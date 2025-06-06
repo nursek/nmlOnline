@@ -46,7 +46,7 @@ public class Unit {
     private List<MeleeEquipment> meleeWeapons;
     private List<DefensiveEquipment> defensiveEquipments;
 
-    public Unit(float experience, String name, UnitClass primaryClass) {
+    public Unit(double experience, String name, UnitClass primaryClass) {
         this.id = 0;
         this.name = name;
         this.experience = experience;
@@ -86,11 +86,11 @@ public class Unit {
     // Applique les bonus du joueur (appelé par Player)
     public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus, 
                                   double pdcBonus, double armorBonus, double evasionBonus) {
-        this.finalAttack = baseAttack * (1.0 + attackBonus / 100.0);
-        this.finalDefense = baseDefense * (1.0 + defenseBonus / 100.0);
-        this.finalPdf = baseCalculatedPdf * (1.0 + pdfBonus / 100.0);
-        this.finalPdc = baseCalculatedPdc * (1.0 + pdcBonus / 100.0);
-        this.finalArmor = baseCalculatedArmor * (1.0 + armorBonus / 100.0);
+        this.finalAttack = baseAttack * (1.0 + attackBonus);
+        this.finalDefense = baseDefense * (1.0 + defenseBonus);
+        this.finalPdf = baseCalculatedPdf * (1.0 + pdfBonus);
+        this.finalPdc = baseCalculatedPdc * (1.0 + pdcBonus);
+        this.finalArmor = baseCalculatedArmor * (1.0 + armorBonus);
         this.finalEvasion = baseCalculatedEvasion - (evasionBonus * 10);
     }
 
@@ -236,7 +236,7 @@ public class Unit {
         if (value == Math.floor(value)) {
             return String.valueOf((int)value);
         } else {
-            return String.format("%.2f", value).replaceAll("0+$", "").replaceAll("\\.$", "");
+            return String.format("%.2f", value).replaceAll("0+$", "").replaceAll(",$", "");
         }
     }
     

@@ -1,7 +1,7 @@
 {
   "name": "Colonel d'Acier",
   "attackBonusPercent": 0.15,
-  "defenseBonusPercent": 0.10,
+  "defenseBonusPercent": -0.15,
   "army": [
     {
       "id": 1,

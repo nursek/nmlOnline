@@ -22,7 +22,7 @@ public class PlayerTestDemo {
         // Test 2: Import de tous les joueurs depuis JSON
         testImportPlayersFromJson();
         //testComplexArmy();
-        testFileArmy();
+        //testFileArmy();
     }
 
     private static void testComplexArmy() {
@@ -136,13 +136,7 @@ public class PlayerTestDemo {
         // Affichage de chaque armée
         for (Player player : players) {
             player.displayArmy();
-            System.out.println("Armor Bonus: " + player.getArmorBonusPercent());
-            System.out.println("Attack Bonus: " + player.getAttackBonusPercent());
-            System.out.println("Defense Bonus: " + player.getDefenseBonusPercent());
-            System.out.println("Pdf Bonus: " + player.getPdfBonusPercent());
-            System.out.println("Pdc Bonus: " + player.getPdcBonusPercent());
-            System.out.println("Evasion Bonus: " + player.getEvasionBonusPercent());
-
+            System.out.println("===============================================");
         }
     }
 

@@ -174,12 +174,12 @@ public class Player {
 
         if (hasAnyBonus()) {
             System.out.println("Bonus/Malus du joueur :");
-            if (attackBonusPercent != 0) System.out.printf("  Attaque : %+.1f%%\n", attackBonusPercent);
-            if (defenseBonusPercent != 0) System.out.printf("  Défense : %+.1f%%\n", defenseBonusPercent);
-            if (pdfBonusPercent != 0) System.out.printf("  PDF : %+.1f%%\n", pdfBonusPercent);
-            if (pdcBonusPercent != 0) System.out.printf("  PDC : %+.1f%%\n", pdcBonusPercent);
-            if (armorBonusPercent != 0) System.out.printf("  Armure : %+.1f%%\n", armorBonusPercent);
-            if (evasionBonusPercent != 0) System.out.printf("  Esquive : %+.1f%%\n", evasionBonusPercent);
+            if (attackBonusPercent != 0) System.out.printf("  Attaque : %+.1f%%\n", attackBonusPercent * 100);
+            if (defenseBonusPercent != 0) System.out.printf("  Défense : %+.1f%%\n", defenseBonusPercent * 100);
+            if (pdfBonusPercent != 0) System.out.printf("  PDF : %+.1f%%\n", pdfBonusPercent * 100);
+            if (pdcBonusPercent != 0) System.out.printf("  PDC : %+.1f%%\n", pdcBonusPercent * 100);
+            if (armorBonusPercent != 0) System.out.printf("  Armure : %+.1f%%\n", armorBonusPercent * 100);
+            if (evasionBonusPercent != 0) System.out.printf("  Esquive : %+.1f%%\n", evasionBonusPercent * 100);
             System.out.println();
         }
 
