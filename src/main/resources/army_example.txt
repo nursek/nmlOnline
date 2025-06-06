@@ -1,0 +1,4 @@
+(L) Larbin (0 Exp) : Pistolet 9mm. Pistolet-mitrailleur. HK-MP7. Poing américain. Matraque télescopique. Tenue ultra légère. Grenade lacrymogène.
+(T) Voyou (3 Exp) : Mitrailleuse. Fusil d'assaut. Mini machine gun. Batte de métal. Machette. Gilet pare-balles léger. Gilet pare-balles moyen. Équipement militaire complet.
+(M) Malfrat (6 Exp) : Fusil à pompe. Winchester. Tromblon. Hache de bûcheron. Tronçonneuse. Protection dorsale. Bouclier anti-émeutes. Bouclier balistique.
+(T) (M) Brute (10 Exp) : Mini machine gun. Tronçonneuse. Bouclier balistique. Équipement militaire complet.

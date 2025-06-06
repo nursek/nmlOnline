@@ -1,14 +1,20 @@
 package com.mg.nmlonline.model.player;
 
+import com.mg.nmlonline.model.equipement.Equipment;
 import com.mg.nmlonline.model.unit.Unit;
+import com.mg.nmlonline.model.unit.UnitClass;
 import lombok.Data;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Classe représentant un joueur avec son armée d'unités
@@ -109,10 +115,7 @@ public class Player {
     }
 
     /**
-     * Trie l'armée selon les critères :
-     * 1. Défense totale (Def + Arm) décroissante
-     * 2. Expérience décroissante (en cas d'égalité)
-     * 3. ID croissant (en cas d'égalité parfaite)
+     * Trie l'armée par expérience décroissante, puis par défense totale décroissante,:
      */
     private void sortAndReorderArmy() {
         army.sort(Comparator
@@ -199,6 +202,95 @@ public class Player {
         return attackBonusPercent != 0 || defenseBonusPercent != 0 ||
                pdfBonusPercent != 0 || pdcBonusPercent != 0 ||
                armorBonusPercent != 0 || evasionBonusPercent != 0;
+    }
+
+    // Méthode pour créer l'armée d'un joueur via un fichier texte
+    public void fromFile(String filePath) throws IOException {
+        List<String> lines = Files.readAllLines(Path.of(filePath));
+        System.out.println("[fromFile] Lecture du fichier : " + filePath + " (" + lines.size() + " lignes)");
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                System.out.println("[fromFile] Ligne vide ignorée.");
+                continue;
+            }
+
+            System.out.println("[fromFile] Analyse de la ligne : " + line);
+
+            if (line.startsWith("(")) {
+                // Extraction des classes
+                Matcher classMatcher = Pattern.compile("^((\\([^)]*\\)\\s*)+)").matcher(line);
+                List<UnitClass> classes = new ArrayList<>();
+                int lastEnd = 0;
+                if (classMatcher.find()) {
+                    String classesPart = classMatcher.group(1);
+                    System.out.println("[fromFile] Partie classes détectée : " + classesPart);
+                    Matcher singleClassMatcher = Pattern.compile("\\(([^)]+)\\)").matcher(classesPart);
+                    while (singleClassMatcher.find()) {
+                        String classCode = singleClassMatcher.group(1);
+                        System.out.println("[fromFile] Code classe trouvé : " + classCode);
+                        try {
+                            classes.add(UnitClass.fromCode(classCode));
+                        } catch (Exception e) {
+                            System.err.println("[fromFile] Erreur conversion classe : " + classCode + " -> " + e.getMessage());
+                        }
+                    }
+                    lastEnd = classMatcher.end();
+                } else {
+                    System.err.println("[fromFile] Aucune classe détectée !");
+                }
+
+                // Extraction du nom, exp et équipements
+                String rest = line.substring(lastEnd).trim();
+                System.out.println("[fromFile] Partie restante après classes : " + rest);
+                Matcher mainMatcher = Pattern.compile("([\\w\\s\\-éèàêîôûç]+)\\s*\\((\\d+) Exp\\)\\s*:\\s*([^.]*)").matcher(rest);
+                if (mainMatcher.find()) {
+                    String unitName = mainMatcher.group(1).trim();
+                    float exp = Float.parseFloat(mainMatcher.group(2).trim());
+                    String equipmentStr = mainMatcher.group(3).trim();
+                    System.out.println("[fromFile] Nom unité : " + unitName + " | Exp : " + exp + " | Equipements : " + equipmentStr);
+
+                    // Créer l’unité selon le nom
+                    Unit unit = null;
+                    if (unitName.startsWith("Larbin")) {
+                        System.out.println("[fromFile] Création unité Larbin");
+                        unit = new Unit(exp, "Larbin", classes.get(0));
+                    } else if (unitName.startsWith("Voyou")) {
+                        System.out.println("[fromFile] Création unité Voyou");
+                        unit = new Unit(exp, "Voyou", classes.get(0));
+                    } else if (unitName.startsWith("Malfrat")) {
+                        System.out.println("[fromFile] Création unité Malfrat");
+                        unit = new Unit(exp, "Malfrat", classes.get(0));
+                    } else if (unitName.startsWith("Brute")) {
+                        System.out.println("[fromFile] Création unité brute");
+                        unit = new Unit(exp, "Brute", classes.get(0));
+                    } else {
+                        System.err.println("[fromFile] Type d'unité inconnu : " + unitName);
+                        continue;
+                    }
+
+                    // Ajouter la classe secondaire si présente
+                    if (classes.size() > 1) {
+                        System.out.println("[fromFile] Ajout classe secondaire : " + classes.get(1));
+                        unit.addSecondClass(classes.get(1));
+                    }
+
+                    // Ajouter les équipements si besoin
+//                if (!equipmentStr.equalsIgnoreCase("Aucun équipement")) {
+//                    List<Equipment> equipments = parseEquipments(equipmentStr);
+//                    unit.setEquipments(equipments);
+//                }
+
+                    addUnit(unit);
+                    System.out.println("[fromFile] Unité ajoutée : " + unit);
+                } else {
+                    System.err.println("[fromFile] Impossible d'extraire nom/exp/équipements sur : " + rest);
+                }
+            }
+            else{
+                System.err.println("[fromFile] Ligne non reconnue dans le fichier: " + line);
+            }
+        }
     }
 
     @Override

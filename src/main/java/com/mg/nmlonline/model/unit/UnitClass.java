@@ -45,11 +45,28 @@ public enum UnitClass {
                 case VOYOU -> 0.35;
                 case MALFRAT -> 0.50;
                 case BRUTE -> 0.65;
+                case PERSONNAGE -> 0.0;
             };
         }
     };
 
     private final String code;
+
+    /**
+     * Retourne la classe d'unité correspondant au code fourni.
+     *
+     * @param code Le code de la classe d'unité (L, T, M, P, S).
+     * @return La classe d'unité correspondante.
+     * @throws IllegalArgumentException Si le code ne correspond à aucune classe connue.
+     */
+    public static UnitClass fromCode(String code) {
+        for (UnitClass uc : values()) {
+            if (uc.getCode().equalsIgnoreCase(code.trim())) {
+                return uc;
+            }
+        }
+        throw new IllegalArgumentException("Classe inconnue : " + code);
+    }
 
     UnitClass(String code) { 
         this.code = code;

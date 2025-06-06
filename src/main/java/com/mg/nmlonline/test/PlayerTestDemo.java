@@ -12,8 +12,8 @@ public class PlayerTestDemo {
 
     public static void main(String[] args) {
         System.out.println("=== DÉMO CLASSE PLAYER ===\n");
-
-        testComplexArmy();
+        //testComplexArmy();
+        testFileArmy();
     }
 
     private static void testComplexArmy() {
@@ -71,19 +71,21 @@ public class PlayerTestDemo {
         malfrat2.equipDefensive(EquipmentFactory.createBouclierBalistique());
         
         // Voyous
-        Unit voyou1 = new Unit(2, "Voyou réanimé", UnitClass.TIREUR);
+        Unit voyou1 = new Unit(2, "Voyou", UnitClass.TIREUR);
         voyou1.gainExperience(2);
         voyou1.equipFirearm(EquipmentFactory.createMitrailleuse());
         voyou1.equipDefensive(EquipmentFactory.createGiletPareBalesLeger());
         voyou1.equipDefensive(EquipmentFactory.createGiletPareBalesMoyen());
         
-        Unit voyou2 = new Unit(16, "Voyou réanimé", UnitClass.LEGER);
+        Unit voyou2 = new Unit(16, "Voyou", UnitClass.LEGER);
         voyou2.gainExperience(2);
         voyou2.equipFirearm(EquipmentFactory.createHKMP7());
         voyou2.equipDefensive(EquipmentFactory.createTenueUltraLegere());
 
         Unit larbin = new Unit(5, "Larbin", UnitClass.LEGER);
-        voyou2.gainExperience(1);
+        larbin.gainExperience(1);
+        larbin.equipFirearm(EquipmentFactory.createHKMP7());
+        larbin.equipDefensive(EquipmentFactory.createTenueUltraLegere());
         
         // Ajout dans l'ordre désordonné pour tester le tri
         player.addUnit(voyou1);
@@ -97,5 +99,18 @@ public class PlayerTestDemo {
         
         player.displayArmy();
         System.out.println("\n✅ Tests Player terminés !");
+    }
+
+    private static void testFileArmy(){
+        System.out.println("🔹 TEST: FILE ARMY (reproduction exemple)");
+        System.out.println("===============================================");
+
+        Player player = new Player("Ratio Antoine");
+        try {
+            player.fromFile("src/main/resources/army_example.txt");
+            player.displayArmy();
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la lecture du fichier d'armée : " + e.getMessage());
+        }
     }
 }

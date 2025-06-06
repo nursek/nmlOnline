@@ -44,11 +44,11 @@ public class Unit {
     private List<MeleeEquipment> meleeWeapons;
     private List<DefensiveEquipment> defensiveEquipments;
 
-    public Unit(int id, String name, UnitClass primaryClass) {
-        this.id = id;
+    public Unit(float experience, String name, UnitClass primaryClass) {
+        this.id = 0;
         this.name = name;
-        this.experience = 0;
-        this.type = UnitType.LARBIN;
+        this.experience = experience;
+        this.type = UnitType.getTypeByExperience((int) experience); // Détermine le type par l'expérience
         this.classes = new ArrayList<>();
         this.classes.add(primaryClass);
         
@@ -89,7 +89,7 @@ public class Unit {
         this.finalPdf = baseCalculatedPdf * (1.0 + pdfBonus / 100.0);
         this.finalPdc = baseCalculatedPdc * (1.0 + pdcBonus / 100.0);
         this.finalArmor = baseCalculatedArmor * (1.0 + armorBonus / 100.0);
-        this.finalEvasion = baseCalculatedEvasion * (1.0 + evasionBonus / 100.0);
+        this.finalEvasion = baseCalculatedEvasion - (evasionBonus * 10);
     }
 
     private double calculateEquipmentPdf() {
