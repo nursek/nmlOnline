@@ -2,6 +2,7 @@ package com.mg.nmlonline.model.player;
 
 import com.mg.nmlonline.model.unit.Unit;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -14,6 +15,7 @@ import java.util.Map;
  * Classe représentant un joueur avec son armée d'unités
  */
 @Data
+@NoArgsConstructor
 public class Player {
     private String name;
     private List<Unit> army;

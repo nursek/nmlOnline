@@ -4,6 +4,11 @@ import com.mg.nmlonline.model.player.Player;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
 import com.mg.nmlonline.model.equipement.EquipmentFactory;
+import com.mg.nmlonline.service.PlayerService;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Test de la classe Player avec tri des unités
@@ -14,6 +19,9 @@ public class PlayerTestDemo {
         System.out.println("=== DÉMO CLASSE PLAYER ===\n");
 
         testComplexArmy();
+
+        // Test 2: Import de tous les joueurs depuis JSON
+        testImportPlayersFromJson();
     }
 
     private static void testComplexArmy() {
@@ -97,5 +105,47 @@ public class PlayerTestDemo {
         
         player.displayArmy();
         System.out.println("\n✅ Tests Player terminés !");
+    }
+
+    private static void testImportPlayersFromJson() {
+        System.out.println("🔹 TEST: Import de tous les joueurs depuis JSON");
+        System.out.println("==============================================");
+
+        PlayerService playerService = new PlayerService();
+        File playersDir = new File("src/main/resources/players/");
+        File[] jsonFiles = playersDir.listFiles((dir, name) -> name.endsWith(".json"));
+
+        if (jsonFiles == null || jsonFiles.length == 0) {
+            System.out.println("Aucun fichier JSON trouvé dans /players.");
+            return;
+        }
+
+        // Liste pour stocker tous les joueurs importés
+        List<Player> players = new ArrayList<>();
+
+        for (File jsonFile : jsonFiles) {
+            try {
+                Player player = playerService.importPlayerFromJson(jsonFile.getPath());
+                players.add(player);
+            } catch (Exception e) {
+                System.out.println("Erreur lors de l'import de " + jsonFile.getName());
+                e.printStackTrace();
+            }
+        }
+
+        // Affichage de chaque armée
+        for (Player player : players) {
+            player.displayArmy();
+            System.out.println("Armor Bonus: " + player.getArmorBonusPercent());
+            System.out.println("Attack Bonus: " + player.getAttackBonusPercent());
+            System.out.println("Defense Bonus: " + player.getDefenseBonusPercent());
+            System.out.println("Pdf Bonus: " + player.getPdfBonusPercent());
+            System.out.println("Pdc Bonus: " + player.getPdcBonusPercent());
+            System.out.println("Evasion Bonus: " + player.getEvasionBonusPercent());
+            System.out.println("==============================================");
+
+        }
+
+        // La liste players reste disponible pour d'autres traitements
     }
 }
