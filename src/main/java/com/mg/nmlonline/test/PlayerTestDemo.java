@@ -4,14 +4,23 @@ import com.mg.nmlonline.model.player.Player;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
 import com.mg.nmlonline.model.equipement.EquipmentFactory;
+import com.mg.nmlonline.service.PlayerService;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Test de la classe Player avec tri des unités
  */
+@Slf4j
 public class PlayerTestDemo {
 
     public static void main(String[] args) {
         System.out.println("=== DÉMO CLASSE PLAYER ===\n");
+        // Test 2: Import de tous les joueurs depuis JSON
+        testImportPlayersFromJson();
         //testComplexArmy();
         testFileArmy();
     }
@@ -71,21 +80,19 @@ public class PlayerTestDemo {
         malfrat2.equipDefensive(EquipmentFactory.createBouclierBalistique());
         
         // Voyous
-        Unit voyou1 = new Unit(2, "Voyou", UnitClass.TIREUR);
+        Unit voyou1 = new Unit(2, "Voyou réanimé", UnitClass.TIREUR);
         voyou1.gainExperience(2);
         voyou1.equipFirearm(EquipmentFactory.createMitrailleuse());
         voyou1.equipDefensive(EquipmentFactory.createGiletPareBalesLeger());
         voyou1.equipDefensive(EquipmentFactory.createGiletPareBalesMoyen());
         
-        Unit voyou2 = new Unit(16, "Voyou", UnitClass.LEGER);
+        Unit voyou2 = new Unit(16, "Voyou réanimé", UnitClass.LEGER);
         voyou2.gainExperience(2);
         voyou2.equipFirearm(EquipmentFactory.createHKMP7());
         voyou2.equipDefensive(EquipmentFactory.createTenueUltraLegere());
 
         Unit larbin = new Unit(5, "Larbin", UnitClass.LEGER);
-        larbin.gainExperience(1);
-        larbin.equipFirearm(EquipmentFactory.createHKMP7());
-        larbin.equipDefensive(EquipmentFactory.createTenueUltraLegere());
+        voyou2.gainExperience(1);
         
         // Ajout dans l'ordre désordonné pour tester le tri
         player.addUnit(voyou1);
@@ -99,6 +106,44 @@ public class PlayerTestDemo {
         
         player.displayArmy();
         System.out.println("\n✅ Tests Player terminés !");
+    }
+
+    private static void testImportPlayersFromJson() {
+        System.out.println("🔹 TEST: Import de tous les joueurs depuis JSON");
+        System.out.println("==============================================");
+
+        PlayerService playerService = new PlayerService();
+        File playersDir = new File("src/main/resources/players/");
+        File[] jsonFiles = playersDir.listFiles((dir, name) -> name.endsWith(".json"));
+
+        if (jsonFiles == null || jsonFiles.length == 0) {
+            System.out.println("Aucun fichier JSON trouvé dans /players.");
+            return;
+        }
+
+        // Liste pour stocker tous les joueurs importés
+        List<Player> players = new ArrayList<>();
+
+        for (File jsonFile : jsonFiles) {
+            try {
+                Player player = playerService.importPlayerFromJson(jsonFile.getPath());
+                players.add(player);
+            } catch (Exception e) {
+                log.error("Erreur lors de l'import de " + jsonFile.getName(), e);
+            }
+        }
+
+        // Affichage de chaque armée
+        for (Player player : players) {
+            player.displayArmy();
+            System.out.println("Armor Bonus: " + player.getArmorBonusPercent());
+            System.out.println("Attack Bonus: " + player.getAttackBonusPercent());
+            System.out.println("Defense Bonus: " + player.getDefenseBonusPercent());
+            System.out.println("Pdf Bonus: " + player.getPdfBonusPercent());
+            System.out.println("Pdc Bonus: " + player.getPdcBonusPercent());
+            System.out.println("Evasion Bonus: " + player.getEvasionBonusPercent());
+
+        }
     }
 
     private static void testFileArmy(){

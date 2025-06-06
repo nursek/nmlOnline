@@ -5,7 +5,38 @@ import java.util.Set;
 
 // Factory pour créer les équipements prédéfinis
 public class EquipmentFactory {
-    
+
+    public static Equipment createEquipmentByType(EquipmentType type) {
+        return switch (type) {
+            // ARMES À FEU
+            case PISTOLET_9MM -> createPistolet9mm();
+            case PISTOLET_MITRAILLEUR -> createPistoletMitrailleur();
+            case HK_MP7 -> createHKMP7();
+            case MITRAILLEUSE -> createMitrailleuse();
+            case FUSIL_ASSAUT -> createFusilAssaut();
+            case MINI_MACHINE_GUN -> createMiniMachineGun();
+            case FUSIL_POMPE -> createFusilPompe();
+            case WINCHESTER -> createWinchester();
+            case TROMBLON -> createTromblon();
+            // CORPS-À-CORPS
+            case POING_AMERICAIN -> createPoingAmericain();
+            case MATRAQUE_TELESCOPIC -> createMatraqueTelescopic();
+            case BATTE_METAL -> createBatteMetal();
+            case MACHETTE -> createMachette();
+            case HACHE_BUCHERON -> createHacheBucheron();
+            case TRONCONNEUSE -> createTronconneuse();
+            // DEFENSIFS
+            case TENUE_ULTRA_LEGERE -> createTenueUltraLegere();
+            case GRENADE_LACRYMOGENE -> createGrenadeLacrymogene();
+            case GILET_PARE_BALLES_LEGER -> createGiletPareBalesLeger();
+            case GILET_PARE_BALLES_MOYEN -> createGiletPareBalesMoyen();
+            case EQUIPEMENT_MILITAIRE_COMPLET -> createEquipementMilitaireComplet();
+            case PROTECTION_DORSALE -> createProtectionDorsale();
+            case BOUCLIER_ANTI_EMEUTES -> createBouclierAntiEmeutes();
+            case BOUCLIER_BALISTIQUE -> createBouclierBalistique();
+        };
+    }
+
     // === ARMES À FEU CLASSE LÉGER ===
     public static FirearmEquipment createPistolet9mm() {
         return new FirearmEquipment("Pistolet 9mm", 400, 80, 0, 0, Set.of(UnitClass.LEGER));

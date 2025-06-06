@@ -4,6 +4,7 @@ import com.mg.nmlonline.model.equipement.Equipment;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,6 +21,7 @@ import java.util.regex.Pattern;
  * Classe représentant un joueur avec son armée d'unités
  */
 @Data
+@NoArgsConstructor
 public class Player {
     private String name;
     private List<Unit> army;

@@ -5,6 +5,7 @@ import com.mg.nmlonline.model.equipement.Equipment;
 import com.mg.nmlonline.model.equipement.FirearmEquipment;
 import com.mg.nmlonline.model.equipement.MeleeEquipment;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
  * Represents a unit with various attributes for combat.
  */
 @Data
+@NoArgsConstructor
 public class Unit {
     private int id;
     private String name;

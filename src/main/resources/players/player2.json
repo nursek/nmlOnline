@@ -1,0 +1,57 @@
+{
+  "name": "Colonel d'Acier",
+  "attackBonusPercent": 0.15,
+  "defenseBonusPercent": 0.10,
+  "army": [
+    {
+      "id": 1,
+      "type": "BRUTE",
+      "classes": ["MASTODONTE", "TIREUR"],
+      "experience": 10,
+      "firearms": ["Mini machine gun"],
+      "defensive": [
+        "Bouclier balistique",
+        "Équipement militaire complet"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "MALFRAT",
+      "classes": ["TIREUR", "LEGER"],
+      "experience": 7.5,
+      "firearms": ["Fusil d'assaut"],
+      "defensive": [
+        "Gilet pare-balles moyen",
+        "Bouclier anti-émeutes"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "VOYOU",
+      "classes": ["LEGER"],
+      "experience": 3,
+      "firearms": ["Pistolet-mitrailleur"],
+      "defensive": [
+        "Tenue ultra légère"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VOYOU",
+      "classes": ["TIREUR"],
+      "experience": 2.5,
+      "firearms": ["Mitrailleuse"],
+      "defensive": [
+        "Gilet pare-balles léger"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "LARBIN",
+      "classes": ["LEGER"],
+      "experience": 1,
+      "firearms": [],
+      "defensive": []
+    }
+  ]
+}
