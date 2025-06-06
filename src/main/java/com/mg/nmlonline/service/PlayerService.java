@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.model.player.Player;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
-import com.mg.nmlonline.model.unit.UnitType;
 import com.mg.nmlonline.model.equipement.*;
 import java.io.File;
 import java.io.IOException;

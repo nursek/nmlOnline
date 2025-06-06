@@ -5,6 +5,7 @@ import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
 import com.mg.nmlonline.model.equipement.EquipmentFactory;
 import com.mg.nmlonline.service.PlayerService;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import java.util.List;
 /**
  * Test de la classe Player avec tri des unités
  */
+@Slf4j
 public class PlayerTestDemo {
 
     public static void main(String[] args) {
@@ -128,8 +130,7 @@ public class PlayerTestDemo {
                 Player player = playerService.importPlayerFromJson(jsonFile.getPath());
                 players.add(player);
             } catch (Exception e) {
-                System.out.println("Erreur lors de l'import de " + jsonFile.getName());
-                e.printStackTrace();
+                log.error("Erreur lors de l'import de " + jsonFile.getName(), e);
             }
         }
 
@@ -142,10 +143,7 @@ public class PlayerTestDemo {
             System.out.println("Pdf Bonus: " + player.getPdfBonusPercent());
             System.out.println("Pdc Bonus: " + player.getPdcBonusPercent());
             System.out.println("Evasion Bonus: " + player.getEvasionBonusPercent());
-            System.out.println("==============================================");
 
         }
-
-        // La liste players reste disponible pour d'autres traitements
     }
 }
