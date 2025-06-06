@@ -1,0 +1,283 @@
+package com.mg.nmlonline.model.unit;
+
+import com.mg.nmlonline.model.equipement.DefensiveEquipment;
+import com.mg.nmlonline.model.equipement.Equipment;
+import com.mg.nmlonline.model.equipement.FirearmEquipment;
+import com.mg.nmlonline.model.equipement.MeleeEquipment;
+import lombok.Data;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Represents a unit with various attributes for combat.
+ */
+@Data
+public class Unit {
+    private int id;
+    private String name;
+    private double experience;
+    private UnitType type;
+    private List<UnitClass> classes;
+    
+    // Statistiques de base
+    private int baseAttack;
+    private int baseDefense;
+    
+    // Statistiques calculées et conservées (sans bonus du joueur)
+    private double baseCalculatedPdf;
+    private double baseCalculatedPdc;
+    private double baseCalculatedArmor;
+    private double baseCalculatedEvasion;
+    
+    // Statistiques finales (avec bonus du joueur appliqués)
+    private double finalAttack;
+    private double finalDefense;
+    private double finalPdf;
+    private double finalPdc;
+    private double finalArmor;
+    private double finalEvasion;
+    
+    // Équipements
+    private List<FirearmEquipment> firearms;
+    private List<MeleeEquipment> meleeWeapons;
+    private List<DefensiveEquipment> defensiveEquipments;
+
+    public Unit(int id, String name, UnitClass primaryClass) {
+        this.id = id;
+        this.name = name;
+        this.experience = 0;
+        this.type = UnitType.LARBIN;
+        this.classes = new ArrayList<>();
+        this.classes.add(primaryClass);
+        
+        this.baseAttack = type.getBaseAttack();
+        this.baseDefense = type.getBaseDefense();
+        
+        this.firearms = new ArrayList<>();
+        this.meleeWeapons = new ArrayList<>();
+        this.defensiveEquipments = new ArrayList<>();
+        
+        recalculateBaseStats(); // Calcul initial
+    }
+
+    // Recalcule les statistiques de base (sans bonus joueur)
+    public void recalculateBaseStats() {
+        this.baseAttack = type.getBaseAttack();
+        this.baseDefense = type.getBaseDefense();
+        
+        this.baseCalculatedPdf = calculateEquipmentPdf();
+        this.baseCalculatedPdc = calculateEquipmentPdc();
+        this.baseCalculatedArmor = calculateEquipmentArmor();
+        this.baseCalculatedEvasion = calculateEquipmentEvasion();
+        
+        // Par défaut, pas de bonus
+        this.finalAttack = baseAttack;
+        this.finalDefense = baseDefense;
+        this.finalPdf = baseCalculatedPdf;
+        this.finalPdc = baseCalculatedPdc;
+        this.finalArmor = baseCalculatedArmor;
+        this.finalEvasion = baseCalculatedEvasion;
+    }
+    
+    // Applique les bonus du joueur (appelé par Player)
+    public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus, 
+                                  double pdcBonus, double armorBonus, double evasionBonus) {
+        this.finalAttack = baseAttack * (1.0 + attackBonus / 100.0);
+        this.finalDefense = baseDefense * (1.0 + defenseBonus / 100.0);
+        this.finalPdf = baseCalculatedPdf * (1.0 + pdfBonus / 100.0);
+        this.finalPdc = baseCalculatedPdc * (1.0 + pdcBonus / 100.0);
+        this.finalArmor = baseCalculatedArmor * (1.0 + armorBonus / 100.0);
+        this.finalEvasion = baseCalculatedEvasion * (1.0 + evasionBonus / 100.0);
+    }
+
+    private double calculateEquipmentPdf() {
+        double totalPdf = 0;
+        
+        for (FirearmEquipment firearm : firearms) {
+            if (isEquipmentCompatible(firearm)) {
+                totalPdf += baseAttack * (firearm.getPdfBonus() / 100.0);
+            }
+        }
+        return totalPdf;
+    }
+
+    private double calculateEquipmentPdc() {
+        double totalPdc = 0;
+        
+        for (MeleeEquipment melee : meleeWeapons) {
+            if (isEquipmentCompatible(melee)) {
+                totalPdc += baseAttack * (melee.getPdcBonus() / 100.0);
+            }
+        }
+        
+        // Ajout des bonus Pdc des armes à feu spécialisées (comme Tromblon)
+        for (FirearmEquipment firearm : firearms) {
+            if (isEquipmentCompatible(firearm)) {
+                totalPdc += baseAttack * (firearm.getPdcBonus() / 100.0);
+            }
+        }
+        
+        return totalPdc;
+    }
+
+    private double calculateEquipmentArmor() {
+        double totalArmor = 0;
+        
+        for (DefensiveEquipment defensive : defensiveEquipments) {
+            if (isEquipmentCompatible(defensive)) {
+                totalArmor += baseDefense * (defensive.getArmBonus() / 100.0);
+            }
+        }
+        
+        // Ajout des bonus d'armure des armes à feu
+        for (FirearmEquipment firearm : firearms) {
+            if (isEquipmentCompatible(firearm)) {
+                totalArmor += baseDefense * (firearm.getArmBonus() / 100.0);
+            }
+        }
+        
+        return totalArmor;
+    }
+
+    private double calculateEquipmentEvasion() {
+        double totalEvasion = 0;
+        
+        for (DefensiveEquipment defensive : defensiveEquipments) {
+            if (isEquipmentCompatible(defensive)) {
+                totalEvasion += defensive.getEvasionBonus();
+            }
+        }
+        
+        return totalEvasion;
+    }
+
+    private boolean isEquipmentCompatible(Equipment equipment) {
+        return classes.stream().anyMatch(unitClass -> 
+            equipment.getCompatibleClasses().contains(unitClass));
+    }
+
+    // Gestion de l'évolution
+    public void gainExperience(double exp) {
+        this.experience += exp;
+        UnitType newType = UnitType.getTypeByExperience((int) experience);
+        if (newType != this.type) {
+            evolve(newType);
+        }
+    }
+
+    private void evolve(UnitType newType) {
+        this.type = newType;
+        recalculateBaseStats(); // Recalcule avec les nouvelles stats de base
+    }
+
+    // Gestion des classes
+    public boolean canAddSecondClass() {
+        return (type == UnitType.MALFRAT || type == UnitType.BRUTE) && classes.size() == 1 &&
+               experience >= 5; // Voyou qui a évolué en malfrat
+    }
+
+    public void addSecondClass(UnitClass secondClass) {
+        if (canAddSecondClass() && !classes.contains(secondClass)) {
+            classes.add(secondClass);
+            recalculateBaseStats(); // Recalcule avec les nouvelles compatibilités
+        }
+        else
+            System.out.println("Impossible d'ajouter la classe : " + secondClass);
+    }
+
+    // Gestion des équipements
+    public boolean canEquip(Equipment equipment) {
+        if (equipment instanceof FirearmEquipment) {
+            return firearms.size() < type.getMaxFirearms() && 
+                   isEquipmentCompatible(equipment);
+        } else if (equipment instanceof MeleeEquipment) {
+            return meleeWeapons.size() < type.getMaxMeleeWeapons() && 
+                   isEquipmentCompatible(equipment);
+        } else if (equipment instanceof DefensiveEquipment) {
+            return defensiveEquipments.size() < type.getMaxDefensiveEquipment() && 
+                   isEquipmentCompatible(equipment);
+        }
+        return false;
+    }
+
+    public void equipFirearm(FirearmEquipment firearm) {
+        if (canEquip(firearm)) {
+            firearms.add(firearm);
+            recalculateBaseStats();
+        }
+    }
+
+    public void equipMelee(MeleeEquipment melee) {
+        if (canEquip(melee)) {
+            meleeWeapons.add(melee);
+            recalculateBaseStats();
+        }
+    }
+
+    public void equipDefensive(DefensiveEquipment defensive) {
+        if (canEquip(defensive)) {
+            defensiveEquipments.add(defensive);
+            recalculateBaseStats();
+        }
+    }
+
+    // Méthodes utilitaires pour le tri
+    public double getTotalDefense() {
+        return finalDefense + finalArmor;
+    }
+
+    // Méthodes de formatage pour l'affichage
+    private String formatStat(double value) {
+        // 2 décimales, supprime les zéros inutiles
+        if (value == Math.floor(value)) {
+            return String.valueOf((int)value);
+        } else {
+            return String.format("%.2f", value).replaceAll("0+$", "").replaceAll("\\.$", "");
+        }
+    }
+    
+    private String formatEvasion(double value) {
+        // Esquive arrondie au chiffre du dessus (plafond)
+        return String.valueOf((int)Math.ceil(value));
+    }
+
+    // Méthode toString pour affichage selon le format demandé
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Classes
+        sb.append(
+                classes.stream()
+                        .map(c -> "(" + c.getCode() + ")")
+                        .collect(Collectors.joining(" "))
+        ).append(" ");
+        
+        // Type et informations
+        sb.append(type.name().charAt(0)).append(type.name().substring(1).toLowerCase());
+        sb.append(" n°").append(id);
+        sb.append(" (").append(formatStat(experience)).append(" Exp) : ");
+        
+        // Équipements
+        firearms.forEach(f -> sb.append(f.getName()).append(". "));
+        meleeWeapons.forEach(m -> sb.append(m.getName()).append(". "));
+        defensiveEquipments.forEach(d -> sb.append(d.getName()).append(". "));
+
+        if (firearms.isEmpty() && meleeWeapons.isEmpty() && defensiveEquipments.isEmpty()) {
+            sb.append("Aucun équipement. ");
+        }
+        
+        // Statistiques avec formatage précis
+        sb.append(formatStat(finalAttack)).append(" Atk");
+        if (finalPdf > 0) sb.append(" + ").append(formatStat(finalPdf)).append(" Pdf");
+        if (finalPdc > 0) sb.append(" + ").append(formatStat(finalPdc)).append(" Pdc");
+        sb.append(" / ").append(formatStat(finalDefense)).append(" Def");
+        if (finalArmor > 0) sb.append(" + ").append(formatStat(finalArmor)).append(" Arm");
+        if (finalEvasion > 0) sb.append(". Esquive : ").append(formatEvasion(finalEvasion)).append(" %");
+        sb.append(".");
+        
+        return sb.toString();
+    }
+}
