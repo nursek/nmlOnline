@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @Data
 @NoArgsConstructor
 public class Unit {
-    private int id;
+    private int id; //TODO: virer l'id normalement c'est useless.
     private String name;
     private double experience;
     private UnitType type;

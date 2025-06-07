@@ -1,6 +1,8 @@
 package com.mg.nmlonline.model.player;
 
 import com.mg.nmlonline.model.equipement.Equipment;
+import com.mg.nmlonline.model.equipement.EquipmentFactory;
+import com.mg.nmlonline.model.equipement.EquipmentType;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
 import lombok.Data;
@@ -189,12 +191,12 @@ public class Player {
 
         if (hasAnyBonus()) {
             System.out.println("Bonus/Malus du joueur :");
-            if (attackBonusPercent != 0) System.out.printf("  Attaque : %+.1f%%\n", attackBonusPercent * 100);
-            if (defenseBonusPercent != 0) System.out.printf("  Défense : %+.1f%%\n", defenseBonusPercent * 100);
-            if (pdfBonusPercent != 0) System.out.printf("  PDF : %+.1f%%\n", pdfBonusPercent * 100);
-            if (pdcBonusPercent != 0) System.out.printf("  PDC : %+.1f%%\n", pdcBonusPercent * 100);
-            if (armorBonusPercent != 0) System.out.printf("  Armure : %+.1f%%\n", armorBonusPercent * 100);
-            if (evasionBonusPercent != 0) System.out.printf("  Esquive : %+.1f%%\n", evasionBonusPercent * 100);
+            if (attackBonusPercent != 0) System.out.printf("  Attaque : %+.1f%%%n", attackBonusPercent * 100);
+            if (defenseBonusPercent != 0) System.out.printf("  Défense : %+.1f%%%n", defenseBonusPercent * 100);
+            if (pdfBonusPercent != 0) System.out.printf("  PDF : %+.1f%%%n", pdfBonusPercent * 100);
+            if (pdcBonusPercent != 0) System.out.printf("  PDC : %+.1f%%%n", pdcBonusPercent * 100);
+            if (armorBonusPercent != 0) System.out.printf("  Armure : %+.1f%%%n", armorBonusPercent * 100);
+            if (evasionBonusPercent != 0) System.out.printf("  Esquive : %+.1f%%%n", evasionBonusPercent * 100);
             System.out.println();
         }
 
@@ -210,7 +212,7 @@ public class Player {
         double totalArm = army.stream().mapToDouble(Unit::getFinalArmor).sum();
 
         System.out.printf(
-                "\nTotal : %d unités => %.0f Atk + %.0f Pdf + %.0f Pdc / %.0f Def + %.0f Arm.\n",
+                "%nTotal : %d unités => %.0f Atk + %.0f Pdf + %.0f Pdc / %.0f Def + %.0f Arm.%n",
                 getArmySize(), totalAtk, totalPdf, totalPdc, totalDef, totalArm
         );
     }
@@ -222,17 +224,12 @@ public class Player {
     }
 
     // Méthode pour créer l'armée d'un joueur via un fichier texte
+    //TODO: déplacer dans le service PlayerService.
     public void fromFile(String filePath) throws IOException {
         List<String> lines = Files.readAllLines(Path.of(filePath));
-        System.out.println("[fromFile] Lecture du fichier : " + filePath + " (" + lines.size() + " lignes)");
         for (String line : lines) {
             line = line.trim();
-            if (line.isEmpty()) {
-                System.out.println("[fromFile] Ligne vide ignorée.");
-                continue;
-            }
-
-            System.out.println("[fromFile] Analyse de la ligne : " + line);
+            if (line.isEmpty()) continue;
 
             if (line.startsWith("(")) {
                 // Extraction des classes
@@ -240,85 +237,100 @@ public class Player {
                 List<UnitClass> classes = new ArrayList<>();
                 int lastEnd = 0;
                 if (classMatcher.find()) {
-                    String classesPart = classMatcher.group(1);
-                    System.out.println("[fromFile] Partie classes détectée : " + classesPart);
-                    Matcher singleClassMatcher = Pattern.compile("\\(([^)]+)\\)").matcher(classesPart);
+                    Matcher singleClassMatcher = Pattern.compile("\\(([^)]+)\\)").matcher(classMatcher.group(1));
                     while (singleClassMatcher.find()) {
-                        String classCode = singleClassMatcher.group(1);
-                        System.out.println("[fromFile] Code classe trouvé : " + classCode);
                         try {
-                            classes.add(UnitClass.fromCode(classCode));
+                            classes.add(UnitClass.fromCode(singleClassMatcher.group(1)));
                         } catch (Exception e) {
-                            System.err.println("[fromFile] Erreur conversion classe : " + classCode + " -> " + e.getMessage());
+                            System.err.println("Classe inconnue : " + singleClassMatcher.group(1));
                         }
                     }
                     lastEnd = classMatcher.end();
-                } else {
-                    System.err.println("[fromFile] Aucune classe détectée !");
                 }
 
                 // Extraction du nom, exp et équipements
                 String rest = line.substring(lastEnd).trim();
-                System.out.println("[fromFile] Partie restante après classes : " + rest);
-                Matcher mainMatcher = Pattern.compile("([\\w\\s\\-éèàêîôûç]+)\\s*\\((\\d+) Exp\\)\\s*:\\s*([^.]*)").matcher(rest);
+                Matcher mainMatcher = Pattern.compile("([\\w\\s\\-éèàêîôûç]+)\\s*\\((\\d+) Exp\\)\\s*:\\s*(.*)").matcher(rest);
                 if (mainMatcher.find()) {
                     String unitName = mainMatcher.group(1).trim();
                     float exp = Float.parseFloat(mainMatcher.group(2).trim());
                     String equipmentStr = mainMatcher.group(3).trim();
-                    System.out.println("[fromFile] Nom unité : " + unitName + " | Exp : " + exp + " | Equipements : " + equipmentStr);
 
-                    // Créer l’unité selon le nom
-                    Unit unit = null;
-                    if (unitName.startsWith("Larbin")) {
-                        System.out.println("[fromFile] Création unité Larbin");
-                        unit = new Unit(exp, "Larbin", classes.get(0));
-                    } else if (unitName.startsWith("Voyou")) {
-                        System.out.println("[fromFile] Création unité Voyou");
-                        unit = new Unit(exp, "Voyou", classes.get(0));
-                    } else if (unitName.startsWith("Malfrat")) {
-                        System.out.println("[fromFile] Création unité Malfrat");
-                        unit = new Unit(exp, "Malfrat", classes.get(0));
-                    } else if (unitName.startsWith("Brute")) {
-                        System.out.println("[fromFile] Création unité brute");
-                        unit = new Unit(exp, "Brute", classes.get(0));
-                    } else {
-                        System.err.println("[fromFile] Type d'unité inconnu : " + unitName);
-                        continue;
-                    }
+                    Unit unit = getUnit(unitName, exp, classes);
 
-                    // Ajouter la classe secondaire si présente
+                    // Gérer les unités avec des noms spécifiques
+
                     if (classes.size() > 1) {
-                        System.out.println("[fromFile] Ajout classe secondaire : " + classes.get(1));
+                        assert unit != null;
                         unit.addSecondClass(classes.get(1));
                     }
 
-                    // Ajouter les équipements si besoin
-//                if (!equipmentStr.equalsIgnoreCase("Aucun équipement")) {
-//                    List<Equipment> equipments = parseEquipments(equipmentStr);
-//                    unit.setEquipments(equipments);
-//                }
+                    if (unit != null) {
+                        addEquipmentsToUnit(unit, equipmentStr);
+                        addUnit(unit);
+                    }
 
-                    addUnit(unit);
-                    System.out.println("[fromFile] Unité ajoutée : " + unit);
-                } else {
-                    System.err.println("[fromFile] Impossible d'extraire nom/exp/équipements sur : " + rest);
                 }
-            }
-            else{
-                System.err.println("[fromFile] Ligne non reconnue dans le fichier: " + line);
             }
         }
     }
 
+    /**
+     * Crée une unité basée sur le nom et l'expérience, en utilisant la première classe de la liste.
+     * Si le nom de l'unité ne correspond pas à un type connu, retourne null.
+     * T : Ajouter d'autres types d'unités reconnues si nécessaire.
+     */
+    private static Unit getUnit(String unitName, float exp, List<UnitClass> classes) {
+        Unit unit = null;
+        if (unitName.startsWith("Larbin")) {
+            unit = new Unit(exp, "Larbin", classes.getFirst());
+        } else if (unitName.startsWith("Voyou")) {
+            unit = new Unit(exp, "Voyou", classes.getFirst());
+        } else if (unitName.startsWith("Malfrat")) {
+            unit = new Unit(exp, "Malfrat", classes.getFirst());
+        } else if (unitName.startsWith("Brute")) {
+            unit = new Unit(exp, "Brute", classes.getFirst());
+        }
+        return unit;
+    }
+
+    /**
+     * Parse la chaîne d'équipements, ajoute chaque équipement à l'unité, et retourne la liste des noms.
+     */
+    private void addEquipmentsToUnit(Unit unit, String equipmentStr) {
+        List<String> equipmentList = new ArrayList<>();
+        if (!equipmentStr.equalsIgnoreCase("Aucun équipement")) {
+            String[] equipmentArray = equipmentStr.split("\\.");
+            for (String eq : equipmentArray) {
+                String trimmed = eq.trim();
+                if (!trimmed.isEmpty()) {
+                    try {
+                        EquipmentType type = EquipmentType.fromDisplayName(trimmed);
+                        unit.equip(EquipmentFactory.createEquipmentByType(type));
+                        equipmentList.add(trimmed);
+                    } catch (Exception e) {
+                        // Silencieux si équipement inconnu
+                    }
+                }
+            }
+        }
+    }
+
+    /** Affiche les équipements du joueur
+     * Regroupe les équipements par nom et affiche le nombre de chaque type
+     * TODO: Trier les équipements par type et afficher les détails (prix, stats, etc.)
+     */
     public void displayEquipments() {
         System.out.println("=== ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
         if (equipments.isEmpty()) {
             System.out.println("Aucun équipement.");
             return;
         }
+        Map<String, Integer> equipmentCount = new HashMap<>();
         for (Equipment equipment : equipments) {
-            System.out.println(equipment.getName());
+            equipmentCount.merge(equipment.getName(), 1, Integer::sum);
         }
+        equipmentCount.forEach((ename, count) -> System.out.printf("%d x %s%n", count, ename));
     }
 
     @Override

@@ -13,6 +13,10 @@ public enum UnitClass {
         public double getDefenseReductionOnFirstSector() { return 0.5; }
     },
 
+    ELEMENTAIRE("E") {
+
+    },
+
     TIREUR("T") {
         @Override
         public double getCriticalChance() { return 0.10; }
@@ -45,7 +49,7 @@ public enum UnitClass {
                 case VOYOU -> 0.35;
                 case MALFRAT -> 0.50;
                 case BRUTE -> 0.65;
-                case PERSONNAGE -> 0.0;
+                case PERSONNAGE -> 0.75;
             };
         }
     };

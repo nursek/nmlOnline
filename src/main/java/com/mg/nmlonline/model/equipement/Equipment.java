@@ -10,7 +10,7 @@ public abstract class Equipment {
     protected final String name;
     protected final int cost;
 
-    public Equipment(String name, int cost) {
+    protected Equipment(String name, int cost) {
         this.name = name;
         this.cost = cost;
     }

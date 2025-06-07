@@ -147,7 +147,7 @@ public class PlayerTestDemo {
         System.out.println("🔹 TEST: FILE ARMY (reproduction exemple)");
         System.out.println("===============================================");
 
-        Player player = new Player("Ratio Antoine");
+        Player player = new Player("Jonas Brother");
         try {
             player.fromFile("src/main/resources/army_example.txt");
             player.displayArmy();

@@ -146,7 +146,7 @@ public class UnitTestDemo {
         // (T) (M) Brute n°3 (9 Exp) : Mini machine gun. Tronçonneuse. Tronçonneuse. Tronçonneuse. 
         // Bouclier anti-émeutes. Équipement militaire complet. Bouclier balistique. 
         // 100 Atk + 400 Pdf + 300 Pdc / 100 Def + 730 Arm.
-        Unit brute3 = new Unit(3, "Brute", UnitClass.TIREUR);
+        Unit brute3 = new Unit(0, "Brute", UnitClass.TIREUR);
         brute3.gainExperience(9);
         brute3.addSecondClass(UnitClass.MASTODONTE);
         brute3.equip(EquipmentFactory.createMiniMachineGun());
@@ -160,7 +160,7 @@ public class UnitTestDemo {
         
         // (L) Larbin n°6 (0 Exp) : Pistolet-mitrailleur. Tenue ultralégère. 
         // 10 Atk + 15 Pdf / 10 Def + 7,5 Arm. Esquive : 10 %.
-        Unit larbin6 = new Unit(6, "Larbin", UnitClass.LEGER);
+        Unit larbin6 = new Unit(0, "Larbin", UnitClass.LEGER);
         larbin6.equip(EquipmentFactory.createPistoletMitrailleur());
         larbin6.equip(EquipmentFactory.createTenueUltraLegere());
         System.out.println("Exemple 2: " + larbin6);
@@ -168,7 +168,7 @@ public class UnitTestDemo {
         // (T) Malfrat n°3 (6 Exp) : Mini machine gun. Machette. Machette. 
         // Gilet pare-balles moyen. Équipement militaire complet. 
         // 50 Atk + 200 Pdf + 75 Pdc / 50 Def + 150 Arm.
-        Unit malfrat3 = new Unit(3, "Malfrat", UnitClass.TIREUR);
+        Unit malfrat3 = new Unit(0, "Malfrat", UnitClass.TIREUR);
         malfrat3.gainExperience(6);
         malfrat3.equip(EquipmentFactory.createMiniMachineGun());
         malfrat3.equip(EquipmentFactory.createMachette());
