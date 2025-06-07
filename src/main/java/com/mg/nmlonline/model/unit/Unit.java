@@ -1,9 +1,6 @@
 package com.mg.nmlonline.model.unit;
 
-import com.mg.nmlonline.model.equipement.DefensiveEquipment;
-import com.mg.nmlonline.model.equipement.Equipment;
-import com.mg.nmlonline.model.equipement.FirearmEquipment;
-import com.mg.nmlonline.model.equipement.MeleeEquipment;
+import com.mg.nmlonline.model.equipement.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -42,9 +39,7 @@ public class Unit {
     private double finalEvasion;
     
     // Équipements
-    private List<FirearmEquipment> firearms;
-    private List<MeleeEquipment> meleeWeapons;
-    private List<DefensiveEquipment> defensiveEquipments;
+    private List<Equipment> equipments;
 
     public Unit(double experience, String name, UnitClass primaryClass) {
         this.id = 0;
@@ -57,9 +52,7 @@ public class Unit {
         this.baseAttack = type.getBaseAttack();
         this.baseDefense = type.getBaseDefense();
         
-        this.firearms = new ArrayList<>();
-        this.meleeWeapons = new ArrayList<>();
-        this.defensiveEquipments = new ArrayList<>();
+        this.equipments = new ArrayList<>();
         
         recalculateBaseStats(); // Calcul initial
     }
@@ -97,9 +90,9 @@ public class Unit {
     private double calculateEquipmentPdf() {
         double totalPdf = 0;
         
-        for (FirearmEquipment firearm : firearms) {
-            if (isEquipmentCompatible(firearm)) {
-                totalPdf += baseAttack * (firearm.getPdfBonus() / 100.0);
+        for (Equipment equipment : equipments) {
+            if (isEquipmentCompatible(equipment)) {
+                totalPdf += baseAttack * (equipment.getPdfBonus() / 100.0);
             }
         }
         return totalPdf;
@@ -108,50 +101,33 @@ public class Unit {
     private double calculateEquipmentPdc() {
         double totalPdc = 0;
         
-        for (MeleeEquipment melee : meleeWeapons) {
-            if (isEquipmentCompatible(melee)) {
-                totalPdc += baseAttack * (melee.getPdcBonus() / 100.0);
+        for (Equipment equipment : equipments) {
+            if (isEquipmentCompatible(equipment)) {
+                totalPdc += baseAttack * (equipment.getPdcBonus() / 100.0);
             }
         }
-        
-        // Ajout des bonus Pdc des armes à feu spécialisées (comme Tromblon)
-        for (FirearmEquipment firearm : firearms) {
-            if (isEquipmentCompatible(firearm)) {
-                totalPdc += baseAttack * (firearm.getPdcBonus() / 100.0);
-            }
-        }
-        
         return totalPdc;
     }
 
     private double calculateEquipmentArmor() {
         double totalArmor = 0;
         
-        for (DefensiveEquipment defensive : defensiveEquipments) {
-            if (isEquipmentCompatible(defensive)) {
-                totalArmor += baseDefense * (defensive.getArmBonus() / 100.0);
+        for (Equipment equipment : equipments) {
+            if (isEquipmentCompatible(equipment)) {
+                totalArmor += baseDefense * (equipment.getArmBonus() / 100.0);
             }
         }
-        
-        // Ajout des bonus d'armure des armes à feu
-        for (FirearmEquipment firearm : firearms) {
-            if (isEquipmentCompatible(firearm)) {
-                totalArmor += baseDefense * (firearm.getArmBonus() / 100.0);
-            }
-        }
-        
         return totalArmor;
     }
 
     private double calculateEquipmentEvasion() {
         double totalEvasion = 0;
         
-        for (DefensiveEquipment defensive : defensiveEquipments) {
-            if (isEquipmentCompatible(defensive)) {
-                totalEvasion += defensive.getEvasionBonus();
+        for (Equipment equipment : equipments) {
+            if (isEquipmentCompatible(equipment)) {
+                totalEvasion += equipment.getEvasionBonus();
             }
         }
-        
         return totalEvasion;
     }
 
@@ -192,35 +168,30 @@ public class Unit {
     // Gestion des équipements
     public boolean canEquip(Equipment equipment) {
         if (equipment instanceof FirearmEquipment) {
-            return firearms.size() < type.getMaxFirearms() && 
-                   isEquipmentCompatible(equipment);
+            long firearmsCount = equipments.stream()
+                    .filter(e -> e instanceof FirearmEquipment)
+                    .count();
+            return firearmsCount < type.getMaxFirearms() &&
+                    isEquipmentCompatible(equipment);
         } else if (equipment instanceof MeleeEquipment) {
-            return meleeWeapons.size() < type.getMaxMeleeWeapons() && 
-                   isEquipmentCompatible(equipment);
+            long meleeCount = equipments.stream()
+                    .filter(e -> e instanceof MeleeEquipment)
+                    .count();
+            return meleeCount < type.getMaxMeleeWeapons() &&
+                    isEquipmentCompatible(equipment);
         } else if (equipment instanceof DefensiveEquipment) {
-            return defensiveEquipments.size() < type.getMaxDefensiveEquipment() && 
-                   isEquipmentCompatible(equipment);
+            long defensiveCount = equipments.stream()
+                    .filter(e -> e instanceof DefensiveEquipment)
+                    .count();
+            return defensiveCount < type.getMaxDefensiveEquipment() &&
+                    isEquipmentCompatible(equipment);
         }
         return false;
     }
 
-    public void equipFirearm(FirearmEquipment firearm) {
-        if (canEquip(firearm)) {
-            firearms.add(firearm);
-            recalculateBaseStats();
-        }
-    }
-
-    public void equipMelee(MeleeEquipment melee) {
-        if (canEquip(melee)) {
-            meleeWeapons.add(melee);
-            recalculateBaseStats();
-        }
-    }
-
-    public void equipDefensive(DefensiveEquipment defensive) {
-        if (canEquip(defensive)) {
-            defensiveEquipments.add(defensive);
+    public void equip(Equipment equipment) {
+        if (canEquip(equipment)) {
+            equipments.add(equipment);
             recalculateBaseStats();
         }
     }
@@ -263,11 +234,8 @@ public class Unit {
         sb.append(" (").append(formatStat(experience)).append(" Exp) : ");
         
         // Équipements
-        firearms.forEach(f -> sb.append(f.getName()).append(". "));
-        meleeWeapons.forEach(m -> sb.append(m.getName()).append(". "));
-        defensiveEquipments.forEach(d -> sb.append(d.getName()).append(". "));
-
-        if (firearms.isEmpty() && meleeWeapons.isEmpty() && defensiveEquipments.isEmpty()) {
+        equipments.forEach(f -> sb.append(f.getName()).append(". "));
+        if (equipments.isEmpty()) {
             sb.append("Aucun équipement. ");
         }
         

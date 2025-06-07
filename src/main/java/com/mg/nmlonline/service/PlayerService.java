@@ -26,6 +26,13 @@ public class PlayerService {
         player.applyArmorBonus(dto.armorBonusPercent);
         player.applyEvasionBonus(dto.evasionBonusPercent);
 
+
+        // Équipements généraux
+        for (String equipments : dto.equipments) {
+            EquipmentType type = EquipmentType.fromDisplayName(equipments);
+            player.addEquipment(EquipmentFactory.createEquipmentByType(type));
+        }
+
         for (UnitDTO unitDto : dto.army) {
             Unit unit = new Unit(unitDto.id, unitDto.type, UnitClass.valueOf(unitDto.classes.get(0)));
             unit.gainExperience(unitDto.experience);
@@ -35,15 +42,10 @@ public class PlayerService {
                 unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
             }
 
-            // Équipements à feu
-            for (String firearmName : unitDto.firearms) {
-                EquipmentType type = EquipmentType.fromDisplayName(firearmName);
-                unit.equipFirearm((FirearmEquipment) EquipmentFactory.createEquipmentByType(type));
-            }
-            // Équipements défensifs
-            for (String defName : unitDto.defensive) {
-                EquipmentType type = EquipmentType.fromDisplayName(defName);
-                unit.equipDefensive((DefensiveEquipment) EquipmentFactory.createEquipmentByType(type));
+            // Équipements appliqués à l'unité
+            for (String equipment : unitDto.equipments) {
+                EquipmentType type = EquipmentType.fromDisplayName(equipment);
+                unit.equip(EquipmentFactory.createEquipmentByType(type));
             }
             player.addUnit(unit);
         }
@@ -54,6 +56,7 @@ public class PlayerService {
     private static class PlayerDTO {
         public String name;
         public List<UnitDTO> army;
+        public List<String> equipments;
         public double attackBonusPercent;
         public double defenseBonusPercent;
         public double pdfBonusPercent;
@@ -66,7 +69,6 @@ public class PlayerService {
         public String type;
         public List<String> classes;
         public double experience;
-        public List<String> firearms = new ArrayList<>();
-        public List<String> defensive = new ArrayList<>();
+        public List<String> equipments = new ArrayList<>();
     }
 }

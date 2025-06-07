@@ -2,14 +2,27 @@
   "name": "Colonel d'Acier",
   "attackBonusPercent": 0.15,
   "defenseBonusPercent": -0.15,
+  "equipments": [
+    "Mini machine gun",
+    "Bouclier balistique",
+    "Équipement militaire complet",
+    "Fusil d'assaut",
+    "Gilet pare-balles moyen",
+    "Bouclier anti-émeutes",
+    "Poing américain",
+    "Pistolet-mitrailleur",
+    "Tenue ultra légère",
+    "Matraque télescopique",
+    "Mitrailleuse",
+    "Gilet pare-balles léger"
+  ],
   "army": [
     {
-      "id": 1,
       "type": "BRUTE",
       "classes": ["MASTODONTE", "TIREUR"],
       "experience": 10,
-      "firearms": ["Mini machine gun"],
-      "defensive": [
+      "equipments": [
+        "Mini machine gun",
         "Bouclier balistique",
         "Équipement militaire complet"
       ]
@@ -19,10 +32,11 @@
       "type": "MALFRAT",
       "classes": ["TIREUR", "LEGER"],
       "experience": 7.5,
-      "firearms": ["Fusil d'assaut"],
-      "defensive": [
+      "equipments": [
+        "Fusil d'assaut",
         "Gilet pare-balles moyen",
-        "Bouclier anti-émeutes"
+        "Bouclier anti-émeutes",
+        "Poing américain"
       ]
     },
     {
@@ -30,9 +44,10 @@
       "type": "VOYOU",
       "classes": ["LEGER"],
       "experience": 3,
-      "firearms": ["Pistolet-mitrailleur"],
-      "defensive": [
-        "Tenue ultra légère"
+      "equipments": [
+        "Pistolet-mitrailleur",
+        "Tenue ultra légère",
+        "Matraque télescopique"
       ]
     },
     {
@@ -40,8 +55,8 @@
       "type": "VOYOU",
       "classes": ["TIREUR"],
       "experience": 2.5,
-      "firearms": ["Mitrailleuse"],
-      "defensive": [
+      "equipments": [
+        "Mitrailleuse",
         "Gilet pare-balles léger"
       ]
     },
@@ -49,9 +64,7 @@
       "id": 5,
       "type": "LARBIN",
       "classes": ["LEGER"],
-      "experience": 1,
-      "firearms": [],
-      "defensive": []
+      "experience": 1
     }
   ]
 }

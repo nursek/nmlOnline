@@ -23,6 +23,7 @@ public class PlayerTestDemo {
         testImportPlayersFromJson();
         //testComplexArmy();
         //testFileArmy();
+
     }
 
     private static void testComplexArmy() {
@@ -37,59 +38,59 @@ public class PlayerTestDemo {
         Unit brute1 = new Unit(2, "Brute", UnitClass.TIREUR);
         brute1.gainExperience(9);
         brute1.addSecondClass(UnitClass.PILOTE_DESTRUCTEUR);
-        brute1.equipFirearm(EquipmentFactory.createMiniMachineGun()); // Lance-roquettes simulé
-        brute1.equipDefensive(EquipmentFactory.createGiletPareBalesMoyen()); // Casque militaire simulé
-        brute1.equipDefensive(EquipmentFactory.createEquipementMilitaireComplet());
+        brute1.equip(EquipmentFactory.createMiniMachineGun()); // Lance-roquettes simulé
+        brute1.equip(EquipmentFactory.createGiletPareBalesMoyen()); // Casque militaire simulé
+        brute1.equip(EquipmentFactory.createEquipementMilitaireComplet());
         
         // Brute avec défense légèrement inférieure
         Unit brute2 = new Unit(3, "Brute", UnitClass.TIREUR);
         brute2.gainExperience(9);
         brute2.addSecondClass(UnitClass.MASTODONTE);
-        brute2.equipFirearm(EquipmentFactory.createMiniMachineGun());
-        brute2.equipDefensive(EquipmentFactory.createBouclierAntiEmeutes());
-        brute2.equipDefensive(EquipmentFactory.createEquipementMilitaireComplet());
-        brute2.equipDefensive(EquipmentFactory.createBouclierBalistique());
-        brute2.equipDefensive(EquipmentFactory.createBouclierBalistique());
-        brute2.equipDefensive(EquipmentFactory.createBouclierBalistique());
+        brute2.equip(EquipmentFactory.createMiniMachineGun());
+        brute2.equip(EquipmentFactory.createBouclierAntiEmeutes());
+        brute2.equip(EquipmentFactory.createEquipementMilitaireComplet());
+        brute2.equip(EquipmentFactory.createBouclierBalistique());
+        brute2.equip(EquipmentFactory.createBouclierBalistique());
+        brute2.equip(EquipmentFactory.createBouclierBalistique());
         
         // Brute avec moins d'expérience
         Unit brute3 = new Unit(4, "Brute", UnitClass.LEGER);
         brute3.gainExperience(8.5);
         brute3.addSecondClass(UnitClass.MASTODONTE);
 
-        brute3.equipFirearm(EquipmentFactory.createTromblon());
-        brute3.equipDefensive(EquipmentFactory.createTenueUltraLegere());
-        brute3.equipDefensive(EquipmentFactory.createBouclierAntiEmeutes());
-        brute3.equipDefensive(EquipmentFactory.createBouclierBalistique());
+        brute3.equip(EquipmentFactory.createTromblon());
+        brute3.equip(EquipmentFactory.createTenueUltraLegere());
+        brute3.equip(EquipmentFactory.createBouclierAntiEmeutes());
+        brute3.equip(EquipmentFactory.createBouclierBalistique());
         
         // Malfrats
         Unit malfrat1 = new Unit(1, "Malfrat", UnitClass.MASTODONTE);
         malfrat1.gainExperience(7);
         malfrat1.addSecondClass(UnitClass.TIREUR);
-        malfrat1.equipFirearm(EquipmentFactory.createTromblon());
-        malfrat1.equipDefensive(EquipmentFactory.createGiletPareBalesMoyen());
-        malfrat1.equipDefensive(EquipmentFactory.createBouclierAntiEmeutes());
-        malfrat1.equipDefensive(EquipmentFactory.createBouclierBalistique());
+        malfrat1.equip(EquipmentFactory.createTromblon());
+        malfrat1.equip(EquipmentFactory.createGiletPareBalesMoyen());
+        malfrat1.equip(EquipmentFactory.createBouclierAntiEmeutes());
+        malfrat1.equip(EquipmentFactory.createBouclierBalistique());
         
         Unit malfrat2 = new Unit(2, "Malfrat", UnitClass.TIREUR);
         malfrat2.addSecondClass(UnitClass.MASTODONTE);
         malfrat2.gainExperience(6);
-        malfrat2.equipFirearm(EquipmentFactory.createMiniMachineGun());
-        malfrat2.equipDefensive(EquipmentFactory.createGiletPareBalesMoyen());
-        malfrat2.equipDefensive(EquipmentFactory.createBouclierAntiEmeutes());
-        malfrat2.equipDefensive(EquipmentFactory.createBouclierBalistique());
+        malfrat2.equip(EquipmentFactory.createMiniMachineGun());
+        malfrat2.equip(EquipmentFactory.createGiletPareBalesMoyen());
+        malfrat2.equip(EquipmentFactory.createBouclierAntiEmeutes());
+        malfrat2.equip(EquipmentFactory.createBouclierBalistique());
         
         // Voyous
         Unit voyou1 = new Unit(2, "Voyou réanimé", UnitClass.TIREUR);
         voyou1.gainExperience(2);
-        voyou1.equipFirearm(EquipmentFactory.createMitrailleuse());
-        voyou1.equipDefensive(EquipmentFactory.createGiletPareBalesLeger());
-        voyou1.equipDefensive(EquipmentFactory.createGiletPareBalesMoyen());
+        voyou1.equip(EquipmentFactory.createMitrailleuse());
+        voyou1.equip(EquipmentFactory.createGiletPareBalesLeger());
+        voyou1.equip(EquipmentFactory.createGiletPareBalesMoyen());
         
         Unit voyou2 = new Unit(16, "Voyou réanimé", UnitClass.LEGER);
         voyou2.gainExperience(2);
-        voyou2.equipFirearm(EquipmentFactory.createHKMP7());
-        voyou2.equipDefensive(EquipmentFactory.createTenueUltraLegere());
+        voyou2.equip(EquipmentFactory.createHKMP7());
+        voyou2.equip(EquipmentFactory.createTenueUltraLegere());
 
         Unit larbin = new Unit(5, "Larbin", UnitClass.LEGER);
         voyou2.gainExperience(1);
@@ -136,8 +137,10 @@ public class PlayerTestDemo {
         // Affichage de chaque armée
         for (Player player : players) {
             player.displayArmy();
+            player.displayEquipments();
             System.out.println("===============================================");
         }
+
     }
 
     private static void testFileArmy(){
@@ -152,4 +155,5 @@ public class PlayerTestDemo {
             System.err.println("Erreur lors de la lecture du fichier d'armée : " + e.getMessage());
         }
     }
+
 }

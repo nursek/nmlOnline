@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 public class Player {
     private String name;
     private List<Unit> army;
+    private List<Equipment> equipments;
     
     // Bonus/Malus globaux du joueur en pourcentage
     private double attackBonusPercent = 0.0;
@@ -37,6 +38,7 @@ public class Player {
     public Player(String name) {
         this.name = name;
         this.army = new ArrayList<>();
+        this.equipments = new ArrayList<>();
     }
 
     // Méthodes pour gérer l'armée
@@ -52,6 +54,19 @@ public class Player {
 
     public void removeUnit(int unitId) {
         army.removeIf(unit -> unit.getId() == unitId);
+    }
+
+    // Méthode pour ajouter un équipement à l'armée
+    public void addEquipment(Equipment equipment) {
+        equipments.add(equipment);
+    }
+
+    public void removeEquipment(Equipment equipment) {
+        equipments.remove(equipment);
+    }
+
+    public void removeEquipment(String equipmentName) {
+        equipments.removeIf(equipment -> equipment.getName().equalsIgnoreCase(equipmentName));
     }
 
     // Méthodes pour appliquer les bonus/malus
@@ -292,6 +307,17 @@ public class Player {
             else{
                 System.err.println("[fromFile] Ligne non reconnue dans le fichier: " + line);
             }
+        }
+    }
+
+    public void displayEquipments() {
+        System.out.println("=== ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
+        if (equipments.isEmpty()) {
+            System.out.println("Aucun équipement.");
+            return;
+        }
+        for (Equipment equipment : equipments) {
+            System.out.println(equipment.getName());
         }
     }
 

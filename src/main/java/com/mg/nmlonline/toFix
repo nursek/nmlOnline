@@ -2,7 +2,7 @@
 
 2) Player :
     - Compte en banque du joueur
-    - Reserve d'équipement du joueur
+    - Reserve d'équipement du joueur (nouvelle fonction d'affichage)
         - Nb équipements
         - Valeur totale des équipement
         - Nb d'équipements par type

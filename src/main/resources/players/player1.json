@@ -1,13 +1,41 @@
 {
   "name": "Général Suprême",
+  "equipments": [
+    "Mini machine gun",
+    "Gilet pare-balles moyen",
+    "Équipement militaire complet",
+    "Mini machine gun",
+    "Bouclier anti-émeutes",
+    "Équipement militaire complet",
+    "Bouclier balistique",
+    "Bouclier balistique",
+    "Bouclier balistique",
+    "Tromblon",
+    "Tenue ultra légère",
+    "Bouclier anti-émeutes",
+    "Bouclier balistique",
+    "Tromblon",
+    "Gilet pare-balles moyen",
+    "Bouclier anti-émeutes",
+    "Bouclier balistique",
+    "Mini machine gun",
+    "Gilet pare-balles moyen",
+    "Bouclier anti-émeutes",
+    "Bouclier balistique",
+    "Mitrailleuse",
+    "Gilet pare-balles léger",
+    "Gilet pare-balles moyen",
+    "HK-MP7",
+    "Tenue ultra légère"
+  ],
   "army": [
     {
       "id": 2,
       "type": "BRUTE",
       "classes": ["TIREUR", "PILOTE_DESTRUCTEUR"],
       "experience": 9,
-      "firearms": ["Mini machine gun"],
-      "defensive": [
+      "equipments": [
+        "Mini machine gun",
         "Gilet pare-balles moyen",
         "Équipement militaire complet"
       ]
@@ -17,8 +45,8 @@
       "type": "BRUTE",
       "classes": ["TIREUR", "MASTODONTE"],
       "experience": 9,
-      "firearms": ["Mini machine gun"],
-      "defensive": [
+      "equipments": [
+        "Mini machine gun",
         "Bouclier anti-émeutes",
         "Équipement militaire complet",
         "Bouclier balistique",
@@ -31,8 +59,8 @@
       "type": "BRUTE",
       "classes": ["LEGER", "MASTODONTE"],
       "experience": 8.5,
-      "firearms": ["Tromblon"],
-      "defensive": [
+      "equipments": [
+        "Tromblon",
         "Tenue ultra légère",
         "Bouclier anti-émeutes",
         "Bouclier balistique"
@@ -43,8 +71,8 @@
       "type": "MALFRAT",
       "classes": ["MASTODONTE", "TIREUR"],
       "experience": 7,
-      "firearms": ["Tromblon"],
-      "defensive": [
+      "equipments": [
+        "Tromblon",
         "Gilet pare-balles moyen",
         "Bouclier anti-émeutes",
         "Bouclier balistique"
@@ -55,8 +83,8 @@
       "type": "MALFRAT",
       "classes": ["TIREUR", "MASTODONTE"],
       "experience": 6,
-      "firearms": ["Mini machine gun"],
-      "defensive": [
+      "equipments": [
+        "Mini machine gun",
         "Gilet pare-balles moyen",
         "Bouclier anti-émeutes",
         "Bouclier balistique"
@@ -67,8 +95,8 @@
       "type": "VOYOU",
       "classes": ["TIREUR"],
       "experience": 2,
-      "firearms": ["Mitrailleuse"],
-      "defensive": [
+      "equipments": [
+        "Mitrailleuse",
         "Gilet pare-balles léger",
         "Gilet pare-balles moyen"
       ]
@@ -78,8 +106,8 @@
       "type": "VOYOU",
       "classes": ["LEGER"],
       "experience": 2,
-      "firearms": ["HK-MP7"],
-      "defensive": [
+      "equipments": [
+        "HK-MP7",
         "Tenue ultra légère"
       ]
     },
@@ -88,8 +116,7 @@
       "type": "LARBIN",
       "classes": ["LEGER"],
       "experience": 1,
-      "firearms": [],
-      "defensive": []
+      "equipments": []
     }
   ]
 }

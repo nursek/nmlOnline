@@ -83,29 +83,29 @@ public class UnitTestDemo {
         
         // Larbin Léger équipé
         Unit larbinLeger = new Unit(20, "Larbin Équipé", UnitClass.LEGER);
-        larbinLeger.equipFirearm(EquipmentFactory.createPistoletMitrailleur());
-        larbinLeger.equipMelee(EquipmentFactory.createMatraqueTelescopic());
-        larbinLeger.equipDefensive(EquipmentFactory.createTenueUltraLegere());
+        larbinLeger.equip(EquipmentFactory.createPistoletMitrailleur());
+        larbinLeger.equip(EquipmentFactory.createMatraqueTelescopic());
+        larbinLeger.equip(EquipmentFactory.createTenueUltraLegere());
         System.out.println(larbinLeger);
         
         // Brute Tireur équipée
         Unit bruteTireur = new Unit(21, "Brute Équipée", UnitClass.TIREUR);
         bruteTireur.gainExperience(8);
-        bruteTireur.equipFirearm(EquipmentFactory.createMiniMachineGun());
-        bruteTireur.equipMelee(EquipmentFactory.createMachette());
-        bruteTireur.equipMelee(EquipmentFactory.createBatteMetal());
-        bruteTireur.equipDefensive(EquipmentFactory.createGiletPareBalesMoyen());
-        bruteTireur.equipDefensive(EquipmentFactory.createEquipementMilitaireComplet());
+        bruteTireur.equip(EquipmentFactory.createMiniMachineGun());
+        bruteTireur.equip(EquipmentFactory.createMachette());
+        bruteTireur.equip(EquipmentFactory.createBatteMetal());
+        bruteTireur.equip(EquipmentFactory.createGiletPareBalesMoyen());
+        bruteTireur.equip(EquipmentFactory.createEquipementMilitaireComplet());
         System.out.println(bruteTireur);
         
         // Mastodonte avec Tromblon
         Unit mastodonte = new Unit(22, "Mastodonte Destructeur", UnitClass.MASTODONTE);
         mastodonte.gainExperience(8);
-        mastodonte.equipFirearm(EquipmentFactory.createTromblon());
-        mastodonte.equipMelee(EquipmentFactory.createTronconneuse());
-        mastodonte.equipMelee(EquipmentFactory.createHacheBucheron());
-        mastodonte.equipDefensive(EquipmentFactory.createBouclierBalistique());
-        mastodonte.equipDefensive(EquipmentFactory.createBouclierAntiEmeutes());
+        mastodonte.equip(EquipmentFactory.createTromblon());
+        mastodonte.equip(EquipmentFactory.createTronconneuse());
+        mastodonte.equip(EquipmentFactory.createHacheBucheron());
+        mastodonte.equip(EquipmentFactory.createBouclierBalistique());
+        mastodonte.equip(EquipmentFactory.createBouclierAntiEmeutes());
         System.out.println(mastodonte);
         System.out.println();
     }
@@ -128,10 +128,10 @@ public class UnitTestDemo {
         System.out.println("Après seconde classe: " + malfrat);
         
         // Équipement avec les deux classes
-        malfrat.equipFirearm(EquipmentFactory.createMiniMachineGun()); // Compatible Tireur
-        malfrat.equipMelee(EquipmentFactory.createTronconneuse()); // Compatible Mastodonte
-        malfrat.equipDefensive(EquipmentFactory.createGiletPareBalesMoyen()); // Compatible Tireur
-        malfrat.equipDefensive(EquipmentFactory.createBouclierAntiEmeutes()); // Compatible Mastodonte
+        malfrat.equip(EquipmentFactory.createMiniMachineGun()); // Compatible Tireur
+        malfrat.equip(EquipmentFactory.createTronconneuse()); // Compatible Mastodonte
+        malfrat.equip(EquipmentFactory.createGiletPareBalesMoyen()); // Compatible Tireur
+        malfrat.equip(EquipmentFactory.createBouclierAntiEmeutes()); // Compatible Mastodonte
         System.out.println("Équipé: " + malfrat);
         System.out.println();
     }
@@ -149,20 +149,20 @@ public class UnitTestDemo {
         Unit brute3 = new Unit(3, "Brute", UnitClass.TIREUR);
         brute3.gainExperience(9);
         brute3.addSecondClass(UnitClass.MASTODONTE);
-        brute3.equipFirearm(EquipmentFactory.createMiniMachineGun());
-        brute3.equipMelee(EquipmentFactory.createTronconneuse());
-        brute3.equipMelee(EquipmentFactory.createTronconneuse());
-        brute3.equipMelee(EquipmentFactory.createTronconneuse());
-        brute3.equipDefensive(EquipmentFactory.createBouclierAntiEmeutes());
-        brute3.equipDefensive(EquipmentFactory.createEquipementMilitaireComplet());
-        brute3.equipDefensive(EquipmentFactory.createBouclierBalistique());
+        brute3.equip(EquipmentFactory.createMiniMachineGun());
+        brute3.equip(EquipmentFactory.createTronconneuse());
+        brute3.equip(EquipmentFactory.createTronconneuse());
+        brute3.equip(EquipmentFactory.createTronconneuse());
+        brute3.equip(EquipmentFactory.createBouclierAntiEmeutes());
+        brute3.equip(EquipmentFactory.createEquipementMilitaireComplet());
+        brute3.equip(EquipmentFactory.createBouclierBalistique());
         System.out.println("Exemple 1: " + brute3);
         
         // (L) Larbin n°6 (0 Exp) : Pistolet-mitrailleur. Tenue ultralégère. 
         // 10 Atk + 15 Pdf / 10 Def + 7,5 Arm. Esquive : 10 %.
         Unit larbin6 = new Unit(6, "Larbin", UnitClass.LEGER);
-        larbin6.equipFirearm(EquipmentFactory.createPistoletMitrailleur());
-        larbin6.equipDefensive(EquipmentFactory.createTenueUltraLegere());
+        larbin6.equip(EquipmentFactory.createPistoletMitrailleur());
+        larbin6.equip(EquipmentFactory.createTenueUltraLegere());
         System.out.println("Exemple 2: " + larbin6);
         
         // (T) Malfrat n°3 (6 Exp) : Mini machine gun. Machette. Machette. 
@@ -170,11 +170,11 @@ public class UnitTestDemo {
         // 50 Atk + 200 Pdf + 75 Pdc / 50 Def + 150 Arm.
         Unit malfrat3 = new Unit(3, "Malfrat", UnitClass.TIREUR);
         malfrat3.gainExperience(6);
-        malfrat3.equipFirearm(EquipmentFactory.createMiniMachineGun());
-        malfrat3.equipMelee(EquipmentFactory.createMachette());
-        malfrat3.equipMelee(EquipmentFactory.createMachette());
-        malfrat3.equipDefensive(EquipmentFactory.createGiletPareBalesMoyen());
-        malfrat3.equipDefensive(EquipmentFactory.createEquipementMilitaireComplet());
+        malfrat3.equip(EquipmentFactory.createMiniMachineGun());
+        malfrat3.equip(EquipmentFactory.createMachette());
+        malfrat3.equip(EquipmentFactory.createMachette());
+        malfrat3.equip(EquipmentFactory.createGiletPareBalesMoyen());
+        malfrat3.equip(EquipmentFactory.createEquipementMilitaireComplet());
         System.out.println("Exemple 3: " + malfrat3);
         
         System.out.println();
