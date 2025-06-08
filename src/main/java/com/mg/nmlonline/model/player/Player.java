@@ -318,17 +318,26 @@ public class Player {
      * Regroupe les équipements par nom et affiche le nombre de chaque type
      * TODO: Trier les équipements par type et afficher les détails (prix, stats, etc.)
      */
+    //Équipements des Légers :
+    //54 pistolets 9mm (+80 % Pdf). 0 / 54 équipé. 21 600 $.
+    //28 pistolets-mitrailleurs (+150 % Pdf ; +25 % Arm). 4 / 28 équipés. 23 800 $.
+    //13 HK-MP7 (+300 % Pdf ; +25 % Arm). 13 / 13 équipés. 20 800 $. (0 / 5 achetés).
+    //21 tenues ultralégères (+50 % Arm ; +10 % Esquive). 19 / 21 équipées. 15 750 $.
+    //2 grenades lacrymogènes (+25 % Esquive). 2 / 2 équipées. 5 000 $.
+    //2 tenues légères en fibre chauffante (+100 % Arm ; +20 % Esquive). 2 / 2 équipées. 6 000 $.
     public void displayEquipments() {
         System.out.println("=== ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
         if (equipments.isEmpty()) {
             System.out.println("Aucun équipement.");
             return;
         }
-        Map<String, Integer> equipmentCount = new HashMap<>();
+        Map<Equipment, Integer> equipmentCount = new HashMap<>();
         for (Equipment equipment : equipments) {
-            equipmentCount.merge(equipment.getName(), 1, Integer::sum);
+            equipmentCount.merge(equipment, 1, Integer::sum);
         }
-        equipmentCount.forEach((ename, count) -> System.out.printf("%d x %s%n", count, ename));
+        equipmentCount.forEach((equipment, count) ->
+                System.out.printf("%d x %s%n", count, equipment.toString())
+        );
     }
 
     @Override
