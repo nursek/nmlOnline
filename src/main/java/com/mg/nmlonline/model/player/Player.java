@@ -2,7 +2,6 @@ package com.mg.nmlonline.model.player;
 
 import com.mg.nmlonline.model.equipement.Equipment;
 import com.mg.nmlonline.model.equipement.EquipmentFactory;
-import com.mg.nmlonline.model.equipement.EquipmentType;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
 import lombok.Data;
@@ -28,7 +27,7 @@ public class Player {
     private String name;
     private List<Unit> army;
     private List<Equipment> equipments;
-    
+
     // Bonus/Malus globaux du joueur en pourcentage
     private double attackBonusPercent = 0.0;
     private double defenseBonusPercent = 0.0;
@@ -134,7 +133,7 @@ public class Player {
     }
 
     /**
-     * Trie l'armée par expérience décroissante, puis par défense totale décroissante
+     * Trie l'armée par expérience décroissante, puis par défense totale décroissante,:
      */
     private void sortAndReorderArmy() {
         army.sort(Comparator
@@ -244,7 +243,7 @@ public class Player {
                             classes.add(uc);
                             System.out.println("[DEBUG] Classe trouvée : " + uc);
                         } catch (Exception e) {
-                            System.err.println("[DEBUG] Classe inconnue : " + singleClassMatcher.group(1));
+                            System.err.println("Classe inconnue : " + singleClassMatcher.group(1));
                         }
                     }
                     lastEnd = classMatcher.end();
@@ -305,10 +304,9 @@ public class Player {
                 String trimmed = eq.trim();
                 if (!trimmed.isEmpty()) {
                     try {
-                        EquipmentType type = EquipmentType.fromDisplayName(trimmed);
-                        unit.equip(EquipmentFactory.createEquipmentByType(type));
+                        unit.equip(EquipmentFactory.createFromName(trimmed));
                     } catch (Exception e) {
-                        // Silencieux si équipement inconnu
+                        System.out.println("Erreur lors de la création de l'équipement : " + e.getMessage());
                     }
                 }
             }
@@ -325,11 +323,13 @@ public class Player {
             System.out.println("Aucun équipement.");
             return;
         }
-        Map<String, Integer> equipmentCount = new HashMap<>();
+        Map<Equipment, Integer> equipmentCount = new HashMap<>();
         for (Equipment equipment : equipments) {
-            equipmentCount.merge(equipment.getName(), 1, Integer::sum);
+            equipmentCount.merge(equipment, 1, Integer::sum);
         }
-        equipmentCount.forEach((ename, count) -> System.out.printf("%d x %s%n", count, ename));
+        equipmentCount.forEach((equipment, count) ->
+                System.out.printf("%d x %s%n", count, equipment.toString())
+        );
     }
 
     @Override

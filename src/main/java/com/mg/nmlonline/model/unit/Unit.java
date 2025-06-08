@@ -181,21 +181,22 @@ public class Unit {
 
     // Gestion des équipements
     public boolean canEquip(Equipment equipment) {
-        if (equipment instanceof FirearmEquipment) {
+        EquipmentCategory category = equipment.getCategory();
+        if (category == EquipmentCategory.Firearm) {
             long firearmsCount = equipments.stream()
-                    .filter(FirearmEquipment.class::isInstance)
+                    .filter(e -> e.getCategory() == EquipmentCategory.Firearm)
                     .count();
             return firearmsCount < type.getMaxFirearms() &&
                     isEquipmentCompatible(equipment);
-        } else if (equipment instanceof MeleeEquipment) {
+        } else if (category == EquipmentCategory.Meelee) {
             long meleeCount = equipments.stream()
-                    .filter(MeleeEquipment.class::isInstance)
+                    .filter(e -> e.getCategory() == EquipmentCategory.Meelee)
                     .count();
             return meleeCount < type.getMaxMeleeWeapons() &&
                     isEquipmentCompatible(equipment);
-        } else if (equipment instanceof DefensiveEquipment) {
+        } else if (category == EquipmentCategory.Defensive) {
             long defensiveCount = equipments.stream()
-                    .filter(DefensiveEquipment.class::isInstance)
+                    .filter(e -> e.getCategory() == EquipmentCategory.Defensive)
                     .count();
             return defensiveCount < type.getMaxDefensiveEquipment() &&
                     isEquipmentCompatible(equipment);

@@ -86,13 +86,5 @@ public enum EquipmentType {
     EquipmentType(String displayName) {
         this.displayName = displayName;
     }
-
-    public static EquipmentType fromDisplayName(String name) {
-        for (EquipmentType type : values()) {
-            if (type.displayName.equalsIgnoreCase(name)) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Aucun EquipmentType pour le nom: " + name);
-    }
+    
 }
