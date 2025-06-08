@@ -6,18 +6,13 @@ import java.util.Set;
 
 // Classe abstraite pour les équipements
 @Data
-public abstract class Equipment {
+public class Equipment {
     protected final String name;
     protected final int cost;
-
-    protected Equipment(String name, int cost) {
-        this.name = name;
-        this.cost = cost;
-    }
-
-    public abstract double getPdfBonus();
-    public abstract double getPdcBonus();
-    public abstract double getArmBonus();
-    public abstract double getEvasionBonus();
-    public abstract Set<UnitClass> getCompatibleClasses();
+    private final double pdfBonus;
+    private final double pdcBonus;
+    private final double armBonus;
+    private final double evasionBonus;
+    private final Set<UnitClass> compatibleClasses;
+    private final EquipmentCategory category;
 }

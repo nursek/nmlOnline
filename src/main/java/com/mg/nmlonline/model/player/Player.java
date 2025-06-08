@@ -2,7 +2,6 @@ package com.mg.nmlonline.model.player;
 
 import com.mg.nmlonline.model.equipement.Equipment;
 import com.mg.nmlonline.model.equipement.EquipmentFactory;
-import com.mg.nmlonline.model.equipement.EquipmentType;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
 import lombok.Data;
@@ -28,7 +27,7 @@ public class Player {
     private String name;
     private List<Unit> army;
     private List<Equipment> equipments;
-    
+
     // Bonus/Malus globaux du joueur en pourcentage
     private double attackBonusPercent = 0.0;
     private double defenseBonusPercent = 0.0;
@@ -76,32 +75,32 @@ public class Player {
         this.attackBonusPercent = percentBonus;
         updateAllUnitsBonuses();
     }
-    
+
     public void applyDefenseBonus(double percentBonus) {
         this.defenseBonusPercent = percentBonus;
         updateAllUnitsBonuses();
     }
-    
+
     public void applyPdfBonus(double percentBonus) {
         this.pdfBonusPercent = percentBonus;
         updateAllUnitsBonuses();
     }
-    
+
     public void applyPdcBonus(double percentBonus) {
         this.pdcBonusPercent = percentBonus;
         updateAllUnitsBonuses();
     }
-    
+
     public void applyArmorBonus(double percentBonus) {
         this.armorBonusPercent = percentBonus;
         updateAllUnitsBonuses();
     }
-    
+
     public void applyEvasionBonus(double percentBonus) {
         this.evasionBonusPercent = percentBonus;
         updateAllUnitsBonuses();
     }
-    
+
     // Méthode pour appliquer un bonus global à toutes les stats
     public void applyGlobalBonus(double percentBonus) {
         this.attackBonusPercent = percentBonus;
@@ -116,12 +115,12 @@ public class Player {
     // Applique les bonus du joueur à une unité spécifique
     private void applyBonusesToUnit(Unit unit) {
         unit.applyPlayerBonuses(
-            attackBonusPercent, 
-            defenseBonusPercent, 
-            pdfBonusPercent, 
-            pdcBonusPercent, 
-            armorBonusPercent, 
-            evasionBonusPercent
+                attackBonusPercent,
+                defenseBonusPercent,
+                pdfBonusPercent,
+                pdcBonusPercent,
+                armorBonusPercent,
+                evasionBonusPercent
         );
     }
 
@@ -139,7 +138,8 @@ public class Player {
     private void sortAndReorderArmy() {
         army.sort(Comparator
                 .comparingDouble(Unit::getExperience).reversed()          // 1. Exp décroissante
-                .thenComparing(Unit::getTotalDefense, Comparator.reverseOrder())  // 2. Def totale décroissante
+                .thenComparing(Unit::getTotalDefense, Comparator.reverseOrder())
+                .thenComparing(Unit::getTotalAttack, Comparator.reverseOrder())// 2. Def totale décroissante
                 .thenComparing(Unit::getId)                      // 3. ID original croissant
         );
 
@@ -163,21 +163,21 @@ public class Player {
 
     public Unit getUnitById(int id) {
         return army.stream()
-            .filter(unit -> unit.getId() == id)
-            .findFirst()
-            .orElse(null);
+                .filter(unit -> unit.getId() == id)
+                .findFirst()
+                .orElse(null);
     }
 
     public List<Unit> getUnitsByType(String unitType) {
         return army.stream()
-            .filter(unit -> unit.getType().name().equalsIgnoreCase(unitType))
-            .toList();
+                .filter(unit -> unit.getType().name().equalsIgnoreCase(unitType))
+                .toList();
     }
 
     public double getTotalArmyValue() {
         return army.stream()
-            .mapToDouble(Unit::getTotalDefense)
-            .sum();
+                .mapToDouble(Unit::getTotalDefense)
+                .sum();
     }
 
     // Affichage de l'armée
@@ -219,8 +219,8 @@ public class Player {
 
     private boolean hasAnyBonus() {
         return attackBonusPercent != 0 || defenseBonusPercent != 0 ||
-               pdfBonusPercent != 0 || pdcBonusPercent != 0 ||
-               armorBonusPercent != 0 || evasionBonusPercent != 0;
+                pdfBonusPercent != 0 || pdcBonusPercent != 0 ||
+                armorBonusPercent != 0 || evasionBonusPercent != 0;
     }
 
     // Méthode pour créer l'armée d'un joueur via un fichier texte
@@ -240,9 +240,11 @@ public class Player {
                     Matcher singleClassMatcher = Pattern.compile("\\(([^)]+)\\)").matcher(classMatcher.group(1));
                     while (singleClassMatcher.find()) {
                         try {
-                            classes.add(UnitClass.fromCode(singleClassMatcher.group(1)));
+                            UnitClass uc = UnitClass.fromCode(singleClassMatcher.group(1));
+                            classes.add(uc);
+                            System.out.println("[DEBUG] Classe trouvée : " + uc);
                         } catch (Exception e) {
-                            System.err.println("Classe inconnue : " + singleClassMatcher.group(1));
+                            System.err.println("[DEBUG] Classe inconnue : " + singleClassMatcher.group(1));
                         }
                     }
                     lastEnd = classMatcher.end();
@@ -250,7 +252,7 @@ public class Player {
 
                 // Extraction du nom, exp et équipements
                 String rest = line.substring(lastEnd).trim();
-                Matcher mainMatcher = Pattern.compile("([\\w\\s\\-éèàêîôûç]+)\\s*\\((\\d+) Exp\\)\\s*:\\s*(.*)").matcher(rest);
+                Matcher mainMatcher = Pattern.compile("([\\w\\s\\-éèàêîôûç]+)\\s*(?:n°\\d+\\s*)?\\((\\d+[\\.,]?\\d*) Exp\\)\\s*:\\s*(.*)").matcher(rest.replace(',', '.'));
                 if (mainMatcher.find()) {
                     String unitName = mainMatcher.group(1).trim();
                     float exp = Float.parseFloat(mainMatcher.group(2).trim());
@@ -258,18 +260,17 @@ public class Player {
 
                     Unit unit = getUnit(unitName, exp, classes);
 
-                    // Gérer les unités avec des noms spécifiques
-
                     if (classes.size() > 1) {
-                        assert unit != null;
-                        unit.addSecondClass(classes.get(1));
+                        for (int i = 1; i < classes.size(); i++) {
+                            unit.addSecondClass(classes.get(i));
+                            System.out.println("[DEBUG] Ajout d'une seconde classe : " + classes.get(i));
+                        }
                     }
+                    addEquipmentsToUnit(unit, equipmentStr);
+                    addUnit(unit);
 
-                    if (unit != null) {
-                        addEquipmentsToUnit(unit, equipmentStr);
-                        addUnit(unit);
-                    }
-
+                } else {
+                    System.err.println("[DEBUG] Format de ligne non reconnu après extraction des classes : " + rest);
                 }
             }
         }
@@ -281,35 +282,32 @@ public class Player {
      * T : Ajouter d'autres types d'unités reconnues si nécessaire.
      */
     private static Unit getUnit(String unitName, float exp, List<UnitClass> classes) {
-        Unit unit = null;
-        if (unitName.startsWith("Larbin")) {
-            unit = new Unit(exp, "Larbin", classes.getFirst());
-        } else if (unitName.startsWith("Voyou")) {
-            unit = new Unit(exp, "Voyou", classes.getFirst());
-        } else if (unitName.startsWith("Malfrat")) {
-            unit = new Unit(exp, "Malfrat", classes.getFirst());
-        } else if (unitName.startsWith("Brute")) {
-            unit = new Unit(exp, "Brute", classes.getFirst());
-        }
-        return unit;
+        return new Unit(exp, unitName, classes.getFirst());
     }
 
     /**
      * Parse la chaîne d'équipements, ajoute chaque équipement à l'unité, et retourne la liste des noms.
      */
     private void addEquipmentsToUnit(Unit unit, String equipmentStr) {
-        List<String> equipmentList = new ArrayList<>();
+        // Coupe la chaîne dès qu'une stat connue est trouvée
+        String[] statKeywords = {"Atk", "Pdf", "Pdc", "Def", "Arm", "Esquive"};
+        for (String keyword : statKeywords) {
+            int idx = equipmentStr.indexOf(keyword);
+            if (idx != -1) {
+                equipmentStr = equipmentStr.substring(0, idx).trim();
+                break;
+            }
+        }
+
         if (!equipmentStr.equalsIgnoreCase("Aucun équipement")) {
             String[] equipmentArray = equipmentStr.split("\\.");
             for (String eq : equipmentArray) {
                 String trimmed = eq.trim();
                 if (!trimmed.isEmpty()) {
                     try {
-                        EquipmentType type = EquipmentType.fromDisplayName(trimmed);
-                        unit.equip(EquipmentFactory.createEquipmentByType(type));
-                        equipmentList.add(trimmed);
+                        unit.equip(EquipmentFactory.createFromName(trimmed));
                     } catch (Exception e) {
-                        // Silencieux si équipement inconnu
+                        System.out.println("Erreur lors de la création de l'équipement : " + e.getMessage());
                     }
                 }
             }

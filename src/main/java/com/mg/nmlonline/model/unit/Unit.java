@@ -167,21 +167,22 @@ public class Unit {
 
     // Gestion des équipements
     public boolean canEquip(Equipment equipment) {
-        if (equipment instanceof FirearmEquipment) {
+        EquipmentCategory category = equipment.getCategory();
+        if (category == EquipmentCategory.Firearm) {
             long firearmsCount = equipments.stream()
-                    .filter(e -> e instanceof FirearmEquipment)
+                    .filter(e -> e.getCategory() == EquipmentCategory.Firearm)
                     .count();
             return firearmsCount < type.getMaxFirearms() &&
                     isEquipmentCompatible(equipment);
-        } else if (equipment instanceof MeleeEquipment) {
+        } else if (category == EquipmentCategory.Meelee) {
             long meleeCount = equipments.stream()
-                    .filter(e -> e instanceof MeleeEquipment)
+                    .filter(e -> e.getCategory() == EquipmentCategory.Meelee)
                     .count();
             return meleeCount < type.getMaxMeleeWeapons() &&
                     isEquipmentCompatible(equipment);
-        } else if (equipment instanceof DefensiveEquipment) {
+        } else if (category == EquipmentCategory.Defensive) {
             long defensiveCount = equipments.stream()
-                    .filter(e -> e instanceof DefensiveEquipment)
+                    .filter(e -> e.getCategory() == EquipmentCategory.Defensive)
                     .count();
             return defensiveCount < type.getMaxDefensiveEquipment() &&
                     isEquipmentCompatible(equipment);
@@ -199,6 +200,10 @@ public class Unit {
     // Méthodes utilitaires pour le tri
     public double getTotalDefense() {
         return finalDefense + finalArmor;
+    }
+
+    public double getTotalAttack() {
+        return finalAttack + finalPdf + finalPdc;
     }
 
     // Méthodes de formatage pour l'affichage

@@ -29,8 +29,7 @@ public class PlayerService {
 
         // Équipements généraux
         for (String equipments : dto.equipments) {
-            EquipmentType type = EquipmentType.fromDisplayName(equipments);
-            player.addEquipment(EquipmentFactory.createEquipmentByType(type));
+            player.addEquipment(EquipmentFactory.createFromName(equipments));
         }
 
         for (UnitDTO unitDto : dto.army) {
@@ -44,8 +43,7 @@ public class PlayerService {
 
             // Équipements appliqués à l'unité
             for (String equipment : unitDto.equipments) {
-                EquipmentType type = EquipmentType.fromDisplayName(equipment);
-                unit.equip(EquipmentFactory.createEquipmentByType(type));
+                unit.equip(EquipmentFactory.createFromName(equipment));
             }
             player.addUnit(unit);
         }
