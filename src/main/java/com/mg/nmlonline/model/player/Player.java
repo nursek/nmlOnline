@@ -319,17 +319,39 @@ public class Player {
      */
     public void displayEquipments() {
         System.out.println("=== ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
-        if (equipments.isEmpty()) {
+        if (equipments.isEmpty() && army.stream().allMatch(u -> u.getEquipments().isEmpty())) {
             System.out.println("Aucun équipement.");
             return;
         }
-        Map<Equipment, Integer> equipmentCount = new HashMap<>();
-        for (Equipment equipment : equipments) {
-            equipmentCount.merge(equipment, 1, Integer::sum);
+
+        // Compte total par nom
+        Map<String, Equipment> equipmentRef = new HashMap<>();
+        Map<String, Integer> totalCount = new HashMap<>();
+        Map<String, Integer> equippedCount = new HashMap<>();
+
+        // Compte dans l'inventaire du joueur
+        for (Equipment eq : equipments) {
+            totalCount.merge(eq.getName(), 1, Integer::sum);
+            equipmentRef.putIfAbsent(eq.getName(), eq);
         }
-        equipmentCount.forEach((equipment, count) ->
-                System.out.printf("%d x %s%n", count, equipment.toString())
-        );
+
+        // Compte dans les unités
+        for (Unit unit : army) {
+            for (Equipment eq : unit.getEquipments()) {
+                totalCount.merge(eq.getName(), 1, Integer::sum);
+                equippedCount.merge(eq.getName(), 1, Integer::sum);
+                equipmentRef.putIfAbsent(eq.getName(), eq);
+            }
+        }
+
+        // Affichage
+        for (String name : totalCount.keySet()) {
+            int total = totalCount.get(name);
+            int equipped = equippedCount.getOrDefault(name, 0);
+            Equipment eq = equipmentRef.get(name);
+            int totalPrice = total * eq.getCost();
+            System.out.printf("%d x %s %d / %d équipé. %,d $.\n", total, eq.toString(), equipped, total, totalPrice);
+        }
     }
 
     @Override
