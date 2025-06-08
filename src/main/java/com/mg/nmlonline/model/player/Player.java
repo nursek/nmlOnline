@@ -134,13 +134,14 @@ public class Player {
     }
 
     /**
-     * Trie l'armée par expérience décroissante, puis par défense totale décroissante,:
+     * Trie l'armée par expérience décroissante, puis par défense totale décroissante
      */
     private void sortAndReorderArmy() {
         army.sort(Comparator
-                .comparingDouble(Unit::getExperience).reversed()          // 1. Exp décroissante
-                .thenComparing(Unit::getTotalDefense, Comparator.reverseOrder())  // 2. Def totale décroissante
-                .thenComparing(Unit::getId)                      // 3. ID original croissant
+                .comparingDouble(Unit::getExperience).reversed()
+                .thenComparing(Unit::getTotalDefense, Comparator.reverseOrder())
+                .thenComparing(Unit::getTotalAttack, Comparator.reverseOrder())
+                .thenComparing(Unit::getId)
         );
 
         // Renumérotation automatique des IDs par type d'unité
@@ -224,7 +225,6 @@ public class Player {
     }
 
     // Méthode pour créer l'armée d'un joueur via un fichier texte
-    //TODO: déplacer dans le service PlayerService.
     public void fromFile(String filePath) throws IOException {
         List<String> lines = Files.readAllLines(Path.of(filePath));
         for (String line : lines) {
@@ -240,9 +240,11 @@ public class Player {
                     Matcher singleClassMatcher = Pattern.compile("\\(([^)]+)\\)").matcher(classMatcher.group(1));
                     while (singleClassMatcher.find()) {
                         try {
-                            classes.add(UnitClass.fromCode(singleClassMatcher.group(1)));
+                            UnitClass uc = UnitClass.fromCode(singleClassMatcher.group(1));
+                            classes.add(uc);
+                            System.out.println("[DEBUG] Classe trouvée : " + uc);
                         } catch (Exception e) {
-                            System.err.println("Classe inconnue : " + singleClassMatcher.group(1));
+                            System.err.println("[DEBUG] Classe inconnue : " + singleClassMatcher.group(1));
                         }
                     }
                     lastEnd = classMatcher.end();
@@ -250,7 +252,7 @@ public class Player {
 
                 // Extraction du nom, exp et équipements
                 String rest = line.substring(lastEnd).trim();
-                Matcher mainMatcher = Pattern.compile("([\\w\\s\\-éèàêîôûç]+)\\s*\\((\\d+) Exp\\)\\s*:\\s*(.*)").matcher(rest);
+                Matcher mainMatcher = Pattern.compile("([\\w\\s\\-éèàêîôûç]+)\\s*(?:n°\\d+\\s*)?\\((\\d+[.,]?\\d*) Exp\\)\\s*:\\s*(.*)").matcher(rest.replace(',', '.'));
                 if (mainMatcher.find()) {
                     String unitName = mainMatcher.group(1).trim();
                     float exp = Float.parseFloat(mainMatcher.group(2).trim());
@@ -258,18 +260,17 @@ public class Player {
 
                     Unit unit = getUnit(unitName, exp, classes);
 
-                    // Gérer les unités avec des noms spécifiques
-
                     if (classes.size() > 1) {
-                        assert unit != null;
-                        unit.addSecondClass(classes.get(1));
+                        for (int i = 1; i < classes.size(); i++) {
+                            unit.addSecondClass(classes.get(i));
+                            System.out.println("[DEBUG] Ajout d'une seconde classe : " + classes.get(i));
+                        }
                     }
+                    addEquipmentsToUnit(unit, equipmentStr);
+                    addUnit(unit);
 
-                    if (unit != null) {
-                        addEquipmentsToUnit(unit, equipmentStr);
-                        addUnit(unit);
-                    }
-
+                } else {
+                    System.err.println("[DEBUG] Format de ligne non reconnu après extraction des classes : " + rest);
                 }
             }
         }
@@ -281,24 +282,23 @@ public class Player {
      * T : Ajouter d'autres types d'unités reconnues si nécessaire.
      */
     private static Unit getUnit(String unitName, float exp, List<UnitClass> classes) {
-        Unit unit = null;
-        if (unitName.startsWith("Larbin")) {
-            unit = new Unit(exp, "Larbin", classes.getFirst());
-        } else if (unitName.startsWith("Voyou")) {
-            unit = new Unit(exp, "Voyou", classes.getFirst());
-        } else if (unitName.startsWith("Malfrat")) {
-            unit = new Unit(exp, "Malfrat", classes.getFirst());
-        } else if (unitName.startsWith("Brute")) {
-            unit = new Unit(exp, "Brute", classes.getFirst());
-        }
-        return unit;
+        return new Unit(exp, unitName, classes.getFirst());
     }
 
     /**
      * Parse la chaîne d'équipements, ajoute chaque équipement à l'unité, et retourne la liste des noms.
      */
     private void addEquipmentsToUnit(Unit unit, String equipmentStr) {
-        List<String> equipmentList = new ArrayList<>();
+        // Coupe la chaîne dès qu'une stat connue est trouvée
+        String[] statKeywords = {"Atk", "Pdf", "Pdc", "Def", "Arm", "Esquive"};
+        for (String keyword : statKeywords) {
+            int idx = equipmentStr.indexOf(keyword);
+            if (idx != -1) {
+                equipmentStr = equipmentStr.substring(0, idx).trim();
+                break;
+            }
+        }
+
         if (!equipmentStr.equalsIgnoreCase("Aucun équipement")) {
             String[] equipmentArray = equipmentStr.split("\\.");
             for (String eq : equipmentArray) {
@@ -307,7 +307,6 @@ public class Player {
                     try {
                         EquipmentType type = EquipmentType.fromDisplayName(trimmed);
                         unit.equip(EquipmentFactory.createEquipmentByType(type));
-                        equipmentList.add(trimmed);
                     } catch (Exception e) {
                         // Silencieux si équipement inconnu
                     }

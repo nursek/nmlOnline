@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @Data
 @NoArgsConstructor
 public class Unit {
-    private int id; //TODO: virer l'id normalement c'est useless.
+    private int id;
     private String name;
     private double experience;
     private UnitType type;
@@ -59,15 +59,19 @@ public class Unit {
 
     // Recalcule les statistiques de base (sans bonus joueur)
     public void recalculateBaseStats() {
-        this.baseAttack = type.getBaseAttack();
-        this.baseDefense = type.getBaseDefense();
-        
+        double statMultiplier = classes.stream()
+                .mapToDouble(UnitClass::getStatMultiplier)
+                .min()
+                .orElse(1.0);
+
+        this.baseAttack = (int) (type.getBaseAttack() * statMultiplier);
+        this.baseDefense = (int) (type.getBaseDefense() * statMultiplier);
+
         this.baseCalculatedPdf = calculateEquipmentPdf();
         this.baseCalculatedPdc = calculateEquipmentPdc();
         this.baseCalculatedArmor = calculateEquipmentArmor();
         this.baseCalculatedEvasion = calculateEquipmentEvasion();
-        
-        // Par défaut, pas de bonus
+
         this.finalAttack = baseAttack;
         this.finalDefense = baseDefense;
         this.finalPdf = baseCalculatedPdf;
@@ -150,38 +154,48 @@ public class Unit {
         recalculateBaseStats(); // Recalcule avec les nouvelles stats de base
     }
 
-    // Gestion des classes
+        // Gestion des classes
     public boolean canAddSecondClass() {
-        return (type == UnitType.MALFRAT || type == UnitType.BRUTE) && classes.size() == 1 &&
-               experience >= 5; // Voyou qui a évolué en malfrat
+        long effectiveClassCount = classes.stream()
+            .filter(c -> c != UnitClass.BLESSE)
+            .count();
+        if (type == UnitType.LARBIN || type == UnitType.VOYOU) {
+            return effectiveClassCount < 1 ;
+        }
+        else
+            return effectiveClassCount <= 1 && experience >= 5;
     }
 
     public void addSecondClass(UnitClass secondClass) {
+        if (secondClass == UnitClass.BLESSE) {
+            System.out.println("Impossible d'ajouter la classe BLESSE comme seconde classe.");
+            return;
+        }
         if (canAddSecondClass() && !classes.contains(secondClass)) {
             classes.add(secondClass);
-            recalculateBaseStats(); // Recalcule avec les nouvelles compatibilités
-        }
-        else
+            recalculateBaseStats();
+        } else {
             System.out.println("Impossible d'ajouter la classe : " + secondClass);
+        }
     }
 
     // Gestion des équipements
     public boolean canEquip(Equipment equipment) {
         if (equipment instanceof FirearmEquipment) {
             long firearmsCount = equipments.stream()
-                    .filter(e -> e instanceof FirearmEquipment)
+                    .filter(FirearmEquipment.class::isInstance)
                     .count();
             return firearmsCount < type.getMaxFirearms() &&
                     isEquipmentCompatible(equipment);
         } else if (equipment instanceof MeleeEquipment) {
             long meleeCount = equipments.stream()
-                    .filter(e -> e instanceof MeleeEquipment)
+                    .filter(MeleeEquipment.class::isInstance)
                     .count();
             return meleeCount < type.getMaxMeleeWeapons() &&
                     isEquipmentCompatible(equipment);
         } else if (equipment instanceof DefensiveEquipment) {
             long defensiveCount = equipments.stream()
-                    .filter(e -> e instanceof DefensiveEquipment)
+                    .filter(DefensiveEquipment.class::isInstance)
                     .count();
             return defensiveCount < type.getMaxDefensiveEquipment() &&
                     isEquipmentCompatible(equipment);
@@ -194,6 +208,10 @@ public class Unit {
             equipments.add(equipment);
             recalculateBaseStats();
         }
+    }
+
+    public double getTotalAttack() {
+        return finalAttack + finalPdf + finalPdc;
     }
 
     // Méthodes utilitaires pour le tri
@@ -229,7 +247,7 @@ public class Unit {
         ).append(" ");
         
         // Type et informations
-        sb.append(type.name().charAt(0)).append(type.name().substring(1).toLowerCase());
+        sb.append(name);
         sb.append(" n°").append(id);
         sb.append(" (").append(formatStat(experience)).append(" Exp) : ");
         

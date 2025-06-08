@@ -13,6 +13,9 @@ public enum EquipmentType {
         MITRAILLEUSE("Mitrailleuse"),
         FUSIL_ASSAUT("Fusil d'assaut"),
         MINI_MACHINE_GUN("Mini machine gun"),
+        MINI_MACHINE_GUN_CM("Mini machine gun [CM]"),
+        MINI_MACHINE_GUN_MP("Mini machine gun [MP]"),
+        MINI_MACHINE_GUN_CM_MP("Mini machine gun [CM] [MP]"),
         // MASTODONTE
         FUSIL_POMPE("Fusil à pompe"),
         WINCHESTER("Winchester"),
@@ -31,7 +34,7 @@ public enum EquipmentType {
         SNIPER_LOURD("Fusil de sniper lourd"),
         SNIPER_COMBAT("Fusil de sniper de combat"),
     // CORPS-À-CORPS
-        // LÉGER
+        // LÉGERx
         POING_AMERICAIN("Poing américain"),
         MATRAQUE_TELESCOPIC("Matraque télescopique"),
         // TIREUR
@@ -55,6 +58,7 @@ public enum EquipmentType {
         TENUE_ULTRA_LEGERE("Tenue ultra légère"),
         GRENADE_ASSOURDISSANTE("Grenade assourdissante"),
         GRENADE_LACRYMOGENE("Grenade lacrymogène"),
+        FIBRE_CHAUFFANTE("Tenue légère en fibre chauffante"),
         // TIREUR
         GILET_PARE_BALLES_LEGER("Gilet pare-balles léger"),
         GILET_PARE_BALLES_MOYEN("Gilet pare-balles moyen"),
