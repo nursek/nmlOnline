@@ -5,16 +5,22 @@ HK-MP7;1600;300;0;25;0;LEGER;Firearm
 Mitrailleuse;1500;200;0;50;0;TIREUR;Firearm
 Fusil d'assaut;2300;350;0;60;0;TIREUR;Firearm
 Mini machine gun;2600;400;0;80;0;TIREUR;Firearm
+Mini machine gun [CM];3400;500;0;80;0;TIREUR;Firearm
+Mini machine gun [MP];4680;400;0;80;0;TIREUR;Firearm
+Mini machine gun [CM] [MP];5480;500;0;80;0;TIREUR;Firearm
 Fusil à pompe;1000;0;200;0;0;MASTODONTE;Firearm
 Winchester;1500;0;300;0;0;MASTODONTE;Firearm
 Tromblon;2000;0;400;0;0;MASTODONTE;Firearm
+Tromblon [DM];3000;0;400;0;0;MASTODONTE;Firearm
+Tromblon [MGC];3500;0;400;0;0;MASTODONTE;Firearm
+Tromblon [DM] [MGC];4500;0;400;0;0;MASTODONTE;Firearm
 Pistolet chauffant;900;100;0;0;0;ELEMENTAIRE;Firearm
 Fusil à impulsion électromagnétique;2250;250;0;0;0;ELEMENTAIRE;Firearm
 Canon à glace;2500;300;0;0;0;ELEMENTAIRE;Firearm
 Lance-flammes;3000;400;0;0;0;ELEMENTAIRE;Firearm
 Bombes collantes;3400;80;0;0;0;PILOTE_DESTRUCTEUR;Firearm
-Lance-roquettes;5500;400;200;0;0;PILOTE_DESTRUCTEUR;Firearm
-Lance-grenades;5800;500;100;0;0;PILOTE_DESTRUCTEUR;Firearm
+Lance-roquettes;5500;400;0;200;0;PILOTE_DESTRUCTEUR;Firearm
+Lance-grenades;5800;500;0;100;0;PILOTE_DESTRUCTEUR;Firearm
 Fusil de sniper léger;1000;150;0;30;0;SNIPER;Firearm
 Fusil de sniper lourd;1800;300;0;50;0;SNIPER;Firearm
 Fusil de sniper de combat;2300;400;0;60;0;SNIPER;Firearm
@@ -25,7 +31,10 @@ Machette;375;0;75;0;0;TIREUR;Meelee
 Hache de bûcheron;450;0;90;0;0;MASTODONTE;Meelee
 Tronçonneuse;500;0;100;0;0;MASTODONTE;Meelee
 Matraque électrique;450;0;50;0;0;ELEMENTAIRE;Meelee
-Gantelets électrique;1000;0;85;0;0;ELEMENTAIRE;Meelee
+Gantelet électrique;1000;0;85;0;0;ELEMENTAIRE;Meelee
+Panachurros;125;0;25;0;0;PILOTE_DESTRUCTEUR;Meelee
+Panachouquette;250;0;50;0;0;PILOTE_DESTRUCTEUR;Meelee
+Panachoucroute;500;0;100;0;0;PILOTE_DESTRUCTEUR;Meelee
 Couteau de cuisine;200;0;40;0;0;SNIPER;Meelee
 Couteau de combat;300;0;60;0;0;SNIPER;Meelee
 Tenue ultra légère;750;0;0;50;10;LEGER;Defensive
@@ -36,3 +45,14 @@ Gilet pare-balles moyen;1000;0;0;100;0;TIREUR;Defensive
 Protection dorsale;250;0;0;30;0;MASTODONTE;Defensive
 Bouclier anti-émeutes;1500;0;0;150;0;MASTODONTE;Defensive
 Bouclier balistique;3000;0;0;300;0;MASTODONTE;Defensive
+Grenade assourdissante;1250;0;0;0;15;LEGER;Defensive
+Tenue légère en fibre chauffante;3000;0;0;100;20;LEGER;Defensive
+Armure conductrice;1750;0;0;100;0;ELEMENTAIRE;Defensive
+Armure thermorésistante;2250;0;0;200;0;ELEMENTAIRE;Defensive
+Armure isolante;2250;0;0;200;0;ELEMENTAIRE;Defensive
+Armure thermique;2750;0;0;200;0;ELEMENTAIRE;Defensive
+Protège-dents;150;0;0;20;0;PILOTE_DESTRUCTEUR;Defensive
+Casque militaire;750;0;0;75;0;PILOTE_DESTRUCTEUR;Defensive
+Gilet Kevlar;1500;0;0;150;0;PILOTE_DESTRUCTEUR;Defensive
+Treillis de camouflage urbain;1500;0;0;100;10;SNIPER;Defensive
+Gilet de camouflage optique;2500;0;0;125;10;SNIPER;Defensive

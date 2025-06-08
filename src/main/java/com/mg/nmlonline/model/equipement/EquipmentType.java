@@ -20,6 +20,8 @@ public enum EquipmentType {
         FUSIL_POMPE("Fusil à pompe"),
         WINCHESTER("Winchester"),
         TROMBLON("Tromblon"),
+        TROMBLON_DM("Tromblon [DM]"),
+        TROMBLON_DM_MGC("Tromblon [DM][MGC]"),
         // ELEMENTAIRE
         PISTOLET_CHAUFFANT("Pistolet chauffant"),
         FUSIL_IMPULSION("Fusil à impulsion"),

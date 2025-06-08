@@ -27,6 +27,7 @@ public class Player {
     private String name;
     private List<Unit> army;
     private List<Equipment> equipments;
+    private double money = 0.0; // Argent du joueur
 
     // Bonus/Malus globaux du joueur en pourcentage
     private double attackBonusPercent = 0.0;
@@ -133,7 +134,7 @@ public class Player {
     }
 
     /**
-     * Trie l'armée par expérience décroissante, puis par défense totale décroissante,:
+     * Trie l'armée par expérience décroissante, puis par défense totale décroissante
      */
     private void sortAndReorderArmy() {
         army.sort(Comparator
@@ -288,7 +289,6 @@ public class Player {
      * Parse la chaîne d'équipements, ajoute chaque équipement à l'unité, et retourne la liste des noms.
      */
     private void addEquipmentsToUnit(Unit unit, String equipmentStr) {
-        // Coupe la chaîne dès qu'une stat connue est trouvée
         String[] statKeywords = {"Atk", "Pdf", "Pdc", "Def", "Arm", "Esquive"};
         for (String keyword : statKeywords) {
             int idx = equipmentStr.indexOf(keyword);
@@ -302,7 +302,8 @@ public class Player {
             String[] equipmentArray = equipmentStr.split("\\.");
             for (String eq : equipmentArray) {
                 String trimmed = eq.trim();
-                if (!trimmed.isEmpty()) {
+                // Ne garder que les éléments contenant au moins une lettre
+                if (!trimmed.isEmpty() && trimmed.matches(".*[a-zA-ZéèàêîôûçÉÈÀÊÎÔÛÇ].*")) {
                     try {
                         unit.equip(EquipmentFactory.createFromName(trimmed));
                     } catch (Exception e) {
@@ -315,7 +316,6 @@ public class Player {
 
     /** Affiche les équipements du joueur
      * Regroupe les équipements par nom et affiche le nombre de chaque type
-     * TODO: Trier les équipements par type et afficher les détails (prix, stats, etc.)
      */
     public void displayEquipments() {
         System.out.println("=== ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
