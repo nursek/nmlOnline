@@ -16,9 +16,8 @@ public class PlayerTestDemo {
 
     public static void main(String[] args) {
         System.out.println("=== DÉMO CLASSE PLAYER ===\n");
-        // Test 2: Import de tous les joueurs depuis JSON
         testImportPlayersFromJson();
-        //testFileArmy();
+        testFileArmy();
 
     }
 
@@ -43,7 +42,7 @@ public class PlayerTestDemo {
                 Player player = playerService.importPlayerFromJson(jsonFile.getPath());
                 players.add(player);
             } catch (Exception e) {
-                log.error("Erreur lors de l'import de " + jsonFile.getName(), e);
+                log.error("Erreur lors de l'import de {}", jsonFile.getName(), e);
             }
         }
 
@@ -59,10 +58,9 @@ public class PlayerTestDemo {
     private static void testFileArmy(){
         System.out.println("🔹 TEST: FILE ARMY (reproduction exemple)");
         System.out.println("===============================================");
-
-        Player player = new Player("Ratcatcher");
+        PlayerService playerService = new PlayerService();
         try {
-            player.fromFile("src/main/resources/ratcatcher.txt");
+            Player player = playerService.fromFile("src/main/resources/players/ratcatcher.txt");
             player.displayArmy();
         } catch (Exception e) {
             System.err.println("Erreur lors de la lecture du fichier d'armée : " + e.getMessage());

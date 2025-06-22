@@ -59,7 +59,7 @@ public class Unit {
         recalculateBaseStats(); // Calcul initial
     }
 
-    public Unit(String charName, UnitType unitType, int atk, int pdf, int pdc, int def, int arm, int evasion) {
+    public Unit(String charName, UnitType unitType, int atk, int pdf, int pdc, int def, int arm, double evasion) {
         this.id = 0;
         this.name = charName;
         this.experience = 100;
