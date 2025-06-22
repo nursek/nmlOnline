@@ -60,14 +60,24 @@ public class Player {
     }
 
     // Méthode pour ajouter un équipement à l'armée
-    public void addEquipment(Equipment equipment) {
+    public void addEquipment(Equipment equipment, int number) {
         for (EquipmentStack stack : equipments) {
             if (stack.getEquipment().equals(equipment)) {
-                stack.increment();
+                for (int i = 0; i < number; i++) {
+                    stack.increment();
+                }
                 return;
             }
         }
-        equipments.add(new EquipmentStack(equipment));
+        EquipmentStack newStack = new EquipmentStack(equipment);
+        for (int i = 1; i < number; i++) {
+            newStack.increment();
+        }
+        equipments.add(newStack);
+    }
+
+    public void addEquipment(Equipment equipment) {
+        addEquipment(equipment, 1);
     }
 
     public void removeEquipment(Equipment equipment) {

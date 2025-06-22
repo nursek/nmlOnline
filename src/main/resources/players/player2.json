@@ -3,18 +3,18 @@
   "attackBonusPercent": 0.15,
   "defenseBonusPercent": -0.15,
   "equipments": [
-    "Mini machine gun",
-    "Bouclier balistique",
-    "Équipement militaire complet",
-    "Fusil d'assaut",
-    "Gilet pare-balles moyen",
-    "Bouclier anti-émeutes",
-    "Poing américain",
-    "Pistolet-mitrailleur",
-    "Tenue ultra légère",
-    "Matraque télescopique",
-    "Mitrailleuse",
-    "Gilet pare-balles léger"
+    { "name": "Mini machine gun", "quantity": 1 },
+    { "name": "Bouclier balistique", "quantity": 1 },
+    { "name": "Équipement militaire complet", "quantity": 1 },
+    { "name": "Fusil d'assaut", "quantity": 1 },
+    { "name": "Gilet pare-balles moyen", "quantity": 1 },
+    { "name": "Bouclier anti-émeutes", "quantity": 1 },
+    { "name": "Poing américain", "quantity": 1 },
+    { "name": "Pistolet-mitrailleur", "quantity": 1 },
+    { "name": "Tenue ultra légère", "quantity": 1 },
+    { "name": "Matraque télescopique", "quantity": 1 },
+    { "name": "Mitrailleuse", "quantity": 1 },
+    { "name": "Gilet pare-balles léger", "quantity": 1 }
   ],
   "army": [
     {
