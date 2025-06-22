@@ -1,0 +1,8 @@
+(T) Voyou réanimé n°3 (2 Exp) : Mini machine gun. Gilet pare-balles léger. Gilet pare-balles moyen. 20 Atk + 80 Pdf / 20 Def + 46 Arm.
+(T) Voyou réanimé n°4 (2 Exp) : Mini machine gun. Gilet pare-balles léger. Gilet pare-balles moyen. 20 Atk + 80 Pdf / 20 Def + 46 Arm.
+(T) Voyou réanimé n°5 (2 Exp) : Mini machine gun. Gilet pare-balles léger. Gilet pare-balles moyen. 20 Atk + 80 Pdf / 20 Def + 46 Arm.
+(T) Voyou réanimé n°6 (2 Exp) : Mini machine gun. Gilet pare-balles léger. Gilet pare-balles moyen. 20 Atk + 80 Pdf / 20 Def + 46 Arm.
+
+(T) Voyou réanimé n°7 (2 Exp) : Fusil d'assaut. Gilet pare-balles léger. Gilet pare-balles moyen. 20 Atk + 70 Pdf / 20 Def + 42 Arm.
+(T) Voyou réanimé n°8 (2 Exp) : Fusil d'assaut. Gilet pare-balles léger. Gilet pare-balles moyen. 20 Atk + 70 Pdf / 20 Def + 42 Arm.
+(T) Voyou réanimé n°9 (2 Exp) : Fusil d'assaut. Gilet pare-balles léger. Gilet pare-balles moyen. 20 Atk + 70 Pdf / 20 Def + 42 Arm.
