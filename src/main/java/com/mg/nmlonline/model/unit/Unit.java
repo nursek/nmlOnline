@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.mg.nmlonline.model.unit.UnitType.*;
+
 /**
  * Represents a unit with various attributes for combat.
  */
@@ -55,6 +57,23 @@ public class Unit {
         this.equipments = new ArrayList<>();
         
         recalculateBaseStats(); // Calcul initial
+    }
+
+    public Unit(String charName, UnitType unitType, int atk, int pdf, int pdc, int def, int arm, int evasion) {
+        this.id = 0;
+        this.name = charName;
+        this.experience = 100;
+        this.type = unitType; // Type de l'unité
+
+        this.baseAttack = atk;
+        this.baseDefense = def;
+        this.baseCalculatedPdf = pdf;
+        this.baseCalculatedPdc = pdc;
+        this.baseCalculatedArmor = arm;
+        this.baseCalculatedEvasion = evasion;
+
+        this.equipments = new ArrayList<>();
+        this.classes = new ArrayList<>();
     }
 
     // Recalcule les statistiques de base (sans bonus joueur)
@@ -239,34 +258,46 @@ public class Unit {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        
-        // Classes
-        sb.append(
-                classes.stream()
-                        .map(c -> "(" + c.getCode() + ")")
-                        .collect(Collectors.joining(" "))
-        ).append(" ");
-        
-        // Type et informations
-        sb.append(name);
-        sb.append(" n°").append(id);
-        sb.append(" (").append(formatStat(experience)).append(" Exp) : ");
-        
-        // Équipements
-        equipments.forEach(f -> sb.append(f.getName()).append(". "));
-        if (equipments.isEmpty()) {
-            sb.append("Aucun équipement. ");
+
+        if(type== PERSONNAGE){
+            // Exemple de ligne : Mortarion (100 Atk + 100 Pdf + 50 Pdc / 250 Def)
+            sb.append(name);
+            sb.append(" (");
+            statsBuilder(sb, baseAttack, baseCalculatedPdf, baseCalculatedPdc, baseDefense, baseCalculatedArmor, baseCalculatedEvasion);
+            sb.append(").");
         }
-        
-        // Statistiques avec formatage précis
+        else {
+            sb.append(
+                    classes.stream()
+                            .map(c -> "(" + c.getCode() + ")")
+                            .collect(Collectors.joining(" "))
+            ).append(" ");
+
+            // Type et informations
+            sb.append(name);
+            sb.append(" n°").append(id);
+            sb.append(" (").append(formatStat(experience)).append(" Exp) : ");
+
+            // Équipements
+            equipments.forEach(f -> sb.append(f.getName()).append(". "));
+            if (equipments.isEmpty()) {
+                sb.append("Aucun équipement. ");
+            }
+
+            // Statistiques avec formatage précis
+            statsBuilder(sb, finalAttack, finalPdf, finalPdc, finalDefense, finalArmor, finalEvasion);
+            sb.append(".");
+        }
+
+        return sb.toString();
+    }
+
+    private void statsBuilder(StringBuilder sb, double finalAttack, double finalPdf, double finalPdc, double finalDefense, double finalArmor, double finalEvasion) {
         sb.append(formatStat(finalAttack)).append(" Atk");
         if (finalPdf > 0) sb.append(" + ").append(formatStat(finalPdf)).append(" Pdf");
         if (finalPdc > 0) sb.append(" + ").append(formatStat(finalPdc)).append(" Pdc");
         sb.append(" / ").append(formatStat(finalDefense)).append(" Def");
         if (finalArmor > 0) sb.append(" + ").append(formatStat(finalArmor)).append(" Arm");
         if (finalEvasion > 0) sb.append(". Esquive : ").append(formatEvasion(finalEvasion)).append(" %");
-        sb.append(".");
-        
-        return sb.toString();
     }
 }

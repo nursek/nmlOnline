@@ -1,3 +1,5 @@
+Mortarion (100 Atk + 100 Pdf + 50 Pdc / 250 Def + 10 % Esquive)
+Aagron (300 Atk + 150 Pdf / 250 Def)
 (T) Voyou réanimé n°3 (2 Exp) : Mini machine gun. Gilet pare-balles léger. Gilet pare-balles moyen. 20 Atk + 80 Pdf / 20 Def + 46 Arm.
 (T) Voyou réanimé n°4 (2 Exp) : Mini machine gun. Gilet pare-balles léger. Gilet pare-balles moyen. 20 Atk + 80 Pdf / 20 Def + 46 Arm.
 (T) Voyou réanimé n°5 (2 Exp) : Mini machine gun. Gilet pare-balles léger. Gilet pare-balles moyen. 20 Atk + 80 Pdf / 20 Def + 46 Arm.

@@ -1,10 +1,6 @@
 package com.mg.nmlonline.test;
 
-import com.mg.nmlonline.model.equipement.EquipmentType;
 import com.mg.nmlonline.model.player.Player;
-import com.mg.nmlonline.model.unit.Unit;
-import com.mg.nmlonline.model.unit.UnitClass;
-import com.mg.nmlonline.model.equipement.EquipmentFactory;
 import com.mg.nmlonline.service.PlayerService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,8 +17,8 @@ public class PlayerTestDemo {
     public static void main(String[] args) {
         System.out.println("=== DÉMO CLASSE PLAYER ===\n");
         // Test 2: Import de tous les joueurs depuis JSON
-        //testImportPlayersFromJson();
-        testFileArmy();
+        testImportPlayersFromJson();
+        //testFileArmy();
 
     }
 
