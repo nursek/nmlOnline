@@ -34,8 +34,8 @@ public class PlayerService {
 
 
         // Équipements généraux
-        for (String equipments : dto.equipments) {
-            player.addEquipment(EquipmentFactory.createFromName(equipments));
+        for (EquipmentDTO equipments : dto.equipments) {
+            player.addEquipment(EquipmentFactory.createFromName(equipments.name));
         }
 
         for (UnitDTO unitDto : dto.army) {
@@ -196,8 +196,9 @@ public class PlayerService {
     // DTO internes pour la désérialisation
     private static class PlayerDTO {
         public String name;
-        public List<UnitDTO> army = new ArrayList<>();
-        public List<String> equipments = new ArrayList<>();
+        public List<UnitDTO> army;
+        public List<EquipmentDTO> equipments;
+
         public double attackBonusPercent;
         public double defenseBonusPercent;
         public double pdfBonusPercent;
@@ -211,5 +212,9 @@ public class PlayerService {
         public List<String> classes;
         public double experience;
         public List<String> equipments = new ArrayList<>();
+    }
+    private static class EquipmentDTO {
+        public String name;
+        public int quantity;
     }
 }

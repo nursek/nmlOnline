@@ -2,6 +2,7 @@ package com.mg.nmlonline.model.player;
 
 import com.mg.nmlonline.model.equipement.Equipment;
 import com.mg.nmlonline.model.equipement.EquipmentFactory;
+import com.mg.nmlonline.model.equipement.EquipmentStack;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
 import com.mg.nmlonline.model.unit.UnitType;
@@ -27,7 +28,7 @@ import java.util.regex.Pattern;
 public class Player {
     private String name;
     private List<Unit> army;
-    private List<Equipment> equipments;
+    private List<EquipmentStack> equipments;
     private double money = 0.0; // Argent du joueur
 
     // Bonus/Malus globaux du joueur en pourcentage
@@ -60,16 +61,38 @@ public class Player {
     }
 
     // Méthode pour ajouter un équipement à l'armée
+    public void addEquipment(Equipment equipment, int number) {
+        for (EquipmentStack stack : equipments) {
+            if (stack.getEquipment().equals(equipment)) {
+                for (int i = 0; i < number; i++) {
+                    stack.increment();
+                }
+                return;
+            }
+        }
+        EquipmentStack newStack = new EquipmentStack(equipment);
+        for (int i = 1; i < number; i++) {
+            newStack.increment();
+        }
+        equipments.add(newStack);
+    }
+
     public void addEquipment(Equipment equipment) {
-        equipments.add(equipment);
+        addEquipment(equipment, 1);
     }
 
     public void removeEquipment(Equipment equipment) {
-        equipments.remove(equipment);
-    }
-
-    public void removeEquipment(String equipmentName) {
-        equipments.removeIf(equipment -> equipment.getName().equalsIgnoreCase(equipmentName));
+        for (int i = 0; i < equipments.size(); i++) {
+            EquipmentStack stack = equipments.get(i);
+            if (stack.getEquipment().equals(equipment)) {
+                if (stack.getQuantity() > 1) {
+                    stack.decrement();
+                } else {
+                    equipments.remove(i);
+                }
+                return;
+            }
+        }
     }
 
     // Méthodes pour appliquer les bonus/malus
@@ -233,8 +256,9 @@ public class Player {
         Map<String, Integer> equippedCount = new HashMap<>();
 
         // Compte dans l'inventaire du joueur
-        for (Equipment eq : equipments) {
-            totalCount.merge(eq.getName(), 1, Integer::sum);
+        for (EquipmentStack stack : equipments) {
+            Equipment eq = stack.getEquipment();
+            totalCount.put(eq.getName(), stack.getQuantity());
             equipmentRef.putIfAbsent(eq.getName(), eq);
         }
 
