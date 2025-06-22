@@ -5,6 +5,7 @@ import com.mg.nmlonline.model.equipement.EquipmentFactory;
 import com.mg.nmlonline.model.equipement.EquipmentStack;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
+import com.mg.nmlonline.model.unit.UnitType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -176,8 +177,6 @@ public class Player {
             typeCounters.put(unitType, currentCount);
             unit.setId(currentCount); // ID par type
         }
-
-
     }
 
     // Méthodes utilitaires
@@ -196,12 +195,6 @@ public class Player {
         return army.stream()
             .filter(unit -> unit.getType().name().equalsIgnoreCase(unitType))
             .toList();
-    }
-
-    public double getTotalArmyValue() {
-        return army.stream()
-            .mapToDouble(Unit::getTotalDefense)
-            .sum();
     }
 
     // Affichage de l'armée
@@ -247,87 +240,6 @@ public class Player {
                armorBonusPercent != 0 || evasionBonusPercent != 0;
     }
 
-    // Méthode pour créer l'armée d'un joueur via un fichier texte
-    public void fromFile(String filePath) throws IOException {
-        List<String> lines = Files.readAllLines(Path.of(filePath));
-        for (String line : lines) {
-            line = line.trim();
-            if (line.isEmpty()) continue;
-
-            if (line.startsWith("(")) {
-                // Extraction des classes
-                Matcher classMatcher = Pattern.compile("^((\\([^)]*\\)\\s*)+)").matcher(line);
-                List<UnitClass> classes = new ArrayList<>();
-                int lastEnd = 0;
-                if (classMatcher.find()) {
-                    Matcher singleClassMatcher = Pattern.compile("\\(([^)]+)\\)").matcher(classMatcher.group(1));
-                    while (singleClassMatcher.find()) {
-                        try {
-                            UnitClass uc = UnitClass.fromCode(singleClassMatcher.group(1));
-                            classes.add(uc);
-                            System.out.println("[DEBUG] Classe trouvée : " + uc);
-                        } catch (Exception e) {
-                            System.err.println("Classe inconnue : " + singleClassMatcher.group(1));
-                        }
-                    }
-                    lastEnd = classMatcher.end();
-                }
-
-                // Extraction du nom, exp et équipements
-                String rest = line.substring(lastEnd).trim();
-                Matcher mainMatcher = Pattern.compile("([\\w\\s\\-éèàêîôûç]+)\\s*(?:n°\\d+\\s*)?\\((\\d+[.,]?\\d*) Exp\\)\\s*:\\s*(.*)").matcher(rest.replace(',', '.'));
-                if (mainMatcher.find()) {
-                    String unitName = mainMatcher.group(1).trim();
-                    float exp = Float.parseFloat(mainMatcher.group(2).trim());
-                    String equipmentStr = mainMatcher.group(3).trim();
-
-                    Unit unit = new Unit(exp, unitName, classes.getFirst());
-
-                    if (classes.size() > 1) {
-                        for (int i = 1; i < classes.size(); i++) {
-                            unit.addSecondClass(classes.get(i));
-                            System.out.println("[DEBUG] Ajout d'une seconde classe : " + classes.get(i));
-                        }
-                    }
-                    addEquipmentsToUnit(unit, equipmentStr);
-                    addUnit(unit);
-
-                } else {
-                    System.err.println("[DEBUG] Format de ligne non reconnu après extraction des classes : " + rest);
-                }
-            }
-        }
-    }
-
-    /**
-     * Parse la chaîne d'équipements, ajoute chaque équipement à l'unité, et retourne la liste des noms.
-     */
-    private void addEquipmentsToUnit(Unit unit, String equipmentStr) {
-        String[] statKeywords = {"Atk", "Pdf", "Pdc", "Def", "Arm", "Esquive"};
-        for (String keyword : statKeywords) {
-            int idx = equipmentStr.indexOf(keyword);
-            if (idx != -1) {
-                equipmentStr = equipmentStr.substring(0, idx).trim();
-                break;
-            }
-        }
-
-        if (!equipmentStr.equalsIgnoreCase("Aucun équipement")) {
-            String[] equipmentArray = equipmentStr.split("\\.");
-            for (String eq : equipmentArray) {
-                String trimmed = eq.trim();
-                // Ne garder que les éléments contenant au moins une lettre
-                if (!trimmed.isEmpty() && trimmed.matches(".*[a-zA-ZéèàêîôûçÉÈÀÊÎÔÛÇ].*")) {
-                    try {
-                        unit.equip(EquipmentFactory.createFromName(trimmed));
-                    } catch (Exception e) {
-                        System.out.println("Erreur lors de la création de l'équipement : " + e.getMessage());
-                    }
-                }
-            }
-        }
-    }
-
     /** Affiche les équipements du joueur
      * Regroupe les équipements par nom et affiche le nombre de chaque type
      */
@@ -365,7 +277,7 @@ public class Player {
             int equipped = equippedCount.getOrDefault(name, 0);
             Equipment eq = equipmentRef.get(name);
             int totalPrice = total * eq.getCost();
-            System.out.printf("%d x %s %d / %d équipé. %,d $.\n", total, eq.toString(), equipped, total, totalPrice);
+            System.out.printf("%d x %s %d / %d équipé. %,d $.%n", total, eq, equipped, total, totalPrice);
         }
     }
 
