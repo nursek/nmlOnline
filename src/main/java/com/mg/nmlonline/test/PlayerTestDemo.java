@@ -21,7 +21,7 @@ public class PlayerTestDemo {
     public static void main(String[] args) {
         System.out.println("=== DÉMO CLASSE PLAYER ===\n");
         // Test 2: Import de tous les joueurs depuis JSON
-        //testImportPlayersFromJson();
+        testImportPlayersFromJson();
         testFileArmy();
 
     }

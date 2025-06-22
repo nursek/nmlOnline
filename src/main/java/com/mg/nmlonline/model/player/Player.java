@@ -2,6 +2,7 @@ package com.mg.nmlonline.model.player;
 
 import com.mg.nmlonline.model.equipement.Equipment;
 import com.mg.nmlonline.model.equipement.EquipmentFactory;
+import com.mg.nmlonline.model.equipement.EquipmentStack;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
 import lombok.Data;
@@ -26,7 +27,7 @@ import java.util.regex.Pattern;
 public class Player {
     private String name;
     private List<Unit> army;
-    private List<Equipment> equipments;
+    private List<EquipmentStack> equipments;
     private double money = 0.0; // Argent du joueur
 
     // Bonus/Malus globaux du joueur en pourcentage
@@ -60,15 +61,27 @@ public class Player {
 
     // Méthode pour ajouter un équipement à l'armée
     public void addEquipment(Equipment equipment) {
-        equipments.add(equipment);
+        for (EquipmentStack stack : equipments) {
+            if (stack.getEquipment().equals(equipment)) {
+                stack.increment();
+                return;
+            }
+        }
+        equipments.add(new EquipmentStack(equipment));
     }
 
     public void removeEquipment(Equipment equipment) {
-        equipments.remove(equipment);
-    }
-
-    public void removeEquipment(String equipmentName) {
-        equipments.removeIf(equipment -> equipment.getName().equalsIgnoreCase(equipmentName));
+        for (int i = 0; i < equipments.size(); i++) {
+            EquipmentStack stack = equipments.get(i);
+            if (stack.getEquipment().equals(equipment)) {
+                if (stack.getQuantity() > 1) {
+                    stack.decrement();
+                } else {
+                    equipments.remove(i);
+                }
+                return;
+            }
+        }
     }
 
     // Méthodes pour appliquer les bonus/malus
@@ -258,7 +271,7 @@ public class Player {
                     float exp = Float.parseFloat(mainMatcher.group(2).trim());
                     String equipmentStr = mainMatcher.group(3).trim();
 
-                    Unit unit = getUnit(unitName, exp, classes);
+                    Unit unit = new Unit(exp, unitName, classes.getFirst());
 
                     if (classes.size() > 1) {
                         for (int i = 1; i < classes.size(); i++) {
@@ -274,15 +287,6 @@ public class Player {
                 }
             }
         }
-    }
-
-    /**
-     * Crée une unité basée sur le nom et l'expérience, en utilisant la première classe de la liste.
-     * Si le nom de l'unité ne correspond pas à un type connu, retourne null.
-     * T : Ajouter d'autres types d'unités reconnues si nécessaire.
-     */
-    private static Unit getUnit(String unitName, float exp, List<UnitClass> classes) {
-        return new Unit(exp, unitName, classes.getFirst());
     }
 
     /**
@@ -330,8 +334,9 @@ public class Player {
         Map<String, Integer> equippedCount = new HashMap<>();
 
         // Compte dans l'inventaire du joueur
-        for (Equipment eq : equipments) {
-            totalCount.merge(eq.getName(), 1, Integer::sum);
+        for (EquipmentStack stack : equipments) {
+            Equipment eq = stack.getEquipment();
+            totalCount.put(eq.getName(), stack.getQuantity());
             equipmentRef.putIfAbsent(eq.getName(), eq);
         }
 
