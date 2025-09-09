@@ -1,14 +1,5 @@
 1) valeur décimales pour les unités affichées.
 
-2) Player :
-    - Compte en banque du joueur
-    - Reserve d'équipement du joueur (nouvelle fonction d'affichage)
-        - Nb équipements
-        - Valeur totale des équipement
-        - Nb d'équipements par type
-        - NB d'équipement équipés sur l'armée du joueur
+2) réparer les JSON
 
-    - Système de Quartier
-        - Une armée peut être dans un quartier
-        - Un joueur peut avoir plusieurs quartiers
 // This file is part of NML Online.

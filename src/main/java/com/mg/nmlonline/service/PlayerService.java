@@ -2,6 +2,7 @@ package com.mg.nmlonline.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.model.player.Player;
+import com.mg.nmlonline.model.sector.Sector;
 import com.mg.nmlonline.model.unit.Unit;
 import com.mg.nmlonline.model.unit.UnitClass;
 import com.mg.nmlonline.model.equipement.*;
@@ -24,20 +25,16 @@ public class PlayerService {
 
         Player player = new Player(dto.name);
 
-        // Après la création du Player et l'ajout des unités
-        player.applyAttackBonus(dto.attackBonusPercent);
-        player.applyDefenseBonus(dto.defenseBonusPercent);
-        player.applyPdfBonus(dto.pdfBonusPercent);
-        player.applyPdcBonus(dto.pdcBonusPercent);
-        player.applyArmorBonus(dto.armorBonusPercent);
-        player.applyEvasionBonus(dto.evasionBonusPercent);
-
-
         // Équipements généraux
         for (EquipmentDTO equipments : dto.equipments) {
             player.addEquipment(EquipmentFactory.createFromName(equipments.name));
         }
 
+        // Création d'un secteur par défaut pour les unités importées
+        Sector defaultSector = new Sector(1);
+        player.addSector(defaultSector);
+
+        // Ajout des unités au secteur par défaut
         for (UnitDTO unitDto : dto.army) {
             Unit unit = new Unit(unitDto.id, unitDto.type, UnitClass.valueOf(unitDto.classes.get(0)));
             unit.gainExperience(unitDto.experience);
@@ -51,14 +48,22 @@ public class PlayerService {
             for (String equipment : unitDto.equipments) {
                 unit.equip(EquipmentFactory.createFromName(equipment));
             }
-            player.addUnit(unit);
+
+            // Ajout au secteur au lieu de l'armée du joueur
+            player.addUnitToSector(unit, 1);
         }
+
         return player;
     }
 
-    // Méthode pour créer l'armée d'un joueur via un fichier texte
+    // Méthode pour créer l'armée d'un joueur via un fichier texte.
     public Player fromFile(String filePath) throws IOException {
-        Player player = new Player("Skiriga");
+        Player player = new Player("Placeholder"); //TODO nom du joueur en lecture
+
+        // Création d'un secteur par défaut
+        Sector defaultSector = new Sector(1);
+        player.addSector(defaultSector);
+
         List<String> lines = Files.readAllLines(Path.of(filePath));
         for (String line : lines) {
             line = line.trim();
@@ -72,6 +77,7 @@ public class PlayerService {
         }
         return player;
     }
+
 
     private void processUnitLine(Player player, String line) {
         if (line.startsWith("(")) {
@@ -94,13 +100,16 @@ public class PlayerService {
 
                 addSecondClass(classes, unit);
                 addEquipmentsToUnit(unit, equipmentStr);
-                player.addUnit(unit);
+
+                // Ajout au secteur par défaut au lieu de l'armée du joueur
+                player.addUnitToSector(unit, 1);
 
             } else {
                 System.err.println("[DEBUG] Format de ligne non reconnu après extraction des classes : " + rest);
             }
         }
     }
+
 
     private void processCharacterLine(Player player, String line) {
         // Exemple de ligne : Mortarion (100 Atk + 100 Pdf + 50 Pdc / 250 Def)
@@ -117,11 +126,14 @@ public class PlayerService {
             double esquive = extractStatDouble(stats);
 
             Unit personnage = new Unit(charName, UnitType.PERSONNAGE, atk, pdf, pdc, def, arm, esquive);
-            player.addUnit(personnage);
+
+            // Ajout au secteur par défaut au lieu de l'armée du joueur
+            player.addUnitToSector(personnage, 1);
         } else {
             System.err.println("[DEBUG] Ligne personnage non reconnue : " + line);
         }
     }
+
 
     private static int handleClasses(Matcher classMatcher, List<UnitClass> classes, int lastEnd) {
         if (classMatcher.find()) {
@@ -198,14 +210,8 @@ public class PlayerService {
         public String name;
         public List<UnitDTO> army;
         public List<EquipmentDTO> equipments;
-
-        public double attackBonusPercent;
-        public double defenseBonusPercent;
-        public double pdfBonusPercent;
-        public double pdcBonusPercent;
-        public double armorBonusPercent;
-        public double evasionBonusPercent;
     }
+
     private static class UnitDTO {
         public int id;
         public String type;
@@ -213,6 +219,7 @@ public class PlayerService {
         public double experience;
         public List<String> equipments = new ArrayList<>();
     }
+
     private static class EquipmentDTO {
         public String name;
         public int quantity;

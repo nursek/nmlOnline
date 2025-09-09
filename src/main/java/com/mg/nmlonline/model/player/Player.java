@@ -1,25 +1,16 @@
 package com.mg.nmlonline.model.player;
 
 import com.mg.nmlonline.model.equipement.Equipment;
-import com.mg.nmlonline.model.equipement.EquipmentFactory;
 import com.mg.nmlonline.model.equipement.EquipmentStack;
+import com.mg.nmlonline.model.sector.Sector;
 import com.mg.nmlonline.model.unit.Unit;
-import com.mg.nmlonline.model.unit.UnitClass;
-import com.mg.nmlonline.model.unit.UnitType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
  * Classe représentant un joueur avec son armée d'unités
  */
@@ -27,40 +18,127 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 public class Player {
     private String name;
-    private List<Unit> army;
-    private List<EquipmentStack> equipments;
     private double money = 0.0; // Argent du joueur
+    private List<EquipmentStack> equipments = new ArrayList<>(); // Équipements possédés par le joueur
+    private List<Sector> sectors = new ArrayList<>(); // Secteurs/Quartiers contrôlés par le joueur
 
-    // Bonus/Malus globaux du joueur en pourcentage
-    private double attackBonusPercent = 0.0;
-    private double defenseBonusPercent = 0.0;
-    private double pdfBonusPercent = 0.0;
-    private double pdcBonusPercent = 0.0;
-    private double armorBonusPercent = 0.0;
-    private double evasionBonusPercent = 0.0;
+    private double totalIncome = 0.0 ;
+    private double totalMilitaryPower = 0.0; // Puissance militaire totale du joueur, calculée à partir des armées des secteurs
+    private double totalEconomyPower = 0.0; // Puissance économique totale du joueur, calculée à partir des secteurs, des équipements, etc.
 
     public Player(String name) {
         this.name = name;
-        this.army = new ArrayList<>();
-        this.equipments = new ArrayList<>();
     }
 
-    // Méthodes pour gérer l'armée
-    public void addUnit(Unit unit) {
-        army.add(unit);
-        applyBonusesToUnit(unit);
-        sortAndReorderArmy();
+    // === GESTION DES SECTEURS DU JOUEUR ===
+
+    public void addSector(Sector sector) {
+        sectors.add(sector);
+        recalculateStats();
     }
 
-    public void removeUnit(Unit unit) {
-        army.remove(unit);
+    public void removeSector(Sector sector) {
+        sectors.remove(sector);
+        recalculateStats();
     }
 
-    public void removeUnit(int unitId) {
-        army.removeIf(unit -> unit.getId() == unitId);
+    public Sector getSectorByNumber(int sectorNumber) {
+        return sectors.stream()
+                .filter(sector -> sector.getNumber() == sectorNumber)
+                .findFirst()
+                .orElse(null);
     }
 
-    // Méthode pour ajouter un équipement à l'armée
+    public List<Sector> getSectorsWithArmy() {
+        return sectors.stream()
+                .filter(sector -> sector.getArmySize() > 0)
+                .toList();
+    }
+
+    /**
+     * Ajoute une unité directement à un secteur spécifique
+     */
+    public boolean addUnitToSector(Unit unit, int sectorNumber) {
+        Sector targetSector = getSectorByNumber(sectorNumber);
+        if (targetSector != null) {
+            targetSector.addUnit(unit);
+            recalculateStats();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Supprime une unité d'un secteur spécifique
+     */
+    public boolean removeUnitFromSector(Unit unit, int sectorNumber) {
+        Sector sourceSector = getSectorByNumber(sectorNumber);
+        if (sourceSector != null) {
+            boolean removed = sourceSector.removeUnit(unit);
+            if (removed) {
+                recalculateStats();
+            }
+            return removed;
+        }
+        return false;
+    }
+
+    /**
+     * Transfert d'unités entre secteurs
+     */
+    public boolean transferUnitBetweenSectors(Unit unit, int fromSectorNumber, int toSectorNumber) {
+        Sector fromSector = getSectorByNumber(fromSectorNumber);
+        Sector toSector = getSectorByNumber(toSectorNumber);
+
+        if (fromSector != null && toSector != null && fromSector.removeUnit(unit)) {
+            toSector.addUnit(unit);
+            recalculateStats();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Obtient toutes les unités du joueur (toutes dans les secteurs)
+     */
+    public List<Unit> getAllUnits() {
+        List<Unit> allUnits = new ArrayList<>();
+        for (Sector sector : sectors) {
+            allUnits.addAll(sector.getArmy());
+        }
+        return allUnits;
+    }
+
+    /**
+     * Trouve une unité par son ID dans tous les secteurs
+     */
+    public Unit getUnitById(int id) {
+        return getAllUnits().stream()
+                .filter(unit -> unit.getId() == id)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Trouve des unités par type dans tous les secteurs
+     */
+    public List<Unit> getUnitsByType(String unitType) {
+        return getAllUnits().stream()
+                .filter(unit -> unit.getClasses().stream()
+                        .anyMatch(unitClass -> unitClass.name().equalsIgnoreCase(unitType)))
+                .toList();
+    }
+
+
+    /**
+     * Obtient le nombre total d'unités (toutes dans les secteurs)
+     */
+    public int getTotalArmySize() {
+        return sectors.stream().mapToInt(Sector::getArmySize).sum();
+    }
+
+    // === GESTION DES EQUIPMENT DU JOUEUR ===
+
     public void addEquipment(Equipment equipment, int number) {
         for (EquipmentStack stack : equipments) {
             if (stack.getEquipment().equals(equipment)) {
@@ -95,157 +173,66 @@ public class Player {
         }
     }
 
-    // Méthodes pour appliquer les bonus/malus
-    public void applyAttackBonus(double percentBonus) {
-        this.attackBonusPercent = percentBonus;
-        updateAllUnitsBonuses();
-    }
-    
-    public void applyDefenseBonus(double percentBonus) {
-        this.defenseBonusPercent = percentBonus;
-        updateAllUnitsBonuses();
-    }
-    
-    public void applyPdfBonus(double percentBonus) {
-        this.pdfBonusPercent = percentBonus;
-        updateAllUnitsBonuses();
-    }
-    
-    public void applyPdcBonus(double percentBonus) {
-        this.pdcBonusPercent = percentBonus;
-        updateAllUnitsBonuses();
-    }
-    
-    public void applyArmorBonus(double percentBonus) {
-        this.armorBonusPercent = percentBonus;
-        updateAllUnitsBonuses();
-    }
-    
-    public void applyEvasionBonus(double percentBonus) {
-        this.evasionBonusPercent = percentBonus;
-        updateAllUnitsBonuses();
-    }
-    
-    // Méthode pour appliquer un bonus global à toutes les stats
-    public void applyGlobalBonus(double percentBonus) {
-        this.attackBonusPercent = percentBonus;
-        this.defenseBonusPercent = percentBonus;
-        this.pdfBonusPercent = percentBonus;
-        this.pdcBonusPercent = percentBonus;
-        this.armorBonusPercent = percentBonus;
-        this.evasionBonusPercent = percentBonus;
-        updateAllUnitsBonuses();
+    public double getTotalEquipmentValue() {
+        return equipments.stream()
+                .mapToDouble(stack -> stack.getEquipment().getCost() * stack.getQuantity())
+                .sum();
     }
 
-    // Applique les bonus du joueur à une unité spécifique
-    private void applyBonusesToUnit(Unit unit) {
-        unit.applyPlayerBonuses(
-            attackBonusPercent, 
-            defenseBonusPercent, 
-            pdfBonusPercent, 
-            pdcBonusPercent, 
-            armorBonusPercent, 
-            evasionBonusPercent
-        );
+    // === CALCULS ET STATISTIQUES ===
+
+    private void recalculateStats() {
+        totalIncome = sectors.stream()
+                .mapToDouble(Sector::getIncome)
+                .sum();
+
+        // TotalAtk de chaque secteur + TotalDef de chaque secteur / 2
+        totalMilitaryPower = calculateTotalMilitaryPower();
+
+        totalEconomyPower = money + totalIncome + getTotalEquipmentValue();
+        //TODO : à modifier pr totalEconomyPower, prendre en compte le revenu de chaque quartier
     }
 
-    // Met à jour les bonus pour toutes les unités
-    private void updateAllUnitsBonuses() {
-        for (Unit unit : army) {
-            applyBonusesToUnit(unit);
-        }
-        sortAndReorderArmy();
+    private double calculateTotalMilitaryPower() {
+        double offensivePower = sectors.stream()
+                .mapToDouble(Sector::getOffensivePower)
+                .sum();
+        double defensivePower = sectors.stream()
+                .mapToDouble(Sector::getDefensivePower)
+                .sum();
+
+        return offensivePower + defensivePower / 2;
     }
 
     /**
-     * Trie l'armée par expérience décroissante, puis par défense totale décroissante
+     * Affiche toutes les armées des secteurs du joueur
      */
-    private void sortAndReorderArmy() {
-        army.sort(Comparator
-                .comparingDouble(Unit::getExperience).reversed()
-                .thenComparing(Unit::getTotalDefense, Comparator.reverseOrder())
-                .thenComparing(Unit::getTotalAttack, Comparator.reverseOrder())
-                .thenComparing(Unit::getId)
-        );
-
-        // Renumérotation automatique des IDs par type d'unité
-        Map<String, Integer> typeCounters = new HashMap<>();
-
-        for (Unit unit : army) {
-            String unitType = unit.getType().name();
-            int currentCount = typeCounters.getOrDefault(unitType, 0) + 1;
-            typeCounters.put(unitType, currentCount);
-            unit.setId(currentCount); // ID par type
-        }
-    }
-
-    // Méthodes utilitaires
-    public int getArmySize() {
-        return army.size();
-    }
-
-    public Unit getUnitById(int id) {
-        return army.stream()
-            .filter(unit -> unit.getId() == id)
-            .findFirst()
-            .orElse(null);
-    }
-
-    public List<Unit> getUnitsByType(String unitType) {
-        return army.stream()
-            .filter(unit -> unit.getType().name().equalsIgnoreCase(unitType))
-            .toList();
-    }
-
-    // Affichage de l'armée
     public void displayArmy() {
-        System.out.println("=== ARMÉE DE " + name.toUpperCase() + " ===");
+        System.out.println("=== ARMÉES DE " + name.toUpperCase() + " ===");
 
-        if (army.isEmpty()) {
-            System.out.println("Aucune unité dans l'armée.");
-            return;
+        List<Sector> sectorsWithArmy = getSectorsWithArmy();
+        if (sectorsWithArmy.isEmpty()) {
+            System.out.println("Aucune unité dans les secteurs.");
+        } else {
+            for (Sector sector : sectorsWithArmy) {
+                sector.displayArmy();
+                System.out.println();
+            }
         }
 
-        if (hasAnyBonus()) {
-            System.out.println("Bonus/Malus du joueur :");
-            if (attackBonusPercent != 0) System.out.printf("  Attaque : %+.1f%%%n", attackBonusPercent * 100);
-            if (defenseBonusPercent != 0) System.out.printf("  Défense : %+.1f%%%n", defenseBonusPercent * 100);
-            if (pdfBonusPercent != 0) System.out.printf("  PDF : %+.1f%%%n", pdfBonusPercent * 100);
-            if (pdcBonusPercent != 0) System.out.printf("  PDC : %+.1f%%%n", pdcBonusPercent * 100);
-            if (armorBonusPercent != 0) System.out.printf("  Armure : %+.1f%%%n", armorBonusPercent * 100);
-            if (evasionBonusPercent != 0) System.out.printf("  Esquive : %+.1f%%%n", evasionBonusPercent * 100);
-            System.out.println();
-        }
-
-        for (Unit unit : army) {
-            System.out.println(unit);
-        }
-
-        // Calcul des totaux
-        double totalAtk = army.stream().mapToDouble(Unit::getFinalAttack).sum();
-        double totalPdf = army.stream().mapToDouble(Unit::getFinalPdf).sum();
-        double totalPdc = army.stream().mapToDouble(Unit::getFinalPdc).sum();
-        double totalDef = army.stream().mapToDouble(Unit::getFinalDefense).sum();
-        double totalArm = army.stream().mapToDouble(Unit::getFinalArmor).sum();
-
-        System.out.printf(
-                "%nTotal : %d unités => %.0f Atk + %.0f Pdf + %.0f Pdc / %.0f Def + %.0f Arm.%n",
-                getArmySize(), totalAtk, totalPdf, totalPdc, totalDef, totalArm
-        );
+        System.out.printf("TOTAL : %d unités réparties dans %d secteurs%n",
+                getTotalArmySize(), sectors.size());
     }
 
-    private boolean hasAnyBonus() {
-        return attackBonusPercent != 0 || defenseBonusPercent != 0 ||
-               pdfBonusPercent != 0 || pdcBonusPercent != 0 ||
-               armorBonusPercent != 0 || evasionBonusPercent != 0;
-    }
 
     /** Affiche les équipements du joueur
      * Regroupe les équipements par nom et affiche le nombre de chaque type
      */
     public void displayEquipments() {
         System.out.println("=== ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
-        if (equipments.isEmpty() && army.stream().allMatch(u -> u.getEquipments().isEmpty())) {
+        List<Unit> allUnits = getAllUnits(); // Toutes les unités sont dans les secteurs
+
+        if (equipments.isEmpty() && allUnits.stream().allMatch(u -> u.getEquipments().isEmpty())) {
             System.out.println("Aucun équipement.");
             return;
         }
@@ -262,8 +249,8 @@ public class Player {
             equipmentRef.putIfAbsent(eq.getName(), eq);
         }
 
-        // Compte dans les unités
-        for (Unit unit : army) {
+        // Compte dans toutes les unités (dans tous les secteurs)
+        for (Unit unit : allUnits) {
             for (Equipment eq : unit.getEquipments()) {
                 totalCount.merge(eq.getName(), 1, Integer::sum);
                 equippedCount.merge(eq.getName(), 1, Integer::sum);
@@ -272,17 +259,15 @@ public class Player {
         }
 
         // Affichage
-        for (String name : totalCount.keySet()) {
-            int total = totalCount.get(name);
-            int equipped = equippedCount.getOrDefault(name, 0);
-            Equipment eq = equipmentRef.get(name);
+        for (Map.Entry<String, Integer> entry : totalCount.entrySet()) {
+            String eqName = entry.getKey();
+            int total = entry.getValue();
+            int equipped = equippedCount.getOrDefault(eqName, 0);
+            Equipment eq = equipmentRef.get(eqName);
             int totalPrice = total * eq.getCost();
-            System.out.printf("%d x %s %d / %d équipé. %,d $.%n", total, eq, equipped, total, totalPrice);
+            System.out.printf("%d x %s (%d / %d équipé) = %,d $%n", total, eq.getName(), equipped, total, totalPrice);
         }
     }
 
-    @Override
-    public String toString() {
-        return String.format("Joueur: %s (%d unités)", name, getArmySize());
-    }
+
 }

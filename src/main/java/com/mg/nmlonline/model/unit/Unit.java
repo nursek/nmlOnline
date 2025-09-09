@@ -98,7 +98,8 @@ public class Unit {
         this.finalArmor = baseCalculatedArmor;
         this.finalEvasion = baseCalculatedEvasion;
     }
-    
+
+    //TODO : pour les bonus du joueur, revoir + tard pendant systeme de combat
     // Applique les bonus du joueur (appelé par Player)
     public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus, 
                                   double pdcBonus, double armorBonus, double evasionBonus) {
