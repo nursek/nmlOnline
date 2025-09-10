@@ -1,5 +1,7 @@
 package com.mg.nmlonline.service;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.model.player.Player;
 import com.mg.nmlonline.model.sector.Sector;
@@ -19,38 +21,53 @@ import java.util.regex.Pattern;
 public class PlayerService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    // TODO : révérifier le fonctionnement du service avec JSON en priorité puis texte.
     public Player importPlayerFromJson(String filePath) throws IOException {
-        // 1. Désérialisation brute dans un DTO
         PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
 
         Player player = new Player(dto.name);
+        player.getStats().setMoney(dto.money);
 
         // Équipements généraux
         for (EquipmentDTO equipments : dto.equipments) {
             player.addEquipment(EquipmentFactory.createFromName(equipments.name));
         }
 
-        // Création d'un secteur par défaut pour les unités importées
-        Sector defaultSector = new Sector(1);
-        player.addSector(defaultSector);
+        // Gestion de plusieurs secteurs
+        if (dto.sectors != null && !dto.sectors.isEmpty()) {
+            for (SectorDTO sectorDto : dto.sectors) {
+                Sector sector = new Sector(sectorDto.id, sectorDto.name);
+                player.addSector(sector);
 
-        // Ajout des unités au secteur par défaut
-        for (UnitDTO unitDto : dto.army) {
-            Unit unit = new Unit(unitDto.id, unitDto.type, UnitClass.valueOf(unitDto.classes.get(0)));
-            unit.gainExperience(unitDto.experience);
+                for (UnitDTO unitDto : sectorDto.army) {
+                    Unit unit = new Unit(unitDto.id, unitDto.type, UnitClass.valueOf(unitDto.classes.get(0)));
+                    unit.gainExperience(unitDto.experience);
 
-            // Ajout de la seconde classe si présente
-            if (unitDto.classes.size() > 1) {
-                unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
+                    if (unitDto.classes.size() > 1) {
+                        unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
+                    }
+                    for (String equipment : unitDto.equipments) {
+                        unit.equip(EquipmentFactory.createFromName(equipment));
+                    }
+                    player.addUnitToSector(unit, sectorDto.id);
+                }
             }
+        } else {
+            // Fallback: secteur par défaut si pas de secteurs dans le JSON
+            Sector defaultSector = new Sector(1);
+            player.addSector(defaultSector);
+            for (UnitDTO unitDto : dto.army) {
+                Unit unit = new Unit(unitDto.id, unitDto.type, UnitClass.valueOf(unitDto.classes.get(0)));
+                unit.gainExperience(unitDto.experience);
 
-            // Équipements appliqués à l'unité
-            for (String equipment : unitDto.equipments) {
-                unit.equip(EquipmentFactory.createFromName(equipment));
+                if (unitDto.classes.size() > 1) {
+                    unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
+                }
+                for (String equipment : unitDto.equipments) {
+                    unit.equip(EquipmentFactory.createFromName(equipment));
+                }
+                player.addUnitToSector(unit, 1);
             }
-
-            // Ajout au secteur au lieu de l'armée du joueur
-            player.addUnitToSector(unit, 1);
         }
 
         return player;
@@ -77,7 +94,6 @@ public class PlayerService {
         }
         return player;
     }
-
 
     private void processUnitLine(Player player, String line) {
         if (line.startsWith("(")) {
@@ -110,7 +126,6 @@ public class PlayerService {
         }
     }
 
-
     private void processCharacterLine(Player player, String line) {
         // Exemple de ligne : Mortarion (100 Atk + 100 Pdf + 50 Pdc / 250 Def)
         Matcher m = Pattern.compile("^([\\w\\s\\-éèàêîôûç]+)\\s*\\(([^)]+)\\)").matcher(line);
@@ -133,7 +148,6 @@ public class PlayerService {
             System.err.println("[DEBUG] Ligne personnage non reconnue : " + line);
         }
     }
-
 
     private static int handleClasses(Matcher classMatcher, List<UnitClass> classes, int lastEnd) {
         if (classMatcher.find()) {
@@ -160,8 +174,6 @@ public class PlayerService {
             }
         }
     }
-
-
 
     private int extractStat(String stats, String key) {
         Matcher m = Pattern.compile("(\\d+)\\s*" + key).matcher(stats);
@@ -205,13 +217,25 @@ public class PlayerService {
         }
     }
 
-    // DTO internes pour la désérialisation
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class PlayerDTO {
         public String name;
         public List<UnitDTO> army;
         public List<EquipmentDTO> equipments;
+        public List<SectorDTO> sectors;
+        public double money;
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class SectorDTO {
+        @JsonProperty("number")
+        public int id;
+        public String name;
+        public double income;
+        public List<UnitDTO> army;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class UnitDTO {
         public int id;
         public String type;
@@ -220,6 +244,7 @@ public class PlayerService {
         public List<String> equipments = new ArrayList<>();
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class EquipmentDTO {
         public String name;
         public int quantity;

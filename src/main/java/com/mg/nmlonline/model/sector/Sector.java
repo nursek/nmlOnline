@@ -2,57 +2,74 @@ package com.mg.nmlonline.model.sector;
 
 import com.mg.nmlonline.model.unit.Unit;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.*;
 
 @Data
+@Getter
+@Setter
 public class Sector {
     private int number;
     private String name;
     private List<Unit> army = new ArrayList<>();
-
-    double totalAtk = 0.0;
-    double totalPdf = 0.0;
-    double totalPdc = 0.0;
-    double totalDef = 0.0;
-    double totalArmor = 0.0;
-
     private double income = 2000 ;
+
+    private double totalAtk = 0.0;
+    private double totalPdf = 0.0;
+    private double totalPdc = 0.0;
+    private double totalDef = 0.0;
+    private double totalArmor = 0.0;
 
     public Sector(int number) {
         this.number = number;
-        this.name = "Sector n°" + number + " ";
+        this.name = "Secteur n°" + number;
+    }
+
+    public Sector(int number, String name) {
+        this.number = number;
+        this.name = name;
     }
 
     // === GESTION DE L'ARMÉE DU SECTEUR ===
 
     public void addUnit(Unit unit) {
-        army.add(unit);
-        sortAndReorderArmy();
-        recalculateMilitaryPower();
+        if (unit != null) {
+            army.add(unit);
+            sortArmy();
+            reassignUnitIds();
+            recalculateMilitaryPower();
+        }
     }
 
     public void addUnits(List<Unit> units) {
-        army.addAll(units);
-        sortAndReorderArmy();
-        recalculateMilitaryPower();
+        if (units != null && !units.isEmpty()) {
+            army.addAll(units);
+            sortArmy();
+            reassignUnitIds();
+            recalculateMilitaryPower();
+        }
     }
 
     public boolean removeUnit(Unit unit) {
         boolean removed = army.remove(unit);
         if (removed) {
-            sortAndReorderArmy();
+            sortArmy();
+            reassignUnitIds();
             recalculateMilitaryPower();
         }
         return removed;
     }
 
-    public void removeUnit(int unitId) {
+    public boolean removeUnit(int unitId) {
         boolean removed = army.removeIf(unit -> unit.getId() == unitId);
         if (removed) {
-            sortAndReorderArmy();
+            sortArmy();
+            reassignUnitIds();
             recalculateMilitaryPower();
         }
+        return removed;
     }
 
     public int getArmySize() {
@@ -122,27 +139,19 @@ public class Sector {
         return totalDef + totalArmor;
     }
 
-    /**
-     * Calcule la puissance militaire totale du secteur (pour compatibilité)
-     */
-    public double calculateMilitaryPower() {
-        recalculateMilitaryPower();
-        return getOffensivePower() + getDefensivePower();
-    }
+    // === TRI ET RÉASSIGNATION DES IDS ===
 
-
-    // Déplacer dans un autre endroit ? Utilitaire ?
-
-    public void sortAndReorderArmy() {
+    public void sortArmy() {
         army.sort(Comparator
                 .comparingDouble(Unit::getExperience).reversed()
                 .thenComparing(Unit::getTotalDefense, Comparator.reverseOrder())
                 .thenComparing(Unit::getTotalAttack, Comparator.reverseOrder())
                 .thenComparing(Unit::getId)
         );
+    }
 
+    public void reassignUnitIds() {
         Map<String, Integer> typeCounters = new HashMap<>();
-
         for (Unit unit : army) {
             String unitType = unit.getType().name();
             int currentCount = typeCounters.getOrDefault(unitType, 0) + 1;
@@ -170,8 +179,8 @@ public class Sector {
         recalculateMilitaryPower();
 
         System.out.printf(
-                "Total %s : %d unités => %.0f Atk + %.0f Pdf + %.0f Pdc / %.0f Def + %.0f Arm.%n",
-                name, getArmySize(), totalAtk, totalPdf, totalPdc, totalDef, totalArmor
+                "Total => %.0f Atk + %.0f Pdf + %.0f Pdc / %.0f Def + %.0f Arm.%n",
+                totalAtk, totalPdf, totalPdc, totalDef, totalArmor
         );
     }
 

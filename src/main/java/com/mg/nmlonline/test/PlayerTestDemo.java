@@ -1,6 +1,9 @@
 package com.mg.nmlonline.test;
 
 import com.mg.nmlonline.model.player.Player;
+import com.mg.nmlonline.model.sector.Sector;
+import com.mg.nmlonline.model.unit.Unit;
+import com.mg.nmlonline.model.unit.UnitClass;
 import com.mg.nmlonline.service.PlayerService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,25 +19,24 @@ public class PlayerTestDemo {
 
     public static void main(String[] args) {
         System.out.println("=== DÉMO CLASSE PLAYER ===\n");
-        testImportPlayersFromJson();
-        testFileArmy();
-
+           testImportPlayersFromJson();
+           //testFileArmy();
+        //testPlayerMethods();
     }
 
     private static void testImportPlayersFromJson() {
-        System.out.println("🔹 TEST: Import de tous les joueurs depuis JSON");
-        System.out.println("==============================================");
+        log.info("🔹 TEST: Import de tous les joueurs depuis JSON");
+        log.info("==============================================");
 
         PlayerService playerService = new PlayerService();
         File playersDir = new File("src/main/resources/players/");
         File[] jsonFiles = playersDir.listFiles((dir, name) -> name.endsWith(".json"));
 
         if (jsonFiles == null || jsonFiles.length == 0) {
-            System.out.println("Aucun fichier JSON trouvé dans /players.");
+            log.info("Aucun fichier JSON trouvé dans /players.");
             return;
         }
 
-        // Liste pour stocker tous les joueurs importés
         List<Player> players = new ArrayList<>();
 
         for (File jsonFile : jsonFiles) {
@@ -46,25 +48,47 @@ public class PlayerTestDemo {
             }
         }
 
-        // Affichage de chaque armée
         for (Player player : players) {
-            player.displayArmy();
+            log.info("Joueur: {}", player.getName());
             player.displayEquipments();
-            System.out.println("===============================================");
+            for (Sector sector : player.getSectors()) {
+                log.info("Quartier: {}", sector.getName());
+                sector.displayArmy(); // Affiche l'armée du quartier
+            }
+            player.displayStats();
+            log.info("===============================================");
         }
-
     }
 
     private static void testFileArmy(){
-        System.out.println("🔹 TEST: FILE ARMY (reproduction exemple)");
-        System.out.println("===============================================");
+        log.info("🔹 TEST: FILE ARMY (reproduction exemple)");
+        log.info("===============================================");
         PlayerService playerService = new PlayerService();
         try {
             Player player = playerService.fromFile("src/main/resources/players/ratcatcher.txt");
             player.displayArmy();
         } catch (Exception e) {
-            System.err.println("Erreur lors de la lecture du fichier d'armée : " + e.getMessage());
+            log.info("Erreur lors de la lecture du fichier d'armée : " + e.getMessage());
         }
     }
 
+    private static void testPlayerMethods() {
+        System.out.println("🔹 TEST: Méthodes de la classe Player");
+        System.out.println("================================================");
+        Player player = new Player("TestPlayer");
+        Sector sector = new Sector(1);
+        player.addSector(sector);
+
+        Unit unit = new Unit(1, "TestUnit", UnitClass.TIREUR);
+        if(player.addUnitToSector(unit, 1)) {
+            System.out.println("Unité ajoutée avec succès.");
+        } else {
+            System.out.println("Échec de l'ajout de l'unité.");
+        }
+
+        player.displayArmy();
+        player.getStats().setMoney(500);
+        player.getStats().setTotalEquipmentValue(10000);
+        player.displayStats();
+    }
 }

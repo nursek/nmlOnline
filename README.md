@@ -41,7 +41,7 @@ nmlOnline est une application Java destinée à la gestion, la simulation et l'a
 
 1. **Cloner le dépôt :**
    ```bash
-   git clone https://github.com/votre-utilisateur/nmlOnline.git
+   git clone https://github.com/nursek/nmlOnline.git
    cd nmlOnline
    ```
 
