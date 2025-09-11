@@ -29,13 +29,12 @@ public class Player {
     public void addSector(Sector sector) {
         if (sector != null && !sectors.contains(sector)) {
             sectors.add(sector);
-            recalculateStats();
         }
     }
 
     public void removeSector(Sector sector) {
         if (sectors.remove(sector)) {
-            recalculateStats();
+            System.out.println(sector.getName() + " has been removed");
         }
     }
 
@@ -63,7 +62,6 @@ public class Player {
         Sector targetSector = getSectorByNumber(sectorNumber);
         if (targetSector != null) {
             targetSector.addUnit(unit);
-            recalculateStats();
             return true;
         }
         return false;
@@ -77,7 +75,7 @@ public class Player {
         if (sourceSector != null) {
             boolean removed = sourceSector.removeUnit(unit);
             if (removed) {
-                recalculateStats();
+                System.out.println("Unit " + unit.getName() + " removed from sector " + sectorNumber);
             }
             return removed;
         }
@@ -85,24 +83,8 @@ public class Player {
     }
 
     /**
-     * Transfert d'unités entre secteurs
-     */
-    public boolean transferUnitBetweenSectors(Unit unit, int fromSectorNumber, int toSectorNumber) {
-        Sector fromSector = getSectorByNumber(fromSectorNumber);
-        Sector toSector = getSectorByNumber(toSectorNumber);
-
-        if (fromSector != null && toSector != null && fromSector.removeUnit(unit)) {
-            toSector.addUnit(unit);
-            recalculateStats();
-            return true;
-        }
-        return false;
-    }
-
-    /**
      * Obtient toutes les unités du joueur (toutes dans les secteurs)
      */
-    // TODO : Utilisé pour afficher "Troupes disponibles : 1 brute (10 Exp), 2 soldats (5 Exp)."
     public List<Unit> getAllUnits() {
         List<Unit> allUnits = new ArrayList<>();
         for (Sector sector : sectors) {
@@ -141,6 +123,18 @@ public class Player {
 
     // === GESTION DES EQUIPMENT DU JOUEUR ===
 
+    public boolean buyEquipment(Equipment equipment, int quantity) {
+        double totalCost = equipment.getCost() * quantity;
+        if (stats.getMoney() >= totalCost) {
+            stats.setMoney(stats.getMoney() - totalCost);
+            addEquipment(equipment, quantity);
+            setTotalEquipmentValue();
+            calculateTotalEconomyPower();
+            return true;
+        }
+        return false;
+    }
+
     public void addEquipment(Equipment equipment, int number) {
         for (EquipmentStack stack : equipments) {
             if (stack.getEquipment().equals(equipment)) {
@@ -176,62 +170,76 @@ public class Player {
     }
 
     public void setTotalEquipmentValue() {
-        stats.setTotalEquipmentValue(equipments.stream()
+        double inventoryValue = equipments.stream()
                 .mapToDouble(stack -> stack.getEquipment().getCost() * stack.getQuantity())
-                .sum());
+                .sum();
+
+        double equippedValue = getAllUnits().stream()
+                .flatMap(unit -> unit.getEquipments().stream())
+                .mapToDouble(Equipment::getCost)
+                .sum();
+
+        stats.setTotalEquipmentValue(inventoryValue + equippedValue);
     }
+
+    // === GESTION DES UNITS DU JOUEUR ===
+
+    public boolean transferUnitBetweenSectors(Unit unit, int fromSectorNumber, int toSectorNumber) {
+        Sector fromSector = getSectorByNumber(fromSectorNumber);
+        Sector toSector = getSectorByNumber(toSectorNumber);
+
+        if (fromSector != null && toSector != null && fromSector.removeUnit(unit)) {
+            toSector.addUnit(unit);
+            return true;
+        }
+        return false;
+    }
+
+//    public boolean equipFirearmToUnit(int sectorId, int unitId, Equipment firearm) {
+//        Sector sector = getSectorById(sectorId);
+//        if (sector == null) return false;
+//
+//        Unit unit = sector.getUnitById(unitId);
+//        if (unit == null) return false;
+//
+//        int maxQuantity = firearm.getMaxPerUnit();
+//        long currentCount = unit.getEquipments().stream()
+//                .filter(e -> e.equals(firearm))
+//                .count();
+//
+//        if (currentCount >= maxQuantity) return false;
+//
+//        if (getEquipmentInventory().getOrDefault(firearm, 0) > 0) {
+//            unit.addEquipment(firearm);
+//            getEquipmentInventory().put(firearm, getEquipmentInventory().get(firearm) - 1);
+//            return true;
+//        }
+//        return false;
+//    }
 
     // === CALCULS ET STATISTIQUES ===
 
-    private void recalculateStats() {
-        stats.setTotalMilitaryPower(calculateTotalMilitaryPower());
+    private void updateTotalStats() {
+        double totalOffensive = sectors.stream()
+                .mapToDouble(sector -> sector.getStat("offensive"))
+                .sum();
+        double totalDefensive = sectors.stream()
+                .mapToDouble(sector -> sector.getStat("defensive"))
+                .sum();
+
+        stats.setTotalOffensivePower(totalOffensive);
+        stats.setTotalDefensivePower(totalDefensive);
+    }
+
+    private void updateGlobalStats() {
+        updateTotalStats();
+        stats.setGlobalPower((stats.getTotalOffensivePower() + stats.getTotalDefensivePower()) /2);
     }
 
     private void calculateTotalIncome() {
         stats.setTotalIncome(sectors.stream()
                 .mapToDouble(Sector::getIncome)
                 .sum());
-    }
-
-    private double calculateTotalSectorsAtk(){
-        return sectors.stream()
-                .mapToDouble(Sector::getTotalAtk)
-                .sum();
-    }
-
-    private double calculateTotalSectorsPdf(){
-        return sectors.stream()
-                .mapToDouble(Sector::getTotalPdf)
-                .sum();
-    }
-
-    private double calculateTotalSectorsPdc(){
-        return sectors.stream()
-                .mapToDouble(Sector::getTotalPdc)
-                .sum();
-    }
-
-    private double calculateTotalSectorsDef(){
-        return sectors.stream()
-                .mapToDouble(Sector::getTotalDef)
-                .sum();
-    }
-
-    private double calculateTotalSectorsArmor(){
-        return sectors.stream()
-                .mapToDouble(Sector::getTotalArmor)
-                .sum();
-    }
-
-    private double calculateTotalMilitaryPower() {
-        double offensivePower = sectors.stream()
-                .mapToDouble(Sector::getOffensivePower)
-                .sum();
-        double defensivePower = sectors.stream()
-                .mapToDouble(Sector::getDefensivePower)
-                .sum();
-
-        return (offensivePower + defensivePower) / 2;
     }
 
     private void calculateTotalEconomyPower() {
@@ -241,6 +249,8 @@ public class Player {
                 + stats.getTotalVehiclesValue();
         stats.setTotalEconomyPower(economyPower);
     }
+
+    // === AFFICHAGE ===
 
     /**
      * Affiche toutes les armées des secteurs du joueur
@@ -311,49 +321,27 @@ public class Player {
     private static final String FORMAT_FLOAT = "%,.2f";
 
     public void displayStats() {
-        // C'est le bordel mais trql
+        updateGlobalStats();
         calculateTotalIncome();
+        setTotalEquipmentValue();
         calculateTotalEconomyPower();
-        recalculateStats();
 
-        double totalAtk = calculateTotalSectorsAtk();
-        double totalPdf = calculateTotalSectorsPdf();
-        double totalPdc = calculateTotalSectorsPdc();
-        double totalDef = calculateTotalSectorsDef();
-        double totalArmor = calculateTotalSectorsArmor();
 
-        List<String> offensiveStats = new ArrayList<>();
-        if (totalAtk != 0) offensiveStats.add(formatStat(totalAtk, "Atk"));
-        if (totalPdf != 0) offensiveStats.add(formatStat(totalPdf, "Pdf"));
-        if (totalPdc != 0) offensiveStats.add(formatStat(totalPdc, "Pdc"));
+        System.out.printf("=== %s ===%n", name.toUpperCase());
 
-        List<String> defensiveStats = new ArrayList<>();
-        if (totalDef != 0) defensiveStats.add(formatStat(totalDef, "Def"));
-        if (totalArmor != 0) defensiveStats.add(formatStat(totalArmor, "Arm"));
+        System.out.println("--- Statistiques Économiques ---");
+        System.out.println(formatStat(stats.getMoney(), "$ "));
+        System.out.println(formatStat(stats.getTotalIncome(), "revenu quotidien"));
+        System.out.println(formatStat(stats.getTotalVehiclesValue(), "valeur des véhicules"));
+        System.out.println(formatStat(stats.getTotalEquipmentValue(), "valeur des équipements"));
+        System.out.println(formatStat(stats.getTotalEconomyPower(), "puissance économique totale"));
+        System.out.println();
 
-        StringBuilder sb = new StringBuilder("Puissance militaire totale -> ");
-        sb.append(String.join(" + ", offensiveStats));
-        if (!offensiveStats.isEmpty() && !defensiveStats.isEmpty()) sb.append(" / ");
-        sb.append(String.join(" + ", defensiveStats));
-        sb.append(".");
-
-        System.out.println(sb);
-
-        double money = stats.getMoney();
-        double income = stats.getTotalIncome();
-        double equipment = stats.getTotalEquipmentValue();
-        double economy = stats.getTotalEconomyPower();
-        double vehicles = stats.getTotalVehiclesValue();
-
-        String moneyStr = (money % 1 == 0) ? String.format(FORMAT_INT, money) : String.format(FORMAT_FLOAT, money);
-        String incomeStr = (income % 1 == 0) ? String.format(FORMAT_INT, income) : String.format(FORMAT_FLOAT, income);
-        String equipmentStr = (equipment % 1 == 0) ? String.format(FORMAT_INT, equipment) : String.format(FORMAT_FLOAT, equipment);
-        String economyStr = (economy % 1 == 0) ? String.format(FORMAT_INT, economy) : String.format(FORMAT_FLOAT, economy);
-        String vehiclesStr = (vehicles % 1 == 0) ? String.format(FORMAT_INT, vehicles) : String.format(FORMAT_FLOAT, vehicles);
-
-        System.out.printf("Puissance militaire globale -> %,.2f%n", stats.getTotalMilitaryPower());
-        System.out.printf("Puissance économique -> %s $ (compte en banque) + %s $ (revenu quotidien) + %s $ (équipements) + %s $ (véhicules) = %s $.%n",
-                moneyStr, incomeStr, equipmentStr, vehiclesStr, economyStr);
+        System.out.println("--- Statistiques Militaires ---");
+        System.out.println(formatStat(stats.getTotalOffensivePower(), "puissance offensive totale"));
+        System.out.println(formatStat(stats.getTotalDefensivePower(), "puissance défensive totale"));
+        System.out.println(formatStat(stats.getGlobalPower(), "puissance globale"));
+        System.out.println();
     }
 
     // Méthode utilitaire pour formater chaque statistique

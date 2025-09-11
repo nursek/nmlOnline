@@ -19,8 +19,8 @@ public class PlayerTestDemo {
 
     public static void main(String[] args) {
         System.out.println("=== DÉMO CLASSE PLAYER ===\n");
-           testImportPlayersFromJson();
-           //testFileArmy();
+        testImportPlayersFromJson();
+        //testFileArmy();
         //testPlayerMethods();
     }
 
@@ -49,14 +49,11 @@ public class PlayerTestDemo {
         }
 
         for (Player player : players) {
-            log.info("Joueur: {}", player.getName());
             player.displayEquipments();
             for (Sector sector : player.getSectors()) {
-                log.info("Quartier: {}", sector.getName());
                 sector.displayArmy(); // Affiche l'armée du quartier
             }
             player.displayStats();
-            log.info("===============================================");
         }
     }
 

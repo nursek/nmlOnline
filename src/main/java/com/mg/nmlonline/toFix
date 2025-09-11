@@ -1,5 +1,7 @@
 1) valeur décimales pour les unités affichées.
 
 2) réparer les JSON
-
+3) Permette la gestion des unités blessées dans le JSON. Peut-être via un statut à part et non une classe ? Comme on va se délaisser du format texte.
+4) Enregistrer des modifications en JSON.
+5) rename les stats des totaux en "PlayerAtk", "SectorAtk" etc à la place de total, on s'y retrouvera mieux.
 // This file is part of NML Online.

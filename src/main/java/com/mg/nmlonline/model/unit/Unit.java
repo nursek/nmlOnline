@@ -59,6 +59,7 @@ public class Unit {
         recalculateBaseStats(); // Calcul initial
     }
 
+    //used in TXT format ?
     public Unit(String charName, UnitType unitType, int atk, int pdf, int pdc, int def, int arm, double evasion) {
         this.id = 0;
         this.name = charName;
@@ -97,6 +98,18 @@ public class Unit {
         this.finalPdc = baseCalculatedPdc;
         this.finalArmor = baseCalculatedArmor;
         this.finalEvasion = baseCalculatedEvasion;
+    }
+
+    public double getStat(String stat) {
+        return switch (stat.toLowerCase()) {
+            case "atk" -> finalAttack;
+            case "pdf" -> finalPdf;
+            case "pdc" -> finalPdc;
+            case "def" -> finalDefense;
+            case "armor", "arm" -> finalArmor;
+            case "evasion", "esquive" -> finalEvasion;
+            default -> 0.0;
+        };
     }
 
     //TODO : pour les bonus du joueur, revoir + tard pendant systeme de combat

@@ -13,14 +13,9 @@ import java.util.*;
 public class Sector {
     private int number;
     private String name;
-    private List<Unit> army = new ArrayList<>();
     private double income = 2000 ;
-
-    private double totalAtk = 0.0;
-    private double totalPdf = 0.0;
-    private double totalPdc = 0.0;
-    private double totalDef = 0.0;
-    private double totalArmor = 0.0;
+    private List<Unit> army = new ArrayList<>();
+    private SectorStats stats = new SectorStats();
 
     public Sector(int number) {
         this.number = number;
@@ -30,6 +25,41 @@ public class Sector {
     public Sector(int number, String name) {
         this.number = number;
         this.name = name;
+    }
+
+    // === GESTION DES STATISTIQUES DU SECTEUR ===
+
+    public double getStat(String stat) {
+        return switch (stat.toLowerCase()) {
+            case "income" -> getIncome();
+            case "atk" -> stats.getTotalAtk();
+            case "pdf" -> stats.getTotalPdf();
+            case "pdc" -> stats.getTotalPdc();
+            case "def" -> stats.getTotalDef();
+            case "armor", "arm" -> stats.getTotalArmor();
+            case "offensive" -> stats.getTotalOffensive();
+            case "defensive" -> stats.getTotalDefensive();
+            case "global", "globalstats" -> stats.getGlobalStats();
+            default -> 0.0;
+        };
+    }
+
+    public double calculateTotal(String stat) {
+        return army.stream()
+                .mapToDouble(unit -> unit.getStat(stat))
+                .sum();
+    }
+
+    public void recalculateMilitaryPower(){
+        stats.setTotalAtk(calculateTotal("atk"));
+        stats.setTotalPdf(calculateTotal("pdf"));
+        stats.setTotalPdc(calculateTotal("pdc"));
+        stats.setTotalDef(calculateTotal("def"));
+        stats.setTotalArmor(calculateTotal("armor"));
+
+        stats.setTotalOffensive(stats.getTotalAtk() + stats.getTotalPdf() + stats.getTotalPdc());
+        stats.setTotalDefensive(stats.getTotalDef() + stats.getTotalArmor());
+        stats.setGlobalStats((stats.getTotalOffensive() + stats.getTotalDefensive()) / 2);
     }
 
     // === GESTION DE L'ARMÉE DU SECTEUR ===
@@ -89,56 +119,6 @@ public class Sector {
                 .toList();
     }
 
-    /**
-     * Calcule la puissance militaire totale du secteur
-     */
-
-    public void calculateTotalAtk(){
-        totalAtk =  army.stream()
-                .mapToDouble(Unit::getFinalAttack)
-                .sum();
-    }
-
-    public void calculateTotalPdf(){
-        totalPdf = army.stream()
-                .mapToDouble(Unit::getFinalPdf)
-                .sum();
-    }
-
-    public void calculateTotalPdc(){
-        totalPdc =  army.stream()
-                .mapToDouble(Unit::getFinalPdc)
-                .sum();
-    }
-
-    public void calculateTotalDef(){
-        totalDef = army.stream()
-                .mapToDouble(Unit::getFinalDefense)
-                .sum();
-    }
-
-    public void calculateTotalArmor(){
-        totalArmor = army.stream()
-                .mapToDouble(Unit::getFinalArmor)
-                .sum();
-    }
-
-    public void recalculateMilitaryPower(){
-        calculateTotalAtk();
-        calculateTotalPdf();
-        calculateTotalPdc();
-        calculateTotalDef();
-        calculateTotalArmor();
-    }
-
-    public double getOffensivePower(){
-        return totalAtk + totalPdf + totalPdc;
-    }
-
-    public double getDefensivePower(){
-        return totalDef + totalArmor;
-    }
-
     // === TRI ET RÉASSIGNATION DES IDS ===
 
     public void sortArmy() {
@@ -151,6 +131,7 @@ public class Sector {
     }
 
     public void reassignUnitIds() {
+        // Déplacer cette méthode plutôt côté Player pr garder une uniformité : larbin n°1 dans un quartier, si larbin n°1 dans un autre quartier, ce sont 2 unités différentes, donc larbin n°2.
         Map<String, Integer> typeCounters = new HashMap<>();
         for (Unit unit : army) {
             String unitType = unit.getType().name();
@@ -161,7 +142,7 @@ public class Sector {
     }
 
     /**
-     * Affiche l'armée du secteur
+     * Affiche l'armée du secteur (dans la console)
      */
     public void displayArmy() {
         System.out.printf("=== %s ===%n", name.toUpperCase());
@@ -180,7 +161,7 @@ public class Sector {
 
         System.out.printf(
                 "Total => %.0f Atk + %.0f Pdf + %.0f Pdc / %.0f Def + %.0f Arm.%n",
-                totalAtk, totalPdf, totalPdc, totalDef, totalArmor
+                stats.getTotalAtk(), stats.getTotalPdf(), stats.getTotalPdc(), stats.getTotalDef(), stats.getTotalArmor()
         );
     }
 
