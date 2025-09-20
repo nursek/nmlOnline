@@ -237,7 +237,7 @@ public class Unit {
         return false;
     }
 
-    public void equip(Equipment equipment) {
+    public void addEquipment(Equipment equipment) {
         if (canEquip(equipment)) {
             equipments.add(equipment);
             recalculateBaseStats();
@@ -302,6 +302,7 @@ public class Unit {
             statsBuilder(sb, finalAttack, finalPdf, finalPdc, finalDefense, finalArmor, finalEvasion);
             sb.append(".");
         }
+
 
         return sb.toString();
     }

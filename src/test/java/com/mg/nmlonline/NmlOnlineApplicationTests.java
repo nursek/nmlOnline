@@ -8,6 +8,7 @@ class NmlOnlineApplicationTests {
 
     @Test
     void contextLoads() {
+        //TODO : add tests ?
     }
 
 }

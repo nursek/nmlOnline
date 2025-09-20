@@ -123,11 +123,20 @@ public class Player {
 
     // === GESTION DES EQUIPMENT DU JOUEUR ===
 
+    public Equipment getEquipmentByString(String name) {
+        for (EquipmentStack stack : equipments) {
+            if (stack.getEquipment().getName().equalsIgnoreCase(name)) {
+                return stack.getEquipment();
+            }
+        }
+        return null;
+    }
+
     public boolean buyEquipment(Equipment equipment, int quantity) {
-        double totalCost = equipment.getCost() * quantity;
+        double totalCost = (double) equipment.getCost() * quantity;
         if (stats.getMoney() >= totalCost) {
             stats.setMoney(stats.getMoney() - totalCost);
-            addEquipment(equipment, quantity);
+            addEquipmentToStack(equipment, quantity);
             setTotalEquipmentValue();
             calculateTotalEconomyPower();
             return true;
@@ -135,7 +144,7 @@ public class Player {
         return false;
     }
 
-    public void addEquipment(Equipment equipment, int number) {
+    public void addEquipmentToStack(Equipment equipment, int number) {
         for (EquipmentStack stack : equipments) {
             if (stack.getEquipment().equals(equipment)) {
                 for (int i = 0; i < number; i++) {
@@ -151,11 +160,11 @@ public class Player {
         equipments.add(newStack);
     }
 
-    public void addEquipment(Equipment equipment) {
-        addEquipment(equipment, 1);
+    public void addEquipmentToStack(Equipment equipment) {
+        addEquipmentToStack(equipment, 1);
     }
 
-    public void removeEquipment(Equipment equipment) {
+    public void removeEquipmentFromStack(Equipment equipment) {
         for (int i = 0; i < equipments.size(); i++) {
             EquipmentStack stack = equipments.get(i);
             if (stack.getEquipment().equals(equipment)) {
@@ -166,6 +175,20 @@ public class Player {
                 }
                 return;
             }
+        }
+    }
+
+    public void printEquipmentInventory() {
+        System.out.println("=== INVENTAIRE D'ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
+        if (equipments.isEmpty()) {
+            System.out.println("Aucun équipement en inventaire.");
+            return;
+        }
+        for (EquipmentStack stack : equipments) {
+            Equipment eq = stack.getEquipment();
+            int quantity = stack.getQuantity();
+            int totalPrice = quantity * eq.getCost();
+            System.out.printf("%d x %s = %,d $%n", quantity, eq.getName(), totalPrice);
         }
     }
 
@@ -182,6 +205,24 @@ public class Player {
         stats.setTotalEquipmentValue(inventoryValue + equippedValue);
     }
 
+    public void refreshEquipmentAvailability() {
+        // Compte le nombre d'exemplaires portés pour chaque équipement
+        Map<Equipment, Integer> equippedCount = new HashMap<>();
+        for (Unit unit : getAllUnits()) {
+            for (Equipment eq : unit.getEquipments()) {
+                equippedCount.put(eq, equippedCount.getOrDefault(eq, 0) + 1);
+            }
+        }
+        // Met à jour l'attribut available de chaque stack
+        for (EquipmentStack stack : equipments) {
+            int total = stack.getQuantity();
+            int used = equippedCount.getOrDefault(stack.getEquipment(), 0);
+            int available = total - used;
+            stack.setAvailable(available);
+        }
+    }
+
+
     // === GESTION DES UNITS DU JOUEUR ===
 
     public boolean transferUnitBetweenSectors(Unit unit, int fromSectorNumber, int toSectorNumber) {
@@ -195,27 +236,34 @@ public class Player {
         return false;
     }
 
-//    public boolean equipFirearmToUnit(int sectorId, int unitId, Equipment firearm) {
-//        Sector sector = getSectorById(sectorId);
-//        if (sector == null) return false;
-//
-//        Unit unit = sector.getUnitById(unitId);
-//        if (unit == null) return false;
-//
-//        int maxQuantity = firearm.getMaxPerUnit();
-//        long currentCount = unit.getEquipments().stream()
-//                .filter(e -> e.equals(firearm))
-//                .count();
-//
-//        if (currentCount >= maxQuantity) return false;
-//
-//        if (getEquipmentInventory().getOrDefault(firearm, 0) > 0) {
-//            unit.addEquipment(firearm);
-//            getEquipmentInventory().put(firearm, getEquipmentInventory().get(firearm) - 1);
-//            return true;
-//        }
-//        return false;
-//    }
+    public boolean equipEquipmentToUnit(int sectorNumber, int unitId, String equipmentName) {
+        Equipment equipment = getEquipmentByString(equipmentName);
+        if (equipment == null) return false;
+        return equipEquipmentToUnit(sectorNumber, unitId, equipment);
+    }
+
+    public boolean equipEquipmentToUnit(int sectorNumber, int unitId, Equipment firearm) {
+        // Trouver le secteur
+        Sector sector = getSectorByNumber(sectorNumber);
+        if (sector == null) return false;
+
+        // Trouver l'unité
+        Unit unit = sector.getUnitById(unitId);
+        System.out.println(unit);
+        if (unit == null) return false;
+
+        // Trouver le stack correspondant à l'arme
+        for (EquipmentStack stack : equipments) {
+            if (stack.getEquipment().equals(firearm) && stack.getAvailable() > 0) {
+                // Équiper l'unité
+                unit.addEquipment(firearm);
+                stack.setAvailable(stack.getAvailable() - 1);
+                setTotalEquipmentValue();
+                return true;
+            }
+        }
+        return false;
+    }
 
     // === CALCULS ET STATISTIQUES ===
 
@@ -233,7 +281,7 @@ public class Player {
 
     private void updateGlobalStats() {
         updateTotalStats();
-        stats.setGlobalPower((stats.getTotalOffensivePower() + stats.getTotalDefensivePower()) /2);
+        stats.setGlobalPower((stats.getTotalOffensivePower() + stats.getTotalDefensivePower()) / 2);
     }
 
     private void calculateTotalIncome() {
@@ -273,47 +321,22 @@ public class Player {
     }
 
 
-    /** Affiche les équipements du joueur
+    /**
+     * Affiche les équipements du joueur
      * Regroupe les équipements par nom et affiche le nombre de chaque type
      */
     public void displayEquipments() {
         System.out.println("=== ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
-        List<Unit> allUnits = getAllUnits(); // Toutes les unités sont dans les secteurs
-
-        if (equipments.isEmpty() && allUnits.stream().allMatch(u -> u.getEquipments().isEmpty())) {
+        if (equipments.isEmpty()) {
             System.out.println("Aucun équipement.");
             return;
         }
-
-        // Compte total par nom
-        Map<String, Equipment> equipmentRef = new HashMap<>();
-        Map<String, Integer> totalCount = new HashMap<>();
-        Map<String, Integer> equippedCount = new HashMap<>();
-
-        // Compte dans l'inventaire du joueur
         for (EquipmentStack stack : equipments) {
             Equipment eq = stack.getEquipment();
-            totalCount.put(eq.getName(), stack.getQuantity());
-            equipmentRef.putIfAbsent(eq.getName(), eq);
-        }
-
-        // Compte dans toutes les unités (dans tous les secteurs)
-        for (Unit unit : allUnits) {
-            for (Equipment eq : unit.getEquipments()) {
-                totalCount.merge(eq.getName(), 1, Integer::sum);
-                equippedCount.merge(eq.getName(), 1, Integer::sum);
-                equipmentRef.putIfAbsent(eq.getName(), eq);
-            }
-        }
-
-        // Affichage
-        for (Map.Entry<String, Integer> entry : totalCount.entrySet()) {
-            String eqName = entry.getKey();
-            int total = entry.getValue();
-            int equipped = equippedCount.getOrDefault(eqName, 0);
-            Equipment eq = equipmentRef.get(eqName);
-            int totalPrice = total * eq.getCost();
-            System.out.printf("%d x %s (%d / %d équipé) = %,d $%n", total, eq.getName(), equipped, total, totalPrice);
+            int quantity = stack.getQuantity();
+            int available = stack.getAvailable(); // nouvel attribut
+            int totalPrice = quantity * eq.getCost();
+            System.out.printf("%d x %s (%d disponibles) = %,d $%n", quantity, eq.getName(), available, totalPrice);
         }
     }
 

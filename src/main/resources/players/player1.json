@@ -2,16 +2,50 @@
   "name": "Général Suprême",
   "money": 20000,
   "equipments": [
-    { "name": "Mini machine gun", "quantity": 3 },
-    { "name": "Gilet pare-balles moyen", "quantity": 4 },
-    { "name": "Équipement militaire complet", "quantity": 2 },
-    { "name": "Bouclier anti-émeutes", "quantity": 4 },
-    { "name": "Bouclier balistique", "quantity": 6 },
-    { "name": "Tromblon", "quantity": 2 },
-    { "name": "Tenue ultra légère", "quantity": 2 },
-    { "name": "Mitrailleuse", "quantity": 1 },
-    { "name": "Gilet pare-balles léger", "quantity": 1 },
-    { "name": "HK-MP7", "quantity": 1 }
+    {
+      "name": "Mini machine gun",
+      "quantity": 3
+    },
+    {
+      "name": "Gilet pare-balles moyen",
+      "quantity": 6
+    },
+    {
+      "name": "Équipement militaire complet",
+      "quantity": 2
+    },
+    {
+      "name": "Bouclier anti-émeutes",
+      "quantity": 4
+    },
+    {
+      "name": "Bouclier balistique",
+      "quantity": 6
+    },
+    {
+      "name": "Tromblon",
+      "quantity": 2
+    },
+    {
+      "name": "Tenue ultra légère",
+      "quantity": 2
+    },
+    {
+      "name": "Mitrailleuse",
+      "quantity": 1
+    },
+    {
+      "name": "Pistolet 9mm",
+      "quantity": 2
+    },
+    {
+      "name": "Gilet pare-balles léger",
+      "quantity": 10
+    },
+    {
+      "name": "HK-MP7",
+      "quantity": 1
+    }
   ],
   "sectors": [
     {
@@ -22,7 +56,10 @@
         {
           "id": 2,
           "type": "BRUTE",
-          "classes": ["TIREUR", "PILOTE_DESTRUCTEUR"],
+          "classes": [
+            "TIREUR",
+            "PILOTE_DESTRUCTEUR"
+          ],
           "experience": 9,
           "equipments": [
             "Mini machine gun",
@@ -33,7 +70,10 @@
         {
           "id": 3,
           "type": "BRUTE",
-          "classes": ["TIREUR", "MASTODONTE"],
+          "classes": [
+            "TIREUR",
+            "MASTODONTE"
+          ],
           "experience": 9,
           "equipments": [
             "Mini machine gun",
@@ -47,7 +87,10 @@
         {
           "id": 4,
           "type": "BRUTE",
-          "classes": ["LEGER", "MASTODONTE"],
+          "classes": [
+            "LEGER",
+            "MASTODONTE"
+          ],
           "experience": 8.5,
           "equipments": [
             "Tromblon",
@@ -60,7 +103,10 @@
         {
           "id": 1,
           "type": "MALFRAT",
-          "classes": ["MASTODONTE", "TIREUR"],
+          "classes": [
+            "MASTODONTE",
+            "TIREUR"
+          ],
           "experience": 7,
           "equipments": [
             "Tromblon",
@@ -79,7 +125,10 @@
         {
           "id": 2,
           "type": "MALFRAT",
-          "classes": ["TIREUR", "MASTODONTE"],
+          "classes": [
+            "TIREUR",
+            "MASTODONTE"
+          ],
           "experience": 6,
           "equipments": [
             "Mini machine gun",
@@ -91,7 +140,9 @@
         {
           "id": 2,
           "type": "VOYOU",
-          "classes": ["TIREUR"],
+          "classes": [
+            "TIREUR"
+          ],
           "experience": 2,
           "equipments": [
             "Mitrailleuse",
@@ -102,7 +153,9 @@
         {
           "id": 16,
           "type": "VOYOU",
-          "classes": ["LEGER"],
+          "classes": [
+            "LEGER"
+          ],
           "experience": 2,
           "equipments": [
             "HK-MP7",
@@ -112,8 +165,28 @@
         {
           "id": 5,
           "type": "LARBIN",
-          "classes": ["LEGER"],
+          "classes": [
+            "LEGER"
+          ],
           "experience": 1,
+          "equipments": []
+        },
+        {
+          "id": 6,
+          "type": "LARBIN",
+          "classes": [
+            "TIREUR"
+          ],
+          "experience": 1,
+          "equipments": []
+        },
+        {
+          "id": 6,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 0,
           "equipments": []
         }
       ]

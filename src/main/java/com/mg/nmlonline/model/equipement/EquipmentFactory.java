@@ -4,7 +4,6 @@ import com.mg.nmlonline.model.unit.UnitClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -14,6 +13,10 @@ import java.util.stream.Collectors;
 // Factory pour créer les équipements prédéfinis
 @Slf4j
 public class EquipmentFactory {
+
+    private EquipmentFactory() {
+        // Constructeur privé pour empêcher l'instanciation
+    }
 
     public static Equipment createFromName(String name) {
         try (BufferedReader br = new BufferedReader(new java.io.InputStreamReader(
