@@ -26,8 +26,6 @@ public class PlayerService {
 
         if (dto.sectors != null && !dto.sectors.isEmpty()) {
             importSectors(player, dto.sectors);
-        } else {
-            importDefaultSector(player, dto.army);
         }
         return player;
     }
@@ -63,8 +61,7 @@ public class PlayerService {
     }
 
     private Unit createUnitFromDTO(UnitDTO unitDto) {
-        Unit unit = new Unit(unitDto.id, unitDto.type, UnitClass.valueOf(unitDto.classes.get(0)));
-        unit.gainExperience(unitDto.experience);
+        Unit unit = new Unit(unitDto.experience, unitDto.type, UnitClass.valueOf(unitDto.classes.get(0)));
         if (unitDto.classes.size() > 1) {
             unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
         }
@@ -77,10 +74,48 @@ public class PlayerService {
         return unit;
     }
 
+    public void savePlayerToJson(Player player, String filePath) throws IOException {
+        PlayerDTO dto = new PlayerDTO();
+        dto.name = player.getName();
+        dto.money = player.getStats().getMoney();
+        dto.equipments = new ArrayList<>();
+        for (EquipmentStack stack : player.getEquipments()) {
+            EquipmentDTO equipmentDTO = new EquipmentDTO();
+            equipmentDTO.name = stack.getEquipment().getName();
+            equipmentDTO.quantity = stack.getQuantity();
+            dto.equipments.add(equipmentDTO);
+        }
+        dto.sectors = new ArrayList<>();
+        for (Sector sector : player.getSectors()) {
+            SectorDTO sectorDTO = new SectorDTO();
+            sectorDTO.id = sector.getNumber();
+            sectorDTO.name = sector.getName();
+            sectorDTO.income = sector.getIncome();
+            sectorDTO.army = new ArrayList<>();
+            for (Unit unit : sector.getUnits()) {
+                UnitDTO unitDTO = new UnitDTO();
+                unitDTO.id = unit.getId();
+                unitDTO.type = String.valueOf(unit.getType());
+                unitDTO.experience = unit.getExperience();
+                unitDTO.classes = new ArrayList<>();
+//                unitDTO.classes.add(unit.getClasses().toString()); // Check ici, possible bugs
+//                if (unit.getSecondClass() != null) {
+//                    unitDTO.classes.add(unit.getSecondClass().name());
+//                }
+                unitDTO.equipments = new ArrayList<>();
+                for (Equipment equipment : unit.getEquipments()) {
+                    unitDTO.equipments.add(equipment.getName());
+                }
+                sectorDTO.army.add(unitDTO);
+            }
+            dto.sectors.add(sectorDTO);
+        }
+        objectMapper.writeValue(new File(filePath), dto);
+        }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class PlayerDTO {
         public String name;
-        public List<UnitDTO> army;
         public List<EquipmentDTO> equipments;
         public List<SectorDTO> sectors;
         public double money;

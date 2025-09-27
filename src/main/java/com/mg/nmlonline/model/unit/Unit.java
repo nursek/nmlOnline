@@ -1,6 +1,7 @@
 package com.mg.nmlonline.model.unit;
 
 import com.mg.nmlonline.model.equipement.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,10 +16,15 @@ import static com.mg.nmlonline.model.unit.UnitType.*;
  */
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class Unit {
+    // Unique ID for each unit
+    private static int nextId = 1 ;
+
     private int id;
     private String name;
-    private double experience;
+    private int number = 0 ;
+    private double experience = 0.0 ;
     private UnitType type;
     private List<UnitClass> classes;
     
@@ -44,7 +50,7 @@ public class Unit {
     private List<Equipment> equipments;
 
     public Unit(double experience, String name, UnitClass primaryClass) {
-        this.id = 0;
+        this.id = nextId++;
         this.name = name;
         this.experience = experience;
         this.type = UnitType.getTypeByExperience((int) experience); // Détermine le type par l'expérience
@@ -59,9 +65,9 @@ public class Unit {
         recalculateBaseStats(); // Calcul initial
     }
 
-    //used in TXT format ?
+    //used in TXT.
     public Unit(String charName, UnitType unitType, int atk, int pdf, int pdc, int def, int arm, double evasion) {
-        this.id = 0;
+        this.id = nextId++;
         this.name = charName;
         this.experience = 100;
         this.type = unitType; // Type de l'unité
@@ -112,7 +118,7 @@ public class Unit {
         };
     }
 
-    //TODO : pour les bonus du joueur, revoir + tard pendant systeme de combat
+    //TODO : pour les bonus du joueur, revoir + tard pendant système de combat
     // Applique les bonus du joueur (appelé par Player)
     public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus, 
                                   double pdcBonus, double armorBonus, double evasionBonus) {
@@ -272,6 +278,7 @@ public class Unit {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        sb.append("id: ").append(id);
 
         if(type== PERSONNAGE){
             // Exemple de ligne : Mortarion (100 Atk + 100 Pdf + 50 Pdc / 250 Def)
@@ -289,7 +296,7 @@ public class Unit {
 
             // Type et informations
             sb.append(name);
-            sb.append(" n°").append(id);
+            sb.append(" n°").append(number);
             sb.append(" (").append(formatStat(experience)).append(" Exp) : ");
 
             // Équipements

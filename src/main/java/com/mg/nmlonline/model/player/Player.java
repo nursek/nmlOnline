@@ -225,6 +225,16 @@ public class Player {
 
     // === GESTION DES UNITS DU JOUEUR ===
 
+    public void reassignUnitNumbers() {
+        Map<String, Integer> typeCounters = new HashMap<>();
+        for (Unit unit : getAllUnits()) {
+            String unitType = unit.getType().name();
+            int currentCount = typeCounters.getOrDefault(unitType, 0) + 1;
+            typeCounters.put(unitType, currentCount);
+            unit.setNumber(currentCount);
+        }
+    }
+
     public boolean transferUnitBetweenSectors(Unit unit, int fromSectorNumber, int toSectorNumber) {
         Sector fromSector = getSectorByNumber(fromSectorNumber);
         Sector toSector = getSectorByNumber(toSectorNumber);

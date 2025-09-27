@@ -2,10 +2,7 @@ package com.mg.nmlonline.test;
 
 import com.mg.nmlonline.model.player.Player;
 import com.mg.nmlonline.model.sector.Sector;
-import com.mg.nmlonline.model.unit.Unit;
-import com.mg.nmlonline.model.unit.UnitClass;
 import com.mg.nmlonline.service.PlayerService;
-import com.mg.nmlonline.service.PlayerTextService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -59,18 +56,6 @@ public class PlayerTestDemo {
         }
     }
 
-    private static void testFileArmy(){
-        log.info("🔹 TEST: FILE ARMY (reproduction exemple)");
-        log.info("===============================================");
-        PlayerTextService playerTextService = new PlayerTextService();
-        try {
-            Player player = playerTextService.fromFile("src/main/resources/players/ratcatcher.txt");
-            player.displayArmy();
-        } catch (Exception e) {
-            log.info("Erreur lors de la lecture du fichier d'armée : {}", e.getMessage());
-        }
-    }
-
     private static void testImportSinglePlayerFromJson() {
         log.info("🔹 TEST: Import d’un seul joueur depuis JSON");
 
@@ -87,6 +72,7 @@ public class PlayerTestDemo {
             Player player = playerService.importPlayerFromJson(jsonFile.getPath());
             player.refreshEquipmentAvailability();
             //player.printEquipmentInventory();
+            player.reassignUnitNumbers();
             player.displayEquipments();
             if (!(player.equipEquipmentToUnit(2, 3, "Pistolet 9mm")))
                 System.out.println("fail");
@@ -94,6 +80,12 @@ public class PlayerTestDemo {
             for (Sector sector : player.getSectors()) {
                 sector.displayArmy();
             }
+            player.transferUnitBetweenSectors(player.getUnitById(10), 2, 1);
+
+            for (Sector sector : player.getSectors()) {
+                sector.displayArmy();
+            }
+            playerService.savePlayerToJson(player, "src/main/resources/players/player1-test.json");
             // Ajoute ici d’autres tests spécifiques sur le joueur
         } catch (Exception e) {
             log.error("Erreur lors de l'import de {}", jsonFile.getName(), e);

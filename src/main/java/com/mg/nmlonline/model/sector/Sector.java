@@ -119,6 +119,10 @@ public class Sector {
                 .toList();
     }
 
+    public List<Unit> getUnits() {
+        return army;
+    }
+
     // === TRI ET RÉASSIGNATION DES IDS ===
 
     public void sortArmy() {
@@ -137,7 +141,7 @@ public class Sector {
             String unitType = unit.getType().name();
             int currentCount = typeCounters.getOrDefault(unitType, 0) + 1;
             typeCounters.put(unitType, currentCount);
-            unit.setId(currentCount);
+            unit.setNumber(currentCount);
         }
     }
 

@@ -54,7 +54,7 @@
       "income": 2000,
       "army": [
         {
-          "id": 2,
+          "id": 1,
           "type": "BRUTE",
           "classes": [
             "TIREUR",
@@ -68,7 +68,7 @@
           ]
         },
         {
-          "id": 3,
+          "id": 2,
           "type": "BRUTE",
           "classes": [
             "TIREUR",
@@ -77,6 +77,7 @@
           "experience": 9,
           "equipments": [
             "Mini machine gun",
+            "Hache de bûcheron",
             "Bouclier anti-émeutes",
             "Équipement militaire complet",
             "Bouclier balistique",
@@ -85,7 +86,7 @@
           ]
         },
         {
-          "id": 4,
+          "id": 3,
           "type": "BRUTE",
           "classes": [
             "LEGER",
@@ -101,7 +102,7 @@
           ]
         },
         {
-          "id": 1,
+          "id": 4,
           "type": "MALFRAT",
           "classes": [
             "MASTODONTE",
@@ -123,7 +124,7 @@
       "income": 2500,
       "army": [
         {
-          "id": 2,
+          "id": 5,
           "type": "MALFRAT",
           "classes": [
             "TIREUR",
@@ -138,7 +139,7 @@
           ]
         },
         {
-          "id": 2,
+          "id": 6,
           "type": "VOYOU",
           "classes": [
             "TIREUR"
@@ -151,7 +152,7 @@
           ]
         },
         {
-          "id": 16,
+          "id": 7,
           "type": "VOYOU",
           "classes": [
             "LEGER"
@@ -163,7 +164,7 @@
           ]
         },
         {
-          "id": 5,
+          "id": 8,
           "type": "LARBIN",
           "classes": [
             "LEGER"
@@ -172,7 +173,7 @@
           "equipments": []
         },
         {
-          "id": 6,
+          "id": 9,
           "type": "LARBIN",
           "classes": [
             "TIREUR"
@@ -181,7 +182,7 @@
           "equipments": []
         },
         {
-          "id": 6,
+          "id": 10,
           "type": "LARBIN",
           "classes": [
             "LEGER"
