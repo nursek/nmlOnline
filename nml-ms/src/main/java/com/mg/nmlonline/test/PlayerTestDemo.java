@@ -27,7 +27,7 @@ public class PlayerTestDemo {
         log.info("==============================================");
 
         PlayerService playerService = new PlayerService();
-        File playersDir = new File("src/main/resources/players/");
+        File playersDir = new File(PlayerTestDemo.class.getClassLoader().getResource("players").getFile());
         File[] jsonFiles = playersDir.listFiles((dir, name) -> name.endsWith(".json"));
 
         if (jsonFiles == null || jsonFiles.length == 0) {
@@ -60,7 +60,7 @@ public class PlayerTestDemo {
         log.info("🔹 TEST: Import d’un seul joueur depuis JSON");
 
         PlayerService playerService = new PlayerService();
-        File playersDir = new File("src/main/resources/players/");
+        File playersDir = new File(PlayerTestDemo.class.getClassLoader().getResource("players").getFile());
         File[] jsonFiles = playersDir.listFiles((dir, name) -> name.endsWith(".json"));
 
         if (jsonFiles == null || jsonFiles.length == 0) {
