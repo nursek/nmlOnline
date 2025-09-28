@@ -74,7 +74,7 @@ public class PlayerTestDemo {
             //player.printEquipmentInventory();
             player.reassignUnitNumbers();
             player.displayEquipments();
-            if (!(player.equipEquipmentToUnit(2, 3, "Pistolet 9mm")))
+            if (!(player.equipToUnit(2, 3, "Pistolet 9mm")))
                 System.out.println("fail");
 
             for (Sector sector : player.getSectors()) {
@@ -85,7 +85,7 @@ public class PlayerTestDemo {
             for (Sector sector : player.getSectors()) {
                 sector.displayArmy();
             }
-            playerService.savePlayerToJson(player, "src/main/resources/players/player1-test.json");
+            //playerService.savePlayerToJson(player, "src/main/resources/players/player1-test.json");
             // Ajoute ici d’autres tests spécifiques sur le joueur
         } catch (Exception e) {
             log.error("Erreur lors de l'import de {}", jsonFile.getName(), e);

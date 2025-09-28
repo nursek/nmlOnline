@@ -1,11 +1,11 @@
-1) valeur décimales pour les unités affichées.
-
-2) réparer les JSON
-3) Permette la gestion des unités blessées dans le JSON. Peut-être via un statut à part et non une classe ? Comme on va se délaisser du format texte.
-4) Enregistrer des modifications en JSON.
-5) rename les stats des totaux en "PlayerAtk", "SectorAtk" etc à la place de total, on s'y retrouvera mieux.
-6) Gestion de la quantité d'équipement d'une unité
-7) Rework la gestion des équipements du joueur, n'avoir qu'une liste d'équipements total, puis parser et compter le nombre d"équipements équipés sur les unités du joueur. Peut-être faire un bool équipé / pas équipé ? Trop lourd ?
-// This file is part of NML Online.
-
-!! Highest priority : handle of Id and number of units. Basicly the ID and number are different, but they share Id = number. Need to add another attribute only for display.
+TODO1 : Ajouter un équipement à une unité réduis le stock de disponible. Verification pour pas dépasser limite.
+TODO2 : Gestion des unités blessées via le format JSON.
+TODO3 : Enregistrer les modifications dans le JSON.
+TODO4 : Gestion des Personnages.
+TODO5 : Gestion des véhicules.
+TODO6 : Gestion des bâtiments.
+TODO7 : Gestion des batailles.
+TODO8 : Interface graphique.
+TODO9 : Tests unitaires.
+TODO10 : Documentation.
+package com.mg.nmlonline;

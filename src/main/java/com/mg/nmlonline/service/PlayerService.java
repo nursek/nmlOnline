@@ -65,7 +65,7 @@ public class PlayerService {
         if (unitDto.classes.size() > 1) {
             unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
         }
-        // Implement better logic to add equipement with quantity and availability
+        //TODO Implement better logic to add equipement with quantity and availability
 
         for (String equipment : unitDto.equipments) {
             unit.addEquipment(EquipmentFactory.createFromName(equipment));
@@ -98,7 +98,7 @@ public class PlayerService {
                 unitDTO.type = String.valueOf(unit.getType());
                 unitDTO.experience = unit.getExperience();
                 unitDTO.classes = new ArrayList<>();
-//                unitDTO.classes.add(unit.getClasses().toString()); // Check ici, possible bugs
+//TODO               unitDTO.classes.add(unit.getClasses().toString()); // Check ici, possible bugs
 //                if (unit.getSecondClass() != null) {
 //                    unitDTO.classes.add(unit.getSecondClass().name());
 //                }

@@ -246,13 +246,13 @@ public class Player {
         return false;
     }
 
-    public boolean equipEquipmentToUnit(int sectorNumber, int unitId, String equipmentName) {
+    public boolean equipToUnit(int sectorNumber, int unitId, String equipmentName) {
         Equipment equipment = getEquipmentByString(equipmentName);
         if (equipment == null) return false;
-        return equipEquipmentToUnit(sectorNumber, unitId, equipment);
+        return equipToUnit(sectorNumber, unitId, equipment);
     }
 
-    public boolean equipEquipmentToUnit(int sectorNumber, int unitId, Equipment firearm) {
+    public boolean equipToUnit(int sectorNumber, int unitId, Equipment firearm) {
         // Trouver le secteur
         Sector sector = getSectorByNumber(sectorNumber);
         if (sector == null) return false;
