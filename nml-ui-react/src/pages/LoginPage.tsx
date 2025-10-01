@@ -1,10 +1,12 @@
 import React, { useState, useContext } from "react";
 import { UserContext } from "../context/UserContext";
+import { useNavigate } from "react-router-dom";
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const userContext = useContext(UserContext);
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,6 +19,7 @@ const LoginPage: React.FC = () => {
       const data = await res.json();
       userContext?.setUser({ id: data.id, name: data.name, money: data.money });
       localStorage.setItem("token", data.token);
+      navigate("/joueur");
     } else {
       alert("Login échoué");
     }

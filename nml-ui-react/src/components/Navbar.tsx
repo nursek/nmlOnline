@@ -1,20 +1,20 @@
 import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { UserContext } from '../context/UserContext';
 
 const Navbar: React.FC = () => {
   const userContext = useContext(UserContext);
   const user = userContext?.user;
   const setUser = userContext?.setUser;
+  const navigate = useNavigate();
 
   const handleAuth = () => {
     if (user) {
-      // Déconnexion
       setUser && setUser(null);
+      localStorage.removeItem('token');
+      navigate('/login');
     } else {
-      // Simulation de connexion
-      const demoUser = { id: '1', name: 'Joueur1', money: 100 };
-      setUser && setUser(demoUser);
+      navigate('/login');
     }
   };
 

@@ -3,8 +3,10 @@ package com.mg.nmlonline.model.player;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "CREDENTIALS")
 public class User {
     @Id
     @GeneratedValue

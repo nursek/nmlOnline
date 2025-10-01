@@ -30,4 +30,18 @@ public class AuthController {
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login failed");
     }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody LoginRequest req) {
+        if (userService.findByUsername(req.getUsername()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Utilisateur déjà existant");
+        }
+        User user = new User();
+        user.setUsername(req.getUsername());
+        user.setPassword(userService.encodePassword(req.getPassword()));
+        user.setMoney(100); // montant de départ
+        userService.save(user);
+        return ResponseEntity.ok("Utilisateur créé");
+    }
+
 }
