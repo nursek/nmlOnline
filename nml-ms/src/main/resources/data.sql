@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS CREDENTIALS (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    money INT NOT NULL
+);
+INSERT INTO CREDENTIALS (username, password, money) VALUES ('test', '$2a$10$WMsQsnTZ/7pFn.klPSeJ0.m0B1bnsAt9wFgkIduzvmkMF2PzvAOUq', 100);
