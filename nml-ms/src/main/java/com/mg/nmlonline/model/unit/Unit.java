@@ -243,11 +243,13 @@ public class Unit {
         return false;
     }
 
-    public void addEquipment(Equipment equipment) {
+    public boolean addEquipment(Equipment equipment) {
         if (canEquip(equipment)) {
             equipments.add(equipment);
             recalculateBaseStats();
+            return true;
         }
+        return false;
     }
 
     public double getTotalAttack() {
@@ -278,7 +280,7 @@ public class Unit {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("id: ").append(id);
+        sb.append("Unique id: ").append(id).append(" - ");
 
         if(type== PERSONNAGE){
             // Exemple de ligne : Mortarion (100 Atk + 100 Pdf + 50 Pdc / 250 Def)

@@ -24,18 +24,13 @@ public class EquipmentStack {
         }
     }
 
-    public boolean assignToUnit() {
-        if (available > 0) {
-            available--;
-            return true;
-        }
-        return false;
+    public boolean isAvailable() {
+        return available > 0;
     }
 
-    public void removeFromUnit() {
-        if (available < quantity) {
-            available++;
-        }
-        quantity--;
+    public void decrementAvailable() {
+        if(available > 0)
+            available--;
     }
+
 }

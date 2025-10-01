@@ -19,7 +19,6 @@ public class PlayerTestDemo {
         System.out.println("=== DÉMO CLASSE PLAYER ===\n");
         testImportSinglePlayerFromJson();
         //testImportPlayersFromJson();
-        //testFileArmy();
     }
 
     private static void testImportPlayersFromJson() {
@@ -47,7 +46,6 @@ public class PlayerTestDemo {
         }
 
         for (Player player : players) {
-            player.printEquipmentInventory();
             player.displayEquipments();
             for (Sector sector : player.getSectors()) {
                 sector.displayArmy(); // Affiche l'armée du quartier
@@ -71,17 +69,19 @@ public class PlayerTestDemo {
         try {
             Player player = playerService.importPlayerFromJson(jsonFile.getPath());
             player.refreshEquipmentAvailability();
-            //player.printEquipmentInventory();
             player.reassignUnitNumbers();
             player.displayEquipments();
-            if (!(player.equipToUnit(2, 3, "Pistolet 9mm")))
+            if (!(player.equipToUnit(2, 10, "Pistolet 9mm")))
                 System.out.println("fail");
 
             for (Sector sector : player.getSectors()) {
                 sector.displayArmy();
             }
-            player.transferUnitBetweenSectors(player.getUnitById(10), 2, 1);
+            if(!(player.transferUnitBetweenSectors(player.getUnitById(10), 2, 1))){
+                System.out.println("fail to transfer unit");
+            }
 
+            player.reassignUnitNumbers();
             for (Sector sector : player.getSectors()) {
                 sector.displayArmy();
             }

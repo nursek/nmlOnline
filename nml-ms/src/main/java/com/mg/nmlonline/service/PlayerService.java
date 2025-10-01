@@ -49,18 +49,12 @@ public class PlayerService {
     private void importUnitsToSector(Player player, List<UnitDTO> units, int sectorId) {
         if (units == null) return;
         for (UnitDTO unitDto : units) {
-            Unit unit = createUnitFromDTO(unitDto);
+            Unit unit = createUnitFromDTO(player, unitDto);
             player.addUnitToSector(unit, sectorId);
         }
     }
 
-    private void importDefaultSector(Player player, List<UnitDTO> units) {
-        Sector defaultSector = new Sector(1);
-        player.addSector(defaultSector);
-        importUnitsToSector(player, units, 1);
-    }
-
-    private Unit createUnitFromDTO(UnitDTO unitDto) {
+    private Unit createUnitFromDTO(Player player, UnitDTO unitDto) {
         Unit unit = new Unit(unitDto.experience, unitDto.type, UnitClass.valueOf(unitDto.classes.get(0)));
         if (unitDto.classes.size() > 1) {
             unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
@@ -68,8 +62,9 @@ public class PlayerService {
         //TODO Implement better logic to add equipement with quantity and availability
 
         for (String equipment : unitDto.equipments) {
-            unit.addEquipment(EquipmentFactory.createFromName(equipment));
-            //TODO: handle equipement stock
+            if(player.isEquipmentAvailable(equipment) && unit.addEquipment(EquipmentFactory.createFromName(equipment)) && !player.decrementEquipmentAvailability(equipment)){
+                        System.err.println("Erreur : équipement " + equipment + " non disponible pour le joueur " + player.getName());
+            }
         }
         return unit;
     }

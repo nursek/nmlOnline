@@ -164,6 +164,39 @@ public class Player {
         addEquipmentToStack(equipment, 1);
     }
 
+    public boolean isEquipmentAvailable(Equipment equipment) {
+        for (EquipmentStack stack : equipments) {
+            if (stack.getEquipment().equals(equipment)) {
+                return stack.isAvailable();
+            }
+        }
+        return false;
+    }
+
+    public boolean isEquipmentAvailable(String equipmentName) {
+        Equipment equipment = getEquipmentByString(equipmentName);
+        if (equipment == null) return false;
+        return isEquipmentAvailable(equipment);
+    }
+
+    public boolean decrementEquipmentAvailability(Equipment equipment) {
+        for (EquipmentStack stack : equipments) {
+            if (stack.getEquipment().equals(equipment)) {
+                stack.decrementAvailable();
+                setTotalEquipmentValue();
+                calculateTotalEconomyPower();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean decrementEquipmentAvailability(String equipmentName) {
+        Equipment equipment = getEquipmentByString(equipmentName);
+        if (equipment == null) return false;
+        return decrementEquipmentAvailability(equipment);
+    }
+
     public void removeEquipmentFromStack(Equipment equipment) {
         for (int i = 0; i < equipments.size(); i++) {
             EquipmentStack stack = equipments.get(i);
@@ -175,20 +208,6 @@ public class Player {
                 }
                 return;
             }
-        }
-    }
-
-    public void printEquipmentInventory() {
-        System.out.println("=== INVENTAIRE D'ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
-        if (equipments.isEmpty()) {
-            System.out.println("Aucun équipement en inventaire.");
-            return;
-        }
-        for (EquipmentStack stack : equipments) {
-            Equipment eq = stack.getEquipment();
-            int quantity = stack.getQuantity();
-            int totalPrice = quantity * eq.getCost();
-            System.out.printf("%d x %s = %,d $%n", quantity, eq.getName(), totalPrice);
         }
     }
 
@@ -252,7 +271,7 @@ public class Player {
         return equipToUnit(sectorNumber, unitId, equipment);
     }
 
-    public boolean equipToUnit(int sectorNumber, int unitId, Equipment firearm) {
+    public boolean equipToUnit(int sectorNumber, int unitId, Equipment equipment) {
         // Trouver le secteur
         Sector sector = getSectorByNumber(sectorNumber);
         if (sector == null) return false;
@@ -264,10 +283,10 @@ public class Player {
 
         // Trouver le stack correspondant à l'arme
         for (EquipmentStack stack : equipments) {
-            if (stack.getEquipment().equals(firearm) && stack.getAvailable() > 0) {
+            if (stack.getEquipment().equals(equipment) && stack.getAvailable() > 0) {
                 // Équiper l'unité
-                unit.addEquipment(firearm);
-                stack.setAvailable(stack.getAvailable() - 1);
+                unit.addEquipment(equipment);
+                stack.decrementAvailable();
                 setTotalEquipmentValue();
                 return true;
             }
