@@ -1,9 +1,9 @@
-package com.mg.nmlonline.model.player;
+package com.mg.nmlonline.entity.player;
 
-import com.mg.nmlonline.model.equipement.Equipment;
-import com.mg.nmlonline.model.equipement.EquipmentStack;
-import com.mg.nmlonline.model.sector.Sector;
-import com.mg.nmlonline.model.unit.Unit;
+import com.mg.nmlonline.entity.equipment.Equipment;
+import com.mg.nmlonline.entity.equipment.EquipmentStack;
+import com.mg.nmlonline.entity.sector.Sector;
+import com.mg.nmlonline.entity.unit.Unit;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

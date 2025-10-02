@@ -1,4 +1,4 @@
-package com.mg.nmlonline.model.sector;
+package com.mg.nmlonline.entity.sector;
 
 import lombok.Data;
 

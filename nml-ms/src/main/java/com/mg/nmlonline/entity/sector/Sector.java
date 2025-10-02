@@ -1,6 +1,6 @@
-package com.mg.nmlonline.model.sector;
+package com.mg.nmlonline.entity.sector;
 
-import com.mg.nmlonline.model.unit.Unit;
+import com.mg.nmlonline.entity.unit.Unit;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;

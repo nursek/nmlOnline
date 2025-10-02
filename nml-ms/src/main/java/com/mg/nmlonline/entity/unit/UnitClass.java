@@ -1,4 +1,4 @@
-package com.mg.nmlonline.model.unit;
+package com.mg.nmlonline.entity.unit;
 
 import lombok.Getter;
 
