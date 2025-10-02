@@ -19,25 +19,25 @@ import static com.mg.nmlonline.model.unit.UnitType.*;
 @AllArgsConstructor
 public class Unit {
     // Unique ID for each unit
-    private static int nextId = 1 ;
+    private static int nextId = 1;
 
     private int id;
     private String name;
-    private int number = 0 ;
-    private double experience = 0.0 ;
+    private int number = 0;
+    private double experience = 0.0;
     private UnitType type;
     private List<UnitClass> classes;
-    
+
     // Statistiques de base
     private int baseAttack;
     private int baseDefense;
-    
+
     // Statistiques calculées et conservées (sans bonus du joueur)
     private double baseCalculatedPdf;
     private double baseCalculatedPdc;
     private double baseCalculatedArmor;
     private double baseCalculatedEvasion;
-    
+
     // Statistiques finales (avec bonus du joueur appliqués)
     private double finalAttack;
     private double finalDefense;
@@ -45,7 +45,7 @@ public class Unit {
     private double finalPdc;
     private double finalArmor;
     private double finalEvasion;
-    
+
     // Équipements
     private List<Equipment> equipments;
 
@@ -56,12 +56,12 @@ public class Unit {
         this.type = UnitType.getTypeByExperience((int) experience); // Détermine le type par l'expérience
         this.classes = new ArrayList<>();
         this.classes.add(primaryClass);
-        
+
         this.baseAttack = type.getBaseAttack();
         this.baseDefense = type.getBaseDefense();
-        
+
         this.equipments = new ArrayList<>();
-        
+
         recalculateBaseStats(); // Calcul initial
     }
 
@@ -85,10 +85,7 @@ public class Unit {
 
     // Recalcule les statistiques de base (sans bonus joueur)
     public void recalculateBaseStats() {
-        double statMultiplier = classes.stream()
-                .mapToDouble(UnitClass::getStatMultiplier)
-                .min()
-                .orElse(1.0);
+        double statMultiplier = classes.stream().mapToDouble(UnitClass::getStatMultiplier).min().orElse(1.0);
 
         this.baseAttack = (int) (type.getBaseAttack() * statMultiplier);
         this.baseDefense = (int) (type.getBaseDefense() * statMultiplier);
@@ -120,8 +117,7 @@ public class Unit {
 
     //TODO : pour les bonus du joueur, revoir + tard pendant système de combat
     // Applique les bonus du joueur (appelé par Player)
-    public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus, 
-                                  double pdcBonus, double armorBonus, double evasionBonus) {
+    public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus, double pdcBonus, double armorBonus, double evasionBonus) {
         this.finalAttack = baseAttack * (1.0 + attackBonus);
         this.finalDefense = baseDefense * (1.0 + defenseBonus);
         this.finalPdf = baseCalculatedPdf * (1.0 + pdfBonus);
@@ -132,7 +128,7 @@ public class Unit {
 
     private double calculateEquipmentPdf() {
         double totalPdf = 0;
-        
+
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
                 totalPdf += baseAttack * (equipment.getPdfBonus() / 100.0);
@@ -143,7 +139,7 @@ public class Unit {
 
     private double calculateEquipmentPdc() {
         double totalPdc = 0;
-        
+
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
                 totalPdc += baseAttack * (equipment.getPdcBonus() / 100.0);
@@ -154,7 +150,7 @@ public class Unit {
 
     private double calculateEquipmentArmor() {
         double totalArmor = 0;
-        
+
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
                 totalArmor += baseDefense * (equipment.getArmBonus() / 100.0);
@@ -165,7 +161,7 @@ public class Unit {
 
     private double calculateEquipmentEvasion() {
         double totalEvasion = 0;
-        
+
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
                 totalEvasion += equipment.getEvasionBonus();
@@ -175,8 +171,7 @@ public class Unit {
     }
 
     private boolean isEquipmentCompatible(Equipment equipment) {
-        return classes.stream().anyMatch(unitClass -> 
-            equipment.getCompatibleClasses().contains(unitClass));
+        return classes.stream().anyMatch(unitClass -> equipment.getCompatibleClasses().contains(unitClass));
     }
 
     // Gestion de l'évolution
@@ -193,16 +188,12 @@ public class Unit {
         recalculateBaseStats(); // Recalcule avec les nouvelles stats de base
     }
 
-        // Gestion des classes
+    // Gestion des classes
     public boolean canAddSecondClass() {
-        long effectiveClassCount = classes.stream()
-            .filter(c -> c != UnitClass.BLESSE)
-            .count();
+        long effectiveClassCount = classes.stream().filter(c -> c != UnitClass.BLESSE).count();
         if (type == UnitType.LARBIN || type == UnitType.VOYOU) {
-            return effectiveClassCount < 1 ;
-        }
-        else
-            return effectiveClassCount <= 1 && experience >= 5;
+            return effectiveClassCount < 1;
+        } else return effectiveClassCount <= 1 && experience >= 5;
     }
 
     public void addSecondClass(UnitClass secondClass) {
@@ -221,24 +212,15 @@ public class Unit {
     // Gestion des équipements
     public boolean canEquip(Equipment equipment) {
         EquipmentCategory category = equipment.getCategory();
-        if (category == EquipmentCategory.Firearm) {
-            long firearmsCount = equipments.stream()
-                    .filter(e -> e.getCategory() == EquipmentCategory.Firearm)
-                    .count();
-            return firearmsCount < type.getMaxFirearms() &&
-                    isEquipmentCompatible(equipment);
-        } else if (category == EquipmentCategory.Meelee) {
-            long meleeCount = equipments.stream()
-                    .filter(e -> e.getCategory() == EquipmentCategory.Meelee)
-                    .count();
-            return meleeCount < type.getMaxMeleeWeapons() &&
-                    isEquipmentCompatible(equipment);
-        } else if (category == EquipmentCategory.Defensive) {
-            long defensiveCount = equipments.stream()
-                    .filter(e -> e.getCategory() == EquipmentCategory.Defensive)
-                    .count();
-            return defensiveCount < type.getMaxDefensiveEquipment() &&
-                    isEquipmentCompatible(equipment);
+        if (category == EquipmentCategory.FIREARM) {
+            long firearmsCount = equipments.stream().filter(e -> e.getCategory() == EquipmentCategory.FIREARM).count();
+            return firearmsCount < type.getMaxFirearms() && isEquipmentCompatible(equipment);
+        } else if (category == EquipmentCategory.MELEE) {
+            long meleeCount = equipments.stream().filter(e -> e.getCategory() == EquipmentCategory.MELEE).count();
+            return meleeCount < type.getMaxMeleeWeapons() && isEquipmentCompatible(equipment);
+        } else if (category == EquipmentCategory.DEFENSIVE) {
+            long defensiveCount = equipments.stream().filter(e -> e.getCategory() == EquipmentCategory.DEFENSIVE).count();
+            return defensiveCount < type.getMaxDefensiveEquipment() && isEquipmentCompatible(equipment);
         }
         return false;
     }
@@ -250,6 +232,15 @@ public class Unit {
             return true;
         }
         return false;
+    }
+
+    public boolean removeEquipment(Equipment equipment) {
+        if (equipment == null) return false;
+        boolean removed = equipments.remove(equipment);
+        if (removed) {
+            recalculateBaseStats();
+        }
+        return removed;
     }
 
     public double getTotalAttack() {
@@ -265,15 +256,15 @@ public class Unit {
     private String formatStat(double value) {
         // 2 décimales, supprime les zéros inutiles
         if (value == Math.floor(value)) {
-            return String.valueOf((int)value);
+            return String.valueOf((int) value);
         } else {
             return String.format("%.2f", value).replaceAll("0+$", "").replaceAll(",$", "");
         }
     }
-    
+
     private String formatEvasion(double value) {
         // Esquive arrondie au chiffre du dessus (plafond)
-        return String.valueOf((int)Math.ceil(value));
+        return String.valueOf((int) Math.ceil(value));
     }
 
     // Méthode toString pour affichage selon le format demandé
@@ -282,19 +273,14 @@ public class Unit {
         StringBuilder sb = new StringBuilder();
         sb.append("Unique id: ").append(id).append(" - ");
 
-        if(type== PERSONNAGE){
+        if (type == PERSONNAGE) {
             // Exemple de ligne : Mortarion (100 Atk + 100 Pdf + 50 Pdc / 250 Def)
             sb.append(name);
             sb.append(" (");
             statsBuilder(sb, baseAttack, baseCalculatedPdf, baseCalculatedPdc, baseDefense, baseCalculatedArmor, baseCalculatedEvasion);
             sb.append(").");
-        }
-        else {
-            sb.append(
-                    classes.stream()
-                            .map(c -> "(" + c.getCode() + ")")
-                            .collect(Collectors.joining(" "))
-            ).append(" ");
+        } else {
+            sb.append(classes.stream().map(c -> "(" + c.getCode() + ")").collect(Collectors.joining(" "))).append(" ");
 
             // Type et informations
             sb.append(name);

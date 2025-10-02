@@ -133,6 +133,9 @@ public class Player {
     }
 
     public boolean buyEquipment(Equipment equipment, int quantity) {
+        if (equipment == null || quantity <=0){
+            return false;
+        }
         double totalCost = (double) equipment.getCost() * quantity;
         if (stats.getMoney() >= totalCost) {
             stats.setMoney(stats.getMoney() - totalCost);
