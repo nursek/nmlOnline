@@ -30,4 +30,18 @@ public class UserService {
         userRepo.save(user);
     }
 
+    public void saveRefreshToken(User user, String refreshTokenHash) {
+        user.setRefreshTokenHash(refreshTokenHash);
+        userRepo.save(user);
+    }
+
+    public User findByRefreshToken(String refreshToken) {
+        for (User user : userRepo.findAll()) {
+            String hash = user.getRefreshTokenHash();
+            if (hash != null && encoder.matches(refreshToken, hash)) {
+                return user;
+            }
+        }
+        return null;
+    }
 }

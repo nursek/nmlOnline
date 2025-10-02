@@ -1,10 +1,10 @@
 import Navbar from "./components/Navbar";
-import LoginPage from "./pages/LoginPage";
+import LoginPage from "./views/Login/LoginPage";
 import { Routes, Route, Link } from "react-router-dom";
-import CartePage from "./pages/Carte/CartePage";
-import JoueurPage from "./pages/Joueur/JoueurPage";
-import BoutiquePage from "./pages/Boutique/BoutiquePage";
-import ReglesPage from "./pages/Regles/ReglesPage";
+import CartePage from "./views/Carte/CartePage";
+import JoueurPage from "./views/Joueur/JoueurPage";
+import BoutiquePage from "./views/Boutique/BoutiquePage";
+import ReglesPage from "./views/Regles/ReglesPage";
 
 function App() {
   return (
