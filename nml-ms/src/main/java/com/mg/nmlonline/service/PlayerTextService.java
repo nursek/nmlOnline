@@ -1,11 +1,11 @@
 package com.mg.nmlonline.service;
 
-import com.mg.nmlonline.model.equipement.EquipmentFactory;
-import com.mg.nmlonline.model.player.Player;
-import com.mg.nmlonline.model.sector.Sector;
-import com.mg.nmlonline.model.unit.Unit;
-import com.mg.nmlonline.model.unit.UnitClass;
-import com.mg.nmlonline.model.unit.UnitType;
+import com.mg.nmlonline.entity.equipment.EquipmentFactory;
+import com.mg.nmlonline.entity.player.Player;
+import com.mg.nmlonline.entity.sector.Sector;
+import com.mg.nmlonline.entity.unit.Unit;
+import com.mg.nmlonline.entity.unit.UnitClass;
+import com.mg.nmlonline.entity.unit.UnitType;
 
 import java.io.IOException;
 import java.nio.file.Files;

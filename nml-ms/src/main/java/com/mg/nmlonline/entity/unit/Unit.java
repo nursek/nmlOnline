@@ -1,6 +1,6 @@
-package com.mg.nmlonline.model.unit;
+package com.mg.nmlonline.entity.unit;
 
-import com.mg.nmlonline.model.equipement.*;
+import com.mg.nmlonline.entity.equipment.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.mg.nmlonline.model.unit.UnitType.*;
+import static com.mg.nmlonline.entity.unit.UnitType.*;
 
 /**
  * Represents a unit with various attributes for combat.

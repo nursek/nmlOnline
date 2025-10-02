@@ -1,6 +1,6 @@
-package com.mg.nmlonline.model.equipement;
+package com.mg.nmlonline.entity.equipment;
 
-import com.mg.nmlonline.model.unit.UnitClass;
+import com.mg.nmlonline.entity.unit.UnitClass;
 import lombok.Data;
 import java.util.Set;
 

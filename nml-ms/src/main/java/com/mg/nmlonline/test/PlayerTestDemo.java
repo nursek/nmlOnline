@@ -1,7 +1,7 @@
 package com.mg.nmlonline.test;
 
-import com.mg.nmlonline.model.player.Player;
-import com.mg.nmlonline.model.sector.Sector;
+import com.mg.nmlonline.entity.player.Player;
+import com.mg.nmlonline.entity.sector.Sector;
 import com.mg.nmlonline.service.PlayerService;
 import lombok.extern.slf4j.Slf4j;
 

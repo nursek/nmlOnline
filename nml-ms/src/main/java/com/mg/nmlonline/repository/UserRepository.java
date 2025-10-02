@@ -1,5 +1,6 @@
-package com.mg.nmlonline.model.player;
+package com.mg.nmlonline.repository;
 
+import com.mg.nmlonline.entity.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository<User, Long> {

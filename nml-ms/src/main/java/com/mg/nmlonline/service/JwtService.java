@@ -1,6 +1,6 @@
 package com.mg.nmlonline.service;
 
-import com.mg.nmlonline.model.player.User;
+import com.mg.nmlonline.entity.user.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;

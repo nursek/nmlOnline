@@ -1,7 +1,7 @@
 package com.mg.nmlonline.service;
 
-import com.mg.nmlonline.model.player.User;
-import com.mg.nmlonline.model.player.UserRepository;
+import com.mg.nmlonline.entity.user.User;
+import com.mg.nmlonline.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;

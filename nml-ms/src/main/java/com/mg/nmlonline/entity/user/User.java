@@ -1,4 +1,4 @@
-package com.mg.nmlonline.model.player;
+package com.mg.nmlonline.entity.user;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

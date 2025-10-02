@@ -1,4 +1,4 @@
-package com.mg.nmlonline.service;
+package com.mg.nmlonline.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

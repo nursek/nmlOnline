@@ -3,11 +3,11 @@ package com.mg.nmlonline.service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mg.nmlonline.model.player.Player;
-import com.mg.nmlonline.model.sector.Sector;
-import com.mg.nmlonline.model.unit.Unit;
-import com.mg.nmlonline.model.unit.UnitClass;
-import com.mg.nmlonline.model.equipement.*;
+import com.mg.nmlonline.entity.player.Player;
+import com.mg.nmlonline.entity.sector.Sector;
+import com.mg.nmlonline.entity.unit.Unit;
+import com.mg.nmlonline.entity.unit.UnitClass;
+import com.mg.nmlonline.entity.equipment.*;
 
 import java.io.File;
 import java.io.IOException;

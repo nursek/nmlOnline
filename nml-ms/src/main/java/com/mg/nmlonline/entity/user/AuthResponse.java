@@ -1,4 +1,4 @@
-package com.mg.nmlonline.model.player;
+package com.mg.nmlonline.entity.user;
 
 public class AuthResponse {
     private String token;

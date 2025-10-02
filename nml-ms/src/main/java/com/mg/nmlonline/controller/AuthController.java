@@ -1,9 +1,9 @@
 package com.mg.nmlonline.controller;
 
 import com.mg.nmlonline.service.JwtService;
-import com.mg.nmlonline.model.player.AuthResponse;
-import com.mg.nmlonline.model.player.LoginRequest;
-import com.mg.nmlonline.model.player.User;
+import com.mg.nmlonline.entity.user.AuthResponse;
+import com.mg.nmlonline.entity.user.LoginRequest;
+import com.mg.nmlonline.entity.user.User;
 import com.mg.nmlonline.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
