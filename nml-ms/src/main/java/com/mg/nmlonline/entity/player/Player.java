@@ -299,12 +299,36 @@ public class Player {
 
     // === CALCULS ET STATISTIQUES ===
 
+    public void updateCombatStats(){
+        double totalAtk = getAllUnits().stream()
+                .mapToDouble(Unit::getFinalAttack)
+                .sum();
+        double totalPdf = getAllUnits().stream()
+                .mapToDouble(Unit::getFinalAttack)
+                .sum();
+        double totalPdc = getAllUnits().stream()
+                .mapToDouble(Unit::getFinalAttack)
+                .sum();
+        double totalDef = getAllUnits().stream()
+                .mapToDouble(Unit::getFinalAttack)
+                .sum();
+        double totalArmor = getAllUnits().stream()
+                .mapToDouble(Unit::getFinalAttack)
+                .sum();
+
+        stats.setTotalAtk(totalAtk);
+        stats.setTotalPdf(totalPdf);
+        stats.setTotalPdc(totalPdc);
+        stats.setTotalDef(totalDef);
+        stats.setTotalArmor(totalArmor);
+    }
+
     private void updateTotalStats() {
         double totalOffensive = sectors.stream()
-                .mapToDouble(sector -> sector.getStat("offensive"))
+                .mapToDouble(sector -> sector.getStats().getTotalOffensive())
                 .sum();
         double totalDefensive = sectors.stream()
-                .mapToDouble(sector -> sector.getStat("defensive"))
+                .mapToDouble(sector -> sector.getStats().getTotalDefensive())
                 .sum();
 
         stats.setTotalOffensivePower(totalOffensive);
@@ -403,5 +427,9 @@ public class Player {
     private String formatStat(double value, String label) {
         String formatted = (value % 1 == 0) ? String.format(FORMAT_INT, value) : String.format(FORMAT_FLOAT, value);
         return formatted + " " + label;
+    }
+
+    public PlayerStats getPlayerStats() {
+        return stats;
     }
 }

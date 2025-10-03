@@ -103,18 +103,6 @@ public class Unit {
         this.finalEvasion = baseCalculatedEvasion;
     }
 
-    public double getStat(String stat) {
-        return switch (stat.toLowerCase()) {
-            case "atk" -> finalAttack;
-            case "pdf" -> finalPdf;
-            case "pdc" -> finalPdc;
-            case "def" -> finalDefense;
-            case "armor", "arm" -> finalArmor;
-            case "evasion", "esquive" -> finalEvasion;
-            default -> 0.0;
-        };
-    }
-
     //TODO : pour les bonus du joueur, revoir + tard pendant système de combat
     // Applique les bonus du joueur (appelé par Player)
     public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus, double pdcBonus, double armorBonus, double evasionBonus) {

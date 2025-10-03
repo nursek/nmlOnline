@@ -50,7 +50,9 @@ public class PlayerService {
         if (units == null) return;
         for (UnitDTO unitDto : units) {
             Unit unit = createUnitFromDTO(player, unitDto);
-            player.addUnitToSector(unit, sectorId);
+            if(!(player.addUnitToSector(unit, sectorId))){
+                return;
+            }
         }
     }
 
@@ -59,7 +61,7 @@ public class PlayerService {
         if (unitDto.classes.size() > 1) {
             unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
         }
-        //TODO Implement better logic to add equipement with quantity and availability
+        //TODO Implement better logic to add équipment with quantity and availability
 
         for (String equipment : unitDto.equipments) {
             if(player.isEquipmentAvailable(equipment) && unit.addEquipment(EquipmentFactory.createFromName(equipment)) && !player.decrementEquipmentAvailability(equipment)){

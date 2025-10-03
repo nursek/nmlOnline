@@ -29,33 +29,22 @@ public class Sector {
 
     // === GESTION DES STATISTIQUES DU SECTEUR ===
 
-    public double getStat(String stat) {
-        return switch (stat.toLowerCase()) {
-            case "income" -> getIncome();
-            case "atk" -> stats.getTotalAtk();
-            case "pdf" -> stats.getTotalPdf();
-            case "pdc" -> stats.getTotalPdc();
-            case "def" -> stats.getTotalDef();
-            case "armor", "arm" -> stats.getTotalArmor();
-            case "offensive" -> stats.getTotalOffensive();
-            case "defensive" -> stats.getTotalDefensive();
-            case "global", "globalstats" -> stats.getGlobalStats();
-            default -> 0.0;
-        };
-    }
-
-    public double calculateTotal(String stat) {
-        return army.stream()
-                .mapToDouble(unit -> unit.getStat(stat))
-                .sum();
-    }
-
     public void recalculateMilitaryPower(){
-        stats.setTotalAtk(calculateTotal("atk"));
-        stats.setTotalPdf(calculateTotal("pdf"));
-        stats.setTotalPdc(calculateTotal("pdc"));
-        stats.setTotalDef(calculateTotal("def"));
-        stats.setTotalArmor(calculateTotal("armor"));
+        stats.setTotalAtk(army.stream()
+                .mapToDouble(Unit::getFinalAttack)
+                .sum());
+        stats.setTotalPdf(army.stream()
+                .mapToDouble(Unit::getFinalPdf)
+                .sum());
+        stats.setTotalPdc(army.stream()
+                .mapToDouble(Unit::getFinalPdc)
+                .sum());
+        stats.setTotalDef(army.stream()
+                .mapToDouble(Unit::getFinalDefense)
+                .sum());
+        stats.setTotalArmor(army.stream()
+                .mapToDouble(Unit::getFinalArmor)
+                .sum());
 
         stats.setTotalOffensive(stats.getTotalAtk() + stats.getTotalPdf() + stats.getTotalPdc());
         stats.setTotalDefensive(stats.getTotalDef() + stats.getTotalArmor());

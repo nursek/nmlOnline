@@ -15,4 +15,10 @@ public class PlayerStats {
     private double globalPower = 0.0;
     private double totalEconomyPower = 0.0; // Puissance économique totale du joueur : totalIncome + totalEquipmentValue + argent + vehiclesValue
 
+    // Total stats for Battle v0.5
+    private double totalAtk = 0.0;
+    private double totalPdf = 0.0;
+    private double totalPdc = 0.0;
+    private double totalDef = 0.0;
+    private double totalArmor = 0.0;
 }
