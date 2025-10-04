@@ -1,6 +1,7 @@
 package com.mg.nmlonline.entity.battle;
 
 import com.mg.nmlonline.entity.player.Player;
+import com.mg.nmlonline.entity.unit.Unit;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,8 +22,61 @@ public class Battle {
     // A battle can have a winner, but not mandatory. A winner claims or keeps the sector.
     private Player winner;
 
+    private static final Random RANDOM = new Random();
 
-    public void combatFake(Player defender, Player attacker) {
+
+    private int rand() {
+        return RANDOM.nextInt(100);
+    }
+
+
+    public double classicPhaseConfiguration(List<Unit> defender, double availableAttackerPoints, String phaseName) {
+        double lastFetchedEvasion = 0;
+        double lastFetchedArmor = 0;
+        double lastFetchedDef = 0;
+
+        while (availableAttackerPoints > 0 && (!defender.isEmpty())) {
+            // Select last unit in the defender list
+            Unit targetUnit = defender.getLast();
+            lastFetchedEvasion = targetUnit.getFinalEvasion();
+            lastFetchedArmor = targetUnit.getFinalArmor();
+            lastFetchedDef = targetUnit.getFinalDefense();
+
+            // Handle unit evasion
+            if (lastFetchedEvasion > 0 && (rand() % 100) + 1 <= lastFetchedEvasion) {
+                // Unit evades the attack
+                System.out.println("Unit " + targetUnit.getName() + " evades this attack!");
+                availableAttackerPoints = availableAttackerPoints - (lastFetchedDef + lastFetchedArmor);
+                continue; // Move to the next iteration
+            }
+
+            // Calculate damage, no evasion.
+            if ((lastFetchedArmor + lastFetchedDef) <= availableAttackerPoints) {
+                // Unit is directly killed
+                System.out.println("Unit " + targetUnit.getId() + " is destroyed in " + phaseName + " phase!");
+                availableAttackerPoints = availableAttackerPoints - (lastFetchedDef + lastFetchedArmor);
+                defender.remove(targetUnit);
+                //todo: move targetUnit to casualty list, created after.
+            } else {
+                // Unit armor is damaged, but not wounded
+                if (availableAttackerPoints <= lastFetchedArmor) {
+                    // On enlève les points d'armure
+                    targetUnit.setFinalArmor(lastFetchedArmor - availableAttackerPoints);
+                    availableAttackerPoints = 0;
+                } else {
+                    // Unit armor is destroyed and unit is wounded.
+                    targetUnit.setFinalArmor(lastFetchedArmor - availableAttackerPoints);
+                    availableAttackerPoints = lastFetchedArmor - availableAttackerPoints;
+                    targetUnit.setFinalDefense(lastFetchedDef - availableAttackerPoints);
+                }
+            }
+            return availableAttackerPoints;
+        }
+        return availableAttackerPoints;
+    }
+
+
+    public void classicCombatConfiguration(Player attacker, Player defender) {
         // Calculate total stats for defender
         defender.updateCombatStats();
         attacker.updateCombatStats();
@@ -58,7 +112,6 @@ public class Battle {
         }
 
     }
-
 
 
 }
