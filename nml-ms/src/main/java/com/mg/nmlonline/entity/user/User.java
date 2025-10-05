@@ -14,6 +14,7 @@ public class User {
     private String username;
     private String password;
     private int money;
+    private String refreshTokenHash; // Ajouté
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -26,4 +27,7 @@ public class User {
 
     public int getMoney() { return money; }
     public void setMoney(int money) { this.money = money; }
+
+    public String getRefreshTokenHash() { return refreshTokenHash; }
+    public void setRefreshTokenHash(String refreshTokenHash) { this.refreshTokenHash = refreshTokenHash; }
 }

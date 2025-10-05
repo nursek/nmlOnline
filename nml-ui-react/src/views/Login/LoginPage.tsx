@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { UserContext } from "../context/UserContext";
+import { UserContext } from "../../context/UserContext";
 import { useNavigate } from "react-router-dom";
 
 const LoginPage: React.FC = () => {
@@ -14,11 +14,16 @@ const LoginPage: React.FC = () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
+      credentials: "include"
     });
     if (res.ok) {
       const data = await res.json();
-      userContext?.setUser({ id: data.id, name: data.name, money: data.money });
-      localStorage.setItem("token", data.token);
+      userContext?.setUser({
+        id: data.id,
+        name: data.name,
+        money: data.money,
+        token: data.token
+      });
       navigate("/joueur");
     } else {
       alert("Login échoué");

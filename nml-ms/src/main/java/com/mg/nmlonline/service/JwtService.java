@@ -13,9 +13,7 @@ import java.util.Date;
 @Service
 public class JwtService {
     private final String SECRET = "secret-key-very-long-for-hmac-sha256-1234567890"; // À remplacer par une vraie clé en prod
-    private final long EXPIRATION = 86400000; // 1 jour
-
-    public String generateToken(User user) {
+    public String generateToken(User user, long expirationMillis) {
         Key key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
         return Jwts.builder()
                 .setSubject(user.getUsername())
@@ -23,7 +21,7 @@ public class JwtService {
                 .claim("name", user.getUsername())
                 .claim("money", user.getMoney())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
