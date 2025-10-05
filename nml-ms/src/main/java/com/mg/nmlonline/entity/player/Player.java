@@ -300,20 +300,25 @@ public class Player {
     // === CALCULS ET STATISTIQUES ===
 
     public void updateCombatStats(){
+        // Met à jour les stats de chaque secteur
+        for (Sector sector : sectors) {
+            sector.recalculateMilitaryPower();
+        }
+
         double totalAtk = getAllUnits().stream()
                 .mapToDouble(Unit::getFinalAttack)
                 .sum();
         double totalPdf = getAllUnits().stream()
-                .mapToDouble(Unit::getFinalAttack)
+                .mapToDouble(Unit::getFinalPdf)
                 .sum();
         double totalPdc = getAllUnits().stream()
-                .mapToDouble(Unit::getFinalAttack)
+                .mapToDouble(Unit::getFinalPdc)
                 .sum();
         double totalDef = getAllUnits().stream()
-                .mapToDouble(Unit::getFinalAttack)
+                .mapToDouble(Unit::getFinalDefense)
                 .sum();
         double totalArmor = getAllUnits().stream()
-                .mapToDouble(Unit::getFinalAttack)
+                .mapToDouble(Unit::getFinalArmor)
                 .sum();
 
         stats.setTotalAtk(totalAtk);

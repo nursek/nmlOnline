@@ -1,70 +1,122 @@
 {
-  "name": "Colonel d'Acier",
-  "attackBonusPercent": 0.15,
-  "defenseBonusPercent": -0.15,
+  "name": "The Armored Fangs",
+  "money": 30000,
   "equipments": [
-    { "name": "Mini machine gun", "quantity": 1 },
-    { "name": "Bouclier balistique", "quantity": 1 },
-    { "name": "Équipement militaire complet", "quantity": 1 },
-    { "name": "Fusil d'assaut", "quantity": 1 },
-    { "name": "Gilet pare-balles moyen", "quantity": 1 },
-    { "name": "Bouclier anti-émeutes", "quantity": 1 },
-    { "name": "Poing américain", "quantity": 1 },
-    { "name": "Pistolet-mitrailleur", "quantity": 1 },
-    { "name": "Tenue ultra légère", "quantity": 1 },
-    { "name": "Matraque télescopique", "quantity": 1 },
-    { "name": "Mitrailleuse", "quantity": 1 },
-    { "name": "Gilet pare-balles léger", "quantity": 1 }
+    {
+      "name": "Mini machine gun",
+      "quantity": 4
+    },
+    {
+      "name": "Gilet pare-balles moyen",
+      "quantity": 6
+    },
+    {
+      "name": "Équipement militaire complet",
+      "quantity": 2
+    },
+    {
+      "name": "Bouclier anti-émeutes",
+      "quantity": 4
+    },
+    {
+      "name": "Bouclier balistique",
+      "quantity": 6
+    },
+    {
+      "name": "Tromblon",
+      "quantity": 2
+    },
+    {
+      "name": "Tenue ultra légère",
+      "quantity": 2
+    },
+    {
+      "name": "Mitrailleuse",
+      "quantity": 1
+    },
+    {
+      "name": "Pistolet 9mm",
+      "quantity": 2
+    },
+    {
+      "name": "Gilet pare-balles léger",
+      "quantity": 10
+    },
+    {
+      "name": "HK-MP7",
+      "quantity": 1
+    }
   ],
-  "army": [
+  "sectors": [
     {
-      "type": "BRUTE",
-      "classes": ["MASTODONTE", "TIREUR"],
-      "experience": 10,
-      "equipments": [
-        "Mini machine gun",
-        "Bouclier balistique",
-        "Équipement militaire complet"
+      "number": 1,
+      "name": "Quartier Sombre",
+      "income": 2000,
+      "army": [
+        {
+          "id": 1,
+          "type": "BRUTE",
+          "classes": [
+            "TIREUR",
+            "PILOTE_DESTRUCTEUR"
+          ],
+          "experience": 9,
+          "equipments": [
+            "Mini machine gun",
+            "Gilet pare-balles moyen",
+            "Équipement militaire complet"
+          ]
+        },
+        {
+          "id": 2,
+          "type": "BRUTE",
+          "classes": [
+            "TIREUR",
+            "MASTODONTE"
+          ],
+          "experience": 9,
+          "equipments": [
+            "Mini machine gun",
+            "Hache de bûcheron",
+            "Bouclier anti-émeutes",
+            "Équipement militaire complet",
+            "Bouclier balistique",
+            "Bouclier balistique",
+            "Bouclier balistique"
+          ]
+        },
+        {
+          "id": 3,
+          "type": "BRUTE",
+          "classes": [
+            "LEGER",
+            "MASTODONTE"
+          ],
+          "experience": 8.5,
+          "equipments": [
+            "Tromblon",
+            "Tromblon",
+            "Tenue ultra légère",
+            "Bouclier anti-émeutes",
+            "Bouclier balistique"
+          ]
+        },
+        {
+          "id": 4,
+          "type": "MALFRAT",
+          "classes": [
+            "MASTODONTE",
+            "TIREUR"
+          ],
+          "experience": 7,
+          "equipments": [
+            "Tromblon",
+            "Gilet pare-balles moyen",
+            "Bouclier anti-émeutes",
+            "Bouclier balistique"
+          ]
+        }
       ]
-    },
-    {
-      "id": 2,
-      "type": "MALFRAT",
-      "classes": ["TIREUR", "LEGER"],
-      "experience": 7.5,
-      "equipments": [
-        "Fusil d'assaut",
-        "Gilet pare-balles moyen",
-        "Bouclier anti-émeutes",
-        "Poing américain"
-      ]
-    },
-    {
-      "id": 3,
-      "type": "VOYOU",
-      "classes": ["LEGER"],
-      "experience": 3,
-      "equipments": [
-        "Pistolet-mitrailleur",
-        "Tenue ultra légère",
-        "Matraque télescopique"
-      ]
-    },
-    {
-      "id": 4,
-      "type": "VOYOU",
-      "classes": ["TIREUR"],
-      "experience": 2.5,
-      "equipments": [
-        "Mitrailleuse",
-        "Gilet pare-balles léger"
-      ]
-    },
-    {
-      "id": 5,
-      "type": "LARBIN",
-      "classes": ["LEGER"],
-      "experience": 1
     }
   ]
 }

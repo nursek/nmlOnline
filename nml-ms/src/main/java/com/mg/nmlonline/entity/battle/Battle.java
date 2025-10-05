@@ -31,46 +31,41 @@ public class Battle {
 
 
     public double classicPhaseConfiguration(List<Unit> defender, double availableAttackerPoints, String phaseName) {
-        double lastFetchedEvasion = 0;
-        double lastFetchedArmor = 0;
-        double lastFetchedDef = 0;
-
-        while (availableAttackerPoints > 0 && (!defender.isEmpty())) {
-            // Select last unit in the defender list
+        List<Unit> casualties = new ArrayList<>();
+        System.out.println("availableAttackerPoints : " + availableAttackerPoints);
+        while (availableAttackerPoints > 0 && !defender.isEmpty()) {
             Unit targetUnit = defender.getLast();
-            lastFetchedEvasion = targetUnit.getFinalEvasion();
-            lastFetchedArmor = targetUnit.getFinalArmor();
-            lastFetchedDef = targetUnit.getFinalDefense();
+            double evasion = targetUnit.getFinalEvasion();
+            double armor = targetUnit.getFinalArmor();
+            double defense = targetUnit.getFinalDefense();
 
-            // Handle unit evasion
-            if (lastFetchedEvasion > 0 && (rand() % 100) + 1 <= lastFetchedEvasion) {
-                // Unit evades the attack
+            // Gestion de l'évasion
+            if (evasion > 0 && (rand() % 100) + 1 <= evasion) {
                 System.out.println("Unit " + targetUnit.getName() + " evades this attack!");
-                availableAttackerPoints = availableAttackerPoints - (lastFetchedDef + lastFetchedArmor);
-                continue; // Move to the next iteration
+                availableAttackerPoints -= (defense + armor);
+                continue;
             }
 
-            // Calculate damage, no evasion.
-            if ((lastFetchedArmor + lastFetchedDef) <= availableAttackerPoints) {
-                // Unit is directly killed
+            // Calcul des dégâts
+             if ((armor + defense) <= availableAttackerPoints) {
                 System.out.println("Unit " + targetUnit.getId() + " is destroyed in " + phaseName + " phase!");
-                availableAttackerPoints = availableAttackerPoints - (lastFetchedDef + lastFetchedArmor);
+                availableAttackerPoints -= (defense + armor);
                 defender.remove(targetUnit);
-                //todo: move targetUnit to casualty list, created after.
+                casualties.add(targetUnit);
+            } else if (availableAttackerPoints <= armor) {
+                targetUnit.setFinalArmor(armor - availableAttackerPoints);
+                availableAttackerPoints = 0;
             } else {
-                // Unit armor is damaged, but not wounded
-                if (availableAttackerPoints <= lastFetchedArmor) {
-                    // On enlève les points d'armure
-                    targetUnit.setFinalArmor(lastFetchedArmor - availableAttackerPoints);
-                    availableAttackerPoints = 0;
-                } else {
-                    // Unit armor is destroyed and unit is wounded.
-                    targetUnit.setFinalArmor(lastFetchedArmor - availableAttackerPoints);
-                    availableAttackerPoints = lastFetchedArmor - availableAttackerPoints;
-                    targetUnit.setFinalDefense(lastFetchedDef - availableAttackerPoints);
-                }
+                targetUnit.setFinalArmor(armor - availableAttackerPoints);
+                double remaining = availableAttackerPoints - armor;
+                targetUnit.setFinalDefense(defense - remaining);
+                availableAttackerPoints = 0;
             }
-            return availableAttackerPoints;
+        }
+
+        // TODO: utiliser la liste casualties si besoin
+        for (Unit unit : defender) {
+            System.out.println("Remaining Unit after " + phaseName + " phase: " + unit);
         }
         return availableAttackerPoints;
     }
@@ -94,24 +89,11 @@ public class Battle {
         double attackerTotalDef = attacker.getPlayerStats().getTotalDef();
         double attackerTotalArmor = attacker.getPlayerStats().getTotalArmor();
 
-        // Simple combat resolution logic (to be replaced with actual mechanics)
-        double defenderPower = defenderTotalAtk + defenderTotalPdf + defenderTotalPdc + defenderTotalDef + defenderTotalArmor;
-        double attackerPower = attackerTotalAtk + attackerTotalPdf + attackerTotalPdc + attackerTotalDef + attackerTotalArmor;
+        System.out.println("\n--- Combat between Attacker: " + attacker.getName() + " and Defender: " + defender.getName() + " ---");
 
-        if (attackerPower > defenderPower) {
-            this.winner = attacker;
-            // Attacker wins, takes control of the sector
-            System.out.println("Attacker wins the battle!");
-        } else if (defenderPower > attackerPower) {
-            this.winner = defender;
-            // Defender wins, retains control of the sector
-            System.out.println("Defender wins the battle!");
-        } else {
-            this.winner = null; // Draw
-            System.out.println("The battle ends in a draw!");
-        }
+        double attackerRemainingPoints = classicPhaseConfiguration(defender.getAllUnits(), attackerTotalPdf, "PDF");
+        double defenderRemainingPoints = classicPhaseConfiguration(attacker.getAllUnits(), defenderTotalPdf, "HUH");
 
+        System.out.println("After PDF phase, Attacker remaining points: " + attackerRemainingPoints + ", Defender remaining points: " + defenderRemainingPoints);
     }
-
-
 }

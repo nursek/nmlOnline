@@ -107,8 +107,11 @@ public class PlayerTestDemo {
             Player defender = playerService.importPlayerFromJson(player1Path);
             Player attacker = playerService.importPlayerFromJson(player2Path);
 
+            attacker.displayArmy();
+            defender.displayArmy();
+
             Battle battleHandler = new Battle();
-            battleHandler.classicCombatConfiguration(defender, attacker);
+            battleHandler.classicCombatConfiguration(attacker, defender);
         } catch (IOException e) {
             throw new RuntimeException("Skill issue lors de l'import des joueurs pour le test de combat", e);
         }
