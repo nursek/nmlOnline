@@ -31,16 +31,13 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
-    // Limitation des tentatives
     private final ConcurrentHashMap<String, Attempt> attempts = new ConcurrentHashMap<>();
     private static final int MAX_ATTEMPTS = 5;
-    private static final long BLOCK_TIME_MS = TimeUnit.MINUTES.toMillis(5);
+    private static final long BLOCK_TIME_MS = TimeUnit.MINUTES.toMillis(1);
 
     @Value("${app.cookie.secure:false}")
     private boolean appCookieSecure;
 
-
-    // Sécurité tokens
     private static final String PEPPER = "un-secret-tres-long-a-mettre-en-env";
     private static final int BCRYPT_COST = 12;
     private static final long ACCESS_TOKEN_EXPIRATION = 10 * 60 * 1000; // 10 min
@@ -70,12 +67,13 @@ public class AuthController {
             att.count = 0;
             String accessToken = jwtService.generateToken(user, ACCESS_TOKEN_EXPIRATION);
             String refreshToken = generateRefreshToken();
-            userService.saveRefreshToken(user, hash(refreshToken)); // À implémenter dans UserService
+            String refreshTokenHash = hash(refreshToken);
+            userService.saveRefreshToken(user, refreshTokenHash);
             Cookie cookie = new Cookie("refresh_token", refreshToken);
             cookie.setHttpOnly(true);
             cookie.setPath("/api/auth/refresh");
             cookie.setMaxAge(7 * 24 * 60 * 60);
-            cookie.setSecure(appCookieSecure); // true en prod
+            cookie.setSecure(appCookieSecure);
             cookie.setAttribute("SameSite", "Lax");
             response.addCookie(cookie);
             return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername(), user.getMoney()));
@@ -93,14 +91,14 @@ public class AuthController {
     @PostMapping("/auth/refresh")
     public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
         Cookie cookie = WebUtils.getCookie(request, "refresh_token");
-        if (cookie == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (cookie == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{}");
         String refreshToken = cookie.getValue();
         User user = userService.findByRefreshToken(refreshToken);
-        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{}");
 
-        // Rotation du refresh token
         String newRefreshToken = generateRefreshToken();
-        userService.saveRefreshToken(user, hash(newRefreshToken));
+        String newRefreshTokenHash = hash(newRefreshToken);
+        userService.saveRefreshToken(user, newRefreshTokenHash);
         Cookie newCookie = new Cookie("refresh_token", newRefreshToken);
         newCookie.setHttpOnly(true);
         newCookie.setPath("/api/auth/refresh");
@@ -121,7 +119,7 @@ public class AuthController {
         User user = new User();
         user.setUsername(req.getUsername());
         user.setPassword(userService.encodePassword(req.getPassword()));
-        user.setMoney(100); // montant de départ
+        user.setMoney(100);
         userService.save(user);
         return ResponseEntity.ok("Utilisateur créé");
     }
