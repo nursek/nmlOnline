@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const userContext = useContext(UserContext);
   const navigate = useNavigate();
 
@@ -13,7 +14,7 @@ const LoginPage: React.FC = () => {
     const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, rememberMe }),
       credentials: "include"
     });
     if (res.ok) {
@@ -50,6 +51,18 @@ const LoginPage: React.FC = () => {
           placeholder="Mot de passe"
         />
       </div>
+      <div className="mb-3 form-check">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            id="rememberMe"
+            checked={rememberMe}
+            onChange={e => setRememberMe(e.target.checked)}
+          />
+          <label className="form-check-label" htmlFor="rememberMe">
+            Rester connecté
+          </label>
+        </div>
       <button type="submit" className="btn btn-primary">Connexion</button>
     </form>
   );

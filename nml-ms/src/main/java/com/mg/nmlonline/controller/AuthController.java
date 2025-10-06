@@ -68,11 +68,18 @@ public class AuthController {
             String accessToken = jwtService.generateToken(user, ACCESS_TOKEN_EXPIRATION);
             String refreshToken = generateRefreshToken();
             String refreshTokenHash = hash(refreshToken);
+
+            // Durée selon rememberMe
+            long refreshTokenDurationMs = req.isRememberMe() ? (30L * 24 * 60 * 60 * 1000) : (24L * 60 * 60 * 1000);
+            long refreshTokenExpiry = now + refreshTokenDurationMs;
+            user.setRefreshTokenExpiry(refreshTokenExpiry);
             userService.saveRefreshToken(user, refreshTokenHash);
+
+            int refreshTokenMaxAge = (int) (refreshTokenDurationMs / 1000);
             Cookie cookie = new Cookie("refresh_token", refreshToken);
             cookie.setHttpOnly(true);
             cookie.setPath("/api/auth/refresh");
-            cookie.setMaxAge(7 * 24 * 60 * 60);
+            cookie.setMaxAge(refreshTokenMaxAge);
             cookie.setSecure(appCookieSecure);
             cookie.setAttribute("SameSite", "Lax");
             response.addCookie(cookie);
@@ -94,15 +101,22 @@ public class AuthController {
         if (cookie == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{}");
         String refreshToken = cookie.getValue();
         User user = userService.findByRefreshToken(refreshToken);
-        if (user == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{}");
+        long now = System.currentTimeMillis();
+        if (user == null || user.getRefreshTokenExpiry() == null || user.getRefreshTokenExpiry() < now) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{}");
+        }
 
         String newRefreshToken = generateRefreshToken();
         String newRefreshTokenHash = hash(newRefreshToken);
+        // On ne modifie pas refreshTokenExpiry ici : on garde la date initiale
         userService.saveRefreshToken(user, newRefreshTokenHash);
+
+        long maxAge = (user.getRefreshTokenExpiry() - now) / 1000;
+        if (maxAge <= 0) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{}");
         Cookie newCookie = new Cookie("refresh_token", newRefreshToken);
         newCookie.setHttpOnly(true);
         newCookie.setPath("/api/auth/refresh");
-        newCookie.setMaxAge(7 * 24 * 60 * 60);
+        newCookie.setMaxAge((int) maxAge);
         newCookie.setSecure(appCookieSecure);
         newCookie.setAttribute("SameSite", "Lax");
         response.addCookie(newCookie);
@@ -122,6 +136,18 @@ public class AuthController {
         user.setMoney(100);
         userService.save(user);
         return ResponseEntity.ok("Utilisateur créé");
+    }
+
+    @PostMapping("/auth/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        Cookie cookie = new Cookie("refresh_token", "");
+        cookie.setHttpOnly(true);
+        cookie.setPath("/api/auth/refresh");
+        cookie.setMaxAge(0); // Supprime le cookie
+        cookie.setSecure(appCookieSecure);
+        cookie.setAttribute("SameSite", "Lax");
+        response.addCookie(cookie);
+        return ResponseEntity.ok().build();
     }
 
     // Helpers
