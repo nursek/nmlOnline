@@ -19,6 +19,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -78,7 +79,7 @@ public class AuthController {
             int refreshTokenMaxAge = (int) (refreshTokenDurationMs / 1000);
             Cookie cookie = new Cookie("refresh_token", refreshToken);
             cookie.setHttpOnly(true);
-            cookie.setPath("/api/auth/refresh");
+            cookie.setPath("/api/auth");
             cookie.setMaxAge(refreshTokenMaxAge);
             cookie.setSecure(appCookieSecure);
             cookie.setAttribute("SameSite", "Lax");
@@ -98,32 +99,47 @@ public class AuthController {
     @PostMapping("/auth/refresh")
     public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
         Cookie cookie = WebUtils.getCookie(request, "refresh_token");
-        if (cookie == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{}");
+        long now = System.currentTimeMillis();
+
+        if (cookie == null) {
+            return ResponseEntity.ok(Map.of("valid", false));
+        }
+
         String refreshToken = cookie.getValue();
         User user = userService.findByRefreshToken(refreshToken);
-        long now = System.currentTimeMillis();
+
         if (user == null || user.getRefreshTokenExpiry() == null || user.getRefreshTokenExpiry() < now) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{}");
+            return ResponseEntity.ok(Map.of("valid", false));
+        }
+
+        long maxAge = (user.getRefreshTokenExpiry() - now) / 1000;
+        if (maxAge <= 0) {
+            return ResponseEntity.ok(Map.of("valid", false));
         }
 
         String newRefreshToken = generateRefreshToken();
         String newRefreshTokenHash = hash(newRefreshToken);
-        // On ne modifie pas refreshTokenExpiry ici : on garde la date initiale
         userService.saveRefreshToken(user, newRefreshTokenHash);
 
-        long maxAge = (user.getRefreshTokenExpiry() - now) / 1000;
-        if (maxAge <= 0) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{}");
         Cookie newCookie = new Cookie("refresh_token", newRefreshToken);
         newCookie.setHttpOnly(true);
-        newCookie.setPath("/api/auth/refresh");
+        newCookie.setPath("/api/auth");
         newCookie.setMaxAge((int) maxAge);
         newCookie.setSecure(appCookieSecure);
         newCookie.setAttribute("SameSite", "Lax");
         response.addCookie(newCookie);
 
         String accessToken = jwtService.generateToken(user, ACCESS_TOKEN_EXPIRATION);
-        return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername(), user.getMoney()));
+
+        return ResponseEntity.ok(Map.of(
+                "valid", true,
+                "token", accessToken,
+                "id", user.getId(),
+                "name", user.getUsername(),
+                "money", user.getMoney()
+        ));
     }
+
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody LoginRequest req) {
@@ -139,14 +155,23 @@ public class AuthController {
     }
 
     @PostMapping("/auth/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response) {
-        Cookie cookie = new Cookie("refresh_token", "");
-        cookie.setHttpOnly(true);
-        cookie.setPath("/api/auth/refresh");
-        cookie.setMaxAge(0); // Supprime le cookie
-        cookie.setSecure(appCookieSecure);
-        cookie.setAttribute("SameSite", "Lax");
-        response.addCookie(cookie);
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        System.out.println("Logout called");
+        Cookie cookie = WebUtils.getCookie(request, "refresh_token");
+        if (cookie != null) {
+            String refreshToken = cookie.getValue();
+            User user = userService.findByRefreshToken(refreshToken);
+            if (user != null) {
+                userService.resetRefreshToken(user);
+            }
+        }
+        Cookie clearCookie = new Cookie("refresh_token", "");
+        clearCookie.setHttpOnly(true);
+        clearCookie.setPath("/api/auth");
+        clearCookie.setMaxAge(0);
+        clearCookie.setSecure(appCookieSecure);
+        clearCookie.setAttribute("SameSite", "Lax");
+        response.addCookie(clearCookie);
         return ResponseEntity.ok().build();
     }
 

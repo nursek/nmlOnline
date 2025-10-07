@@ -41,6 +41,12 @@ public class UserService {
         userRepo.save(user);
     }
 
+    public void resetRefreshToken(User user) {
+        user.setRefreshTokenHash(null);
+        user.setRefreshTokenExpiry(null);
+        userRepo.save(user);
+    }
+
     public User findByRefreshToken(String refreshToken) {
         String transformed = hashInput(refreshToken);
         for (User user : userRepo.findAll()) {

@@ -14,12 +14,21 @@ const JoueurPage: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
 
   useEffect(() => {
-    if (user) {
+    /*if (user) {
       fetch(`/api/players/${user.id}/units`)
-        .then(res => res.json())
+        .then(async res => {
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || "Erreur lors du chargement des unités");
+          }
+          return res.json();
+        })
         .then(data => setUnits(data))
-        .catch(err => console.error(err));
-    }
+        .catch(err => {
+          console.error(err);
+          setUnits([]); // Vide la liste en cas d’erreur
+        });
+    }*/ // TODO : API
   }, [user]);
 
   return (

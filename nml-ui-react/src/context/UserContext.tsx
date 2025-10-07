@@ -22,8 +22,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refreshToken = async () => {
     try {
       const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+      if (data.valid) {
         setUser({
           id: data.id,
           name: data.name,
