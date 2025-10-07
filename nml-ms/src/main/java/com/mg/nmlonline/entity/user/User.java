@@ -4,9 +4,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "CREDENTIALS")
+@Getter
+@Setter
 public class User {
     @Id
     @GeneratedValue
@@ -14,20 +18,6 @@ public class User {
     private String username;
     private String password;
     private int money;
-    private String refreshTokenHash; // Ajouté
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-
-    public int getMoney() { return money; }
-    public void setMoney(int money) { this.money = money; }
-
-    public String getRefreshTokenHash() { return refreshTokenHash; }
-    public void setRefreshTokenHash(String refreshTokenHash) { this.refreshTokenHash = refreshTokenHash; }
+    private String refreshTokenHash;
+    private Long refreshTokenExpiry;
 }

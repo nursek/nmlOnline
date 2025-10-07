@@ -13,10 +13,21 @@ const BoutiquePage: React.FC = () => {
   const [items, setItems] = useState<Equipment[]>([]);
 
   useEffect(() => {
+    /*if(user) {
     fetch(`/api/equipment`)
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || "Erreur lors du chargement des équipements");
+        }
+        return res.json();
+      })
       .then(data => setItems(data))
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error(err);
+        setItems([]); // Vide la liste en cas d’erreur
+      });
+    }*/ // TODO : API
   }, []);
 
   const handleBuy = (item: Equipment) => {
