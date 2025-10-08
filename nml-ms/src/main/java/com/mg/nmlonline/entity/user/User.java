@@ -17,7 +17,6 @@ public class User {
     private Long id;
     private String username;
     private String password;
-    private int money;
     private String refreshTokenHash;
     private Long refreshTokenExpiry;
 }

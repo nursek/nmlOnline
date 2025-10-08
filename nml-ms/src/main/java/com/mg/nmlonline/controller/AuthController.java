@@ -84,7 +84,7 @@ public class AuthController {
             cookie.setSecure(appCookieSecure);
             cookie.setAttribute("SameSite", "Lax");
             response.addCookie(cookie);
-            return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername(), user.getMoney()));
+            return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername()));
         } else {
             att.count++;
             att.lastAttempt = now;
@@ -135,8 +135,7 @@ public class AuthController {
                 "valid", true,
                 "token", accessToken,
                 "id", user.getId(),
-                "name", user.getUsername(),
-                "money", user.getMoney()
+                "name", user.getUsername()
         ));
     }
 
@@ -149,7 +148,6 @@ public class AuthController {
         User user = new User();
         user.setUsername(req.getUsername());
         user.setPassword(userService.encodePassword(req.getPassword()));
-        user.setMoney(100);
         userService.save(user);
         return ResponseEntity.ok("Utilisateur créé");
     }

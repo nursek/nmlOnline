@@ -3,7 +3,6 @@ import React, { createContext, useState, useEffect, ReactNode } from 'react';
 interface User {
   id: string;
   name: string;
-  money: number;
   token: string;
 }
 
@@ -27,7 +26,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser({
           id: data.id,
           name: data.name,
-          money: data.money,
           token: data.token
         });
         return true;
