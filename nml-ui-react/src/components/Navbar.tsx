@@ -8,11 +8,9 @@ const Navbar: React.FC = () => {
   const setUser = userContext?.setUser;
   const navigate = useNavigate();
 
-  const handleAuth = () => {
+  const handleAuth = async () => {
     if (user) {
-      setUser && setUser(null);
-      localStorage.removeItem('token');
-      navigate('/login');
+      await userContext?.logout();
     } else {
       navigate('/login');
     }
