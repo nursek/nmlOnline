@@ -19,7 +19,6 @@ public class JwtService {
                 .setSubject(user.getUsername())
                 .claim("id", user.getId())
                 .claim("name", user.getUsername())
-                .claim("money", user.getMoney())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))
                 .signWith(key, SignatureAlgorithm.HS256)

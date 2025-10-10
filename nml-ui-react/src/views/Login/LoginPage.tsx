@@ -22,7 +22,6 @@ const LoginPage: React.FC = () => {
       userContext?.setUser({
         id: data.id,
         name: data.name,
-        money: data.money,
         token: data.token
       });
       navigate("/joueur");
