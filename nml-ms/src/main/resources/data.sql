@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS PLAYERS (
 );
 INSERT INTO PLAYERS (username, money, army, equipment) VALUES ('nursek', 3000, NULL, NULL);
 INSERT INTO PLAYERS (username, money, army, equipment) VALUES ('lurio', 2900, NULL, NULL);
+INSERT INTO PLAYERS (username, money, army, equipment) VALUES ('test', 0, NULL, NULL);
 
 CREATE TABLE IF NOT EXISTS EQUIPMENT (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
