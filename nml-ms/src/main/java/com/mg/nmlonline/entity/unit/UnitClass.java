@@ -19,7 +19,8 @@ public enum UnitClass {
 
     MASTODONTE("M") {
         @Override
-        public double getDamageReduction() { return 0.75; }
+        public double getDamageReduction(String damageType) {
+            return 0.25; }
     },
 
     PILOTE_DESTRUCTEUR("P") {},
@@ -49,12 +50,12 @@ public enum UnitClass {
         throw new IllegalArgumentException("Classe inconnue : " + code);
     }
 
-    UnitClass(String code) { 
+    UnitClass(String code) {
         this.code = code;
     }
 
     // Méthodes par défaut
-    public double getDamageReduction() { return 1.0; }
+    public double getDamageReduction(String damageType) { return 0; }
     public double getCriticalChance() { return 0.0; }
     public double getCriticalMultiplier() { return 1.0; }
     public double getStatMultiplier() { return 1.0; }

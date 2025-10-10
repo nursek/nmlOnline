@@ -81,7 +81,6 @@
             "Bouclier anti-émeutes",
             "Équipement militaire complet",
             "Bouclier balistique",
-            "Bouclier balistique",
             "Bouclier balistique"
           ]
         },
@@ -92,11 +91,10 @@
             "LEGER",
             "MASTODONTE"
           ],
-          "experience": 8.5,
+          "experience": 11,
           "equipments": [
             "Tromblon",
             "Tromblon",
-            "Tenue ultra légère",
             "Bouclier anti-émeutes",
             "Bouclier balistique"
           ]

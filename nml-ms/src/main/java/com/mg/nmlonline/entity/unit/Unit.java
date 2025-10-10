@@ -298,4 +298,8 @@ public class Unit {
         if (finalArmor > 0) sb.append(" + ").append(formatStat(finalArmor)).append(" Arm");
         if (finalEvasion > 0) sb.append(". Esquive : ").append(formatEvasion(finalEvasion)).append(" %");
     }
+
+    public double getDamageReduction(String damageType) {
+        return classes.stream().mapToDouble(c -> c.getDamageReduction(damageType)).max().orElse(0);
+    }
 }

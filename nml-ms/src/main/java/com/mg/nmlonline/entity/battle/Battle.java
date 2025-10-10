@@ -24,50 +24,64 @@ public class Battle {
 
     private static final Random RANDOM = new Random();
 
-
     private int rand() {
         return RANDOM.nextInt(100);
     }
 
-
-    public double classicPhaseConfiguration(List<Unit> defender, double availableAttackerPoints, String phaseName) {
+    public PhaseResult classicPhaseConfiguration(List<Unit> defender, double availableAttackerPoints, String damageType) {
         List<Unit> casualties = new ArrayList<>();
         System.out.println("availableAttackerPoints : " + availableAttackerPoints);
+
         while (availableAttackerPoints > 0 && !defender.isEmpty()) {
             Unit targetUnit = defender.getLast();
             double evasion = targetUnit.getFinalEvasion();
             double armor = targetUnit.getFinalArmor();
             double defense = targetUnit.getFinalDefense();
+            double resistance = targetUnit.getDamageReduction(damageType); // ex: 0.25 pour 25%
 
-            // Gestion de l'évasion
+            // Gestion de l'évasion (pas de résistance appliquée ici)
             if (evasion > 0 && (rand() % 100) + 1 <= evasion) {
                 System.out.println("Unit " + targetUnit.getName() + " evades this attack!");
                 availableAttackerPoints -= (defense + armor);
                 continue;
             }
 
-            // Calcul des dégâts
-             if ((armor + defense) <= availableAttackerPoints) {
-                System.out.println("Unit " + targetUnit.getId() + " is destroyed in " + phaseName + " phase!");
-                availableAttackerPoints -= (defense + armor);
+            // Calcul des dégâts avec résistance
+            double effectivePoints = availableAttackerPoints * (1 - resistance);
+            if( availableAttackerPoints != effectivePoints) {
+                System.out.println("Resistance of " + (resistance * 100) + "% applied. Effective damage points: " + effectivePoints);
+            }
+
+            if ((armor + defense) <= effectivePoints) {
+                System.out.println("Unit " + targetUnit.getId() + " is destroyed in " + damageType + " phase!");
+                availableAttackerPoints -= (defense + armor) / (1 - resistance);
                 defender.remove(targetUnit);
                 casualties.add(targetUnit);
-            } else if (availableAttackerPoints <= armor) {
-                targetUnit.setFinalArmor(armor - availableAttackerPoints);
+            } else if (effectivePoints <= armor) {
+                targetUnit.setFinalArmor(armor - effectivePoints);
                 availableAttackerPoints = 0;
             } else {
-                targetUnit.setFinalArmor(armor - availableAttackerPoints);
-                double remaining = availableAttackerPoints - armor;
-                targetUnit.setFinalDefense(defense - remaining);
+                targetUnit.setFinalArmor(armor - effectivePoints);
+                double remainingPoints = effectivePoints - armor;
+                targetUnit.setFinalDefense(defense - remainingPoints);
                 availableAttackerPoints = 0;
             }
         }
 
-        // TODO: utiliser la liste casualties si besoin
         for (Unit unit : defender) {
-            System.out.println("Remaining Unit after " + phaseName + " phase: " + unit);
+            System.out.println("Remaining Unit after " + damageType + " phase: " + unit);
         }
-        return availableAttackerPoints;
+        return new PhaseResult(casualties, defender, availableAttackerPoints);
+    }
+
+    public boolean doesFightEnd() {
+        return attackers.isEmpty() || defenders.isEmpty();
+    }
+
+    public void printUnits(List<Unit> units) {
+        for (Unit unit : units) {
+            System.out.println(unit);
+        }
     }
 
 
@@ -76,24 +90,37 @@ public class Battle {
         defender.updateCombatStats();
         attacker.updateCombatStats();
 
-        double defenderTotalAtk = defender.getPlayerStats().getTotalAtk();
-        double defenderTotalPdf = defender.getPlayerStats().getTotalPdf();
-        double defenderTotalPdc = defender.getPlayerStats().getTotalPdc();
-        double defenderTotalDef = defender.getPlayerStats().getTotalDef();
-        double defenderTotalArmor = defender.getPlayerStats().getTotalArmor();
+        List<Unit> defenderUnits = defender.getAllUnits();
+        List<Unit> attackerUnits = attacker.getAllUnits();
 
-        // Calculate total stats for attacker
-        double attackerTotalAtk = attacker.getPlayerStats().getTotalAtk();
+        printUnits(defenderUnits);
+        System.out.println("-----");
+        printUnits(attackerUnits);
+
+//
+//        double defenderTotalAtk = defender.getPlayerStats().getTotalAtk();
+        double defenderTotalPdf = defender.getPlayerStats().getTotalPdf();
+//        double defenderTotalPdc = defender.getPlayerStats().getTotalPdc();
+//        double defenderTotalDef = defender.getPlayerStats().getTotalDef();
+//        double defenderTotalArmor = defender.getPlayerStats().getTotalArmor();
+//
+//        // Calculate total stats for attacker
+//        double attackerTotalAtk = attacker.getPlayerStats().getTotalAtk();
         double attackerTotalPdf = attacker.getPlayerStats().getTotalPdf();
-        double attackerTotalPdc = attacker.getPlayerStats().getTotalPdc();
-        double attackerTotalDef = attacker.getPlayerStats().getTotalDef();
-        double attackerTotalArmor = attacker.getPlayerStats().getTotalArmor();
+//        double attackerTotalPdc = attacker.getPlayerStats().getTotalPdc();
+//        double attackerTotalDef = attacker.getPlayerStats().getTotalDef();
+//        double attackerTotalArmor = attacker.getPlayerStats().getTotalArmor();
 
         System.out.println("\n--- Combat between Attacker: " + attacker.getName() + " and Defender: " + defender.getName() + " ---");
 
-        double attackerRemainingPoints = classicPhaseConfiguration(defender.getAllUnits(), attackerTotalPdf, "PDF");
-        double defenderRemainingPoints = classicPhaseConfiguration(attacker.getAllUnits(), defenderTotalPdf, "HUH");
+        PhaseResult attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF");
+        PhaseResult defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "HUH");
 
-        System.out.println("After PDF phase, Attacker remaining points: " + attackerRemainingPoints + ", Defender remaining points: " + defenderRemainingPoints);
+        defenderUnits = attackerPhaseResult.survivors();
+        attackerUnits = defenderPhaseResult.survivors();
+
+        printUnits(defenderUnits);
+        System.out.println("-----");
+        printUnits(attackerUnits);
     }
 }
