@@ -4,6 +4,8 @@ import com.mg.nmlonline.entity.equipment.Equipment;
 import com.mg.nmlonline.entity.equipment.EquipmentStack;
 import com.mg.nmlonline.entity.sector.Sector;
 import com.mg.nmlonline.entity.unit.Unit;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,15 +15,17 @@ import java.util.*;
  * Classe représentant un joueur avec son armée d'unités
  */
 @Data
+@Entity
+@Table(name = "PLAYERS")
 @NoArgsConstructor
 public class Player {
-    private String name;
+    private String username;
     private PlayerStats stats = new PlayerStats();
     private List<EquipmentStack> equipments = new ArrayList<>(); // Équipements possédés par le joueur
     private List<Sector> sectors = new ArrayList<>(); // Secteurs/Quartiers contrôlés par le joueur
 
-    public Player(String name) {
-        this.name = name;
+    public Player(String username) {
+        this.username = username;
     }
 
     // === GESTION DES SECTEURS DU JOUEUR ===
@@ -365,7 +369,7 @@ public class Player {
      * Affiche toutes les armées des secteurs du joueur
      */
     public void displayArmy() {
-        System.out.println("=== ARMÉES DE " + name.toUpperCase() + " ===");
+        System.out.println("=== ARMÉES DE " + username.toUpperCase() + " ===");
 
         List<Sector> sectorsWithArmy = getSectorsWithArmy();
         if (sectorsWithArmy.isEmpty()) {
@@ -387,7 +391,7 @@ public class Player {
      * Regroupe les équipements par nom et affiche le nombre de chaque type
      */
     public void displayEquipments() {
-        System.out.println("=== ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
+        System.out.println("=== ÉQUIPEMENTS DE " + username.toUpperCase() + " ===");
         if (equipments.isEmpty()) {
             System.out.println("Aucun équipement.");
             return;
@@ -411,7 +415,7 @@ public class Player {
         calculateTotalEconomyPower();
 
 
-        System.out.printf("=== %s ===%n", name.toUpperCase());
+        System.out.printf("=== %s ===%n", username.toUpperCase());
 
         System.out.println("--- Statistiques Économiques ---");
         System.out.println(formatStat(stats.getMoney(), "$ "));

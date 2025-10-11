@@ -13,9 +13,9 @@ INSERT INTO CREDENTIALS (username, password) VALUES ('nursek', '$2y$10$X41e/q5zc
 CREATE TABLE IF NOT EXISTS PLAYERS (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
-    money INT NOT NULL,
-    army BLOB,
-    equipment BLOB
+    stats BLOB,
+    equipments BLOB,
+    sectors BLOB
 );
 INSERT INTO PLAYERS (username, money, army, equipment) VALUES ('nursek', 3000, NULL, NULL);
 INSERT INTO PLAYERS (username, money, army, equipment) VALUES ('lurio', 2900, NULL, NULL);
