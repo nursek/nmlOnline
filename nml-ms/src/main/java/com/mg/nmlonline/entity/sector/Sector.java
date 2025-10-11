@@ -31,19 +31,19 @@ public class Sector {
 
     public void recalculateMilitaryPower(){
         stats.setTotalAtk(army.stream()
-                .mapToDouble(Unit::getFinalAttack)
+                .mapToDouble(Unit::getAttack)
                 .sum());
         stats.setTotalPdf(army.stream()
-                .mapToDouble(Unit::getFinalPdf)
+                .mapToDouble(Unit::getPdf)
                 .sum());
         stats.setTotalPdc(army.stream()
-                .mapToDouble(Unit::getFinalPdc)
+                .mapToDouble(Unit::getPdc)
                 .sum());
         stats.setTotalDef(army.stream()
-                .mapToDouble(Unit::getFinalDefense)
+                .mapToDouble(Unit::getDefense)
                 .sum());
         stats.setTotalArmor(army.stream()
-                .mapToDouble(Unit::getFinalArmor)
+                .mapToDouble(Unit::getArmor)
                 .sum());
 
         stats.setTotalOffensive(stats.getTotalAtk() + stats.getTotalPdf() + stats.getTotalPdc());

@@ -29,22 +29,14 @@ public class Unit {
     private List<UnitClass> classes;
 
     // Statistiques de base
-    private int baseAttack;
-    private int baseDefense;
+    private double attack;
+    private double defense;
 
     // Statistiques calculées et conservées (sans bonus du joueur)
-    private double baseCalculatedPdf;
-    private double baseCalculatedPdc;
-    private double baseCalculatedArmor;
-    private double baseCalculatedEvasion;
-
-    // Statistiques finales (avec bonus du joueur appliqués)
-    private double finalAttack;
-    private double finalDefense;
-    private double finalPdf;
-    private double finalPdc;
-    private double finalArmor;
-    private double finalEvasion;
+    private double pdf;
+    private double pdc;
+    private double armor;
+    private double evasion;
 
     // Équipements
     private List<Equipment> equipments;
@@ -57,61 +49,35 @@ public class Unit {
         this.classes = new ArrayList<>();
         this.classes.add(primaryClass);
 
-        this.baseAttack = type.getBaseAttack();
-        this.baseDefense = type.getBaseDefense();
+        this.attack = type.getBaseAttack();
+        this.defense = type.getBaseDefense();
 
         this.equipments = new ArrayList<>();
 
         recalculateBaseStats(); // Calcul initial
     }
 
-    //used in TXT.
-    public Unit(String charName, UnitType unitType, int atk, int pdf, int pdc, int def, int arm, double evasion) {
-        this.id = nextId++;
-        this.name = charName;
-        this.experience = 100;
-        this.type = unitType; // Type de l'unité
-
-        this.baseAttack = atk;
-        this.baseDefense = def;
-        this.baseCalculatedPdf = pdf;
-        this.baseCalculatedPdc = pdc;
-        this.baseCalculatedArmor = arm;
-        this.baseCalculatedEvasion = evasion;
-
-        this.equipments = new ArrayList<>();
-        this.classes = new ArrayList<>();
-    }
-
     // Recalcule les statistiques de base (sans bonus joueur)
     public void recalculateBaseStats() {
         double statMultiplier = classes.stream().mapToDouble(UnitClass::getStatMultiplier).min().orElse(1.0);
 
-        this.baseAttack = (int) (type.getBaseAttack() * statMultiplier);
-        this.baseDefense = (int) (type.getBaseDefense() * statMultiplier);
-
-        this.baseCalculatedPdf = calculateEquipmentPdf();
-        this.baseCalculatedPdc = calculateEquipmentPdc();
-        this.baseCalculatedArmor = calculateEquipmentArmor();
-        this.baseCalculatedEvasion = calculateEquipmentEvasion();
-
-        this.finalAttack = baseAttack;
-        this.finalDefense = baseDefense;
-        this.finalPdf = baseCalculatedPdf;
-        this.finalPdc = baseCalculatedPdc;
-        this.finalArmor = baseCalculatedArmor;
-        this.finalEvasion = baseCalculatedEvasion;
+        this.attack = type.getBaseAttack() * statMultiplier;
+        this.defense =  type.getBaseDefense() * statMultiplier;
+        this.pdf = calculateEquipmentPdf();
+        this.pdc = calculateEquipmentPdc();
+        this.armor = calculateEquipmentArmor();
+        this.evasion = calculateEquipmentEvasion();
     }
 
     //TODO : pour les bonus du joueur, revoir + tard pendant système de combat
     // Applique les bonus du joueur (appelé par Player)
     public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus, double pdcBonus, double armorBonus, double evasionBonus) {
-        this.finalAttack = baseAttack * (1.0 + attackBonus);
-        this.finalDefense = baseDefense * (1.0 + defenseBonus);
-        this.finalPdf = baseCalculatedPdf * (1.0 + pdfBonus);
-        this.finalPdc = baseCalculatedPdc * (1.0 + pdcBonus);
-        this.finalArmor = baseCalculatedArmor * (1.0 + armorBonus);
-        this.finalEvasion = baseCalculatedEvasion - (evasionBonus * 10);
+        this.attack = attack * (1.0 + attackBonus);
+        this.defense = defense * (1.0 + defenseBonus);
+        this.pdf = pdf * (1.0 + pdfBonus);
+        this.pdc = pdc * (1.0 + pdcBonus);
+        this.armor = armor * (1.0 + armorBonus);
+        this.evasion = evasion - (evasionBonus * 10);
     }
 
     private double calculateEquipmentPdf() {
@@ -119,7 +85,7 @@ public class Unit {
 
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
-                totalPdf += baseAttack * (equipment.getPdfBonus() / 100.0);
+                totalPdf += attack * (equipment.getPdfBonus() / 100.0);
             }
         }
         return totalPdf;
@@ -130,7 +96,7 @@ public class Unit {
 
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
-                totalPdc += baseAttack * (equipment.getPdcBonus() / 100.0);
+                totalPdc += attack * (equipment.getPdcBonus() / 100.0);
             }
         }
         return totalPdc;
@@ -141,7 +107,7 @@ public class Unit {
 
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
-                totalArmor += baseDefense * (equipment.getArmBonus() / 100.0);
+                totalArmor += defense * (equipment.getArmBonus() / 100.0);
             }
         }
         return totalArmor;
@@ -232,12 +198,12 @@ public class Unit {
     }
 
     public double getTotalAttack() {
-        return finalAttack + finalPdf + finalPdc;
+        return attack + pdf + pdc;
     }
 
     // Méthodes utilitaires pour le tri
     public double getTotalDefense() {
-        return finalDefense + finalArmor;
+        return defense + armor;
     }
 
     // Méthodes de formatage pour l'affichage
@@ -265,7 +231,7 @@ public class Unit {
             // Exemple de ligne : Mortarion (100 Atk + 100 Pdf + 50 Pdc / 250 Def)
             sb.append(name);
             sb.append(" (");
-            statsBuilder(sb, baseAttack, baseCalculatedPdf, baseCalculatedPdc, baseDefense, baseCalculatedArmor, baseCalculatedEvasion);
+            statsBuilder(sb, attack, pdf, pdc, defense, armor, evasion);
             sb.append(").");
         } else {
             sb.append(classes.stream().map(c -> "(" + c.getCode() + ")").collect(Collectors.joining(" "))).append(" ");
@@ -282,7 +248,7 @@ public class Unit {
             }
 
             // Statistiques avec formatage précis
-            statsBuilder(sb, finalAttack, finalPdf, finalPdc, finalDefense, finalArmor, finalEvasion);
+            statsBuilder(sb, attack, pdf, pdc, defense, armor, evasion);
             sb.append(".");
         }
 
@@ -290,13 +256,13 @@ public class Unit {
         return sb.toString();
     }
 
-    private void statsBuilder(StringBuilder sb, double finalAttack, double finalPdf, double finalPdc, double finalDefense, double finalArmor, double finalEvasion) {
-        sb.append(formatStat(finalAttack)).append(" Atk");
-        if (finalPdf > 0) sb.append(" + ").append(formatStat(finalPdf)).append(" Pdf");
-        if (finalPdc > 0) sb.append(" + ").append(formatStat(finalPdc)).append(" Pdc");
-        sb.append(" / ").append(formatStat(finalDefense)).append(" Def");
-        if (finalArmor > 0) sb.append(" + ").append(formatStat(finalArmor)).append(" Arm");
-        if (finalEvasion > 0) sb.append(". Esquive : ").append(formatEvasion(finalEvasion)).append(" %");
+    private void statsBuilder(StringBuilder sb, double attack, double pdf, double pdc, double defense, double armor, double evasion) {
+        sb.append(formatStat(attack)).append(" Atk");
+        if (pdf > 0) sb.append(" + ").append(formatStat(pdf)).append(" Pdf");
+        if (pdc > 0) sb.append(" + ").append(formatStat(pdc)).append(" Pdc");
+        sb.append(" / ").append(formatStat(defense)).append(" Def");
+        if (armor > 0) sb.append(" + ").append(formatStat(armor)).append(" Arm");
+        if (evasion > 0) sb.append(". Esquive : ").append(formatEvasion(evasion)).append(" %");
     }
 
     public double getDamageReduction(String damageType) {

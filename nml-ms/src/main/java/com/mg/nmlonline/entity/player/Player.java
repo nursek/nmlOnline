@@ -306,19 +306,19 @@ public class Player {
         }
 
         double totalAtk = getAllUnits().stream()
-                .mapToDouble(Unit::getFinalAttack)
+                .mapToDouble(Unit::getAttack)
                 .sum();
         double totalPdf = getAllUnits().stream()
-                .mapToDouble(Unit::getFinalPdf)
+                .mapToDouble(Unit::getPdf)
                 .sum();
         double totalPdc = getAllUnits().stream()
-                .mapToDouble(Unit::getFinalPdc)
+                .mapToDouble(Unit::getPdc)
                 .sum();
         double totalDef = getAllUnits().stream()
-                .mapToDouble(Unit::getFinalDefense)
+                .mapToDouble(Unit::getDefense)
                 .sum();
         double totalArmor = getAllUnits().stream()
-                .mapToDouble(Unit::getFinalArmor)
+                .mapToDouble(Unit::getArmor)
                 .sum();
 
         stats.setTotalAtk(totalAtk);

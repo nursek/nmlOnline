@@ -40,7 +40,5 @@ public class PlayerTestDemo {
         } catch (IOException e) {
             throw new RuntimeException("Skill issue lors de l'import des joueurs pour le test de combat", e);
         }
-
-    // Ajouter ici la logique de simulation de combat entre defender et attacker}
     }
 }
