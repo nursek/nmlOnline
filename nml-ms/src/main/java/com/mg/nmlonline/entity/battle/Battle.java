@@ -106,6 +106,9 @@ public class Battle {
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
 
+        reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "PDF");
+        reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "PDF");
+
         printUnitsIndented(defenderUnits, "Défenseurs restants");
         printUnitsIndented(attackerUnits, "Attaquants restants");
 
@@ -125,6 +128,9 @@ public class Battle {
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
 
+        reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "PDC");
+        reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "PDC");
+
         printUnitsIndented(defenderUnits, "Défenseurs restants");
         printUnitsIndented(attackerUnits, "Attaquants restants");
 
@@ -143,6 +149,9 @@ public class Battle {
 
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
+
+        reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "ATK");
+        reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "ATK");
 
         printUnitsIndented(defenderUnits, "Défenseurs restants");
         printUnitsIndented(attackerUnits, "Attaquants restants");
