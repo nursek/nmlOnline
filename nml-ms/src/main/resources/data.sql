@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS PLAYERS (
     equipments BLOB,
     sectors BLOB
 );
-INSERT INTO PLAYERS (username, money, army, equipment) VALUES ('nursek', 3000, NULL, NULL);
-INSERT INTO PLAYERS (username, money, army, equipment) VALUES ('lurio', 2900, NULL, NULL);
-INSERT INTO PLAYERS (username, money, army, equipment) VALUES ('test', 0, NULL, NULL);
+INSERT INTO PLAYERS (username, stats, equipments, sectors) VALUES ('nursek', NULL, NULL, NULL);
+INSERT INTO PLAYERS (username, stats, equipments, sectors) VALUES ('lurio', NULL, NULL, NULL);
+INSERT INTO PLAYERS (username, stats, equipments, sectors) VALUES ('test', NULL, NULL, NULL);
 
 CREATE TABLE IF NOT EXISTS EQUIPMENT (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS EQUIPMENT (
     pdc_bonus INT NOT NULL,
     arm_bonus INT NOT NULL,
     evasion_bonus INT NOT NULL,
-    compatible_classes VARCHAR(255),
+    compatible_class VARCHAR(255),
     category VARCHAR(100)
 );
-INSERT INTO EQUIPMENT (name, cost, pdf_bonus, pdc_bonus, arm_bonus, evasion_bonus, compatible_classes, category) VALUES
+INSERT INTO EQUIPMENT (name, cost, pdf_bonus, pdc_bonus, arm_bonus, evasion_bonus, compatible_class, category) VALUES
 ('Pistolet 9mm',400,80,0,0,0,'LEGER','FIREARM'),
 ('Pistolet-mitrailleur',850,150,0,25,0,'LEGER','FIREARM'),
 ('HK-MP7',1600,300,0,25,0,'LEGER','FIREARM'),

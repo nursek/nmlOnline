@@ -65,7 +65,7 @@ public class PlayerService {
 
         for (String equipment : unitDto.equipments) {
             if(player.isEquipmentAvailable(equipment) && unit.addEquipment(EquipmentFactory.createFromName(equipment)) && !player.decrementEquipmentAvailability(equipment)){
-                        System.err.println("Erreur : équipement " + equipment + " non disponible pour le joueur " + player.getUsername());
+                        System.err.println("Erreur : équipement " + equipment + " non disponible pour le joueur " + player.getName());
             }
         }
         return unit;
@@ -73,7 +73,7 @@ public class PlayerService {
 
     public void savePlayerToJson(Player player, String filePath) throws IOException {
         PlayerDTO dto = new PlayerDTO();
-        dto.name = player.getUsername();
+        dto.name = player.getName();
         dto.money = player.getStats().getMoney();
         dto.equipments = new ArrayList<>();
         for (EquipmentStack stack : player.getEquipments()) {
