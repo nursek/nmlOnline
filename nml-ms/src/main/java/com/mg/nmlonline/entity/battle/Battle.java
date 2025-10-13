@@ -49,7 +49,7 @@ public class Battle {
             // Calcul des dégâts avec résistance
             double effectivePoints = availableAttackerPoints * (1 - resistance);
             if (availableAttackerPoints != effectivePoints) {
-                System.out.printf("      > Résistance de %.0f%% appliquée. Dégâts effectifs : %.2f\n", resistance * 100, effectivePoints);
+                System.out.printf("      > Résistance de %.0f%% appliquée. Dégâts effectifs : %.2f%n", resistance * 100, effectivePoints);
             }
 
             if ((armor + defense) <= effectivePoints) {
@@ -59,13 +59,13 @@ public class Battle {
                 casualties.add(targetUnit);
             } else if (effectivePoints <= armor) {
                 targetUnit.setArmor(armor - effectivePoints);
-                System.out.printf("      > %s perd %.2f d'armure (reste: %.2f)\n", targetUnit.getName(), effectivePoints, targetUnit.getArmor());
+                System.out.printf("      > %s perd %.2f d'armure (reste: %.2f)%n", targetUnit.getName(), effectivePoints, targetUnit.getArmor());
                 availableAttackerPoints = 0;
             } else {
                 targetUnit.setArmor(0);
                 double remainingPoints = effectivePoints - armor;
                 targetUnit.setDefense(defense - remainingPoints);
-                System.out.printf("      > %s perd toute son armure et %.2f de défense (reste: %.2f)\n", targetUnit.getName(), remainingPoints, targetUnit.getDefense());
+                System.out.printf("      > %s perd toute son armure et %.2f de défense (reste: %.2f)%n", targetUnit.getName(), remainingPoints, targetUnit.getDefense());
                 availableAttackerPoints = 0;
             }
         }
@@ -85,6 +85,27 @@ public class Battle {
         return new PhaseResult(casualties, defender, availableAttackerPoints);
     }
 
+    double getTotalPoints(Player player, String pointsType) {
+        return switch (pointsType) {
+            case "PDF" -> player.getPlayerStats().getTotalPdf();
+            case "PDC" -> player.getPlayerStats().getTotalPdc();
+            case "ATK" -> player.getPlayerStats().getTotalAtk();
+            default -> 0;
+        };
+    }
+
+    double checkPointsTypeInUnits(List<Unit> units, String pointsType) {
+        return switch (pointsType) {
+            case "PDF" -> units.stream().mapToDouble(Unit::getPdf).sum();
+            case "PDC" -> units.stream().mapToDouble(Unit::getPdc).sum();
+            case "ATK" -> units.stream().mapToDouble(Unit::getAttack).sum();
+            default -> 0;
+        };
+    }
+
+    //private List<Unit> handleInjuredUnits(List<Unit> units) {
+     // Injured unit receive the BLESSE class (rename it to Injured).   for (Unit unit : units) {
+    //}
 
     public void classicCombatConfiguration(Player attacker, Player defender) {
         defender.updateCombatStats();
@@ -93,12 +114,15 @@ public class Battle {
         List<Unit> defenderUnits = defender.getAllUnits();
         List<Unit> attackerUnits = attacker.getAllUnits();
 
+        List<Unit> defenderInjuredUnits = new ArrayList<>();
+        List<Unit> attackerInjuredUnits = new ArrayList<>();
+
         System.out.println("\n=== Début du combat entre " + attacker.getName() + " et " + defender.getName() + " ===");
 
         // Phase PDF
         printPhaseHeader("PDF");
-        double attackerTotalPdf = attacker.getPlayerStats().getTotalPdf();
-        double defenderTotalPdf = defender.getPlayerStats().getTotalPdf();
+        double attackerTotalPdf = getTotalPoints(attacker, "PDF");
+        double defenderTotalPdf = getTotalPoints(defender, "PDF");
 
         PhaseResult attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF");
         PhaseResult defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF");
@@ -117,10 +141,34 @@ public class Battle {
             return;
         }
 
+        // Check if there is leftover Pdf points to make a second PDF phase It will be used when buildings are implemented
+        if (checkPointsTypeInUnits(attackerUnits, "PDF") > 0 || checkPointsTypeInUnits(defenderUnits, "PDF") > 0) {
+            printPhaseHeader("PDF - Round 2");
+            attackerTotalPdf = getTotalPoints(attacker, "PDF");
+            defenderTotalPdf = getTotalPoints(defender, "PDF");
+
+            attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF");
+            defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF");
+
+            defenderUnits = attackerPhaseResult.survivors();
+            attackerUnits = defenderPhaseResult.survivors();
+
+            reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "PDF");
+            reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "PDF");
+
+            printUnitsIndented(defenderUnits, "Défenseurs restants");
+            printUnitsIndented(attackerUnits, "Attaquants restants");
+
+            if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
+                System.out.println("\n=== Combat terminé après la phase PDF round 2 ! ===");
+                return;
+            }
+        }
+
         // Phase PDC
         printPhaseHeader("PDC");
-        double attackerTotalPdc = attacker.getPlayerStats().getTotalPdc();
-        double defenderTotalPdc = defender.getPlayerStats().getTotalPdc();
+        double attackerTotalPdc = getTotalPoints(attacker, "PDC");
+        double defenderTotalPdc = getTotalPoints(defender, "PDC");
 
         attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC");
         defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC");
@@ -139,16 +187,43 @@ public class Battle {
             return;
         }
 
+        if (checkPointsTypeInUnits(attackerUnits, "PDC") > 0 || checkPointsTypeInUnits(defenderUnits, "PDC") > 0) {
+            printPhaseHeader("PDC - Round 2");
+            attackerTotalPdc = getTotalPoints(attacker, "PDC");
+            defenderTotalPdc = getTotalPoints(defender, "PDC");
+
+            attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC");
+            defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC");
+
+            defenderUnits = attackerPhaseResult.survivors();
+            attackerUnits = defenderPhaseResult.survivors();
+
+            reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "PDC");
+            reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "PDC");
+
+            printUnitsIndented(defenderUnits, "Défenseurs restants");
+            printUnitsIndented(attackerUnits, "Attaquants restants");
+
+            if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
+                System.out.println("\n=== Combat terminé après la phase PDC round 2 ! ===");
+                return;
+            }
+        }
+
         // Phase ATK
         printPhaseHeader("ATK");
-        double attackerTotalAtk = attacker.getPlayerStats().getTotalAtk();
-        double defenderTotalAtk = defender.getPlayerStats().getTotalAtk();
+        double attackerTotalAtk = getTotalPoints(attacker, "ATK");
+        double defenderTotalAtk = getTotalPoints(defender, "ATK");
 
+        // Make it non-lethal.
         attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalAtk, "ATK");
         defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalAtk, "ATK");
 
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
+
+        defenderInjuredUnits = attackerPhaseResult.casualties(); // At this phase, they are not dead, just injured.
+        attackerInjuredUnits = defenderPhaseResult.casualties();
 
         reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "ATK");
         reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "ATK");
@@ -227,7 +302,7 @@ public class Battle {
                 points -= toAssign;
                 if (points <= 0) break;
             }
-            // Les unités restantes reçoivent 0
+            // Les unités restantes reçoivent 0.
             boolean assignZero = points <= 0;
             if (assignZero) {
                 for (Unit unit : units) {
