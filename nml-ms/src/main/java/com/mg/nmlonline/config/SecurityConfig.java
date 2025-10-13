@@ -17,17 +17,27 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/login",
-                                "/api/register",
-                                "/api/auth/refresh",
-                                "/api/auth/logout", // <-- ajoute cette ligne
-                                "/h2-console/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                );
+        // Autoriser les endpoints publics (login/register/refresh/logout + console H2)
+        http.authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                        "/api/login",
+                        "/api/register",
+                        "/api/auth/refresh",
+                        "/api/auth/logout",
+                        "/h2-console/**"
+                ).permitAll()
+                .anyRequest().authenticated()
+        );
+
+        // Ne pas appliquer CSRF sur la console H2 (sécurisé pour dev)
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
+
+        // Autoriser l'affichage dans un iframe de la même origine (résout X-Frame-Options: DENY)
+        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+
+        // Auth simple pour dev (ajuster/retirer en prod)
+        http.httpBasic();
+
         return http.build();
     }
 

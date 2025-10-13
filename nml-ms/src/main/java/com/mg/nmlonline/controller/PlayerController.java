@@ -1,7 +1,8 @@
 package com.mg.nmlonline.controller;
 
+import com.mg.nmlonline.dto.PlayerDto;
 import com.mg.nmlonline.entity.player.PlayerEntity;
-import com.mg.nmlonline.repository.PlayerRepository;
+import com.mg.nmlonline.service.PlayerService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,44 +13,44 @@ import java.util.List;
 @RequestMapping("/api/players")
 public class PlayerController {
 
-    private final PlayerRepository playerRepository;
+    private final PlayerService playerService;
 
-    public PlayerController(PlayerRepository playerRepository) {
-        this.playerRepository = playerRepository;
+    public PlayerController(PlayerService playerService) {
+        this.playerService = playerService;
     }
 
     @GetMapping
-    public List<PlayerEntity> listAll() {
-        return playerRepository.findAll();
+    public List<PlayerDto> listAll() {
+        return playerService.listAllDtos();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PlayerEntity> getOne(@PathVariable Long id) {
-        return playerRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<PlayerDto> getOne(@PathVariable Long id) {
+        return playerService.findDtoById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/export")
+    public ResponseEntity<PlayerDto> exportPlayer(@PathVariable Long id) {
+        return getOne(id);
     }
 
     @PostMapping
-    public ResponseEntity<PlayerEntity> create(@RequestBody PlayerEntity payload) {
-        PlayerEntity saved = playerRepository.save(payload);
+    public ResponseEntity<PlayerDto> create(@RequestBody PlayerDto payload) {
+        PlayerDto saved = playerService.createFromDto(payload);
         return ResponseEntity.created(URI.create("/api/players/" + saved.getId())).body(saved);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PlayerEntity> update(@PathVariable Long id, @RequestBody PlayerEntity payload) {
-        if (!playerRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        payload.setId(id);
-        PlayerEntity saved = playerRepository.save(payload);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<PlayerDto> update(@PathVariable Long id, @RequestBody PlayerDto payload) {
+        PlayerDto updated = playerService.updateFromDto(id, payload);
+        if (updated == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!playerRepository.existsById(id)) return ResponseEntity.notFound().build();
-        playerRepository.deleteById(id);
+        boolean deleted = playerService.deleteEntity(id);
+        if (!deleted) return ResponseEntity.notFound().build();
         return ResponseEntity.noContent().build();
     }
 }

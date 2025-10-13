@@ -1,144 +1,130 @@
 package com.mg.nmlonline.service;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mg.nmlonline.entity.player.Player;
-import com.mg.nmlonline.entity.sector.Sector;
-import com.mg.nmlonline.entity.unit.Unit;
-import com.mg.nmlonline.entity.unit.UnitClass;
-import com.mg.nmlonline.entity.equipment.*;
+import com.mg.nmlonline.dto.PlayerDto;
+import com.mg.nmlonline.entity.player.PlayerEntity;
+import com.mg.nmlonline.mapper.PlayerMapper;
+import com.mg.nmlonline.repository.PlayerRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
+/**
+ * Service d'application pour la gestion des players.
+ * - Expose des DTOs pour les controllers
+ * - Opérations CRUD sur PlayerEntity
+ * - Orchestration import/export via PlayerImportService / PlayerExportService
+ * - Sérialisation simple des champs complexes en BLOB pour la persistence
+ */
+@Service
 public class PlayerService {
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // === JSON IMPORT METHOD ===
-    public Player importPlayerFromJson(String filePath) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
-        Player player = new Player(dto.name);
-        player.getStats().setMoney(dto.money);
+    private final PlayerRepository playerRepository;
+    private final PlayerMapper playerMapper;
+    private final PlayerImportService playerImportService;
+    private final PlayerExportService playerExportService;
 
-        importGeneralEquipments(player, dto.equipments);
-
-        if (dto.sectors != null && !dto.sectors.isEmpty()) {
-            importSectors(player, dto.sectors);
-        }
-        return player;
+    public PlayerService(PlayerRepository playerRepository,
+                         PlayerMapper playerMapper,
+                         PlayerImportService playerImportService,
+                         PlayerExportService playerExportService) {
+        this.playerRepository = playerRepository;
+        this.playerMapper = playerMapper;
+        this.playerImportService = playerImportService;
+        this.playerExportService = playerExportService;
     }
 
-    private void importGeneralEquipments(Player player, List<EquipmentDTO> equipments) {
-        if (equipments == null) return;
-        for (EquipmentDTO equipment : equipments) {
-            player.addEquipmentToStack(EquipmentFactory.createFromName(equipment.name), equipment.quantity);
+    // --- Lecture (DTO) pour controllers ---
+    public List<PlayerDto> listAllDtos() {
+        return playerRepository.findAll().stream()
+                .map(playerMapper::entityToDto)
+                .collect(Collectors.toList());
+    }
+
+    public Optional<PlayerDto> findDtoById(Long id) {
+        return playerRepository.findById(id).map(playerMapper::entityToDto);
+    }
+
+    // --- CRUD entités (utilisées par controllers si nécessaire) ---
+    public List<PlayerEntity> listAllEntities() {
+        return playerRepository.findAll();
+    }
+
+    public Optional<PlayerEntity> findEntityById(Long id) {
+        return playerRepository.findById(id);
+    }
+
+    public PlayerEntity createEntity(PlayerEntity payload) {
+        return playerRepository.save(payload);
+    }
+
+    public PlayerEntity updateEntity(Long id, PlayerEntity payload) {
+        if (!playerRepository.existsById(id)) {
+            return null;
+        }
+        payload.setId(id);
+        return playerRepository.save(payload);
+    }
+
+    public boolean deleteEntity(Long id) {
+        if (!playerRepository.existsById(id)) return false;
+        playerRepository.deleteById(id);
+        return true;
+    }
+
+    // --- Sauvegarde d'un domaine Player (utilitaire) ---
+    public PlayerEntity saveDomainAsEntity(com.mg.nmlonline.entity.player.Player player) {
+        PlayerEntity e = playerMapper.domainToEntity(player);
+        return playerRepository.save(e);
+    }
+
+    // --- Import / Export (délégué aux services dédiés) ---
+    public com.mg.nmlonline.entity.player.Player importPlayerFromJson(String filePath) throws IOException {
+        return playerImportService.importPlayerFromJson(filePath);
+    }
+
+    public void savePlayerToJson(com.mg.nmlonline.entity.player.Player player, String filePath) throws IOException {
+        playerExportService.savePlayerToJson(player, filePath);
+    }
+
+    // --- Création / mise à jour via PlayerDto (utilisés par controllers POST/PUT) ---
+    @Transactional
+    public PlayerDto createFromDto(PlayerDto dto) {
+        try {
+            PlayerEntity e = new PlayerEntity();
+            e.setId(null);
+            e.setUsername(dto.getName());
+            // Sérialisation simple des objets complexes en BLOB
+            e.setStats(objectMapper.writeValueAsBytes(dto.getMoney()));
+            e.setEquipments(objectMapper.writeValueAsBytes(dto.getEquipments()));
+            e.setSectors(objectMapper.writeValueAsBytes(dto.getSectors()));
+            PlayerEntity saved = playerRepository.save(e);
+            return playerMapper.entityToDto(saved);
+        } catch (IOException ex) {
+            throw new RuntimeException("Erreur de sérialisation lors de la création du joueur", ex);
         }
     }
 
-    private void importSectors(Player player, List<SectorDTO> sectors) {
-        for (SectorDTO sectorDto : sectors) {
-            Sector sector = new Sector(sectorDto.id, sectorDto.name);
-            sector.setIncome(sectorDto.income);
-            player.addSector(sector);
-            importUnitsToSector(player, sectorDto.army, sectorDto.id);
+    @Transactional
+    public PlayerDto updateFromDto(Long id, PlayerDto dto) {
+        if (!playerRepository.existsById(id)) return null;
+        try {
+            PlayerEntity e = new PlayerEntity();
+            e.setId(id);
+            e.setUsername(dto.getName());
+            e.setStats(objectMapper.writeValueAsBytes(dto.getMoney()));
+            e.setEquipments(objectMapper.writeValueAsBytes(dto.getEquipments()));
+            e.setSectors(objectMapper.writeValueAsBytes(dto.getSectors()));
+            PlayerEntity saved = playerRepository.save(e);
+            return playerMapper.entityToDto(saved);
+        } catch (IOException ex) {
+            throw new RuntimeException("Erreur de sérialisation lors de la mise à jour du joueur", ex);
         }
-    }
-
-    private void importUnitsToSector(Player player, List<UnitDTO> units, int sectorId) {
-        if (units == null) return;
-        for (UnitDTO unitDto : units) {
-            Unit unit = createUnitFromDTO(player, unitDto);
-            if(!(player.addUnitToSector(unit, sectorId))){
-                return;
-            }
-        }
-    }
-
-    private Unit createUnitFromDTO(Player player, UnitDTO unitDto) {
-        Unit unit = new Unit(unitDto.experience, unitDto.type, UnitClass.valueOf(unitDto.classes.get(0)));
-        if (unitDto.classes.size() > 1) {
-            unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
-        }
-        //TODO Implement better logic to add équipment with quantity and availability
-
-        for (String equipment : unitDto.equipments) {
-            if(player.isEquipmentAvailable(equipment) && unit.addEquipment(EquipmentFactory.createFromName(equipment)) && !player.decrementEquipmentAvailability(equipment)){
-                        System.err.println("Erreur : équipement " + equipment + " non disponible pour le joueur " + player.getName());
-            }
-        }
-        return unit;
-    }
-
-    public void savePlayerToJson(Player player, String filePath) throws IOException {
-        PlayerDTO dto = new PlayerDTO();
-        dto.name = player.getName();
-        dto.money = player.getStats().getMoney();
-        dto.equipments = new ArrayList<>();
-        for (EquipmentStack stack : player.getEquipments()) {
-            EquipmentDTO equipmentDTO = new EquipmentDTO();
-            equipmentDTO.name = stack.getEquipment().getName();
-            equipmentDTO.quantity = stack.getQuantity();
-            dto.equipments.add(equipmentDTO);
-        }
-        dto.sectors = new ArrayList<>();
-        for (Sector sector : player.getSectors()) {
-            SectorDTO sectorDTO = new SectorDTO();
-            sectorDTO.id = sector.getNumber();
-            sectorDTO.name = sector.getName();
-            sectorDTO.income = sector.getIncome();
-            sectorDTO.army = new ArrayList<>();
-            for (Unit unit : sector.getUnits()) {
-                UnitDTO unitDTO = new UnitDTO();
-                unitDTO.id = unit.getId();
-                unitDTO.type = String.valueOf(unit.getType());
-                unitDTO.experience = unit.getExperience();
-                unitDTO.classes = new ArrayList<>();
-//TODO               unitDTO.classes.add(unit.getClasses().toString()); // Check ici, possible bugs
-//                if (unit.getSecondClass() != null) {
-//                    unitDTO.classes.add(unit.getSecondClass().name());
-//                }
-                unitDTO.equipments = new ArrayList<>();
-                for (Equipment equipment : unit.getEquipments()) {
-                    unitDTO.equipments.add(equipment.getName());
-                }
-                sectorDTO.army.add(unitDTO);
-            }
-            dto.sectors.add(sectorDTO);
-        }
-        objectMapper.writeValue(new File(filePath), dto);
-        }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class PlayerDTO {
-        public String name;
-        public List<EquipmentDTO> equipments;
-        public List<SectorDTO> sectors;
-        public double money;
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class SectorDTO {
-        @JsonProperty("number")
-        public int id;
-        public String name;
-        public double income;
-        public List<UnitDTO> army;
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class UnitDTO {
-        public int id;
-        public String type;
-        public List<String> classes;
-        public double experience;
-        public List<String> equipments = new ArrayList<>();
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class EquipmentDTO {
-        public String name;
-        public int quantity;
     }
 }

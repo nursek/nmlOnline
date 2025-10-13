@@ -1,7 +1,8 @@
 package com.mg.nmlonline.controller;
 
+import com.mg.nmlonline.dto.EquipmentDto;
 import com.mg.nmlonline.entity.equipment.EquipmentEntity;
-import com.mg.nmlonline.repository.EquipmentRepository;
+import com.mg.nmlonline.service.EquipmentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,44 +13,41 @@ import java.util.List;
 @RequestMapping("/api/equipment")
 public class EquipmentController {
 
-    private final EquipmentRepository equipmentRepository;
+    private final EquipmentService equipmentService;
 
-    public EquipmentController(EquipmentRepository equipmentRepository) {
-        this.equipmentRepository = equipmentRepository;
+    public EquipmentController(EquipmentService equipmentService) {
+        this.equipmentService = equipmentService;
     }
 
     @GetMapping
-    public List<EquipmentEntity> listAll() {
-        return equipmentRepository.findAll();
+    public List<EquipmentDto> listAll() {
+        return equipmentService.listAllDtos();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EquipmentEntity> getOne(@PathVariable Long id) {
-        return equipmentRepository.findById(id)
+    public ResponseEntity<EquipmentDto> getOne(@PathVariable Long id) {
+        return equipmentService.findDtoById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<EquipmentEntity> create(@RequestBody EquipmentEntity payload) {
-        EquipmentEntity saved = equipmentRepository.save(payload);
+    public ResponseEntity<EquipmentDto> create(@RequestBody EquipmentDto payload) {
+        EquipmentDto saved = equipmentService.createFromDto(payload);
         return ResponseEntity.created(URI.create("/api/equipment/" + saved.getId())).body(saved);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EquipmentEntity> update(@PathVariable Long id, @RequestBody EquipmentEntity payload) {
-        if (!equipmentRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        payload.setId(id);
-        EquipmentEntity saved = equipmentRepository.save(payload);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<EquipmentDto> update(@PathVariable Long id, @RequestBody EquipmentDto payload) {
+        EquipmentDto updated = equipmentService.updateFromDto(id, payload);
+        if (updated == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!equipmentRepository.existsById(id)) return ResponseEntity.notFound().build();
-        equipmentRepository.deleteById(id);
+        boolean deleted = equipmentService.delete(id);
+        if (!deleted) return ResponseEntity.notFound().build();
         return ResponseEntity.noContent().build();
     }
 }
