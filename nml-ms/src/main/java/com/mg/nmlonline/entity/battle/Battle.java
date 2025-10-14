@@ -2,11 +2,13 @@ package com.mg.nmlonline.entity.battle;
 
 import com.mg.nmlonline.entity.player.Player;
 import com.mg.nmlonline.entity.unit.Unit;
+import com.mg.nmlonline.entity.unit.UnitClass;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
@@ -103,9 +105,28 @@ public class Battle {
         };
     }
 
-    //private List<Unit> handleInjuredUnits(List<Unit> units) {
-     // Injured unit receive the BLESSE class (rename it to Injured).   for (Unit unit : units) {
-    //}
+
+    private Unit handleInjuredUnit(Unit unit) {
+        if (unit.getClasses().stream().noneMatch(c -> c.getCode().equals("BLESSE"))) {
+            unit.getClasses().add(UnitClass.BLESSE);
+            unit.recalculateBaseStats();
+        }
+        return unit;
+    }
+
+    private List<Unit> replaceWithInjured(List<Unit> survivors, List<Unit> casualties) {
+        Set<Integer> casualtiesIds = casualties.stream().map(Unit::getId).collect(Collectors.toSet());
+        List<Unit> result = new ArrayList<>();
+        for (Unit unit : survivors) {
+            if (casualtiesIds.contains(unit.getId()) ||
+                    (unit.getClasses().stream().noneMatch(c -> c.getCode().equals("BLESSE")) && unit.getDefense() < unit.getBaseDefense())) {
+                result.add(handleInjuredUnit(unit));
+            } else {
+                result.add(unit);
+            }
+        }
+        return result;
+    }
 
     public void classicCombatConfiguration(Player attacker, Player defender) {
         defender.updateCombatStats();
@@ -114,8 +135,8 @@ public class Battle {
         List<Unit> defenderUnits = defender.getAllUnits();
         List<Unit> attackerUnits = attacker.getAllUnits();
 
-        List<Unit> defenderInjuredUnits = new ArrayList<>();
-        List<Unit> attackerInjuredUnits = new ArrayList<>();
+        printUnitsIndented(defenderUnits, "Défenseurs début");
+        printUnitsIndented(attackerUnits, "Attaquants début");
 
         System.out.println("\n=== Début du combat entre " + attacker.getName() + " et " + defender.getName() + " ===");
 
@@ -222,8 +243,10 @@ public class Battle {
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
 
-        defenderInjuredUnits = attackerPhaseResult.casualties(); // At this phase, they are not dead, just injured.
-        attackerInjuredUnits = defenderPhaseResult.casualties();
+        // Fin du combat, on remplace les unités détruites par des blessées etc on recalcule les stats.
+
+        defenderUnits = replaceWithInjured(defenderUnits, attackerPhaseResult.casualties());
+        attackerUnits = replaceWithInjured(attackerUnits, defenderPhaseResult.casualties());
 
         reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "ATK");
         reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "ATK");
@@ -250,77 +273,43 @@ public class Battle {
     }
 
     private void reassignPointsForNextPhase(List<Unit> units, double points, String pointsType) {
-        // Basically, if you there are remaining points after a phase, they're bound over to be used in the next phase.
-        // If points are 0, set allUnits points type at 0 : ex Pdf = 0 then all units are pdf = 0.
-        // If points > 0, then verify it doesn't exceed the total points of all units, if it does, set all units points to their max.
-        // If points < total points of all units, go through all units and assign points until you reach the available points, from the top to the bottom of the list.
         if (units == null || units.isEmpty()) return;
 
-        // Calcul du total des points max pour ce type
-        double totalMax = 0;
-        for (Unit unit : units) {
-            switch (pointsType) {
-                case "PDF" -> totalMax += unit.getPdf();
-                case "PDC" -> totalMax += unit.getPdc();
-                case "ATK" -> totalMax += unit.getAttack();
-            }
-        }
+        double totalMax = units.stream().mapToDouble(u -> getUnitPoints(u, pointsType)).sum();
 
         if (points <= 0) {
-            // Tous les points à 0
-            for (Unit unit : units) {
-                switch (pointsType) {
-                    case "PDF" -> unit.setPdf(0);
-                    case "PDC" -> unit.setPdc(0);
-                    case "ATK" -> unit.setAttack(0);
-                }
-            }
+            units.forEach(u -> setUnitPoints(u, pointsType, 0));
         } else if (points >= totalMax) {
-            // Tous les points à leur max
-            for (Unit unit : units) {
-                switch (pointsType) {
-                    case "PDF" -> unit.setPdf(unit.getPdf());
-                    case "PDC" -> unit.setPdc(unit.getPdc());
-                    case "ATK" -> unit.setAttack(unit.getAttack());
-                }
-            }
+            units.forEach(u -> setUnitPoints(u, pointsType, getUnitPoints(u, pointsType)));
         } else {
-            // Répartition des points du haut vers le bas
             for (Unit unit : units) {
-                double max = switch (pointsType) {
-                    case "PDF" -> unit.getPdf();
-                    case "PDC" -> unit.getPdc();
-                    case "ATK" -> unit.getAttack();
-                    default -> 0;
-                };
+                double max = getUnitPoints(unit, pointsType);
                 double toAssign = Math.min(points, max);
-                switch (pointsType) {
-                    case "PDF" -> unit.setPdf(toAssign);
-                    case "PDC" -> unit.setPdc(toAssign);
-                    case "ATK" -> unit.setAttack(toAssign);
-                }
+                setUnitPoints(unit, pointsType, toAssign);
                 points -= toAssign;
                 if (points <= 0) break;
             }
-            // Les unités restantes reçoivent 0.
-            boolean assignZero = points <= 0;
-            if (assignZero) {
-                for (Unit unit : units) {
-                    double current = switch (pointsType) {
-                        case "PDF" -> unit.getPdf();
-                        case "PDC" -> unit.getPdc();
-                        case "ATK" -> unit.getAttack();
-                        default -> 0;
-                    };
-                    if (current == 0) {
-                        switch (pointsType) {
-                            case "PDF" -> unit.setPdf(0);
-                            case "PDC" -> unit.setPdc(0);
-                            case "ATK" -> unit.setAttack(0);
-                        }
-                    }
-                }
-            }
+            units.stream()
+                    .filter(u -> getUnitPoints(u, pointsType) == 0)
+                    .forEach(u -> setUnitPoints(u, pointsType, 0));
+        }
+    }
+
+    private double getUnitPoints(Unit unit, String pointsType) {
+        return switch (pointsType) {
+            case "PDF" -> unit.getPdf();
+            case "PDC" -> unit.getPdc();
+            case "ATK" -> unit.getAttack();
+            default -> throw new IllegalArgumentException("Type de points inconnu : " + pointsType);
+        };
+    }
+
+    private void setUnitPoints(Unit unit, String pointsType, double value) {
+        switch (pointsType) {
+            case "PDF" -> unit.setPdf(value);
+            case "PDC" -> unit.setPdc(value);
+            case "ATK" -> unit.setAttack(value);
+            default -> throw new IllegalArgumentException("Type de points inconnu : " + pointsType);
         }
     }
 }

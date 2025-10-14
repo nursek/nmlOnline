@@ -268,4 +268,8 @@ public class Unit {
     public double getDamageReduction(String damageType) {
         return classes.stream().mapToDouble(c -> c.getDamageReduction(damageType)).max().orElse(0);
     }
+
+    public double getBaseDefense() {
+        return this.type.getBaseDefense();
+    }
 }

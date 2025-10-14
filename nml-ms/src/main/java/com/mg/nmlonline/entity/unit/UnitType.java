@@ -7,11 +7,16 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum UnitType {
+    // Living units
     LARBIN(1, 0, 1, 10, 10, 1, 1, 1),
     VOYOU(2, 2, 4, 20, 20, 1, 1, 2),
     MALFRAT(3, 5, 7, 50, 50, 1, 2, 3),
     BRUTE(4, 8, Integer.MAX_VALUE, 100, 100, 1, 3, 4),
+
+    // Characters units
     PERSONNAGE(0, 100, 100, 0, 0, 0, 0, 0), // Type pour les personnages non combattants
+
+    // Vehicle units
     VEHICULE(0, 100, 100, 0, 0, 0, 0, 0); // Type pour les véhicules / Rework
 
 
