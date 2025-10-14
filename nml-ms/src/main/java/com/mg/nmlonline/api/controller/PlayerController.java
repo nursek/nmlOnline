@@ -1,0 +1,49 @@
+package com.mg.nmlonline.api.controller;
+
+import com.mg.nmlonline.api.dto.PlayerDto;
+import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.mapper.PlayerMapper;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/players")
+public class PlayerController {
+
+    private final PlayerService playerService;
+    private final PlayerMapper playerMapper;
+
+    public PlayerController(PlayerService playerService, PlayerMapper playerMapper) {
+        this.playerService = playerService;
+        this.playerMapper = playerMapper;
+    }
+
+    @GetMapping
+    public List<PlayerDto> findAll() {
+        return playerService.findAll().stream()
+                .map(playerMapper::toDto)
+                .toList();
+    }
+
+    @GetMapping("/{id}")
+    public PlayerDto findById(@PathVariable Long id) {
+        Player player = playerService.findById(id);
+        return playerMapper.toDto(player);
+    }
+
+    @PostMapping
+    public PlayerDto create(@RequestBody PlayerDto dto) {
+        Player player = playerMapper.toDomain(dto);
+        Player created = playerService.create(player);
+        return playerMapper.toDto(created);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        if(!playerService.delete(id)) {
+            throw new RuntimeException("Equipment with id " + id + " not found.");
+        }
+    }
+}
