@@ -122,9 +122,6 @@ public class PlayerDemo {
             Player defender = importService.importPlayerFromJson(p1.getFile());
             Player attacker = importService.importPlayerFromJson(p2.getFile());
 
-            attacker.displayArmy();
-            defender.displayArmy();
-
             Battle battleHandler = new Battle();
             battleHandler.classicCombatConfiguration(attacker, defender);
 
