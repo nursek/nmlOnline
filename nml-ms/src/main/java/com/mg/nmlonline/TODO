@@ -8,4 +8,6 @@ TODO7 : Gestion des batailles.
 TODO8 : Interface graphique.
 TODO9 : Tests unitaires.
 TODO10 : Documentation.
-package com.mg.nmlonline;
+TODO11 : Refactor Unit en classe abstraite et créer des sous-classes pour chaque type d'unité.
+TODO12 : Classe Board pour gérer la carte de jeu et ses informations publiques.
+TODO13 : Import joueurs JSON en db au chargement de l'application.
