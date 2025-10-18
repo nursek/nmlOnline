@@ -27,9 +27,9 @@ public class PlayerController {
                 .toList();
     }
 
-    @GetMapping("/{id}")
-    public PlayerDto findById(@PathVariable Long id) {
-        Player player = playerService.findById(id);
+    @GetMapping("/{name}")
+    public PlayerDto findByName(@PathVariable String name) {
+        Player player = playerService.findByName(name);
         return playerMapper.toDto(player);
     }
 

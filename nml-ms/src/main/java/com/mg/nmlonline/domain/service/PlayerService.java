@@ -29,8 +29,8 @@ public class PlayerService {
                 .collect(Collectors.toList());
     }
 
-    public Player findById(Long id) {
-        return playerRepository.findById(id)
+    public Player findByName(String name) {
+        return playerRepository.findByUsername(name)
                 .map(playerMapper::toDomain)
                 .orElse(null);
     }
