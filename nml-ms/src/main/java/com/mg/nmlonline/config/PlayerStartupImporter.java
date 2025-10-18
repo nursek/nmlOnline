@@ -20,10 +20,10 @@ public class PlayerStartupImporter implements ApplicationRunner {
     private final PlayerImportService playerImportService;
     private final PlayerService playerService;
 
-    @Value("classpath:players/player1.json")
+    @Value("classpath:players/lurio.json")
     private Resource player1;
 
-    @Value("classpath:players/player2.json")
+    @Value("classpath:players/nursek.json")
     private Resource player2;
 
     public PlayerStartupImporter(PlayerImportService playerImportService,

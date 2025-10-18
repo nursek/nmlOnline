@@ -17,8 +17,6 @@ CREATE TABLE IF NOT EXISTS PLAYERS (
     equipments BLOB,
     sectors BLOB
 );
-INSERT INTO PLAYERS (username, stats, equipments, sectors) VALUES ('nursek', NULL, NULL, NULL);
-INSERT INTO PLAYERS (username, stats, equipments, sectors) VALUES ('lurio', NULL, NULL, NULL);
 INSERT INTO PLAYERS (username, stats, equipments, sectors) VALUES ('test', NULL, NULL, NULL);
 
 CREATE TABLE IF NOT EXISTS EQUIPMENT (
