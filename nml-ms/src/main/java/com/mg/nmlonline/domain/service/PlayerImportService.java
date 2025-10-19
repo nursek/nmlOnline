@@ -65,15 +65,15 @@ public class PlayerImportService {
         if (unitDto.classes != null && unitDto.classes.size() > 1) {
             unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
         }
+        // Handle "BLESSE" class if present
+        if (unitDto.classes != null && unitDto.isInjured) {
+            unit.setInjured(true);
+        }
 
         if (unitDto.equipments != null) {
             for (String equipmentName : unitDto.equipments) {
-                if (player.isEquipmentAvailable(equipmentName)) {
-                    if (unit.addEquipment(EquipmentFactory.createFromName(equipmentName))) {
-                        if (!player.decrementEquipmentAvailability(equipmentName)) {
-                            System.err.println("Erreur : équipement " + equipmentName + " non disponible pour le joueur " + player.getName());
-                        }
-                    }
+                if (player.isEquipmentAvailable(equipmentName) && unit.addEquipment(EquipmentFactory.createFromName(equipmentName)) && !player.decrementEquipmentAvailability(equipmentName)) {
+                    System.err.println("Erreur : équipement " + equipmentName + " non disponible pour le joueur " + player.getName());
                 }
             }
         }
@@ -105,6 +105,7 @@ public class PlayerImportService {
         public List<String> classes = new ArrayList<>();
         public double experience;
         public List<String> equipments = new ArrayList<>();
+        public boolean isInjured;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

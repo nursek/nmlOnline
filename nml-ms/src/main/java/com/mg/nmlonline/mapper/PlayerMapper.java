@@ -130,6 +130,7 @@ public class PlayerMapper {
                 ud.experience = u.getExperience();
                 ud.equipments = Optional.ofNullable(u.getEquipments()).orElse(List.of()).stream()
                         .map(Equipment::getName).collect(Collectors.toList());
+                ud.isInjured = u.isInjured();
                 return ud;
             }).collect(Collectors.toList());
             return sd;

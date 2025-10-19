@@ -1,5 +1,5 @@
-TODO1 : Ajouter un équipement à une unité réduis le stock de disponible. Verification pour pas dépasser limite.
-TODO2 : Gestion des unités blessées via le format JSON.
+TODO1 : Ajouter un équipement à une unité réduis le stock de disponible. Verification pour pas dépasser limite / DONE
+TODO2 : Gestion des unités blessées via le format JSON -> REWORK du statut blessé en un boolean : Injured.
 TODO3 : Enregistrer les modifications dans le JSON.
 TODO4 : Gestion des Personnages.
 TODO5 : Gestion des véhicules.

@@ -53,15 +53,6 @@ nmlOnline est une application Java destinée à la gestion, la simulation et l'a
 
 ## Utilisation
 
-### Exemple : Import d'une armée depuis un fichier texte
-
-```java
-Player player = new Player("Ratcatcher");
-player.fromFile("src/main/resources/army_example.txt");
-player.displayArmy();
-player.displayEquipments();
-```
-
 ### Exemple : Import de joueurs depuis JSON
 
 ```java

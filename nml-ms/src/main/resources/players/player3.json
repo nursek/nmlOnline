@@ -1,0 +1,299 @@
+{
+  "name": "Roi des rats",
+  "money": 40000,
+  "equipments": [
+    {
+      "name": "Mini machine gun",
+      "quantity": 4
+    },
+    {
+      "name": "Gilet pare-balles moyen",
+      "quantity": 6
+    },
+    {
+      "name": "Équipement militaire complet",
+      "quantity": 2
+    },
+    {
+      "name": "Bouclier anti-émeutes",
+      "quantity": 4
+    },
+    {
+      "name": "Bouclier balistique",
+      "quantity": 6
+    },
+    {
+      "name": "Tromblon",
+      "quantity": 2
+    },
+    {
+      "name": "Tenue ultra légère",
+      "quantity": 20
+    },
+    {
+      "name": "Mitrailleuse",
+      "quantity": 1
+    },
+    {
+      "name": "Pistolet 9mm",
+      "quantity": 15
+    },
+    {
+      "name": "Gilet pare-balles léger",
+      "quantity": 10
+    },
+    {
+      "name": "HK-MP7",
+      "quantity": 12
+    },
+    {
+      "name": "Fusil à pompe",
+      "quantity": 2
+    },
+    {
+      "name": "Lance-roquettes",
+      "quantity": 10
+    },
+    {
+      "name": "Treillis de camouflage urbain",
+      "quantity": 5
+    },
+    {
+      "name": "Matraque télescopique",
+      "quantity": 40
+    },
+    {
+      "name": "Grenade lacrymogène",
+      "quantity": 20
+    }
+  ],
+  "sectors": [
+    {
+      "number": 1,
+      "name": "Quartier général des opérations",
+      "income": 2000,
+      "army": []
+    },
+    {
+      "number": 2,
+      "name": "Quartier Sud",
+      "income": 2500,
+      "army": [
+        {
+          "id": 6,
+          "type": "VOYOU",
+          "classes": [
+            "TIREUR"
+          ],
+          "experience": 2,
+          "equipments": [
+            "Mitrailleuse",
+            "Gilet pare-balles léger",
+            "Gilet pare-balles moyen"
+          ]
+        },
+        {
+          "id": 7,
+          "type": "VOYOU",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 2,
+          "equipments": [
+            "HK-MP7",
+            "Tenue ultra légère"
+          ]
+        },
+        {
+          "id": 8,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": []
+        },
+        {
+          "id": 9,
+          "type": "LARBIN",
+          "classes": [
+            "TIREUR"
+          ],
+          "experience": 1,
+          "equipments": []
+        },
+        {
+          "id": 10,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 0,
+          "equipments": []
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "name": "Quartier isolé",
+      "income": 1500,
+      "army": [
+        {
+          "id": 1,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        },
+        {
+          "id": 2,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        },
+        {
+          "id": 3,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        },
+        {
+          "id": 4,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        },
+        {
+          "id": 5,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        },
+        {
+          "id": 6,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        },
+        {
+          "id": 7,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        },
+        {
+          "id": 8,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        },
+        {
+          "id": 9,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "HK-MP7",
+            "Tenue ultra légère"
+          ]
+        },
+        {
+          "id": 10,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        },
+        {
+          "id": 11,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        },
+        {
+          "id": 12,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Pistolet 9mm",
+            "Grenade lacrymogène",
+            "Matraque télescopique"
+          ]
+        }
+      ]
+    }
+  ]
+}

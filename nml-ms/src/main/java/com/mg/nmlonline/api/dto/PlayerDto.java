@@ -24,6 +24,7 @@ public class PlayerDto {
         public String type;
         public Double experience;
         public List<String> equipments;
+        public Boolean isInjured;
     }
 
     @Data

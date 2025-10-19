@@ -2,7 +2,6 @@ package com.mg.nmlonline.domain.model.battle;
 
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.Unit;
-import com.mg.nmlonline.domain.model.unit.UnitClass;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -107,10 +106,8 @@ public class Battle {
 
 
     private Unit handleInjuredUnit(Unit unit) {
-        if (unit.getClasses().stream().noneMatch(c -> c.getCode().equals("BLESSE"))) {
-            unit.getClasses().add(UnitClass.BLESSE);
-            unit.recalculateBaseStats();
-        }
+        unit.setInjured(true);
+        unit.recalculateBaseStats();
         return unit;
     }
 
@@ -142,8 +139,8 @@ public class Battle {
 
         // Phase PDF
         printPhaseHeader("PDF");
-        double attackerTotalPdf = getTotalPoints(attacker, "PDF");
-        double defenderTotalPdf = getTotalPoints(defender, "PDF");
+        double attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
+        double defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF");
 
         PhaseResult attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF");
         PhaseResult defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF");
@@ -165,8 +162,8 @@ public class Battle {
         // Check if there is leftover Pdf points to make a second PDF phase It will be used when buildings are implemented
         if (checkPointsTypeInUnits(attackerUnits, "PDF") > 0 || checkPointsTypeInUnits(defenderUnits, "PDF") > 0) {
             printPhaseHeader("PDF - Round 2");
-            attackerTotalPdf = getTotalPoints(attacker, "PDF");
-            defenderTotalPdf = getTotalPoints(defender, "PDF");
+            attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
+            defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF");
 
             attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF");
             defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF");
@@ -188,8 +185,8 @@ public class Battle {
 
         // Phase PDC
         printPhaseHeader("PDC");
-        double attackerTotalPdc = getTotalPoints(attacker, "PDC");
-        double defenderTotalPdc = getTotalPoints(defender, "PDC");
+        double attackerTotalPdc = getAvailablePoints(attackerUnits, "PDC");
+        double defenderTotalPdc = getAvailablePoints(defenderUnits, "PDC");
 
         attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC");
         defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC");
@@ -233,8 +230,8 @@ public class Battle {
 
         // Phase ATK
         printPhaseHeader("ATK");
-        double attackerTotalAtk = getTotalPoints(attacker, "ATK");
-        double defenderTotalAtk = getTotalPoints(defender, "ATK");
+        double attackerTotalAtk = getAvailablePoints(attackerUnits, "ATK");
+        double defenderTotalAtk = getAvailablePoints(defenderUnits, "ATK");
 
         // Make it non-lethal.
         attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalAtk, "ATK");
@@ -243,7 +240,7 @@ public class Battle {
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
 
-        // Fin du combat, on remplace les unités détruites par des blessées etc on recalcule les stats.
+        // Fin du combat, on remplace les unités détruites par des blessées etc, on recalcule les stats.
 
         defenderUnits = replaceWithInjured(defenderUnits, attackerPhaseResult.casualties());
         attackerUnits = replaceWithInjured(attackerUnits, defenderPhaseResult.casualties());
@@ -311,5 +308,9 @@ public class Battle {
             case "ATK" -> unit.setAttack(value);
             default -> throw new IllegalArgumentException("Type de points inconnu : " + pointsType);
         }
+    }
+
+    private double getAvailablePoints(List<Unit> units, String pointsType) {
+        return units.stream().mapToDouble(u -> getUnitPoints(u, pointsType)).sum();
     }
 }

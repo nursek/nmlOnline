@@ -33,14 +33,7 @@ public enum UnitClass {
 
     PILOTE_DESTRUCTEUR("P") {},
 
-    SNIPER("S") {},
-
-    BLESSE("X") {
-        @Override
-        public double getStatMultiplier() {
-            return 0.5;
-        } // Stats/2
-    };
+    SNIPER("S") {};
 
     private final String code;
 
@@ -61,7 +54,4 @@ public enum UnitClass {
         return 1.0;
     }
 
-    public double getStatMultiplier() {
-        return 1.0;
-    }
 }

@@ -2,7 +2,6 @@ package com.mg.nmlonline.domain.model.unit;
 
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
-import com.mg.nmlonline.domain.model.equipment.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,6 +28,8 @@ public class Unit {
     private double experience = 0.0;
     private UnitType type;
     private List<UnitClass> classes;
+
+    private boolean isInjured = false;
 
     // Statistiques de base
     private double attack;
@@ -61,7 +62,7 @@ public class Unit {
 
     // Recalcule les statistiques de base (sans bonus joueur)
     public void recalculateBaseStats() {
-        double statMultiplier = classes.stream().mapToDouble(UnitClass::getStatMultiplier).min().orElse(1.0);
+        double statMultiplier = isInjured ? 0.5 : 1.0;
 
         this.attack = type.getBaseAttack() * statMultiplier;
         this.defense =  type.getBaseDefense() * statMultiplier;
@@ -146,18 +147,14 @@ public class Unit {
 
     // Gestion des classes
     public boolean canAddSecondClass() {
-        long effectiveClassCount = classes.stream().filter(c -> c != UnitClass.BLESSE).count();
+        long effectiveClassCount = classes.size();
         if (type == UnitType.LARBIN || type == UnitType.VOYOU) {
             return effectiveClassCount < 1;
         } else return effectiveClassCount <= 1 && experience >= 5;
     }
 
     public void addSecondClass(UnitClass secondClass) {
-        if (secondClass == UnitClass.BLESSE) {
-            System.out.println("Impossible d'ajouter la classe BLESSE comme seconde classe.");
-            return;
-        }
-        if (canAddSecondClass() && !classes.contains(secondClass)) {
+         if (canAddSecondClass() && !classes.contains(secondClass)) {
             classes.add(secondClass);
             recalculateBaseStats();
         } else {
@@ -230,12 +227,15 @@ public class Unit {
         sb.append("Unique id: ").append(id).append(" - ");
 
         if (type == PERSONNAGE) {
-            // Exemple de ligne : Mortarion (100 Atk + 100 Pdf + 50 Pdc / 250 Def)
+            // Exemple de ligne : Character (100 Atk + 100 Pdf + 50 Pdc / 250 Def)
             sb.append(name);
             sb.append(" (");
             statsBuilder(sb, attack, pdf, pdc, defense, armor, evasion);
             sb.append(").");
         } else {
+            if (isInjured) {
+                sb.append("[X] ");
+            }
             sb.append(classes.stream().map(c -> "(" + c.getCode() + ")").collect(Collectors.joining(" "))).append(" ");
 
             // Type et informations

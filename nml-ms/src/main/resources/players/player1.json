@@ -170,16 +170,22 @@
             "LEGER"
           ],
           "experience": 1,
-          "equipments": []
+          "equipments": [
+            "HK-MP7",
+            "Tenue ultra légère"
+          ]
         },
         {
           "id": 9,
           "type": "LARBIN",
           "classes": [
-            "TIREUR"
+            "LEGER"
           ],
           "experience": 1,
-          "equipments": []
+          "equipments": [
+            "HK-MP7",
+            "Tenue ultra légère"
+          ]
         },
         {
           "id": 10,
@@ -188,7 +194,10 @@
             "LEGER"
           ],
           "experience": 0,
-          "equipments": []
+          "equipments": [
+            "HK-MP7",
+            "Tenue ultra légère"
+          ]
         }
       ]
     }
