@@ -30,13 +30,16 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
         );
 
-        // Ne pas appliquer CSRF sur la console H2 (sécurisé pour dev)
-        http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
+        // Désactiver CSRF pour une API REST stateless (JWT)
+        http.csrf(csrf -> csrf.disable());
+
+        // Ne pas appliquer CSRF sur la console H2 (sécurisé pour dev) - redondant mais inoffensif
+        // http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
 
         // Autoriser l'affichage dans un iframe de la même origine (résout X-Frame-Options: DENY)
         http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
-        // Mode sans état : pour JWT. Si vous n'utilisez pas JWT, adaptez (ex : formLogin pour dev).
+        // Mode sans état : pour JWT.
         http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
