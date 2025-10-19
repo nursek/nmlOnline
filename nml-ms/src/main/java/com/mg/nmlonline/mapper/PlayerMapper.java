@@ -42,7 +42,7 @@ public class PlayerMapper {
         try {
             if (e.getEquipments() != null && e.getEquipments().length > 0) {
                 List<EquipmentStack> eqs = objectMapper.readValue(e.getEquipments(),
-                        new TypeReference<>() {
+                        new TypeReference<List<EquipmentStack>>() {
                         });
                 p.setEquipments(eqs);
             }
@@ -53,7 +53,7 @@ public class PlayerMapper {
         try {
             if (e.getSectors() != null && e.getSectors().length > 0) {
                 List<Sector> sectors = objectMapper.readValue(e.getSectors(),
-                        new TypeReference<>() {
+                        new TypeReference<List<Sector>>() {
                         });
                 p.setSectors(sectors);
             }

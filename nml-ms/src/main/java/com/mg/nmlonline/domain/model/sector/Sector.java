@@ -1,15 +1,25 @@
 package com.mg.nmlonline.domain.model.sector;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.mg.nmlonline.domain.model.equipment.Equipment;
+import com.mg.nmlonline.domain.model.equipment.EquipmentFactory;
 import com.mg.nmlonline.domain.model.unit.Unit;
+import com.mg.nmlonline.domain.model.unit.UnitClass;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.IOException;
 import java.util.*;
 
 @Data
 @Getter
 @Setter
+@JsonDeserialize(using = Sector.SectorDeserializer.class)
 public class Sector {
     private int number;
     private String name;
@@ -161,6 +171,90 @@ public class Sector {
     @Override
     public String toString() {
         return String.format("%s - %d unités, Revenus: %.0f$", name, getArmySize(), income);
+    }
+
+    public static class SectorDeserializer extends JsonDeserializer<Sector> {
+        @Override
+        public Sector deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            JsonNode node = p.getCodec().readTree(p);
+
+            int number = node.get("number").asInt();
+            String name = node.get("name").asText();
+
+            Sector sector = new Sector(number, name);
+            sector.setIncome(node.get("income").asDouble(2000));
+
+            JsonNode armyNode = node.get("army");
+            if (armyNode != null && armyNode.isArray()) {
+                List<Unit> army = new ArrayList<>();
+                for (JsonNode unitNode : armyNode) {
+                    Unit unit = deserializeUnit(unitNode);
+                    if (unit != null) {
+                        army.add(unit);
+                    }
+                }
+                sector.setArmy(army);
+            }
+
+            JsonNode statsNode = node.get("stats");
+            if (statsNode != null) {
+                SectorStats stats = new SectorStats();
+                stats.setTotalAtk(statsNode.get("totalAtk").asDouble(0));
+                stats.setTotalPdf(statsNode.get("totalPdf").asDouble(0));
+                stats.setTotalPdc(statsNode.get("totalPdc").asDouble(0));
+                stats.setTotalDef(statsNode.get("totalDef").asDouble(0));
+                stats.setTotalArmor(statsNode.get("totalArmor").asDouble(0));
+                stats.setTotalOffensive(statsNode.get("totalOffensive").asDouble(0));
+                stats.setTotalDefensive(statsNode.get("totalDefensive").asDouble(0));
+                stats.setGlobalStats(statsNode.get("globalStats").asDouble(0));
+                sector.setStats(stats);
+            }
+
+            return sector;
+        }
+
+        private Unit deserializeUnit(JsonNode unitNode) {
+            int id = unitNode.get("id").asInt();
+            String name = unitNode.get("name").asText();
+            int number = unitNode.get("number").asInt(0);
+            double experience = unitNode.get("experience").asDouble(0);
+
+            JsonNode classesNode = unitNode.get("classes");
+            List<UnitClass> classes = new ArrayList<>();
+            if (classesNode != null && classesNode.isArray()) {
+                for (JsonNode classNode : classesNode) {
+                    String className = classNode.asText();
+                    try {
+                        classes.add(UnitClass.valueOf(className));
+                    } catch (IllegalArgumentException ignored) {}
+                }
+            }
+
+            if (classes.isEmpty()) {
+                return null;
+            }
+
+            Unit unit = new Unit(experience, name, classes.get(0));
+            unit.setId(id);
+            unit.setNumber(number);
+
+            for (int i = 1; i < classes.size(); i++) {
+                unit.addSecondClass(classes.get(i));
+            }
+
+            JsonNode equipmentsNode = unitNode.get("equipments");
+            if (equipmentsNode != null && equipmentsNode.isArray()) {
+                for (JsonNode eqNode : equipmentsNode) {
+                    String eqName = eqNode.get("name").asText();
+                    Equipment equipment = EquipmentFactory.createFromName(eqName);
+                    if (equipment != null) {
+                        unit.addEquipment(equipment);
+                    }
+                }
+            }
+
+            return unit;
+        }
     }
 }
 
