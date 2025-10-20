@@ -2,13 +2,14 @@ package com.mg.nmlonline.mapper;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mg.nmlonline.api.dto.PlayerDto;
+import com.mg.nmlonline.api.dto.*;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.entity.PlayerEntity;
 import com.mg.nmlonline.domain.model.player.PlayerStats;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.UnitType;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -42,8 +43,7 @@ public class PlayerMapper {
         try {
             if (e.getEquipments() != null && e.getEquipments().length > 0) {
                 List<EquipmentStack> eqs = objectMapper.readValue(e.getEquipments(),
-                        new TypeReference<List<EquipmentStack>>() {
-                        });
+                        new TypeReference<List<EquipmentStack>>() {});
                 p.setEquipments(eqs);
             }
         } catch (IOException ex) {
@@ -53,8 +53,7 @@ public class PlayerMapper {
         try {
             if (e.getSectors() != null && e.getSectors().length > 0) {
                 List<Sector> sectors = objectMapper.readValue(e.getSectors(),
-                        new TypeReference<List<Sector>>() {
-                        });
+                        new TypeReference<List<Sector>>() {});
                 p.setSectors(sectors);
             }
         } catch (IOException ex) {
@@ -86,55 +85,136 @@ public class PlayerMapper {
     public PlayerDto toDto(Player p) {
         PlayerDto dto = new PlayerDto();
         if (p == null) return dto;
-        dto.id = null; // l'id vient de l'entité si nécessaire
-        dto.name = p.getName();
+        dto.setId(null); // l'id vient de l'entité si nécessaire
+        dto.setName(p.getName());
 
         // PlayerStats -> PlayerStatsDto
         PlayerStats stats = p.getPlayerStats();
         if (stats == null) {
-            dto.stats = null;
+            dto.setStats(null);
         } else {
-            PlayerDto.PlayerStatsDto sd = new PlayerDto.PlayerStatsDto();
-            sd.money = stats.getMoney();
-            sd.totalIncome = stats.getTotalIncome();
-            sd.totalVehiclesValue = stats.getTotalVehiclesValue();
-            sd.totalEquipmentValue = stats.getTotalEquipmentValue();
-            sd.totalOffensivePower = stats.getTotalOffensivePower();
-            sd.totalDefensivePower = stats.getTotalDefensivePower();
-            sd.globalPower = stats.getGlobalPower();
-            sd.totalEconomyPower = stats.getTotalEconomyPower();
-            sd.totalAtk = stats.getTotalAtk();
-            sd.totalPdf = stats.getTotalPdf();
-            sd.totalPdc = stats.getTotalPdc();
-            sd.totalDef = stats.getTotalDef();
-            sd.totalArmor = stats.getTotalArmor();
-            dto.stats = sd;
+            PlayerStatsDto sd = new PlayerStatsDto();
+            sd.setMoney(stats.getMoney());
+            sd.setTotalIncome(stats.getTotalIncome());
+            sd.setTotalVehiclesValue(stats.getTotalVehiclesValue());
+            sd.setTotalEquipmentValue(stats.getTotalEquipmentValue());
+            sd.setTotalOffensivePower(stats.getTotalOffensivePower());
+            sd.setTotalDefensivePower(stats.getTotalDefensivePower());
+            sd.setGlobalPower(stats.getGlobalPower());
+            sd.setTotalEconomyPower(stats.getTotalEconomyPower());
+            sd.setTotalAtk(stats.getTotalAtk());
+            sd.setTotalPdf(stats.getTotalPdf());
+            sd.setTotalPdc(stats.getTotalPdc());
+            sd.setTotalDef(stats.getTotalDef());
+            sd.setTotalArmor(stats.getTotalArmor());
+            dto.setStats(sd);
         }
 
-        dto.equipments = Optional.ofNullable(p.getEquipments()).orElse(List.of()).stream().map(stack -> {
-            PlayerDto.EquipmentDto ed = new PlayerDto.EquipmentDto();
-            ed.name = (stack.getEquipment() == null) ? null : stack.getEquipment().getName();
-            ed.quantity = stack.getQuantity();
-            return ed;
-        }).collect(Collectors.toList());
+        // Equipments
+        dto.setEquipments(Optional.ofNullable(p.getEquipments()).orElse(List.of()).stream().map(stack -> {
+            EquipmentStackDto esd = new EquipmentStackDto();
+            Equipment equipment = stack.getEquipment();
+            if (equipment != null) {
+                EquipmentDto ed = new EquipmentDto();
+                ed.setName(equipment.getName());
+                ed.setCost(equipment.getCost());
+                ed.setPdfBonus(equipment.getPdfBonus());
+                ed.setPdcBonus(equipment.getPdcBonus());
+                ed.setArmBonus(equipment.getArmBonus());
+                ed.setEvasionBonus(equipment.getEvasionBonus());
+                // compatibleClass et category à compléter si besoin
+                esd.setEquipment(ed);
+            }
+            esd.setQuantity(stack.getQuantity());
+            esd.setAvailable(stack.getAvailable());
+            return esd;
+        }).collect(Collectors.toList()));
 
-        dto.sectors = Optional.ofNullable(p.getSectors()).orElse(List.of()).stream().map(sec -> {
-            PlayerDto.SectorDto sd = new PlayerDto.SectorDto();
-            sd.number = sec.getNumber();
-            sd.name = sec.getName();
-            sd.income = sec.getIncome();
-            sd.army = Optional.ofNullable(sec.getArmy()).orElse(List.of()).stream().map(u -> {
-                PlayerDto.UnitDto ud = new PlayerDto.UnitDto();
-                ud.id = u.getId();
-                ud.type = (u.getType() == null) ? null : String.valueOf(u.getType());
-                ud.experience = u.getExperience();
-                ud.equipments = Optional.ofNullable(u.getEquipments()).orElse(List.of()).stream()
-                        .map(Equipment::getName).collect(Collectors.toList());
-                ud.isInjured = u.isInjured();
+
+        // Sectors
+        dto.setSectors(Optional.ofNullable(p.getSectors()).orElse(List.of()).stream().map(sec -> {
+            SectorDto sd = new SectorDto();
+            sd.setNumber(sec.getNumber());
+            sd.setName(sec.getName());
+            sd.setIncome(sec.getIncome());
+
+            // Army
+            sd.setArmy(Optional.ofNullable(sec.getArmy()).orElse(List.of()).stream().map(u -> {
+                UnitDto ud = new UnitDto();
+                ud.setId(u.getId());
+                ud.setName(u.getName());
+                ud.setNumber(u.getNumber());
+                ud.setExperience(u.getExperience());
+
+                // UnitType
+                UnitType type = u.getType();
+                if (type != null) {
+                    UnitTypeDto utd = new UnitTypeDto();
+                    utd.setName(type.name());
+                    utd.setLevel(type.getLevel());
+                    utd.setMinExp(type.getMinExp());
+                    utd.setMaxExp(type.getMaxExp());
+                    utd.setBaseAttack(type.getBaseAttack());
+                    utd.setBaseDefense(type.getBaseDefense());
+                    utd.setMaxFirearms(type.getMaxFirearms());
+                    utd.setMaxMeleeWeapons(type.getMaxMeleeWeapons());
+                    utd.setMaxDefensiveEquipment(type.getMaxDefensiveEquipment());
+                    ud.setType(utd);
+                }
+
+                // UnitClasses
+                ud.setClasses(Optional.ofNullable(u.getClasses()).orElse(List.of()).stream().map(cls -> {
+                    UnitClassDto ucd = new UnitClassDto();
+                    ucd.setName(cls.name());
+                    ucd.setCode(cls.getCode());
+                    // autres champs à compléter si besoin
+                    return ucd;
+                }).collect(Collectors.toList()));
+
+                ud.setIsInjured(u.isInjured());
+
+                // Equipments
+                ud.setEquipments(Optional.ofNullable(u.getEquipments()).orElse(List.of()).stream().map(eq -> {
+                    EquipmentDto eqd = new EquipmentDto();
+                    eqd.setName(eq.getName());
+                    eqd.setCost(eq.getCost());
+                    eqd.setPdfBonus(eq.getPdfBonus());
+                    eqd.setPdcBonus(eq.getPdcBonus());
+                    eqd.setArmBonus(eq.getArmBonus());
+                    eqd.setEvasionBonus(eq.getEvasionBonus());
+                    // compatibleClass et category à compléter si besoin
+                    return eqd;
+                }).collect(Collectors.toList()));
+
+                // Stats
+                ud.setAttack(u.getAttack());
+                ud.setDefense(u.getDefense());
+                ud.setPdf(u.getPdf());
+                ud.setPdc(u.getPdc());
+                ud.setArmor(u.getArmor());
+                ud.setEvasion(u.getEvasion());
+                ud.setTotalAttack(u.getTotalAttack());
+                ud.setTotalDefense(u.getTotalDefense());
+
                 return ud;
-            }).collect(Collectors.toList());
+            }).collect(Collectors.toList()));
+
+            // SectorStats
+            if (sec.getStats() != null) {
+                SectorStatsDto ssd = new SectorStatsDto();
+                ssd.setTotalAtk(sec.getStats().getTotalAtk());
+                ssd.setTotalPdf(sec.getStats().getTotalPdf());
+                ssd.setTotalPdc(sec.getStats().getTotalPdc());
+                ssd.setTotalDef(sec.getStats().getTotalDef());
+                ssd.setTotalArmor(sec.getStats().getTotalArmor());
+                ssd.setTotalOffensive(sec.getStats().getTotalOffensive());
+                ssd.setTotalDefensive(sec.getStats().getTotalDefensive());
+                ssd.setGlobalStats(sec.getStats().getGlobalStats());
+                sd.setStats(ssd);
+            }
+
             return sd;
-        }).collect(Collectors.toList());
+        }).collect(Collectors.toList()));
 
         return dto;
     }
@@ -143,49 +223,45 @@ public class PlayerMapper {
         if (dto == null) return null;
 
         Player p = new Player();
-        p.setName(dto.name);
+        p.setName(dto.getName());
 
         // player stats : convertir PlayerStatsDto -> PlayerStats
         PlayerStats stats = new PlayerStats();
-        if (dto.stats != null) {
-            stats.setMoney(dto.stats.money == null ? 0d : dto.stats.money);
-            stats.setTotalIncome(dto.stats.totalIncome == null ? 0d : dto.stats.totalIncome);
-            stats.setTotalVehiclesValue(dto.stats.totalVehiclesValue == null ? 0d : dto.stats.totalVehiclesValue);
-            stats.setTotalEquipmentValue(dto.stats.totalEquipmentValue == null ? 0d : dto.stats.totalEquipmentValue);
-            stats.setTotalOffensivePower(dto.stats.totalOffensivePower == null ? 0d : dto.stats.totalOffensivePower);
-            stats.setTotalDefensivePower(dto.stats.totalDefensivePower == null ? 0d : dto.stats.totalDefensivePower);
-            stats.setGlobalPower(dto.stats.globalPower == null ? 0d : dto.stats.globalPower);
-            stats.setTotalEconomyPower(dto.stats.totalEconomyPower == null ? 0d : dto.stats.totalEconomyPower);
-            stats.setTotalAtk(dto.stats.totalAtk == null ? 0d : dto.stats.totalAtk);
-            stats.setTotalPdf(dto.stats.totalPdf == null ? 0d : dto.stats.totalPdf);
-            stats.setTotalPdc(dto.stats.totalPdc == null ? 0d : dto.stats.totalPdc);
-            stats.setTotalDef(dto.stats.totalDef == null ? 0d : dto.stats.totalDef);
-            stats.setTotalArmor(dto.stats.totalArmor == null ? 0d : dto.stats.totalArmor);
-        } else {
-            // déjà initialisé avec valeurs par défaut dans PlayerStats
+        PlayerStatsDto psd = dto.getStats();
+        if (psd != null) {
+            stats.setMoney(psd.getMoney() == null ? 0d : psd.getMoney());
+            stats.setTotalIncome(psd.getTotalIncome() == null ? 0d : psd.getTotalIncome());
+            stats.setTotalVehiclesValue(psd.getTotalVehiclesValue() == null ? 0d : psd.getTotalVehiclesValue());
+            stats.setTotalEquipmentValue(psd.getTotalEquipmentValue() == null ? 0d : psd.getTotalEquipmentValue());
+            stats.setTotalOffensivePower(psd.getTotalOffensivePower() == null ? 0d : psd.getTotalOffensivePower());
+            stats.setTotalDefensivePower(psd.getTotalDefensivePower() == null ? 0d : psd.getTotalDefensivePower());
+            stats.setGlobalPower(psd.getGlobalPower() == null ? 0d : psd.getGlobalPower());
+            stats.setTotalEconomyPower(psd.getTotalEconomyPower() == null ? 0d : psd.getTotalEconomyPower());
+            stats.setTotalAtk(psd.getTotalAtk() == null ? 0d : psd.getTotalAtk());
+            stats.setTotalPdf(psd.getTotalPdf() == null ? 0d : psd.getTotalPdf());
+            stats.setTotalPdc(psd.getTotalPdc() == null ? 0d : psd.getTotalPdc());
+            stats.setTotalDef(psd.getTotalDef() == null ? 0d : psd.getTotalDef());
+            stats.setTotalArmor(psd.getTotalArmor() == null ? 0d : psd.getTotalArmor());
         }
         p.setStats(stats);
 
-        // equipments : EquipmentStack nécessite un Equipment en paramètre (final) -> on passe null et initialise les quantités
-        List<EquipmentStack> eqs = Optional.ofNullable(dto.equipments).orElse(List.of()).stream().map(ed -> {
+        // Equipments : EquipmentStack nécessite un Equipment en paramètre (final) -> on passe null et initialise les quantités
+        List<EquipmentStack> eqs = Optional.ofNullable(dto.getEquipments()).orElse(List.of()).stream().map(ed -> {
             EquipmentStack stack = new EquipmentStack(null);
-            int qty = ed == null || ed.quantity == null ? 0 : ed.quantity;
-            stack.setQuantity(qty);
-            stack.setAvailable(qty);
+            // quantité non présente dans EquipmentDto, à adapter si besoin
+            stack.setQuantity(0);
+            stack.setAvailable(0);
             return stack;
         }).collect(Collectors.toList());
         p.setEquipments(eqs);
 
-        // sectors : Sector n'a pas de constructeur vide -> utiliser le constructeur avec le numéro
-        List<Sector> sectors = Optional.ofNullable(dto.sectors).orElse(List.of()).stream().map(sd -> {
-            int number = sd == null || sd.number == null ? 0 : sd.number;
+        // Sectors
+        List<Sector> sectors = Optional.ofNullable(dto.getSectors()).orElse(List.of()).stream().map(sd -> {
+            int number = sd.getNumber() == null ? 0 : sd.getNumber();
             Sector sec = new Sector(number);
-            if (sd != null && sd.name != null) {
-                sec.setName(sd.name);
-            }
-            if (sd != null && sd.income != null) {
-                sec.setIncome(sd.income);
-            }
+            sec.setName(sd.getName());
+            sec.setIncome(sd.getIncome());
+            // Army et stats à compléter si besoin
             sec.setArmy(List.of());
             return sec;
         }).collect(Collectors.toList());

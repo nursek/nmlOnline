@@ -1,6 +1,7 @@
 package com.mg.nmlonline.mapper;
 
 import com.mg.nmlonline.api.dto.EquipmentDto;
+import com.mg.nmlonline.api.dto.UnitClassDto;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.infrastructure.entity.EquipmentEntity;
@@ -16,8 +17,6 @@ public class EquipmentMapper {
     public Equipment toDomain(EquipmentEntity e) {
         if (e == null) return null;
         Set<UnitClass> compatible = (e.getCompatibleClass() == null) ? Set.of() : Set.of(e.getCompatibleClass());
-        // Equipment constructor (final fields) : (String name, int cost, double pdfBonus, double pdcBonus, double armBonus, double evasionBonus, Set<UnitClass> compatibleClasses, EquipmentCategory category)
-        // on laisse category à null si non disponible/convertible simplement
         return new Equipment(
                 e.getName(),
                 e.getCost(),
@@ -35,43 +34,62 @@ public class EquipmentMapper {
         EquipmentEntity e = new EquipmentEntity();
         e.setName(domain.getName());
         e.setCost(domain.getCost());
-        // les champs pdf/pdc/arm/evasion sont des int en entité -> arrondir depuis le domaine si nécessaire
         e.setPdfBonus((int) Math.round(domain.getPdfBonus()));
         e.setPdcBonus((int) Math.round(domain.getPdcBonus()));
         e.setArmBonus((int) Math.round(domain.getArmBonus()));
         e.setEvasionBonus((int) Math.round(domain.getEvasionBonus()));
-        // prendo le premier compatibleClass s'il existe
         e.setCompatibleClass(domain.getCompatibleClasses() == null || domain.getCompatibleClasses().isEmpty()
                 ? null
                 : domain.getCompatibleClasses().iterator().next());
-        // category en base est String ; si le domaine a une enum, on conserve son name()
         e.setCategory(domain.getCategory() == null ? null : domain.getCategory().name());
         return e;
     }
 
+    // Ajout du mapping UnitClass <-> UnitClassDto
+    private UnitClassDto toUnitClassDto(UnitClass uc) {
+        if (uc == null) return null;
+        UnitClassDto dto = new UnitClassDto();
+        dto.setName(uc.name());
+        dto.setCode(uc.getCode());
+        dto.setCriticalChance(uc.getCriticalChance());
+        dto.setCriticalMultiplier(uc.getCriticalMultiplier());
+        dto.setDamageReductionPdf(uc.getDamageReduction("PDF"));
+        dto.setDamageReductionPdc(uc.getDamageReduction("PDC"));
+
+        return dto;
+    }
+
+    private UnitClass toUnitClass(UnitClassDto dto) {
+        if (dto == null || dto.getCode() == null) return null;
+        for (UnitClass uc : UnitClass.values()) {
+            if (uc.getCode().equals(dto.getCode())) {
+                return uc;
+            }
+        }
+        return null;
+    }
+
     public EquipmentDto toDto(Equipment d) {
         if (d == null) return null;
-        Long id = null;
         UnitClass comp = (d.getCompatibleClasses() == null || d.getCompatibleClasses().isEmpty())
                 ? null
                 : d.getCompatibleClasses().iterator().next();
         String category = Optional.ofNullable(d.getCategory()).map(Enum::name).orElse(null);
         return new EquipmentDto(
-                id,
                 d.getName(),
                 d.getCost(),
-                (int) Math.round(d.getPdfBonus()),
-                (int) Math.round(d.getPdcBonus()),
-                (int) Math.round(d.getArmBonus()),
-                (int) Math.round(d.getEvasionBonus()),
-                comp,
+                d.getPdfBonus(),
+                d.getPdcBonus(),
+                d.getArmBonus(),
+                d.getEvasionBonus(),
+                toUnitClassDto(comp),
                 category
         );
     }
 
     public Equipment toDomain(EquipmentDto dto) {
         if (dto == null) return null;
-        UnitClass comp = dto.getCompatibleClass();
+        UnitClass comp = toUnitClass(dto.getCompatibleClass());
         Set<UnitClass> compatible = (comp == null) ? Set.of() : Set.of(comp);
         EquipmentCategory category = null;
         if (dto.getCategory() != null) {
@@ -82,7 +100,7 @@ public class EquipmentMapper {
         }
         return new Equipment(
                 dto.getName(),
-                dto.getCost(),
+                (int) Math.round(dto.getCost()),
                 dto.getPdfBonus(),
                 dto.getPdcBonus(),
                 dto.getArmBonus(),
