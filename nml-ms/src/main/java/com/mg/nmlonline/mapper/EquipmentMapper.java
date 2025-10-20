@@ -45,35 +45,41 @@ public class EquipmentMapper {
         return e;
     }
 
-    // Ajout du mapping UnitClass <-> UnitClassDto
-    private UnitClassDto toUnitClassDto(UnitClass uc) {
-        if (uc == null) return null;
-        UnitClassDto dto = new UnitClassDto();
-        dto.setName(uc.name());
-        dto.setCode(uc.getCode());
-        dto.setCriticalChance(uc.getCriticalChance());
-        dto.setCriticalMultiplier(uc.getCriticalMultiplier());
-        dto.setDamageReductionPdf(uc.getDamageReduction("PDF"));
-        dto.setDamageReductionPdc(uc.getDamageReduction("PDC"));
-
-        return dto;
+    // Set<UnitClass> -> Set<UnitClassDto>
+    private Set<UnitClassDto> toUnitClassDto(Set<UnitClass> classes) {
+        if (classes == null) return Set.of();
+        return classes.stream().map(uc -> {
+            UnitClassDto dto = new UnitClassDto();
+            dto.setName(uc.name());
+            dto.setCode(uc.getCode());
+            dto.setCriticalChance(uc.getCriticalChance());
+            dto.setCriticalMultiplier(uc.getCriticalMultiplier());
+            dto.setDamageReductionPdf(uc.getDamageReduction("PDF"));
+            dto.setDamageReductionPdc(uc.getDamageReduction("PDC"));
+            return dto;
+        }).collect(java.util.stream.Collectors.toSet());
     }
 
-    private UnitClass toUnitClass(UnitClassDto dto) {
-        if (dto == null || dto.getCode() == null) return null;
-        for (UnitClass uc : UnitClass.values()) {
-            if (uc.getCode().equals(dto.getCode())) {
-                return uc;
-            }
-        }
-        return null;
+    // Set<UnitClassDto> -> Set<UnitClass>
+    private Set<UnitClass> toUnitClass(Set<UnitClassDto> dtos) {
+        if (dtos == null) return Set.of();
+        return dtos.stream()
+                .filter(dto -> dto.getCode() != null)
+                .map(dto -> {
+                    for (UnitClass uc : UnitClass.values()) {
+                        if (uc.getCode().equals(dto.getCode())) {
+                            return uc;
+                        }
+                    }
+                    return null;
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
     }
 
     public EquipmentDto toDto(Equipment d) {
         if (d == null) return null;
-        UnitClass comp = (d.getCompatibleClasses() == null || d.getCompatibleClasses().isEmpty())
-                ? null
-                : d.getCompatibleClasses().iterator().next();
+        Set<UnitClass> comp = d.getCompatibleClasses();
         String category = Optional.ofNullable(d.getCategory()).map(Enum::name).orElse(null);
         return new EquipmentDto(
                 d.getName(),
@@ -87,10 +93,10 @@ public class EquipmentMapper {
         );
     }
 
+
     public Equipment toDomain(EquipmentDto dto) {
         if (dto == null) return null;
-        UnitClass comp = toUnitClass(dto.getCompatibleClass());
-        Set<UnitClass> compatible = (comp == null) ? Set.of() : Set.of(comp);
+        Set<UnitClass> comp = toUnitClass(dto.getCompatibleClass());
         EquipmentCategory category = null;
         if (dto.getCategory() != null) {
             try {
@@ -105,7 +111,7 @@ public class EquipmentMapper {
                 dto.getPdcBonus(),
                 dto.getArmBonus(),
                 dto.getEvasionBonus(),
-                compatible,
+                comp,
                 category
         );
     }

@@ -21,8 +21,4 @@ public class UnitDto {
     private Double pdc;
     private Double armor;
     private Double evasion;
-
-    // Totaux utilitaires
-    private Double totalAttack;
-    private Double totalDefense;
 }

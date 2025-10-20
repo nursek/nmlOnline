@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,6 +16,6 @@ public class EquipmentDto {
     private double pdcBonus;
     private double armBonus;
     private double evasionBonus;
-    private UnitClassDto compatibleClass;
+    private Set<UnitClassDto> compatibleClass;
     private String category;
 }
