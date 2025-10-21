@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "PLAYERS")
 @Data
@@ -15,18 +18,22 @@ public class PlayerEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String username;
+    @Column(nullable = false, unique = true)
+    private String name;
 
-    @Lob
-    @Column(name = "stats", columnDefinition = "BLOB")
-    private byte[] stats;
+    // Stats du joueur (embedded)
+    @Embedded
+    private PlayerStatsEmbeddable stats = new PlayerStatsEmbeddable();
 
-    @Lob
-    @Column(name = "equipments", columnDefinition = "BLOB")
-    private byte[] equipments;
+    // Bonuses du joueur (embedded)
+    @Embedded
+    private PlayerBonusesEmbeddable bonuses = new PlayerBonusesEmbeddable();
 
-    @Lob
-    @Column(name = "sectors", columnDefinition = "BLOB")
-    private byte[] sectors;
+    // Inventaire d'équipements du joueur
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<EquipmentStackEntity> equipments = new ArrayList<>();
+
+    // Secteurs contrôlés par le joueur
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SectorEntity> sectors = new ArrayList<>();
 }

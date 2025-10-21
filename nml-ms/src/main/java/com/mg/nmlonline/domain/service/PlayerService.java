@@ -30,7 +30,7 @@ public class PlayerService {
     }
 
     public Player findByName(String name) {
-        return playerRepository.findByUsername(name)
+        return playerRepository.findByName(name)
                 .map(playerMapper::toDomain)
                 .orElse(null);
     }
