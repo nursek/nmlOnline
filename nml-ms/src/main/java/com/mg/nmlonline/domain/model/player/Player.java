@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.model.player;
 
 import com.mg.nmlonline.domain.model.equipment.Equipment;
+import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -8,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Classe représentant un joueur avec son armée d'unités
@@ -264,6 +266,155 @@ public class Player {
         if (fromSector != null && toSector != null && fromSector.removeUnit(unit)) {
             toSector.addUnit(unit);
             return true;
+        }
+        return false;
+    }
+
+    /**
+     * Retourne la liste des équipements compatibles avec une unité donnée.
+     * Un équipement est compatible si :
+     * - Il correspond à une classe de l'unité
+     * - Il est disponible dans l'inventaire du joueur
+     * - L'unité n'a pas atteint la limite pour cette catégorie d'équipement
+     *
+     * @param unit L'unité pour laquelle vérifier la compatibilité
+     * @return Liste des équipements compatibles disponibles
+     */
+    public List<Equipment> getCompatibleEquipments(Unit unit) {
+        if (unit == null) {
+            return new ArrayList<>();
+        }
+
+        return equipments.stream()
+                .filter(stack -> stack.getAvailable() > 0) // Équipement disponible
+                .map(EquipmentStack::getEquipment)
+                .filter(unit::canEquip) // Compatible et limite non atteinte
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Retourne les équipements compatibles filtrés par catégorie.
+     * Utile pour afficher uniquement les armes, ou uniquement les équipements défensifs.
+     *
+     * @param unit L'unité pour laquelle vérifier
+     * @param category La catégorie d'équipement recherchée (FIREARM, MELEE, DEFENSIVE)
+     * @return Liste des équipements compatibles de cette catégorie
+     */
+    public List<Equipment> getCompatibleEquipmentsByCategory(Unit unit, EquipmentCategory category) {
+        if (unit == null || category == null) {
+            return new ArrayList<>();
+        }
+
+        return equipments.stream()
+                .filter(stack -> stack.getAvailable() > 0)
+                .map(EquipmentStack::getEquipment)
+                .filter(eq -> eq.getCategory() == category)
+                .filter(unit::canEquip)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Remplace un équipement d'une unité par un nouveau.
+     * Si l'unité possède déjà un équipement de la même catégorie et atteint la limite,
+     * l'ancien équipement est retiré et rendu à l'inventaire du joueur.
+     *
+     * @param unit L'unité dont on veut changer l'équipement
+     * @param oldEquipment L'équipement à retirer (peut être null si on veut juste équiper)
+     * @param newEquipment Le nouvel équipement à ajouter
+     * @return true si le remplacement a réussi
+     */
+    public boolean replaceEquipment(Unit unit, Equipment oldEquipment, Equipment newEquipment) {
+        if (unit == null || newEquipment == null) {
+            return false;
+        }
+
+        // Vérifier que le nouvel équipement est disponible
+        if (!isEquipmentAvailable(newEquipment)) {
+            System.out.println("Équipement non disponible : " + newEquipment.getName());
+            return false;
+        }
+
+        // Si un ancien équipement est spécifié, le retirer d'abord
+        if (oldEquipment != null) {
+            boolean removed = unit.removeEquipment(oldEquipment);
+            if (removed) {
+                // Rendre l'équipement à l'inventaire
+                incrementEquipmentAvailability(oldEquipment);
+                System.out.println("Équipement retiré : " + oldEquipment.getName());
+            } else {
+                System.out.println("Impossible de retirer l'équipement : " + oldEquipment.getName());
+                return false;
+            }
+        }
+
+        // Équiper le nouvel équipement
+        boolean equipped = unit.addEquipment(newEquipment);
+        if (equipped) {
+            decrementEquipmentAvailability(newEquipment);
+            setTotalEquipmentValue();
+            System.out.println("Nouvel équipement ajouté : " + newEquipment.getName());
+            return true;
+        } else {
+            // Si l'équipement échoue, remettre l'ancien si on l'avait retiré
+            if (oldEquipment != null) {
+                unit.addEquipment(oldEquipment);
+                decrementEquipmentAvailability(oldEquipment);
+            }
+            System.out.println("Impossible d'équiper : " + newEquipment.getName());
+            return false;
+        }
+    }
+
+    /**
+     * Remplace automatiquement un équipement de même catégorie.
+     * Trouve automatiquement l'équipement de la même catégorie à remplacer.
+     *
+     * @param unit L'unité dont on veut changer l'équipement
+     * @param newEquipment Le nouvel équipement à ajouter
+     * @return true si le remplacement a réussi
+     */
+    public boolean replaceEquipmentByCategory(Unit unit, Equipment newEquipment) {
+        if (unit == null || newEquipment == null) {
+            return false;
+        }
+
+        EquipmentCategory category = newEquipment.getCategory();
+
+        // Vérifier si l'unité a atteint la limite pour cette catégorie
+        long currentCount = unit.countEquipmentsByCategory(category);
+        int maxAllowed = switch (category) {
+            case FIREARM -> unit.getType().getMaxFirearms();
+            case MELEE -> unit.getType().getMaxMeleeWeapons();
+            case DEFENSIVE -> unit.getType().getMaxDefensiveEquipment();
+        };
+
+        // Si la limite est atteinte, retirer le premier équipement de cette catégorie
+        Equipment oldEquipment = null;
+        if (currentCount >= maxAllowed) {
+            List<Equipment> equipmentsOfCategory = unit.getEquipmentsByCategory(category);
+            if (!equipmentsOfCategory.isEmpty()) {
+                oldEquipment = equipmentsOfCategory.get(0);
+            }
+        }
+
+        return replaceEquipment(unit, oldEquipment, newEquipment);
+    }
+
+    /**
+     * Incrémente la disponibilité d'un équipement dans l'inventaire.
+     * Utilisé quand un équipement est retiré d'une unité.
+     *
+     * @param equipment L'équipement à rendre disponible
+     * @return true si l'opération a réussi
+     */
+    private boolean incrementEquipmentAvailability(Equipment equipment) {
+        for (EquipmentStack stack : equipments) {
+            if (stack.getEquipment().equals(equipment)) {
+                stack.incrementAvailable();
+                setTotalEquipmentValue();
+                calculateTotalEconomyPower();
+                return true;
+            }
         }
         return false;
     }

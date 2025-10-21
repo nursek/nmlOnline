@@ -19,36 +19,44 @@ import static com.mg.nmlonline.domain.model.unit.UnitType.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Unit {
-    // Unique ID for each unit
-    private static int nextId = 1;
+    // ===== CONSTANTES =====
+    private static final double INJURED_STAT_MULTIPLIER = 0.5;
+    private static final int MIN_EXPERIENCE_FOR_SECOND_CLASS = 5;
 
+    // ===== IDENTIFIANT UNIQUE =====
+    private static int nextId = 1;
     private int id;
+
+    // ===== INFORMATIONS DE BASE =====
     private String name;
-    private int number = 0;
+    private int number = 0; // Numéro de l'unité dans l'armée (ex: BRUTE n°1, n°2, etc.)
     private double experience = 0.0;
     private UnitType type;
     private List<UnitClass> classes;
 
+    // ===== ÉTAT DE L'UNITÉ =====
     private boolean isInjured = false;
 
-    // Statistiques de base
+    // ===== STATISTIQUES DE BASE =====
+    // Stats de base de l'unité (modifiées par le type et l'état blessé)
     private double attack;
     private double defense;
 
-    // Statistiques calculées et conservées (sans bonus du joueur)
-    private double pdf;
-    private double pdc;
-    private double armor;
-    private double evasion;
+    // ===== STATISTIQUES CALCULÉES =====
+    // Stats calculées à partir des équipements (sans bonus du joueur)
+    private double pdf; // Points de dégâts à distance
+    private double pdc; // Points de dégâts au corps à corps
+    private double armor; // Armure (points de vie supplémentaires)
+    private double evasion; // Chance d'esquive en %
 
-    // Équipements
+    // ===== ÉQUIPEMENTS =====
     private List<Equipment> equipments;
 
     public Unit(double experience, String name, UnitClass primaryClass) {
         this.id = nextId++;
         this.name = name;
         this.experience = experience;
-        this.type = UnitType.getTypeByExperience((int) experience); // Détermine le type par l'expérience
+        this.type = UnitType.getTypeByExperience((int) experience);
         this.classes = new ArrayList<>();
         this.classes.add(primaryClass);
 
@@ -57,35 +65,38 @@ public class Unit {
 
         this.equipments = new ArrayList<>();
 
-        recalculateBaseStats(); // Calcul initial
+        recalculateBaseStats();
     }
 
     // Recalcule les statistiques de base (sans bonus joueur)
     public void recalculateBaseStats() {
-        double statMultiplier = isInjured ? 0.5 : 1.0;
+        double statMultiplier = isInjured ? INJURED_STAT_MULTIPLIER : 1.0;
 
         this.attack = type.getBaseAttack() * statMultiplier;
-        this.defense =  type.getBaseDefense() * statMultiplier;
+        this.defense = type.getBaseDefense() * statMultiplier;
         this.pdf = calculateEquipmentPdf();
         this.pdc = calculateEquipmentPdc();
         this.armor = calculateEquipmentArmor();
         this.evasion = calculateEquipmentEvasion();
     }
 
-    //TODO : pour les bonus du joueur, revoir + tard pendant système de combat
-    // Applique les bonus du joueur (appelé par Player)
-    public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus, double pdcBonus, double armorBonus, double evasionBonus) {
-        this.attack = attack * (1.0 + attackBonus);
-        this.defense = defense * (1.0 + defenseBonus);
-        this.pdf = pdf * (1.0 + pdfBonus);
-        this.pdc = pdc * (1.0 + pdcBonus);
-        this.armor = armor * (1.0 + armorBonus);
-        this.evasion = evasion - (evasionBonus * 10);
+    /**
+     * Applique les bonus du joueur sur les statistiques de l'unité.
+     * À appeler après recalculateBaseStats() pour ajouter les bonus globaux du joueur.
+     * TODO: À revoir lors de l'implémentation du système de combat complet
+     */
+    public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus,
+                                   double pdcBonus, double armorBonus, double evasionBonus) {
+        this.attack *= (1.0 + attackBonus);
+        this.defense *= (1.0 + defenseBonus);
+        this.pdf *= (1.0 + pdfBonus);
+        this.pdc *= (1.0 + pdcBonus);
+        this.armor *= (1.0 + armorBonus);
+        this.evasion -= (evasionBonus * 10);
     }
 
     private double calculateEquipmentPdf() {
         double totalPdf = 0;
-
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
                 totalPdf += attack * (equipment.getPdfBonus() / 100.0);
@@ -96,7 +107,6 @@ public class Unit {
 
     private double calculateEquipmentPdc() {
         double totalPdc = 0;
-
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
                 totalPdc += attack * (equipment.getPdcBonus() / 100.0);
@@ -107,7 +117,6 @@ public class Unit {
 
     private double calculateEquipmentArmor() {
         double totalArmor = 0;
-
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
                 totalArmor += defense * (equipment.getArmBonus() / 100.0);
@@ -118,7 +127,6 @@ public class Unit {
 
     private double calculateEquipmentEvasion() {
         double totalEvasion = 0;
-
         for (Equipment equipment : equipments) {
             if (isEquipmentCompatible(equipment)) {
                 totalEvasion += equipment.getEvasionBonus();
@@ -128,10 +136,16 @@ public class Unit {
     }
 
     private boolean isEquipmentCompatible(Equipment equipment) {
-        return classes.stream().anyMatch(unitClass -> equipment.getCompatibleClasses().contains(unitClass));
+        return classes.stream()
+                .anyMatch(unitClass -> equipment.getCompatibleClasses().contains(unitClass));
     }
 
-    // Gestion de l'évolution
+    // ===== GESTION DE L'EXPÉRIENCE ET DE L'ÉVOLUTION =====
+
+    /**
+     * Fait gagner de l'expérience à l'unité et déclenche une évolution si nécessaire.
+     * @param exp Montant d'expérience à ajouter
+     */
     public void gainExperience(double exp) {
         this.experience += exp;
         UnitType newType = UnitType.getTypeByExperience((int) experience);
@@ -145,16 +159,28 @@ public class Unit {
         recalculateBaseStats(); // Recalcule avec les nouvelles stats de base
     }
 
-    // Gestion des classes
+    // ===== GESTION DES CLASSES =====
+
+    /**
+     * Vérifie si l'unité peut obtenir une seconde classe.
+     * Les LARBIN et VOYOU ne peuvent avoir qu'une seule classe.
+     * Les autres unités peuvent avoir une seconde classe à partir de 5 d'expérience.
+     * @return true si une seconde classe peut être ajoutée
+     */
     public boolean canAddSecondClass() {
         long effectiveClassCount = classes.size();
         if (type == UnitType.LARBIN || type == UnitType.VOYOU) {
             return effectiveClassCount < 1;
-        } else return effectiveClassCount <= 1 && experience >= 5;
+        }
+        return effectiveClassCount <= 1 && experience >= MIN_EXPERIENCE_FOR_SECOND_CLASS;
     }
 
+    /**
+     * Ajoute une seconde classe à l'unité si possible.
+     * @param secondClass Classe à ajouter
+     */
     public void addSecondClass(UnitClass secondClass) {
-         if (canAddSecondClass() && !classes.contains(secondClass)) {
+        if (canAddSecondClass() && !classes.contains(secondClass)) {
             classes.add(secondClass);
             recalculateBaseStats();
         } else {
@@ -162,20 +188,29 @@ public class Unit {
         }
     }
 
-    // Gestion des équipements
+    // ===== GESTION DES ÉQUIPEMENTS =====
+
+    /**
+     * Vérifie si l'unité peut équiper un équipement donné.
+     * Prend en compte les limites par type d'équipement et la compatibilité.
+     * @param equipment Équipement à vérifier
+     * @return true si l'équipement peut être ajouté
+     */
     public boolean canEquip(Equipment equipment) {
-        EquipmentCategory category = equipment.getCategory();
-        if (category == EquipmentCategory.FIREARM) {
-            long firearmsCount = equipments.stream().filter(e -> e.getCategory() == EquipmentCategory.FIREARM).count();
-            return firearmsCount < type.getMaxFirearms() && isEquipmentCompatible(equipment);
-        } else if (category == EquipmentCategory.MELEE) {
-            long meleeCount = equipments.stream().filter(e -> e.getCategory() == EquipmentCategory.MELEE).count();
-            return meleeCount < type.getMaxMeleeWeapons() && isEquipmentCompatible(equipment);
-        } else if (category == EquipmentCategory.DEFENSIVE) {
-            long defensiveCount = equipments.stream().filter(e -> e.getCategory() == EquipmentCategory.DEFENSIVE).count();
-            return defensiveCount < type.getMaxDefensiveEquipment() && isEquipmentCompatible(equipment);
+        if (!isEquipmentCompatible(equipment)) {
+            return false;
         }
-        return false;
+
+        EquipmentCategory category = equipment.getCategory();
+        long currentCount = equipments.stream()
+                .filter(e -> e.getCategory() == category)
+                .count();
+
+        return switch (category) {
+            case FIREARM -> currentCount < type.getMaxFirearms();
+            case MELEE -> currentCount < type.getMaxMeleeWeapons();
+            case DEFENSIVE -> currentCount < type.getMaxDefensiveEquipment();
+        };
     }
 
     public boolean addEquipment(Equipment equipment) {
@@ -196,6 +231,34 @@ public class Unit {
         return removed;
     }
 
+    /**
+     * Obtient la liste des équipements d'une catégorie spécifique.
+     * @param category Catégorie d'équipement recherchée
+     * @return Liste des équipements de cette catégorie
+     */
+    public List<Equipment> getEquipmentsByCategory(EquipmentCategory category) {
+        return equipments.stream()
+                .filter(e -> e.getCategory() == category)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Compte le nombre d'équipements d'une catégorie donnée.
+     * @param category Catégorie à compter
+     * @return Nombre d'équipements de cette catégorie
+     */
+    public long countEquipmentsByCategory(EquipmentCategory category) {
+        return equipments.stream()
+                .filter(e -> e.getCategory() == category)
+                .count();
+    }
+
+    // ===== MÉTHODES UTILITAIRES POUR LE COMBAT =====
+
+    /**
+     * Calcule l'attaque totale de l'unité (ATK + PDF + PDC).
+     * @return Total des points d'attaque
+     */
     public double getTotalAttack() {
         return attack + pdf + pdc;
     }
@@ -265,13 +328,5 @@ public class Unit {
         sb.append(" / ").append(formatStat(defense)).append(" Def");
         if (armor > 0) sb.append(" + ").append(formatStat(armor)).append(" Arm");
         if (evasion > 0) sb.append(". Esquive : ").append(formatEvasion(evasion)).append(" %");
-    }
-
-    public double getDamageReduction(String damageType) {
-        return classes.stream().mapToDouble(c -> c.getDamageReduction(damageType)).max().orElse(0);
-    }
-
-    public double getBaseDefense() {
-        return this.type.getBaseDefense();
     }
 }
