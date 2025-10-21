@@ -41,6 +41,11 @@ public class EquipmentStack {
             available--;
     }
 
+    public void incrementAvailable() {
+        if(available < quantity)
+            available++;
+    }
+
     public static class EquipmentStackDeserializer extends JsonDeserializer<EquipmentStack> {
         @Override
         public EquipmentStack deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
