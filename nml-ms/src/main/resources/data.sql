@@ -10,26 +10,6 @@ INSERT INTO CREDENTIALS (username, password) VALUES ('a', '$2a$12$ca/.P6xWRGFiH5
 INSERT INTO CREDENTIALS (username, password) VALUES ('lurio', '$2y$10$PoKeBxBu4AhIM9yMbEUIzOf8SHbdHC8/A5BHqq9jkUT.YiZbsXZNe');
 INSERT INTO CREDENTIALS (username, password) VALUES ('nursek', '$2y$10$X41e/q5zcdbR8T5AMatbFuaXhj.E2fvEJ7DivsuqSlNeY97mrI0mW');
 
-CREATE TABLE IF NOT EXISTS PLAYERS (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(255) NOT NULL,
-    stats BLOB,
-    equipments BLOB,
-    sectors BLOB
-);
-INSERT INTO PLAYERS (username, stats, equipments, sectors) VALUES ('test', NULL, NULL, NULL);
-
-CREATE TABLE IF NOT EXISTS EQUIPMENT (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    cost INT NOT NULL,
-    pdf_bonus INT NOT NULL,
-    pdc_bonus INT NOT NULL,
-    arm_bonus INT NOT NULL,
-    evasion_bonus INT NOT NULL,
-    compatible_class VARCHAR(255),
-    category VARCHAR(100)
-);
 INSERT INTO EQUIPMENT (name, cost, pdf_bonus, pdc_bonus, arm_bonus, evasion_bonus, compatible_class, category) VALUES
 ('Pistolet 9mm',400,80,0,0,0,'LEGER','FIREARM'),
 ('Pistolet-mitrailleur',850,150,0,25,0,'LEGER','FIREARM'),
