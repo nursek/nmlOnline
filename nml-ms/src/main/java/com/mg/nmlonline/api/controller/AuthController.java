@@ -33,8 +33,10 @@ public class AuthController {
     private JwtService jwtService;
 
     private final ConcurrentHashMap<String, Attempt> attempts = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, RefreshThrottle> refreshThrottles = new ConcurrentHashMap<>();
     private static final int MAX_ATTEMPTS = 5;
     private static final long BLOCK_TIME_MS = TimeUnit.MINUTES.toMillis(1);
+    private static final long REFRESH_MIN_INTERVAL_MS = 1000; // 5 secondes minimum entre chaque refresh
 
     @Value("${app.cookie.secure:false}")
     private boolean appCookieSecure;
@@ -47,6 +49,11 @@ public class AuthController {
         int count;
         long lastAttempt;
         long blockedUntil;
+    }
+
+    private static class RefreshThrottle {
+        long lastRefresh;
+        int refreshCount;
     }
 
     @PostMapping("/login")
@@ -98,19 +105,45 @@ public class AuthController {
 
     @PostMapping("/auth/refresh")
     public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
-        Cookie cookie = WebUtils.getCookie(request, "refresh_token");
+        String clientIp = request.getRemoteAddr();
         long now = System.currentTimeMillis();
 
+        // Protection anti-spam : vérifier le throttling par IP AVANT toute opération
+        RefreshThrottle throttle = refreshThrottles.computeIfAbsent(clientIp, k -> new RefreshThrottle());
+
+        if (throttle.lastRefresh > 0) {
+            long timeSinceLastRefresh = now - throttle.lastRefresh;
+            if (timeSinceLastRefresh < REFRESH_MIN_INTERVAL_MS) {
+                throttle.refreshCount++;
+                // Si trop de tentatives rapides (>3 en moins de 5 secondes), bloquer temporairement
+                if (throttle.refreshCount > 3) {
+                    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                            .body(Map.of("valid", false, "error", "Trop de requêtes, veuillez patienter"));
+                }
+                return ResponseEntity.ok(Map.of("valid", false, "error", "Veuillez patienter avant de rafraîchir"));
+            } else {
+                // Réinitialiser le compteur si l'intervalle est respecté
+                throttle.refreshCount = 0;
+            }
+        }
+
+        // Vérifier le cookie AVANT de toucher à la BDD
+        Cookie cookie = WebUtils.getCookie(request, "refresh_token");
         if (cookie == null) {
             return ResponseEntity.ok(Map.of("valid", false));
         }
 
+        // Mettre à jour le timestamp AVANT l'appel BDD pour bloquer les requêtes suivantes
+        throttle.lastRefresh = now;
+
+        // Maintenant qu'on sait que la requête est valide, on peut chercher en BDD
         String refreshToken = cookie.getValue();
         User user = userService.findByRefreshToken(refreshToken);
 
         if (user == null || user.getRefreshTokenExpiry() == null || user.getRefreshTokenExpiry() < now) {
             return ResponseEntity.ok(Map.of("valid", false));
         }
+
 
         long maxAge = (user.getRefreshTokenExpiry() - now) / 1000;
         if (maxAge <= 0) {

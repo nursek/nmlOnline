@@ -28,7 +28,7 @@ public class PlayerController {
     }
 
     @GetMapping("/{name}")
-    public PlayerDto findByName(@PathVariable String name) {
+    public PlayerDto findByName(@PathVariable("name") String name) {
         Player player = playerService.findByName(name);
         return playerMapper.toDto(player);
     }
@@ -41,7 +41,7 @@ public class PlayerController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable("id") Long id) {
         if(!playerService.delete(id)) {
             throw new RuntimeException("Equipment with id " + id + " not found.");
         }

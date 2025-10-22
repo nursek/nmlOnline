@@ -37,6 +37,7 @@ public class PlayerService {
 
     @Transactional
     public Player create(Player player) {
+        player.recalculateStats();
         PlayerEntity entity = playerMapper.toEntity(player);
         PlayerEntity saved = playerRepository.save(entity);
         return playerMapper.toDomain(saved);

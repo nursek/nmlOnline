@@ -359,6 +359,14 @@ public class Player {
         stats.setTotalEconomyPower(economyPower);
     }
 
+    public void recalculateStats() {
+        updateCombatStats();
+        updateGlobalStats();
+        calculateTotalIncome();
+        setTotalEquipmentValue();
+        calculateTotalEconomyPower();
+    }
+
     // === AFFICHAGE ===
 
     /**

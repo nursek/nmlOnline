@@ -1,4 +1,3 @@
-// java
 package com.mg.nmlonline.infrastructure.entity;
 
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
