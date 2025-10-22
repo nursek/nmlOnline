@@ -28,7 +28,7 @@ public class EquipmentController {
     }
 
     @GetMapping("/{id}")
-    public EquipmentDto findById(@PathVariable Long id) {
+    public EquipmentDto findById(@PathVariable("id") Long id) {
         Equipment equipment = equipmentService.findById(id);
         return equipmentMapper.toDto(equipment);
     }
@@ -41,7 +41,7 @@ public class EquipmentController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable("id") Long id) {
         if(!equipmentService.delete(id)) {
             throw new RuntimeException("Equipment with id " + id + " not found.");
         }

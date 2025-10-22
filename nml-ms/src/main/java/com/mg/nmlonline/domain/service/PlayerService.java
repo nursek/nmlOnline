@@ -30,13 +30,14 @@ public class PlayerService {
     }
 
     public Player findByName(String name) {
-        return playerRepository.findByUsername(name)
+        return playerRepository.findByName(name)
                 .map(playerMapper::toDomain)
                 .orElse(null);
     }
 
     @Transactional
     public Player create(Player player) {
+        player.recalculateStats();
         PlayerEntity entity = playerMapper.toEntity(player);
         PlayerEntity saved = playerRepository.save(entity);
         return playerMapper.toDomain(saved);

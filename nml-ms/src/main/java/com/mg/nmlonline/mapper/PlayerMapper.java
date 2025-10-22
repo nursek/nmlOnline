@@ -1,196 +1,276 @@
 package com.mg.nmlonline.mapper;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mg.nmlonline.api.dto.PlayerDto;
+import com.mg.nmlonline.api.dto.*;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
-import com.mg.nmlonline.infrastructure.entity.PlayerEntity;
+import com.mg.nmlonline.domain.model.player.PlayerBonuses;
 import com.mg.nmlonline.domain.model.player.PlayerStats;
-import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.infrastructure.entity.*;
+import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
 public class PlayerMapper {
 
-    private final ObjectMapper objectMapper;
+    private final EquipmentMapper equipmentMapper;
+    private final SectorMapper sectorMapper;
+    private final EquipmentRepository equipmentRepository;
 
-    public PlayerMapper(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public PlayerMapper(EquipmentMapper equipmentMapper, SectorMapper sectorMapper, EquipmentRepository equipmentRepository) {
+        this.equipmentMapper = equipmentMapper;
+        this.sectorMapper = sectorMapper;
+        this.equipmentRepository = equipmentRepository;
     }
 
-    public Player toDomain(PlayerEntity e) {
-        Player p = new Player();
-        if (e == null) return p;
-        p.setName(e.getUsername());
+    /**
+     * Convertit une entité PlayerEntity en objet Player du domaine
+     */
+    public Player toDomain(PlayerEntity entity) {
+        if (entity == null) return new Player();
 
-        try {
-            if (e.getStats() != null && e.getStats().length > 0) {
-                PlayerStats stats = objectMapper.readValue(e.getStats(), PlayerStats.class);
-                p.setStats(stats);
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException("Erreur de conversion des stats du joueur", ex);
+        Player player = new Player(entity.getName());
+
+        // Conversion des stats
+        if (entity.getStats() != null) {
+            PlayerStats stats = new PlayerStats();
+            PlayerStatsEmbeddable statsEmb = entity.getStats();
+            stats.setMoney(statsEmb.getMoney());
+            stats.setTotalIncome(statsEmb.getTotalIncome());
+            stats.setTotalVehiclesValue(statsEmb.getTotalVehiclesValue());
+            stats.setTotalEquipmentValue(statsEmb.getTotalEquipmentValue());
+            stats.setTotalOffensivePower(statsEmb.getTotalOffensivePower());
+            stats.setTotalDefensivePower(statsEmb.getTotalDefensivePower());
+            stats.setGlobalPower(statsEmb.getGlobalPower());
+            stats.setTotalEconomyPower(statsEmb.getTotalEconomyPower());
+            stats.setTotalAtk(statsEmb.getTotalAtk());
+            stats.setTotalPdf(statsEmb.getTotalPdf());
+            stats.setTotalPdc(statsEmb.getTotalPdc());
+            stats.setTotalDef(statsEmb.getTotalDef());
+            stats.setTotalArmor(statsEmb.getTotalArmor());
+            player.setStats(stats);
         }
 
-        try {
-            if (e.getEquipments() != null && e.getEquipments().length > 0) {
-                List<EquipmentStack> eqs = objectMapper.readValue(e.getEquipments(),
-                        new TypeReference<List<EquipmentStack>>() {
-                        });
-                p.setEquipments(eqs);
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException("Erreur de conversion des équipements du joueur", ex);
+        // Conversion des bonus (si nécessaire)
+        if (entity.getBonuses() != null) {
+            PlayerBonuses bonuses = new PlayerBonuses();
+            PlayerBonusesEmbeddable bonusesEmb = entity.getBonuses();
+            bonuses.setAttackBonusPercent(bonusesEmb.getAttackBonusPercent());
+            bonuses.setDefenseBonusPercent(bonusesEmb.getDefenseBonusPercent());
+            bonuses.setPdfBonusPercent(bonusesEmb.getPdfBonusPercent());
+            bonuses.setPdcBonusPercent(bonusesEmb.getPdcBonusPercent());
+            bonuses.setArmorBonusPercent(bonusesEmb.getArmorBonusPercent());
+            bonuses.setEvasionBonusPercent(bonusesEmb.getEvasionBonusPercent());
+            // Note: Player n'a pas de champ bonuses dans le domaine actuel
+            // Vous pourrez l'ajouter si nécessaire
         }
 
-        try {
-            if (e.getSectors() != null && e.getSectors().length > 0) {
-                List<Sector> sectors = objectMapper.readValue(e.getSectors(),
-                        new TypeReference<List<Sector>>() {
-                        });
-                p.setSectors(sectors);
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException("Erreur de conversion des secteurs du joueur", ex);
+        // Conversion des équipements (EquipmentStack)
+        if (entity.getEquipments() != null) {
+            List<EquipmentStack> equipmentStacks = entity.getEquipments().stream()
+                    .map(this::equipmentStackToDomain)
+                    .collect(Collectors.toList());
+            player.setEquipments(equipmentStacks);
         }
 
-        return p;
+        // Conversion des secteurs
+        if (entity.getSectors() != null) {
+            List<com.mg.nmlonline.domain.model.sector.Sector> sectors = entity.getSectors().stream()
+                    .map(sectorMapper::toDomain)
+                    .collect(Collectors.toList());
+            player.setSectors(sectors);
+        }
+
+        return player;
     }
 
-    public PlayerEntity toEntity(Player domain) {
-        PlayerEntity e = new PlayerEntity();
-        e.setUsername(domain.getName());
-        try {
-            if (domain.getPlayerStats() != null) {
-                e.setStats(objectMapper.writeValueAsBytes(domain.getPlayerStats()));
-            }
-            if (domain.getEquipments() != null) {
-                e.setEquipments(objectMapper.writeValueAsBytes(domain.getEquipments()));
-            }
-            if (domain.getSectors() != null) {
-                e.setSectors(objectMapper.writeValueAsBytes(domain.getSectors()));
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException("Erreur de conversion vers l'entité joueur", ex);
+    /**
+     * Convertit un DTO PlayerDto en objet Player du domaine
+     */
+    public Player toDomain(PlayerDto dto) {
+        if (dto == null) return new Player();
+
+        Player player = new Player(dto.getName());
+
+        // Conversion des stats
+        if (dto.getStats() != null) {
+            PlayerStats stats = new PlayerStats();
+            PlayerStatsDto statsDto = dto.getStats();
+            stats.setMoney(statsDto.getMoney());
+            stats.setTotalIncome(statsDto.getTotalIncome());
+            stats.setTotalVehiclesValue(statsDto.getTotalVehiclesValue());
+            stats.setTotalEquipmentValue(statsDto.getTotalEquipmentValue());
+            stats.setTotalOffensivePower(statsDto.getTotalOffensivePower());
+            stats.setTotalDefensivePower(statsDto.getTotalDefensivePower());
+            stats.setGlobalPower(statsDto.getGlobalPower());
+            stats.setTotalEconomyPower(statsDto.getTotalEconomyPower());
+            stats.setTotalAtk(statsDto.getTotalAtk());
+            stats.setTotalPdf(statsDto.getTotalPdf());
+            stats.setTotalPdc(statsDto.getTotalPdc());
+            stats.setTotalDef(statsDto.getTotalDef());
+            stats.setTotalArmor(statsDto.getTotalArmor());
+            player.setStats(stats);
         }
-        return e;
+
+        // Conversion des équipements
+        if (dto.getEquipments() != null) {
+            List<EquipmentStack> equipmentStacks = dto.getEquipments().stream()
+                    .map(this::equipmentStackFromDto)
+                    .collect(Collectors.toList());
+            player.setEquipments(equipmentStacks);
+        }
+
+        // Conversion des secteurs
+        if (dto.getSectors() != null) {
+            List<com.mg.nmlonline.domain.model.sector.Sector> sectors = dto.getSectors().stream()
+                    .map(sectorMapper::toDomain)
+                    .collect(Collectors.toList());
+            player.setSectors(sectors);
+        }
+
+        return player;
     }
 
-    public PlayerDto toDto(Player p) {
+    /**
+     * Convertit un objet Player du domaine en entité PlayerEntity
+     */
+    public PlayerEntity toEntity(Player player) {
+        if (player == null) return new PlayerEntity();
+
+        PlayerEntity entity = new PlayerEntity();
+        entity.setName(player.getName());
+
+        // Conversion des stats
+        if (player.getStats() != null) {
+            PlayerStatsEmbeddable statsEmb = new PlayerStatsEmbeddable();
+            PlayerStats stats = player.getStats();
+            statsEmb.setMoney(stats.getMoney());
+            statsEmb.setTotalIncome(stats.getTotalIncome());
+            statsEmb.setTotalVehiclesValue(stats.getTotalVehiclesValue());
+            statsEmb.setTotalEquipmentValue(stats.getTotalEquipmentValue());
+            statsEmb.setTotalOffensivePower(stats.getTotalOffensivePower());
+            statsEmb.setTotalDefensivePower(stats.getTotalDefensivePower());
+            statsEmb.setGlobalPower(stats.getGlobalPower());
+            statsEmb.setTotalEconomyPower(stats.getTotalEconomyPower());
+            statsEmb.setTotalAtk(stats.getTotalAtk());
+            statsEmb.setTotalPdf(stats.getTotalPdf());
+            statsEmb.setTotalPdc(stats.getTotalPdc());
+            statsEmb.setTotalDef(stats.getTotalDef());
+            statsEmb.setTotalArmor(stats.getTotalArmor());
+            entity.setStats(statsEmb);
+        }
+
+        // Conversion des équipements
+        if (player.getEquipments() != null) {
+            List<EquipmentStackEntity> equipmentStackEntities = player.getEquipments().stream()
+                    .map(stack -> equipmentStackToEntity(stack, entity))
+                    .collect(Collectors.toList());
+            entity.setEquipments(equipmentStackEntities);
+        }
+
+        // Conversion des secteurs
+        if (player.getSectors() != null) {
+            List<SectorEntity> sectorEntities = player.getSectors().stream()
+                    .map(sector -> sectorMapper.toEntity(sector, entity))
+                    .collect(Collectors.toList());
+            entity.setSectors(sectorEntities);
+        }
+
+        return entity;
+    }
+
+    /**
+     * Convertit un objet Player du domaine en DTO
+     */
+    public PlayerDto toDto(Player player) {
+        if (player == null) return new PlayerDto();
+
         PlayerDto dto = new PlayerDto();
-        if (p == null) return dto;
-        dto.id = null; // l'id vient de l'entité si nécessaire
-        dto.name = p.getName();
+        dto.setName(player.getName());
 
-        // PlayerStats -> PlayerStatsDto
-        PlayerStats stats = p.getPlayerStats();
-        if (stats == null) {
-            dto.stats = null;
-        } else {
-            PlayerDto.PlayerStatsDto sd = new PlayerDto.PlayerStatsDto();
-            sd.money = stats.getMoney();
-            sd.totalIncome = stats.getTotalIncome();
-            sd.totalVehiclesValue = stats.getTotalVehiclesValue();
-            sd.totalEquipmentValue = stats.getTotalEquipmentValue();
-            sd.totalOffensivePower = stats.getTotalOffensivePower();
-            sd.totalDefensivePower = stats.getTotalDefensivePower();
-            sd.globalPower = stats.getGlobalPower();
-            sd.totalEconomyPower = stats.getTotalEconomyPower();
-            sd.totalAtk = stats.getTotalAtk();
-            sd.totalPdf = stats.getTotalPdf();
-            sd.totalPdc = stats.getTotalPdc();
-            sd.totalDef = stats.getTotalDef();
-            sd.totalArmor = stats.getTotalArmor();
-            dto.stats = sd;
+        // Conversion des stats
+        if (player.getStats() != null) {
+            PlayerStatsDto statsDto = new PlayerStatsDto();
+            PlayerStats stats = player.getStats();
+            statsDto.setMoney(stats.getMoney());
+            statsDto.setTotalIncome(stats.getTotalIncome());
+            statsDto.setTotalVehiclesValue(stats.getTotalVehiclesValue());
+            statsDto.setTotalEquipmentValue(stats.getTotalEquipmentValue());
+            statsDto.setTotalOffensivePower(stats.getTotalOffensivePower());
+            statsDto.setTotalDefensivePower(stats.getTotalDefensivePower());
+            statsDto.setGlobalPower(stats.getGlobalPower());
+            statsDto.setTotalEconomyPower(stats.getTotalEconomyPower());
+            statsDto.setTotalAtk(stats.getTotalAtk());
+            statsDto.setTotalPdf(stats.getTotalPdf());
+            statsDto.setTotalPdc(stats.getTotalPdc());
+            statsDto.setTotalDef(stats.getTotalDef());
+            statsDto.setTotalArmor(stats.getTotalArmor());
+            dto.setStats(statsDto);
         }
 
-        dto.equipments = Optional.ofNullable(p.getEquipments()).orElse(List.of()).stream().map(stack -> {
-            PlayerDto.EquipmentDto ed = new PlayerDto.EquipmentDto();
-            ed.name = (stack.getEquipment() == null) ? null : stack.getEquipment().getName();
-            ed.quantity = stack.getQuantity();
-            return ed;
-        }).collect(Collectors.toList());
+        // Conversion des équipements
+        if (player.getEquipments() != null) {
+            List<EquipmentStackDto> equipmentStackDtos = player.getEquipments().stream()
+                    .map(this::equipmentStackToDto)
+                    .collect(Collectors.toList());
+            dto.setEquipments(equipmentStackDtos);
+        }
 
-        dto.sectors = Optional.ofNullable(p.getSectors()).orElse(List.of()).stream().map(sec -> {
-            PlayerDto.SectorDto sd = new PlayerDto.SectorDto();
-            sd.number = sec.getNumber();
-            sd.name = sec.getName();
-            sd.income = sec.getIncome();
-            sd.army = Optional.ofNullable(sec.getArmy()).orElse(List.of()).stream().map(u -> {
-                PlayerDto.UnitDto ud = new PlayerDto.UnitDto();
-                ud.id = u.getId();
-                ud.type = (u.getType() == null) ? null : String.valueOf(u.getType());
-                ud.experience = u.getExperience();
-                ud.equipments = Optional.ofNullable(u.getEquipments()).orElse(List.of()).stream()
-                        .map(Equipment::getName).collect(Collectors.toList());
-                ud.isInjured = u.isInjured();
-                return ud;
-            }).collect(Collectors.toList());
-            return sd;
-        }).collect(Collectors.toList());
+        // Conversion des secteurs
+        if (player.getSectors() != null) {
+            List<SectorDto> sectorDtos = player.getSectors().stream()
+                    .map(sectorMapper::toDto)
+                    .collect(Collectors.toList());
+            dto.setSectors(sectorDtos);
+        }
 
         return dto;
     }
 
-    public Player toDomain(PlayerDto dto) {
+    // === MÉTHODES AUXILIAIRES POUR EQUIPMENTSTACK ===
+
+    private EquipmentStack equipmentStackToDomain(EquipmentStackEntity entity) {
+        if (entity == null) return null;
+        Equipment equipment = equipmentMapper.toDomain(entity.getEquipment());
+        EquipmentStack stack = new EquipmentStack(equipment);
+        stack.setQuantity(entity.getQuantity());
+        stack.setAvailable(entity.getAvailable());
+        return stack;
+    }
+
+    private EquipmentStack equipmentStackFromDto(EquipmentStackDto dto) {
         if (dto == null) return null;
+        Equipment equipment = equipmentMapper.toDomain(dto.getEquipment());
+        EquipmentStack stack = new EquipmentStack(equipment);
+        stack.setQuantity(dto.getQuantity());
+        stack.setAvailable(dto.getAvailable());
+        return stack;
+    }
 
-        Player p = new Player();
-        p.setName(dto.name);
+    private EquipmentStackEntity equipmentStackToEntity(EquipmentStack stack, PlayerEntity player) {
+        if (stack == null) return null;
+        EquipmentStackEntity entity = new EquipmentStackEntity();
+        entity.setPlayer(player);
 
-        // player stats : convertir PlayerStatsDto -> PlayerStats
-        PlayerStats stats = new PlayerStats();
-        if (dto.stats != null) {
-            stats.setMoney(dto.stats.money == null ? 0d : dto.stats.money);
-            stats.setTotalIncome(dto.stats.totalIncome == null ? 0d : dto.stats.totalIncome);
-            stats.setTotalVehiclesValue(dto.stats.totalVehiclesValue == null ? 0d : dto.stats.totalVehiclesValue);
-            stats.setTotalEquipmentValue(dto.stats.totalEquipmentValue == null ? 0d : dto.stats.totalEquipmentValue);
-            stats.setTotalOffensivePower(dto.stats.totalOffensivePower == null ? 0d : dto.stats.totalOffensivePower);
-            stats.setTotalDefensivePower(dto.stats.totalDefensivePower == null ? 0d : dto.stats.totalDefensivePower);
-            stats.setGlobalPower(dto.stats.globalPower == null ? 0d : dto.stats.globalPower);
-            stats.setTotalEconomyPower(dto.stats.totalEconomyPower == null ? 0d : dto.stats.totalEconomyPower);
-            stats.setTotalAtk(dto.stats.totalAtk == null ? 0d : dto.stats.totalAtk);
-            stats.setTotalPdf(dto.stats.totalPdf == null ? 0d : dto.stats.totalPdf);
-            stats.setTotalPdc(dto.stats.totalPdc == null ? 0d : dto.stats.totalPdc);
-            stats.setTotalDef(dto.stats.totalDef == null ? 0d : dto.stats.totalDef);
-            stats.setTotalArmor(dto.stats.totalArmor == null ? 0d : dto.stats.totalArmor);
-        } else {
-            // déjà initialisé avec valeurs par défaut dans PlayerStats
-        }
-        p.setStats(stats);
+        // Rechercher l'équipement existant par nom au lieu d'en créer un nouveau
+        EquipmentEntity equipmentEntity = equipmentRepository.findByName(stack.getEquipment().getName())
+                .orElseGet(() -> equipmentMapper.toEntity(stack.getEquipment()));
 
-        // equipments : EquipmentStack nécessite un Equipment en paramètre (final) -> on passe null et initialise les quantités
-        List<EquipmentStack> eqs = Optional.ofNullable(dto.equipments).orElse(List.of()).stream().map(ed -> {
-            EquipmentStack stack = new EquipmentStack(null);
-            int qty = ed == null || ed.quantity == null ? 0 : ed.quantity;
-            stack.setQuantity(qty);
-            stack.setAvailable(qty);
-            return stack;
-        }).collect(Collectors.toList());
-        p.setEquipments(eqs);
+        entity.setEquipment(equipmentEntity);
+        entity.setQuantity(stack.getQuantity());
+        entity.setAvailable(stack.getAvailable());
+        return entity;
+    }
 
-        // sectors : Sector n'a pas de constructeur vide -> utiliser le constructeur avec le numéro
-        List<Sector> sectors = Optional.ofNullable(dto.sectors).orElse(List.of()).stream().map(sd -> {
-            int number = sd == null || sd.number == null ? 0 : sd.number;
-            Sector sec = new Sector(number);
-            if (sd != null && sd.name != null) {
-                sec.setName(sd.name);
-            }
-            if (sd != null && sd.income != null) {
-                sec.setIncome(sd.income);
-            }
-            sec.setArmy(List.of());
-            return sec;
-        }).collect(Collectors.toList());
-        p.setSectors(sectors);
-
-        return p;
+    private EquipmentStackDto equipmentStackToDto(EquipmentStack stack) {
+        if (stack == null) return null;
+        EquipmentStackDto dto = new EquipmentStackDto();
+        dto.setEquipment(equipmentMapper.toDto(stack.getEquipment()));
+        dto.setQuantity(stack.getQuantity());
+        dto.setAvailable(stack.getAvailable());
+        return dto;
     }
 }

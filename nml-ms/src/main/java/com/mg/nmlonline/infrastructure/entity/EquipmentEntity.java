@@ -1,6 +1,6 @@
-// java
 package com.mg.nmlonline.infrastructure.entity;
 
+import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -16,28 +16,29 @@ public class EquipmentEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
 
     @Column(nullable = false)
     private int cost;
 
     @Column(name = "pdf_bonus", nullable = false)
-    private int pdfBonus;
+    private double pdfBonus;
 
     @Column(name = "pdc_bonus", nullable = false)
-    private int pdcBonus;
+    private double pdcBonus;
 
     @Column(name = "arm_bonus", nullable = false)
-    private int armBonus;
+    private double armBonus;
 
     @Column(name = "evasion_bonus", nullable = false)
-    private int evasionBonus;
+    private double evasionBonus;
 
-    @Column(name = "compatible_class")
     @Enumerated(EnumType.STRING)
+    @Column(name = "compatible_class")
     private UnitClass compatibleClass;
 
-    @Column(length = 100)
-    private String category;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EquipmentCategory category;
 }
