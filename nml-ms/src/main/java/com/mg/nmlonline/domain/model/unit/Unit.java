@@ -44,10 +44,10 @@ public class Unit {
 
     // ===== STATISTIQUES CALCULÉES =====
     // Stats calculées à partir des équipements (sans bonus du joueur)
-    private double pdf; // Points de dégâts à distance
-    private double pdc; // Points de dégâts au corps à corps
+    private double pdf;
+    private double pdc;
     private double armor; // Armure (points de vie supplémentaires)
-    private double evasion; // Chance d'esquive en %
+    private double evasion;
 
     // ===== ÉQUIPEMENTS =====
     private List<Equipment> equipments;
@@ -329,4 +329,16 @@ public class Unit {
         if (armor > 0) sb.append(" + ").append(formatStat(armor)).append(" Arm");
         if (evasion > 0) sb.append(". Esquive : ").append(formatEvasion(evasion)).append(" %");
     }
+
+    public double getDamageReduction(String damageType) {
+        return classes.stream()
+                .mapToDouble(c -> c.getDamageReduction(damageType))
+                .max()
+                .orElse(0.0);
+    }
+
+    public double getBaseDefense() {
+        return type.getBaseDefense();
+    }
+
 }
