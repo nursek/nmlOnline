@@ -128,6 +128,17 @@ CREATE TABLE IF NOT EXISTS UNIT_EQUIPMENTS (
 );
 
 -- =============================================
+-- Table CREDENTIALS : Informations d'authentification des joueurs
+-- =============================================
+CREATE TABLE IF NOT EXISTS CREDENTIALS (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    refresh_token_hash VARCHAR(255),
+    refresh_token_expiry BIGINT
+);
+
+-- =============================================
 -- Index pour améliorer les performances
 -- =============================================
 CREATE INDEX IF NOT EXISTS idx_equipment_stacks_player ON EQUIPMENT_STACKS(player_id);
