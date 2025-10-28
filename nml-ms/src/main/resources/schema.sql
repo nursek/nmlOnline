@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS SECTORS (
     income DOUBLE NOT NULL DEFAULT 2000.0,
 
     -- Nouvelles colonnes pour la carte
-    owner_player_id INT,
+    owner_player_id BIGINT,
     color VARCHAR(7) NOT NULL DEFAULT '#ffffff',
     resource VARCHAR(50),
 
