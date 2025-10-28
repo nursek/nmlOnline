@@ -280,7 +280,7 @@ public class Sector {
                 return null;
             }
 
-            Unit unit = new Unit(experience, name, classes.getFirst());
+            Unit unit = new Unit(experience, name, classes.get(0));
             unit.setId(id);
             unit.setNumber(number);
 
