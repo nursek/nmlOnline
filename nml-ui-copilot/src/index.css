@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: oklch(0.15 0.02 240);
+  --color-foreground: oklch(0.95 0.01 240);
+  --color-card: oklch(0.15 0.02 240);
+  --color-card-foreground: oklch(0.95 0.01 240);
+  --color-popover: oklch(0.15 0.02 240);
+  --color-popover-foreground: oklch(0.95 0.01 240);
+  --color-primary: oklch(0.65 0.2 240);
+  --color-primary-foreground: oklch(0.15 0.02 240);
+  --color-secondary: oklch(0.25 0.03 240);
+  --color-secondary-foreground: oklch(0.95 0.01 240);
+  --color-muted: oklch(0.25 0.03 240);
+  --color-muted-foreground: oklch(0.7 0.01 240);
+  --color-accent: oklch(0.25 0.03 240);
+  --color-accent-foreground: oklch(0.95 0.01 240);
+  --color-destructive: oklch(0.45 0.15 0);
+  --color-destructive-foreground: oklch(0.95 0.01 240);
+  --color-border: oklch(0.25 0.03 240);
+  --color-input: oklch(0.25 0.03 240);
+  --color-ring: oklch(0.55 0.2 240);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  body {
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .game-card {
+    @apply bg-card border-2 border-border rounded-lg p-4 shadow-lg hover:shadow-xl transition-shadow;
+  }
+
+  .game-button {
+    @apply px-4 py-2 bg-primary text-primary-foreground rounded-md font-semibold hover:opacity-90 transition-opacity;
+  }
+
+  .territory-card {
+    @apply relative bg-gradient-to-br from-card to-secondary border-2 rounded-lg overflow-hidden;
+  }
+}
+
