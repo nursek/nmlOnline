@@ -9,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Classe représentant un joueur avec son armée d'unités
@@ -289,7 +288,7 @@ public class Player {
                 .filter(stack -> stack.getAvailable() > 0) // Équipement disponible
                 .map(EquipmentStack::getEquipment)
                 .filter(unit::canEquip) // Compatible et limite non atteinte
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -310,7 +309,7 @@ public class Player {
                 .map(EquipmentStack::getEquipment)
                 .filter(eq -> eq.getCategory() == category)
                 .filter(unit::canEquip)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**

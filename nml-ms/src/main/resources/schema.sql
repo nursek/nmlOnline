@@ -61,14 +61,28 @@ CREATE TABLE IF NOT EXISTS EQUIPMENT_STACKS (
 );
 
 -- =============================================
--- Table SECTORS : Secteurs contrôlés par les joueurs
+-- Table BOARDS : Représente les cartes de jeu
+-- =============================================
+CREATE TABLE IF NOT EXISTS BOARDS (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- =============================================
+-- Table SECTORS : Secteurs contrôlés par les joueurs ou neutres
 -- =============================================
 CREATE TABLE IF NOT EXISTS SECTORS (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    player_id BIGINT NOT NULL,
+    board_id BIGINT NOT NULL,
+    player_id BIGINT,
     number INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     income DOUBLE NOT NULL DEFAULT 2000.0,
+
+    -- Nouvelles colonnes pour la carte
+    owner_player_id INT,
+    color VARCHAR(7) NOT NULL DEFAULT '#ffffff',
+    resource VARCHAR(50),
 
     -- Stats du secteur (embedded SectorStatsEmbeddable)
     sector_total_atk DOUBLE DEFAULT 0.0,
@@ -80,7 +94,17 @@ CREATE TABLE IF NOT EXISTS SECTORS (
     sector_total_defensive DOUBLE DEFAULT 0.0,
     sector_global_stats DOUBLE DEFAULT 0.0,
 
-    FOREIGN KEY (player_id) REFERENCES PLAYERS(id) ON DELETE CASCADE
+    FOREIGN KEY (board_id) REFERENCES BOARDS(id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES PLAYERS(id) ON DELETE SET NULL
+);
+
+-- =============================================
+-- Table SECTOR_NEIGHBORS : Relations de voisinage entre secteurs
+-- =============================================
+CREATE TABLE IF NOT EXISTS SECTOR_NEIGHBORS (
+    sector_id BIGINT NOT NULL,
+    neighbor_number INT NOT NULL,
+    FOREIGN KEY (sector_id) REFERENCES SECTORS(id) ON DELETE CASCADE
 );
 
 -- =============================================
@@ -147,3 +171,5 @@ CREATE INDEX IF NOT EXISTS idx_sectors_player ON SECTORS(player_id);
 CREATE INDEX IF NOT EXISTS idx_units_sector ON UNITS(sector_id);
 CREATE INDEX IF NOT EXISTS idx_unit_equipments_unit ON UNIT_EQUIPMENTS(unit_id);
 CREATE INDEX IF NOT EXISTS idx_unit_equipments_equipment ON UNIT_EQUIPMENTS(equipment_id);
+CREATE INDEX IF NOT EXISTS idx_sector_neighbors_sector ON SECTOR_NEIGHBORS(sector_id);
+CREATE INDEX IF NOT EXISTS idx_sectors_board ON SECTORS(board_id);
