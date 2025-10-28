@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class PlayerService {
@@ -26,7 +25,7 @@ public class PlayerService {
     public List<Player> findAll() {
         return playerRepository.findAll().stream()
                 .map(playerMapper::toDomain)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public Player findByName(String name) {

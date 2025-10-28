@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class EquipmentService {
@@ -25,7 +24,7 @@ public class EquipmentService {
     public List<Equipment> findAll() {
         return equipmentRepository.findAll().stream()
                 .map(equipmentMapper::toDomain)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public Equipment findById(Long id) {

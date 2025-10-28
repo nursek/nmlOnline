@@ -18,7 +18,11 @@ public class SectorEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "player_id", nullable = false)
+    @JoinColumn(name = "board_id", nullable = false)
+    private BoardEntity board;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "player_id", nullable = true)
     private PlayerEntity player;
 
     @Column(nullable = false)
@@ -29,6 +33,22 @@ public class SectorEntity {
 
     @Column(nullable = false)
     private double income = 2000.0;
+
+    // === NOUVELLES PROPRIÉTÉS POUR LA CARTE ===
+
+    @Column(name = "owner_player_id", nullable = true)
+    private Integer ownerPlayerId; // null si secteur neutre
+
+    @Column(nullable = false)
+    private String color = "#ffffff"; // couleur par défaut blanc
+
+    @Column(nullable = true)
+    private String resource; // ressource du secteur (ex: "JOYAUX", "OR", "CIGARES")
+
+    @ElementCollection
+    @CollectionTable(name = "SECTOR_NEIGHBORS", joinColumns = @JoinColumn(name = "sector_id"))
+    @Column(name = "neighbor_number")
+    private List<Integer> neighbors = new ArrayList<>();
 
     // Stats du secteur (embedded)
     @Embedded

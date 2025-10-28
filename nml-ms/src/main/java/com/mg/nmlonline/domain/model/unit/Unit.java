@@ -239,7 +239,7 @@ public class Unit {
     public List<Equipment> getEquipmentsByCategory(EquipmentCategory category) {
         return equipments.stream()
                 .filter(e -> e.getCategory() == category)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**

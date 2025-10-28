@@ -11,7 +11,6 @@ import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class PlayerMapper {
@@ -72,7 +71,7 @@ public class PlayerMapper {
         if (entity.getEquipments() != null) {
             List<EquipmentStack> equipmentStacks = entity.getEquipments().stream()
                     .map(this::equipmentStackToDomain)
-                    .collect(Collectors.toList());
+                    .toList();
             player.setEquipments(equipmentStacks);
         }
 
@@ -80,7 +79,7 @@ public class PlayerMapper {
         if (entity.getSectors() != null) {
             List<com.mg.nmlonline.domain.model.sector.Sector> sectors = entity.getSectors().stream()
                     .map(sectorMapper::toDomain)
-                    .collect(Collectors.toList());
+                    .toList();
             player.setSectors(sectors);
         }
 
@@ -119,7 +118,7 @@ public class PlayerMapper {
         if (dto.getEquipments() != null) {
             List<EquipmentStack> equipmentStacks = dto.getEquipments().stream()
                     .map(this::equipmentStackFromDto)
-                    .collect(Collectors.toList());
+                    .toList();
             player.setEquipments(equipmentStacks);
         }
 
@@ -127,7 +126,7 @@ public class PlayerMapper {
         if (dto.getSectors() != null) {
             List<com.mg.nmlonline.domain.model.sector.Sector> sectors = dto.getSectors().stream()
                     .map(sectorMapper::toDomain)
-                    .collect(Collectors.toList());
+                    .toList();
             player.setSectors(sectors);
         }
 
@@ -167,7 +166,7 @@ public class PlayerMapper {
         if (player.getEquipments() != null) {
             List<EquipmentStackEntity> equipmentStackEntities = player.getEquipments().stream()
                     .map(stack -> equipmentStackToEntity(stack, entity))
-                    .collect(Collectors.toList());
+                    .toList();
             entity.setEquipments(equipmentStackEntities);
         }
 
@@ -175,7 +174,7 @@ public class PlayerMapper {
         if (player.getSectors() != null) {
             List<SectorEntity> sectorEntities = player.getSectors().stream()
                     .map(sector -> sectorMapper.toEntity(sector, entity))
-                    .collect(Collectors.toList());
+                    .toList();
             entity.setSectors(sectorEntities);
         }
 
@@ -215,7 +214,7 @@ public class PlayerMapper {
         if (player.getEquipments() != null) {
             List<EquipmentStackDto> equipmentStackDtos = player.getEquipments().stream()
                     .map(this::equipmentStackToDto)
-                    .collect(Collectors.toList());
+                    .toList();
             dto.setEquipments(equipmentStackDtos);
         }
 
@@ -223,7 +222,7 @@ public class PlayerMapper {
         if (player.getSectors() != null) {
             List<SectorDto> sectorDtos = player.getSectors().stream()
                     .map(sectorMapper::toDto)
-                    .collect(Collectors.toList());
+                    .toList();
             dto.setSectors(sectorDtos);
         }
 
