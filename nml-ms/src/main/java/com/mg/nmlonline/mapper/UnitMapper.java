@@ -37,7 +37,6 @@ public class UnitMapper {
 
         Unit unit = new Unit();
         unit.setId(entity.getId() != null ? entity.getId().intValue() : 0);
-        unit.setName(entity.getName());
         unit.setNumber(entity.getNumber());
         unit.setExperience(entity.getExperience());
         unit.setType(entity.getType());
@@ -72,7 +71,6 @@ public class UnitMapper {
 
         Unit unit = new Unit();
         unit.setId(dto.getId() != null ? dto.getId() : 0);
-        unit.setName(dto.getName());
         unit.setNumber(dto.getNumber() != null ? dto.getNumber() : 0);
         unit.setExperience(dto.getExperience() != null ? dto.getExperience() : 0.0);
 
@@ -123,7 +121,6 @@ public class UnitMapper {
 
         UnitEntity entity = new UnitEntity();
         entity.setSector(sector);
-        entity.setName(unit.getName());
         entity.setNumber(unit.getNumber());
         entity.setExperience(unit.getExperience());
         entity.setType(unit.getType());
@@ -167,7 +164,6 @@ public class UnitMapper {
 
         UnitDto dto = new UnitDto();
         dto.setId(unit.getId());
-        dto.setName(unit.getName());
         dto.setNumber(unit.getNumber());
         dto.setExperience(unit.getExperience());
 

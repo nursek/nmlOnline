@@ -1,0 +1,365 @@
+{
+  "name": "Carte Principale",
+  "sectors": [
+    {
+      "number": 3,
+      "name": "Entrepôt Abandonné",
+      "income": 1500,
+      "resource": "ferraille",
+      "army": [
+        {
+          "id": 1,
+          "type": "LARBIN",
+          "classes": ["LEGER"],
+          "experience": 0.5,
+          "equipments": ["Pistolet 9mm", "Tenue ultra légère"]
+        },
+        {
+          "id": 2,
+          "type": "LARBIN",
+          "classes": ["TIREUR"],
+          "experience": 0.8,
+          "equipments": ["Pistolet-mitrailleur", "Gilet pare-balles léger"]
+        }
+      ],
+      "neighbors": [2, 4, 7]
+    },
+    {
+      "number": 4,
+      "name": "Zone Industrielle",
+      "income": 2200,
+      "resource": "or",
+      "army": [
+        {
+          "id": 1,
+          "type": "VOYOU",
+          "classes": ["TIREUR"],
+          "experience": 3.2,
+          "equipments": ["Mitrailleuse", "Gilet pare-balles léger"]
+        },
+        {
+          "id": 2,
+          "type": "VOYOU",
+          "classes": ["LEGER"],
+          "experience": 2.8,
+          "equipments": ["HK-MP7", "Tenue ultra légère"]
+        },
+        {
+          "id": 3,
+          "type": "VOYOU",
+          "classes": ["MASTODONTE"],
+          "experience": 3.5,
+          "equipments": ["Fusil à pompe", "Protection dorsale"]
+        }
+      ],
+      "neighbors": [3, 8]
+    },
+    {
+      "number": 5,
+      "name": "Marché Noir",
+      "income": 3500,
+      "resource": "joyaux",
+      "army": [
+        {
+          "id": 1,
+          "type": "MALFRAT",
+          "classes": ["TIREUR", "MASTODONTE"],
+          "experience": 6.5,
+          "equipments": ["Fusil d'assaut", "Gilet pare-balles moyen", "Bouclier anti-émeutes"]
+        },
+        {
+          "id": 2,
+          "type": "VOYOU",
+          "classes": ["TIREUR"],
+          "experience": 3.0,
+          "equipments": ["Mitrailleuse", "Gilet pare-balles léger"]
+        },
+        {
+          "id": 3,
+          "type": "VOYOU",
+          "classes": ["MASTODONTE"],
+          "experience": 2.5,
+          "equipments": ["Winchester", "Protection dorsale"]
+        }
+      ],
+      "neighbors": [1, 6, 9]
+    },
+    {
+      "number": 6,
+      "name": "Dépôt d'Armes",
+      "income": 2800,
+      "resource": "munitions",
+      "army": [
+        {
+          "id": 1,
+          "type": "MALFRAT",
+          "classes": ["TIREUR", "MASTODONTE"],
+          "experience": 7.2,
+          "equipments": ["Fusil d'assaut", "Winchester", "Gilet pare-balles moyen"]
+        },
+        {
+          "id": 2,
+          "type": "MALFRAT",
+          "classes": ["LEGER", "TIREUR"],
+          "experience": 6.8,
+          "equipments": ["Mini machine gun", "Tenue ultra légère"]
+        }
+      ],
+      "neighbors": [2, 5, 7, 10]
+    },
+    {
+      "number": 7,
+      "name": "Terrain Vague",
+      "income": 800,
+      "army": [
+        {
+          "id": 1,
+          "type": "LARBIN",
+          "classes": ["LEGER"],
+          "experience": 0.2,
+          "equipments": ["Pistolet 9mm", "Tenue ultra légère"]
+        }
+      ],
+      "neighbors": [3, 6, 8, 11]
+    },
+    {
+      "number": 8,
+      "name": "Bar Clandestin",
+      "income": 1800,
+      "resource": "alcool",
+      "army": [
+        {
+          "id": 1,
+          "type": "VOYOU",
+          "classes": ["LEGER"],
+          "experience": 2.0,
+          "equipments": ["Pistolet-mitrailleur", "Tenue ultra légère"]
+        },
+        {
+          "id": 2,
+          "type": "VOYOU",
+          "classes": ["MASTODONTE"],
+          "experience": 2.5,
+          "equipments": ["Fusil à pompe", "Protection dorsale"]
+        },
+        {
+          "id": 3,
+          "type": "VOYOU",
+          "classes": ["MASTODONTE"],
+          "experience": 2.3,
+          "equipments": ["Winchester", "Protection dorsale"]
+        },
+        {
+          "id": 4,
+          "type": "VOYOU",
+          "classes": ["TIREUR"],
+          "experience": 1.8,
+          "equipments": ["Mitrailleuse", "Gilet pare-balles léger"]
+        }
+      ],
+      "neighbors": [4, 7, 12]
+    },
+    {
+      "number": 9,
+      "name": "Raffinerie",
+      "income": 4200,
+      "resource": "cigares",
+      "army": [
+        {
+          "id": 1,
+          "type": "BRUTE",
+          "classes": ["TIREUR", "PILOTE_DESTRUCTEUR"],
+          "experience": 10.5,
+          "equipments": ["Mini machine gun", "Lance-grenades", "Équipement militaire complet"]
+        },
+        {
+          "id": 2,
+          "type": "MALFRAT",
+          "classes": ["MASTODONTE", "TIREUR"],
+          "experience": 7.5,
+          "equipments": ["Fusil d'assaut", "Tromblon", "Bouclier anti-émeutes"]
+        }
+      ],
+      "neighbors": [5, 10, 13]
+    },
+    {
+      "number": 10,
+      "name": "Parc Abandonné",
+      "income": 1200,
+      "army": [
+        {
+          "id": 1,
+          "type": "LARBIN",
+          "classes": ["LEGER"],
+          "experience": 0.5,
+          "equipments": ["Pistolet 9mm", "Tenue ultra légère"]
+        },
+        {
+          "id": 2,
+          "type": "LARBIN",
+          "classes": ["TIREUR"],
+          "experience": 0.7,
+          "equipments": ["Pistolet-mitrailleur", "Gilet pare-balles léger"]
+        },
+        {
+          "id": 3,
+          "type": "LARBIN",
+          "classes": ["LEGER"],
+          "experience": 1.2,
+          "equipments": ["HK-MP7", "Tenue ultra légère"]
+        }
+      ],
+      "neighbors": [6, 9, 11, 14]
+    },
+    {
+      "number": 11,
+      "name": "Station Service",
+      "income": 2000,
+      "resource": "essence",
+      "army": [
+        {
+          "id": 1,
+          "type": "VOYOU",
+          "classes": ["TIREUR"],
+          "experience": 3.5,
+          "equipments": ["Fusil d'assaut", "Gilet pare-balles léger"]
+        },
+        {
+          "id": 2,
+          "type": "VOYOU",
+          "classes": ["MASTODONTE"],
+          "experience": 2.8,
+          "equipments": ["Tromblon", "Protection dorsale"]
+        },
+        {
+          "id": 3,
+          "type": "MALFRAT",
+          "classes": ["TIREUR", "MASTODONTE"],
+          "experience": 6.0,
+          "equipments": ["Mini machine gun", "Bouclier anti-émeutes", "Gilet pare-balles moyen"]
+        }
+      ],
+      "neighbors": [7, 10, 12, 15]
+    },
+    {
+      "number": 13,
+      "name": "Base Militaire Abandonnée",
+      "income": 5000,
+      "resource": "uranium",
+      "army": [
+        {
+          "id": 1,
+          "type": "BRUTE",
+          "classes": ["TIREUR", "MASTODONTE"],
+          "experience": 11.8,
+          "equipments": ["Mini machine gun [CM]", "Tromblon [DM]", "Équipement militaire complet", "Bouclier balistique"]
+        },
+        {
+          "id": 2,
+          "type": "MALFRAT",
+          "classes": ["TIREUR", "MASTODONTE"],
+          "experience": 7.8,
+          "equipments": ["Fusil d'assaut", "Winchester", "Gilet pare-balles moyen", "Bouclier anti-émeutes"]
+        },
+        {
+          "id": 3,
+          "type": "MALFRAT",
+          "classes": ["TIREUR", "LEGER"],
+          "experience": 6.5,
+          "equipments": ["Mini machine gun", "Gilet pare-balles moyen", "Grenade lacrymogène"]
+        }
+      ],
+      "neighbors": [9, 14]
+    },
+    {
+      "number": 14,
+      "name": "Quartier Résidentiel",
+      "income": 1000,
+      "army": [
+        {
+          "id": 1,
+          "type": "LARBIN",
+          "classes": ["TIREUR"],
+          "experience": 0.8,
+          "equipments": ["Pistolet-mitrailleur", "Gilet pare-balles léger"]
+        },
+        {
+          "id": 2,
+          "type": "LARBIN",
+          "classes": ["LEGER"],
+          "experience": 0.6,
+          "equipments": ["Pistolet 9mm", "Tenue ultra légère"]
+        }
+      ],
+      "neighbors": [10, 13, 15]
+    },
+    {
+      "number": 15,
+      "name": "Casino",
+      "income": 3800,
+      "resource": "argent_sale",
+      "army": [
+        {
+          "id": 1,
+          "type": "MALFRAT",
+          "classes": ["TIREUR", "MASTODONTE"],
+          "experience": 8.2,
+          "equipments": ["Mini machine gun", "Tromblon", "Gilet pare-balles moyen", "Bouclier anti-émeutes"]
+        },
+        {
+          "id": 2,
+          "type": "MALFRAT",
+          "classes": ["TIREUR"],
+          "experience": 6.8,
+          "equipments": ["Fusil d'assaut", "Gilet pare-balles moyen"]
+        },
+        {
+          "id": 3,
+          "type": "MALFRAT",
+          "classes": ["MASTODONTE", "LEGER"],
+          "experience": 7.0,
+          "equipments": ["Winchester", "Tenue ultra légère", "Bouclier anti-émeutes"]
+        }
+      ],
+      "neighbors": [11, 14, 16]
+    },
+    {
+      "number": 16,
+      "name": "Port de Contrebande",
+      "income": 4500,
+      "resource": "marchandises",
+      "army": [
+        {
+          "id": 1,
+          "type": "BRUTE",
+          "classes": ["TIREUR", "PILOTE_DESTRUCTEUR"],
+          "experience": 12.5,
+          "equipments": ["Mini machine gun [CM]", "Lance-roquettes", "Équipement militaire complet", "Gilet Kevlar"]
+        },
+        {
+          "id": 2,
+          "type": "VOYOU",
+          "classes": ["TIREUR"],
+          "experience": 3.8,
+          "equipments": ["Fusil d'assaut", "Gilet pare-balles léger"]
+        },
+        {
+          "id": 3,
+          "type": "VOYOU",
+          "classes": ["LEGER"],
+          "experience": 3.5,
+          "equipments": ["HK-MP7", "Tenue ultra légère"]
+        },
+        {
+          "id": 4,
+          "type": "VOYOU",
+          "classes": ["MASTODONTE"],
+          "experience": 2.8,
+          "equipments": ["Winchester", "Protection dorsale"]
+        }
+      ],
+      "neighbors": [12, 15]
+    }
+  ]
+}
+

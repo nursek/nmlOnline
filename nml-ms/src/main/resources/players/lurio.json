@@ -52,6 +52,7 @@
       "number": 1,
       "name": "Quartier Nord",
       "income": 2000,
+      "neighbors": [2, 5],
       "army": [
         {
           "id": 1,
@@ -122,6 +123,7 @@
       "number": 2,
       "name": "Quartier Sud",
       "income": 2500,
+      "neighbors": [1, 3, 6],
       "army": [
         {
           "id": 5,
@@ -170,16 +172,22 @@
             "LEGER"
           ],
           "experience": 1,
-          "equipments": []
+          "equipments": [
+            "HK-MP7",
+            "Tenue ultra légère"
+          ]
         },
         {
           "id": 9,
           "type": "LARBIN",
           "classes": [
-            "TIREUR"
+            "LEGER"
           ],
           "experience": 1,
-          "equipments": []
+          "equipments": [
+            "HK-MP7",
+            "Tenue ultra légère"
+          ]
         },
         {
           "id": 10,
@@ -188,7 +196,10 @@
             "LEGER"
           ],
           "experience": 0,
-          "equipments": []
+          "equipments": [
+            "HK-MP7",
+            "Tenue ultra légère"
+          ]
         }
       ]
     }

@@ -22,11 +22,12 @@ public class UnitEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sector_id", nullable = false)
+    @JoinColumns({
+        @JoinColumn(name = "board_id", referencedColumnName = "board_id", nullable = false),
+        @JoinColumn(name = "sector_number", referencedColumnName = "number", nullable = false)
+    })
     private SectorEntity sector;
 
-    @Column(nullable = false)
-    private String name;
 
     @Column(nullable = false)
     private int number = 0;

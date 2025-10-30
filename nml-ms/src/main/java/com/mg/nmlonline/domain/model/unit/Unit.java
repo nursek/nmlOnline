@@ -28,7 +28,6 @@ public class Unit {
     private int id;
 
     // ===== INFORMATIONS DE BASE =====
-    private String name;
     private int number = 0; // Numéro de l'unité dans l'armée (ex: BRUTE n°1, n°2, etc.)
     private double experience = 0.0;
     private UnitType type;
@@ -52,9 +51,8 @@ public class Unit {
     // ===== ÉQUIPEMENTS =====
     private List<Equipment> equipments;
 
-    public Unit(double experience, String name, UnitClass primaryClass) {
+    public Unit(double experience, UnitClass primaryClass) {
         this.id = nextId++;
-        this.name = name;
         this.experience = experience;
         this.type = UnitType.getTypeByExperience((int) experience);
         this.classes = new ArrayList<>();
@@ -70,6 +68,8 @@ public class Unit {
 
     // Recalcule les statistiques de base (sans bonus joueur)
     public void recalculateBaseStats() {
+        if (type == null) return; // Protection contre les types null
+
         double statMultiplier = isInjured ? INJURED_STAT_MULTIPLIER : 1.0;
 
         this.attack = type.getBaseAttack() * statMultiplier;
@@ -160,6 +160,15 @@ public class Unit {
     }
 
     // ===== GESTION DES CLASSES =====
+
+    /**
+     * Vérifie si l'unité est utilisable.
+     * Une unité sans classe est considérée comme inutilisable.
+     * @return true si l'unité a au moins une classe et peut être utilisée
+     */
+    public boolean isUsable() {
+        return classes != null && !classes.isEmpty();
+    }
 
     /**
      * Vérifie si l'unité peut obtenir une seconde classe.
@@ -291,7 +300,7 @@ public class Unit {
 
         if (type == PERSONNAGE) {
             // Exemple de ligne : Character (100 Atk + 100 Pdf + 50 Pdc / 250 Def)
-            sb.append(name);
+            sb.append(type.name());
             sb.append(" (");
             statsBuilder(sb, attack, pdf, pdc, defense, armor, evasion);
             sb.append(").");
@@ -302,7 +311,7 @@ public class Unit {
             sb.append(classes.stream().map(c -> "(" + c.getCode() + ")").collect(Collectors.joining(" "))).append(" ");
 
             // Type et informations
-            sb.append(name);
+            sb.append(type.name());
             sb.append(" n°").append(number);
             sb.append(" (").append(formatStat(experience)).append(" Exp) : ");
 

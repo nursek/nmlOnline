@@ -12,7 +12,7 @@ public class SectorDto {
     private SectorStatsDto stats;
 
     // Nouvelles propriétés pour la carte
-    private Integer ownerPlayerId;
+    private Long ownerId;
     private String color;
     private String resource;
     private List<Integer> neighbors;

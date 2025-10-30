@@ -6,7 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "PLAYERS")
@@ -33,7 +35,9 @@ public class PlayerEntity {
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EquipmentStackEntity> equipments = new ArrayList<>();
 
-    // Secteurs contrôlés par le joueur
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SectorEntity> sectors = new ArrayList<>();
+    // IDs des secteurs contrôlés par le joueur (Board est la source unique de vérité)
+    @ElementCollection
+    @CollectionTable(name = "PLAYER_OWNED_SECTORS", joinColumns = @JoinColumn(name = "player_id"))
+    @Column(name = "sector_number")
+    private Set<Long> ownedSectorIds = new HashSet<>();
 }
