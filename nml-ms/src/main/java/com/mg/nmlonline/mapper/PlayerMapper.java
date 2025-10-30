@@ -10,6 +10,7 @@ import com.mg.nmlonline.infrastructure.entity.*;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
 
 @Component
@@ -75,13 +76,13 @@ public class PlayerMapper {
             player.setEquipments(equipmentStacks);
         }
 
-        // Conversion des secteurs
-        if (entity.getSectors() != null) {
-            List<com.mg.nmlonline.domain.model.sector.Sector> sectors = entity.getSectors().stream()
-                    .map(sectorMapper::toDomain)
-                    .toList();
-            player.setSectors(sectors);
+        // Conversion des IDs de secteurs
+        if (entity.getOwnedSectorIds() != null) {
+            player.setOwnedSectorIds(new HashSet<>(entity.getOwnedSectorIds()));
         }
+
+        // Définir l'ID du joueur
+        player.setId(entity.getId());
 
         return player;
     }
@@ -122,13 +123,13 @@ public class PlayerMapper {
             player.setEquipments(equipmentStacks);
         }
 
-        // Conversion des secteurs
-        if (dto.getSectors() != null) {
-            List<com.mg.nmlonline.domain.model.sector.Sector> sectors = dto.getSectors().stream()
-                    .map(sectorMapper::toDomain)
-                    .toList();
-            player.setSectors(sectors);
+        // Conversion des IDs de secteurs
+        if (dto.getOwnedSectorIds() != null) {
+            player.setOwnedSectorIds(new HashSet<>(dto.getOwnedSectorIds()));
         }
+
+        // Définir l'ID du joueur
+        player.setId(dto.getId());
 
         return player;
     }
@@ -170,12 +171,14 @@ public class PlayerMapper {
             entity.setEquipments(equipmentStackEntities);
         }
 
-        // Conversion des secteurs
-        if (player.getSectors() != null) {
-            List<SectorEntity> sectorEntities = player.getSectors().stream()
-                    .map(sector -> sectorMapper.toEntity(sector, entity))
-                    .toList();
-            entity.setSectors(sectorEntities);
+        // Conversion des IDs de secteurs
+        if (player.getOwnedSectorIds() != null) {
+            entity.setOwnedSectorIds(new HashSet<>(player.getOwnedSectorIds()));
+        }
+
+        // Définir l'ID de l'entité
+        if (player.getId() != null) {
+            entity.setId(player.getId());
         }
 
         return entity;
@@ -218,13 +221,13 @@ public class PlayerMapper {
             dto.setEquipments(equipmentStackDtos);
         }
 
-        // Conversion des secteurs
-        if (player.getSectors() != null) {
-            List<SectorDto> sectorDtos = player.getSectors().stream()
-                    .map(sectorMapper::toDto)
-                    .toList();
-            dto.setSectors(sectorDtos);
+        // Conversion des IDs de secteurs
+        if (player.getOwnedSectorIds() != null) {
+            dto.setOwnedSectorIds(new HashSet<>(player.getOwnedSectorIds()));
         }
+
+        // Définir l'ID du DTO
+        dto.setId(player.getId());
 
         return dto;
     }
@@ -249,14 +252,18 @@ public class PlayerMapper {
         return stack;
     }
 
-    private EquipmentStackEntity equipmentStackToEntity(EquipmentStack stack, PlayerEntity player) {
+    public EquipmentStackEntity equipmentStackToEntity(EquipmentStack stack, PlayerEntity player) {
         if (stack == null) return null;
         EquipmentStackEntity entity = new EquipmentStackEntity();
         entity.setPlayer(player);
 
-        // Rechercher l'équipement existant par nom au lieu d'en créer un nouveau
+        // Rechercher l'équipement existant par nom
+        // Il DOIT exister car data.sql l'a inséré
         EquipmentEntity equipmentEntity = equipmentRepository.findByName(stack.getEquipment().getName())
-                .orElseGet(() -> equipmentMapper.toEntity(stack.getEquipment()));
+                .orElseThrow(() -> new IllegalStateException(
+                    "Equipment not found: " + stack.getEquipment().getName() +
+                    ". Make sure data.sql has been executed."
+                ));
 
         entity.setEquipment(equipmentEntity);
         entity.setQuantity(stack.getQuantity());

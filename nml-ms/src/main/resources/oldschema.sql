@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS PLAYERS (
     evasion_bonus_percent DOUBLE DEFAULT 0.0
 );
 
+
 -- =============================================
 -- Table EQUIPMENT : Catalogue des équipements
 -- =============================================
@@ -72,15 +73,13 @@ CREATE TABLE IF NOT EXISTS BOARDS (
 -- Table SECTORS : Secteurs contrôlés par les joueurs ou neutres
 -- =============================================
 CREATE TABLE IF NOT EXISTS SECTORS (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    board_id BIGINT NOT NULL,
-    player_id BIGINT,
     number INT NOT NULL,
+    board_id BIGINT NOT NULL,
     name VARCHAR(255) NOT NULL,
     income DOUBLE NOT NULL DEFAULT 2000.0,
 
-    -- Nouvelles colonnes pour la carte
-    owner_player_id BIGINT,
+    -- Colonnes pour la carte
+    owner_id BIGINT, -- null si secteur neutre
     color VARCHAR(7) NOT NULL DEFAULT '#ffffff',
     resource VARCHAR(50),
 
@@ -94,17 +93,30 @@ CREATE TABLE IF NOT EXISTS SECTORS (
     sector_total_defensive DOUBLE DEFAULT 0.0,
     sector_global_stats DOUBLE DEFAULT 0.0,
 
+    PRIMARY KEY (board_id, number),
     FOREIGN KEY (board_id) REFERENCES BOARDS(id) ON DELETE CASCADE,
-    FOREIGN KEY (player_id) REFERENCES PLAYERS(id) ON DELETE SET NULL
+    FOREIGN KEY (owner_id) REFERENCES PLAYERS(id) ON DELETE SET NULL
 );
 
 -- =============================================
 -- Table SECTOR_NEIGHBORS : Relations de voisinage entre secteurs
 -- =============================================
 CREATE TABLE IF NOT EXISTS SECTOR_NEIGHBORS (
-    sector_id BIGINT NOT NULL,
+    board_id BIGINT NOT NULL,
+    sector_number INT NOT NULL,
     neighbor_number INT NOT NULL,
-    FOREIGN KEY (sector_id) REFERENCES SECTORS(id) ON DELETE CASCADE
+    FOREIGN KEY (board_id, sector_number) REFERENCES SECTORS(board_id, number) ON DELETE CASCADE
+);
+
+-- =============================================
+-- Table PLAYER_OWNED_SECTORS : Secteurs possédés par les joueurs
+-- =============================================
+CREATE TABLE IF NOT EXISTS PLAYER_OWNED_SECTORS (
+    player_id BIGINT NOT NULL,
+    sector_number INT NOT NULL,
+    PRIMARY KEY (player_id, sector_number)
+    -- Note: Pas de FK vers SECTORS car la clé primaire de SECTORS est composite (board_id, number)
+    -- L'intégrité sera gérée au niveau applicatif
 );
 
 -- =============================================
@@ -112,7 +124,8 @@ CREATE TABLE IF NOT EXISTS SECTOR_NEIGHBORS (
 -- =============================================
 CREATE TABLE IF NOT EXISTS UNITS (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    sector_id BIGINT NOT NULL,
+    board_id BIGINT NOT NULL,
+    sector_number INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     number INT NOT NULL DEFAULT 0,
     experience DOUBLE NOT NULL DEFAULT 0.0,
@@ -127,7 +140,7 @@ CREATE TABLE IF NOT EXISTS UNITS (
     armor DOUBLE NOT NULL,
     evasion DOUBLE NOT NULL,
 
-    FOREIGN KEY (sector_id) REFERENCES SECTORS(id) ON DELETE CASCADE
+    FOREIGN KEY (board_id, sector_number) REFERENCES SECTORS(board_id, number) ON DELETE CASCADE
 );
 
 -- =============================================
@@ -167,9 +180,10 @@ CREATE TABLE IF NOT EXISTS CREDENTIALS (
 -- =============================================
 CREATE INDEX IF NOT EXISTS idx_equipment_stacks_player ON EQUIPMENT_STACKS(player_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_stacks_equipment ON EQUIPMENT_STACKS(equipment_id);
-CREATE INDEX IF NOT EXISTS idx_sectors_player ON SECTORS(player_id);
-CREATE INDEX IF NOT EXISTS idx_units_sector ON UNITS(sector_id);
+CREATE INDEX IF NOT EXISTS idx_sectors_owner ON SECTORS(owner_id);
+CREATE INDEX IF NOT EXISTS idx_units_sector ON UNITS(board_id, sector_number);
 CREATE INDEX IF NOT EXISTS idx_unit_equipments_unit ON UNIT_EQUIPMENTS(unit_id);
 CREATE INDEX IF NOT EXISTS idx_unit_equipments_equipment ON UNIT_EQUIPMENTS(equipment_id);
-CREATE INDEX IF NOT EXISTS idx_sector_neighbors_sector ON SECTOR_NEIGHBORS(sector_id);
-CREATE INDEX IF NOT EXISTS idx_sectors_board ON SECTORS(board_id);
+CREATE INDEX IF NOT EXISTS idx_sector_neighbors_sector ON SECTOR_NEIGHBORS(board_id, sector_number);
+CREATE INDEX IF NOT EXISTS idx_player_owned_sectors_player ON PLAYER_OWNED_SECTORS(player_id);
+CREATE INDEX IF NOT EXISTS idx_player_owned_sectors_sector ON PLAYER_OWNED_SECTORS(sector_number);

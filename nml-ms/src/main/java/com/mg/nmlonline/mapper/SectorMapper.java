@@ -34,7 +34,7 @@ public class SectorMapper {
         sector.setIncome(entity.getIncome());
 
         // Nouvelles propriétés pour la carte
-        sector.setOwnerPlayerId(entity.getOwnerPlayerId());
+        sector.setOwnerId(entity.getOwnerId());
         sector.setColor(entity.getColor());
         if (entity.getResource() != null) {
             Resource resource = new Resource(entity.getResource(), 0.0);
@@ -83,7 +83,7 @@ public class SectorMapper {
         sector.setIncome(dto.getIncome());
 
         // Nouvelles propriétés pour la carte
-        sector.setOwnerPlayerId(dto.getOwnerPlayerId());
+        sector.setOwnerId(dto.getOwnerId());
         sector.setColor(dto.getColor());
         if (dto.getResource() != null) {
             Resource resource = new Resource(dto.getResource(), 0.0);
@@ -129,13 +129,12 @@ public class SectorMapper {
         if (sector == null) return null;
 
         SectorEntity entity = new SectorEntity();
-        entity.setPlayer(player);
         entity.setNumber(sector.getNumber());
         entity.setName(sector.getName());
         entity.setIncome(sector.getIncome());
 
         // Nouvelles propriétés pour la carte
-        entity.setOwnerPlayerId(sector.getOwnerPlayerId());
+        entity.setOwnerId(sector.getOwnerId());
         entity.setColor(sector.getColor() != null ? sector.getColor() : "#ffffff");
         entity.setResource(sector.getResource() != null ? sector.getResource().getType() : null);
         if (sector.getNeighbors() != null && !sector.getNeighbors().isEmpty()) {
@@ -176,13 +175,12 @@ public class SectorMapper {
 
         SectorEntity entity = new SectorEntity();
         entity.setBoard(board);
-        entity.setPlayer(null);
         entity.setNumber(sector.getNumber());
         entity.setName(sector.getName());
         entity.setIncome(sector.getIncome());
 
         // Nouvelles propriétés pour la carte
-        entity.setOwnerPlayerId(sector.getOwnerPlayerId());
+        entity.setOwnerId(sector.getOwnerId());
         entity.setColor(sector.getColor() != null ? sector.getColor() : "#ffffff");
         entity.setResource(sector.getResource() != null ? sector.getResource().getType() : null);
         if (sector.getNeighbors() != null && !sector.getNeighbors().isEmpty()) {
@@ -227,7 +225,7 @@ public class SectorMapper {
         dto.setIncome(sector.getIncome());
 
         // Nouvelles propriétés pour la carte
-        dto.setOwnerPlayerId(sector.getOwnerPlayerId());
+        dto.setOwnerId(sector.getOwnerId());
         dto.setColor(sector.getColor());
         dto.setResource(sector.getResource() != null ? sector.getResource().getType() : null);
         if (sector.getNeighbors() != null && !sector.getNeighbors().isEmpty()) {

@@ -1,6 +1,7 @@
 package com.mg.nmlonline.infrastructure.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,20 +12,15 @@ import java.util.List;
 @Table(name = "SECTORS")
 @Data
 @NoArgsConstructor
+@IdClass(SectorEntity.SectorId.class)
 public class SectorEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id", nullable = false)
     private BoardEntity board;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "player_id", nullable = true)
-    private PlayerEntity player;
-
+    @Id
     @Column(nullable = false)
     private int number;
 
@@ -36,8 +32,8 @@ public class SectorEntity {
 
     // === NOUVELLES PROPRIÉTÉS POUR LA CARTE ===
 
-    @Column(name = "owner_player_id", nullable = true)
-    private Integer ownerPlayerId; // null si secteur neutre
+    @Column(name = "owner_id", nullable = true)
+    private Long ownerId; // null si secteur neutre
 
     @Column(nullable = false)
     private String color = "#ffffff"; // couleur par défaut blanc
@@ -46,7 +42,11 @@ public class SectorEntity {
     private String resource; // ressource du secteur (ex: "JOYAUX", "OR", "CIGARES")
 
     @ElementCollection
-    @CollectionTable(name = "SECTOR_NEIGHBORS", joinColumns = @JoinColumn(name = "sector_id"))
+    @CollectionTable(name = "SECTOR_NEIGHBORS",
+        joinColumns = {
+            @JoinColumn(name = "board_id", referencedColumnName = "board_id"),
+            @JoinColumn(name = "sector_number", referencedColumnName = "number")
+        })
     @Column(name = "neighbor_number")
     private List<Integer> neighbors = new ArrayList<>();
 
@@ -57,5 +57,29 @@ public class SectorEntity {
     // Unités dans ce secteur
     @OneToMany(mappedBy = "sector", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UnitEntity> army = new ArrayList<>();
-}
 
+    /**
+     * Classe pour la clé primaire composite (board_id, number)
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SectorId implements java.io.Serializable {
+        private Long board;  // Correspond au board_id (ID de BoardEntity)
+        private int number;  // Numéro du secteur
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof SectorId)) return false;
+            SectorId sectorId = (SectorId) o;
+            return number == sectorId.number &&
+                   java.util.Objects.equals(board, sectorId.board);
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hash(board, number);
+        }
+    }
+}

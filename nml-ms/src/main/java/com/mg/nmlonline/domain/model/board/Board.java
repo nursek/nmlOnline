@@ -84,7 +84,7 @@ public class Board {
     /**
      * Assigne un propriétaire à un secteur et met à jour sa couleur.
      */
-    public void assignOwner(int sectorNumber, Integer playerId, String colorHex) {
+    public void assignOwner(int sectorNumber, Long playerId, String colorHex) {
         Sector sector = getSector(sectorNumber);
         if (sector == null) {
             throw new IllegalArgumentException("Sector " + sectorNumber + " does not exist");
@@ -95,7 +95,7 @@ public class Board {
     /**
      * Retourne tous les secteurs possédés par un joueur.
      */
-    public List<Sector> getSectorsByOwner(int playerId) {
+    public List<Sector> getSectorsByOwner(Long playerId) {
         return sectors.values().stream()
                 .filter(s -> s.isOwnedBy(playerId))
                 .toList();
@@ -132,9 +132,9 @@ public class Board {
             return false;
         }
         // Conflit si les deux secteurs ont des propriétaires différents (non nulls)
-        return s1.getOwnerPlayerId() != null
-                && s2.getOwnerPlayerId() != null
-                && !s1.getOwnerPlayerId().equals(s2.getOwnerPlayerId());
+        return s1.getOwnerId() != null
+                && s2.getOwnerId() != null
+                && !s1.getOwnerId().equals(s2.getOwnerId());
     }
 
     @Override

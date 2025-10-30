@@ -10,6 +10,7 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentFactory;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
+import com.mg.nmlonline.domain.model.unit.UnitType;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,7 +30,7 @@ public class Sector {
     private SectorStats stats = new SectorStats();
 
     // === NOUVELLES DONNÉES POUR LA CARTE ===
-    private Integer ownerPlayerId; // null si secteur neutre/vide
+    private Long ownerId; // null si secteur neutre/vide - ID du joueur propriétaire
     private String color; // couleur déterminée par l'owner, blanc (#ffffff) par défaut
     private Resource resource; // ressource du secteur (joyaux, or, cigares, etc.)
     private List<Integer> neighbors = new ArrayList<>(); // liste des numéros de secteurs voisins
@@ -68,17 +69,17 @@ public class Sector {
 
     // === GESTION OWNER ET COULEUR ===
 
-    public void setOwnerAndColor(Integer playerId, String colorHex) {
-        this.ownerPlayerId = playerId;
+    public void setOwnerAndColor(Long playerId, String colorHex) {
+        this.ownerId = playerId;
         this.color = colorHex != null ? colorHex : "#ffffff";
     }
 
-    public boolean isOwnedBy(int playerId) {
-        return ownerPlayerId != null && ownerPlayerId == playerId;
+    public boolean isOwnedBy(Long playerId) {
+        return ownerId != null && ownerId.equals(playerId);
     }
 
     public boolean isNeutral() {
-        return ownerPlayerId == null;
+        return ownerId == null;
     }
 
     // === GESTION DES STATISTIQUES DU SECTEUR ===
@@ -280,9 +281,10 @@ public class Sector {
                 return null;
             }
 
-            Unit unit = new Unit(experience, name, classes.get(0));
+            Unit unit = new Unit(experience, classes.get(0));
             unit.setId(id);
             unit.setNumber(number);
+            unit.setType(UnitType.valueOf(unitNode.get("type").asText()));
 
             for (int i = 1; i < classes.size(); i++) {
                 unit.addSecondClass(classes.get(i));

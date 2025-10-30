@@ -1,11 +1,12 @@
 package com.mg.nmlonline.demo;
 
-import com.mg.nmlonline.domain.model.battle.Battle;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.board.Resource;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.service.CombatService;
 import com.mg.nmlonline.domain.service.PlayerImportService;
+import com.mg.nmlonline.domain.service.PlayerStatsService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class PlayerDemo {
         System.out.println("║  TEST: Simulation Complète de Jeu avec Board et Combat ║");
         System.out.println("╚════════════════════════════════════════════════════════╝\n");
 
+        // Créer le service d'import
         PlayerImportService importService = new PlayerImportService();
 
         try {
@@ -48,19 +50,39 @@ public class PlayerDemo {
             Player player2 = importService.importPlayerFromJson(p2Url.getFile());
             Player player3 = importService.importPlayerFromJson(p3Url.getFile());
 
-            System.out.println("✓ Joueur 1: " + player1.getName() + " - " + player1.getSectors().size() + " secteurs");
-            System.out.println("✓ Joueur 2: " + player2.getName() + " - " + player2.getSectors().size() + " secteurs");
-            System.out.println("✓ Joueur 3: " + player3.getName() + " - " + player3.getSectors().size() + " secteurs");
+            // Initialiser les IDs des joueurs (simuler la création en base de données)
+            player1.setId(1L);
+            player2.setId(2L);
+            player3.setId(3L);
 
             // === ÉTAPE 2: Création du Board et ajout de tous les secteurs ===
             System.out.println("\n═══ ÉTAPE 2: Création du Board ═══\n");
 
-            Board board = createAndPopulateBoard(player1, player2, player3);
+            Board board = createBoard();
+
+            // Importer les secteurs depuis les fichiers JSON et les ajouter au Board
+            importService.importSectorsToBoard(p1Url.getFile(), player1, board);
+            importService.importSectorsToBoard(p2Url.getFile(), player2, board);
+            importService.importSectorsToBoard(p3Url.getFile(), player3, board);
+
+            // Définir les voisins et ressources
+            setupNeighbors(board, 16);
+            assignResources(board);
+
+            // Assigner les couleurs aux joueurs
+            assignColorsToPlayers(board, player1, 1L, "#FF0000");
+            assignColorsToPlayers(board, player2, 2L, "#0000FF");
+            assignColorsToPlayers(board, player3, 3L, "#00FF00");
+
+            System.out.println("✓ Joueur 1: " + player1.getName() + " - " + player1.getOwnedSectorCount() + " secteurs");
+            System.out.println("✓ Joueur 2: " + player2.getName() + " - " + player2.getOwnedSectorCount() + " secteurs");
+            System.out.println("✓ Joueur 3: " + player3.getName() + " - " + player3.getOwnedSectorCount() + " secteurs");
+
 
             System.out.println("✓ Board créé avec " + board.getSectorCount() + " secteurs");
-            System.out.println("  - Secteurs du joueur 1: " + board.getSectorsByOwner(1).size());
-            System.out.println("  - Secteurs du joueur 2: " + board.getSectorsByOwner(2).size());
-            System.out.println("  - Secteurs du joueur 3: " + board.getSectorsByOwner(3).size());
+            System.out.println("  - Secteurs du joueur 1: " + board.getSectorsByOwner(1L).size());
+            System.out.println("  - Secteurs du joueur 2: " + board.getSectorsByOwner(2L).size());
+            System.out.println("  - Secteurs du joueur 3: " + board.getSectorsByOwner(3L).size());
             System.out.println("  - Secteurs neutres: " + board.getNeutralSectors().size());
 
             // === ÉTAPE 3: Affichage des informations du Board ===
@@ -83,37 +105,10 @@ public class PlayerDemo {
     }
 
     /**
-     * Crée le Board et y ajoute tous les secteurs des joueurs.
+     * Crée un Board vide.
      */
-    private static Board createAndPopulateBoard(Player player1, Player player2, Player player3) {
-        Board board = new Board();
-
-        // Récupérer tous les numéros de secteurs possédés par les joueurs
-        Set<Integer> allSectorNumbers = new HashSet<>();
-        for (Sector s : player1.getSectors()) allSectorNumbers.add(s.getNumber());
-        for (Sector s : player2.getSectors()) allSectorNumbers.add(s.getNumber());
-        for (Sector s : player3.getSectors()) allSectorNumbers.add(s.getNumber());
-
-        // Trouver le numéro de secteur maximum pour créer la grille complète
-        int maxSector = allSectorNumbers.stream().max(Integer::compareTo).orElse(16);
-
-        // Créer tous les secteurs de 1 à maxSector
-        for (int i = 1; i <= maxSector; i++) {
-            board.addSector(new Sector(i, "Secteur n°" + i));
-        }
-
-        // Définir les voisins (grille 4x4 par exemple)
-        setupNeighbors(board, maxSector);
-
-        // Assigner des ressources à certains secteurs
-        assignResources(board);
-
-        // Lier les secteurs des joueurs au board
-        linkPlayerSectorsToBoard(board, player1, 1, "#FF0000"); // Rouge
-        linkPlayerSectorsToBoard(board, player2, 2, "#0000FF"); // Bleu
-        linkPlayerSectorsToBoard(board, player3, 3, "#00FF00"); // Vert
-
-        return board;
+    private static Board createBoard() {
+        return new Board();
     }
 
     /**
@@ -160,20 +155,14 @@ public class PlayerDemo {
     }
 
     /**
-     * Lie les secteurs d'un joueur au Board en assignant le propriétaire et la couleur.
+     * Assigne les couleurs aux secteurs déjà possédés par les joueurs.
      */
-    private static void linkPlayerSectorsToBoard(Board board, Player player, int playerId, String color) {
-        for (Sector playerSector : player.getSectors()) {
-            Sector boardSector = board.getSector(playerSector.getNumber());
-            if (boardSector != null) {
-                // Assigner le propriétaire et la couleur
-                board.assignOwner(playerSector.getNumber(), playerId, color);
-
-                // Copier les données du secteur du joueur vers le board
-                boardSector.setName(playerSector.getName());
-                boardSector.setIncome(playerSector.getIncome());
-                boardSector.setArmy(new ArrayList<>(playerSector.getArmy()));
-                boardSector.setStats(playerSector.getStats());
+    private static void assignColorsToPlayers(Board board, Player player, Long playerId, String color) {
+        // Mettre à jour la couleur des secteurs déjà assignés au joueur
+        for (Long sectorId : player.getOwnedSectorIds()) {
+            Sector boardSector = board.getSector(sectorId.intValue());
+            if (boardSector != null && boardSector.isOwnedBy(playerId)) {
+                boardSector.setColor(color);
             }
         }
     }
@@ -185,9 +174,9 @@ public class PlayerDemo {
         System.out.println("📊 Informations détaillées du Board:\n");
 
         // Afficher les secteurs par joueur
-        displayPlayerSectors(board, player1, 1, "Rouge");
-        displayPlayerSectors(board, player2, 2, "Bleu");
-        displayPlayerSectors(board, player3, 3, "Vert");
+        displayPlayerSectors(board, player1, 1L, "Rouge");
+        displayPlayerSectors(board, player2, 2L, "Bleu");
+        displayPlayerSectors(board, player3, 3L, "Vert");
 
         // Afficher les ressources
         System.out.println("\n💎 Ressources sur la carte:");
@@ -202,7 +191,7 @@ public class PlayerDemo {
     /**
      * Affiche les secteurs d'un joueur spécifique.
      */
-    private static void displayPlayerSectors(Board board, Player player, int playerId, String colorName) {
+    private static void displayPlayerSectors(Board board, Player player, long playerId, String colorName) {
         List<Sector> playerSectors = board.getSectorsByOwner(playerId);
         System.out.println("\n🎮 " + player.getName() + " (" + colorName + ") - " + playerSectors.size() + " secteurs:");
 
@@ -231,8 +220,8 @@ public class PlayerDemo {
                 if (board.hasConflict(sector.getNumber(), neighborNum)) {
                     Sector neighbor = board.getSector(neighborNum);
                     System.out.printf("  ⚠️  Conflit détecté: Secteur %d (Joueur %d) ↔ Secteur %d (Joueur %d)%n",
-                        sector.getNumber(), sector.getOwnerPlayerId(),
-                        neighborNum, neighbor.getOwnerPlayerId());
+                        sector.getNumber(), sector.getOwnerId(),
+                        neighborNum, neighbor.getOwnerId());
                     conflictCount++;
                 }
             }
@@ -249,39 +238,27 @@ public class PlayerDemo {
      * Simule une bataille entre deux joueurs sur un secteur spécifique.
      */
     private static void simulateBattleBetweenPlayers(Player attacker, Player defender, Board board) {
-        System.out.println("⚔️  DÉBUT DE LA BATAILLE\n");
-        System.out.println("  Attaquant: " + attacker.getName());
-        System.out.println("  Défenseur: " + defender.getName() + "\n");
+        // Créer les services nécessaires
+        PlayerStatsService playerStatsService = new PlayerStatsService();
+        CombatService combatService = new CombatService();
 
-        // Trouver un secteur du défenseur avec une armée
-        Sector defenderSector = defender.getSectorsWithArmy().stream()
-            .findFirst()
-            .orElse(null);
-
-        if (defenderSector == null) {
-            System.out.println("❌ Le défenseur n'a pas d'armée disponible pour le combat.");
-            return;
+        // Le CombatService a besoin de PlayerStatsService, on doit le setter manuellement
+        // (en production, ceci serait géré par Spring @Autowired)
+        try {
+            java.lang.reflect.Field field = CombatService.class.getDeclaredField("playerStatsService");
+            field.setAccessible(true);
+            field.set(combatService, playerStatsService);
+        } catch (Exception e) {
+            System.err.println("Erreur d'initialisation: " + e.getMessage());
         }
-
-        // Trouver un secteur de l'attaquant avec une armée
-        Sector attackerSector = attacker.getSectorsWithArmy().stream()
-            .findFirst()
-            .orElse(null);
-
-        if (attackerSector == null) {
-            System.out.println("❌ L'attaquant n'a pas d'armée disponible pour le combat.");
-            return;
-        }
-
-        System.out.println("  📍 Secteur attaqué: " + defenderSector.getName() + " (n°" + defenderSector.getNumber() + ")");
-        System.out.println("  📍 Secteur d'origine: " + attackerSector.getName() + " (n°" + attackerSector.getNumber() + ")");
-        System.out.println("\n" + "=".repeat(60) + "\n");
 
         // Lancer la bataille
-        Battle battle = new Battle();
-        battle.classicCombatConfiguration(attacker, defender);
+        CombatService.BattleResult result = combatService.simulateBattle(attacker, defender, board);
 
-        System.out.println("\n" + "=".repeat(60));
-        System.out.println("⚔️  FIN DE LA BATAILLE");
+        if (result.isSuccess() && result.getWinner() != null) {
+            System.out.println("\n🏆 Vainqueur: " + result.getWinner().getName());
+        } else if (!result.isSuccess()) {
+            System.out.println("\n" + result.getMessage());
+        }
     }
 }
