@@ -6,7 +6,6 @@ import java.util.List;
 @Data
 public class UnitDto {
     private Integer id;
-    private String name;
     private Integer number;
     private Double experience;
     private UnitTypeDto type;

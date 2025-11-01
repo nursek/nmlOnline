@@ -3,11 +3,13 @@ package com.mg.nmlonline.domain.service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.EquipmentFactory;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
+import com.mg.nmlonline.domain.model.unit.UnitType;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -19,7 +21,22 @@ import java.util.List;
 public class PlayerImportService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final PlayerStatsService playerStatsService;
 
+    // Constructeur pour Spring (injection de dépendances)
+    public PlayerImportService(PlayerStatsService playerStatsService) {
+        this.playerStatsService = playerStatsService;
+    }
+
+    // Constructeur sans argument pour les tests/standalone
+    public PlayerImportService() {
+        this.playerStatsService = new PlayerStatsService();
+    }
+
+    /**
+     * Importe un joueur depuis un fichier JSON.
+     * Les secteurs doivent être ajoutés au Board séparément via la méthode importSectorsToBoard.
+     */
     public Player importPlayerFromJson(String filePath) throws IOException {
         PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
         Player player = new Player(dto.name);
@@ -27,10 +44,23 @@ public class PlayerImportService {
 
         importGeneralEquipments(player, dto.equipments);
 
-        if (dto.sectors != null && !dto.sectors.isEmpty()) {
-            importSectors(player, dto.sectors);
-        }
         return player;
+    }
+
+    /**
+     * Importe les secteurs depuis un fichier JSON et les ajoute au Board.
+     * Les secteurs sont assignés au joueur dans le Board.
+     * Recalcule automatiquement les stats du joueur après l'import.
+     */
+    public void importSectorsToBoard(String filePath, Player player, Board board) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+
+        if (dto.sectors != null && !dto.sectors.isEmpty()) {
+            importSectors(player, board, dto.sectors);
+        }
+
+        // Recalculer toutes les stats du joueur maintenant que les secteurs et unités sont chargés
+        playerStatsService.recalculateStats(player, board);
     }
 
     private void importGeneralEquipments(Player player, List<EquipmentDTO> equipments) {
@@ -40,33 +70,62 @@ public class PlayerImportService {
         }
     }
 
-    private void importSectors(Player player, List<SectorDTO> sectors) {
+    private void importSectors(Player player, Board board, List<SectorDTO> sectors) {
         for (SectorDTO sectorDto : sectors) {
-            Sector sector = new Sector(sectorDto.id, sectorDto.name);
-            sector.setIncome(sectorDto.income);
-            player.addSector(sector);
-            importUnitsToSector(player, sectorDto.army, sectorDto.id);
+            // Créer ou récupérer le secteur du Board
+            Sector sector = board.getSector(sectorDto.id);
+            if (sector == null) {
+                sector = new Sector(sectorDto.id, sectorDto.name);
+                sector.setIncome(sectorDto.income);
+                board.addSector(sector);
+            } else {
+                sector.setName(sectorDto.name);
+                sector.setIncome(sectorDto.income);
+            }
+
+            // Ajouter les voisins (neighbors) du secteur
+            if (sectorDto.neighbors != null) {
+                for (Integer neighborId : sectorDto.neighbors) {
+                    sector.addNeighbor(neighborId);
+                }
+            }
+
+            // Assigner le secteur au joueur
+            board.assignOwner(sectorDto.id, player.getId(), "#ffffff");
+            player.addOwnedSectorId((long) sectorDto.id);
+
+            // Importer les unités
+            importUnitsToSector(player, sector, sectorDto.army);
         }
     }
 
-    private void importUnitsToSector(Player player, List<UnitDTO> units, int sectorId) {
+    private void importUnitsToSector(Player player, Sector sector, List<UnitDTO> units) {
         if (units == null) return;
         for (UnitDTO unitDto : units) {
             Unit unit = createUnitFromDTO(player, unitDto);
-            if (!player.addUnitToSector(unit, sectorId)) {
-                // comportement conservé : si l'ajout échoue, on quitte
-                return;
+            if (unit != null) { // Only add unit if it was created successfully
+                sector.addUnit(unit);
             }
         }
     }
 
     private Unit createUnitFromDTO(Player player, UnitDTO unitDto) {
-        Unit unit = new Unit(unitDto.experience, unitDto.type, UnitClass.valueOf(unitDto.classes.get(0)));
-        if (unitDto.classes != null && unitDto.classes.size() > 1) {
+        // Une unité sans classe est inutilisable
+        if (unitDto.classes == null || unitDto.classes.isEmpty()) {
+            System.err.println("Impossible de créer une unité sans classe - unité ignorée");
+            return null;
+        }
+
+        Unit unit = new Unit(unitDto.experience, UnitClass.valueOf(unitDto.classes.get(0)));
+        // Convertir le type String en UnitType
+        if (unitDto.type != null && !unitDto.type.isEmpty()) {
+            unit.setType(UnitType.valueOf(unitDto.type));
+        }
+        if (unitDto.classes.size() > 1) {
             unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
         }
         // Handle "BLESSE" class if present
-        if (unitDto.classes != null && unitDto.isInjured) {
+        if (unitDto.isInjured) {
             unit.setInjured(true);
         }
 
@@ -95,6 +154,7 @@ public class PlayerImportService {
         public int id;
         public String name;
         public double income;
+        public List<Integer> neighbors;
         public List<UnitDTO> army;
     }
 

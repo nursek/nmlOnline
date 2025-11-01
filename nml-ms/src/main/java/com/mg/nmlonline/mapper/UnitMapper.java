@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class UnitMapper {
@@ -38,7 +37,6 @@ public class UnitMapper {
 
         Unit unit = new Unit();
         unit.setId(entity.getId() != null ? entity.getId().intValue() : 0);
-        unit.setName(entity.getName());
         unit.setNumber(entity.getNumber());
         unit.setExperience(entity.getExperience());
         unit.setType(entity.getType());
@@ -58,7 +56,7 @@ public class UnitMapper {
             List<Equipment> equipments = entity.getEquipments().stream()
                     .map(UnitEquipmentEntity::getEquipment)
                     .map(equipmentMapper::toDomain)
-                    .collect(Collectors.toList());
+                    .toList();
             unit.setEquipments(equipments);
         }
 
@@ -73,7 +71,6 @@ public class UnitMapper {
 
         Unit unit = new Unit();
         unit.setId(dto.getId() != null ? dto.getId() : 0);
-        unit.setName(dto.getName());
         unit.setNumber(dto.getNumber() != null ? dto.getNumber() : 0);
         unit.setExperience(dto.getExperience() != null ? dto.getExperience() : 0.0);
 
@@ -91,11 +88,11 @@ public class UnitMapper {
             List<UnitClass> classes = dto.getClasses().stream()
                     .map(this::fromUnitClassDto)
                     .filter(java.util.Objects::nonNull)
-                    .collect(Collectors.toList());
+                    .toList();
             unit.setClasses(classes);
         }
 
-        unit.setInjured(dto.getIsInjured() != null ? dto.getIsInjured() : false);
+        unit.setInjured(dto.getIsInjured());
 
         // Stats
         unit.setAttack(dto.getAttack() != null ? dto.getAttack() : 0.0);
@@ -109,7 +106,7 @@ public class UnitMapper {
         if (dto.getEquipments() != null) {
             List<Equipment> equipments = dto.getEquipments().stream()
                     .map(equipmentMapper::toDomain)
-                    .collect(Collectors.toList());
+                    .toList();
             unit.setEquipments(equipments);
         }
 
@@ -124,7 +121,6 @@ public class UnitMapper {
 
         UnitEntity entity = new UnitEntity();
         entity.setSector(sector);
-        entity.setName(unit.getName());
         entity.setNumber(unit.getNumber());
         entity.setExperience(unit.getExperience());
         entity.setType(unit.getType());
@@ -153,7 +149,7 @@ public class UnitMapper {
                         ue.setEquipment(equipmentEntity);
                         return ue;
                     })
-                    .collect(Collectors.toList());
+                    .toList();
             entity.setEquipments(unitEquipments);
         }
 
@@ -168,7 +164,6 @@ public class UnitMapper {
 
         UnitDto dto = new UnitDto();
         dto.setId(unit.getId());
-        dto.setName(unit.getName());
         dto.setNumber(unit.getNumber());
         dto.setExperience(unit.getExperience());
 
@@ -179,7 +174,7 @@ public class UnitMapper {
         if (unit.getClasses() != null) {
             dto.setClasses(unit.getClasses().stream()
                     .map(this::toUnitClassDto)
-                    .collect(Collectors.toList()));
+                    .toList());
         }
 
         dto.setIsInjured(unit.isInjured());
@@ -196,7 +191,7 @@ public class UnitMapper {
         if (unit.getEquipments() != null) {
             List<EquipmentDto> equipmentDtos = unit.getEquipments().stream()
                     .map(equipmentMapper::toDto)
-                    .collect(Collectors.toList());
+                    .toList();
             dto.setEquipments(equipmentDtos);
         }
 

@@ -3,13 +3,11 @@ package com.mg.nmlonline.domain.model.player;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
-import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Classe représentant un joueur avec son armée d'unités
@@ -17,111 +15,48 @@ import java.util.stream.Collectors;
 @Data
 @NoArgsConstructor
 public class Player {
+    private Long id; // ID du joueur (correspond à l'ownerId dans les secteurs)
     private String name;
     private PlayerStats stats = new PlayerStats();
     private List<EquipmentStack> equipments = new ArrayList<>(); // Équipements possédés par le joueur
-    private List<Sector> sectors = new ArrayList<>(); // Secteurs/Quartiers contrôlés par le joueur
+    private Set<Long> ownedSectorIds = new HashSet<>(); // IDs des secteurs contrôlés par le joueur
 
     public Player(String name) {
         this.name = name;
     }
 
     // === GESTION DES SECTEURS DU JOUEUR ===
+    // Note: Les secteurs sont désormais gérés via Board (single source of truth)
+    // Player ne stocke que les IDs des secteurs qu'il possède
 
-    public void addSector(Sector sector) {
-        if (sector != null && !sectors.contains(sector)) {
-            sectors.add(sector);
+    public void addOwnedSectorId(Long sectorId) {
+        if (sectorId != null) {
+            ownedSectorIds.add(sectorId);
         }
     }
 
-    public void removeSector(Sector sector) {
-        if (sectors.remove(sector)) {
-            System.out.println(sector.getName() + " has been removed");
+    public void removeOwnedSectorId(Long sectorId) {
+        if (ownedSectorIds.remove(sectorId)) {
+            System.out.println("Sector ID " + sectorId + " has been removed from player ownership");
         }
     }
 
-    public Sector getSectorByNumber(int sectorNumber) {
-        return sectors.stream()
-                .filter(sector -> sector.getNumber() == sectorNumber)
-                .findFirst()
-                .orElse(null);
+    public boolean ownsSector(Long sectorId) {
+        return ownedSectorIds.contains(sectorId);
     }
 
-    public List<Sector> getSectorsWithArmy() {
-        return sectors.stream()
-                .filter(sector -> sector.getArmySize() > 0)
-                .toList();
+    public Set<Long> getOwnedSectorIds() {
+        return Collections.unmodifiableSet(ownedSectorIds);
     }
 
-    public List<Sector> getSectors() {
-        return Collections.unmodifiableList(sectors);
+    public int getOwnedSectorCount() {
+        return ownedSectorIds.size();
     }
 
-    /**
-     * Ajoute une unité directement à un secteur spécifique
-     */
-    public boolean addUnitToSector(Unit unit, int sectorNumber) {
-        Sector targetSector = getSectorByNumber(sectorNumber);
-        if (targetSector != null) {
-            targetSector.addUnit(unit);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Supprime une unité d'un secteur spécifique
-     */
-    public boolean removeUnitFromSector(Unit unit, int sectorNumber) {
-        Sector sourceSector = getSectorByNumber(sectorNumber);
-        if (sourceSector != null) {
-            boolean removed = sourceSector.removeUnit(unit);
-            if (removed) {
-                System.out.println("Unit " + unit.getName() + " removed from sector " + sectorNumber);
-            }
-            return removed;
-        }
-        return false;
-    }
-
-    /**
-     * Obtient toutes les unités du joueur (toutes dans les secteurs)
-     */
-    public List<Unit> getAllUnits() {
-        List<Unit> allUnits = new ArrayList<>();
-        for (Sector sector : sectors) {
-            allUnits.addAll(sector.getArmy());
-        }
-        return allUnits;
-    }
-
-    /**
-     * Trouve une unité par son ID dans tous les secteurs
-     */
-    public Unit getUnitById(int id) {
-        return getAllUnits().stream()
-                .filter(unit -> unit.getId() == id)
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
-     * Trouve des unités par type dans tous les secteurs
-     */
-    public List<Unit> getUnitsByType(String unitType) {
-        return getAllUnits().stream()
-                .filter(unit -> unit.getClasses().stream()
-                        .anyMatch(unitClass -> unitClass.name().equalsIgnoreCase(unitType)))
-                .toList();
-    }
-
-
-    /**
-     * Obtient le nombre total d'unités (toutes dans les secteurs)
-     */
-    public int getTotalArmySize() {
-        return sectors.stream().mapToInt(Sector::getArmySize).sum();
-    }
+    // === MÉTHODES NÉCESSITANT BOARD ===
+    // Note: Les méthodes qui manipulent les unités dans les secteurs nécessitent désormais
+    // une référence au Board pour accéder aux secteurs (single source of truth)
+    // Ces méthodes devraient être déplacées vers un service ou recevoir Board en paramètre
 
     // === GESTION DES EQUIPMENT DU JOUEUR ===
 
@@ -221,20 +156,23 @@ public class Player {
                 .mapToDouble(stack -> stack.getEquipment().getCost() * stack.getQuantity())
                 .sum();
 
-        double equippedValue = getAllUnits().stream()
-                .flatMap(unit -> unit.getEquipments().stream())
-                .mapToDouble(Equipment::getCost)
-                .sum();
-
-        stats.setTotalEquipmentValue(inventoryValue + equippedValue);
+        // Note: Pour calculer la valeur des équipements portés, il faut maintenant
+        // passer par Board pour accéder aux secteurs et leurs unités
+        // Cette méthode ne calcule désormais que la valeur de l'inventaire
+        stats.setTotalEquipmentValue(inventoryValue);
     }
 
-    public void refreshEquipmentAvailability() {
+    // Note: Cette méthode nécessite maintenant Board pour accéder aux unités
+    // Elle devrait être déplacée vers un service ou recevoir Board + List<Sector> en paramètre
+    /*
+    public void refreshEquipmentAvailability(List<Sector> playerSectors) {
         // Compte le nombre d'exemplaires portés pour chaque équipement
         Map<Equipment, Integer> equippedCount = new HashMap<>();
-        for (Unit unit : getAllUnits()) {
-            for (Equipment eq : unit.getEquipments()) {
-                equippedCount.put(eq, equippedCount.getOrDefault(eq, 0) + 1);
+        for (Sector sector : playerSectors) {
+            for (Unit unit : sector.getUnits()) {
+                for (Equipment eq : unit.getEquipmentsList()) {
+                    equippedCount.put(eq, equippedCount.getOrDefault(eq, 0) + 1);
+                }
             }
         }
         // Met à jour l'attribut available de chaque stack
@@ -245,30 +183,38 @@ public class Player {
             stack.setAvailable(available);
         }
     }
+    */
 
 
     // === GESTION DES UNITS DU JOUEUR ===
 
-    public void reassignUnitNumbers() {
+    // Note: Cette méthode nécessite maintenant Board pour accéder aux unités
+    // Elle devrait être déplacée vers un service ou recevoir Board + List<Sector> en paramètre
+    /*
+    public void reassignUnitNumbers(List<Sector> playerSectors) {
         Map<String, Integer> typeCounters = new HashMap<>();
-        for (Unit unit : getAllUnits()) {
-            String unitType = unit.getType().name();
-            int currentCount = typeCounters.getOrDefault(unitType, 0) + 1;
-            typeCounters.put(unitType, currentCount);
-            unit.setNumber(currentCount);
+        for (Sector sector : playerSectors) {
+            for (Unit unit : sector.getUnits()) {
+                String unitType = unit.getType().name();
+                int currentCount = typeCounters.getOrDefault(unitType, 0) + 1;
+                typeCounters.put(unitType, currentCount);
+                unit.setNumber(currentCount);
+            }
         }
     }
+    */
 
-    public boolean transferUnitBetweenSectors(Unit unit, int fromSectorNumber, int toSectorNumber) {
-        Sector fromSector = getSectorByNumber(fromSectorNumber);
-        Sector toSector = getSectorByNumber(toSectorNumber);
-
+    // Note: Cette méthode nécessite maintenant Board pour accéder aux secteurs
+    // Elle devrait être déplacée vers un service ou recevoir les secteurs en paramètre
+    /*
+    public boolean transferUnitBetweenSectors(Unit unit, Sector fromSector, Sector toSector) {
         if (fromSector != null && toSector != null && fromSector.removeUnit(unit)) {
             toSector.addUnit(unit);
             return true;
         }
         return false;
     }
+    */
 
     /**
      * Retourne la liste des équipements compatibles avec une unité donnée.
@@ -289,7 +235,7 @@ public class Player {
                 .filter(stack -> stack.getAvailable() > 0) // Équipement disponible
                 .map(EquipmentStack::getEquipment)
                 .filter(unit::canEquip) // Compatible et limite non atteinte
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -310,7 +256,7 @@ public class Player {
                 .map(EquipmentStack::getEquipment)
                 .filter(eq -> eq.getCategory() == category)
                 .filter(unit::canEquip)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -393,7 +339,7 @@ public class Player {
         if (currentCount >= maxAllowed) {
             List<Equipment> equipmentsOfCategory = unit.getEquipmentsByCategory(category);
             if (!equipmentsOfCategory.isEmpty()) {
-                oldEquipment = equipmentsOfCategory.get(0);
+                oldEquipment = equipmentsOfCategory.getFirst();
             }
         }
 
@@ -407,7 +353,7 @@ public class Player {
      * @param equipment L'équipement à rendre disponible
      * @return true si l'opération a réussi
      */
-    private boolean incrementEquipmentAvailability(Equipment equipment) {
+    public boolean incrementEquipmentAvailability(Equipment equipment) {
         for (EquipmentStack stack : equipments) {
             if (stack.getEquipment().equals(equipment)) {
                 stack.incrementAvailable();
@@ -419,15 +365,16 @@ public class Player {
         return false;
     }
 
-    public boolean equipToUnit(int sectorNumber, int unitId, String equipmentName) {
+    // Note: Ces méthodes nécessitent maintenant Board pour accéder aux secteurs
+    // Elles devraient être déplacées vers un service ou recevoir le secteur en paramètre
+    /*
+    public boolean equipToUnit(Sector sector, int unitId, String equipmentName) {
         Equipment equipment = getEquipmentByString(equipmentName);
         if (equipment == null) return false;
-        return equipToUnit(sectorNumber, unitId, equipment);
+        return equipToUnit(sector, unitId, equipment);
     }
 
-    public boolean equipToUnit(int sectorNumber, int unitId, Equipment equipment) {
-        // Trouver le secteur
-        Sector sector = getSectorByNumber(sectorNumber);
+    public boolean equipToUnit(Sector sector, int unitId, Equipment equipment) {
         if (sector == null) return false;
 
         // Trouver l'unité
@@ -447,28 +394,37 @@ public class Player {
         }
         return false;
     }
+    */
 
     // === CALCULS ET STATISTIQUES ===
+    // Note: Ces méthodes nécessitent maintenant Board pour accéder aux secteurs et aux unités
+    // Elles devraient être déplacées vers un service ou recevoir Board + List<Sector> en paramètre
 
-    public void updateCombatStats(){
+    /*
+    public void updateCombatStats(List<Sector> playerSectors){
         // Met à jour les stats de chaque secteur
-        for (Sector sector : sectors) {
+        for (Sector sector : playerSectors) {
             sector.recalculateMilitaryPower();
         }
 
-        double totalAtk = getAllUnits().stream()
+        double totalAtk = playerSectors.stream()
+                .flatMap(sector -> sector.getUnits().stream())
                 .mapToDouble(Unit::getAttack)
                 .sum();
-        double totalPdf = getAllUnits().stream()
+        double totalPdf = playerSectors.stream()
+                .flatMap(sector -> sector.getUnits().stream())
                 .mapToDouble(Unit::getPdf)
                 .sum();
-        double totalPdc = getAllUnits().stream()
+        double totalPdc = playerSectors.stream()
+                .flatMap(sector -> sector.getUnits().stream())
                 .mapToDouble(Unit::getPdc)
                 .sum();
-        double totalDef = getAllUnits().stream()
+        double totalDef = playerSectors.stream()
+                .flatMap(sector -> sector.getUnits().stream())
                 .mapToDouble(Unit::getDefense)
                 .sum();
-        double totalArmor = getAllUnits().stream()
+        double totalArmor = playerSectors.stream()
+                .flatMap(sector -> sector.getUnits().stream())
                 .mapToDouble(Unit::getArmor)
                 .sum();
 
@@ -478,31 +434,38 @@ public class Player {
         stats.setTotalDef(totalDef);
         stats.setTotalArmor(totalArmor);
     }
+    */
 
-    private void updateTotalStats() {
-        double totalOffensive = sectors.stream()
+    /*
+    private void updateTotalStats(List<Sector> playerSectors) {
+        double totalOffensive = playerSectors.stream()
                 .mapToDouble(sector -> sector.getStats().getTotalOffensive())
                 .sum();
-        double totalDefensive = sectors.stream()
+        double totalDefensive = playerSectors.stream()
                 .mapToDouble(sector -> sector.getStats().getTotalDefensive())
                 .sum();
 
         stats.setTotalOffensivePower(totalOffensive);
         stats.setTotalDefensivePower(totalDefensive);
     }
+    */
 
-    private void updateGlobalStats() {
-        updateTotalStats();
+    /*
+    private void updateGlobalStats(List<Sector> playerSectors) {
+        updateTotalStats(playerSectors);
         stats.setGlobalPower((stats.getTotalOffensivePower() + stats.getTotalDefensivePower()) / 2);
     }
+    */
 
-    private void calculateTotalIncome() {
-        stats.setTotalIncome(sectors.stream()
+    /*
+    private void calculateTotalIncome(List<Sector> playerSectors) {
+        stats.setTotalIncome(playerSectors.stream()
                 .mapToDouble(Sector::getIncome)
                 .sum());
     }
+    */
 
-    private void calculateTotalEconomyPower() {
+    public void calculateTotalEconomyPower() {
         double economyPower = stats.getTotalIncome()
                 + stats.getTotalEquipmentValue()
                 + stats.getMoney()
@@ -510,35 +473,23 @@ public class Player {
         stats.setTotalEconomyPower(economyPower);
     }
 
-    public void recalculateStats() {
-        updateCombatStats();
-        updateGlobalStats();
-        calculateTotalIncome();
+    // Note: Cette méthode nécessite maintenant Board pour accéder aux secteurs
+    // Elle devrait être déplacée vers un service ou recevoir Board + List<Sector> en paramètre
+    /*
+    public void recalculateStats(List<Sector> playerSectors) {
+        updateCombatStats(playerSectors);
+        updateGlobalStats(playerSectors);
+        calculateTotalIncome(playerSectors);
         setTotalEquipmentValue();
         calculateTotalEconomyPower();
     }
+    */
 
     // === AFFICHAGE ===
 
-    /**
-     * Affiche toutes les armées des secteurs du joueur
-     */
-    public void displayArmy() {
-        System.out.println("=== ARMÉES DE " + name.toUpperCase() + " ===");
-
-        List<Sector> sectorsWithArmy = getSectorsWithArmy();
-        if (sectorsWithArmy.isEmpty()) {
-            System.out.println("Aucune unité dans les secteurs.");
-        } else {
-            for (Sector sector : sectorsWithArmy) {
-                sector.displayArmy();
-                System.out.println();
-            }
-        }
-
-        System.out.printf("TOTAL : %d unités réparties dans %d secteurs%n",
-                getTotalArmySize(), sectors.size());
-    }
+    // Note: displayArmy() nécessite maintenant Board pour accéder aux secteurs
+    // Elle devrait être déplacée vers un service ou recevoir Board + List<Sector> en paramètre
+    // Voir les méthodes commentées plus haut pour référence
 
 
     /**
@@ -564,8 +515,8 @@ public class Player {
     private static final String FORMAT_FLOAT = "%,.2f";
 
     public void displayStats() {
-        updateGlobalStats();
-        calculateTotalIncome();
+        // Note: updateGlobalStats() et calculateTotalIncome() nécessitent maintenant Board
+        // Ces calculs doivent être faits en amont par un service
         setTotalEquipmentValue();
         calculateTotalEconomyPower();
 

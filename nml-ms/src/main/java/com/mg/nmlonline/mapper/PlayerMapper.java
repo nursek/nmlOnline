@@ -10,8 +10,8 @@ import com.mg.nmlonline.infrastructure.entity.*;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class PlayerMapper {
@@ -72,17 +72,17 @@ public class PlayerMapper {
         if (entity.getEquipments() != null) {
             List<EquipmentStack> equipmentStacks = entity.getEquipments().stream()
                     .map(this::equipmentStackToDomain)
-                    .collect(Collectors.toList());
+                    .toList();
             player.setEquipments(equipmentStacks);
         }
 
-        // Conversion des secteurs
-        if (entity.getSectors() != null) {
-            List<com.mg.nmlonline.domain.model.sector.Sector> sectors = entity.getSectors().stream()
-                    .map(sectorMapper::toDomain)
-                    .collect(Collectors.toList());
-            player.setSectors(sectors);
+        // Conversion des IDs de secteurs
+        if (entity.getOwnedSectorIds() != null) {
+            player.setOwnedSectorIds(new HashSet<>(entity.getOwnedSectorIds()));
         }
+
+        // Définir l'ID du joueur
+        player.setId(entity.getId());
 
         return player;
     }
@@ -119,17 +119,17 @@ public class PlayerMapper {
         if (dto.getEquipments() != null) {
             List<EquipmentStack> equipmentStacks = dto.getEquipments().stream()
                     .map(this::equipmentStackFromDto)
-                    .collect(Collectors.toList());
+                    .toList();
             player.setEquipments(equipmentStacks);
         }
 
-        // Conversion des secteurs
-        if (dto.getSectors() != null) {
-            List<com.mg.nmlonline.domain.model.sector.Sector> sectors = dto.getSectors().stream()
-                    .map(sectorMapper::toDomain)
-                    .collect(Collectors.toList());
-            player.setSectors(sectors);
+        // Conversion des IDs de secteurs
+        if (dto.getOwnedSectorIds() != null) {
+            player.setOwnedSectorIds(new HashSet<>(dto.getOwnedSectorIds()));
         }
+
+        // Définir l'ID du joueur
+        player.setId(dto.getId());
 
         return player;
     }
@@ -167,16 +167,18 @@ public class PlayerMapper {
         if (player.getEquipments() != null) {
             List<EquipmentStackEntity> equipmentStackEntities = player.getEquipments().stream()
                     .map(stack -> equipmentStackToEntity(stack, entity))
-                    .collect(Collectors.toList());
+                    .toList();
             entity.setEquipments(equipmentStackEntities);
         }
 
-        // Conversion des secteurs
-        if (player.getSectors() != null) {
-            List<SectorEntity> sectorEntities = player.getSectors().stream()
-                    .map(sector -> sectorMapper.toEntity(sector, entity))
-                    .collect(Collectors.toList());
-            entity.setSectors(sectorEntities);
+        // Conversion des IDs de secteurs
+        if (player.getOwnedSectorIds() != null) {
+            entity.setOwnedSectorIds(new HashSet<>(player.getOwnedSectorIds()));
+        }
+
+        // Définir l'ID de l'entité
+        if (player.getId() != null) {
+            entity.setId(player.getId());
         }
 
         return entity;
@@ -215,17 +217,17 @@ public class PlayerMapper {
         if (player.getEquipments() != null) {
             List<EquipmentStackDto> equipmentStackDtos = player.getEquipments().stream()
                     .map(this::equipmentStackToDto)
-                    .collect(Collectors.toList());
+                    .toList();
             dto.setEquipments(equipmentStackDtos);
         }
 
-        // Conversion des secteurs
-        if (player.getSectors() != null) {
-            List<SectorDto> sectorDtos = player.getSectors().stream()
-                    .map(sectorMapper::toDto)
-                    .collect(Collectors.toList());
-            dto.setSectors(sectorDtos);
+        // Conversion des IDs de secteurs
+        if (player.getOwnedSectorIds() != null) {
+            dto.setOwnedSectorIds(new HashSet<>(player.getOwnedSectorIds()));
         }
+
+        // Définir l'ID du DTO
+        dto.setId(player.getId());
 
         return dto;
     }
@@ -250,14 +252,18 @@ public class PlayerMapper {
         return stack;
     }
 
-    private EquipmentStackEntity equipmentStackToEntity(EquipmentStack stack, PlayerEntity player) {
+    public EquipmentStackEntity equipmentStackToEntity(EquipmentStack stack, PlayerEntity player) {
         if (stack == null) return null;
         EquipmentStackEntity entity = new EquipmentStackEntity();
         entity.setPlayer(player);
 
-        // Rechercher l'équipement existant par nom au lieu d'en créer un nouveau
+        // Rechercher l'équipement existant par nom
+        // Il DOIT exister car data.sql l'a inséré
         EquipmentEntity equipmentEntity = equipmentRepository.findByName(stack.getEquipment().getName())
-                .orElseGet(() -> equipmentMapper.toEntity(stack.getEquipment()));
+                .orElseThrow(() -> new IllegalStateException(
+                    "Equipment not found: " + stack.getEquipment().getName() +
+                    ". Make sure data.sql has been executed."
+                ));
 
         entity.setEquipment(equipmentEntity);
         entity.setQuantity(stack.getQuantity());

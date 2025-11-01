@@ -1,0 +1,120 @@
+{
+  "name": "Carte Principale",
+  "sectors": [
+    {
+      "number": 3,
+      "name": "Entrepôt Abandonné",
+      "income": 1500,
+      "resource": "ferraille",
+      "army": [
+      ],
+      "neighbors": [2, 4, 7]
+    },
+    {
+      "number": 4,
+      "name": "Zone Industrielle",
+      "income": 2200,
+      "resource": "or",
+      "army": [
+      ],
+      "neighbors": [3, 8]
+    },
+    {
+      "number": 5,
+      "name": "Marché Noir",
+      "income": 3500,
+      "resource": "joyaux",
+      "army": [
+      ],
+      "neighbors": [1, 6, 9]
+    },
+    {
+      "number": 6,
+      "name": "Dépôt d'Armes",
+      "income": 2800,
+      "resource": "munitions",
+      "army": [
+      ],
+      "neighbors": [2, 5, 7, 10]
+    },
+    {
+      "number": 7,
+      "name": "Terrain Vague",
+      "income": 800,
+      "army": [
+      ],
+      "neighbors": [3, 6, 8, 11]
+    },
+    {
+      "number": 8,
+      "name": "Bar Clandestin",
+      "income": 1800,
+      "resource": "alcool",
+      "army": [
+      ],
+      "neighbors": [4, 7, 12]
+    },
+    {
+      "number": 9,
+      "name": "Raffinerie",
+      "income": 4200,
+      "resource": "cigares",
+      "army": [
+      ],
+      "neighbors": [5, 10, 13]
+    },
+    {
+      "number": 10,
+      "name": "Parc Abandonné",
+      "income": 1200,
+      "army": [
+      ],
+      "neighbors": [6, 9, 11, 14]
+    },
+    {
+      "number": 11,
+      "name": "Station Service",
+      "income": 2000,
+      "resource": "essence",
+      "army": [
+      ],
+      "neighbors": [7, 10, 12, 15]
+    },
+    {
+      "number": 13,
+      "name": "Base Militaire Abandonnée",
+      "income": 5000,
+      "resource": "uranium",
+      "army": [
+      ],
+      "neighbors": [9, 14]
+    },
+    {
+      "number": 14,
+      "name": "Quartier Résidentiel",
+      "income": 1000,
+      "army": [
+      ],
+      "neighbors": [10, 13, 15]
+    },
+    {
+      "number": 15,
+      "name": "Casino",
+      "income": 3800,
+      "resource": "argent_sale",
+      "army": [
+      ],
+      "neighbors": [11, 14, 16]
+    },
+    {
+      "number": 16,
+      "name": "Port de Contrebande",
+      "income": 4500,
+      "resource": "marchandises",
+      "army": [
+      ],
+      "neighbors": [12, 15]
+    }
+  ]
+}
+

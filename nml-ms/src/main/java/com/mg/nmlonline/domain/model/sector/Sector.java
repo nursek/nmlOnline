@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.mg.nmlonline.domain.model.board.Resource;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentFactory;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
+import com.mg.nmlonline.domain.model.unit.UnitType;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,18 +25,63 @@ import java.util.*;
 public class Sector {
     private int number;
     private String name;
-    private double income = 2000 ;
+    private double income = 2000;
     private List<Unit> army = new ArrayList<>();
     private SectorStats stats = new SectorStats();
+
+    // === NOUVELLES DONNÉES POUR LA CARTE ===
+    private Long ownerId; // null si secteur neutre/vide - ID du joueur propriétaire
+    private String color; // couleur déterminée par l'owner, blanc (#ffffff) par défaut
+    private Resource resource; // ressource du secteur (joyaux, or, cigares, etc.)
+    private List<Integer> neighbors = new ArrayList<>(); // liste des numéros de secteurs voisins
+    private Long boardId; // ID du board auquel appartient ce secteur
+    // ========================================
 
     public Sector(int number) {
         this.number = number;
         this.name = "Secteur n°" + number;
+        this.color = "#ffffff"; // blanc par défaut
     }
 
     public Sector(int number, String name) {
         this.number = number;
         this.name = name;
+        this.color = "#ffffff"; // blanc par défaut
+    }
+
+    // === GESTION DES VOISINS ===
+
+    public void addNeighbor(int neighborNumber) {
+        if (!neighbors.contains(neighborNumber) && neighborNumber != this.number) {
+            neighbors.add(neighborNumber);
+        }
+    }
+
+    public void removeNeighbor(int neighborNumber) {
+        neighbors.remove((Integer) neighborNumber);
+    }
+
+    public boolean isNeighbor(int sectorNumber) {
+        return neighbors.contains(sectorNumber);
+    }
+
+    public List<Integer> getNeighbors() {
+        return Collections.unmodifiableList(neighbors);
+    }
+
+    // === GESTION OWNER ET COULEUR ===
+
+    public void setOwnerAndColor(Long playerId, String colorHex) {
+        this.ownerId = playerId;
+        this.color = colorHex != null ? colorHex : "#ffffff";
+    }
+
+    public boolean isOwnedBy(Long playerId) {
+        return ownerId != null && ownerId.equals(playerId);
+    }
+
+    public boolean isNeutral() {
+        return ownerId == null;
     }
 
     // === GESTION DES STATISTIQUES DU SECTEUR ===
@@ -226,7 +273,9 @@ public class Sector {
                     String className = classNode.asText();
                     try {
                         classes.add(UnitClass.valueOf(className));
-                    } catch (IllegalArgumentException ignored) {}
+                    } catch (IllegalArgumentException ignored) {
+                        // Classe inconnue, on l'ignore
+                    }
                 }
             }
 
@@ -234,9 +283,10 @@ public class Sector {
                 return null;
             }
 
-            Unit unit = new Unit(experience, name, classes.get(0));
+            Unit unit = new Unit(experience, classes.get(0));
             unit.setId(id);
             unit.setNumber(number);
+            unit.setType(UnitType.valueOf(unitNode.get("type").asText()));
 
             for (int i = 1; i < classes.size(); i++) {
                 unit.addSecondClass(classes.get(i));

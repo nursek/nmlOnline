@@ -42,7 +42,7 @@ public class Battle {
 
             // Gestion de l'évasion
             if (evasion > 0 && (rand() % 100) + 1 <= evasion) {
-                System.out.println("      > " + targetUnit.getName() + " esquive l'attaque !");
+                System.out.println("      > " + targetUnit.getType().name() + " esquive l'attaque !");
                 availableAttackerPoints -= (defense + armor);
                 continue;
             }
@@ -54,19 +54,19 @@ public class Battle {
             }
 
             if ((armor + defense) <= effectivePoints) {
-                System.out.println("      > " + targetUnit.getName() + " (ID: " + targetUnit.getId() + ") est détruit pendant la phase " + damageType + " !");
+                System.out.println("      > " + targetUnit.getType().name() + " (ID: " + targetUnit.getId() + ") est détruit pendant la phase " + damageType + " !");
                 availableAttackerPoints -= (defense + armor) / (1 - resistance);
                 defender.remove(targetUnit);
                 casualties.add(targetUnit);
             } else if (effectivePoints <= armor) {
                 targetUnit.setArmor(armor - effectivePoints);
-                System.out.printf("      > %s perd %.2f d'armure (reste: %.2f)%n", targetUnit.getName(), effectivePoints, targetUnit.getArmor());
+                System.out.printf("      > %s perd %.2f d'armure (reste: %.2f)%n", targetUnit.getType().name(), effectivePoints, targetUnit.getArmor());
                 availableAttackerPoints = 0;
             } else {
                 targetUnit.setArmor(0);
                 double remainingPoints = effectivePoints - armor;
                 targetUnit.setDefense(defense - remainingPoints);
-                System.out.printf("      > %s perd toute son armure et %.2f de défense (reste: %.2f)%n", targetUnit.getName(), remainingPoints, targetUnit.getDefense());
+                System.out.printf("      > %s perd toute son armure et %.2f de défense (reste: %.2f)%n", targetUnit.getType().name(), remainingPoints, targetUnit.getDefense());
                 availableAttackerPoints = 0;
             }
         }
@@ -125,12 +125,9 @@ public class Battle {
         return result;
     }
 
-    public void classicCombatConfiguration(Player attacker, Player defender) {
-        defender.updateCombatStats();
-        attacker.updateCombatStats();
-
-        List<Unit> defenderUnits = defender.getAllUnits();
-        List<Unit> attackerUnits = attacker.getAllUnits();
+    public void classicCombatConfiguration(Player attacker, Player defender, List<Unit> attackerUnits, List<Unit> defenderUnits) {
+        if (attackerUnits == null) attackerUnits = new ArrayList<>();
+        if (defenderUnits == null) defenderUnits = new ArrayList<>();
 
         printUnitsIndented(defenderUnits, "Défenseurs début");
         printUnitsIndented(attackerUnits, "Attaquants début");

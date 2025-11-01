@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -11,13 +12,14 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class PlayerExportService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public void savePlayerToJson(Player player, String filePath) throws IOException {
+    public void savePlayerToJson(Player player, Board board, String filePath) throws IOException {
         PlayerDTO dto = new PlayerDTO();
         dto.name = player.getName();
         dto.money = player.getStats().getMoney();
@@ -31,7 +33,9 @@ public class PlayerExportService {
         }
 
         dto.sectors = new ArrayList<>();
-        for (Sector sector : player.getSectors()) {
+        // Récupérer les secteurs du joueur via le Board
+        List<Sector> playerSectors = board.getSectorsByOwner(player.getId());
+        for (Sector sector : playerSectors) {
             SectorDTO sectorDTO = new SectorDTO();
             sectorDTO.id = sector.getNumber();
             sectorDTO.name = sector.getName();

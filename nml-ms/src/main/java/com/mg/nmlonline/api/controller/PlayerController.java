@@ -35,8 +35,10 @@ public class PlayerController {
 
     @PostMapping
     public PlayerDto create(@RequestBody PlayerDto dto) {
+        System.out.println("Created player: " + dto.getName());
         Player player = playerMapper.toDomain(dto);
         Player created = playerService.create(player);
+        System.out.println("Created player: " + created.getName());
         return playerMapper.toDto(created);
     }
 

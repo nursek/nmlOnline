@@ -2,9 +2,11 @@ package com.mg.nmlonline.mapper;
 
 import com.mg.nmlonline.api.dto.SectorDto;
 import com.mg.nmlonline.api.dto.SectorStatsDto;
+import com.mg.nmlonline.domain.model.board.Resource;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.sector.SectorStats;
 import com.mg.nmlonline.domain.model.unit.Unit;
+import com.mg.nmlonline.infrastructure.entity.BoardEntity;
 import com.mg.nmlonline.infrastructure.entity.PlayerEntity;
 import com.mg.nmlonline.infrastructure.entity.SectorEntity;
 import com.mg.nmlonline.infrastructure.entity.SectorStatsEmbeddable;
@@ -12,7 +14,6 @@ import com.mg.nmlonline.infrastructure.entity.UnitEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class SectorMapper {
@@ -31,6 +32,20 @@ public class SectorMapper {
 
         Sector sector = new Sector(entity.getNumber(), entity.getName());
         sector.setIncome(entity.getIncome());
+
+        // Nouvelles propriétés pour la carte
+        sector.setOwnerId(entity.getOwnerId());
+        sector.setColor(entity.getColor());
+        if (entity.getResource() != null) {
+            Resource resource = new Resource(entity.getResource(), 0.0);
+            sector.setResource(resource);
+        }
+        // Conversion des voisins
+        if (entity.getNeighbors() != null && !entity.getNeighbors().isEmpty()) {
+            for (Integer neighborNumber : entity.getNeighbors()) {
+                sector.addNeighbor(neighborNumber);
+            }
+        }
 
         // Conversion des stats
         if (entity.getStats() != null) {
@@ -51,7 +66,7 @@ public class SectorMapper {
         if (entity.getArmy() != null) {
             List<Unit> units = entity.getArmy().stream()
                     .map(unitMapper::toDomain)
-                    .collect(Collectors.toList());
+                    .toList();
             sector.setArmy(units);
         }
 
@@ -66,6 +81,20 @@ public class SectorMapper {
 
         Sector sector = new Sector(dto.getNumber(), dto.getName());
         sector.setIncome(dto.getIncome());
+
+        // Nouvelles propriétés pour la carte
+        sector.setOwnerId(dto.getOwnerId());
+        sector.setColor(dto.getColor());
+        if (dto.getResource() != null) {
+            Resource resource = new Resource(dto.getResource(), 0.0);
+            sector.setResource(resource);
+        }
+        // Conversion des voisins
+        if (dto.getNeighbors() != null && !dto.getNeighbors().isEmpty()) {
+            for (Integer neighborNumber : dto.getNeighbors()) {
+                sector.addNeighbor(neighborNumber);
+            }
+        }
 
         // Conversion des stats
         if (dto.getStats() != null) {
@@ -86,7 +115,7 @@ public class SectorMapper {
         if (dto.getArmy() != null) {
             List<Unit> units = dto.getArmy().stream()
                     .map(unitMapper::toDomain)
-                    .collect(Collectors.toList());
+                    .toList();
             sector.setArmy(units);
         }
 
@@ -94,16 +123,23 @@ public class SectorMapper {
     }
 
     /**
-     * Convertit un objet Sector du domaine en entité SectorEntity
+     * Convertit un objet Sector du domaine en entité SectorEntity (pour un joueur)
      */
     public SectorEntity toEntity(Sector sector, PlayerEntity player) {
         if (sector == null) return null;
 
         SectorEntity entity = new SectorEntity();
-        entity.setPlayer(player);
         entity.setNumber(sector.getNumber());
         entity.setName(sector.getName());
         entity.setIncome(sector.getIncome());
+
+        // Nouvelles propriétés pour la carte
+        entity.setOwnerId(sector.getOwnerId());
+        entity.setColor(sector.getColor() != null ? sector.getColor() : "#ffffff");
+        entity.setResource(sector.getResource() != null ? sector.getResource().getType() : null);
+        if (sector.getNeighbors() != null && !sector.getNeighbors().isEmpty()) {
+            entity.setNeighbors(new java.util.ArrayList<>(sector.getNeighbors()));
+        }
 
         // Conversion des stats
         if (sector.getStats() != null) {
@@ -124,7 +160,7 @@ public class SectorMapper {
         if (sector.getArmy() != null) {
             List<UnitEntity> unitEntities = sector.getArmy().stream()
                     .map(unit -> unitMapper.toEntity(unit, entity))
-                    .collect(Collectors.toList());
+                    .toList();
             entity.setArmy(unitEntities);
         }
 
@@ -132,7 +168,53 @@ public class SectorMapper {
     }
 
     /**
-     * Convertit un objet Sector du domaine en DTO
+     * Convertit un objet Sector du domaine en entité SectorEntity (pour une Board)
+     */
+    public SectorEntity toEntity(Sector sector, BoardEntity board) {
+        if (sector == null) return null;
+
+        SectorEntity entity = new SectorEntity();
+        entity.setBoard(board);
+        entity.setNumber(sector.getNumber());
+        entity.setName(sector.getName());
+        entity.setIncome(sector.getIncome());
+
+        // Nouvelles propriétés pour la carte
+        entity.setOwnerId(sector.getOwnerId());
+        entity.setColor(sector.getColor() != null ? sector.getColor() : "#ffffff");
+        entity.setResource(sector.getResource() != null ? sector.getResource().getType() : null);
+        if (sector.getNeighbors() != null && !sector.getNeighbors().isEmpty()) {
+            entity.setNeighbors(new java.util.ArrayList<>(sector.getNeighbors()));
+        }
+
+        // Conversion des stats
+        if (sector.getStats() != null) {
+            SectorStatsEmbeddable statsEmb = new SectorStatsEmbeddable();
+            SectorStats stats = sector.getStats();
+            statsEmb.setTotalAtk(stats.getTotalAtk());
+            statsEmb.setTotalPdf(stats.getTotalPdf());
+            statsEmb.setTotalPdc(stats.getTotalPdc());
+            statsEmb.setTotalDef(stats.getTotalDef());
+            statsEmb.setTotalArmor(stats.getTotalArmor());
+            statsEmb.setTotalOffensive(stats.getTotalOffensive());
+            statsEmb.setTotalDefensive(stats.getTotalDefensive());
+            statsEmb.setGlobalStats(stats.getGlobalStats());
+            entity.setStats(statsEmb);
+        }
+
+        // Conversion des unités
+        if (sector.getArmy() != null) {
+            List<UnitEntity> unitEntities = sector.getArmy().stream()
+                    .map(unit -> unitMapper.toEntity(unit, entity))
+                    .toList();
+            entity.setArmy(unitEntities);
+        }
+
+        return entity;
+    }
+
+    /**
+     * Convertit un objet Sector du domaine en entité SectorEntity (avec boardId)
      */
     public SectorDto toDto(Sector sector) {
         if (sector == null) return null;
@@ -141,6 +223,14 @@ public class SectorMapper {
         dto.setNumber(sector.getNumber());
         dto.setName(sector.getName());
         dto.setIncome(sector.getIncome());
+
+        // Nouvelles propriétés pour la carte
+        dto.setOwnerId(sector.getOwnerId());
+        dto.setColor(sector.getColor());
+        dto.setResource(sector.getResource() != null ? sector.getResource().getType() : null);
+        if (sector.getNeighbors() != null && !sector.getNeighbors().isEmpty()) {
+            dto.setNeighbors(new java.util.ArrayList<>(sector.getNeighbors()));
+        }
 
         // Conversion des stats
         if (sector.getStats() != null) {
@@ -161,9 +251,20 @@ public class SectorMapper {
         if (sector.getArmy() != null) {
             dto.setArmy(sector.getArmy().stream()
                     .map(unitMapper::toDto)
-                    .collect(Collectors.toList()));
+                    .toList());
         }
 
         return dto;
     }
+
+    /**
+     * Convertit une entité SectorEntity en DTO
+     */
+    public SectorDto toDto(SectorEntity entity) {
+        if (entity == null) return null;
+        
+        Sector sector = toDomain(entity);
+        return toDto(sector);
+    }
 }
+

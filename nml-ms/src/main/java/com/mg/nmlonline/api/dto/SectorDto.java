@@ -10,4 +10,10 @@ public class SectorDto {
     private Double income;
     private List<UnitDto> army;
     private SectorStatsDto stats;
+
+    // Nouvelles propriétés pour la carte
+    private Long ownerId;
+    private String color;
+    private String resource;
+    private List<Integer> neighbors;
 }
