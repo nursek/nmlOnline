@@ -214,7 +214,7 @@ public class SectorMapper {
     }
 
     /**
-     * Convertit un objet Sector du domaine en DTO
+     * Convertit un objet Sector du domaine en entité SectorEntity (avec boardId)
      */
     public SectorDto toDto(Sector sector) {
         if (sector == null) return null;

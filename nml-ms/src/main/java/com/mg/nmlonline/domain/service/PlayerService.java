@@ -16,11 +16,14 @@ public class PlayerService {
 
     private final PlayerRepository playerRepository;
     private final PlayerMapper playerMapper;
+    private final SectorService sectorService;
 
     public PlayerService(PlayerRepository playerRepository,
-                         PlayerMapper playerMapper) {
+                         PlayerMapper playerMapper,
+                         SectorService sectorService) {
         this.playerRepository = playerRepository;
         this.playerMapper = playerMapper;
+        this.sectorService = sectorService;
     }
 
     // --- Lecture (DTO) pour controllers ---
@@ -68,6 +71,7 @@ public class PlayerService {
     public boolean delete(Long id) {
         if (!playerRepository.existsById(id)) return false;
         playerRepository.deleteById(id);
+        sectorService.removePlayerFromSectors(id);
         return true;
     }
 }
