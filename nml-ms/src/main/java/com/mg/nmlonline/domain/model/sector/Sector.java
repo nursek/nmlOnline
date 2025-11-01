@@ -34,6 +34,8 @@ public class Sector {
     private String color; // couleur déterminée par l'owner, blanc (#ffffff) par défaut
     private Resource resource; // ressource du secteur (joyaux, or, cigares, etc.)
     private List<Integer> neighbors = new ArrayList<>(); // liste des numéros de secteurs voisins
+    private Long boardId; // ID du board auquel appartient ce secteur
+    // ========================================
 
     public Sector(int number) {
         this.number = number;
