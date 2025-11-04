@@ -2,10 +2,22 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { login, clearError } from '../store/authSlice';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
-import { Shield, Loader2 } from 'lucide-react';
+import {
+  Box,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  FormControlLabel,
+  Checkbox,
+  CircularProgress,
+  Container,
+  Avatar,
+} from '@mui/material';
+import { Shield } from '@mui/icons-material';
+import '../styles/pages/LoginPage.scss';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -37,100 +49,114 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary to-background p-4">
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyMTk2ZjMiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE0YzAgNi42MjctNS4zNzMgMTItMTIgMTJzLTEyLTUuMzczLTEyLTEyIDUuMzczLTEyIDEyLTEyIDEyIDUuMzczIDEyIDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-10"></div>
-
-      <Card className="w-full max-w-md relative z-10 border-2">
-        <CardHeader className="space-y-4 text-center">
-          <div className="flex justify-center">
-            <div className="p-3 bg-primary/10 rounded-full">
-              <Shield className="h-12 w-12 text-primary" />
-            </div>
-          </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-            NML Online
-          </CardTitle>
-          <CardDescription className="text-base">
-            Connectez-vous pour conquérir des territoires
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label htmlFor="username" className="text-sm font-medium">
-                Nom d'utilisateur
-              </label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="Entrez votre nom d'utilisateur"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                disabled={loading}
-                className="bg-background"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Mot de passe
-              </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Entrez votre mot de passe"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-                className="bg-background"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                id="rememberMe"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                disabled={loading}
-                className="h-4 w-4 rounded border-border bg-background text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background cursor-pointer"
-              />
-              <label
-                htmlFor="rememberMe"
-                className="text-sm font-medium cursor-pointer select-none"
+    <Box className="login-page">
+      <Container maxWidth="sm">
+        <Card className="login-card fade-in" elevation={8}>
+          <CardContent sx={{ p: 4 }}>
+            {/* Logo et titre */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
+              <Avatar
+                sx={{
+                  width: 80,
+                  height: 80,
+                  bgcolor: 'primary.main',
+                  mb: 2,
+                }}
               >
-                Se souvenir de moi (30 jours)
-              </label>
-            </div>
+                <Shield sx={{ fontSize: 48 }} />
+              </Avatar>
+              <Typography
+                variant="h3"
+                sx={{
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #2196f3 0%, #64b5f6 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  mb: 1,
+                }}
+              >
+                NML Online
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Connectez-vous pour conquérir des territoires
+              </Typography>
+            </Box>
 
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connexion en cours...
-                </>
-              ) : (
-                'Se connecter'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+            {/* Formulaire */}
+            <form onSubmit={handleSubmit}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {/* Erreur */}
+                {error && (
+                  <Alert severity="error" variant="filled">
+                    {error}
+                  </Alert>
+                )}
+
+                {/* Nom d'utilisateur */}
+                <TextField
+                  fullWidth
+                  label="Nom d'utilisateur"
+                  variant="outlined"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  disabled={loading}
+                  autoFocus
+                />
+
+                {/* Mot de passe */}
+                <TextField
+                  fullWidth
+                  label="Mot de passe"
+                  type="password"
+                  variant="outlined"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                />
+
+                {/* Se souvenir de moi */}
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      disabled={loading}
+                      color="primary"
+                    />
+                  }
+                  label="Se souvenir de moi (30 jours)"
+                />
+
+                {/* Bouton de connexion */}
+                <Button
+                  type="submit"
+                  variant="contained"
+                  size="large"
+                  fullWidth
+                  disabled={loading}
+                  sx={{
+                    py: 1.5,
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <CircularProgress size={24} sx={{ mr: 1 }} color="inherit" />
+                      Connexion en cours...
+                    </>
+                  ) : (
+                    'Se connecter'
+                  )}
+                </Button>
+              </Box>
+            </form>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 }
 

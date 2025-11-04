@@ -1,9 +1,22 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchAllPlayers } from '../store/playerSlice';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
-import { Map, Loader2, Users, MapPin } from 'lucide-react';
-import { cn } from '../lib/utils';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Chip,
+  CircularProgress,
+  Alert,
+  Container,
+  Paper,
+  Avatar,
+  Divider,
+  Grid,
+} from '@mui/material';
+import { Map, Person, Place } from '@mui/icons-material';
+import '../styles/pages/CartePage.scss';
 
 export default function CartePage() {
   const dispatch = useAppDispatch();
@@ -15,32 +28,32 @@ export default function CartePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <CircularProgress size={60} />
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md">
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Alert severity="error" variant="filled">
           {error}
-        </div>
-      </div>
+        </Alert>
+      </Container>
     );
   }
 
   // Couleurs pour différencier les joueurs
   const playerColors = [
-    'bg-blue-500',
-    'bg-red-500',
-    'bg-green-500',
-    'bg-yellow-500',
-    'bg-purple-500',
-    'bg-pink-500',
-    'bg-orange-500',
-    'bg-cyan-500',
+    '#2196f3',
+    '#f44336',
+    '#4caf50',
+    '#ffc107',
+    '#9c27b0',
+    '#e91e63',
+    '#ff9800',
+    '#00bcd4',
   ];
 
   const getPlayerColor = (index: number) => {
@@ -56,145 +69,246 @@ export default function CartePage() {
     }))
   );
 
-  // Pour la carte, on utilise number comme identifiant
-  // Puisqu'on n'a pas de coordonnées x/y, on affiche juste une liste
-
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-center space-x-4">
-        <div className="p-3 bg-primary/10 rounded-full">
-          <Map className="h-10 w-10 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-            Carte du Monde
-          </h1>
-          <p className="text-muted-foreground">Vue d'ensemble des territoires conquis</p>
-        </div>
-      </div>
+    <Container maxWidth="xl" sx={{ py: 4 }} className="fade-in">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar
+            sx={{
+              width: 64,
+              height: 64,
+              bgcolor: 'primary.main',
+            }}
+          >
+            <Map sx={{ fontSize: 40 }} />
+          </Avatar>
+          <Box>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #2196f3 0%, #64b5f6 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              Carte du Monde
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Vue d'ensemble des territoires conquis
+            </Typography>
+          </Box>
+        </Box>
 
-      {/* Légende des joueurs */}
-      <Card className="border-2">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <Users className="h-6 w-6 text-primary" />
-            <CardTitle>Joueurs actifs</CardTitle>
-          </div>
-          <CardDescription>Commandants en présence</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {players.map((player, idx) => (
-              <div
-                key={`player-${player.id ?? idx}`}
-                className="flex items-center space-x-3 p-3 bg-secondary rounded-lg border-2 border-border"
-              >
-                <div className={cn('w-4 h-4 rounded-full', getPlayerColor(idx))} />
-                <div>
-                  <p className="font-semibold">{player.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {player.sectors.length} {player.sectors.length > 1 ? 'territoires' : 'territoire'}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Carte */}
-      <Card className="border-2">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <MapPin className="h-6 w-6 text-primary" />
-            <CardTitle>Carte des territoires</CardTitle>
-          </div>
-          <CardDescription>
-            {allSectors.length} secteur{allSectors.length > 1 ? 's' : ''} contrôlé{allSectors.length > 1 ? 's' : ''}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {allSectors.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <Map className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg">Aucun territoire n'a encore été conquis</p>
-              <p className="text-sm">La carte est vide pour le moment</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {allSectors.map((sector, index) => (
-                <div
-                  key={`${sector.playerName}-${sector.number ?? index}`}
-                  className="territory-card p-4 border-2 hover:scale-105 transition-transform cursor-pointer"
-                  style={{
-                    borderColor: sector.playerColor.replace('bg-', 'rgb(var(--color-'),
-                  }}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className={cn('w-4 h-4 rounded-full', sector.playerColor)} />
-                    <span className="text-xs font-bold text-muted-foreground">
-                      #{sector.number ?? 'N/A'}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-lg mb-1">{sector.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">{sector.playerName}</p>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Revenus:</span>
-                      <span className="font-semibold text-yellow-500">{sector.income ?? 0} ₡</span>
-                    </div>
-                    {sector.army && sector.army.length > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Armée:</span>
-                        <span className="font-semibold">{sector.army.length} unités</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+        {/* Légende des joueurs */}
+        <Card elevation={4}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+              <Person color="primary" />
+              <Typography variant="h5" fontWeight={600}>
+                Joueurs actifs
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Commandants en présence
+            </Typography>
+            <Grid container spacing={2}>
+              {players.map((player, idx) => (
+                <Grid xs={12} sm={6} md={3} key={`player-${player.id ?? idx}`}>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      bgcolor: 'background.default',
+                      border: '2px solid',
+                      borderColor: getPlayerColor(idx),
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        bgcolor: getPlayerColor(idx),
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Box>
+                      <Typography variant="body1" fontWeight={600}>
+                        {player.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {player.sectors.length} {player.sectors.length > 1 ? 'territoires' : 'territoire'}
+                      </Typography>
+                    </Box>
+                  </Paper>
+                </Grid>
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </Grid>
+          </CardContent>
+        </Card>
 
-      {/* Statistiques des territoires */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {players.map((player, idx) => (
-          <Card key={`player-stats-${player.id ?? idx}`} className="border-2">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <div className={cn('w-4 h-4 rounded-full', getPlayerColor(idx))} />
-                <CardTitle>{player.name}</CardTitle>
-              </div>
-              <CardDescription>
-                {player.sectors.length} territoire{player.sectors.length > 1 ? 's' : ''}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Puissance globale:</span>
-                  <span className="font-semibold">{player.stats.globalPower.toFixed(0)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Argent:</span>
-                  <span className="font-semibold">{player.stats.money.toFixed(0)} ₡</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Revenus:</span>
-                  <span className="font-semibold">{player.stats.totalIncome.toFixed(0)} ₡/tour</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Territoires:</span>
-                  <span className="font-semibold">{player.sectors.length}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+        {/* Carte */}
+        <Card elevation={4}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+              <Place color="primary" />
+              <Typography variant="h5" fontWeight={600}>
+                Carte des territoires
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              {allSectors.length} secteur{allSectors.length > 1 ? 's' : ''} contrôlé{allSectors.length > 1 ? 's' : ''}
+            </Typography>
+            {allSectors.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Map sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  Aucun territoire n'a encore été conquis
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  La carte est vide pour le moment
+                </Typography>
+              </Box>
+            ) : (
+              <Grid container spacing={2}>
+                {allSectors.map((sector, index) => (
+                  <Grid xs={12} sm={6} md={4} lg={3} key={`${sector.playerName}-${sector.number ?? index}`}>
+                    <Paper
+                      className="territory-card"
+                      sx={{
+                        p: 2,
+                        bgcolor: 'background.default',
+                        border: '2px solid',
+                        borderColor: sector.playerColor,
+                        transition: 'all 0.3s',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: 4,
+                        },
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                        <Box
+                          sx={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: '50%',
+                            bgcolor: sector.playerColor,
+                          }}
+                        />
+                        <Chip
+                          label={`#${sector.number ?? 'N/A'}`}
+                          size="small"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      </Box>
+                      <Typography variant="h6" fontWeight={600} gutterBottom>
+                        {sector.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                        {sector.playerName}
+                      </Typography>
+                      <Divider sx={{ my: 1 }} />
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Revenus:
+                          </Typography>
+                          <Typography variant="caption" fontWeight={600} color="warning.main">
+                            {sector.income ?? 0} ₡
+                          </Typography>
+                        </Box>
+                        {sector.army && sector.army.length > 0 && (
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Armée:
+                            </Typography>
+                            <Typography variant="caption" fontWeight={600}>
+                              {sector.army.length} unités
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Statistiques des joueurs */}
+        <Typography variant="h5" fontWeight={600}>
+          Statistiques des joueurs
+        </Typography>
+        <Grid container spacing={3}>
+          {players.map((player, idx) => (
+            <Grid xs={12} sm={6} md={4} key={`player-stats-${player.id ?? idx}`}>
+              <Card elevation={4} className="hover-lift">
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <Box
+                      sx={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        bgcolor: getPlayerColor(idx),
+                      }}
+                    />
+                    <Typography variant="h6" fontWeight={600}>
+                      {player.name}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                    {player.sectors.length} territoire{player.sectors.length > 1 ? 's' : ''}
+                  </Typography>
+                  <Divider sx={{ my: 1 }} />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Puissance globale:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {player.stats.globalPower.toFixed(0)}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Argent:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {player.stats.money.toFixed(0)} ₡
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Revenus:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {player.stats.totalIncome.toFixed(0)} ₡/tour
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Territoires:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {player.sectors.length}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+    </Container>
   );
 }
 

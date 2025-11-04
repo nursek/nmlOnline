@@ -2,11 +2,34 @@ import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchEquipments, addToCart, removeFromCart, updateCartItemQuantity, clearCart } from '../store/shopSlice';
 import { fetchCurrentPlayer } from '../store/playerSlice';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { ShoppingBag, Loader2, Plus, Minus, Trash2, ShoppingCart } from 'lucide-react';
-import { Equipment, CartItem } from '../types';
-import { cn } from '../lib/utils';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Chip,
+  CircularProgress,
+  Alert,
+  Container,
+  Avatar,
+  IconButton,
+  Badge,
+  Drawer,
+  Divider,
+  Paper,
+  Grid,
+} from '@mui/material';
+import {
+  ShoppingBag,
+  Add,
+  Remove,
+  Delete,
+  ShoppingCart,
+  AttachMoney,
+} from '@mui/icons-material';
+import { Equipment } from '../types';
+import '../styles/pages/BoutiquePage.scss';
 
 export default function BoutiquePage() {
   const dispatch = useAppDispatch();
@@ -48,245 +71,309 @@ export default function BoutiquePage() {
   };
 
   const handleCheckout = () => {
-    // TODO: Implémenter l'appel API pour acheter les équipements
     alert('Fonctionnalité d\'achat en cours d\'implémentation');
-    // dispatch(clearCart());
   };
 
   if (loading && equipments.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <CircularProgress size={60} />
+      </Box>
     );
   }
 
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <div className="p-3 bg-primary/10 rounded-full">
-            <ShoppingBag className="h-10 w-10 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-              Boutique d'Équipements
-            </h1>
-            <p className="text-muted-foreground">Équipez vos troupes pour la victoire</p>
-          </div>
-        </div>
+    <Container maxWidth="xl" sx={{ py: 4 }} className="fade-in">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar
+              sx={{
+                width: 64,
+                height: 64,
+                bgcolor: 'primary.main',
+              }}
+            >
+              <ShoppingBag sx={{ fontSize: 40 }} />
+            </Avatar>
+            <Box>
+              <Typography
+                variant="h3"
+                sx={{
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #2196f3 0%, #64b5f6 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                Boutique d'Équipements
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Équipez vos troupes pour la victoire
+              </Typography>
+            </Box>
+          </Box>
 
-        <div className="flex items-center space-x-4">
-          <div className="px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-            <span className="text-sm text-muted-foreground">Argent disponible:</span>
-            <span className="ml-2 text-lg font-bold text-yellow-500">
-              {currentPlayer?.stats.money.toFixed(0)} ₡
-            </span>
-          </div>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Paper
+              sx={{
+                px: 2,
+                py: 1,
+                bgcolor: 'warning.dark',
+                border: '1px solid',
+                borderColor: 'warning.main',
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                Argent disponible:
+              </Typography>
+              <Typography variant="h6" fontWeight={700} color="warning.main" sx={{ ml: 1, display: 'inline' }}>
+                {currentPlayer?.stats.money.toFixed(0)} ₡
+              </Typography>
+            </Paper>
 
-          <Button
-            onClick={() => setShowCart(!showCart)}
-            className="relative"
-            variant={showCart ? 'default' : 'outline'}
-          >
-            <ShoppingCart className="h-5 w-5 mr-2" />
-            Panier ({cart.length})
-            {cart.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-6 w-6 flex items-center justify-center text-xs font-bold">
-                {cart.reduce((sum, item) => sum + item.quantity, 0)}
-              </span>
-            )}
-          </Button>
-        </div>
-      </div>
+            <Badge badgeContent={totalItems} color="primary">
+              <Button
+                variant={showCart ? 'contained' : 'outlined'}
+                startIcon={<ShoppingCart />}
+                onClick={() => setShowCart(!showCart)}
+                size="large"
+              >
+                Panier ({cart.length})
+              </Button>
+            </Badge>
+          </Box>
+        </Box>
 
-      {error && (
-        <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md mb-6">
-          {error}
-        </div>
-      )}
+        {error && (
+          <Alert severity="error" variant="filled">
+            {error}
+          </Alert>
+        )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Liste des équipements */}
-        <div className={cn('space-y-4', showCart ? 'lg:col-span-2' : 'lg:col-span-3')}>
-          <h2 className="text-2xl font-bold flex items-center space-x-2">
-            <span>Équipements disponibles</span>
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Box>
+          <Typography variant="h5" fontWeight={600} gutterBottom>
+            Équipements disponibles
+          </Typography>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
             {equipments.map((equipment) => {
               const owned = getOwnedQuantity(equipment.name);
               const inCart = cart.find((item) => item.equipment.name === equipment.name)?.quantity || 0;
 
               return (
-                <Card key={equipment.name} className="border-2 hover:shadow-xl transition-all hover:scale-[1.02]">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>{equipment.name}</span>
-                      <span className="text-yellow-500 text-lg">{equipment.cost} ₡</span>
-                    </CardTitle>
-                    <CardDescription>{equipment.category}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
+                <Grid xs={12} sm={6} md={4} key={equipment.name}>
+                  <Card className="hover-lift" elevation={4}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
+                        <Typography variant="h6" fontWeight={600}>
+                          {equipment.name}
+                        </Typography>
+                        <Chip
+                          label={`${equipment.cost} ₡`}
+                          color="warning"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      </Box>
+
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                        {equipment.category}
+                      </Typography>
+
                       {/* Bonus */}
-                      <div className="flex flex-wrap gap-2">
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 2 }}>
                         {equipment.pdfBonus > 0 && (
-                          <span className="px-2 py-1 bg-red-500/10 text-red-400 rounded text-sm font-semibold">
-                            +{equipment.pdfBonus} PDF
-                          </span>
+                          <Chip
+                            label={`+${equipment.pdfBonus} PDF`}
+                            size="small"
+                            sx={{ bgcolor: 'error.dark', color: 'white', fontWeight: 600 }}
+                          />
                         )}
                         {equipment.pdcBonus > 0 && (
-                          <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded text-sm font-semibold">
-                            +{equipment.pdcBonus} PDC
-                          </span>
+                          <Chip
+                            label={`+${equipment.pdcBonus} PDC`}
+                            size="small"
+                            sx={{ bgcolor: 'info.dark', color: 'white', fontWeight: 600 }}
+                          />
                         )}
                         {equipment.armBonus > 0 && (
-                          <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded text-sm font-semibold">
-                            +{equipment.armBonus} ARM
-                          </span>
+                          <Chip
+                            label={`+${equipment.armBonus} ARM`}
+                            size="small"
+                            sx={{ bgcolor: 'success.dark', color: 'white', fontWeight: 600 }}
+                          />
                         )}
                         {equipment.evasionBonus > 0 && (
-                          <span className="px-2 py-1 bg-yellow-500/10 text-yellow-400 rounded text-sm font-semibold">
-                            +{equipment.evasionBonus} ESQ
-                          </span>
+                          <Chip
+                            label={`+${equipment.evasionBonus} ESQ`}
+                            size="small"
+                            sx={{ bgcolor: 'warning.dark', color: 'white', fontWeight: 600 }}
+                          />
                         )}
-                      </div>
+                      </Box>
 
                       {/* Classes compatibles */}
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Compatible avec:</p>
-                        <div className="flex flex-wrap gap-1">
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                          Compatible avec:
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                           {equipment.compatibleClass && equipment.compatibleClass.length > 0 ? (
                             equipment.compatibleClass.map((unitClass) => (
-                              <span key={unitClass.code} className="px-2 py-0.5 bg-secondary text-xs rounded">
-                                {unitClass.name}
-                              </span>
+                              <Chip
+                                key={unitClass.code}
+                                label={unitClass.name}
+                                size="small"
+                                variant="outlined"
+                              />
                             ))
                           ) : (
-                            <span className="text-xs text-muted-foreground">Aucune</span>
+                            <Typography variant="caption" color="text.secondary">
+                              Aucune
+                            </Typography>
                           )}
-                        </div>
-                      </div>
+                        </Box>
+                      </Box>
 
                       {/* Quantité possédée */}
                       {owned > 0 && (
-                        <div className="text-sm text-muted-foreground">
-                          Vous en possédez: <span className="font-bold text-primary">{owned}</span>
-                        </div>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          Vous en possédez: <strong style={{ color: '#2196f3' }}>{owned}</strong>
+                        </Typography>
                       )}
 
                       {/* Bouton d'ajout */}
                       <Button
+                        fullWidth
+                        variant="contained"
+                        startIcon={<Add />}
                         onClick={() => handleAddToCart(equipment)}
-                        className="w-full"
-                        size="sm"
                       >
-                        <Plus className="h-4 w-4 mr-2" />
                         Ajouter au panier
-                        {inCart > 0 && <span className="ml-2">({inCart} dans le panier)</span>}
+                        {inCart > 0 && ` (${inCart})`}
                       </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Grid>
               );
             })}
-          </div>
-        </div>
+          </Grid>
+        </Box>
+      </Box>
 
-        {/* Panier */}
-        {showCart && (
-          <div className="lg:col-span-1">
-            <Card className="border-2 sticky top-20">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  <span>Panier</span>
-                </CardTitle>
-                <CardDescription>Votre sélection actuelle</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {cart.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">Votre panier est vide</p>
-                ) : (
-                  <div className="space-y-4">
-                    {cart.map((item: CartItem) => (
-                      <div key={item.equipment.name} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-sm">{item.equipment.name}</h4>
-                          <p className="text-xs text-muted-foreground">
-                            {item.equipment.cost} ₡ × {item.quantity} = {(item.equipment.cost * item.quantity).toFixed(0)} ₡
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() => handleUpdateQuantity(item.equipment.name, item.quantity - 1)}
-                            className="h-8 w-8"
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="font-bold w-8 text-center">{item.quantity}</span>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() => handleUpdateQuantity(item.equipment.name, item.quantity + 1)}
-                            className="h-8 w-8"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="destructive"
-                            onClick={() => handleRemoveFromCart(item.equipment.name)}
-                            className="h-8 w-8"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+      {/* Drawer Panier */}
+      <Drawer
+        anchor="right"
+        open={showCart}
+        onClose={() => setShowCart(false)}
+        PaperProps={{
+          sx: { width: { xs: '100%', sm: 400 }, p: 3 },
+        }}
+      >
+        <Typography variant="h5" fontWeight={600} gutterBottom>
+          Panier
+        </Typography>
+        <Divider sx={{ my: 2 }} />
 
-                    <div className="border-t border-border pt-4 space-y-3">
-                      <div className="flex justify-between text-lg font-bold">
-                        <span>Total:</span>
-                        <span className="text-yellow-500">{getTotalPrice().toFixed(0)} ₡</span>
-                      </div>
+        {cart.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <ShoppingCart sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+            <Typography variant="body1" color="text.secondary">
+              Votre panier est vide
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+            {cart.map((item) => (
+              <Paper key={item.equipment.name} sx={{ p: 2, bgcolor: 'background.default' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {item.equipment.name}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleRemoveFromCart(item.equipment.name)}
+                  >
+                    <Delete />
+                  </IconButton>
+                </Box>
 
-                      {!canAfford() && (
-                        <p className="text-destructive text-sm">
-                          Fonds insuffisants !
-                        </p>
-                      )}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  {item.equipment.cost} ₡ × {item.quantity} = {item.equipment.cost * item.quantity} ₡
+                </Typography>
 
-                      <Button
-                        onClick={handleCheckout}
-                        disabled={!canAfford()}
-                        className="w-full"
-                      >
-                        <ShoppingBag className="h-4 w-4 mr-2" />
-                        Acheter ({getTotalPrice().toFixed(0)} ₡)
-                      </Button>
-
-                      <Button
-                        onClick={() => dispatch(clearCart())}
-                        variant="outline"
-                        className="w-full"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Vider le panier
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleUpdateQuantity(item.equipment.name, Math.max(1, item.quantity - 1))}
+                    disabled={item.quantity <= 1}
+                  >
+                    <Remove />
+                  </IconButton>
+                  <Typography variant="body1" fontWeight={600} sx={{ minWidth: 30, textAlign: 'center' }}>
+                    {item.quantity}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleUpdateQuantity(item.equipment.name, item.quantity + 1)}
+                  >
+                    <Add />
+                  </IconButton>
+                </Box>
+              </Paper>
+            ))}
+          </Box>
         )}
-      </div>
-    </div>
+
+        {cart.length > 0 && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body1">Total:</Typography>
+                <Typography variant="h6" fontWeight={700} color="warning.main">
+                  {getTotalPrice()} ₡
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Argent disponible:
+                </Typography>
+                <Typography variant="body2" fontWeight={600}>
+                  {currentPlayer?.stats.money.toFixed(0)} ₡
+                </Typography>
+              </Box>
+            </Box>
+
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              color={canAfford() ? 'primary' : 'error'}
+              disabled={!canAfford()}
+              onClick={handleCheckout}
+              startIcon={<AttachMoney />}
+            >
+              {canAfford() ? 'Acheter' : 'Fonds insuffisants'}
+            </Button>
+
+            <Button
+              fullWidth
+              variant="outlined"
+              color="error"
+              sx={{ mt: 1 }}
+              onClick={() => dispatch(clearCart())}
+            >
+              Vider le panier
+            </Button>
+          </>
+        )}
+      </Drawer>
+    </Container>
   );
 }
 

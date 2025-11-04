@@ -1,0 +1,12 @@
+@use '../theme.scss' as *;
+
+.territory-card {
+  transition: transform $transition-normal, box-shadow $transition-normal;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+
+  &:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.15), 0 10px 10px -5px rgba(139, 92, 246, 0.1);
+  }
+}
+
