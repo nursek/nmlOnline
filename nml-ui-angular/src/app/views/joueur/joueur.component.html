@@ -1,0 +1,218 @@
+<div class="min-h-screen bg-military-dark bg-camo-pattern p-4 md:p-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-8 p-6 bg-military-base border border-hud-blue/30 rounded-lg clip-corner">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 class="font-military text-3xl md:text-4xl font-bold text-hud-blue uppercase tracking-wider mb-2">
+            👤 Profil Opérateur
+          </h1>
+          <p class="font-tactical text-sm text-gray-400 uppercase tracking-widest">
+            Bienvenue, <span class="text-hud-blue">{{ authService.currentUser()?.username }}</span>
+          </p>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="flex gap-4">
+          <div class="px-4 py-3 bg-military-darker border border-hud-blue/20 rounded-md text-center">
+            <div class="font-military text-2xl font-bold text-hud-blue">{{ units().length }}</div>
+            <div class="text-xs text-gray-400 uppercase tracking-wider">Unités</div>
+          </div>
+          <div class="px-4 py-3 bg-military-darker border border-warning-orange/20 rounded-md text-center">
+            <div class="font-military text-2xl font-bold text-warning-orange">{{ getTotalTroops() }}</div>
+            <div class="text-xs text-gray-400 uppercase tracking-wider">Troupes</div>
+          </div>
+          <div class="px-4 py-3 bg-military-darker border border-tactical-green/20 rounded-md text-center">
+            <div class="font-military text-2xl font-bold text-tactical-green">{{ getTotalEquipment() }}</div>
+            <div class="text-xs text-gray-400 uppercase tracking-wider">Équipements</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    @if (loading()) {
+      <div class="flex flex-col items-center justify-center py-20">
+        <div class="relative w-20 h-20 mb-6">
+          <div class="absolute inset-0 border-4 border-hud-blue/20 rounded-full"></div>
+          <div class="absolute inset-0 border-4 border-hud-blue border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <p class="font-tactical text-hud-blue uppercase tracking-widest">Chargement des données tactiques...</p>
+      </div>
+    }
+
+    <!-- Error State -->
+    @else if (error()) {
+      <div class="p-8 bg-warning-red/20 border border-warning-red/50 rounded-lg text-center">
+        <div class="text-6xl mb-4">⚠️</div>
+        <h3 class="font-military text-2xl text-warning-red uppercase mb-3">Erreur de Communication</h3>
+        <p class="text-gray-300 mb-6">{{ error() }}</p>
+        <button
+          (click)="loadUnits()"
+          class="px-6 py-3 bg-hud-blue hover:bg-hud-teal text-military-dark font-bold uppercase tracking-wider rounded-md transition-all clip-corner">
+          Réessayer
+        </button>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @else if (units().length === 0) {
+      <div class="p-12 bg-military-base border border-hud-blue/30 rounded-lg text-center clip-corner">
+        <div class="text-6xl mb-4">📦</div>
+        <h3 class="font-military text-2xl text-hud-blue uppercase mb-3">Aucune Unité Déployée</h3>
+        <p class="text-gray-400 mb-6 max-w-md mx-auto">
+          Vous n'avez pas encore d'unités tactiques. Commencez par recruter des troupes pour établir votre présence sur le terrain.
+        </p>
+      </div>
+    }
+
+    <!-- Units Grid -->
+    @else {
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (unit of units(); track unit.id) {
+          <div class="group bg-military-base border border-hud-blue/20 rounded-lg overflow-hidden clip-corner hover:border-hud-blue/50 hover:shadow-tactical transition-all">
+            <!-- Unit Header -->
+            <div class="p-4 bg-military-darker border-b border-hud-blue/20">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-military text-xl text-hud-blue uppercase tracking-wider">{{ unit.name }}</h3>
+                <div
+                  class="px-3 py-1 rounded-md text-sm font-bold uppercase tracking-wider"
+                  [ngClass]="{
+                    'bg-warning-red/20 text-warning-red border border-warning-red/50': unit.isInjured,
+                    'bg-tactical-green/20 text-tactical-green border border-tactical-green/50': !unit.isInjured
+                  }">
+                  {{ unit.isInjured ? 'Blessée' : 'Opérationnelle' }}
+                </div>
+              </div>
+
+              <!-- Health Bar -->
+              <div class="relative w-full h-2 bg-military-accent rounded-full overflow-hidden">
+                <div
+                  class="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
+                  [style.width.%]="getHealthPercentage(unit)"
+                  [ngClass]="{
+                    'bg-warning-red': getHealthPercentage(unit) < 30,
+                    'bg-warning-orange': getHealthPercentage(unit) >= 30 && getHealthPercentage(unit) < 70,
+                    'bg-tactical-green': getHealthPercentage(unit) >= 70
+                  }">
+                </div>
+              </div>
+
+              <!-- Unit Info -->
+              <div class="mt-3 text-sm text-gray-400">
+                <div class="flex justify-between">
+                  <span>Type: <span class="text-hud-blue">{{ unit.type.name }}</span></span>
+                  <span>Effectif: <span class="text-warning-orange">{{ unit.number }}</span></span>
+                </div>
+                <div class="mt-1">
+                  <span>Secteur: <span class="text-tactical-green">{{ getSectorName(unit.id) }}</span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Unit Body -->
+            <div class="p-4 space-y-4">
+              <!-- Stats Section -->
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">📊</span>
+                  <span class="font-semibold text-gray-300 uppercase tracking-wider text-sm">Statistiques</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <div class="px-2 py-1 bg-military-accent rounded">
+                    <span class="text-gray-400">ATK:</span>
+                    <span class="ml-1 text-warning-orange font-bold">{{ unit.attack || 0 }}</span>
+                  </div>
+                  <div class="px-2 py-1 bg-military-accent rounded">
+                    <span class="text-gray-400">DEF:</span>
+                    <span class="ml-1 text-tactical-green font-bold">{{ unit.defense || 0 }}</span>
+                  </div>
+                  <div class="px-2 py-1 bg-military-accent rounded">
+                    <span class="text-gray-400">PDF:</span>
+                    <span class="ml-1 text-hud-blue font-bold">{{ unit.pdf || 0 }}</span>
+                  </div>
+                  <div class="px-2 py-1 bg-military-accent rounded">
+                    <span class="text-gray-400">PDC:</span>
+                    <span class="ml-1 text-hud-blue font-bold">{{ unit.pdc || 0 }}</span>
+                  </div>
+                  <div class="px-2 py-1 bg-military-accent rounded">
+                    <span class="text-gray-400">Armure:</span>
+                    <span class="ml-1 text-gray-300 font-bold">{{ unit.armor || 0 }}</span>
+                  </div>
+                  <div class="px-2 py-1 bg-military-accent rounded">
+                    <span class="text-gray-400">Esquive:</span>
+                    <span class="ml-1 text-gray-300 font-bold">{{ unit.evasion || 0 }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Classes Section -->
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">⚔️</span>
+                  <span class="font-semibold text-gray-300 uppercase tracking-wider text-sm">Classes</span>
+                  <span class="ml-auto px-2 py-1 bg-military-accent rounded text-xs text-hud-blue">{{ unit.classes.length || 0 }}</span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  @for (classe of unit.classes; track classe.id) {
+                    <span class="px-3 py-1 bg-warning-orange/20 border border-warning-orange/40 text-warning-orange rounded-md text-sm font-tactical">
+                      {{ classe.name }}
+                    </span>
+                  }
+                  @if (!unit.classes || unit.classes.length === 0) {
+                    <span class="text-sm text-gray-500 italic">Aucune classe</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Equipment Section -->
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">🛡️</span>
+                  <span class="font-semibold text-gray-300 uppercase tracking-wider text-sm">Équipements</span>
+                  <span class="ml-auto px-2 py-1 bg-military-accent rounded text-xs text-tactical-green">{{ unit.equipments.length || 0 }}</span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  @for (equip of unit.equipments; track equip.id) {
+                    <span class="px-3 py-1 bg-tactical-green/20 border border-tactical-green/40 text-tactical-green rounded-md text-sm font-tactical">
+                      {{ equip.name }}
+                    </span>
+                  }
+                  @if (!unit.equipments || unit.equipments.length === 0) {
+                    <span class="text-sm text-gray-500 italic">Aucun équipement assigné</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Experience -->
+              @if (unit.experience) {
+                <div>
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="text-xl">⭐</span>
+                    <span class="font-semibold text-gray-300 uppercase tracking-wider text-sm">Expérience</span>
+                  </div>
+                  <div class="relative w-full h-2 bg-military-accent rounded-full overflow-hidden">
+                    <div
+                      class="absolute inset-y-0 left-0 bg-gradient-to-r from-hud-blue to-hud-teal rounded-full transition-all duration-500"
+                      [style.width.%]="unit.experience">
+                    </div>
+                  </div>
+                  <div class="text-xs text-gray-400 mt-1 text-right">{{ unit.experience }}%</div>
+                </div>
+              }
+            </div>
+
+            <!-- Unit Actions -->
+            <div class="p-4 bg-military-darker border-t border-hud-blue/20 flex gap-2">
+              <button class="flex-1 px-4 py-2 bg-military-accent border border-hud-blue/30 text-hud-blue hover:bg-military-lighter transition-all rounded-md font-semibold uppercase tracking-wider text-sm flex items-center justify-center gap-2">
+                <span>📋</span>
+                <span>Détails</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+

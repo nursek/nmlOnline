@@ -1,0 +1,6 @@
+/* App Component - Utilise Tailwind CSS */
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
