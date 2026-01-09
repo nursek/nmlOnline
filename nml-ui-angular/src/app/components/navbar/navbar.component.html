@@ -1,0 +1,67 @@
+<nav class="bg-gradient-to-r from-military-dark via-military-base to-military-dark border-b border-hud-blue/30 sticky top-0 z-50 backdrop-blur-sm">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-20">
+      <!-- Logo / Brand -->
+      <a routerLink="/" class="flex items-center gap-3 group">
+        <div class="relative">
+          <div class="absolute inset-0 bg-hud-blue blur-md opacity-50 group-hover:opacity-75 transition-opacity"></div>
+          <span class="relative text-4xl">🎯</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-military text-2xl font-bold text-hud-blue tracking-wider uppercase">NML</span>
+          <span class="font-tactical text-xs text-gray-400 tracking-widest">TACTICAL OPS</span>
+        </div>
+      </a>
+
+      <!-- Navigation Menu -->
+      <div class="hidden md:flex items-center gap-1">
+        <a routerLink="/carte" routerLinkActive="nav-active"
+           class="nav-link flex items-center gap-2 px-4 py-2 rounded-md font-semibold uppercase tracking-wider text-sm transition-all hover:bg-military-lighter hover:text-hud-blue group">
+          <span class="text-lg group-hover:scale-110 transition-transform">🗺️</span>
+          <span>Carte</span>
+        </a>
+        <a routerLink="/joueur" routerLinkActive="nav-active"
+           class="nav-link flex items-center gap-2 px-4 py-2 rounded-md font-semibold uppercase tracking-wider text-sm transition-all hover:bg-military-lighter hover:text-hud-blue group">
+          <span class="text-lg group-hover:scale-110 transition-transform">👤</span>
+          <span>Profil</span>
+        </a>
+        <a routerLink="/boutique" routerLinkActive="nav-active"
+           class="nav-link flex items-center gap-2 px-4 py-2 rounded-md font-semibold uppercase tracking-wider text-sm transition-all hover:bg-military-lighter hover:text-hud-blue group">
+          <span class="text-lg group-hover:scale-110 transition-transform">🛒</span>
+          <span>Boutique</span>
+        </a>
+        <a routerLink="/regles" routerLinkActive="nav-active"
+           class="nav-link flex items-center gap-2 px-4 py-2 rounded-md font-semibold uppercase tracking-wider text-sm transition-all hover:bg-military-lighter hover:text-hud-blue group">
+          <span class="text-lg group-hover:scale-110 transition-transform">📖</span>
+          <span>Règles</span>
+        </a>
+      </div>
+
+      <!-- User Section -->
+      <div class="flex items-center gap-3">
+        @if (authService.isAuthenticated()) {
+          <div class="hidden sm:flex items-center gap-3 px-4 py-2 bg-military-lighter rounded-md border border-hud-blue/20">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-hud-blue to-hud-teal flex items-center justify-center font-bold text-military-dark">
+              {{ getUserInitial() }}
+            </div>
+            <div class="flex flex-col">
+              <span class="font-tactical text-xs text-gray-400 uppercase">Opérateur</span>
+              <span class="font-semibold text-hud-blue">{{ authService.currentUser()?.username }}</span>
+            </div>
+          </div>
+          <button (click)="logout()"
+                  class="px-4 py-2 bg-warning-red hover:bg-warning-red/80 text-white font-semibold uppercase tracking-wider text-sm rounded-md transition-all clip-corner flex items-center gap-2">
+            <span>🚪</span>
+            <span class="hidden sm:inline">Déconnexion</span>
+          </button>
+        } @else {
+          <button (click)="goToLogin()"
+                  class="px-6 py-2 bg-gradient-to-r from-hud-blue to-hud-teal text-military-dark font-bold uppercase tracking-wider text-sm rounded-md transition-all hover:shadow-tactical clip-corner">
+            Connexion
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</nav>
+

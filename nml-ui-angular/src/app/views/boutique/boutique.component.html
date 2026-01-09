@@ -1,0 +1,181 @@
+<div class="min-h-screen bg-military-dark py-8 px-4">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-military font-bold text-hud-blue mb-2">
+        🛒 Arsenal Tactique
+      </h1>
+      <p class="text-gray-400">Équipez vos troupes avec l'armement le plus performant</p>
+    </div>
+
+    <!-- Gold Display -->
+    <div class="mb-6 inline-flex items-center gap-3 bg-military-base border border-warning-yellow/30 rounded-lg px-6 py-3">
+      <span class="text-3xl">💰</span>
+      <div>
+        <div class="text-2xl font-military font-bold text-warning-yellow">{{ playerGold }}</div>
+        <div class="text-xs text-gray-400 uppercase tracking-wider">Crédits Disponibles</div>
+      </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="mb-8 space-y-4">
+      <!-- Search Bar -->
+      <div class="relative">
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-hud-blue text-xl">🔍</span>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (input)="filterEquipment()"
+          placeholder="Rechercher un équipement..."
+          class="input-military pl-12 w-full md:w-96"
+        />
+      </div>
+
+      <!-- Category Filters -->
+      <div class="flex flex-wrap gap-3">
+        <button
+          (click)="filterByCategory('all')"
+          [class.bg-hud-blue]="selectedCategory === 'all'"
+          [class.text-military-dark]="selectedCategory === 'all'"
+          [class.bg-military-lighter]="selectedCategory !== 'all'"
+          [class.text-gray-400]="selectedCategory !== 'all'"
+          class="px-6 py-2 rounded-md font-semibold uppercase tracking-wider text-sm transition-all border border-hud-blue/30"
+        >
+          Tous
+        </button>
+        <button
+          (click)="filterByCategory('weapon')"
+          [class.bg-hud-blue]="selectedCategory === 'weapon'"
+          [class.text-military-dark]="selectedCategory === 'weapon'"
+          [class.bg-military-lighter]="selectedCategory !== 'weapon'"
+          [class.text-gray-400]="selectedCategory !== 'weapon'"
+          class="px-6 py-2 rounded-md font-semibold uppercase tracking-wider text-sm transition-all border border-hud-blue/30"
+        >
+          ⚔️ Armes
+        </button>
+        <button
+          (click)="filterByCategory('armor')"
+          [class.bg-hud-blue]="selectedCategory === 'armor'"
+          [class.text-military-dark]="selectedCategory === 'armor'"
+          [class.bg-military-lighter]="selectedCategory !== 'armor'"
+          [class.text-gray-400]="selectedCategory !== 'armor'"
+          class="px-6 py-2 rounded-md font-semibold uppercase tracking-wider text-sm transition-all border border-hud-blue/30"
+        >
+          🛡️ Armures
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    @if (loading()) {
+      <div class="flex items-center justify-center py-20">
+        <div class="text-center">
+          <div class="inline-block w-16 h-16 border-4 border-hud-blue border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p class="text-gray-400">Chargement de l'arsenal...</p>
+        </div>
+      </div>
+    }
+
+    <!-- Error State -->
+    @else if (error()) {
+      <div class="bg-warning-red/20 border border-warning-red text-warning-red px-6 py-4 rounded-lg">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">⚠️</span>
+          <div>
+            <p class="font-semibold">Erreur</p>
+            <p class="text-sm">{{ error() }}</p>
+          </div>
+        </div>
+        <button (click)="loadEquipment()" class="mt-4 btn-secondary text-sm">
+          Réessayer
+        </button>
+      </div>
+    }
+
+    <!-- Equipment Grid -->
+    @else if (filteredEquipment().length === 0) {
+      <div class="text-center py-20">
+        <div class="text-6xl mb-4">📦</div>
+        <h3 class="text-2xl font-military font-bold text-gray-400 mb-2">Aucun équipement trouvé</h3>
+        <p class="text-gray-500">Essayez de modifier vos filtres de recherche</p>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (item of filteredEquipment(); track item.id) {
+          <div class="card-military group relative overflow-hidden">
+            <!-- Locked Overlay -->
+            @if (!canAfford(item)) {
+              <div class="absolute inset-0 bg-military-dark/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                <div class="text-center">
+                  <span class="text-5xl mb-2 block">🔒</span>
+                  <p class="text-warning-red font-semibold">Crédits insuffisants</p>
+                </div>
+              </div>
+            }
+
+            <!-- Equipment Icon -->
+            <div class="flex items-center justify-center mb-4 text-6xl">
+              {{ getEquipmentEmoji(item) }}
+            </div>
+
+            <!-- Equipment Info -->
+            <h3 class="text-xl font-military font-bold text-hud-blue mb-2 text-center">
+              {{ item.name }}
+            </h3>
+
+            @if (item.description) {
+              <p class="text-sm text-gray-400 text-center mb-4">
+                {{ item.description }}
+              </p>
+            }
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              @if (item.attack && item.attack > 0) {
+                <div class="bg-military-darker p-3 rounded-md text-center">
+                  <div class="text-warning-red text-2xl mb-1">⚔️</div>
+                  <div class="text-sm text-gray-500 uppercase">Attaque</div>
+                  <div class="text-lg font-bold text-warning-red">+{{ item.attack }}</div>
+                </div>
+              }
+              @if (item.defense && item.defense > 0) {
+                <div class="bg-military-darker p-3 rounded-md text-center">
+                  <div class="text-tactical-green text-2xl mb-1">🛡️</div>
+                  <div class="text-sm text-gray-500 uppercase">Défense</div>
+                  <div class="text-lg font-bold text-tactical-green">+{{ item.defense }}</div>
+                </div>
+              }
+            </div>
+
+            <!-- Price & Buy Button -->
+            <div class="border-t border-military-lighter pt-4">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-gray-400 text-sm uppercase">Prix</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-2xl font-military font-bold text-warning-yellow">{{ item.price }}</span>
+                  <span class="text-warning-yellow">💰</span>
+                </div>
+              </div>
+
+              <button
+                (click)="purchaseEquipment(item)"
+                [disabled]="!canAfford(item) || purchasing()"
+                [class.opacity-50]="!canAfford(item) || purchasing()"
+                [class.cursor-not-allowed]="!canAfford(item) || purchasing()"
+                class="w-full btn-primary flex items-center justify-center gap-2"
+              >
+                @if (purchasing()) {
+                  <span class="inline-block w-4 h-4 border-2 border-military-dark border-t-transparent rounded-full animate-spin"></span>
+                  <span>Achat en cours...</span>
+                } @else {
+                  <span>💳</span>
+                  <span>Acheter</span>
+                }
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

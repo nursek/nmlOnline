@@ -1,0 +1,249 @@
+<div class="min-h-screen bg-military-dark py-8 px-4">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-military font-bold text-hud-blue mb-2">
+        🗺️ Carte Tactique
+      </h1>
+      <p class="text-gray-400">Vue stratégique du terrain et des zones de contrôle</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Map Container -->
+      <div class="lg:col-span-2">
+        <div class="card-military p-4 relative">
+          <!-- Zoom Controls -->
+          <div class="absolute top-6 right-6 z-10 flex flex-col gap-2">
+            <button
+              (click)="zoomIn()"
+              class="w-10 h-10 bg-military-base hover:bg-military-lighter border border-hud-blue/30 rounded-md flex items-center justify-center text-hud-blue font-bold transition-all"
+              title="Zoom avant"
+            >
+              +
+            </button>
+            <button
+              (click)="zoomOut()"
+              class="w-10 h-10 bg-military-base hover:bg-military-lighter border border-hud-blue/30 rounded-md flex items-center justify-center text-hud-blue font-bold transition-all"
+              title="Zoom arrière"
+            >
+              −
+            </button>
+            <button
+              (click)="resetView()"
+              class="w-10 h-10 bg-military-base hover:bg-military-lighter border border-hud-blue/30 rounded-md flex items-center justify-center text-hud-blue text-xs transition-all"
+              title="Réinitialiser"
+            >
+              ↺
+            </button>
+          </div>
+
+          <!-- SVG Map -->
+          <div class="bg-military-darker rounded-lg overflow-hidden border border-hud-blue/20">
+            <svg
+              viewBox="0 0 800 600"
+              class="w-full h-auto transition-transform duration-300"
+              [style.transform]="'scale(' + zoom() + ')'"
+            >
+              <!-- Background Grid -->
+              <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path
+                    d="M 40 0 L 0 0 0 40"
+                    fill="none"
+                    stroke="rgba(0, 180, 216, 0.1)"
+                    stroke-width="1"
+                  />
+                </pattern>
+              </defs>
+              <rect width="800" height="600" fill="url(#grid)" />
+
+              <!-- Zones -->
+              @for (zone of zones; track zone.id) {
+                <g>
+                  <!-- Zone Path -->
+                  <path
+                    [attr.d]="zone.path"
+                    [attr.fill]="zone.color"
+                    [attr.stroke]="hoveredZone()?.id === zone.id || selectedZone()?.id === zone.id ? '#00b4d8' : '#2a3033'"
+                    [attr.stroke-width]="hoveredZone()?.id === zone.id || selectedZone()?.id === zone.id ? '3' : '2'"
+                    class="cursor-pointer transition-all opacity-70 hover:opacity-90"
+                    (click)="selectZone(zone)"
+                    (mouseenter)="hoveredZone.set(zone)"
+                    (mouseleave)="hoveredZone.set(null)"
+                  />
+
+                  <!-- Zone Label -->
+                  <text
+                    [attr.x]="zone.centerX"
+                    [attr.y]="zone.centerY - 10"
+                    text-anchor="middle"
+                    class="fill-gray-200 font-military font-bold text-sm pointer-events-none"
+                  >
+                    {{ zone.name }}
+                  </text>
+
+                  <!-- Troop Count -->
+                  <text
+                    [attr.x]="zone.centerX"
+                    [attr.y]="zone.centerY + 15"
+                    text-anchor="middle"
+                    class="fill-gray-400 font-tactical text-xs pointer-events-none"
+                  >
+                    👥 {{ zone.troops }}
+                  </text>
+                </g>
+              }
+            </svg>
+          </div>
+
+          <!-- Legend -->
+          <div class="mt-4 flex flex-wrap gap-4 text-sm">
+            <div class="flex items-center gap-2">
+              <div class="w-4 h-4 rounded" style="background-color: #3d5a3c;"></div>
+              <span class="text-gray-400">Vos zones</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-4 h-4 rounded" style="background-color: #c1272d;"></div>
+              <span class="text-gray-400">Zones ennemies</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-4 h-4 rounded" style="background-color: #4a5568;"></div>
+              <span class="text-gray-400">Zones neutres</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone Info Panel -->
+      <div class="lg:col-span-1">
+        @if (selectedZone()) {
+          <div class="card-military">
+            <!-- Zone Header -->
+            <div class="mb-6">
+              <h2 class="text-2xl font-military font-bold text-hud-blue mb-2">
+                {{ selectedZone()!.name }}
+              </h2>
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold"
+                   [class.bg-tactical-green/20]="selectedZone()!.owner === 'Vous'"
+                   [class.text-tactical-green]="selectedZone()!.owner === 'Vous'"
+                   [class.bg-warning-red/20]="selectedZone()!.owner.includes('Ennemi')"
+                   [class.text-warning-red]="selectedZone()!.owner.includes('Ennemi')"
+                   [class.bg-gray-600/20]="selectedZone()!.owner === 'Neutre'"
+                   [class.text-gray-400]="selectedZone()!.owner === 'Neutre'">
+                {{ selectedZone()!.owner }}
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="space-y-4">
+              <!-- Troops -->
+              <div class="bg-military-darker p-4 rounded-md">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-gray-400 text-sm uppercase tracking-wider">Troupes</span>
+                  <span class="text-2xl">👥</span>
+                </div>
+                <div class="text-2xl font-military font-bold text-hud-blue">
+                  {{ selectedZone()!.troops }}
+                </div>
+              </div>
+
+              <!-- Level -->
+              <div class="bg-military-darker p-4 rounded-md">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-gray-400 text-sm uppercase tracking-wider">Niveau</span>
+                  <span class="text-2xl">⭐</span>
+                </div>
+                <div class="text-2xl font-military font-bold text-hud-cyan">
+                  {{ getZoneLevel(selectedZone()!) }}
+                </div>
+              </div>
+
+              <!-- Production -->
+              <div class="bg-military-darker p-4 rounded-md">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-gray-400 text-sm uppercase tracking-wider">Production</span>
+                  <span class="text-2xl">💰</span>
+                </div>
+                <div class="text-2xl font-military font-bold text-warning-yellow">
+                  +{{ getZoneProduction(selectedZone()!) }}
+                </div>
+              </div>
+
+              <!-- Defense -->
+              <div class="bg-military-darker p-4 rounded-md">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-gray-400 text-sm uppercase tracking-wider">Défense</span>
+                  <span class="text-2xl">🛡️</span>
+                </div>
+                <div class="text-2xl font-military font-bold text-tactical-green">
+                  {{ getZoneDefense(selectedZone()!) }}%
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            @if (selectedZone()!.owner === 'Vous') {
+              <div class="mt-6 space-y-3">
+                <button class="w-full btn-primary">
+                  📊 Gérer la zone
+                </button>
+                <button class="w-full btn-secondary">
+                  ⚡ Renforcer les troupes
+                </button>
+              </div>
+            } @else if (selectedZone()!.owner === 'Neutre') {
+              <div class="mt-6">
+                <button class="w-full btn-primary">
+                  🎯 Conquérir la zone
+                </button>
+              </div>
+            } @else {
+              <div class="mt-6">
+                <button class="w-full btn-danger">
+                  ⚔️ Attaquer
+                </button>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="card-military flex flex-col items-center justify-center py-12 text-center">
+            <div class="text-6xl mb-4">🗺️</div>
+            <h3 class="text-xl font-military font-bold text-gray-400 mb-2">
+              Aucune zone sélectionnée
+            </h3>
+            <p class="text-gray-500 text-sm">
+              Cliquez sur une zone de la carte pour voir ses détails
+            </p>
+          </div>
+        }
+
+        <!-- Zone List -->
+        <div class="card-military mt-6">
+          <h3 class="text-lg font-military font-bold text-hud-blue mb-4">
+            Liste des zones
+          </h3>
+          <div class="space-y-2">
+            @for (zone of zones; track zone.id) {
+              <button
+                (click)="selectZone(zone)"
+                [class.bg-military-lighter]="selectedZone()?.id === zone.id"
+                [class.border-hud-blue]="selectedZone()?.id === zone.id"
+                class="w-full text-left p-3 rounded-md border border-military-lighter hover:border-hud-blue/50 transition-all"
+              >
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-semibold text-gray-200">{{ zone.name }}</div>
+                    <div class="text-xs text-gray-500">{{ zone.owner }}</div>
+                  </div>
+                  <div class="text-sm text-gray-400">
+                    👥 {{ zone.troops }}
+                  </div>
+                </div>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

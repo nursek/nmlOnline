@@ -1,0 +1,153 @@
+<div class="min-h-screen bg-military-dark">
+  <!-- Hero Section -->
+  <section class="relative h-screen flex items-center justify-center overflow-hidden">
+    <!-- Background avec pattern -->
+    <div class="absolute inset-0 bg-grid-pattern opacity-30"></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-military-dark via-transparent to-military-dark"></div>
+    
+    <!-- Scan Line Animation -->
+    <div class="scan-line"></div>
+
+    <!-- Hero Content -->
+    <div class="relative z-10 max-w-5xl mx-auto px-4 text-center">
+      <div class="mb-8 inline-block">
+        <div class="text-8xl mb-4 animate-pulse-slow">🎯</div>
+      </div>
+      
+      <h1 class="text-7xl font-military font-black mb-6 bg-gradient-to-r from-hud-blue via-hud-cyan to-hud-teal bg-clip-text text-transparent">
+        NML ONLINE
+      </h1>
+      
+      <p class="text-2xl font-tactical text-gray-400 mb-4 tracking-widest uppercase">
+        No Man's Land - Tactical Operations
+      </p>
+      
+      <p class="text-lg text-gray-500 mb-12 max-w-2xl mx-auto">
+        Plongez dans l'univers tactique de NML Online. Gérez votre équipe, explorez des territoires hostiles et dominez le champ de bataille.
+      </p>
+
+      <div class="flex gap-4 justify-center flex-wrap">
+        @if (authService.isAuthenticated()) {
+          <a routerLink="/joueur" class="btn-primary inline-block">
+            🎮 Continuer la mission
+          </a>
+          <a routerLink="/carte" class="btn-secondary inline-block">
+            🗺️ Explorer la carte
+          </a>
+        } @else {
+          <a routerLink="/login" class="btn-primary inline-block">
+            🔐 Commencer l'opération
+          </a>
+          <a routerLink="/regles" class="btn-secondary inline-block">
+            📖 Briefing tactique
+          </a>
+        }
+      </div>
+    </div>
+
+    <!-- Scroll Indicator -->
+    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
+      <div class="w-6 h-10 border-2 border-hud-blue rounded-full flex items-start justify-center p-1">
+        <div class="w-1 h-2 bg-hud-blue rounded-full"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="py-20 px-4 relative">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-military font-bold text-hud-blue mb-4">
+          Fonctionnalités Tactiques
+        </h2>
+        <div class="w-24 h-1 bg-gradient-to-r from-transparent via-hud-blue to-transparent mx-auto"></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Feature 1: Carte -->
+        <div class="card-military group hover:scale-105 transform transition-all">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🗺️</div>
+          <h3 class="text-xl font-military font-bold text-hud-blue mb-3">Carte Interactive</h3>
+          <p class="text-gray-400">
+            Explorez un territoire divisé en zones stratégiques. Planifiez vos déplacements et conquérez chaque secteur.
+          </p>
+        </div>
+
+        <!-- Feature 2: Profil -->
+        <div class="card-military group hover:scale-105 transform transition-all">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">👤</div>
+          <h3 class="text-xl font-military font-bold text-hud-blue mb-3">Gestion d'Unités</h3>
+          <p class="text-gray-400">
+            Gérez votre escouade, améliorez vos soldats et équipez-les pour le combat.
+          </p>
+        </div>
+
+        <!-- Feature 3: Boutique -->
+        <div class="card-military group hover:scale-105 transform transition-all">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🛒</div>
+          <h3 class="text-xl font-military font-bold text-hud-blue mb-3">Arsenal Tactique</h3>
+          <p class="text-gray-400">
+            Accédez à un arsenal complet d'équipements militaires pour renforcer vos troupes.
+          </p>
+        </div>
+
+        <!-- Feature 4: Règles -->
+        <div class="card-military group hover:scale-105 transform transition-all">
+          <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">📖</div>
+          <h3 class="text-xl font-military font-bold text-hud-blue mb-3">Guide Stratégique</h3>
+          <p class="text-gray-400">
+            Consultez les règles et maîtrisez les mécaniques de jeu pour devenir un commandant d'élite.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="py-20 px-4 bg-military-darker relative overflow-hidden">
+    <div class="absolute inset-0 bg-camo-pattern opacity-5"></div>
+    
+    <div class="max-w-5xl mx-auto relative z-10">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+        <div class="border border-hud-blue/30 rounded-lg p-8 bg-military-base/50 backdrop-blur-sm">
+          <div class="text-5xl font-military font-black text-hud-blue mb-2">1K+</div>
+          <div class="text-gray-400 font-tactical uppercase tracking-wider">Opérateurs Actifs</div>
+        </div>
+        
+        <div class="border border-hud-cyan/30 rounded-lg p-8 bg-military-base/50 backdrop-blur-sm">
+          <div class="text-5xl font-military font-black text-hud-cyan mb-2">50+</div>
+          <div class="text-gray-400 font-tactical uppercase tracking-wider">Zones de Combat</div>
+        </div>
+        
+        <div class="border border-hud-teal/30 rounded-lg p-8 bg-military-base/50 backdrop-blur-sm">
+          <div class="text-5xl font-military font-black text-hud-teal mb-2">100+</div>
+          <div class="text-gray-400 font-tactical uppercase tracking-wider">Équipements</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-20 px-4">
+    <div class="max-w-4xl mx-auto text-center">
+      <h2 class="text-5xl font-military font-bold mb-6">
+        <span class="bg-gradient-to-r from-hud-blue to-hud-teal bg-clip-text text-transparent">
+          Prêt pour la Mission ?
+        </span>
+      </h2>
+      <p class="text-xl text-gray-400 mb-10">
+        Rejoignez les rangs de NML Online et prouvez votre valeur sur le terrain.
+      </p>
+      
+      @if (!authService.isAuthenticated()) {
+        <a routerLink="/login" class="btn-primary inline-block text-lg px-10 py-4">
+          🚀 Démarrer Maintenant
+        </a>
+      } @else {
+        <a routerLink="/joueur" class="btn-primary inline-block text-lg px-10 py-4">
+          ⚡ Accéder au Tableau de Bord
+        </a>
+      }
+    </div>
+  </section>
+</div>
