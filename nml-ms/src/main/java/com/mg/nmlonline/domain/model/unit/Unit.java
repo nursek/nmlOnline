@@ -35,6 +35,10 @@ public class Unit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // ID du joueur propriétaire de l'unité (accès direct)
+    @Column(name = "player_id")
+    private Long playerId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumns({
         @JoinColumn(name = "board_id", referencedColumnName = "board_id", nullable = false),
@@ -272,7 +276,12 @@ public class Unit {
             if (equipments == null) {
                 equipments = new ArrayList<>();
             }
+            if (unitEquipments == null) {
+                unitEquipments = new ArrayList<>();
+            }
             equipments.add(equipment);
+            // Ajouter aussi dans unitEquipments pour la persistance
+            unitEquipments.add(new UnitEquipment(this, equipment));
             recalculateBaseStats();
             return true;
         }
@@ -283,6 +292,10 @@ public class Unit {
         if (equipment == null) return false;
         boolean removed = equipments != null && equipments.remove(equipment);
         if (removed) {
+            // Retirer aussi de unitEquipments pour la persistance
+            if (unitEquipments != null) {
+                unitEquipments.removeIf(ue -> ue.getEquipment().getName().equals(equipment.getName()));
+            }
             recalculateBaseStats();
         }
         return removed;

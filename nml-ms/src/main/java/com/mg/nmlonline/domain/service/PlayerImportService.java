@@ -170,6 +170,8 @@ public class PlayerImportService {
         }
 
         Unit unit = new Unit(unitDto.experience, UnitClass.valueOf(unitDto.classes.get(0)));
+        // Définir le playerId pour accès direct
+        unit.setPlayerId(player.getId());
         // Convertir le type String en UnitType
         if (unitDto.type != null && !unitDto.type.isEmpty()) {
             unit.setType(UnitType.valueOf(unitDto.type));

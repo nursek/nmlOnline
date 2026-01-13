@@ -38,11 +38,10 @@ public class Player {
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EquipmentStack> equipments = new ArrayList<>(); // Équipements possédés par le joueur
 
-    // IDs des secteurs contrôlés par le joueur (Board est la source unique de vérité)
-    @ElementCollection
-    @CollectionTable(name = "PLAYER_OWNED_SECTORS", joinColumns = @JoinColumn(name = "player_id"))
-    @Column(name = "sector_number")
-    private Set<Long> ownedSectorIds = new HashSet<>(); // IDs des secteurs contrôlés par le joueur
+    // Note: Les secteurs contrôlés sont stockés via Sector.ownerId (source unique de vérité)
+    // Cette collection transient est utilisée pour compatibilité avec l'ancien code
+    @Transient
+    private Set<Long> ownedSectorIds = new HashSet<>();
 
     public Player(String name) {
         this.name = name;
