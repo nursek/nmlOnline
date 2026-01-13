@@ -16,20 +16,20 @@ import { LoginRequest, Player, Equipment } from '../../models';
   template: `
     <div class="api-example">
       <h2>Exemple d'utilisation de l'API</h2>
-      
+
       <!-- Section Authentification -->
       <section class="auth-section">
         <h3>Authentification</h3>
         @if (!authService.isAuthenticated()) {
           <div class="login-form">
-            <input 
-              type="text" 
-              [(ngModel)]="username" 
+            <input
+              type="text"
+              [(ngModel)]="username"
               placeholder="Nom d'utilisateur"
             />
-            <input 
-              type="password" 
-              [(ngModel)]="password" 
+            <input
+              type="password"
+              [(ngModel)]="password"
               placeholder="Mot de passe"
             />
             <label>
@@ -71,8 +71,8 @@ import { LoginRequest, Player, Equipment } from '../../models';
             <p>Chargement...</p>
           } @else if (equipment().length > 0) {
             <ul>
-              @for (item of equipment(); track item.id) {
-                <li>{{ item.name }} (ID: {{ item.id }})</li>
+              @for (item of equipment(); track item.name) {
+                <li>{{ item.name }} ({{ item.category }} - {{ item.cost }}$)</li>
               }
             </ul>
           }

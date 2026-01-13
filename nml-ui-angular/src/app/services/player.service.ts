@@ -20,17 +20,19 @@ export class PlayerService {
   }
 
   /**
-   * Récupère un joueur par son ID
+   * Récupère un joueur par son nom
+   * Note: Le backend utilise le nom comme identifiant principal
    */
-  getById(id: number): Observable<Player> {
-    return this.http.get<Player>(`${this.API_URL}/${id}`);
+  getByName(name: string): Observable<Player> {
+    return this.http.get<Player>(`${this.API_URL}/${encodeURIComponent(name)}`);
   }
 
   /**
-   * Exporte un joueur
+   * @deprecated Utiliser getByName à la place - Le backend utilise le nom comme identifiant
+   * Récupère un joueur par son ID (pour compatibilité)
    */
-  export(id: number): Observable<Player> {
-    return this.http.get<Player>(`${this.API_URL}/${id}/export`);
+  getById(id: number): Observable<Player> {
+    return this.http.get<Player>(`${this.API_URL}/${id}`);
   }
 
   /**
@@ -43,8 +45,8 @@ export class PlayerService {
   /**
    * Met à jour un joueur
    */
-  update(id: number, player: Player): Observable<Player> {
-    return this.http.put<Player>(`${this.API_URL}/${id}`, player);
+  update(name: string, player: Player): Observable<Player> {
+    return this.http.put<Player>(`${this.API_URL}/${encodeURIComponent(name)}`, player);
   }
 
   /**

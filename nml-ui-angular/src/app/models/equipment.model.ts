@@ -1,14 +1,16 @@
+import { UnitClass } from './player.model';
+
+/**
+ * Équipement
+ * Correspond à EquipmentDto du backend
+ */
 export interface Equipment {
-  id?: number;
   name: string;
-  type: string;
-  category?: string;
-  description?: string;
-  price: number;
-  attack?: number;
-  defense?: number;
-  pdf?: number;
-  pdc?: number;
-  armor?: number;
-  evasion?: number;
+  cost: number;
+  pdfBonus: number;
+  pdcBonus: number;
+  armBonus: number;
+  evasionBonus: number;
+  compatibleClass?: UnitClass[];
+  category: string;
 }

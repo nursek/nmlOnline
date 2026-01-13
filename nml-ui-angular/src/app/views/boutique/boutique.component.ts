@@ -26,7 +26,7 @@ export class BoutiqueComponent implements OnInit {
 
     // Filter by category
     if (this.selectedCategory !== 'all') {
-      items = items.filter(item => item.type === this.selectedCategory);
+      items = items.filter(item => this.getCategoryType(item.category) === this.selectedCategory);
     }
 
     // Filter by search query
@@ -34,7 +34,7 @@ export class BoutiqueComponent implements OnInit {
       const query = this.searchQuery.toLowerCase();
       items = items.filter(item =>
         item.name.toLowerCase().includes(query) ||
-        item.description?.toLowerCase().includes(query)
+        item.category?.toLowerCase().includes(query)
       );
     }
 
@@ -69,12 +69,12 @@ export class BoutiqueComponent implements OnInit {
 
   loadMockData(): void {
     const mockEquipment: Equipment[] = [
-      { id: 1, name: 'M4A1', type: 'weapon', description: 'Fusil d\'assaut standard', price: 1500, attack: 25, defense: 0 },
-      { id: 2, name: 'Sniper Rifle', type: 'weapon', description: 'Fusil de précision longue portée', price: 3000, attack: 50, defense: 0 },
-      { id: 3, name: 'Body Armor', type: 'armor', description: 'Gilet pare-balles renforcé', price: 2000, attack: 0, defense: 30 },
-      { id: 4, name: 'Tactical Helmet', type: 'armor', description: 'Casque tactique avec vision nocturne', price: 1200, attack: 0, defense: 15 },
-      { id: 5, name: 'LMG', type: 'weapon', description: 'Mitrailleuse légère de suppression', price: 4000, attack: 40, defense: 0 },
-      { id: 6, name: 'Combat Vest', type: 'armor', description: 'Veste tactique avec poches', price: 800, attack: 0, defense: 10 }
+      { name: 'M4A1', category: 'Arme à feu', cost: 1500, pdfBonus: 25, pdcBonus: 0, armBonus: 0, evasionBonus: 0 },
+      { name: 'Sniper Rifle', category: 'Arme à feu', cost: 3000, pdfBonus: 50, pdcBonus: 0, armBonus: 0, evasionBonus: 0 },
+      { name: 'Body Armor', category: 'Armure', cost: 2000, pdfBonus: 0, pdcBonus: 0, armBonus: 30, evasionBonus: 0 },
+      { name: 'Tactical Helmet', category: 'Armure', cost: 1200, pdfBonus: 0, pdcBonus: 0, armBonus: 15, evasionBonus: 0 },
+      { name: 'Couteau de combat', category: 'Arme de mêlée', cost: 400, pdfBonus: 0, pdcBonus: 15, armBonus: 0, evasionBonus: 0 },
+      { name: 'Tenue légère', category: 'Armure', cost: 800, pdfBonus: 0, pdcBonus: 0, armBonus: 5, evasionBonus: 10 }
     ];
     this.equipment.set(mockEquipment);
   }
@@ -87,13 +87,24 @@ export class BoutiqueComponent implements OnInit {
     this.selectedCategory = category;
   }
 
+  /**
+   * Détermine le type de catégorie pour le filtrage
+   */
+  getCategoryType(category: string): string {
+    const cat = category?.toLowerCase() || '';
+    if (cat.includes('arme') || cat.includes('pistolet') || cat.includes('fusil')) return 'weapon';
+    if (cat.includes('armure') || cat.includes('gilet') || cat.includes('tenue') || cat.includes('bouclier')) return 'armor';
+    return 'other';
+  }
+
   canAfford(item: Equipment): boolean {
-    return this.playerGold >= item.price;
+    return this.playerGold >= item.cost;
   }
 
   getEquipmentEmoji(item: Equipment): string {
-    if (item.type === 'weapon') return '⚔️';
-    if (item.type === 'armor') return '🛡️';
+    const type = this.getCategoryType(item.category);
+    if (type === 'weapon') return '⚔️';
+    if (type === 'armor') return '🛡️';
     return '📦';
   }
 
@@ -107,7 +118,7 @@ export class BoutiqueComponent implements OnInit {
 
     // Simulation d'achat
     setTimeout(() => {
-      this.playerGold -= item.price;
+      this.playerGold -= item.cost;
       this.purchasing.set(false);
       alert(`${item.name} acheté avec succès !`);
     }, 500);

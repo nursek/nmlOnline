@@ -101,7 +101,7 @@
       </div>
     } @else {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @for (item of filteredEquipment(); track item.id) {
+        @for (item of filteredEquipment(); track item.name) {
           <div class="card-military group relative overflow-hidden">
             <!-- Locked Overlay -->
             @if (!canAfford(item)) {
@@ -123,26 +123,38 @@
               {{ item.name }}
             </h3>
 
-            @if (item.description) {
-              <p class="text-sm text-gray-400 text-center mb-4">
-                {{ item.description }}
-              </p>
-            }
+            <p class="text-sm text-gray-400 text-center mb-4">
+              {{ item.category }}
+            </p>
 
             <!-- Stats -->
             <div class="grid grid-cols-2 gap-3 mb-4">
-              @if (item.attack && item.attack > 0) {
+              @if (item.pdfBonus && item.pdfBonus > 0) {
                 <div class="bg-military-darker p-3 rounded-md text-center">
-                  <div class="text-warning-red text-2xl mb-1">⚔️</div>
-                  <div class="text-sm text-gray-500 uppercase">Attaque</div>
-                  <div class="text-lg font-bold text-warning-red">+{{ item.attack }}</div>
+                  <div class="text-warning-red text-2xl mb-1">🔥</div>
+                  <div class="text-sm text-gray-500 uppercase">PDF</div>
+                  <div class="text-lg font-bold text-warning-red">+{{ item.pdfBonus }}</div>
                 </div>
               }
-              @if (item.defense && item.defense > 0) {
+              @if (item.pdcBonus && item.pdcBonus > 0) {
+                <div class="bg-military-darker p-3 rounded-md text-center">
+                  <div class="text-warning-yellow text-2xl mb-1">⚔️</div>
+                  <div class="text-sm text-gray-500 uppercase">PDC</div>
+                  <div class="text-lg font-bold text-warning-yellow">+{{ item.pdcBonus }}</div>
+                </div>
+              }
+              @if (item.armBonus && item.armBonus > 0) {
                 <div class="bg-military-darker p-3 rounded-md text-center">
                   <div class="text-tactical-green text-2xl mb-1">🛡️</div>
-                  <div class="text-sm text-gray-500 uppercase">Défense</div>
-                  <div class="text-lg font-bold text-tactical-green">+{{ item.defense }}</div>
+                  <div class="text-sm text-gray-500 uppercase">Armure</div>
+                  <div class="text-lg font-bold text-tactical-green">+{{ item.armBonus }}</div>
+                </div>
+              }
+              @if (item.evasionBonus && item.evasionBonus > 0) {
+                <div class="bg-military-darker p-3 rounded-md text-center">
+                  <div class="text-hud-cyan text-2xl mb-1">💨</div>
+                  <div class="text-sm text-gray-500 uppercase">Évasion</div>
+                  <div class="text-lg font-bold text-hud-cyan">+{{ item.evasionBonus }}</div>
                 </div>
               }
             </div>
@@ -152,7 +164,7 @@
               <div class="flex items-center justify-between mb-3">
                 <span class="text-gray-400 text-sm uppercase">Prix</span>
                 <div class="flex items-center gap-2">
-                  <span class="text-2xl font-military font-bold text-warning-yellow">{{ item.price }}</span>
+                  <span class="text-2xl font-military font-bold text-warning-yellow">{{ item.cost }}</span>
                   <span class="text-warning-yellow">💰</span>
                 </div>
               </div>

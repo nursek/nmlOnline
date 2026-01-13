@@ -12,18 +12,17 @@ export const routes: Routes = [
   },
   {
     path: 'carte',
-    loadComponent: () => import('./views/carte/carte.component').then(m => m.CarteComponent),
-    canActivate: [authGuard]
+    loadComponent: () => import('./views/carte/carte.component').then(m => m.CarteComponent)
+    // Note: authGuard retiré - le composant gère le cas "non connecté" avec un sélecteur de joueur
   },
   {
     path: 'joueur',
-    loadComponent: () => import('./views/joueur/joueur.component').then(m => m.JoueurComponent),
-    canActivate: [authGuard]
+    loadComponent: () => import('./views/joueur/joueur.component').then(m => m.JoueurComponent)
+    // Note: authGuard retiré - le composant gère le cas "non connecté" avec un sélecteur de joueur
   },
   {
     path: 'boutique',
-    loadComponent: () => import('./views/boutique/boutique.component').then(m => m.BoutiqueComponent),
-    canActivate: [authGuard]
+    loadComponent: () => import('./views/boutique/boutique.component').then(m => m.BoutiqueComponent)
   },
   {
     path: 'regles',

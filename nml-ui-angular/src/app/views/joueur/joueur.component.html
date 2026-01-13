@@ -8,9 +8,27 @@
             👤 Profil Opérateur
           </h1>
           <p class="font-tactical text-sm text-gray-400 uppercase tracking-widest">
-            Bienvenue, <span class="text-hud-blue">{{ authService.currentUser()?.username }}</span>
+            @if (player()) {
+              Joueur: <span class="text-hud-blue">{{ player()!.name }}</span>
+            } @else {
+              Bienvenue, <span class="text-hud-blue">{{ authService.currentUser()?.username || 'Opérateur' }}</span>
+            }
           </p>
         </div>
+
+        <!-- Sélecteur de joueur -->
+        @if (showPlayerSelector() && players().length > 0) {
+          <div class="flex items-center gap-3">
+            <span class="text-gray-400 text-sm uppercase tracking-wider">Joueur:</span>
+            <select
+              class="bg-military-darker border border-hud-blue/30 text-hud-blue px-4 py-2 rounded-md font-semibold focus:outline-none focus:border-hud-blue"
+              (change)="onPlayerChange($event)">
+              @for (p of players(); track p.name) {
+                <option [value]="p.name" [selected]="p.name === player()?.name">{{ p.name }}</option>
+              }
+            </select>
+          </div>
+        }
 
         <!-- Stats Summary -->
         <div class="flex gap-4">
@@ -154,7 +172,7 @@
                   <span class="ml-auto px-2 py-1 bg-military-accent rounded text-xs text-hud-blue">{{ unit.classes.length || 0 }}</span>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                  @for (classe of unit.classes; track classe.id) {
+                  @for (classe of unit.classes; track classe.name) {
                     <span class="px-3 py-1 bg-warning-orange/20 border border-warning-orange/40 text-warning-orange rounded-md text-sm font-tactical">
                       {{ classe.name }}
                     </span>
@@ -173,7 +191,7 @@
                   <span class="ml-auto px-2 py-1 bg-military-accent rounded text-xs text-tactical-green">{{ unit.equipments.length || 0 }}</span>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                  @for (equip of unit.equipments; track equip.id) {
+                  @for (equip of unit.equipments; track equip.name) {
                     <span class="px-3 py-1 bg-tactical-green/20 border border-tactical-green/40 text-tactical-green rounded-md text-sm font-tactical">
                       {{ equip.name }}
                     </span>

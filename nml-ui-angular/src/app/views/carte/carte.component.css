@@ -21,3 +21,45 @@
   animation: fade-in 0.3s ease-out;
 }
 
+/* Animations des secteurs */
+.sector-group path {
+  transition: all 0.3s ease;
+}
+
+.sector-group:hover path {
+  filter: brightness(1.2);
+}
+
+/* Scrollbar personnalisée pour la liste des unités */
+.max-h-60::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-60::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.max-h-60::-webkit-scrollbar-thumb {
+  background: rgba(0, 180, 216, 0.4);
+  border-radius: 3px;
+}
+
+.max-h-60::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 180, 216, 0.6);
+}
+
+/* Animation pulse pour le secteur sélectionné */
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(0, 180, 216, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(0, 180, 216, 0.8));
+  }
+}
+
+.selected-sector {
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
