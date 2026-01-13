@@ -82,7 +82,7 @@ public class BoardController {
     public ResponseEntity<Void> assignOwnerToSector(
             @PathVariable Long boardId,
             @PathVariable int sectorNumber,
-            @RequestParam Integer playerId,
+            @RequestParam Long playerId,
             @RequestParam String color) {
         boolean success = boardService.assignOwnerToSector(boardId, sectorNumber, playerId, color);
         return success ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();

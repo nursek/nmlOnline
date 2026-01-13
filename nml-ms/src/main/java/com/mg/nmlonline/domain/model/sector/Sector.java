@@ -1,52 +1,116 @@
 package com.mg.nmlonline.domain.model.sector;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.board.Resource;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentFactory;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Représente un secteur de la carte - Entité JPA avec clé composite
+ */
+@Entity
+@Table(name = "SECTORS")
 @Data
+@NoArgsConstructor
 @Getter
 @Setter
+@IdClass(Sector.SectorId.class)
 @JsonDeserialize(using = Sector.SectorDeserializer.class)
 public class Sector {
+
+    @Id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "board_id", nullable = false)
+    @JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
+    private Board board;
+
+    @Id
+    @Column(nullable = false)
     private int number;
+
+    @Column(nullable = false)
     private String name;
-    private double income = 2000;
-    private List<Unit> army = new ArrayList<>();
+
+    @Column(nullable = false)
+    private double income = 2000.0;
+
+    // === DONNÉES POUR LA CARTE ===
+    @Column(name = "owner_id", nullable = true)
+    private Long ownerId; // null si secteur neutre
+
+    @Column(nullable = false)
+    private String color = "#ffffff";
+
+    @Column(nullable = true)
+    private String resourceType; // ressource du secteur (ex: "JOYAUX", "OR", "CIGARES")
+
+    @ElementCollection
+    @CollectionTable(name = "SECTOR_NEIGHBORS",
+        joinColumns = {
+            @JoinColumn(name = "board_id", referencedColumnName = "board_id"),
+            @JoinColumn(name = "sector_number", referencedColumnName = "number")
+        })
+    @Column(name = "neighbor_number")
+    private List<Integer> neighbors = new ArrayList<>();
+
+    // Stats du secteur (embedded)
+    @Embedded
     private SectorStats stats = new SectorStats();
 
-    // === NOUVELLES DONNÉES POUR LA CARTE ===
-    private Long ownerId; // null si secteur neutre/vide - ID du joueur propriétaire
-    private String color; // couleur déterminée par l'owner, blanc (#ffffff) par défaut
-    private Resource resource; // ressource du secteur (joyaux, or, cigares, etc.)
-    private List<Integer> neighbors = new ArrayList<>(); // liste des numéros de secteurs voisins
-    private Long boardId; // ID du board auquel appartient ce secteur
-    // ========================================
+    // Unités dans ce secteur
+    @OneToMany(mappedBy = "sector", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Unit> army = new ArrayList<>();
+
+    // Champ transient pour compatibilité avec l'ancien code
+    @Transient
+    private Resource resource;
 
     public Sector(int number) {
         this.number = number;
         this.name = "Secteur n°" + number;
-        this.color = "#ffffff"; // blanc par défaut
+        this.color = "#ffffff";
     }
 
     public Sector(int number, String name) {
         this.number = number;
         this.name = name;
-        this.color = "#ffffff"; // blanc par défaut
+        this.color = "#ffffff";
+    }
+
+    // Compatibilité avec l'ancien code pour Resource
+    public Resource getResource() {
+        if (resource != null) {
+            return resource;
+        }
+        if (resourceType != null) {
+            return new Resource(resourceType, 0.0);
+        }
+        return null;
+    }
+
+    public void setResource(Resource resource) {
+        this.resource = resource;
+        if (resource != null) {
+            this.resourceType = resource.getType();
+        }
     }
 
     // === GESTION DES VOISINS ===
@@ -112,6 +176,7 @@ public class Sector {
 
     public void addUnit(Unit unit) {
         if (unit != null) {
+            unit.setSector(this); // Important: définir la relation bidirectionnelle
             army.add(unit);
             sortArmy();
             reassignUnitIds();
@@ -121,6 +186,9 @@ public class Sector {
 
     public void addUnits(List<Unit> units) {
         if (units != null && !units.isEmpty()) {
+            for (Unit unit : units) {
+                unit.setSector(this); // Important: définir la relation bidirectionnelle
+            }
             army.addAll(units);
             sortArmy();
             reassignUnitIds();
@@ -304,6 +372,31 @@ public class Sector {
             }
 
             return unit;
+        }
+    }
+
+    /**
+     * Classe pour la clé primaire composite (board_id, number)
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SectorId implements java.io.Serializable {
+        private Long board;  // Correspond au board_id (ID de Board)
+        private int number;  // Numéro du secteur
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof SectorId)) return false;
+            SectorId sectorId = (SectorId) o;
+            return number == sectorId.number &&
+                   java.util.Objects.equals(board, sectorId.board);
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hash(board, number);
         }
     }
 }

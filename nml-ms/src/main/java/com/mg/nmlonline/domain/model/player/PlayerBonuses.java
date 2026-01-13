@@ -1,21 +1,35 @@
 package com.mg.nmlonline.domain.model.player;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Structure pour gérer les bonus/malus d'un joueur
+ * Structure pour gérer les bonus/malus d'un joueur - Classe Embeddable pour JPA
  */
+@Embeddable
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlayerBonuses {
+    @Column(name = "attack_bonus_percent")
     private double attackBonusPercent = 0.0;
+
+    @Column(name = "defense_bonus_percent")
     private double defenseBonusPercent = 0.0;
+
+    @Column(name = "pdf_bonus_percent")
     private double pdfBonusPercent = 0.0;
+
+    @Column(name = "pdc_bonus_percent")
     private double pdcBonusPercent = 0.0;
+
+    @Column(name = "armor_bonus_percent")
     private double armorBonusPercent = 0.0;
+
+    @Column(name = "evasion_bonus_percent")
     private double evasionBonusPercent = 0.0;
 
     /**

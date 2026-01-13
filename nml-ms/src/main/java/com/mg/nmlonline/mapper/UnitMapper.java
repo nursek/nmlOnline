@@ -8,59 +8,20 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
-import com.mg.nmlonline.infrastructure.entity.SectorEntity;
-import com.mg.nmlonline.infrastructure.entity.UnitEntity;
-import com.mg.nmlonline.infrastructure.entity.UnitEquipmentEntity;
-import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
+/**
+ * Mapper simplifié pour Unit - conversion uniquement entre Domain et DTO
+ */
 @Component
 public class UnitMapper {
 
     private final EquipmentMapper equipmentMapper;
-    private final EquipmentRepository equipmentRepository;
 
-    public UnitMapper(EquipmentMapper equipmentMapper, EquipmentRepository equipmentRepository) {
+    public UnitMapper(EquipmentMapper equipmentMapper) {
         this.equipmentMapper = equipmentMapper;
-        this.equipmentRepository = equipmentRepository;
-    }
-
-    /**
-     * Convertit une entité UnitEntity en objet Unit du domaine
-     */
-    public Unit toDomain(UnitEntity entity) {
-        if (entity == null) return null;
-
-        Unit unit = new Unit();
-        unit.setId(entity.getId() != null ? entity.getId().intValue() : 0);
-        unit.setNumber(entity.getNumber());
-        unit.setExperience(entity.getExperience());
-        unit.setType(entity.getType());
-        unit.setClasses(new ArrayList<>(entity.getClasses() != null ? entity.getClasses() : new HashSet<>()));
-        unit.setInjured(entity.isInjured());
-
-        // Stats
-        unit.setAttack(entity.getAttack());
-        unit.setDefense(entity.getDefense());
-        unit.setPdf(entity.getPdf());
-        unit.setPdc(entity.getPdc());
-        unit.setArmor(entity.getArmor());
-        unit.setEvasion(entity.getEvasion());
-
-        // Conversion des équipements
-        if (entity.getEquipments() != null) {
-            List<Equipment> equipments = entity.getEquipments().stream()
-                    .map(UnitEquipmentEntity::getEquipment)
-                    .map(equipmentMapper::toDomain)
-                    .toList();
-            unit.setEquipments(equipments);
-        }
-
-        return unit;
     }
 
     /**
@@ -92,7 +53,7 @@ public class UnitMapper {
             unit.setClasses(classes);
         }
 
-        unit.setInjured(dto.getIsInjured());
+        unit.setInjured(dto.getIsInjured() != null && dto.getIsInjured());
 
         // Stats
         unit.setAttack(dto.getAttack() != null ? dto.getAttack() : 0.0);
@@ -114,50 +75,7 @@ public class UnitMapper {
     }
 
     /**
-     * Convertit un objet Unit du domaine en entité UnitEntity
-     */
-    public UnitEntity toEntity(Unit unit, SectorEntity sector) {
-        if (unit == null) return null;
-
-        UnitEntity entity = new UnitEntity();
-        entity.setSector(sector);
-        entity.setNumber(unit.getNumber());
-        entity.setExperience(unit.getExperience());
-        entity.setType(unit.getType());
-        entity.setClasses(new HashSet<>(unit.getClasses() != null ? unit.getClasses() : new ArrayList<>()));
-        entity.setInjured(unit.isInjured());
-
-        // Stats
-        entity.setAttack(unit.getAttack());
-        entity.setDefense(unit.getDefense());
-        entity.setPdf(unit.getPdf());
-        entity.setPdc(unit.getPdc());
-        entity.setArmor(unit.getArmor());
-        entity.setEvasion(unit.getEvasion());
-
-        // Conversion des équipements - rechercher les existants
-        if (unit.getEquipments() != null) {
-            List<UnitEquipmentEntity> unitEquipments = unit.getEquipments().stream()
-                    .map(equipment -> {
-                        UnitEquipmentEntity ue = new UnitEquipmentEntity();
-                        ue.setUnit(entity);
-
-                        // Rechercher l'équipement existant par nom
-                        var equipmentEntity = equipmentRepository.findByName(equipment.getName())
-                                .orElseGet(() -> equipmentMapper.toEntity(equipment));
-
-                        ue.setEquipment(equipmentEntity);
-                        return ue;
-                    })
-                    .toList();
-            entity.setEquipments(unitEquipments);
-        }
-
-        return entity;
-    }
-
-    /**
-     * Convertit un objet Unit du domaine en DTO
+     * Convertit un objet Unit du domaine en DTO UnitDto
      */
     public UnitDto toDto(Unit unit) {
         if (unit == null) return null;
@@ -167,14 +85,22 @@ public class UnitMapper {
         dto.setNumber(unit.getNumber());
         dto.setExperience(unit.getExperience());
 
-        // Conversion du type en DTO
-        dto.setType(toUnitTypeDto(unit.getType()));
+        // Conversion du type
+        if (unit.getType() != null) {
+            UnitTypeDto typeDto = new UnitTypeDto();
+            typeDto.setName(unit.getType().name());
+            typeDto.setLevel(unit.getType().getLevel());
+            typeDto.setBaseAttack(unit.getType().getBaseAttack());
+            typeDto.setBaseDefense(unit.getType().getBaseDefense());
+            dto.setType(typeDto);
+        }
 
-        // Conversion des classes en DTOs
+        // Conversion des classes
         if (unit.getClasses() != null) {
-            dto.setClasses(unit.getClasses().stream()
+            List<UnitClassDto> classDtos = unit.getClasses().stream()
                     .map(this::toUnitClassDto)
-                    .toList());
+                    .toList();
+            dto.setClasses(classDtos);
         }
 
         dto.setIsInjured(unit.isInjured());
@@ -198,36 +124,7 @@ public class UnitMapper {
         return dto;
     }
 
-    // === MÉTHODES AUXILIAIRES ===
-
-    private UnitTypeDto toUnitTypeDto(UnitType type) {
-        if (type == null) return null;
-
-        UnitTypeDto dto = new UnitTypeDto();
-        dto.setName(type.name());
-        dto.setLevel(type.getLevel());
-        dto.setMinExp(type.getMinExp());
-        dto.setMaxExp(type.getMaxExp());
-        dto.setBaseAttack(type.getBaseAttack());
-        dto.setBaseDefense(type.getBaseDefense());
-        dto.setMaxFirearms(type.getMaxFirearms());
-        dto.setMaxMeleeWeapons(type.getMaxMeleeWeapons());
-        dto.setMaxDefensiveEquipment(type.getMaxDefensiveEquipment());
-        return dto;
-    }
-
-    private UnitClassDto toUnitClassDto(UnitClass unitClass) {
-        if (unitClass == null) return null;
-
-        UnitClassDto dto = new UnitClassDto();
-        dto.setName(unitClass.name());
-        dto.setCode(unitClass.getCode());
-        dto.setCriticalChance(unitClass.getCriticalChance());
-        dto.setCriticalMultiplier(unitClass.getCriticalMultiplier());
-        dto.setDamageReductionPdf(unitClass.getDamageReduction("PDF"));
-        dto.setDamageReductionPdc(unitClass.getDamageReduction("PDC"));
-        return dto;
-    }
+    // === Méthodes utilitaires ===
 
     private UnitClass fromUnitClassDto(UnitClassDto dto) {
         if (dto == null || dto.getName() == null) return null;
@@ -236,5 +133,13 @@ public class UnitMapper {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    private UnitClassDto toUnitClassDto(UnitClass unitClass) {
+        if (unitClass == null) return null;
+        UnitClassDto dto = new UnitClassDto();
+        dto.setName(unitClass.name());
+        dto.setCode(unitClass.getCode());
+        return dto;
     }
 }

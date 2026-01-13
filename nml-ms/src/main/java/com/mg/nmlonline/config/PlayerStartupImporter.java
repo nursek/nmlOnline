@@ -102,7 +102,7 @@ public class PlayerStartupImporter implements ApplicationRunner {
         }
     }
 
-    private void importIfPresent(Resource resource, Board board) {
+    public void importIfPresent(Resource resource, Board board) {
         try {
             if (resource == null || !resource.exists()) {
                 log.warn("Ressource non trouvée : {}", resource);
@@ -117,23 +117,30 @@ public class PlayerStartupImporter implements ApplicationRunner {
 
                 log.info("Import du joueur depuis : {}", resource.getFilename());
 
-                // Importer le joueur (stats + équipements)
+                // 1. Importer le joueur (stats uniquement, SANS équipements)
                 Player player = playerImportService.importPlayerFromJson(filePath);
 
                 if (player != null) {
-                    // Vérifier si le joueur existe déjà
+                    // 2. Vérifier si le joueur existe déjà ou le créer
                     Player existingPlayer = playerService.findByName(player.getName());
                     if (existingPlayer != null) {
                         log.info("Joueur {} déjà existant, mise à jour...", player.getName());
                         player.setId(existingPlayer.getId());
+                        player = playerService.save(player);
                     } else {
-                        // Créer le joueur en base pour obtenir un ID (stats à 0 pour l'instant)
+                        // Créer le joueur en base pour obtenir un ID (SANS équipements)
                         player = playerService.create(player);
                         log.info("Joueur {} créé avec l'ID {}", player.getName(), player.getId());
                     }
 
-                    // Importer les secteurs et unités dans le Board (en mémoire)
-                    // Les stats sont automatiquement recalculées dans importSectorsToBoard
+                    // 3. Maintenant que le Player est persisté, ajouter les équipements
+                    playerImportService.importEquipmentsToPlayer(filePath, player);
+                    log.info("Équipements importés pour {}", player.getName());
+
+                    // Sauvegarder le joueur avec ses équipements AVANT d'importer les secteurs
+                    player = playerService.save(player);
+
+                    // 4. Importer les secteurs et unités dans le Board (en mémoire)
                     playerImportService.importSectorsToBoard(filePath, player, board);
                     log.info("Secteurs et unités importés pour {} (en mémoire)", player.getName());
 
@@ -146,9 +153,9 @@ public class PlayerStartupImporter implements ApplicationRunner {
                              player.getStats().getTotalIncome(),
                              player.getStats().getTotalEconomyPower());
 
-                    // IMPORTANT : Mettre à jour le joueur en base avec les stats recalculées
-                    player = playerService.create(player); // save fait un upsert automatique
-                    log.info("✓ Joueur {} sauvegardé en base avec les stats à jour", player.getName());
+                    // 5. Sauvegarder le joueur avec les stats à jour (pas les équipements qui sont déjà sauvés)
+                    player = playerService.save(player);
+                    log.info("✓ Joueur {} sauvegardé en base", player.getName());
 
                     log.info("Joueur {} prêt avec {} secteurs", player.getName(), player.getOwnedSectorCount());
                 }

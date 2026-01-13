@@ -4,47 +4,62 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.domain.model.board.Board;
-import com.mg.nmlonline.domain.model.equipment.EquipmentFactory;
+import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
+import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class PlayerImportService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final PlayerStatsService playerStatsService;
+    private final EquipmentRepository equipmentRepository;
+
+    // Cache d'Equipment pour éviter les problèmes de détachement du contexte de persistance
+    private final Map<String, Equipment> equipmentCache = new HashMap<>();
 
     // Constructeur pour Spring (injection de dépendances)
-    public PlayerImportService(PlayerStatsService playerStatsService) {
+    @Autowired
+    public PlayerImportService(PlayerStatsService playerStatsService, EquipmentRepository equipmentRepository) {
         this.playerStatsService = playerStatsService;
+        this.equipmentRepository = equipmentRepository;
     }
 
-    // Constructeur sans argument pour les tests/standalone
-    public PlayerImportService() {
-        this.playerStatsService = new PlayerStatsService();
-    }
 
     /**
-     * Importe un joueur depuis un fichier JSON.
-     * Les secteurs doivent être ajoutés au Board séparément via la méthode importSectorsToBoard.
+     * Importe un joueur depuis un fichier JSON (sans les équipements).
+     * Les équipements doivent être ajoutés via importEquipmentsToPlayer après persistance.
+     * Les secteurs doivent être ajoutés au Board via importSectorsToBoard.
      */
     public Player importPlayerFromJson(String filePath) throws IOException {
         PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
         Player player = new Player(dto.name);
         player.getStats().setMoney(dto.money);
-
-        importGeneralEquipments(player, dto.equipments);
-
+        // Note: les équipements seront ajoutés après persistance du Player
         return player;
+    }
+
+    /**
+     * Importe les équipements depuis un fichier JSON et les ajoute au Player.
+     * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
+     */
+    public void importEquipmentsToPlayer(String filePath, Player player) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+        importGeneralEquipments(player, dto.equipments);
     }
 
     /**
@@ -63,10 +78,48 @@ public class PlayerImportService {
         playerStatsService.recalculateStats(player, board);
     }
 
+    /**
+     * Récupère un Equipment depuis le cache ou la BDD.
+     * Les Equipment sont pré-chargés via data.sql, on ne crée jamais de nouveaux Equipment ici.
+     */
+    public Equipment getEquipmentByName(String equipmentName) {
+        // 1. Vérifier le cache en premier
+        if (equipmentCache.containsKey(equipmentName)) {
+            return equipmentCache.get(equipmentName);
+        }
+
+        if (equipmentRepository == null) {
+            System.err.println("WARN: equipmentRepository est null - mode standalone non supporté");
+            return null;
+        }
+
+        // 2. Chercher l'equipment existant en BDD
+        Optional<Equipment> existingEquipment = equipmentRepository.findByName(equipmentName);
+        if (existingEquipment.isPresent()) {
+            Equipment eq = existingEquipment.get();
+            equipmentCache.put(equipmentName, eq);
+            return eq;
+        }
+
+        // L'equipment n'existe pas - c'est une erreur (devrait être dans data.sql)
+        System.err.println("WARN: Équipement '" + equipmentName + "' non trouvé en BDD (vérifier data.sql)");
+        return null;
+    }
+
+    /**
+     * Vide le cache d'Equipment (à appeler après chaque import complet si nécessaire)
+     */
+    public void clearEquipmentCache() {
+        equipmentCache.clear();
+    }
+
     private void importGeneralEquipments(Player player, List<EquipmentDTO> equipments) {
         if (equipments == null) return;
-        for (EquipmentDTO equipment : equipments) {
-            player.addEquipmentToStack(EquipmentFactory.createFromName(equipment.name), equipment.quantity);
+        for (EquipmentDTO equipmentDto : equipments) {
+            Equipment equipment = getEquipmentByName(equipmentDto.name);
+            if (equipment != null) {
+                player.addEquipmentToStack(equipment, equipmentDto.quantity);
+            }
         }
     }
 
@@ -117,6 +170,8 @@ public class PlayerImportService {
         }
 
         Unit unit = new Unit(unitDto.experience, UnitClass.valueOf(unitDto.classes.get(0)));
+        // Définir le playerId pour accès direct
+        unit.setPlayerId(player.getId());
         // Convertir le type String en UnitType
         if (unitDto.type != null && !unitDto.type.isEmpty()) {
             unit.setType(UnitType.valueOf(unitDto.type));
@@ -131,7 +186,12 @@ public class PlayerImportService {
 
         if (unitDto.equipments != null) {
             for (String equipmentName : unitDto.equipments) {
-                if (player.isEquipmentAvailable(equipmentName) && unit.addEquipment(EquipmentFactory.createFromName(equipmentName)) && !player.decrementEquipmentAvailability(equipmentName)) {
+                Equipment equipment = getEquipmentByName(equipmentName);
+                if (equipment != null && player.isEquipmentAvailable(equipmentName)) {
+                    if (unit.addEquipment(equipment)) {
+                        player.decrementEquipmentAvailability(equipmentName);
+                    }
+                } else {
                     System.err.println("Erreur : équipement " + equipmentName + " non disponible pour le joueur " + player.getName());
                 }
             }

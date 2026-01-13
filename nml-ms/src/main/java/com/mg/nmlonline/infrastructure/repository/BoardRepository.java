@@ -1,13 +1,12 @@
 package com.mg.nmlonline.infrastructure.repository;
 
-import com.mg.nmlonline.infrastructure.entity.BoardEntity;
+import com.mg.nmlonline.domain.model.board.Board;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface BoardRepository extends JpaRepository<BoardEntity, Long> {
-    Optional<BoardEntity> findByName(String name);
+public interface BoardRepository extends JpaRepository<Board, Long> {
+    Optional<Board> findByName(String name);
 }
-
