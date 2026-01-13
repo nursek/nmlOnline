@@ -4,6 +4,7 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.unit.Unit;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,14 +12,36 @@ import java.util.*;
 
 /**
  * Classe représentant un joueur avec son armée d'unités
+ * Entité JPA fusionnée avec le modèle du domaine
  */
+@Entity
+@Table(name = "PLAYERS")
 @Data
 @NoArgsConstructor
 public class Player {
-    private Long id; // ID du joueur (correspond à l'ownerId dans les secteurs)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
     private String name;
+
+    // Stats du joueur (embedded)
+    @Embedded
     private PlayerStats stats = new PlayerStats();
+
+    // Bonuses du joueur (embedded)
+    @Embedded
+    private PlayerBonuses bonuses = new PlayerBonuses();
+
+    // Inventaire d'équipements du joueur
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EquipmentStack> equipments = new ArrayList<>(); // Équipements possédés par le joueur
+
+    // IDs des secteurs contrôlés par le joueur (Board est la source unique de vérité)
+    @ElementCollection
+    @CollectionTable(name = "PLAYER_OWNED_SECTORS", joinColumns = @JoinColumn(name = "player_id"))
+    @Column(name = "sector_number")
     private Set<Long> ownedSectorIds = new HashSet<>(); // IDs des secteurs contrôlés par le joueur
 
     public Player(String name) {
@@ -85,15 +108,23 @@ public class Player {
     }
 
     public void addEquipmentToStack(Equipment equipment, int number) {
+        if (equipment == null) return;
+
+        // Chercher un stack existant avec le même équipement (par nom ou ID)
         for (EquipmentStack stack : equipments) {
-            if (stack.getEquipment().equals(equipment)) {
+            Equipment stackEquip = stack.getEquipment();
+            if (stackEquip != null && stackEquip.getName() != null &&
+                stackEquip.getName().equals(equipment.getName())) {
                 for (int i = 0; i < number; i++) {
                     stack.increment();
                 }
                 return;
             }
         }
+
+        // Créer un nouveau stack
         EquipmentStack newStack = new EquipmentStack(equipment);
+        newStack.setPlayer(this); // Important: définir la relation bidirectionnelle
         for (int i = 1; i < number; i++) {
             newStack.increment();
         }
@@ -105,8 +136,11 @@ public class Player {
     }
 
     public boolean isEquipmentAvailable(Equipment equipment) {
+        if (equipment == null) return false;
         for (EquipmentStack stack : equipments) {
-            if (stack.getEquipment().equals(equipment)) {
+            Equipment stackEquip = stack.getEquipment();
+            if (stackEquip != null && stackEquip.getName() != null &&
+                stackEquip.getName().equals(equipment.getName())) {
                 return stack.isAvailable();
             }
         }
@@ -114,14 +148,23 @@ public class Player {
     }
 
     public boolean isEquipmentAvailable(String equipmentName) {
-        Equipment equipment = getEquipmentByString(equipmentName);
-        if (equipment == null) return false;
-        return isEquipmentAvailable(equipment);
+        if (equipmentName == null) return false;
+        for (EquipmentStack stack : equipments) {
+            Equipment stackEquip = stack.getEquipment();
+            if (stackEquip != null && stackEquip.getName() != null &&
+                stackEquip.getName().equals(equipmentName)) {
+                return stack.isAvailable();
+            }
+        }
+        return false;
     }
 
     public boolean decrementEquipmentAvailability(Equipment equipment) {
+        if (equipment == null) return false;
         for (EquipmentStack stack : equipments) {
-            if (stack.getEquipment().equals(equipment)) {
+            Equipment stackEquip = stack.getEquipment();
+            if (stackEquip != null && stackEquip.getName() != null &&
+                stackEquip.getName().equals(equipment.getName())) {
                 stack.decrementAvailable();
                 setTotalEquipmentValue();
                 calculateTotalEconomyPower();
@@ -132,15 +175,25 @@ public class Player {
     }
 
     public boolean decrementEquipmentAvailability(String equipmentName) {
-        Equipment equipment = getEquipmentByString(equipmentName);
-        if (equipment == null) return false;
-        return decrementEquipmentAvailability(equipment);
+        if (equipmentName == null) return false;
+        for (EquipmentStack stack : equipments) {
+            Equipment stackEquip = stack.getEquipment();
+            if (stackEquip != null && stackEquip.getName() != null &&
+                stackEquip.getName().equals(equipmentName)) {
+                stack.decrementAvailable();
+                setTotalEquipmentValue();
+                calculateTotalEconomyPower();
+                return true;
+            }
+        }
+        return false;
     }
 
     public void removeEquipmentFromStack(Equipment equipment) {
         for (int i = 0; i < equipments.size(); i++) {
             EquipmentStack stack = equipments.get(i);
-            if (stack.getEquipment().equals(equipment)) {
+            if (stack.getEquipment() != null && stack.getEquipment().getName() != null &&
+                stack.getEquipment().getName().equals(equipment.getName())) {
                 if (stack.getQuantity() > 1) {
                     stack.decrement();
                 } else {

@@ -3,15 +3,19 @@ package com.mg.nmlonline.domain.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.board.Resource;
-import com.mg.nmlonline.domain.model.equipment.EquipmentFactory;
+import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
+import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Service pour importer un Board depuis un fichier JSON
@@ -20,6 +24,14 @@ import java.util.List;
 public class BoardImportService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final EquipmentRepository equipmentRepository;
+
+    // Cache d'Equipment pour éviter les requêtes multiples
+    private final Map<String, Equipment> equipmentCache = new HashMap<>();
+
+    public BoardImportService(EquipmentRepository equipmentRepository) {
+        this.equipmentRepository = equipmentRepository;
+    }
 
     /**
      * Importe un Board depuis un fichier JSON
@@ -106,14 +118,40 @@ public class BoardImportService {
             unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
         }
 
-        // Ajouter les équipements
+        // Ajouter les équipements (depuis la BDD, pas de création)
         if (unitDto.equipments != null) {
             for (String equipmentName : unitDto.equipments) {
-                unit.addEquipment(EquipmentFactory.createFromName(equipmentName));
+                Equipment equipment = getEquipmentByName(equipmentName);
+                if (equipment != null) {
+                    unit.addEquipment(equipment);
+                }
             }
         }
 
         return unit;
+    }
+
+    /**
+     * Récupère un Equipment depuis le cache ou la BDD.
+     * Les Equipment sont pré-chargés via data.sql, on ne crée jamais de nouveaux Equipment ici.
+     */
+    private Equipment getEquipmentByName(String equipmentName) {
+        // 1. Vérifier le cache
+        if (equipmentCache.containsKey(equipmentName)) {
+            return equipmentCache.get(equipmentName);
+        }
+
+        // 2. Chercher en BDD
+        Optional<Equipment> existingEquipment = equipmentRepository.findByName(equipmentName);
+        if (existingEquipment.isPresent()) {
+            Equipment eq = existingEquipment.get();
+            equipmentCache.put(equipmentName, eq);
+            return eq;
+        }
+
+        // L'equipment n'existe pas - c'est une erreur
+        System.err.println("WARN: Équipement '" + equipmentName + "' non trouvé en BDD (vérifier data.sql)");
+        return null;
     }
 
     // ===== DTOs pour Jackson =====

@@ -1,20 +1,27 @@
 package com.mg.nmlonline.domain.model.unit;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
+import com.mg.nmlonline.domain.model.sector.Sector;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.mg.nmlonline.domain.model.unit.UnitType.*;
 
 /**
- * Represents a unit with various attributes for combat.
+ * Represents a unit with various attributes for combat - Entité JPA
  */
+@Entity
+@Table(name = "UNITS")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,51 +31,103 @@ public class Unit {
     private static final int MIN_EXPERIENCE_FOR_SECOND_CLASS = 5;
 
     // ===== IDENTIFIANT UNIQUE =====
-    private static int nextId = 1;
-    private int id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumns({
+        @JoinColumn(name = "board_id", referencedColumnName = "board_id", nullable = false),
+        @JoinColumn(name = "sector_number", referencedColumnName = "number", nullable = false)
+    })
+    @JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
+    private Sector sector;
 
     // ===== INFORMATIONS DE BASE =====
-    private int number = 0; // Numéro de l'unité dans l'armée (ex: BRUTE n°1, n°2, etc.)
+    @Column(nullable = false)
+    private int number = 0; // Numéro de l'unité dans l'armée
+
+    @Column(nullable = false)
     private double experience = 0.0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private UnitType type;
-    private List<UnitClass> classes;
+
+    @ElementCollection(targetClass = UnitClass.class)
+    @CollectionTable(name = "UNIT_CLASSES", joinColumns = @JoinColumn(name = "unit_id"))
+    @Column(name = "unit_class")
+    @Enumerated(EnumType.STRING)
+    private Set<UnitClass> classesSet = new HashSet<>();
 
     // ===== ÉTAT DE L'UNITÉ =====
+    @Column(name = "is_injured", nullable = false)
     private boolean isInjured = false;
 
     // ===== STATISTIQUES DE BASE =====
-    // Stats de base de l'unité (modifiées par le type et l'état blessé)
+    @Column(nullable = false)
     private double attack;
+
+    @Column(nullable = false)
     private double defense;
 
     // ===== STATISTIQUES CALCULÉES =====
-    // Stats calculées à partir des équipements (sans bonus du joueur)
+    @Column(nullable = false)
     private double pdf;
+
+    @Column(nullable = false)
     private double pdc;
-    private double armor; // Armure (points de vie supplémentaires)
+
+    @Column(nullable = false)
+    private double armor;
+
+    @Column(nullable = false)
     private double evasion;
 
     // ===== ÉQUIPEMENTS =====
-    private List<Equipment> equipments;
+    @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UnitEquipment> unitEquipments = new ArrayList<>();
+
+    // Champ transient pour compatibilité avec l'ancien code
+    @Transient
+    private List<Equipment> equipments = new ArrayList<>();
 
     public Unit(double experience, UnitClass primaryClass) {
-        this.id = nextId++;
         this.experience = experience;
         this.type = UnitType.getTypeByExperience((int) experience);
-        this.classes = new ArrayList<>();
-        this.classes.add(primaryClass);
+        this.classesSet = new HashSet<>();
+        this.classesSet.add(primaryClass);
 
         this.attack = type.getBaseAttack();
         this.defense = type.getBaseDefense();
 
         this.equipments = new ArrayList<>();
+        this.unitEquipments = new ArrayList<>();
 
         recalculateBaseStats();
     }
 
+    // Méthode de compatibilité pour l'ancien code
+    public List<UnitClass> getClasses() {
+        return new ArrayList<>(classesSet);
+    }
+
+    public void setClasses(List<UnitClass> classes) {
+        this.classesSet = new HashSet<>(classes);
+    }
+
+    // Pour compatibilité avec l'ancien code qui utilise int
+    public int getId() {
+        return id != null ? id.intValue() : 0;
+    }
+
+    public void setId(int id) {
+        this.id = (long) id;
+    }
+
     // Recalcule les statistiques de base (sans bonus joueur)
     public void recalculateBaseStats() {
-        if (type == null) return; // Protection contre les types null
+        if (type == null) return;
 
         double statMultiplier = isInjured ? INJURED_STAT_MULTIPLIER : 1.0;
 
@@ -82,8 +141,6 @@ public class Unit {
 
     /**
      * Applique les bonus du joueur sur les statistiques de l'unité.
-     * À appeler après recalculateBaseStats() pour ajouter les bonus globaux du joueur.
-     * TODO: À revoir lors de l'implémentation du système de combat complet
      */
     public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus,
                                    double pdcBonus, double armorBonus, double evasionBonus) {
@@ -95,9 +152,22 @@ public class Unit {
         this.evasion -= (evasionBonus * 10);
     }
 
+    private List<Equipment> getEquipmentsForCalculation() {
+        // Utilise les équipements transients si disponibles, sinon les récupère des relations
+        if (equipments != null && !equipments.isEmpty()) {
+            return equipments;
+        }
+        if (unitEquipments != null) {
+            return unitEquipments.stream()
+                    .map(UnitEquipment::getEquipment)
+                    .toList();
+        }
+        return new ArrayList<>();
+    }
+
     private double calculateEquipmentPdf() {
         double totalPdf = 0;
-        for (Equipment equipment : equipments) {
+        for (Equipment equipment : getEquipmentsForCalculation()) {
             if (isEquipmentCompatible(equipment)) {
                 totalPdf += attack * (equipment.getPdfBonus() / 100.0);
             }
@@ -107,7 +177,7 @@ public class Unit {
 
     private double calculateEquipmentPdc() {
         double totalPdc = 0;
-        for (Equipment equipment : equipments) {
+        for (Equipment equipment : getEquipmentsForCalculation()) {
             if (isEquipmentCompatible(equipment)) {
                 totalPdc += attack * (equipment.getPdcBonus() / 100.0);
             }
@@ -117,7 +187,7 @@ public class Unit {
 
     private double calculateEquipmentArmor() {
         double totalArmor = 0;
-        for (Equipment equipment : equipments) {
+        for (Equipment equipment : getEquipmentsForCalculation()) {
             if (isEquipmentCompatible(equipment)) {
                 totalArmor += defense * (equipment.getArmBonus() / 100.0);
             }
@@ -127,7 +197,7 @@ public class Unit {
 
     private double calculateEquipmentEvasion() {
         double totalEvasion = 0;
-        for (Equipment equipment : equipments) {
+        for (Equipment equipment : getEquipmentsForCalculation()) {
             if (isEquipmentCompatible(equipment)) {
                 totalEvasion += equipment.getEvasionBonus();
             }
@@ -136,16 +206,12 @@ public class Unit {
     }
 
     private boolean isEquipmentCompatible(Equipment equipment) {
-        return classes.stream()
+        return classesSet.stream()
                 .anyMatch(unitClass -> equipment.getCompatibleClasses().contains(unitClass));
     }
 
     // ===== GESTION DE L'EXPÉRIENCE ET DE L'ÉVOLUTION =====
 
-    /**
-     * Fait gagner de l'expérience à l'unité et déclenche une évolution si nécessaire.
-     * @param exp Montant d'expérience à ajouter
-     */
     public void gainExperience(double exp) {
         this.experience += exp;
         UnitType newType = UnitType.getTypeByExperience((int) experience);
@@ -156,41 +222,26 @@ public class Unit {
 
     private void evolve(UnitType newType) {
         this.type = newType;
-        recalculateBaseStats(); // Recalcule avec les nouvelles stats de base
+        recalculateBaseStats();
     }
 
     // ===== GESTION DES CLASSES =====
 
-    /**
-     * Vérifie si l'unité est utilisable.
-     * Une unité sans classe est considérée comme inutilisable.
-     * @return true si l'unité a au moins une classe et peut être utilisée
-     */
     public boolean isUsable() {
-        return classes != null && !classes.isEmpty();
+        return classesSet != null && !classesSet.isEmpty();
     }
 
-    /**
-     * Vérifie si l'unité peut obtenir une seconde classe.
-     * Les LARBIN et VOYOU ne peuvent avoir qu'une seule classe.
-     * Les autres unités peuvent avoir une seconde classe à partir de 5 d'expérience.
-     * @return true si une seconde classe peut être ajoutée
-     */
     public boolean canAddSecondClass() {
-        long effectiveClassCount = classes.size();
+        long effectiveClassCount = classesSet.size();
         if (type == UnitType.LARBIN || type == UnitType.VOYOU) {
             return effectiveClassCount < 1;
         }
         return effectiveClassCount <= 1 && experience >= MIN_EXPERIENCE_FOR_SECOND_CLASS;
     }
 
-    /**
-     * Ajoute une seconde classe à l'unité si possible.
-     * @param secondClass Classe à ajouter
-     */
     public void addSecondClass(UnitClass secondClass) {
-        if (canAddSecondClass() && !classes.contains(secondClass)) {
-            classes.add(secondClass);
+        if (canAddSecondClass() && !classesSet.contains(secondClass)) {
+            classesSet.add(secondClass);
             recalculateBaseStats();
         } else {
             System.out.println("Impossible d'ajouter la classe : " + secondClass);
@@ -199,19 +250,13 @@ public class Unit {
 
     // ===== GESTION DES ÉQUIPEMENTS =====
 
-    /**
-     * Vérifie si l'unité peut équiper un équipement donné.
-     * Prend en compte les limites par type d'équipement et la compatibilité.
-     * @param equipment Équipement à vérifier
-     * @return true si l'équipement peut être ajouté
-     */
     public boolean canEquip(Equipment equipment) {
         if (!isEquipmentCompatible(equipment)) {
             return false;
         }
 
         EquipmentCategory category = equipment.getCategory();
-        long currentCount = equipments.stream()
+        long currentCount = getEquipmentsForCalculation().stream()
                 .filter(e -> e.getCategory() == category)
                 .count();
 
@@ -224,6 +269,9 @@ public class Unit {
 
     public boolean addEquipment(Equipment equipment) {
         if (canEquip(equipment)) {
+            if (equipments == null) {
+                equipments = new ArrayList<>();
+            }
             equipments.add(equipment);
             recalculateBaseStats();
             return true;
@@ -233,53 +281,36 @@ public class Unit {
 
     public boolean removeEquipment(Equipment equipment) {
         if (equipment == null) return false;
-        boolean removed = equipments.remove(equipment);
+        boolean removed = equipments != null && equipments.remove(equipment);
         if (removed) {
             recalculateBaseStats();
         }
         return removed;
     }
 
-    /**
-     * Obtient la liste des équipements d'une catégorie spécifique.
-     * @param category Catégorie d'équipement recherchée
-     * @return Liste des équipements de cette catégorie
-     */
     public List<Equipment> getEquipmentsByCategory(EquipmentCategory category) {
-        return equipments.stream()
+        return getEquipmentsForCalculation().stream()
                 .filter(e -> e.getCategory() == category)
                 .toList();
     }
 
-    /**
-     * Compte le nombre d'équipements d'une catégorie donnée.
-     * @param category Catégorie à compter
-     * @return Nombre d'équipements de cette catégorie
-     */
     public long countEquipmentsByCategory(EquipmentCategory category) {
-        return equipments.stream()
+        return getEquipmentsForCalculation().stream()
                 .filter(e -> e.getCategory() == category)
                 .count();
     }
 
     // ===== MÉTHODES UTILITAIRES POUR LE COMBAT =====
 
-    /**
-     * Calcule l'attaque totale de l'unité (ATK + PDF + PDC).
-     * @return Total des points d'attaque
-     */
     public double getTotalAttack() {
         return attack + pdf + pdc;
     }
 
-    // Méthodes utilitaires pour le tri
     public double getTotalDefense() {
         return defense + armor;
     }
 
-    // Méthodes de formatage pour l'affichage
     private String formatStat(double value) {
-        // 2 décimales, supprime les zéros inutiles
         if (value == Math.floor(value)) {
             return String.valueOf((int) value);
         } else {
@@ -288,18 +319,15 @@ public class Unit {
     }
 
     private String formatEvasion(double value) {
-        // Esquive arrondie au chiffre du dessus (plafond)
         return String.valueOf((int) Math.ceil(value));
     }
 
-    // Méthode toString pour affichage selon le format demandé
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Unique id: ").append(id).append(" - ");
 
         if (type == PERSONNAGE) {
-            // Exemple de ligne : Character (100 Atk + 100 Pdf + 50 Pdc / 250 Def)
             sb.append(type.name());
             sb.append(" (");
             statsBuilder(sb, attack, pdf, pdc, defense, armor, evasion);
@@ -308,29 +336,27 @@ public class Unit {
             if (isInjured) {
                 sb.append("[X] ");
             }
-            sb.append(classes.stream().map(c -> "(" + c.getCode() + ")").collect(Collectors.joining(" "))).append(" ");
+            sb.append(classesSet.stream().map(c -> "(" + c.getCode() + ")").collect(Collectors.joining(" "))).append(" ");
 
-            // Type et informations
             sb.append(type.name());
             sb.append(" n°").append(number);
             sb.append(" (").append(formatStat(experience)).append(" Exp) : ");
 
-            // Équipements
-            equipments.forEach(f -> sb.append(f.getName()).append(". "));
-            if (equipments.isEmpty()) {
+            List<Equipment> eqs = getEquipmentsForCalculation();
+            eqs.forEach(f -> sb.append(f.getName()).append(". "));
+            if (eqs.isEmpty()) {
                 sb.append("Aucun équipement. ");
             }
 
-            // Statistiques avec formatage précis
             statsBuilder(sb, attack, pdf, pdc, defense, armor, evasion);
             sb.append(".");
         }
 
-
         return sb.toString();
     }
 
-    private void statsBuilder(StringBuilder sb, double attack, double pdf, double pdc, double defense, double armor, double evasion) {
+    private void statsBuilder(StringBuilder sb, double attack, double pdf, double pdc,
+                              double defense, double armor, double evasion) {
         sb.append(formatStat(attack)).append(" Atk");
         if (pdf > 0) sb.append(" + ").append(formatStat(pdf)).append(" Pdf");
         if (pdc > 0) sb.append(" + ").append(formatStat(pdc)).append(" Pdc");
@@ -340,7 +366,7 @@ public class Unit {
     }
 
     public double getDamageReduction(String damageType) {
-        return classes.stream()
+        return classesSet.stream()
                 .mapToDouble(c -> c.getDamageReduction(damageType))
                 .max()
                 .orElse(0.0);
@@ -350,4 +376,11 @@ public class Unit {
         return type.getBaseDefense();
     }
 
+    public List<Equipment> getEquipments() {
+        return equipments != null ? equipments : getEquipmentsForCalculation();
+    }
+
+    public void setEquipments(List<Equipment> equipments) {
+        this.equipments = equipments;
+    }
 }

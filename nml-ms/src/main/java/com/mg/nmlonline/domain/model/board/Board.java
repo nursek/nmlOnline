@@ -1,23 +1,48 @@
 package com.mg.nmlonline.domain.model.board;
 
 import com.mg.nmlonline.domain.model.sector.Sector;
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.*;
 
 /**
- * Représente la carte complète du jeu.
+ * Représente la carte complète du jeu - Entité JPA
  * Contient TOUS les secteurs (vides ou possédés par des joueurs).
- * Les secteurs sont la source de vérité unique (stockés en BDD).
- * Board gère l'organisation spatiale et les relations entre secteurs.
  */
+@Entity
+@Table(name = "BOARDS")
+@Data
+@NoArgsConstructor
 public class Board {
 
-    // Map de tous les secteurs : numéro → Sector
-    // Les secteurs commencent au numéro 1, pas de doublon possible
-    private final Map<Integer, Sector> sectors;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    public Board() {
-        this.sectors = new LinkedHashMap<>();
+    @Column(nullable = false, unique = true)
+    private String name;
+
+    // Tous les secteurs de la carte
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Sector> sectorsList = new ArrayList<>();
+
+    // Map transient pour accès rapide par numéro (utilisé par le code métier)
+    @Transient
+    private Map<Integer, Sector> sectors = new LinkedHashMap<>();
+
+    /**
+     * Initialise la map des secteurs à partir de la liste (après chargement JPA)
+     */
+    @PostLoad
+    public void initSectorsMap() {
+        sectors = new LinkedHashMap<>();
+        if (sectorsList != null) {
+            for (Sector sector : sectorsList) {
+                sectors.put(sector.getNumber(), sector);
+            }
+        }
     }
 
     // === GESTION DES SECTEURS ===
@@ -35,7 +60,9 @@ public class Board {
         if (sectors.containsKey(sector.getNumber())) {
             throw new IllegalStateException("Sector " + sector.getNumber() + " already exists");
         }
+        sector.setBoard(this);
         sectors.put(sector.getNumber(), sector);
+        sectorsList.add(sector);
     }
 
     /**
@@ -72,6 +99,7 @@ public class Board {
     public void removeSector(int number) {
         Sector removed = sectors.remove(number);
         if (removed != null) {
+            sectorsList.remove(removed);
             // Nettoyer les références dans les voisins
             for (Sector s : sectors.values()) {
                 s.removeNeighbor(number);
@@ -120,7 +148,6 @@ public class Board {
 
     /**
      * Vérifie s'il y a conflit entre deux secteurs (propriétaires différents et voisins).
-     * Utilisé pour déterminer si une bataille doit avoir lieu.
      */
     public boolean hasConflict(int sector1, int sector2) {
         if (!areNeighbors(sector1, sector2)) {
@@ -131,7 +158,6 @@ public class Board {
         if (s1 == null || s2 == null) {
             return false;
         }
-        // Conflit si les deux secteurs ont des propriétaires différents (non nulls)
         return s1.getOwnerId() != null
                 && s2.getOwnerId() != null
                 && !s1.getOwnerId().equals(s2.getOwnerId());
@@ -139,6 +165,6 @@ public class Board {
 
     @Override
     public String toString() {
-        return String.format("Board{sectors=%d}", sectors.size());
+        return String.format("Board{id=%d, name='%s', sectors=%d}", id, name, sectors.size());
     }
 }

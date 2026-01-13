@@ -1,22 +1,52 @@
 package com.mg.nmlonline.domain.model.equipment;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.mg.nmlonline.domain.model.player.Player;
+import jakarta.persistence.*;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 
-@RequiredArgsConstructor
+/**
+ * Représente un stack d'équipements dans l'inventaire d'un joueur - Entité JPA
+ */
+@Entity
+@Table(name = "EQUIPMENT_STACKS")
 @Data
+@NoArgsConstructor
 @JsonDeserialize(using = EquipmentStack.EquipmentStackDeserializer.class)
 public class EquipmentStack {
-    private final Equipment equipment;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "player_id", nullable = false)
+    @JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
+    private Player player;
+
+    @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinColumn(name = "equipment_id", nullable = false)
+    private Equipment equipment;
+
+    @Column(nullable = false)
     private int quantity = 1;
+
+    @Column(nullable = false)
     private int available = 1;
+
+    public EquipmentStack(Equipment equipment) {
+        this.equipment = equipment;
+        this.quantity = 1;
+        this.available = 1;
+    }
 
     public void increment() {
         quantity++;
@@ -37,12 +67,12 @@ public class EquipmentStack {
     }
 
     public void decrementAvailable() {
-        if(available > 0)
+        if (available > 0)
             available--;
     }
 
     public void incrementAvailable() {
-        if(available < quantity)
+        if (available < quantity)
             available++;
     }
 

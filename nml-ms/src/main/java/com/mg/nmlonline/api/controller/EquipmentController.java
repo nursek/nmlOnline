@@ -29,7 +29,8 @@ public class EquipmentController {
 
     @GetMapping("/{id}")
     public EquipmentDto findById(@PathVariable("id") Long id) {
-        Equipment equipment = equipmentService.findById(id);
+        Equipment equipment = equipmentService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Equipment with id " + id + " not found."));
         return equipmentMapper.toDto(equipment);
     }
 
