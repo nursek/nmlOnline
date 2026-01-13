@@ -86,15 +86,6 @@ public class Battle {
         return new PhaseResult(casualties, defender, availableAttackerPoints);
     }
 
-    double getTotalPoints(Player player, String pointsType) {
-        return switch (pointsType) {
-            case "PDF" -> player.getPlayerStats().getTotalPdf();
-            case "PDC" -> player.getPlayerStats().getTotalPdc();
-            case "ATK" -> player.getPlayerStats().getTotalAtk();
-            default -> 0;
-        };
-    }
-
     double checkPointsTypeInUnits(List<Unit> units, String pointsType) {
         return switch (pointsType) {
             case "PDF" -> units.stream().mapToDouble(Unit::getPdf).sum();
@@ -125,6 +116,66 @@ public class Battle {
         return result;
     }
 
+    /**
+     * Nouvelle méthode pour résoudre un combat à partir d'un BattleSetup
+     */
+    public void resolveBattle(BattleSetup battleSetup) {
+        if (battleSetup == null || !battleSetup.hasBattle()) {
+            System.out.println("Aucune bataille à résoudre");
+            return;
+        }
+
+        this.sectorId = battleSetup.getSectorId();
+        this.playersInvolved = new ArrayList<>(battleSetup.getPlayers());
+
+        System.out.println("\n====================================================");
+        System.out.println("BATAILLE AU SECTEUR " + sectorId);
+        System.out.println("Type de bataille : " + battleSetup.getBattleType());
+        System.out.println("Joueurs impliqués : " + playersInvolved.size());
+        System.out.println("====================================================");
+
+        // Si combat à 2 joueurs, utiliser la méthode classique
+        if (playersInvolved.size() == 2) {
+            Player player1 = playersInvolved.get(0);
+            Player player2 = playersInvolved.get(1);
+
+            List<Unit> units1 = battleSetup.getUnitsForPlayer(player1);
+            List<Unit> units2 = battleSetup.getUnitsForPlayer(player2);
+
+            // Déterminer attaquant et défenseur
+            Player attacker;
+            Player defender;
+            List<Unit> attackerUnits;
+            List<Unit> defenderUnits;
+
+            if (battleSetup.getOriginalOwnerId() != null &&
+                player1.getId().equals(battleSetup.getOriginalOwnerId())) {
+                defender = player1;
+                attacker = player2;
+                defenderUnits = units1;
+                attackerUnits = units2;
+            } else if (battleSetup.getOriginalOwnerId() != null &&
+                       player2.getId().equals(battleSetup.getOriginalOwnerId())) {
+                defender = player2;
+                attacker = player1;
+                defenderUnits = units2;
+                attackerUnits = units1;
+            } else {
+                // Secteur neutre, le premier est attaquant par défaut
+                attacker = player1;
+                defender = player2;
+                attackerUnits = units1;
+                defenderUnits = units2;
+            }
+
+            classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+        } else {
+            // TODO: Implémenter le combat multi-joueurs
+            System.out.println("Combat multi-joueurs non encore implémenté");
+        }
+    }
+
+
     public void classicCombatConfiguration(Player attacker, Player defender, List<Unit> attackerUnits, List<Unit> defenderUnits) {
         if (attackerUnits == null) attackerUnits = new ArrayList<>();
         if (defenderUnits == null) defenderUnits = new ArrayList<>();
@@ -135,123 +186,127 @@ public class Battle {
         System.out.println("\n=== Début du combat entre " + attacker.getName() + " et " + defender.getName() + " ===");
 
         // Phase PDF
-        printPhaseHeader("PDF");
-        double attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
-        double defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF");
-
-        PhaseResult attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF");
-        PhaseResult defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF");
-
-        defenderUnits = attackerPhaseResult.survivors();
-        attackerUnits = defenderPhaseResult.survivors();
-
-        reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "PDF");
-        reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "PDF");
-
-        printUnitsIndented(defenderUnits, "Défenseurs restants");
-        printUnitsIndented(attackerUnits, "Attaquants restants");
-
-        if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
-            System.out.println("\n=== Combat terminé après la phase PDF ! ===");
-            return;
-        }
-
-        // Check if there is leftover Pdf points to make a second PDF phase It will be used when buildings are implemented
-        if (checkPointsTypeInUnits(attackerUnits, "PDF") > 0 || checkPointsTypeInUnits(defenderUnits, "PDF") > 0) {
-            printPhaseHeader("PDF - Round 2");
-            attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
-            defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF");
-
-            attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF");
-            defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF");
-
-            defenderUnits = attackerPhaseResult.survivors();
-            attackerUnits = defenderPhaseResult.survivors();
-
-            reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "PDF");
-            reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "PDF");
-
-            printUnitsIndented(defenderUnits, "Défenseurs restants");
-            printUnitsIndented(attackerUnits, "Attaquants restants");
-
-            if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
-                System.out.println("\n=== Combat terminé après la phase PDF round 2 ! ===");
-                return;
-            }
-        }
+        CombatUnits combatState = new CombatUnits(attackerUnits, defenderUnits);
+        combatState = executeLethalPhase(combatState, "PDF");
+        if (combatState == null) return;
 
         // Phase PDC
-        printPhaseHeader("PDC");
-        double attackerTotalPdc = getAvailablePoints(attackerUnits, "PDC");
-        double defenderTotalPdc = getAvailablePoints(defenderUnits, "PDC");
+        combatState = executeLethalPhase(combatState, "PDC");
+        if (combatState == null) return;
 
-        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC");
-        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC");
+        // Phase ATK (non-létale)
+        executeNonLethalPhase(combatState);
 
-        defenderUnits = attackerPhaseResult.survivors();
-        attackerUnits = defenderPhaseResult.survivors();
+        printUnitsIndented(combatState.defenderUnits, "Défenseurs restants");
+        printUnitsIndented(combatState.attackerUnits, "Attaquants restants");
 
-        reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "PDC");
-        reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "PDC");
-
-        printUnitsIndented(defenderUnits, "Défenseurs restants");
-        printUnitsIndented(attackerUnits, "Attaquants restants");
-
-        if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
-            System.out.println("\n=== Combat terminé après la phase PDC ! ===");
-            return;
-        }
-
-        if (checkPointsTypeInUnits(attackerUnits, "PDC") > 0 || checkPointsTypeInUnits(defenderUnits, "PDC") > 0) {
-            printPhaseHeader("PDC - Round 2");
-            attackerTotalPdc = getTotalPoints(attacker, "PDC");
-            defenderTotalPdc = getTotalPoints(defender, "PDC");
-
-            attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC");
-            defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC");
-
-            defenderUnits = attackerPhaseResult.survivors();
-            attackerUnits = defenderPhaseResult.survivors();
-
-            reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "PDC");
-            reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "PDC");
-
-            printUnitsIndented(defenderUnits, "Défenseurs restants");
-            printUnitsIndented(attackerUnits, "Attaquants restants");
-
-            if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
-                System.out.println("\n=== Combat terminé après la phase PDC round 2 ! ===");
-                return;
-            }
-        }
-
-        // Phase ATK
-        printPhaseHeader("ATK");
-        double attackerTotalAtk = getAvailablePoints(attackerUnits, "ATK");
-        double defenderTotalAtk = getAvailablePoints(defenderUnits, "ATK");
-
-        // Make it non-lethal.
-        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalAtk, "ATK");
-        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalAtk, "ATK");
-
-        defenderUnits = attackerPhaseResult.survivors();
-        attackerUnits = defenderPhaseResult.survivors();
-
-        // Fin du combat, on remplace les unités détruites par des blessées etc, on recalcule les stats.
-
-        defenderUnits = replaceWithInjured(defenderUnits, attackerPhaseResult.casualties());
-        attackerUnits = replaceWithInjured(attackerUnits, defenderPhaseResult.casualties());
-
-        reassignPointsForNextPhase(attackerUnits, attackerPhaseResult.remainingPoints(), "ATK");
-        reassignPointsForNextPhase(defenderUnits, defenderPhaseResult.remainingPoints(), "ATK");
-
-        printUnitsIndented(defenderUnits, "Défenseurs restants");
-        printUnitsIndented(attackerUnits, "Attaquants restants");
-
-        if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
+        if (combatState.defenderUnits.isEmpty() || combatState.attackerUnits.isEmpty()) {
             System.out.println("\n=== Combat terminé après la phase ATK ! ===");
         } else {
             System.out.println("\n=== Combat terminé, il reste des unités dans les deux camps. ===");
+        }
+    }
+
+    /**
+     * Exécute une phase létale de combat (PDF ou PDC) avec gestion automatique des rounds multiples
+     * Les deux camps attaquent simultanément sur l'état initial des unités
+     * @return null si le combat est terminé, sinon les unités mises à jour
+     */
+    private CombatUnits executeLethalPhase(CombatUnits combatState, String phaseType) {
+        int round = 1;
+        CombatUnits currentState = combatState;
+
+        while (checkPointsTypeInUnits(currentState.attackerUnits, phaseType) > 0
+               || checkPointsTypeInUnits(currentState.defenderUnits, phaseType) > 0) {
+
+            String phaseName = phaseType + (round > 1 ? " - Round " + round : "");
+            printPhaseHeader(phaseName);
+
+            // Créer des copies pour que les deux camps attaquent l'état initial
+            List<Unit> defendersCopy = new ArrayList<>(currentState.defenderUnits);
+            List<Unit> attackersCopy = new ArrayList<>(currentState.attackerUnits);
+
+            // Calculer les résultats des deux attaques simultanément
+            PhaseResult attackerPhaseResult = classicPhaseConfiguration(
+                defendersCopy,
+                getAvailablePoints(currentState.attackerUnits, phaseType),
+                phaseType
+            );
+            PhaseResult defenderPhaseResult = classicPhaseConfiguration(
+                attackersCopy,
+                getAvailablePoints(currentState.defenderUnits, phaseType),
+                phaseType
+            );
+
+            // Appliquer les résultats après les deux attaques
+            currentState = new CombatUnits(
+                defenderPhaseResult.survivors(),
+                attackerPhaseResult.survivors()
+            );
+
+            reassignPointsForNextPhase(currentState.attackerUnits, attackerPhaseResult.remainingPoints(), phaseType);
+            reassignPointsForNextPhase(currentState.defenderUnits, defenderPhaseResult.remainingPoints(), phaseType);
+
+            printUnitsIndented(currentState.defenderUnits, "Défenseurs restants");
+            printUnitsIndented(currentState.attackerUnits, "Attaquants restants");
+
+            if (currentState.defenderUnits.isEmpty() || currentState.attackerUnits.isEmpty()) {
+                System.out.println("\n=== Combat terminé après la phase " + phaseName + " ! ===");
+                return null;
+            }
+
+            round++;
+        }
+
+        return currentState;
+    }
+
+    /**
+     * Exécute la phase non-létale de combat (ATK)
+     * Les unités qui devraient mourir deviennent blessées
+     */
+    private void executeNonLethalPhase(CombatUnits combatState) {
+        printPhaseHeader("ATK");
+
+        // Créer des copies pour que les deux camps attaquent l'état initial
+        List<Unit> defendersCopy = new ArrayList<>(combatState.defenderUnits);
+        List<Unit> attackersCopy = new ArrayList<>(combatState.attackerUnits);
+
+        PhaseResult attackerPhaseResult = classicPhaseConfiguration(
+            defendersCopy,
+            getAvailablePoints(combatState.attackerUnits, "ATK"),
+            "ATK"
+        );
+        PhaseResult defenderPhaseResult = classicPhaseConfiguration(
+            attackersCopy,
+            getAvailablePoints(combatState.defenderUnits, "ATK"),
+            "ATK"
+        );
+
+        // Fin du combat, on remplace les unités censées mourir par des blessées
+        combatState.defenderUnits = replaceWithInjured(
+            attackerPhaseResult.survivors(),
+            attackerPhaseResult.casualties()
+        );
+        combatState.attackerUnits = replaceWithInjured(
+            defenderPhaseResult.survivors(),
+            defenderPhaseResult.casualties()
+        );
+
+        reassignPointsForNextPhase(combatState.attackerUnits, attackerPhaseResult.remainingPoints(), "ATK");
+        reassignPointsForNextPhase(combatState.defenderUnits, defenderPhaseResult.remainingPoints(), "ATK");
+    }
+
+    /**
+     * Classe interne pour encapsuler les listes d'unités en combat
+     */
+    private static class CombatUnits {
+        List<Unit> attackerUnits;
+        List<Unit> defenderUnits;
+
+        CombatUnits(List<Unit> attackerUnits, List<Unit> defenderUnits) {
+            this.attackerUnits = attackerUnits;
+            this.defenderUnits = defenderUnits;
         }
     }
 
