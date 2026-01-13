@@ -95,34 +95,13 @@ public class CombatService {
     }
 
     /**
-     * Classe pour encapsuler le résultat d'une bataille.
-     */
-    public static class BattleResult {
-        private final boolean success;
-        private final String message;
-        private final Player winner;
+         * Classe pour encapsuler le résultat d'une bataille.
+         */
+        public record BattleResult(boolean success, String message, Player winner) {
+            public BattleResult(boolean success, String message) {
+                this(success, message, null);
+            }
 
-        public BattleResult(boolean success, String message) {
-            this(success, message, null);
-        }
-
-        public BattleResult(boolean success, String message, Player winner) {
-            this.success = success;
-            this.message = message;
-            this.winner = winner;
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public Player getWinner() {
-            return winner;
-        }
     }
 }
 

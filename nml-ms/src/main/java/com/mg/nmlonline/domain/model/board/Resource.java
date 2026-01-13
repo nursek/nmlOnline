@@ -31,8 +31,7 @@ public class Resource {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Resource)) return false;
-        Resource resource = (Resource) o;
+        if (!(o instanceof Resource resource)) return false;
         return Double.compare(resource.baseValue, baseValue) == 0 &&
                 Objects.equals(type, resource.type);
     }

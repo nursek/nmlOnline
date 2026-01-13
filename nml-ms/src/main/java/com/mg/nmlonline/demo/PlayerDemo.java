@@ -4,6 +4,7 @@ import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.board.Resource;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.service.CombatService;
 import com.mg.nmlonline.domain.service.PlayerImportService;
 import com.mg.nmlonline.domain.service.PlayerStatsService;
@@ -35,7 +36,7 @@ public class PlayerDemo {
         PlayerImportService importService = new PlayerImportService();
 
         try {
-            // === ÉTAPE 1: Chargement des 3 joueurs depuis les fichiers JSON ===
+            // === ÉTAPE 1 : Chargement des 3 joueurs depuis les fichiers JSON ===
             System.out.println("═══ ÉTAPE 1: Chargement des joueurs ═══\n");
 
             URL p1Url = PlayerDemo.class.getClassLoader().getResource("players/player1.json");
@@ -55,7 +56,7 @@ public class PlayerDemo {
             player2.setId(2L);
             player3.setId(3L);
 
-            // === ÉTAPE 2: Création du Board et ajout de tous les secteurs ===
+            // === ÉTAPE 2 : Création du Board et ajout de tous les secteurs ===
             System.out.println("\n═══ ÉTAPE 2: Création du Board ═══\n");
 
             Board board = createBoard();
@@ -89,12 +90,16 @@ public class PlayerDemo {
             System.out.println("\n═══ ÉTAPE 3: Informations du Board ═══\n");
             displayBoardInfo(board, player1, player2, player3);
 
-            // === ÉTAPE 4: Vérification des conflits potentiels ===
+            // === ÉTAPE 4 : Vérification des conflits potentiels ===
             System.out.println("\n═══ ÉTAPE 4: Vérification des conflits ═══\n");
             checkPotentialConflicts(board);
 
-            // === ÉTAPE 5: Simulation d'une bataille entre deux joueurs ===
-            System.out.println("\n═══ ÉTAPE 5: Simulation de Bataille ═══\n");
+            // === ÉTAPE 5 : Bataille Classique Rapide (Player1 vs Player2) ===
+            System.out.println("\n═══ ÉTAPE 5: Bataille Classique Rapide ═══\n");
+            quickClassicBattle(player1, player2, board);
+
+            // === ÉTAPE 6 : Simulation d'une bataille avec CombatService ===
+            System.out.println("\n═══ ÉTAPE 6: Simulation de Bataille (Player2 vs Player3) ═══\n");
             simulateBattleBetweenPlayers(player2, player3, board);
 
         } catch (IOException e) {
@@ -235,6 +240,42 @@ public class PlayerDemo {
     }
 
     /**
+     * Méthode rapide pour lancer une bataille classique entre player1 et player2.
+     * Utilise directement la classe Battle avec classicCombatConfiguration.
+     */
+    private static void quickClassicBattle(Player player1, Player player2, Board board) {
+        System.out.println("\n═══ BATAILLE CLASSIQUE RAPIDE ═══\n");
+        System.out.println("⚔️  " + player1.getName() + " VS " + player2.getName() + "\n");
+
+        // Créer une nouvelle bataille
+        com.mg.nmlonline.domain.model.battle.Battle battle =
+            new com.mg.nmlonline.domain.model.battle.Battle();
+
+        // Récupérer les unités des deux joueurs depuis leurs secteurs
+        List<Unit> player1Units = new ArrayList<>();
+        List<Unit> player2Units = new ArrayList<>();
+
+        // Collecter toutes les unités des secteurs du joueur 1
+        for (Sector sector : board.getSectorsByOwner(player1.getId())) {
+            player1Units.addAll(sector.getUnits());
+        }
+
+        // Collecter toutes les unités des secteurs du joueur 2
+        for (Sector sector : board.getSectorsByOwner(player2.getId())) {
+            player2Units.addAll(sector.getUnits());
+        }
+
+        System.out.println("📊 Forces en présence:");
+        System.out.println("  • " + player1.getName() + ": " + player1Units.size() + " unités");
+        System.out.println("  • " + player2.getName() + ": " + player2Units.size() + " unités\n");
+
+        // Lancer le combat classique (player1 = attaquant, player2 = défenseur)
+        battle.classicCombatConfiguration(player1, player2, player1Units, player2Units);
+
+        System.out.println("\n✓ Bataille terminée!");
+    }
+
+    /**
      * Simule une bataille entre deux joueurs sur un secteur spécifique.
      */
     private static void simulateBattleBetweenPlayers(Player attacker, Player defender, Board board) {
@@ -255,10 +296,10 @@ public class PlayerDemo {
         // Lancer la bataille
         CombatService.BattleResult result = combatService.simulateBattle(attacker, defender, board);
 
-        if (result.isSuccess() && result.getWinner() != null) {
-            System.out.println("\n🏆 Vainqueur: " + result.getWinner().getName());
-        } else if (!result.isSuccess()) {
-            System.out.println("\n" + result.getMessage());
+        if (result.success() && result.winner() != null) {
+            System.out.println("\n🏆 Vainqueur: " + result.winner().getName());
+        } else if (!result.success()) {
+            System.out.println("\n" + result.message());
         }
     }
 }

@@ -31,7 +31,7 @@ public class Unit {
     private int number = 0; // Numéro de l'unité dans l'armée (ex: BRUTE n°1, n°2, etc.)
     private double experience = 0.0;
     private UnitType type;
-    private List<UnitClass> classes;
+    private List<UnitClass> classes = new ArrayList<>(); // Initialisation par défaut
 
     // ===== ÉTAT DE L'UNITÉ =====
     private boolean isInjured = false;
@@ -49,7 +49,7 @@ public class Unit {
     private double evasion;
 
     // ===== ÉQUIPEMENTS =====
-    private List<Equipment> equipments;
+    private List<Equipment> equipments = new ArrayList<>(); // Initialisation par défaut
 
     public Unit(double experience, UnitClass primaryClass) {
         this.id = nextId++;
@@ -308,7 +308,11 @@ public class Unit {
             if (isInjured) {
                 sb.append("[X] ");
             }
-            sb.append(classes.stream().map(c -> "(" + c.getCode() + ")").collect(Collectors.joining(" "))).append(" ");
+
+            // Vérification pour éviter NullPointerException
+            if (classes != null && !classes.isEmpty()) {
+                sb.append(classes.stream().map(c -> "(" + c.getCode() + ")").collect(Collectors.joining(" "))).append(" ");
+            }
 
             // Type et informations
             sb.append(type.name());
@@ -316,8 +320,12 @@ public class Unit {
             sb.append(" (").append(formatStat(experience)).append(" Exp) : ");
 
             // Équipements
-            equipments.forEach(f -> sb.append(f.getName()).append(". "));
-            if (equipments.isEmpty()) {
+            if (equipments != null) {
+                equipments.forEach(f -> sb.append(f.getName()).append(". "));
+                if (equipments.isEmpty()) {
+                    sb.append("Aucun équipement. ");
+                }
+            } else {
                 sb.append("Aucun équipement. ");
             }
 

@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.model.player;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
+import com.mg.nmlonline.domain.model.trade.ResourceType;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,14 +16,52 @@ import java.util.*;
 @Data
 @NoArgsConstructor
 public class Player {
-    private Long id; // ID du joueur (correspond à l'ownerId dans les secteurs)
+    private Long id; // ID du joueur (correspond à ownerId dans les secteurs).
     private String name;
     private PlayerStats stats = new PlayerStats();
     private List<EquipmentStack> equipments = new ArrayList<>(); // Équipements possédés par le joueur
     private Set<Long> ownedSectorIds = new HashSet<>(); // IDs des secteurs contrôlés par le joueur
+    private Map<ResourceType, Integer> resources = new HashMap<>(); // Ressources possédées par le joueur
 
     public Player(String name) {
         this.name = name;
+    }
+
+    // === GESTION DES RESSOURCES DU JOUEUR ===
+
+    public void addResource(ResourceType type, int quantity) {
+        if (type == null || quantity <= 0) return;
+        resources.merge(type, quantity, Integer::sum);
+    }
+
+    public boolean removeResource(ResourceType type, int quantity) {
+        if (type == null || quantity <= 0) return false;
+        int current = resources.getOrDefault(type, 0);
+        if (current >= quantity) {
+            resources.put(type, current - quantity);
+            if (resources.get(type) == 0) {
+                resources.remove(type);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public int getResourceQuantity(ResourceType type) {
+        return resources.getOrDefault(type, 0);
+    }
+    
+    public boolean hasResource(ResourceType type, int quantity) {
+        return getResourceQuantity(type) >= quantity;
+    }
+
+    /**
+     * Retourne une copie de la map des ressources du joueur.
+     *
+     * @return Map des ressources (type -> quantité)
+     */
+    public Map<ResourceType, Integer> getResources() {
+        return new HashMap<>(resources);
     }
 
     // === GESTION DES SECTEURS DU JOUEUR ===
@@ -70,7 +109,7 @@ public class Player {
     }
 
     public boolean buyEquipment(Equipment equipment, int quantity) {
-        if (equipment == null || quantity <=0){
+        if (equipment == null || quantity <= 0) {
             return false;
         }
         double totalCost = (double) equipment.getCost() * quantity;
@@ -242,7 +281,7 @@ public class Player {
      * Retourne les équipements compatibles filtrés par catégorie.
      * Utile pour afficher uniquement les armes, ou uniquement les équipements défensifs.
      *
-     * @param unit L'unité pour laquelle vérifier
+     * @param unit     L'unité pour laquelle vérifier
      * @param category La catégorie d'équipement recherchée (FIREARM, MELEE, DEFENSIVE)
      * @return Liste des équipements compatibles de cette catégorie
      */
@@ -264,7 +303,7 @@ public class Player {
      * Si l'unité possède déjà un équipement de la même catégorie et atteint la limite,
      * l'ancien équipement est retiré et rendu à l'inventaire du joueur.
      *
-     * @param unit L'unité dont on veut changer l'équipement
+     * @param unit         L'unité dont on veut changer l'équipement
      * @param oldEquipment L'équipement à retirer (peut être null si on veut juste équiper)
      * @param newEquipment Le nouvel équipement à ajouter
      * @return true si le remplacement a réussi
@@ -315,7 +354,7 @@ public class Player {
      * Remplace automatiquement un équipement de même catégorie.
      * Trouve automatiquement l'équipement de la même catégorie à remplacer.
      *
-     * @param unit L'unité dont on veut changer l'équipement
+     * @param unit         L'unité dont on veut changer l'équipement
      * @param newEquipment Le nouvel équipement à ajouter
      * @return true si le remplacement a réussi
      */
