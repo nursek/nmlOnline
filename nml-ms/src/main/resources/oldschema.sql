@@ -44,8 +44,17 @@ CREATE TABLE IF NOT EXISTS EQUIPMENT (
     pdc_bonus DOUBLE NOT NULL DEFAULT 0.0,
     arm_bonus DOUBLE NOT NULL DEFAULT 0.0,
     evasion_bonus DOUBLE NOT NULL DEFAULT 0.0,
-    compatible_class VARCHAR(50), -- LEGER, TIREUR, MASTODONTE, etc.
     category VARCHAR(50) NOT NULL -- FIREARM, MELEE, DEFENSIVE
+);
+
+-- =============================================
+-- Table EQUIPMENT_COMPATIBLE_CLASSES : Classes compatibles par équipement
+-- =============================================
+CREATE TABLE IF NOT EXISTS EQUIPMENT_COMPATIBLE_CLASSES (
+    equipment_id BIGINT NOT NULL,
+    unit_class VARCHAR(50) NOT NULL, -- LEGER, TIREUR, MASTODONTE, etc.
+    PRIMARY KEY (equipment_id, unit_class),
+    FOREIGN KEY (equipment_id) REFERENCES EQUIPMENT(id) ON DELETE CASCADE
 );
 
 -- =============================================
