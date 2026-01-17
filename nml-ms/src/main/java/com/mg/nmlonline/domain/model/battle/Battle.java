@@ -15,8 +15,6 @@ import java.util.stream.Collectors;
 public class Battle {
     private int sectorId; // ID of the sector where the battle takes place
 
-    private List<Player> playersInvolved = new ArrayList<>(); // Principal List of players involved in the battle
-    // Players are then moved to according List
     private List<Player> defenders = new ArrayList<>();
     private List<Player> attackers = new ArrayList<>();
 
@@ -25,8 +23,11 @@ public class Battle {
 
     private static final Random RANDOM = new Random();
 
+    /**
+     * Génère un nombre aléatoire entre 1 et 100 (inclus)
+     */
     private int rand() {
-        return RANDOM.nextInt(100);
+        return RANDOM.nextInt(100) + 1;
     }
 
     public PhaseResult classicPhaseConfiguration(List<Unit> defender, double availableAttackerPoints, String damageType) {
@@ -41,7 +42,7 @@ public class Battle {
             double resistance = targetUnit.getDamageReduction(damageType);
 
             // Gestion de l'évasion
-            if (evasion > 0 && (rand() % 100) + 1 <= evasion) {
+            if (evasion > 0 && rand() <= evasion) {
                 System.out.println("      > " + targetUnit.getType().name() + " esquive l'attaque !");
                 availableAttackerPoints -= (defense + armor);
                 continue;
@@ -88,9 +89,9 @@ public class Battle {
 
     double getTotalPoints(Player player, String pointsType) {
         return switch (pointsType) {
-            case "PDF" -> player.getPlayerStats().getTotalPdf();
-            case "PDC" -> player.getPlayerStats().getTotalPdc();
-            case "ATK" -> player.getPlayerStats().getTotalAtk();
+            case "PDF" -> player.getStats().getTotalPdf();
+            case "PDC" -> player.getStats().getTotalPdc();
+            case "ATK" -> player.getStats().getTotalAtk();
             default -> 0;
         };
     }
@@ -116,7 +117,7 @@ public class Battle {
         List<Unit> result = new ArrayList<>();
         for (Unit unit : survivors) {
             if (casualtiesIds.contains(unit.getId()) ||
-                    (unit.getClasses().stream().noneMatch(c -> c.getCode().equals("BLESSE")) && unit.getDefense() < unit.getBaseDefense())) {
+                    (!unit.isInjured() && unit.getDefense() < unit.getBaseDefense())) {
                 result.add(handleInjuredUnit(unit));
             } else {
                 result.add(unit);

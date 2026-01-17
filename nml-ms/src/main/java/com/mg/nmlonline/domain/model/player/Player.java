@@ -83,12 +83,8 @@ public class Player {
     // === GESTION DES EQUIPMENT DU JOUEUR ===
 
     public Equipment getEquipmentByString(String name) {
-        for (EquipmentStack stack : equipments) {
-            if (stack.getEquipment().getName().equalsIgnoreCase(name)) {
-                return stack.getEquipment();
-            }
-        }
-        return null;
+        EquipmentStack stack = findStackByName(name);
+        return stack != null ? stack.getEquipment() : null;
     }
 
     public boolean buyEquipment(Equipment equipment, int quantity) {
@@ -109,16 +105,13 @@ public class Player {
     public void addEquipmentToStack(Equipment equipment, int number) {
         if (equipment == null) return;
 
-        // Chercher un stack existant avec le même équipement (par nom ou ID)
-        for (EquipmentStack stack : equipments) {
-            Equipment stackEquip = stack.getEquipment();
-            if (stackEquip != null && stackEquip.getName() != null &&
-                stackEquip.getName().equals(equipment.getName())) {
-                for (int i = 0; i < number; i++) {
-                    stack.increment();
-                }
-                return;
+        // Chercher un stack existant avec le même équipement (par nom)
+        EquipmentStack existingStack = findStackByName(equipment.getName());
+        if (existingStack != null) {
+            for (int i = 0; i < number; i++) {
+                existingStack.increment();
             }
+            return;
         }
 
         // Créer un nouveau stack
@@ -130,75 +123,54 @@ public class Player {
         equipments.add(newStack);
     }
 
-    public void addEquipmentToStack(Equipment equipment) {
-        addEquipmentToStack(equipment, 1);
-    }
-
-    public boolean isEquipmentAvailable(Equipment equipment) {
-        if (equipment == null) return false;
-        for (EquipmentStack stack : equipments) {
-            Equipment stackEquip = stack.getEquipment();
-            if (stackEquip != null && stackEquip.getName() != null &&
-                stackEquip.getName().equals(equipment.getName())) {
-                return stack.isAvailable();
-            }
-        }
-        return false;
+    public boolean isEquipmentUnavailable(Equipment equipment) {
+        if (equipment == null) return true;
+        return !isEquipmentAvailable(equipment.getName());
     }
 
     public boolean isEquipmentAvailable(String equipmentName) {
-        if (equipmentName == null) return false;
+        EquipmentStack stack = findStackByName(equipmentName);
+        return stack != null && stack.isAvailable();
+    }
+
+    public void decrementEquipmentAvailability(Equipment equipment) {
+        if (equipment == null) return;
+        decrementEquipmentAvailability(equipment.getName());
+    }
+
+    public void decrementEquipmentAvailability(String equipmentName) {
+        EquipmentStack stack = findStackByName(equipmentName);
+        if (stack != null) {
+            stack.decrementAvailable();
+            setTotalEquipmentValue();
+            calculateTotalEconomyPower();
+        }
+    }
+
+    /**
+     * Trouve un EquipmentStack par nom d'équipement.
+     * Méthode helper privée pour éviter la duplication de code.
+     */
+    private EquipmentStack findStackByName(String equipmentName) {
+        if (equipmentName == null) return null;
         for (EquipmentStack stack : equipments) {
             Equipment stackEquip = stack.getEquipment();
             if (stackEquip != null && stackEquip.getName() != null &&
                 stackEquip.getName().equals(equipmentName)) {
-                return stack.isAvailable();
+                return stack;
             }
         }
-        return false;
-    }
-
-    public boolean decrementEquipmentAvailability(Equipment equipment) {
-        if (equipment == null) return false;
-        for (EquipmentStack stack : equipments) {
-            Equipment stackEquip = stack.getEquipment();
-            if (stackEquip != null && stackEquip.getName() != null &&
-                stackEquip.getName().equals(equipment.getName())) {
-                stack.decrementAvailable();
-                setTotalEquipmentValue();
-                calculateTotalEconomyPower();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean decrementEquipmentAvailability(String equipmentName) {
-        if (equipmentName == null) return false;
-        for (EquipmentStack stack : equipments) {
-            Equipment stackEquip = stack.getEquipment();
-            if (stackEquip != null && stackEquip.getName() != null &&
-                stackEquip.getName().equals(equipmentName)) {
-                stack.decrementAvailable();
-                setTotalEquipmentValue();
-                calculateTotalEconomyPower();
-                return true;
-            }
-        }
-        return false;
+        return null;
     }
 
     public void removeEquipmentFromStack(Equipment equipment) {
-        for (int i = 0; i < equipments.size(); i++) {
-            EquipmentStack stack = equipments.get(i);
-            if (stack.getEquipment() != null && stack.getEquipment().getName() != null &&
-                stack.getEquipment().getName().equals(equipment.getName())) {
-                if (stack.getQuantity() > 1) {
-                    stack.decrement();
-                } else {
-                    equipments.remove(i);
-                }
-                return;
+        if (equipment == null) return;
+        EquipmentStack stack = findStackByName(equipment.getName());
+        if (stack != null) {
+            if (stack.getQuantity() > 1) {
+                stack.decrement();
+            } else {
+                equipments.remove(stack);
             }
         }
     }
@@ -207,66 +179,8 @@ public class Player {
         double inventoryValue = equipments.stream()
                 .mapToDouble(stack -> stack.getEquipment().getCost() * stack.getQuantity())
                 .sum();
-
-        // Note: Pour calculer la valeur des équipements portés, il faut maintenant
-        // passer par Board pour accéder aux secteurs et leurs unités
-        // Cette méthode ne calcule désormais que la valeur de l'inventaire
         stats.setTotalEquipmentValue(inventoryValue);
     }
-
-    // Note: Cette méthode nécessite maintenant Board pour accéder aux unités
-    // Elle devrait être déplacée vers un service ou recevoir Board + List<Sector> en paramètre
-    /*
-    public void refreshEquipmentAvailability(List<Sector> playerSectors) {
-        // Compte le nombre d'exemplaires portés pour chaque équipement
-        Map<Equipment, Integer> equippedCount = new HashMap<>();
-        for (Sector sector : playerSectors) {
-            for (Unit unit : sector.getUnits()) {
-                for (Equipment eq : unit.getEquipmentsList()) {
-                    equippedCount.put(eq, equippedCount.getOrDefault(eq, 0) + 1);
-                }
-            }
-        }
-        // Met à jour l'attribut available de chaque stack
-        for (EquipmentStack stack : equipments) {
-            int total = stack.getQuantity();
-            int used = equippedCount.getOrDefault(stack.getEquipment(), 0);
-            int available = total - used;
-            stack.setAvailable(available);
-        }
-    }
-    */
-
-
-    // === GESTION DES UNITS DU JOUEUR ===
-
-    // Note: Cette méthode nécessite maintenant Board pour accéder aux unités
-    // Elle devrait être déplacée vers un service ou recevoir Board + List<Sector> en paramètre
-    /*
-    public void reassignUnitNumbers(List<Sector> playerSectors) {
-        Map<String, Integer> typeCounters = new HashMap<>();
-        for (Sector sector : playerSectors) {
-            for (Unit unit : sector.getUnits()) {
-                String unitType = unit.getType().name();
-                int currentCount = typeCounters.getOrDefault(unitType, 0) + 1;
-                typeCounters.put(unitType, currentCount);
-                unit.setNumber(currentCount);
-            }
-        }
-    }
-    */
-
-    // Note: Cette méthode nécessite maintenant Board pour accéder aux secteurs
-    // Elle devrait être déplacée vers un service ou recevoir les secteurs en paramètre
-    /*
-    public boolean transferUnitBetweenSectors(Unit unit, Sector fromSector, Sector toSector) {
-        if (fromSector != null && toSector != null && fromSector.removeUnit(unit)) {
-            toSector.addUnit(unit);
-            return true;
-        }
-        return false;
-    }
-    */
 
     /**
      * Retourne la liste des équipements compatibles avec une unité donnée.
@@ -327,7 +241,7 @@ public class Player {
         }
 
         // Vérifier que le nouvel équipement est disponible
-        if (!isEquipmentAvailable(newEquipment)) {
+        if (isEquipmentUnavailable(newEquipment)) {
             System.out.println("Équipement non disponible : " + newEquipment.getName());
             return false;
         }
@@ -403,119 +317,18 @@ public class Player {
      * Utilisé quand un équipement est retiré d'une unité.
      *
      * @param equipment L'équipement à rendre disponible
-     * @return true si l'opération a réussi
      */
-    public boolean incrementEquipmentAvailability(Equipment equipment) {
-        for (EquipmentStack stack : equipments) {
-            if (stack.getEquipment().equals(equipment)) {
-                stack.incrementAvailable();
-                setTotalEquipmentValue();
-                calculateTotalEconomyPower();
-                return true;
-            }
+    public void incrementEquipmentAvailability(Equipment equipment) {
+        if (equipment == null) return;
+        EquipmentStack stack = findStackByName(equipment.getName());
+        if (stack != null) {
+            stack.incrementAvailable();
+            setTotalEquipmentValue();
+            calculateTotalEconomyPower();
         }
-        return false;
     }
-
-    // Note: Ces méthodes nécessitent maintenant Board pour accéder aux secteurs
-    // Elles devraient être déplacées vers un service ou recevoir le secteur en paramètre
-    /*
-    public boolean equipToUnit(Sector sector, int unitId, String equipmentName) {
-        Equipment equipment = getEquipmentByString(equipmentName);
-        if (equipment == null) return false;
-        return equipToUnit(sector, unitId, equipment);
-    }
-
-    public boolean equipToUnit(Sector sector, int unitId, Equipment equipment) {
-        if (sector == null) return false;
-
-        // Trouver l'unité
-        Unit unit = sector.getUnitById(unitId);
-        System.out.println(unit);
-        if (unit == null) return false;
-
-        // Trouver le stack correspondant à l'arme
-        for (EquipmentStack stack : equipments) {
-            if (stack.getEquipment().equals(equipment) && stack.getAvailable() > 0) {
-                // Équiper l'unité
-                unit.addEquipment(equipment);
-                stack.decrementAvailable();
-                setTotalEquipmentValue();
-                return true;
-            }
-        }
-        return false;
-    }
-    */
 
     // === CALCULS ET STATISTIQUES ===
-    // Note: Ces méthodes nécessitent maintenant Board pour accéder aux secteurs et aux unités
-    // Elles devraient être déplacées vers un service ou recevoir Board + List<Sector> en paramètre
-
-    /*
-    public void updateCombatStats(List<Sector> playerSectors){
-        // Met à jour les stats de chaque secteur
-        for (Sector sector : playerSectors) {
-            sector.recalculateMilitaryPower();
-        }
-
-        double totalAtk = playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .mapToDouble(Unit::getAttack)
-                .sum();
-        double totalPdf = playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .mapToDouble(Unit::getPdf)
-                .sum();
-        double totalPdc = playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .mapToDouble(Unit::getPdc)
-                .sum();
-        double totalDef = playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .mapToDouble(Unit::getDefense)
-                .sum();
-        double totalArmor = playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .mapToDouble(Unit::getArmor)
-                .sum();
-
-        stats.setTotalAtk(totalAtk);
-        stats.setTotalPdf(totalPdf);
-        stats.setTotalPdc(totalPdc);
-        stats.setTotalDef(totalDef);
-        stats.setTotalArmor(totalArmor);
-    }
-    */
-
-    /*
-    private void updateTotalStats(List<Sector> playerSectors) {
-        double totalOffensive = playerSectors.stream()
-                .mapToDouble(sector -> sector.getStats().getTotalOffensive())
-                .sum();
-        double totalDefensive = playerSectors.stream()
-                .mapToDouble(sector -> sector.getStats().getTotalDefensive())
-                .sum();
-
-        stats.setTotalOffensivePower(totalOffensive);
-        stats.setTotalDefensivePower(totalDefensive);
-    }
-    */
-
-    /*
-    private void updateGlobalStats(List<Sector> playerSectors) {
-        updateTotalStats(playerSectors);
-        stats.setGlobalPower((stats.getTotalOffensivePower() + stats.getTotalDefensivePower()) / 2);
-    }
-    */
-
-    /*
-    private void calculateTotalIncome(List<Sector> playerSectors) {
-        stats.setTotalIncome(playerSectors.stream()
-                .mapToDouble(Sector::getIncome)
-                .sum());
-    }
-    */
 
     public void calculateTotalEconomyPower() {
         double economyPower = stats.getTotalIncome()
@@ -525,78 +338,5 @@ public class Player {
         stats.setTotalEconomyPower(economyPower);
     }
 
-    // Note: Cette méthode nécessite maintenant Board pour accéder aux secteurs
-    // Elle devrait être déplacée vers un service ou recevoir Board + List<Sector> en paramètre
-    /*
-    public void recalculateStats(List<Sector> playerSectors) {
-        updateCombatStats(playerSectors);
-        updateGlobalStats(playerSectors);
-        calculateTotalIncome(playerSectors);
-        setTotalEquipmentValue();
-        calculateTotalEconomyPower();
-    }
-    */
 
-    // === AFFICHAGE ===
-
-    // Note: displayArmy() nécessite maintenant Board pour accéder aux secteurs
-    // Elle devrait être déplacée vers un service ou recevoir Board + List<Sector> en paramètre
-    // Voir les méthodes commentées plus haut pour référence
-
-
-    /**
-     * Affiche les équipements du joueur
-     * Regroupe les équipements par nom et affiche le nombre de chaque type
-     */
-    public void displayEquipments() {
-        System.out.println("=== ÉQUIPEMENTS DE " + name.toUpperCase() + " ===");
-        if (equipments.isEmpty()) {
-            System.out.println("Aucun équipement.");
-            return;
-        }
-        for (EquipmentStack stack : equipments) {
-            Equipment eq = stack.getEquipment();
-            int quantity = stack.getQuantity();
-            int available = stack.getAvailable(); // nouvel attribut
-            int totalPrice = quantity * eq.getCost();
-            System.out.printf("%d x %s (%d disponibles) = %,d $%n", quantity, eq.getName(), available, totalPrice);
-        }
-    }
-
-    private static final String FORMAT_INT = "%,.0f";
-    private static final String FORMAT_FLOAT = "%,.2f";
-
-    public void displayStats() {
-        // Note: updateGlobalStats() et calculateTotalIncome() nécessitent maintenant Board
-        // Ces calculs doivent être faits en amont par un service
-        setTotalEquipmentValue();
-        calculateTotalEconomyPower();
-
-
-        System.out.printf("=== %s ===%n", name.toUpperCase());
-
-        System.out.println("--- Statistiques Économiques ---");
-        System.out.println(formatStat(stats.getMoney(), "$ "));
-        System.out.println(formatStat(stats.getTotalIncome(), "revenu quotidien"));
-        System.out.println(formatStat(stats.getTotalVehiclesValue(), "valeur des véhicules"));
-        System.out.println(formatStat(stats.getTotalEquipmentValue(), "valeur des équipements"));
-        System.out.println(formatStat(stats.getTotalEconomyPower(), "puissance économique totale"));
-        System.out.println();
-
-        System.out.println("--- Statistiques Militaires ---");
-        System.out.println(formatStat(stats.getTotalOffensivePower(), "puissance offensive totale"));
-        System.out.println(formatStat(stats.getTotalDefensivePower(), "puissance défensive totale"));
-        System.out.println(formatStat(stats.getGlobalPower(), "puissance globale"));
-        System.out.println();
-    }
-
-    // Méthode utilitaire pour formater chaque statistique
-    private String formatStat(double value, String label) {
-        String formatted = (value % 1 == 0) ? String.format(FORMAT_INT, value) : String.format(FORMAT_FLOAT, value);
-        return formatted + " " + label;
-    }
-
-    public PlayerStats getPlayerStats() {
-        return stats;
-    }
 }

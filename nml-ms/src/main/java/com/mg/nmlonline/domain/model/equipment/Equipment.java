@@ -39,9 +39,11 @@ public class Equipment {
     @Column(name = "evasion_bonus", nullable = false)
     private double evasionBonus;
 
+    @ElementCollection(targetClass = UnitClass.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "EQUIPMENT_COMPATIBLE_CLASSES", joinColumns = @JoinColumn(name = "equipment_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "compatible_class")
-    private UnitClass compatibleClass;
+    @Column(name = "unit_class")
+    private Set<UnitClass> compatibleClasses = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -57,21 +59,10 @@ public class Equipment {
         this.pdcBonus = pdcBonus;
         this.armBonus = armBonus;
         this.evasionBonus = evasionBonus;
-        // On prend la première classe compatible (compatibilité avec l'ancien code)
-        this.compatibleClass = compatibleClasses != null && !compatibleClasses.isEmpty()
-                ? compatibleClasses.iterator().next() : null;
+        this.compatibleClasses = compatibleClasses != null ? new HashSet<>(compatibleClasses) : new HashSet<>();
         this.category = category;
     }
 
-    /**
-     * Retourne les classes compatibles sous forme de Set (compatibilité)
-     */
-    public Set<UnitClass> getCompatibleClasses() {
-        if (compatibleClass == null) {
-            return new HashSet<>();
-        }
-        return Set.of(compatibleClass);
-    }
 
     @Override
     public String toString() {
