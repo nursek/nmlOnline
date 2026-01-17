@@ -87,7 +87,7 @@ public class UnitManagementService {
         if (unit == null) return false;
 
         // Vérifier la disponibilité de l'équipement
-        if (!player.isEquipmentAvailable(equipment)) {
+        if (player.isEquipmentUnavailable(equipment)) {
             System.out.println("Équipement non disponible : " + equipment.getName());
             return false;
         }
@@ -120,7 +120,7 @@ public class UnitManagementService {
         }
 
         // Vérifier que le nouvel équipement est disponible
-        if (!player.isEquipmentAvailable(newEquipment)) {
+        if (player.isEquipmentUnavailable(newEquipment)) {
             System.out.println("Équipement non disponible : " + newEquipment.getName());
             return false;
         }

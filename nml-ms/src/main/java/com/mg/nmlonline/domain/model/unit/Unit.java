@@ -156,17 +156,17 @@ public class Unit {
         this.evasion -= (evasionBonus * 10);
     }
 
+    /**
+     * Retourne les équipements pour les calculs de stats.
+     * Priorité : unitEquipments (persistant) > equipments (transient)
+     */
     private List<Equipment> getEquipmentsForCalculation() {
-        // Utilise les équipements transients si disponibles, sinon les récupère des relations
-        if (equipments != null && !equipments.isEmpty()) {
-            return equipments;
-        }
-        if (unitEquipments != null) {
+        if (unitEquipments != null && !unitEquipments.isEmpty()) {
             return unitEquipments.stream()
                     .map(UnitEquipment::getEquipment)
                     .toList();
         }
-        return new ArrayList<>();
+        return equipments != null ? equipments : new ArrayList<>();
     }
 
     private double calculateEquipmentPdf() {
@@ -260,9 +260,7 @@ public class Unit {
         }
 
         EquipmentCategory category = equipment.getCategory();
-        long currentCount = getEquipmentsForCalculation().stream()
-                .filter(e -> e.getCategory() == category)
-                .count();
+        long currentCount = countEquipmentsByCategory(category);
 
         return switch (category) {
             case FIREARM -> currentCount < type.getMaxFirearms();
@@ -390,7 +388,7 @@ public class Unit {
     }
 
     public List<Equipment> getEquipments() {
-        return equipments != null ? equipments : getEquipmentsForCalculation();
+        return getEquipmentsForCalculation();
     }
 
     public void setEquipments(List<Equipment> equipments) {

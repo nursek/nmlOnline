@@ -47,8 +47,4 @@ public class EquipmentFactory {
         }
         return null;
     }
-
-    public static Equipment createFromEnum(EquipmentType equipmentType) {
-        return createFromName(equipmentType.getDisplayName());
-    }
 }
