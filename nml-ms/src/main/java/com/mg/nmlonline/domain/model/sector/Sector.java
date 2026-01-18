@@ -82,14 +82,14 @@ public class Sector {
         this.number = number;
         this.name = "Secteur n°" + number;
         this.color = "#ffffff";
-        this.resourceName = ""; // Défaut vide
+        this.resourceName = null; // Défaut null pour distinguer "non défini" de "vide"
     }
 
     public Sector(int number, String name) {
         this.number = number;
         this.name = name;
         this.color = "#ffffff";
-        this.resourceName = ""; // Défaut vide
+        this.resourceName = null; // Défaut null pour distinguer "non défini" de "vide"
     }
 
     // === GESTION DES VOISINS ===
