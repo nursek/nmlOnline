@@ -1,6 +1,16 @@
 {
   "name": "The Armored Fangs",
   "money": 30000,
+  "resources": [
+    {
+      "type": "Or",
+      "quantity": 7
+    },
+    {
+      "type": "Ivoire",
+      "quantity": 0
+    }
+  ],
   "equipments": [
     {
       "name": "Mini machine gun",

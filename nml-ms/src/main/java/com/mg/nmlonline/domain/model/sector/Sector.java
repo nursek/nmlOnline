@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.mg.nmlonline.domain.model.board.Board;
-import com.mg.nmlonline.domain.model.board.Resource;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentFactory;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -59,8 +58,8 @@ public class Sector {
     @Column(nullable = false)
     private String color = "#ffffff";
 
-    @Column(nullable = true)
-    private String resourceType; // ressource du secteur (ex: "JOYAUX", "OR", "CIGARES")
+    @Column(name = "resource_name", nullable = true)
+    private String resourceName; // Nom de la ressource du secteur (ex: "Or", "Ivoire", "Joyaux")
 
     @ElementCollection
     @CollectionTable(name = "SECTOR_NEIGHBORS",
@@ -79,38 +78,18 @@ public class Sector {
     @OneToMany(mappedBy = "sector", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Unit> army = new ArrayList<>();
 
-    // Champ transient pour compatibilité avec l'ancien code
-    @Transient
-    private Resource resource;
-
     public Sector(int number) {
         this.number = number;
         this.name = "Secteur n°" + number;
         this.color = "#ffffff";
+        this.resourceName = ""; // Défaut vide
     }
 
     public Sector(int number, String name) {
         this.number = number;
         this.name = name;
         this.color = "#ffffff";
-    }
-
-    // Compatibilité avec l'ancien code pour Resource
-    public Resource getResource() {
-        if (resource != null) {
-            return resource;
-        }
-        if (resourceType != null) {
-            return new Resource(resourceType, 0.0);
-        }
-        return null;
-    }
-
-    public void setResource(Resource resource) {
-        this.resource = resource;
-        if (resource != null) {
-            this.resourceType = resource.getType();
-        }
+        this.resourceName = ""; // Défaut vide
     }
 
     // === GESTION DES VOISINS ===

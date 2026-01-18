@@ -5,6 +5,8 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.player.PlayerStats;
+import com.mg.nmlonline.domain.model.resource.PlayerResource;
+import com.mg.nmlonline.domain.service.ResourceService;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -18,9 +20,11 @@ import java.util.List;
 public class PlayerMapper {
 
     private final EquipmentMapper equipmentMapper;
+    private final ResourceService resourceService;
 
-    public PlayerMapper(EquipmentMapper equipmentMapper) {
+    public PlayerMapper(EquipmentMapper equipmentMapper, ResourceService resourceService) {
         this.equipmentMapper = equipmentMapper;
+        this.resourceService = resourceService;
     }
 
     /**
@@ -58,6 +62,14 @@ public class PlayerMapper {
                     .map(this::equipmentStackFromDto)
                     .toList();
             player.setEquipments(equipmentStacks);
+        }
+
+        // Conversion des ressources
+        if (dto.getResources() != null) {
+            List<PlayerResource> playerResources = dto.getResources().stream()
+                    .map(this::playerResourceFromDto)
+                    .toList();
+            player.setResources(playerResources);
         }
 
         // Conversion des IDs de secteurs
@@ -106,12 +118,39 @@ public class PlayerMapper {
             dto.setEquipments(equipmentDtos);
         }
 
+        // Conversion des ressources
+        if (player.getResources() != null) {
+            List<PlayerResourceDto> resourceDtos = player.getResources().stream()
+                    .map(this::playerResourceToDto)
+                    .toList();
+            dto.setResources(resourceDtos);
+        }
+
         // Conversion des IDs de secteurs
         if (player.getOwnedSectorIds() != null) {
             dto.setOwnedSectorIds(new HashSet<>(player.getOwnedSectorIds()));
         }
 
         return dto;
+    }
+
+    private static PlayerStatsDto getPlayerStatsDto(Player player) {
+        PlayerStatsDto statsDto = new PlayerStatsDto();
+        PlayerStats stats = player.getStats();
+        statsDto.setMoney(stats.getMoney());
+        statsDto.setTotalIncome(stats.getTotalIncome());
+        statsDto.setTotalVehiclesValue(stats.getTotalVehiclesValue());
+        statsDto.setTotalEquipmentValue(stats.getTotalEquipmentValue());
+        statsDto.setTotalOffensivePower(stats.getTotalOffensivePower());
+        statsDto.setTotalDefensivePower(stats.getTotalDefensivePower());
+        statsDto.setGlobalPower(stats.getGlobalPower());
+        statsDto.setTotalEconomyPower(stats.getTotalEconomyPower());
+        statsDto.setTotalAtk(stats.getTotalAtk());
+        statsDto.setTotalPdf(stats.getTotalPdf());
+        statsDto.setTotalPdc(stats.getTotalPdc());
+        statsDto.setTotalDef(stats.getTotalDef());
+        statsDto.setTotalArmor(stats.getTotalArmor());
+        return statsDto;
     }
 
     // === Méthodes utilitaires pour EquipmentStack ===
@@ -133,6 +172,33 @@ public class PlayerMapper {
         dto.setEquipment(equipmentMapper.toDto(stack.getEquipment()));
         dto.setQuantity(stack.getQuantity());
         dto.setAvailable(stack.getAvailable());
+        return dto;
+    }
+
+    // === Méthodes utilitaires pour PlayerResource ===
+
+    private PlayerResource playerResourceFromDto(PlayerResourceDto dto) {
+        if (dto == null || dto.getName() == null) return null;
+
+        return new PlayerResource(dto.getName(), dto.getQuantity());
+    }
+
+    private PlayerResourceDto playerResourceToDto(PlayerResource resource) {
+        if (resource == null) return null;
+
+        PlayerResourceDto dto = new PlayerResourceDto();
+        dto.setName(resource.getResourceName());
+        dto.setQuantity(resource.getQuantity());
+
+        // Enrichir avec le prix de base depuis ResourceType
+        try {
+            double baseValue = resourceService.getBaseValue(resource.getResourceName());
+            dto.setBaseValue(baseValue);
+        } catch (IllegalArgumentException e) {
+            // Ressource inconnue, laisser baseValue à null
+            dto.setBaseValue(null);
+        }
+
         return dto;
     }
 }

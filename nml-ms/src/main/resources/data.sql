@@ -10,6 +10,35 @@ INSERT INTO CREDENTIALS (username, password) VALUES ('a', '$2a$12$ca/.P6xWRGFiH5
 INSERT INTO CREDENTIALS (username, password) VALUES ('lurio', '$2y$10$PoKeBxBu4AhIM9yMbEUIzOf8SHbdHC8/A5BHqq9jkUT.YiZbsXZNe');
 INSERT INTO CREDENTIALS (username, password) VALUES ('nursek', '$2y$10$X41e/q5zcdbR8T5AMatbFuaXhj.E2fvEJ7DivsuqSlNeY97mrI0mW');
 
+-- Supprimer l'ancienne table RESOURCE si elle existe (doublon obsolète)
+DROP TABLE IF EXISTS RESOURCE CASCADE;
+
+-- Table pour stocker les types de ressources disponibles dans le jeu
+CREATE TABLE IF NOT EXISTS RESOURCE_TYPE (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    base_value DOUBLE NOT NULL
+);
+
+-- Table pour stocker les ressources possédées par les joueurs (Or, Ivoire, Joyaux, etc.)
+CREATE TABLE IF NOT EXISTS PLAYER_RESOURCES (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    player_id BIGINT NOT NULL,
+    resource_name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    FOREIGN KEY (player_id) REFERENCES PLAYERS(id) ON DELETE CASCADE,
+    FOREIGN KEY (resource_name) REFERENCES RESOURCE_TYPE(name)
+);
+
+INSERT INTO RESOURCE_TYPE (name, base_value) VALUES
+('Cigare', 600),
+('Alcool', 800),
+('Antiquités', 1000),
+('Ivoire', 1100),
+('Uranium', 1400),
+('Or', 1700),
+('Joyaux', 2000);
+
 INSERT INTO EQUIPMENT (name, cost, pdf_bonus, pdc_bonus, arm_bonus, evasion_bonus, category) VALUES
 ('Pistolet 9mm',400,80,0,0,0,'FIREARM'),
 ('Pistolet-mitrailleur',850,150,0,25,0,'FIREARM'),

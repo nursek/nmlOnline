@@ -2,7 +2,6 @@ package com.mg.nmlonline.mapper;
 
 import com.mg.nmlonline.api.dto.SectorDto;
 import com.mg.nmlonline.api.dto.SectorStatsDto;
-import com.mg.nmlonline.domain.model.board.Resource;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.sector.SectorStats;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -36,7 +35,7 @@ public class SectorMapper {
         sector.setOwnerId(dto.getOwnerId());
         sector.setColor(dto.getColor() != null ? dto.getColor() : "#ffffff");
         if (dto.getResource() != null) {
-            sector.setResource(new Resource(dto.getResource(), 0.0));
+            sector.setResourceName(dto.getResource());
         }
 
         // Conversion des voisins
@@ -86,8 +85,8 @@ public class SectorMapper {
         // Propriétés pour la carte
         dto.setOwnerId(sector.getOwnerId());
         dto.setColor(sector.getColor());
-        if (sector.getResource() != null) {
-            dto.setResource(sector.getResource().getType());
+        if (sector.getResourceName() != null && !sector.getResourceName().isEmpty()) {
+            dto.setResource(sector.getResourceName());
         }
         dto.setNeighbors(new ArrayList<>(sector.getNeighbors()));
 

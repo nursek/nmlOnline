@@ -1,6 +1,16 @@
 {
   "name": "Général Suprême",
   "money": 20000,
+  "resources": [
+    {
+      "type": "Or",
+      "quantity": 3
+    },
+    {
+      "type": "Ivoire",
+      "quantity": 12
+    }
+  ],
   "equipments": [
     {
       "name": "Mini machine gun",

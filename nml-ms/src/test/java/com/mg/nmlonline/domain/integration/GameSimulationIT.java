@@ -1,7 +1,6 @@
 package com.mg.nmlonline.domain.integration;
 
 import com.mg.nmlonline.domain.model.board.Board;
-import com.mg.nmlonline.domain.model.board.Resource;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -210,44 +209,40 @@ class GameSimulationIT {
         @Test
         @DisplayName("Ressource or assignée au secteur 1")
         void shouldAssignGoldToSector1() {
-            Resource resource = board.getSector(1).getResource();
-            assertNotNull(resource);
-            assertEquals("or", resource.getType());
-            assertEquals(2000.0, resource.getBaseValue());
+            String resourceName = board.getSector(1).getResourceName();
+            assertNotNull(resourceName);
+            assertEquals("Or", resourceName);
         }
 
         @Test
         @DisplayName("Ressource joyaux assignée au secteur 5")
         void shouldAssignJewelsToSector5() {
-            Resource resource = board.getSector(5).getResource();
-            assertNotNull(resource);
-            assertEquals("joyaux", resource.getType());
-            assertEquals(1500.0, resource.getBaseValue());
+            String resourceName = board.getSector(5).getResourceName();
+            assertNotNull(resourceName);
+            assertEquals("Joyaux", resourceName);
         }
 
         @Test
         @DisplayName("Ressource cigares assignée au secteur 9")
         void shouldAssignCigarsToSector9() {
-            Resource resource = board.getSector(9).getResource();
-            assertNotNull(resource);
-            assertEquals("cigares", resource.getType());
-            assertEquals(800.0, resource.getBaseValue());
+            String resourceName = board.getSector(9).getResourceName();
+            assertNotNull(resourceName);
+            assertEquals("Cigare", resourceName);
         }
 
         @Test
         @DisplayName("Ressource uranium assignée au secteur 13")
         void shouldAssignUraniumToSector13() {
-            Resource resource = board.getSector(13).getResource();
-            assertNotNull(resource);
-            assertEquals("uranium", resource.getType());
-            assertEquals(3000.0, resource.getBaseValue());
+            String resourceName = board.getSector(13).getResourceName();
+            assertNotNull(resourceName);
+            assertEquals("Uranium", resourceName);
         }
 
         @Test
-        @DisplayName("Secteurs sans ressource ont null")
+        @DisplayName("Secteurs sans ressource ont null ou vide")
         void shouldHaveNullResourceForOtherSectors() {
-            // Secteur 2 n'a pas de ressource
-            assertNull(board.getSector(2).getResource());
+            String resourceName = board.getSector(2).getResourceName();
+            assertTrue(resourceName == null || resourceName.isEmpty());
         }
     }
 
@@ -453,10 +448,10 @@ class GameSimulationIT {
     }
 
     private void assignResources() {
-        if (board.hasSector(1)) board.getSector(1).setResource(new Resource("or", 2000.0));
-        if (board.hasSector(5)) board.getSector(5).setResource(new Resource("joyaux", 1500.0));
-        if (board.hasSector(9)) board.getSector(9).setResource(new Resource("cigares", 800.0));
-        if (board.hasSector(13)) board.getSector(13).setResource(new Resource("uranium", 3000.0));
+        if (board.hasSector(1)) board.getSector(1).setResourceName("Or");
+        if (board.hasSector(5)) board.getSector(5).setResourceName("Joyaux");
+        if (board.hasSector(9)) board.getSector(9).setResourceName("Cigare");
+        if (board.hasSector(13)) board.getSector(13).setResourceName("Uranium");
     }
 
     private void addArmiesToSectors() {

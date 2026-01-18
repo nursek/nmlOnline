@@ -245,20 +245,20 @@ class BoardTest {
         void shouldAssignResourceToSector() {
             board.addSector(new Sector(1, "Mine d'or"));
 
-            board.getSector(1).setResource(new Resource("or", 2000.0));
+            board.getSector(1).setResourceName("Or");
 
-            Resource resource = board.getSector(1).getResource();
-            assertNotNull(resource);
-            assertEquals("or", resource.getType());
-            assertEquals(2000.0, resource.getBaseValue());
+            String resourceName = board.getSector(1).getResourceName();
+            assertNotNull(resourceName);
+            assertEquals("Or", resourceName);
         }
 
         @Test
-        @DisplayName("Secteur sans ressource retourne null")
-        void shouldReturnNullForSectorWithoutResource() {
+        @DisplayName("Secteur sans ressource retourne chaîne vide")
+        void shouldReturnEmptyStringForSectorWithoutResource() {
             board.addSector(new Sector(1, "Quartier vide"));
 
-            assertNull(board.getSector(1).getResource());
+            String resourceName = board.getSector(1).getResourceName();
+            assertTrue(resourceName == null || resourceName.isEmpty());
         }
     }
 }
