@@ -131,7 +131,7 @@ public class BoardImportService {
 
     /**
      * Récupère un Equipment depuis le cache ou la BDD.
-     * Les Equipment sont pré-chargés via data.sql, on ne crée jamais de nouveaux Equipment ici.
+     * Les Equipment sont pré-chargés via CSV, on ne crée jamais de nouveaux Equipment ici.
      */
     private Equipment getEquipmentByName(String equipmentName) {
         // 1. Vérifier le cache

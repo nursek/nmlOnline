@@ -258,7 +258,7 @@ class BoardTest {
             board.addSector(new Sector(1, "Quartier vide"));
 
             String resourceName = board.getSector(1).getResourceName();
-            assertTrue(resourceName == null || resourceName.isEmpty());
+            assertNull(resourceName);
         }
     }
 }

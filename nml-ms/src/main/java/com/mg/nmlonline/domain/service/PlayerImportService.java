@@ -80,7 +80,7 @@ public class PlayerImportService {
 
     /**
      * Récupère un Equipment depuis le cache ou la BDD.
-     * Les Equipment sont pré-chargés via data.sql, on ne crée jamais de nouveaux Equipment ici.
+     * Les Equipment sont pré-chargés via equipments.csv, on ne crée jamais de nouveaux Equipment ici.
      */
     public Equipment getEquipmentByName(String equipmentName) {
         // 1. Vérifier le cache en premier
@@ -101,8 +101,8 @@ public class PlayerImportService {
             return eq;
         }
 
-        // L'equipment n'existe pas - c'est une erreur (devrait être dans data.sql)
-        System.err.println("WARN: Équipement '" + equipmentName + "' non trouvé en BDD (vérifier data.sql)");
+        // L'équipment n'existe pas — c'est une erreur (devrait être dans equipments.csv).
+        System.err.println("WARN: Équipement '" + equipmentName + "' non trouvé en BDD (vérifier equipments.csv)");
         return null;
     }
 
@@ -187,12 +187,14 @@ public class PlayerImportService {
         if (unitDto.equipments != null) {
             for (String equipmentName : unitDto.equipments) {
                 Equipment equipment = getEquipmentByName(equipmentName);
-                if (equipment != null && player.isEquipmentAvailable(equipmentName)) {
+                if (equipment == null) {
+                    System.err.println("ERREUR: Équipement '" + equipmentName + "' n'existe pas en BDD (absent de equipments.csv)");
+                } else if (!player.isEquipmentAvailable(equipmentName)) {
+                    System.err.println("ERREUR: Équipement '" + equipmentName + "' non disponible dans l'inventaire du joueur " + player.getName());
+                } else {
                     if (unit.addEquipment(equipment)) {
                         player.decrementEquipmentAvailability(equipmentName);
                     }
-                } else {
-                    System.err.println("Erreur : équipement " + equipmentName + " non disponible pour le joueur " + player.getName());
                 }
             }
         }

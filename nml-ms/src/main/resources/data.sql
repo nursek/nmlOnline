@@ -1,3 +1,6 @@
+-- Données de base : credentials uniquement
+-- Les ressources, équipements et compatibilités sont chargés depuis les fichiers CSV
+
 CREATE TABLE IF NOT EXISTS CREDENTIALS (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
@@ -5,117 +8,8 @@ CREATE TABLE IF NOT EXISTS CREDENTIALS (
     refresh_token_hash VARCHAR(255),
     refresh_token_expiry BIGINT
 );
+
 INSERT INTO CREDENTIALS (username, password) VALUES ('test', '$2a$10$WMsQsnTZ/7pFn.klPSeJ0.m0B1bnsAt9wFgkIduzvmkMF2PzvAOUq');
 INSERT INTO CREDENTIALS (username, password) VALUES ('a', '$2a$12$ca/.P6xWRGFiH5Ra0UXMk.NhNBxYgCX5aEYDDG3nv9CsaZ1FExMnm');
 INSERT INTO CREDENTIALS (username, password) VALUES ('lurio', '$2y$10$PoKeBxBu4AhIM9yMbEUIzOf8SHbdHC8/A5BHqq9jkUT.YiZbsXZNe');
 INSERT INTO CREDENTIALS (username, password) VALUES ('nursek', '$2y$10$X41e/q5zcdbR8T5AMatbFuaXhj.E2fvEJ7DivsuqSlNeY97mrI0mW');
-
--- Supprimer l'ancienne table RESOURCE si elle existe (doublon obsolète)
-DROP TABLE IF EXISTS RESOURCE CASCADE;
-
--- Table pour stocker les types de ressources disponibles dans le jeu
-CREATE TABLE IF NOT EXISTS RESOURCE_TYPE (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE,
-    base_value DOUBLE NOT NULL
-);
-
--- Table pour stocker les ressources possédées par les joueurs (Or, Ivoire, Joyaux, etc.)
-CREATE TABLE IF NOT EXISTS PLAYER_RESOURCES (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    player_id BIGINT NOT NULL,
-    resource_name VARCHAR(255) NOT NULL,
-    quantity INT NOT NULL,
-    FOREIGN KEY (player_id) REFERENCES PLAYERS(id) ON DELETE CASCADE,
-    FOREIGN KEY (resource_name) REFERENCES RESOURCE_TYPE(name)
-);
-
-INSERT INTO RESOURCE_TYPE (name, base_value) VALUES
-('Cigare', 600),
-('Alcool', 800),
-('Antiquités', 1000),
-('Ivoire', 1100),
-('Uranium', 1400),
-('Or', 1700),
-('Joyaux', 2000);
-
-INSERT INTO EQUIPMENT (name, cost, pdf_bonus, pdc_bonus, arm_bonus, evasion_bonus, category) VALUES
-('Pistolet 9mm',400,80,0,0,0,'FIREARM'),
-('Pistolet-mitrailleur',850,150,0,25,0,'FIREARM'),
-('HK-MP7',1600,300,0,25,0,'FIREARM'),
-('Mitrailleuse',1500,200,0,50,0,'FIREARM'),
-('Fusil d''assaut',2300,350,0,60,0,'FIREARM'),
-('Mini machine gun',2600,400,0,80,0,'FIREARM'),
-('Mini machine gun [CM]',3400,500,0,80,0,'FIREARM'),
-('Mini machine gun [MP]',4680,400,0,80,0,'FIREARM'),
-('Mini machine gun [CM] [MP]',5480,500,0,80,0,'FIREARM'),
-('Fusil à pompe',1000,0,200,0,0,'FIREARM'),
-('Winchester',1500,0,300,0,0,'FIREARM'),
-('Tromblon',2000,0,400,0,0,'FIREARM'),
-('Tromblon [DM]',3000,0,400,0,0,'FIREARM'),
-('Tromblon [MGC]',3500,0,400,0,0,'FIREARM'),
-('Tromblon [DM] [MGC]',4500,0,400,0,0,'FIREARM'),
-('Pistolet chauffant',900,100,0,0,0,'FIREARM'),
-('Fusil à impulsion électromagnétique',2250,250,0,0,0,'FIREARM'),
-('Canon à glace',2500,300,0,0,0,'FIREARM'),
-('Lance-flammes',3000,400,0,0,0,'FIREARM'),
-('Bombes collantes',3400,80,0,0,0,'FIREARM'),
-('Lance-roquettes',5500,400,0,200,0,'FIREARM'),
-('Lance-grenades',5800,500,0,100,0,'FIREARM'),
-('Fusil de sniper léger',1000,150,0,30,0,'FIREARM'),
-('Fusil de sniper lourd',1800,300,0,50,0,'FIREARM'),
-('Fusil de sniper de combat',2300,400,0,60,0,'FIREARM'),
-('Poing américain',100,0,20,0,0,'MELEE'),
-('Matraque télescopique',200,0,40,0,0,'MELEE'),
-('Batte de métal',250,0,50,0,0,'MELEE'),
-('Machette',375,0,75,0,0,'MELEE'),
-('Hache de bûcheron',450,0,90,0,0,'MELEE'),
-('Tronçonneuse',500,0,100,0,0,'MELEE'),
-('Matraque électrique',450,0,50,0,0,'MELEE'),
-('Gantelet électrique',1000,0,85,0,0,'MELEE'),
-('Panachurros',125,0,25,0,0,'MELEE'),
-('Panachouquette',250,0,50,0,0,'MELEE'),
-('Panachoucroute',500,0,100,0,0,'MELEE'),
-('Couteau de cuisine',200,0,40,0,0,'MELEE'),
-('Couteau de combat',300,0,60,0,0,'MELEE'),
-('Tenue ultra légère',750,0,0,50,10,'DEFENSIVE'),
-('Grenade lacrymogène',2500,0,0,0,25,'DEFENSIVE'),
-('Gilet pare-balles léger',500,0,0,50,0,'DEFENSIVE'),
-('Gilet pare-balles moyen',1000,0,0,100,0,'DEFENSIVE'),
-('Équipement militaire complet',2000,0,0,200,0,'DEFENSIVE'),
-('Protection dorsale',250,0,0,30,0,'DEFENSIVE'),
-('Bouclier anti-émeutes',1500,0,0,150,0,'DEFENSIVE'),
-('Bouclier balistique',3000,0,0,300,0,'DEFENSIVE'),
-('Grenade assourdissante',1250,0,0,0,15,'DEFENSIVE'),
-('Tenue légère en fibre chauffante',3000,0,0,100,20,'DEFENSIVE'),
-('Armure conductrice',1750,0,0,100,0,'DEFENSIVE'),
-('Armure thermorésistante',2250,0,0,200,0,'DEFENSIVE'),
-('Armure isolante',2250,0,0,200,0,'DEFENSIVE'),
-('Armure thermique',2750,0,0,200,0,'DEFENSIVE'),
-('Protège-dents',150,0,0,20,0,'DEFENSIVE'),
-('Casque militaire',750,0,0,75,0,'DEFENSIVE'),
-('Gilet Kevlar',1500,0,0,150,0,'DEFENSIVE'),
-('Treillis de camouflage urbain',1500,0,0,100,10,'DEFENSIVE'),
-('Gilet de camouflage optique',2500,0,0,125,10,'DEFENSIVE');
-
--- Classes compatibles par équipement (LEGER: 1-3,26-27,39-40,47-48 | TIREUR: 4-9,28-29,41-43 | MASTODONTE: 10-15,30-31,44-46 | ELEMENTAIRE: 16-19,32-33,49-52 | PILOTE_DESTRUCTEUR: 20-22,34-36,53-55 | SNIPER: 23-25,37-38,56-57)
-INSERT INTO EQUIPMENT_COMPATIBLE_CLASSES (equipment_id, unit_class) VALUES
-(1,'LEGER'),(1,'TIREUR'),(2,'LEGER'),(3,'LEGER'),
-(4,'TIREUR'),(5,'TIREUR'),(6,'TIREUR'),(7,'TIREUR'),(8,'TIREUR'),(9,'TIREUR'),
-(10,'MASTODONTE'),(11,'MASTODONTE'),(12,'MASTODONTE'),(13,'MASTODONTE'),(14,'MASTODONTE'),(15,'MASTODONTE'),
-(16,'ELEMENTAIRE'),(17,'ELEMENTAIRE'),(18,'ELEMENTAIRE'),(19,'ELEMENTAIRE'),
-(20,'PILOTE_DESTRUCTEUR'),(21,'PILOTE_DESTRUCTEUR'),(22,'PILOTE_DESTRUCTEUR'),
-(23,'SNIPER'),(24,'SNIPER'),(25,'SNIPER'),
-(26,'LEGER'),(27,'LEGER'),
-(28,'TIREUR'),(29,'TIREUR'),
-(30,'MASTODONTE'),(31,'MASTODONTE'),
-(32,'ELEMENTAIRE'),(33,'ELEMENTAIRE'),
-(34,'PILOTE_DESTRUCTEUR'),(35,'PILOTE_DESTRUCTEUR'),(36,'PILOTE_DESTRUCTEUR'),
-(37,'SNIPER'),(38,'SNIPER'),
-(39,'LEGER'),(40,'LEGER'),
-(41,'TIREUR'),(42,'TIREUR'),(43,'TIREUR'),
-(44,'MASTODONTE'),(45,'MASTODONTE'),(46,'MASTODONTE'),
-(47,'LEGER'),(48,'LEGER'),
-(49,'ELEMENTAIRE'),(50,'ELEMENTAIRE'),(51,'ELEMENTAIRE'),(52,'ELEMENTAIRE'),
-(53,'PILOTE_DESTRUCTEUR'),(54,'PILOTE_DESTRUCTEUR'),(55,'PILOTE_DESTRUCTEUR'),
-(56,'SNIPER'),(57,'SNIPER');

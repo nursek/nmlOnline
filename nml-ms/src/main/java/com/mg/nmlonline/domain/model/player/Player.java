@@ -336,7 +336,7 @@ public class Player {
     // === GESTION DES RESSOURCES DU JOUEUR ===
 
     /**
-     * Ajoute une ressource au joueur (sans baseValue - récupéré depuis ResourceType)
+     * Ajoute une ressource au joueur (sans baseValue - récupéré depuis Resource)
      */
     public void addResource(String resourceName, int quantity) {
         if (resourceName == null || quantity <= 0) return;

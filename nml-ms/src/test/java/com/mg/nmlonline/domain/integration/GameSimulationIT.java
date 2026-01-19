@@ -227,7 +227,7 @@ class GameSimulationIT {
         void shouldAssignCigarsToSector9() {
             String resourceName = board.getSector(9).getResourceName();
             assertNotNull(resourceName);
-            assertEquals("Cigare", resourceName);
+            assertEquals("Cigares", resourceName);
         }
 
         @Test

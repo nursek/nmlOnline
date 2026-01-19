@@ -41,11 +41,11 @@ public class PlayerResource {
     @Column(nullable = false)
     private int quantity = 0; // quantité possédée
 
-    // Relation optionnelle avec ResourceType pour validation et récupération du prix
+    // Relation optionnelle avec Resource pour validation et récupération du prix
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resource_name", referencedColumnName = "name",
                 insertable = false, updatable = false)
-    private ResourceType resourceType;
+    private Resource resource;
 
     public PlayerResource(String resourceName) {
         this.resourceName = resourceName;

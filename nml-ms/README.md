@@ -57,7 +57,7 @@ nmlOnline est une application Java destinée à la gestion, la simulation et l'a
 
 ```java
 PlayerService playerService = new PlayerService();
-Player player = playerService.importPlayerFromJson("src/main/resources/players/player1.json");
+Player player = playerService.importPlayerFromJson("src/main/resources/players/nursek.json");
 player.displayArmy();
 ```
 

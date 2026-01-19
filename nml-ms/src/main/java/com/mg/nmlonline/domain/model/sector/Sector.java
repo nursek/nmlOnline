@@ -78,6 +78,8 @@ public class Sector {
     @OneToMany(mappedBy = "sector", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Unit> army = new ArrayList<>();
 
+    // === CONSTRUCTEURS ===
+
     public Sector(int number) {
         this.number = number;
         this.name = "Secteur n°" + number;
@@ -89,7 +91,7 @@ public class Sector {
         this.number = number;
         this.name = name;
         this.color = "#ffffff";
-        this.resourceName = ""; // Défaut vide
+        this.resourceName = null; // Défaut vide
     }
 
     // === GESTION DES VOISINS ===
@@ -309,7 +311,6 @@ public class Sector {
 
         private Unit deserializeUnit(JsonNode unitNode) {
             int id = unitNode.get("id").asInt();
-            String name = unitNode.get("name").asText();
             int number = unitNode.get("number").asInt(0);
             double experience = unitNode.get("experience").asDouble(0);
 

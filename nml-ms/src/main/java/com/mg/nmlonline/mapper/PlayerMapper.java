@@ -7,6 +7,7 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.player.PlayerStats;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.service.ResourceService;
+import lombok.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -38,21 +39,7 @@ public class PlayerMapper {
 
         // Conversion des stats
         if (dto.getStats() != null) {
-            PlayerStats stats = new PlayerStats();
-            PlayerStatsDto statsDto = dto.getStats();
-            stats.setMoney(statsDto.getMoney());
-            stats.setTotalIncome(statsDto.getTotalIncome());
-            stats.setTotalVehiclesValue(statsDto.getTotalVehiclesValue());
-            stats.setTotalEquipmentValue(statsDto.getTotalEquipmentValue());
-            stats.setTotalOffensivePower(statsDto.getTotalOffensivePower());
-            stats.setTotalDefensivePower(statsDto.getTotalDefensivePower());
-            stats.setGlobalPower(statsDto.getGlobalPower());
-            stats.setTotalEconomyPower(statsDto.getTotalEconomyPower());
-            stats.setTotalAtk(statsDto.getTotalAtk());
-            stats.setTotalPdf(statsDto.getTotalPdf());
-            stats.setTotalPdc(statsDto.getTotalPdc());
-            stats.setTotalDef(statsDto.getTotalDef());
-            stats.setTotalArmor(statsDto.getTotalArmor());
+            PlayerStats stats = getPlayerStats(dto);
             player.setStats(stats);
         }
 
@@ -80,6 +67,25 @@ public class PlayerMapper {
         return player;
     }
 
+    private static @NonNull PlayerStats getPlayerStats(PlayerDto dto) {
+        PlayerStats stats = new PlayerStats();
+        PlayerStatsDto statsDto = dto.getStats();
+        stats.setMoney(statsDto.getMoney());
+        stats.setTotalIncome(statsDto.getTotalIncome());
+        stats.setTotalVehiclesValue(statsDto.getTotalVehiclesValue());
+        stats.setTotalEquipmentValue(statsDto.getTotalEquipmentValue());
+        stats.setTotalOffensivePower(statsDto.getTotalOffensivePower());
+        stats.setTotalDefensivePower(statsDto.getTotalDefensivePower());
+        stats.setGlobalPower(statsDto.getGlobalPower());
+        stats.setTotalEconomyPower(statsDto.getTotalEconomyPower());
+        stats.setTotalAtk(statsDto.getTotalAtk());
+        stats.setTotalPdf(statsDto.getTotalPdf());
+        stats.setTotalPdc(statsDto.getTotalPdc());
+        stats.setTotalDef(statsDto.getTotalDef());
+        stats.setTotalArmor(statsDto.getTotalArmor());
+        return stats;
+    }
+
     /**
      * Convertit un objet Player du domaine en DTO PlayerDto
      */
@@ -92,21 +98,7 @@ public class PlayerMapper {
 
         // Conversion des stats
         if (player.getStats() != null) {
-            PlayerStatsDto statsDto = new PlayerStatsDto();
-            PlayerStats stats = player.getStats();
-            statsDto.setMoney(stats.getMoney());
-            statsDto.setTotalIncome(stats.getTotalIncome());
-            statsDto.setTotalVehiclesValue(stats.getTotalVehiclesValue());
-            statsDto.setTotalEquipmentValue(stats.getTotalEquipmentValue());
-            statsDto.setTotalOffensivePower(stats.getTotalOffensivePower());
-            statsDto.setTotalDefensivePower(stats.getTotalDefensivePower());
-            statsDto.setGlobalPower(stats.getGlobalPower());
-            statsDto.setTotalEconomyPower(stats.getTotalEconomyPower());
-            statsDto.setTotalAtk(stats.getTotalAtk());
-            statsDto.setTotalPdf(stats.getTotalPdf());
-            statsDto.setTotalPdc(stats.getTotalPdc());
-            statsDto.setTotalDef(stats.getTotalDef());
-            statsDto.setTotalArmor(stats.getTotalArmor());
+            PlayerStatsDto statsDto = getPlayerStatsDto(player);
             dto.setStats(statsDto);
         }
 
@@ -190,7 +182,7 @@ public class PlayerMapper {
         dto.setName(resource.getResourceName());
         dto.setQuantity(resource.getQuantity());
 
-        // Enrichir avec le prix de base depuis ResourceType
+        // Enrichir avec le prix de base depuis Resource
         try {
             double baseValue = resourceService.getBaseValue(resource.getResourceName());
             dto.setBaseValue(baseValue);

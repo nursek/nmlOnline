@@ -1,23 +1,24 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.player.Player;
-import com.mg.nmlonline.domain.model.resource.ResourceType;
+import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.infrastructure.repository.ResourceTypeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
  * Service pour gérer les ressources des joueurs
- * Gère les conversions, ventes avec multiplicateurs, et récupération des prix depuis ResourceType
+ * Gère les conversions, ventes avec multiplicateurs, et récupération des prix depuis Resource
  */
 @Service
 public class ResourceService {
 
+    private final ResourceTypeRepository resourceTypeRepository;
+
     @Autowired
-    private ResourceTypeRepository resourceTypeRepository;
+    public ResourceService(ResourceTypeRepository resourceTypeRepository) {
+        this.resourceTypeRepository = resourceTypeRepository;
+    }
 
     /**
      * Multiplicateurs de vente basés sur la quantité vendue
@@ -40,12 +41,13 @@ public class ResourceService {
      */
     public double getBaseValue(String resourceName) {
         return resourceTypeRepository.findByName(resourceName)
-                .map(ResourceType::getBaseValue)
+                .map(Resource::getBaseValue)
                 .orElseThrow(() -> new IllegalArgumentException("Ressource inconnue: " + resourceName));
     }
 
     /**
      * Calcule le multiplicateur de vente basé sur la quantité
+     * Over 9 units, can't reach higher multiplier
      */
     private double getMultiplier(int quantity) {
         if (quantity <= 0) return 0.0;
@@ -126,34 +128,6 @@ public class ResourceService {
     }
 
     /**
-     * Achète une quantité de ressources si le joueur a assez d'argent
-     *
-     * @param player Le joueur
-     * @param resourceName Nom de la ressource à acheter
-     * @param quantity Quantité à acheter
-     * @return true si l'achat a réussi
-     */
-    public boolean buyResource(Player player, String resourceName, int quantity) {
-        if (player == null || resourceName == null || quantity <= 0) {
-            return false;
-        }
-
-        double baseValue = getBaseValue(resourceName);
-        double totalCost = baseValue * quantity;
-
-        // Vérifier que le joueur a assez d'argent
-        if (player.getStats().getMoney() < totalCost) {
-            return false;
-        }
-
-        // Effectuer l'achat
-        player.getStats().setMoney(player.getStats().getMoney() - totalCost);
-        player.addResource(resourceName, quantity);
-
-        return true;
-    }
-
-    /**
      * Récupère les ressources d'un secteur conquis ou lors du tour
      *
      * @param player Le joueur qui récupère
@@ -175,32 +149,4 @@ public class ResourceService {
         return baseValue * quantity;
     }
 
-    /**
-     * Obtient un résumé des ressources d'un joueur avec leurs valeurs
-     *
-     * @param player Le joueur
-     * @return Une liste de chaînes représentant chaque ressource
-     */
-    public List<String> getResourceSummary(Player player) {
-        if (player == null || player.getResources().isEmpty()) {
-            return List.of();
-        }
-
-        return player.getResources().stream()
-                .map(resource -> {
-                    double totalValue = calculateResourceValue(resource.getResourceName(), resource.getQuantity());
-                    return String.format("%s: %d unités (valeur: %,.0f$)",
-                            capitalize(resource.getResourceName()),
-                            resource.getQuantity(),
-                            totalValue);
-                })
-                .collect(Collectors.toList());
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) {
-            return str;
-        }
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
-    }
 }
