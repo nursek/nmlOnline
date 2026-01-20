@@ -52,7 +52,7 @@ public class Sector {
     private double income = 2000.0;
 
     // === DONNÉES POUR LA CARTE ===
-    @Column(name = "owner_id", nullable = true)
+    @Column(name = "owner_id")
     private Long ownerId; // null si secteur neutre
 
     @Column(nullable = false)
@@ -84,14 +84,14 @@ public class Sector {
         this.number = number;
         this.name = "Secteur n°" + number;
         this.color = "#ffffff";
-        this.resourceName = ""; // Défaut vide
+        this.resourceName = null;
     }
 
     public Sector(int number, String name) {
         this.number = number;
         this.name = name;
         this.color = "#ffffff";
-        this.resourceName = null; // Défaut vide
+        this.resourceName = null;
     }
 
     // === GESTION DES VOISINS ===

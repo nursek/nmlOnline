@@ -5,7 +5,7 @@ import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
-import com.mg.nmlonline.infrastructure.repository.ResourceTypeRepository;
+import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -27,7 +27,7 @@ import java.util.*;
 @Slf4j
 public class CsvDataLoader implements CommandLineRunner {
 
-    private final ResourceTypeRepository resourceTypeRepository;
+    private final ResourceRepository resourceRepository;
     private final EquipmentRepository equipmentRepository;
 
     @Override
@@ -42,8 +42,8 @@ public class CsvDataLoader implements CommandLineRunner {
      * Charge les ressources depuis resources.csv
      */
     private void loadResources() {
-        if (resourceTypeRepository.count() > 0) {
-            log.info("Resources already loaded (count: {}), skipping", resourceTypeRepository.count());
+        if (resourceRepository.count() > 0) {
+            log.info("Resources already loaded (count: {}), skipping", resourceRepository.count());
             return;
         }
 
@@ -62,7 +62,7 @@ public class CsvDataLoader implements CommandLineRunner {
                     String[] parts = line.split(",");
                     if (parts.length >= 2) {
                         Resource resource = new Resource(parts[0], Double.parseDouble(parts[1]));
-                        resourceTypeRepository.save(resource);
+                        resourceRepository.save(resource);
                         count++;
                         log.debug("Loaded resource: {}", resource);
                     }

@@ -101,7 +101,7 @@ public class PlayerImportService {
             return eq;
         }
 
-        // L'équipment n'existe pas — c'est une erreur (devrait être dans equipments.csv).
+        // L'équipement n'existe pas — c'est une erreur (devrait être dans equipments.csv).
         System.err.println("WARN: Équipement '" + equipmentName + "' non trouvé en BDD (vérifier equipments.csv)");
         return null;
     }

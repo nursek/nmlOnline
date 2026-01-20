@@ -56,6 +56,9 @@ public class PlayerMapper {
             List<PlayerResource> playerResources = dto.getResources().stream()
                     .map(this::playerResourceFromDto)
                     .toList();
+
+            // Assure la cohérence de la relation bidirectionnelle Player <-> PlayerResource
+            playerResources.forEach(resource -> resource.setPlayer(player));
             player.setResources(playerResources);
         }
 

@@ -101,7 +101,7 @@
       "number": 15,
       "name": "Casino",
       "income": 3800,
-      "resource": "Ivoires",
+      "resource": "Ivoire",
       "army": [
       ],
       "neighbors": [11, 14, 16]

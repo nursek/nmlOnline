@@ -13,12 +13,6 @@ import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 
-/**
- * Représente une ressource dans l'inventaire d'un joueur - Entité JPA
- * Stocke uniquement le nom de la ressource et la quantité possédée
- * Le prix de base est récupéré depuis la table RESOURCE_TYPE
- * Exemple: 3 unités d'Or, 15 unités d'Ivoire
- */
 @Entity
 @Table(name = "PLAYER_RESOURCES")
 @Data
@@ -89,7 +83,7 @@ public class PlayerResource {
         public PlayerResource deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
             JsonNode node = p.getCodec().readTree(p);
 
-            String type = node.get("type").asText();
+            String type = node.has("type") ? node.get("type").asText() : "";
             int quantity = node.has("quantity") ? node.get("quantity").asInt() : 0;
 
             return new PlayerResource(type, quantity);

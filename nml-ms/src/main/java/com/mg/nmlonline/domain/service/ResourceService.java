@@ -2,22 +2,18 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.Resource;
-import com.mg.nmlonline.infrastructure.repository.ResourceTypeRepository;
+import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-/**
- * Service pour gérer les ressources des joueurs
- * Gère les conversions, ventes avec multiplicateurs, et récupération des prix depuis Resource
- */
 @Service
 public class ResourceService {
 
-    private final ResourceTypeRepository resourceTypeRepository;
+    private final ResourceRepository resourceRepository;
 
     @Autowired
-    public ResourceService(ResourceTypeRepository resourceTypeRepository) {
-        this.resourceTypeRepository = resourceTypeRepository;
+    public ResourceService(ResourceRepository resourceRepository) {
+        this.resourceRepository = resourceRepository;
     }
 
     /**
@@ -36,18 +32,15 @@ public class ResourceService {
         45.0    // 9 unités = x45
     };
 
-    /**
-     * Récupère le prix de base d'une ressource depuis la table RESOURCE_TYPE
-     */
     public double getBaseValue(String resourceName) {
-        return resourceTypeRepository.findByName(resourceName)
+        return resourceRepository.findByName(resourceName)
                 .map(Resource::getBaseValue)
                 .orElseThrow(() -> new IllegalArgumentException("Ressource inconnue: " + resourceName));
     }
 
     /**
      * Calcule le multiplicateur de vente basé sur la quantité
-     * Over 9 units, can't reach higher multiplier
+     * Au-delà de 9 unités, impossible d'atteindre un multiplicateur plus élevé
      */
     private double getMultiplier(int quantity) {
         if (quantity <= 0) return 0.0;
@@ -57,24 +50,10 @@ public class ResourceService {
         return SALE_MULTIPLIERS[quantity - 1];
     }
 
-    /**
-     * Calcule le prix de vente total avec multiplicateur
-     * Prix = baseValue * multiplicateur (quantité)
-     */
     public double calculateSaleValue(String resourceName, int quantity) {
-        double baseValue = getBaseValue(resourceName);
-        double multiplier = getMultiplier(quantity);
-        return baseValue * multiplier;
+        return getBaseValue(resourceName) * getMultiplier(quantity);
     }
 
-    /**
-     * Vend une quantité de ressources avec multiplicateur et ajoute l'argent au joueur
-     *
-     * @param player Le joueur
-     * @param resourceName Nom de la ressource à vendre
-     * @param quantity Quantité à vendre
-     * @return Le montant gagné, ou 0 si la vente a échoué
-     */
     public double sellResourceWithMultiplier(Player player, String resourceName, int quantity) {
         if (player == null || resourceName == null || quantity <= 0) {
             return 0.0;
@@ -97,15 +76,6 @@ public class ResourceService {
         return 0.0;
     }
 
-    /**
-     * Transfère des ressources d'un joueur à un autre
-     *
-     * @param fromPlayer Joueur source
-     * @param toPlayer Joueur destinataire
-     * @param resourceName Nom de la ressource
-     * @param quantity Quantité à transférer
-     * @return true si le transfert a réussi
-     */
     public boolean transferResource(Player fromPlayer, Player toPlayer,
                                      String resourceName, int quantity) {
         if (fromPlayer == null || toPlayer == null || resourceName == null || quantity <= 0) {
@@ -127,26 +97,16 @@ public class ResourceService {
         return false;
     }
 
-    /**
-     * Récupère les ressources d'un secteur conquis ou lors du tour
-     *
-     * @param player Le joueur qui récupère
-     * @param resourceName Nom de la ressource du secteur
-     * @param quantity Quantité trouvée/générée dans le secteur
-     */
+
     public void collectSectorResource(Player player, String resourceName, int quantity) {
         if (player != null && resourceName != null && quantity > 0) {
             player.addResource(resourceName, quantity);
         }
+        // Ajouter un nouvel attribut au secteur, indiquant que la ressource a été collectée.
     }
 
-    /**
-     * Calcule la valeur totale d'une ressource possédée par un joueur
-     * (sans multiplicateur, juste baseValue * quantity)
-     */
     public double calculateResourceValue(String resourceName, int quantity) {
-        double baseValue = getBaseValue(resourceName);
-        return baseValue * quantity;
+        return quantity * getBaseValue(resourceName); // Valeur totale sans multiplicateur
     }
 
 }

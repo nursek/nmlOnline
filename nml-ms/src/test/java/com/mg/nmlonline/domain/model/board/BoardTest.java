@@ -253,8 +253,8 @@ class BoardTest {
         }
 
         @Test
-        @DisplayName("Secteur sans ressource retourne chaîne vide")
-        void shouldReturnEmptyStringForSectorWithoutResource() {
+        @DisplayName("Secteur sans ressource retourne null")
+        void shouldReturnNullForSectorWithoutResource() {
             board.addSector(new Sector(1, "Quartier vide"));
 
             String resourceName = board.getSector(1).getResourceName();

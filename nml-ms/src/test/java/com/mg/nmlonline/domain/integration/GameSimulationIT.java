@@ -450,7 +450,7 @@ class GameSimulationIT {
     private void assignResources() {
         if (board.hasSector(1)) board.getSector(1).setResourceName("Or");
         if (board.hasSector(5)) board.getSector(5).setResourceName("Joyaux");
-        if (board.hasSector(9)) board.getSector(9).setResourceName("Cigare");
+        if (board.hasSector(9)) board.getSector(9).setResourceName("Cigares");
         if (board.hasSector(13)) board.getSector(13).setResourceName("Uranium");
     }
 
