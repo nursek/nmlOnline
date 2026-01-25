@@ -188,9 +188,9 @@ public class PlayerImportService {
             for (String equipmentName : unitDto.equipments) {
                 Equipment equipment = getEquipmentByName(equipmentName);
                 if (equipment == null) {
-                    System.err.println("ERREUR: Équipement '" + equipmentName + "' n'existe pas en BDD (absent de equipments.csv)");
+                    System.err.println("WARN: Équipement '" + equipmentName + "' n'existe pas en BDD (absent de equipments.csv)");
                 } else if (!player.isEquipmentAvailable(equipmentName)) {
-                    System.err.println("ERREUR: Équipement '" + equipmentName + "' non disponible dans l'inventaire du joueur " + player.getName());
+                    System.err.println("WARN: Équipement '" + equipmentName + "' non disponible dans l'inventaire du joueur " + player.getName());
                 } else {
                     if (unit.addEquipment(equipment)) {
                         player.decrementEquipmentAvailability(equipmentName);

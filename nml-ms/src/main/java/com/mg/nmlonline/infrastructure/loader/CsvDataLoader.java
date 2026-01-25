@@ -96,7 +96,7 @@ public class CsvDataLoader implements CommandLineRunner {
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
                 if (!line.isEmpty()) {
-                    String[] parts = line.split(";");
+                    String[] parts = line.split(",");
                     if (parts.length >= 8) {
                         Equipment equipment = new Equipment(
                             parts[0],                                    // name

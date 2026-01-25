@@ -37,8 +37,7 @@ public class PlayerResource {
 
     // Relation optionnelle avec Resource pour validation et récupération du prix
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "resource_name", referencedColumnName = "name",
-                insertable = false, updatable = false)
+    @JoinColumn(name = "resource_id", referencedColumnName = "id")
     private Resource resource;
 
     public PlayerResource(String resourceName) {
@@ -56,6 +55,9 @@ public class PlayerResource {
      */
     public void addQuantity(int amount) {
         if (amount > 0) {
+            if (this.quantity > Integer.MAX_VALUE - amount) {
+                throw new IllegalArgumentException("Quantity overflow: cannot add " + amount + " to " + this.quantity);
+            }
             this.quantity += amount;
         }
     }
