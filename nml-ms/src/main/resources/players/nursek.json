@@ -1,6 +1,16 @@
 {
   "name": "nursek",
   "money": 30000,
+  "resources": [
+    {
+      "type": "Or",
+      "quantity": 1
+    },
+    {
+      "type": "Ivoire",
+      "quantity": 1
+    }
+  ],
   "equipments": [
     {
       "name": "Mini machine gun",

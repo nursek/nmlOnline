@@ -10,5 +10,6 @@ public class PlayerDto {
     private String name;
     private PlayerStatsDto stats;
     private List<EquipmentStackDto> equipments;
+    private List<PlayerResourceDto> resources;
     private Set<Long> ownedSectorIds;
 }

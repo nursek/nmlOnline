@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.model.player;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
+import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -38,7 +39,11 @@ public class Player {
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EquipmentStack> equipments = new ArrayList<>(); // Équipements possédés par le joueur
 
-    // Note: Les secteurs contrôlés sont stockés via Sector.ownerId (source unique de vérité)
+    // Inventaire de ressources du joueur
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PlayerResource> resources = new ArrayList<>(); // Ressources possédées par le joueur (Or, Ivoire, etc.)
+
+    // Note : Les secteurs contrôlés sont stockés via Sector.ownerId (source unique de vérité)
     // Cette collection transient est utilisée pour compatibilité avec l'ancien code
     @Transient
     private Set<Long> ownedSectorIds = new HashSet<>();
@@ -328,6 +333,68 @@ public class Player {
         }
     }
 
+    // === GESTION DES RESSOURCES DU JOUEUR ===
+
+    /**
+     * Ajoute une ressource au joueur (sans baseValue - récupéré depuis Resource)
+     */
+    public void addResource(String resourceName, int quantity) {
+        if (resourceName == null || quantity <= 0) return;
+
+        PlayerResource existingResource = findResourceByName(resourceName);
+        if (existingResource != null) {
+            existingResource.addQuantity(quantity);
+        } else {
+            PlayerResource newResource = new PlayerResource(resourceName, quantity);
+            newResource.setPlayer(this);
+            resources.add(newResource);
+        }
+    }
+
+    /**
+     * Retire une ressource du joueur
+     */
+    public boolean removeResource(String resourceName, int quantity) {
+        if (resourceName == null || quantity <= 0) return false;
+
+        PlayerResource resource = findResourceByName(resourceName);
+        if (resource != null) {
+            boolean removed = resource.removeQuantity(quantity);
+            if (resource.getQuantity() == 0) {
+                resources.remove(resource);
+            }
+            return removed;
+        }
+        return false;
+    }
+
+    /**
+     * Vérifie si le joueur possède une quantité donnée d'une ressource
+     */
+    public boolean hasResource(String resourceName, int quantity) {
+        PlayerResource resource = findResourceByName(resourceName);
+        return resource != null && resource.hasQuantity(quantity);
+    }
+
+    /**
+     * Retourne la quantité possédée d'une ressource
+     */
+    public int getResourceQuantity(String resourceName) {
+        PlayerResource resource = findResourceByName(resourceName);
+        return resource != null ? resource.getQuantity() : 0;
+    }
+
+    /**
+     * Trouve une ressource par son nom
+     */
+    private PlayerResource findResourceByName(String resourceName) {
+        if (resourceName == null) return null;
+        return resources.stream()
+                .filter(resource -> resourceName.equals(resource.getResourceName()))
+                .findFirst()
+                .orElse(null);
+    }
+
     // === CALCULS ET STATISTIQUES ===
 
     public void calculateTotalEconomyPower() {
@@ -337,6 +404,5 @@ public class Player {
                 + stats.getTotalVehiclesValue();
         stats.setTotalEconomyPower(economyPower);
     }
-
 
 }

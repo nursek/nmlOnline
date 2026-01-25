@@ -101,7 +101,7 @@
       "number": 15,
       "name": "Casino",
       "income": 3800,
-      "resource": "argent_sale",
+      "resource": "Ivoire",
       "army": [
       ],
       "neighbors": [11, 14, 16]
@@ -110,7 +110,7 @@
       "number": 16,
       "name": "Port de Contrebande",
       "income": 4500,
-      "resource": "marchandises",
+      "resource": "Alcool",
       "army": [
       ],
       "neighbors": [12, 15]

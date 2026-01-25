@@ -2,7 +2,6 @@ package com.mg.nmlonline.domain.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.domain.model.board.Board;
-import com.mg.nmlonline.domain.model.board.Resource;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -70,8 +69,7 @@ public class BoardImportService {
 
                 // Ajouter la ressource si présente
                 if (sectorDto.resource != null && !sectorDto.resource.isEmpty()) {
-                    Resource res = new Resource(sectorDto.resource, 1000.0);
-                    sector.setResource(res);
+                    sector.setResourceName(sectorDto.resource);
                 }
 
                 // Importer les unités
@@ -133,7 +131,7 @@ public class BoardImportService {
 
     /**
      * Récupère un Equipment depuis le cache ou la BDD.
-     * Les Equipment sont pré-chargés via data.sql, on ne crée jamais de nouveaux Equipment ici.
+     * Les Equipment sont pré-chargés via CSV, on ne crée jamais de nouveaux Equipment ici.
      */
     private Equipment getEquipmentByName(String equipmentName) {
         // 1. Vérifier le cache
