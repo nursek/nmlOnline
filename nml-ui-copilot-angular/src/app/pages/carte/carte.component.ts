@@ -720,11 +720,8 @@ export class CarteComponent implements OnInit {
     })) as SectorWithPlayer[];
   });
 
-  filteredSectors = computed(() => {
-    const selected = this.selectedPlayer();
-    if (!selected) return this.allSectors();
-    return this.allSectors();  // On ne filtre pas vraiment, on dim les autres
-  });
+  // filteredSectors est identique à allSectors (le filtre se fait via CSS avec .dimmed)
+  filteredSectors = this.allSectors;
 
   neutralSectorsCount = computed(() =>
     this.allSectors().filter(s => !s.ownerId).length

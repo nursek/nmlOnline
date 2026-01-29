@@ -89,17 +89,6 @@ export const authReducer = createReducer(
     error: null,
   })),
 
-  on(AuthActions.loadUserFromStorage, (state) => {
-    const user = loadUserFromLocalStorage();
-    const storedToken = localStorage.getItem('accessToken');
-
-    return {
-      ...state,
-      user,
-      accessToken: storedToken,
-      isAuthenticated: !!storedToken && !!user,
-    };
-  }),
 
   // Init session (refresh au démarrage)
   on(AuthActions.initSession, (state) => ({

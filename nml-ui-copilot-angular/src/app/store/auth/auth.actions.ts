@@ -1,5 +1,5 @@
 import { createActionGroup, emptyProps, props } from '@ngrx/store';
-import { AuthResponse, LoginRequest, RefreshResponse, User } from '../../models';
+import { AuthResponse, LoginRequest } from '../../models';
 
 export const AuthActions = createActionGroup({
   source: 'Auth',
@@ -10,7 +10,6 @@ export const AuthActions = createActionGroup({
     'Logout': emptyProps(),
     'Logout Success': emptyProps(),
     'Clear Error': emptyProps(),
-    'Load User From Storage': emptyProps(),
     // Refresh token au démarrage
     'Init Session': emptyProps(),
     'Init Session Success': props<{ token: string; id: number; username: string }>(),

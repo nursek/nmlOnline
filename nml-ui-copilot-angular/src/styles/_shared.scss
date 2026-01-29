@@ -1,0 +1,117 @@
+// Styles communs partagés entre les composants
+// À importer avec @use '../../../styles/shared' as shared;
+
+// Variables
+$primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+$primary-color: #6366f1;
+$text-muted: #64748b;
+
+// Mixins
+@mixin page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+@mixin loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+@mixin page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+@mixin avatar($size: 64px, $icon-size: 40px) {
+  width: $size;
+  height: $size;
+  background: $primary-gradient;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  mat-icon {
+    font-size: $icon-size;
+    width: $icon-size;
+    height: $icon-size;
+    color: white;
+  }
+}
+
+@mixin gradient-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: $primary-gradient;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+@mixin subtitle {
+  color: $text-muted;
+  margin: 4px 0 0;
+}
+
+@mixin error-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+@mixin card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+}
+
+@mixin section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+}
+
+@mixin fade-in-animation {
+  animation: fadeIn 0.3s ease;
+}
+
+@mixin hover-lift {
+  transition: transform 0.3s, box-shadow 0.3s;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Keyframes
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// Classes utilitaires
+.fade-in {
+  @include fade-in-animation;
+}
+
+.hover-lift {
+  @include hover-lift;
+}

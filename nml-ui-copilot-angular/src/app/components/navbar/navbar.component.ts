@@ -1,12 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, effect } from '@angular/core';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map } from 'rxjs/operators';
@@ -23,7 +22,6 @@ import { AuthActions } from '../../store/auth/auth.actions';
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatSidenavModule,
     MatListModule,
   ],
   template: `
@@ -39,7 +37,7 @@ import { AuthActions } from '../../store/auth/auth.actions';
           <!-- Menu mobile toggle -->
           @if (isMobile$ | async) {
             <button mat-icon-button (click)="toggleDrawer()">
-              <mat-icon>menu</mat-icon>
+              <mat-icon>{{ drawerOpen() ? 'close' : 'menu' }}</mat-icon>
             </button>
           }
 
@@ -86,9 +84,10 @@ import { AuthActions } from '../../store/auth/auth.actions';
         </div>
       </mat-toolbar>
 
-      <!-- Mobile drawer -->
-      <mat-sidenav-container class="sidenav-container" [hasBackdrop]="true">
-        <mat-sidenav #sidenav mode="over" [opened]="drawerOpen()">
+      <!-- Mobile drawer overlay -->
+      @if ((isMobile$ | async) && drawerOpen()) {
+        <div class="mobile-drawer-backdrop" (click)="toggleDrawer()"></div>
+        <div class="mobile-drawer">
           <mat-nav-list>
             @for (item of menuItems; track item.path) {
               <a mat-list-item
@@ -100,17 +99,25 @@ import { AuthActions } from '../../store/auth/auth.actions';
               </a>
             }
           </mat-nav-list>
-        </mat-sidenav>
-      </mat-sidenav-container>
+        </div>
+      }
     }
   `,
   styles: [`
+    :host {
+      display: block;
+      height: 56px; /* Reserve space for fixed navbar */
+    }
+
     .navbar {
-      position: sticky;
+      position: fixed;
       top: 0;
-      z-index: 1000;
+      left: 0;
+      right: 0;
+      z-index: 1001;
       background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .navbar-content {
@@ -179,28 +186,76 @@ import { AuthActions } from '../../store/auth/auth.actions';
       gap: 16px;
     }
 
-    .sidenav-container {
-      position: absolute;
-      top: 64px;
+    .mobile-drawer-backdrop {
+      position: fixed;
+      top: 0;
       left: 0;
       right: 0;
-      height: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      animation: fadeIn 0.2s ease;
+      touch-action: none;
     }
 
-    mat-sidenav {
-      width: 250px;
-      padding-top: 16px;
+    .mobile-drawer {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      width: 280px;
+      max-width: 80vw;
+      height: calc(100vh - 56px);
+      height: calc(100dvh - 56px);
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      z-index: 1000;
+      box-shadow: 4px 0 15px rgba(0, 0, 0, 0.4);
+      animation: slideIn 0.25s ease;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      border-top: 1px solid rgba(99, 102, 241, 0.3);
+
+      mat-nav-list {
+        padding-top: 8px;
+      }
+
+      a {
+        color: rgba(255, 255, 255, 0.8);
+
+        mat-icon {
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        &.active {
+          background: rgba(99, 102, 241, 0.2);
+          color: #818cf8;
+
+          mat-icon {
+            color: #818cf8;
+          }
+        }
+      }
     }
 
-    mat-nav-list a.active {
-      background: rgba(99, 102, 241, 0.1);
-      color: #6366f1;
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(0); }
     }
   `]
 })
 export class NavbarComponent {
   private store = inject(Store);
   private breakpointObserver = inject(BreakpointObserver);
+  private document = inject(DOCUMENT);
 
   isAuthenticated$ = this.store.select(selectIsAuthenticated);
   user$ = this.store.select(selectUser);
@@ -209,6 +264,17 @@ export class NavbarComponent {
     .pipe(map(result => result.matches));
 
   drawerOpen = signal(false);
+
+  constructor() {
+    // Bloquer le scroll du body quand le drawer est ouvert
+    effect(() => {
+      if (this.drawerOpen()) {
+        this.document.body.style.overflow = 'hidden';
+      } else {
+        this.document.body.style.overflow = '';
+      }
+    });
+  }
 
   menuItems = [
     { path: '/carte', label: 'Carte', icon: 'map' },

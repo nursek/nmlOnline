@@ -32,176 +32,202 @@ import { filter, take } from 'rxjs/operators';
     MatDividerModule,
   ],
   template: `
-    @if ((loading$ | async) && (equipments$ | async)?.length === 0) {
-      <div class="loading-container">
-        <mat-spinner diameter="60"></mat-spinner>
-      </div>
-    } @else {
-      <div class="container fade-in">
-        <!-- Header -->
-        <div class="page-header">
-          <div class="header-left">
-            <div class="avatar">
-              <mat-icon>shopping_bag</mat-icon>
-            </div>
-            <div>
-              <h1 class="title">Boutique d'Équipements</h1>
-              <p class="subtitle">Équipez vos troupes pour la victoire</p>
-            </div>
-          </div>
-
-          <div class="header-right">
-            <div class="money-display">
-              <span class="money-label">Argent disponible:</span>
-              <span class="money-value">{{ (player$ | async)?.stats?.money | number:'1.0-0' }} ₡</span>
-            </div>
-            <button mat-raised-button
-                    [color]="showCart() ? 'primary' : 'basic'"
-                    [matBadge]="(totalItems$ | async) || 0"
-                    matBadgeColor="accent"
-                    (click)="toggleCart()">
-              <mat-icon>shopping_cart</mat-icon>
-              Panier ({{ (cart$ | async)?.length || 0 }})
+    <mat-sidenav-container class="sidenav-container">
+      <!-- Cart Drawer -->
+      <mat-sidenav #cartDrawer mode="over" position="end" [opened]="showCart()" (closed)="showCart.set(false)">
+        <div class="cart-content">
+          <div class="cart-header">
+            <h2>Panier</h2>
+            <button mat-icon-button (click)="toggleCart()">
+              <mat-icon>close</mat-icon>
             </button>
           </div>
-        </div>
+          <mat-divider></mat-divider>
 
-        @if (error$ | async; as error) {
-          <div class="error-alert">
-            <mat-icon>error</mat-icon>
-            {{ error }}
-          </div>
-        }
-
-        <!-- Liste des équipements -->
-        <h2 class="section-title">Équipements disponibles</h2>
-        <div class="equipment-grid">
-          @for (equipment of equipments$ | async; track equipment.name) {
-            <mat-card class="equipment-card hover-lift">
-              <mat-card-content>
-                <div class="equipment-header">
-                  <h3>{{ equipment.name }}</h3>
-                  <mat-chip color="warn" highlighted>{{ equipment.cost }} ₡</mat-chip>
-                </div>
-                <span class="category">{{ equipment.category }}</span>
-
-                <!-- Bonus -->
-                <div class="bonus-chips">
-                  @if (equipment.pdfBonus > 0) {
-                    <mat-chip class="bonus pdf">+{{ equipment.pdfBonus }} PDF</mat-chip>
-                  }
-                  @if (equipment.pdcBonus > 0) {
-                    <mat-chip class="bonus pdc">+{{ equipment.pdcBonus }} PDC</mat-chip>
-                  }
-                  @if (equipment.armBonus > 0) {
-                    <mat-chip class="bonus arm">+{{ equipment.armBonus }} ARM</mat-chip>
-                  }
-                  @if (equipment.evasionBonus > 0) {
-                    <mat-chip class="bonus esq">+{{ equipment.evasionBonus }} ESQ</mat-chip>
-                  }
-                </div>
-
-                <!-- Classes compatibles -->
-                <div class="compatible-classes">
-                  <span class="label">Compatible avec:</span>
-                  <div class="class-chips">
-                    @if (equipment.compatibleClass && equipment.compatibleClass.length > 0) {
-                      @for (unitClass of equipment.compatibleClass; track unitClass.code) {
-                        <mat-chip>{{ unitClass.name }}</mat-chip>
-                      }
-                    } @else {
-                      <span class="none">Aucune</span>
-                    }
+          @if ((cart$ | async)?.length === 0) {
+            <div class="empty-cart">
+              <mat-icon>shopping_cart</mat-icon>
+              <p>Votre panier est vide</p>
+            </div>
+          } @else {
+            <div class="cart-items">
+              @for (item of cart$ | async; track item.equipment.name) {
+                <div class="cart-item">
+                  <div class="item-header">
+                    <h4>{{ item.equipment.name }}</h4>
+                    <button mat-icon-button color="warn" (click)="removeFromCart(item.equipment.name)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                  <p class="item-price">{{ item.equipment.cost }} ₡ × {{ item.quantity }} = {{ item.equipment.cost * item.quantity }} ₡</p>
+                  <div class="quantity-controls">
+                    <button mat-icon-button [disabled]="item.quantity <= 1" (click)="updateQuantity(item.equipment.name, item.quantity - 1)">
+                      <mat-icon>remove</mat-icon>
+                    </button>
+                    <span class="quantity">{{ item.quantity }}</span>
+                    <button mat-icon-button (click)="updateQuantity(item.equipment.name, item.quantity + 1)">
+                      <mat-icon>add</mat-icon>
+                    </button>
                   </div>
                 </div>
+              }
+            </div>
 
-                <!-- Quantité possédée -->
-                @if (getOwnedQuantity(equipment.name) > 0) {
-                  <p class="owned">Vous en possédez: <strong>{{ getOwnedQuantity(equipment.name) }}</strong></p>
-                }
-
-                <!-- Bouton d'ajout -->
-                <button mat-raised-button color="primary" class="add-btn" (click)="addToCart(equipment)">
-                  <mat-icon>add</mat-icon>
-                  Ajouter au panier
-                  @if (getCartQuantity(equipment.name) > 0) {
-                    ({{ getCartQuantity(equipment.name) }})
-                  }
-                </button>
-              </mat-card-content>
-            </mat-card>
-          }
-        </div>
-      </div>
-
-      <!-- Cart Drawer -->
-      <mat-sidenav-container class="cart-container">
-        <mat-sidenav #cartDrawer mode="over" position="end" [opened]="showCart()" (closed)="showCart.set(false)">
-          <div class="cart-content">
-            <h2>Panier</h2>
             <mat-divider></mat-divider>
 
-            @if ((cart$ | async)?.length === 0) {
-              <div class="empty-cart">
-                <mat-icon>shopping_cart</mat-icon>
-                <p>Votre panier est vide</p>
+            <div class="cart-total">
+              <div class="total-row">
+                <span>Total:</span>
+                <span class="total-value">{{ totalPrice$ | async }} ₡</span>
               </div>
-            } @else {
-              <div class="cart-items">
-                @for (item of cart$ | async; track item.equipment.name) {
-                  <div class="cart-item">
-                    <div class="item-header">
-                      <h4>{{ item.equipment.name }}</h4>
-                      <button mat-icon-button color="warn" (click)="removeFromCart(item.equipment.name)">
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                    </div>
-                    <p class="item-price">{{ item.equipment.cost }} ₡ × {{ item.quantity }} = {{ item.equipment.cost * item.quantity }} ₡</p>
-                    <div class="quantity-controls">
-                      <button mat-icon-button [disabled]="item.quantity <= 1" (click)="updateQuantity(item.equipment.name, item.quantity - 1)">
-                        <mat-icon>remove</mat-icon>
-                      </button>
-                      <span class="quantity">{{ item.quantity }}</span>
-                      <button mat-icon-button (click)="updateQuantity(item.equipment.name, item.quantity + 1)">
-                        <mat-icon>add</mat-icon>
-                      </button>
-                    </div>
-                  </div>
-                }
+              <div class="total-row">
+                <span>Argent disponible:</span>
+                <span>{{ (player$ | async)?.stats?.money | number:'1.0-0' }} ₡</span>
               </div>
+            </div>
 
-              <mat-divider></mat-divider>
+            <button mat-raised-button
+                    [color]="canAfford() ? 'primary' : 'warn'"
+                    [disabled]="!canAfford()"
+                    class="checkout-btn"
+                    (click)="checkout()">
+              <mat-icon>attach_money</mat-icon>
+              {{ canAfford() ? 'Acheter' : 'Fonds insuffisants' }}
+            </button>
 
-              <div class="cart-total">
-                <div class="total-row">
-                  <span>Total:</span>
-                  <span class="total-value">{{ totalPrice$ | async }} ₡</span>
-                </div>
-                <div class="total-row">
-                  <span>Argent disponible:</span>
-                  <span>{{ (player$ | async)?.stats?.money | number:'1.0-0' }} ₡</span>
-                </div>
-              </div>
+            <button mat-stroked-button color="warn" class="clear-btn" (click)="clearCart()">
+              Vider le panier
+            </button>
+          }
+        </div>
+      </mat-sidenav>
 
-              <button mat-raised-button
-                      [color]="canAfford() ? 'primary' : 'warn'"
-                      [disabled]="!canAfford()"
-                      class="checkout-btn"
-                      (click)="checkout()">
-                <mat-icon>attach_money</mat-icon>
-                {{ canAfford() ? 'Acheter' : 'Fonds insuffisants' }}
-              </button>
-
-              <button mat-stroked-button color="warn" class="clear-btn" (click)="clearCart()">
-                Vider le panier
-              </button>
-            }
+      <mat-sidenav-content>
+        @if ((loading$ | async) && (equipments$ | async)?.length === 0) {
+          <div class="loading-container">
+            <mat-spinner diameter="60"></mat-spinner>
           </div>
-        </mat-sidenav>
-      </mat-sidenav-container>
-    }
+        } @else {
+          <div class="container fade-in">
+            <!-- Header -->
+            <div class="page-header">
+              <div class="header-left">
+                <div class="avatar">
+                  <mat-icon>shopping_bag</mat-icon>
+                </div>
+                <div>
+                  <h1 class="title">Boutique d'Équipements</h1>
+                  <p class="subtitle">Équipez vos troupes pour la victoire</p>
+                </div>
+              </div>
+
+              <div class="header-right">
+                <div class="money-display">
+                  <span class="money-label">Argent disponible:</span>
+                  <span class="money-value">{{ (player$ | async)?.stats?.money | number:'1.0-0' }} ₡</span>
+                </div>
+                <button mat-raised-button
+                        [color]="showCart() ? 'primary' : 'basic'"
+                        [matBadge]="(totalItems$ | async) || 0"
+                        matBadgeColor="accent"
+                        (click)="toggleCart()">
+                  <mat-icon>shopping_cart</mat-icon>
+                  Panier ({{ (cart$ | async)?.length || 0 }})
+                </button>
+              </div>
+            </div>
+
+            @if (error$ | async; as error) {
+              <div class="error-alert">
+                <mat-icon>error</mat-icon>
+                {{ error }}
+              </div>
+            }
+
+            <!-- Liste des équipements -->
+            <h2 class="section-title">Équipements disponibles</h2>
+            <div class="equipment-grid">
+              @for (equipment of equipments$ | async; track equipment.name) {
+                <mat-card class="equipment-card hover-lift">
+                  <mat-card-content>
+                    <div class="equipment-header">
+                      <h3>{{ equipment.name }}</h3>
+                      <mat-chip color="warn" highlighted>{{ equipment.cost }} ₡</mat-chip>
+                    </div>
+                    <span class="category">{{ equipment.category }}</span>
+
+                    <!-- Bonus -->
+                    <div class="bonus-chips">
+                      @if (equipment.pdfBonus > 0) {
+                        <mat-chip class="bonus pdf">+{{ equipment.pdfBonus }} PDF</mat-chip>
+                      }
+                      @if (equipment.pdcBonus > 0) {
+                        <mat-chip class="bonus pdc">+{{ equipment.pdcBonus }} PDC</mat-chip>
+                      }
+                      @if (equipment.armBonus > 0) {
+                        <mat-chip class="bonus arm">+{{ equipment.armBonus }} ARM</mat-chip>
+                      }
+                      @if (equipment.evasionBonus > 0) {
+                        <mat-chip class="bonus esq">+{{ equipment.evasionBonus }} ESQ</mat-chip>
+                      }
+                    </div>
+
+                    <!-- Classes compatibles -->
+                    <div class="compatible-classes">
+                      <span class="label">Compatible avec:</span>
+                      <div class="class-chips">
+                        @if (equipment.compatibleClass && equipment.compatibleClass.length > 0) {
+                          @for (unitClass of equipment.compatibleClass; track unitClass.code) {
+                            <mat-chip>{{ unitClass.name }}</mat-chip>
+                          }
+                        } @else {
+                          <span class="none">Aucune</span>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Quantité possédée -->
+                    @if (getOwnedQuantity(equipment.name) > 0) {
+                      <p class="owned">Vous en possédez: <strong>{{ getOwnedQuantity(equipment.name) }}</strong></p>
+                    }
+
+                    <!-- Contrôles d'ajout au panier -->
+                    @if (getCartQuantity(equipment.name) === 0) {
+                      <button mat-raised-button color="primary" class="add-btn" (click)="addToCart(equipment)">
+                        <mat-icon>add_shopping_cart</mat-icon>
+                        Ajouter au panier
+                      </button>
+                    } @else {
+                      <div class="cart-controls">
+                        <button mat-mini-fab color="warn" (click)="removeFromCart(equipment.name)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                        <div class="quantity-stepper">
+                          <button mat-icon-button color="primary" (click)="decrementCartQuantity(equipment.name)">
+                            <mat-icon>remove</mat-icon>
+                          </button>
+                          <span class="qty-value">{{ getCartQuantity(equipment.name) }}</span>
+                          <button mat-icon-button color="primary" (click)="addToCart(equipment)">
+                            <mat-icon>add</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </mat-card-content>
+                </mat-card>
+              }
+            </div>
+          </div>
+        }
+      </mat-sidenav-content>
+    </mat-sidenav-container>
   `,
   styles: [`
+    .sidenav-container {
+      height: 100%;
+      min-height: 100vh;
+    }
+
     .loading-container {
       display: flex;
       justify-content: center;
@@ -372,6 +398,46 @@ import { filter, take } from 'rxjs/operators';
 
     .add-btn {
       width: 100%;
+    }
+
+    .cart-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px;
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+
+    .quantity-stepper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: white;
+      border-radius: 8px;
+      padding: 4px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+      .qty-value {
+        min-width: 32px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 1rem;
+        color: #6366f1;
+      }
+    }
+
+    .cart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+
+      h2 {
+        margin: 0;
+        font-weight: 600;
+      }
     }
 
     .cart-container {
@@ -557,6 +623,15 @@ export class BoutiqueComponent implements OnInit {
 
   updateQuantity(name: string, quantity: number): void {
     this.store.dispatch(ShopActions.updateCartItemQuantity({ name, quantity }));
+  }
+
+  decrementCartQuantity(name: string): void {
+    const currentQty = this.getCartQuantity(name);
+    if (currentQty > 1) {
+      this.store.dispatch(ShopActions.updateCartItemQuantity({ name, quantity: currentQty - 1 }));
+    } else {
+      this.store.dispatch(ShopActions.removeFromCart({ name }));
+    }
   }
 
   clearCart(): void {
