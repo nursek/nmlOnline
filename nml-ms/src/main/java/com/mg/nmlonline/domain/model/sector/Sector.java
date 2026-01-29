@@ -61,6 +61,13 @@ public class Sector {
     @Column(name = "resource_name", nullable = true)
     private String resourceName; // Nom de la ressource du secteur (ex: "Or", "Ivoire", "Joyaux")
 
+    // Coordonnées pour le positionnement sur la carte
+    @Column(nullable = true)
+    private Integer x;
+
+    @Column(nullable = true)
+    private Integer y;
+
     @ElementCollection
     @CollectionTable(name = "SECTOR_NEIGHBORS",
         joinColumns = {

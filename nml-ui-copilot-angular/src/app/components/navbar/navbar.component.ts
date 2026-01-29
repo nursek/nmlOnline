@@ -62,12 +62,14 @@ import { AuthActions } from '../../store/auth/auth.actions';
           <!-- User info -->
           <div class="user-section">
             @if (user$ | async; as user) {
-              <mat-chip-set>
-                <mat-chip highlighted>
-                  <mat-icon matChipAvatar>person</mat-icon>
-                  {{ user.username }}
-                </mat-chip>
-              </mat-chip-set>
+              @if (user.username) {
+                <mat-chip-set>
+                  <mat-chip highlighted>
+                    <mat-icon matChipAvatar>person</mat-icon>
+                    {{ user.username }}
+                  </mat-chip>
+                </mat-chip-set>
+              }
             }
 
             @if (!(isMobile$ | async)) {

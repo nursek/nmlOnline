@@ -12,4 +12,5 @@ public class PlayerDto {
     private List<EquipmentStackDto> equipments;
     private List<PlayerResourceDto> resources;
     private Set<Long> ownedSectorIds;
+    private List<SectorDto> sectors; // Secteurs complets pour l'affichage
 }

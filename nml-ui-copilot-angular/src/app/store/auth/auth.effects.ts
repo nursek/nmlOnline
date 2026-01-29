@@ -1,10 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
-import { map, exhaustMap, catchError, tap } from 'rxjs/operators';
+import { map, exhaustMap, catchError, tap, switchMap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthActions } from './auth.actions';
+import { PlayerActions } from '../player/player.actions';
 
 @Injectable()
 export class AuthEffects {
@@ -51,14 +52,37 @@ export class AuthEffects {
     )
   );
 
-  logoutSuccess$ = createEffect(
-    () =>
-      this.actions$.pipe(
-        ofType(AuthActions.logoutSuccess),
-        tap(() => {
-          this.router.navigate(['/login']);
-        })
-      ),
-    { dispatch: false }
+  // Quand logout success, reset le player state et rediriger
+  logoutSuccess$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(AuthActions.logoutSuccess),
+      tap(() => {
+        this.router.navigate(['/login']);
+      }),
+      map(() => PlayerActions.reset())
+    )
+  );
+
+  // Refresh token au démarrage de l'app
+  initSession$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(AuthActions.initSession),
+      exhaustMap(() =>
+        this.apiService.refreshToken().pipe(
+          map((response) => {
+            if (response.valid && response.token && response.id && response.name) {
+              return AuthActions.initSessionSuccess({
+                token: response.token,
+                id: response.id,
+                username: response.name
+              });
+            } else {
+              return AuthActions.initSessionFailure();
+            }
+          }),
+          catchError(() => of(AuthActions.initSessionFailure()))
+        )
+      )
+    )
   );
 }

@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { Store } from '@ngrx/store';
 import { NavbarComponent } from './components/navbar/navbar.component';
+import { AuthActions } from './store/auth/auth.actions';
 
 @Component({
   selector: 'app-root',
@@ -26,4 +28,10 @@ import { NavbarComponent } from './components/navbar/navbar.component';
     }
   `]
 })
-export class App {}
+export class App implements OnInit {
+  private store = inject(Store);
+
+  ngOnInit(): void {
+    this.store.dispatch(AuthActions.initSession());
+  }
+}

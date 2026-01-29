@@ -5,10 +5,19 @@ export interface LoginRequest {
   rememberMe: boolean;
 }
 
+// Correspond à AuthResponse du backend (token, id, name)
 export interface AuthResponse {
-  accessToken: string;
-  userId: number;
-  username: string;
+  token: string;
+  id: number;
+  name: string;
+}
+
+export interface RefreshResponse {
+  valid: boolean;
+  token?: string;
+  id?: number;
+  name?: string;
+  error?: string;
 }
 
 export interface User {
@@ -61,11 +70,27 @@ export interface Sector {
   income: number | null;
   army: Unit[] | null;
   stats?: SectorStats;
+  // Propriétés pour la carte
+  ownerId: number | null;
+  color: string | null;
+  resource: string | null;
+  neighbors: number[];
+  // Coordonnées pour le positionnement
+  x: number | null;
+  y: number | null;
 }
 
 export interface SectorStats {
   defenseBonus: number;
   resourceProduction: number;
+  totalAtk?: number;
+  totalPdf?: number;
+  totalPdc?: number;
+  totalDef?: number;
+  totalArmor?: number;
+  totalOffensive?: number;
+  totalDefensive?: number;
+  globalStats?: number;
 }
 
 export interface Player {
@@ -74,6 +99,12 @@ export interface Player {
   stats: PlayerStats;
   equipments: EquipmentStack[];
   sectors: Sector[];
+}
+
+// Types pour la Board (carte du jeu)
+export interface Board {
+  id: number;
+  sectors: { [key: number]: Sector };
 }
 
 // Types pour les équipements et classes d'unités

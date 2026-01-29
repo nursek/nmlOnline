@@ -38,7 +38,7 @@ public class BoardController {
      * Récupère une board par son ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<BoardDto> getBoardById(@PathVariable Long id) {
+    public ResponseEntity<BoardDto> getBoardById(@PathVariable("id") Long id) {
         return boardService.getBoardById(id)
                 .map(boardMapper::toDto)
                 .map(ResponseEntity::ok)
@@ -49,7 +49,7 @@ public class BoardController {
      * Récupère une board par son nom
      */
     @GetMapping("/name/{name}")
-    public ResponseEntity<BoardDto> getBoardByName(@PathVariable String name) {
+    public ResponseEntity<BoardDto> getBoardByName(@PathVariable("name") String name) {
         return boardService.getBoardByName(name)
                 .map(boardMapper::toDto)
                 .map(ResponseEntity::ok)
@@ -60,7 +60,7 @@ public class BoardController {
      * Crée ou met à jour une board
      */
     @PostMapping
-    public ResponseEntity<BoardDto> createBoard(@RequestBody BoardDto boardDto, @RequestParam String name) {
+    public ResponseEntity<BoardDto> createBoard(@RequestBody BoardDto boardDto, @RequestParam("name") String name) {
         Board board = boardMapper.toDomain(boardDto);
         Board savedBoard = boardService.saveBoard(board, name);
         return ResponseEntity.status(HttpStatus.CREATED).body(boardMapper.toDto(savedBoard));
@@ -70,7 +70,7 @@ public class BoardController {
      * Supprime une board
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBoard(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteBoard(@PathVariable("id") Long id) {
         boardService.deleteBoard(id);
         return ResponseEntity.noContent().build();
     }
@@ -80,10 +80,10 @@ public class BoardController {
      */
     @PutMapping("/{boardId}/sectors/{sectorNumber}/owner")
     public ResponseEntity<Void> assignOwnerToSector(
-            @PathVariable Long boardId,
-            @PathVariable int sectorNumber,
-            @RequestParam Long playerId,
-            @RequestParam String color) {
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("sectorNumber") int sectorNumber,
+            @RequestParam("playerId") Long playerId,
+            @RequestParam("color") String color) {
         boolean success = boardService.assignOwnerToSector(boardId, sectorNumber, playerId, color);
         return success ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
@@ -93,9 +93,9 @@ public class BoardController {
      */
     @GetMapping("/{boardId}/sectors/neighbors")
     public ResponseEntity<Boolean> areNeighbors(
-            @PathVariable Long boardId,
-            @RequestParam int sector1,
-            @RequestParam int sector2) {
+            @PathVariable("boardId") Long boardId,
+            @RequestParam("sector1") int sector1,
+            @RequestParam("sector2") int sector2) {
         boolean areNeighbors = boardService.areNeighbors(boardId, sector1, sector2);
         return ResponseEntity.ok(areNeighbors);
     }
@@ -105,9 +105,9 @@ public class BoardController {
      */
     @GetMapping("/{boardId}/sectors/conflict")
     public ResponseEntity<Boolean> hasConflict(
-            @PathVariable Long boardId,
-            @RequestParam int sector1,
-            @RequestParam int sector2) {
+            @PathVariable("boardId") Long boardId,
+            @RequestParam("sector1") int sector1,
+            @RequestParam("sector2") int sector2) {
         boolean hasConflict = boardService.hasConflict(boardId, sector1, sector2);
         return ResponseEntity.ok(hasConflict);
     }

@@ -515,13 +515,13 @@ export class JoueurComponent implements OnInit {
   error$ = this.store.select(selectPlayerError);
 
   ngOnInit(): void {
+    // Attendre que l'utilisateur soit authentifié et charger le joueur
     this.store.select(selectUser).pipe(
-      filter(user => !!user),
+      filter((user): user is NonNullable<typeof user> => !!user && !!user.username),
       take(1)
     ).subscribe(user => {
-      if (user) {
-        this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
-      }
+      console.log('Loading player for user:', user.username);
+      this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
     });
   }
 

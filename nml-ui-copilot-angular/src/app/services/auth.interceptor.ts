@@ -58,14 +58,28 @@ function handleUnauthorized(
     return apiService.refreshToken().pipe(
       switchMap((response) => {
         isRefreshing = false;
-        localStorage.setItem('accessToken', response.accessToken);
-        refreshTokenSubject.next(response.accessToken);
 
-        return next(req.clone({
-          setHeaders: {
-            Authorization: `Bearer ${response.accessToken}`
+        if (response.valid && response.token) {
+          // Stocker le nouveau token
+          localStorage.setItem('accessToken', response.token);
+
+          // Restaurer le user dans le localStorage
+          if (response.id && response.name) {
+            const user = { id: response.id, username: response.name };
+            localStorage.setItem('user', JSON.stringify(user));
           }
-        }));
+
+          refreshTokenSubject.next(response.token);
+
+          return next(req.clone({
+            setHeaders: {
+              Authorization: `Bearer ${response.token}`
+            }
+          }));
+        } else {
+          // Token invalide, déconnecter
+          throw new Error('Invalid refresh token');
+        }
       }),
       catchError((refreshError) => {
         isRefreshing = false;

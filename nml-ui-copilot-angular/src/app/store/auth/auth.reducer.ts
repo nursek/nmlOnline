@@ -10,14 +10,34 @@ export interface AuthState {
   error: string | null;
 }
 
-// Charger depuis localStorage
-const storedUser = localStorage.getItem('user');
+// Charger depuis localStorage avec validation
+function loadUserFromLocalStorage(): User | null {
+  const storedUser = localStorage.getItem('user');
+  if (!storedUser) return null;
+
+  try {
+    const parsed = JSON.parse(storedUser);
+    // Valider que l'objet a les propriétés requises
+    if (parsed && typeof parsed.id === 'number' && typeof parsed.username === 'string') {
+      return parsed as User;
+    }
+    console.warn('Invalid user object in localStorage, removing it');
+    localStorage.removeItem('user');
+    return null;
+  } catch (e) {
+    console.error('Failed to parse user from localStorage:', e);
+    localStorage.removeItem('user');
+    return null;
+  }
+}
+
+const storedUser = loadUserFromLocalStorage();
 const storedToken = localStorage.getItem('accessToken');
 
 export const initialState: AuthState = {
-  user: storedUser ? JSON.parse(storedUser) : null,
+  user: storedUser,
   accessToken: storedToken,
-  isAuthenticated: !!storedToken,
+  isAuthenticated: !!storedToken && !!storedUser,
   loading: false,
   error: null,
 };
@@ -33,16 +53,16 @@ export const authReducer = createReducer(
 
   on(AuthActions.loginSuccess, (state, { response }) => {
     const user: User = {
-      id: response.userId,
-      username: response.username,
+      id: response.id,
+      username: response.name,
     };
-    localStorage.setItem('accessToken', response.accessToken);
+    localStorage.setItem('accessToken', response.token);
     localStorage.setItem('user', JSON.stringify(user));
     return {
       ...state,
       loading: false,
       isAuthenticated: true,
-      accessToken: response.accessToken,
+      accessToken: response.token,
       user,
     };
   }),
@@ -68,4 +88,47 @@ export const authReducer = createReducer(
     ...state,
     error: null,
   })),
+
+  on(AuthActions.loadUserFromStorage, (state) => {
+    const user = loadUserFromLocalStorage();
+    const storedToken = localStorage.getItem('accessToken');
+
+    return {
+      ...state,
+      user,
+      accessToken: storedToken,
+      isAuthenticated: !!storedToken && !!user,
+    };
+  }),
+
+  // Init session (refresh au démarrage)
+  on(AuthActions.initSession, (state) => ({
+    ...state,
+    loading: true,
+  })),
+
+  on(AuthActions.initSessionSuccess, (state, { token, id, username }) => {
+    const user: User = { id, username };
+    localStorage.setItem('accessToken', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    return {
+      ...state,
+      loading: false,
+      isAuthenticated: true,
+      accessToken: token,
+      user,
+    };
+  }),
+
+  on(AuthActions.initSessionFailure, (state) => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+    return {
+      ...state,
+      loading: false,
+      isAuthenticated: false,
+      accessToken: null,
+      user: null,
+    };
+  }),
 );

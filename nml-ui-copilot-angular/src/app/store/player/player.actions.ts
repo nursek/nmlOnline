@@ -11,5 +11,6 @@ export const PlayerActions = createActionGroup({
     'Fetch All Players Success': props<{ players: Player[] }>(),
     'Fetch All Players Failure': props<{ error: string }>(),
     'Clear Player Error': emptyProps(),
+    'Reset': emptyProps(), // Vider le state du player lors du logout
   },
 });

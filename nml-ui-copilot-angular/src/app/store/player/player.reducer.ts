@@ -61,4 +61,7 @@ export const playerReducer = createReducer(
     ...state,
     error: null,
   })),
+
+  // Reset complet du state (lors du logout)
+  on(PlayerActions.reset, () => initialState),
 );
