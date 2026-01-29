@@ -1,0 +1,92 @@
+import { Injectable, inject } from '@angular/core';
+import {
+  HttpEvent,
+  HttpInterceptor,
+  HttpHandler,
+  HttpRequest,
+  HttpErrorResponse,
+  HttpInterceptorFn,
+  HttpHandlerFn
+} from '@angular/common/http';
+import { Observable, throwError, BehaviorSubject } from 'rxjs';
+import { catchError, filter, switchMap, take } from 'rxjs/operators';
+import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { AuthActions } from '../store/auth/auth.actions';
+import { ApiService } from './api.service';
+
+let isRefreshing = false;
+let refreshTokenSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
+
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const token = localStorage.getItem('accessToken');
+  const router = inject(Router);
+  const store = inject(Store);
+  const apiService = inject(ApiService);
+
+  // Ajouter le token si présent
+  let authReq = req;
+  if (token) {
+    authReq = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  }
+
+  return next(authReq).pipe(
+    catchError((error: HttpErrorResponse) => {
+      if (error.status === 401 && !req.url.includes('/auth/refresh') && !req.url.includes('/login')) {
+        return handleUnauthorized(req, next, router, store, apiService);
+      }
+      return throwError(() => error);
+    })
+  );
+};
+
+function handleUnauthorized(
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+  router: Router,
+  store: Store,
+  apiService: ApiService
+): Observable<HttpEvent<unknown>> {
+  if (!isRefreshing) {
+    isRefreshing = true;
+    refreshTokenSubject.next(null);
+
+    return apiService.refreshToken().pipe(
+      switchMap((response) => {
+        isRefreshing = false;
+        localStorage.setItem('accessToken', response.accessToken);
+        refreshTokenSubject.next(response.accessToken);
+
+        return next(req.clone({
+          setHeaders: {
+            Authorization: `Bearer ${response.accessToken}`
+          }
+        }));
+      }),
+      catchError((refreshError) => {
+        isRefreshing = false;
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+        store.dispatch(AuthActions.logoutSuccess());
+        router.navigate(['/login']);
+        return throwError(() => refreshError);
+      })
+    );
+  }
+
+  return refreshTokenSubject.pipe(
+    filter(token => token !== null),
+    take(1),
+    switchMap(token => {
+      return next(req.clone({
+        setHeaders: {
+          Authorization: `Bearer ${token}`
+        }
+      }));
+    })
+  );
+}
