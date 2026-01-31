@@ -16,4 +16,8 @@ public class SectorDto {
     private String color;
     private String resource;
     private List<Integer> neighbors;
+
+    // Coordonnées pour le positionnement sur la carte
+    private Integer x;
+    private Integer y;
 }

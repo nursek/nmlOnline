@@ -2,119 +2,161 @@
   "name": "Carte Principale",
   "sectors": [
     {
+      "number": 1,
+      "name": "QG Central",
+      "income": 2500,
+      "resource": "or",
+      "army": [],
+      "neighbors": [2, 5],
+      "x": 0,
+      "y": 0
+    },
+    {
+      "number": 2,
+      "name": "Place du Marché",
+      "income": 1800,
+      "resource": "marchandises",
+      "army": [],
+      "neighbors": [1, 3, 6],
+      "x": 1,
+      "y": 0
+    },
+    {
       "number": 3,
       "name": "Entrepôt Abandonné",
       "income": 1500,
       "resource": "ferraille",
-      "army": [
-      ],
-      "neighbors": [2, 4, 7]
+      "army": [],
+      "neighbors": [2, 4, 7],
+      "x": 2,
+      "y": 0
     },
     {
       "number": 4,
       "name": "Zone Industrielle",
       "income": 2200,
-      "resource": "or",
-      "army": [
-      ],
-      "neighbors": [3, 8]
+      "resource": "acier",
+      "army": [],
+      "neighbors": [3, 8],
+      "x": 3,
+      "y": 0
     },
     {
       "number": 5,
       "name": "Marché Noir",
       "income": 3500,
       "resource": "joyaux",
-      "army": [
-      ],
-      "neighbors": [1, 6, 9]
+      "army": [],
+      "neighbors": [1, 6, 9],
+      "x": 0,
+      "y": 1
     },
     {
       "number": 6,
       "name": "Dépôt d'Armes",
       "income": 2800,
       "resource": "munitions",
-      "army": [
-      ],
-      "neighbors": [2, 5, 7, 10]
+      "army": [],
+      "neighbors": [2, 5, 7, 10],
+      "x": 1,
+      "y": 1
     },
     {
       "number": 7,
       "name": "Terrain Vague",
       "income": 800,
-      "army": [
-      ],
-      "neighbors": [3, 6, 8, 11]
+      "army": [],
+      "neighbors": [3, 6, 8, 11],
+      "x": 2,
+      "y": 1
     },
     {
       "number": 8,
       "name": "Bar Clandestin",
       "income": 1800,
       "resource": "alcool",
-      "army": [
-      ],
-      "neighbors": [4, 7, 12]
+      "army": [],
+      "neighbors": [4, 7, 12],
+      "x": 3,
+      "y": 1
     },
     {
       "number": 9,
       "name": "Raffinerie",
       "income": 4200,
       "resource": "cigares",
-      "army": [
-      ],
-      "neighbors": [5, 10, 13]
+      "army": [],
+      "neighbors": [5, 10, 13],
+      "x": 0,
+      "y": 2
     },
     {
       "number": 10,
       "name": "Parc Abandonné",
       "income": 1200,
-      "army": [
-      ],
-      "neighbors": [6, 9, 11, 14]
+      "army": [],
+      "neighbors": [6, 9, 11, 14],
+      "x": 1,
+      "y": 2
     },
     {
       "number": 11,
       "name": "Station Service",
       "income": 2000,
       "resource": "essence",
-      "army": [
-      ],
-      "neighbors": [7, 10, 12, 15]
+      "army": [],
+      "neighbors": [7, 10, 12, 15],
+      "x": 2,
+      "y": 2
+    },
+    {
+      "number": 12,
+      "name": "Garage Mécanique",
+      "income": 1600,
+      "resource": "pièces",
+      "army": [],
+      "neighbors": [8, 11, 16],
+      "x": 3,
+      "y": 2
     },
     {
       "number": 13,
       "name": "Base Militaire Abandonnée",
       "income": 5000,
       "resource": "uranium",
-      "army": [
-      ],
-      "neighbors": [9, 14]
+      "army": [],
+      "neighbors": [9, 14],
+      "x": 0,
+      "y": 3
     },
     {
       "number": 14,
       "name": "Quartier Résidentiel",
       "income": 1000,
-      "army": [
-      ],
-      "neighbors": [10, 13, 15]
+      "army": [],
+      "neighbors": [10, 13, 15],
+      "x": 1,
+      "y": 3
     },
     {
       "number": 15,
       "name": "Casino",
       "income": 3800,
-      "resource": "Ivoire",
-      "army": [
-      ],
-      "neighbors": [11, 14, 16]
+      "resource": "ivoire",
+      "army": [],
+      "neighbors": [11, 14, 16],
+      "x": 2,
+      "y": 3
     },
     {
       "number": 16,
       "name": "Port de Contrebande",
       "income": 4500,
-      "resource": "Alcool",
-      "army": [
-      ],
-      "neighbors": [12, 15]
+      "resource": "alcool",
+      "army": [],
+      "neighbors": [12, 15],
+      "x": 3,
+      "y": 3
     }
   ]
 }
-

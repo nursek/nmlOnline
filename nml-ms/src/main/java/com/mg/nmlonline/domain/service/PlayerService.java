@@ -30,6 +30,11 @@ public class PlayerService {
         return playerRepository.findById(id);
     }
 
+    /**
+     * Find a player by name.
+     * @param name the player name to search for
+     * @return the Player if found, null otherwise
+     */
     public Player findByName(String name) {
         return playerRepository.findByName(name).orElse(null);
     }

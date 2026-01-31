@@ -38,6 +38,10 @@ public class SectorMapper {
             sector.setResourceName(dto.getResource());
         }
 
+        // Coordonnées
+        sector.setX(dto.getX());
+        sector.setY(dto.getY());
+
         // Conversion des voisins
         if (dto.getNeighbors() != null) {
             for (Integer neighborNumber : dto.getNeighbors()) {
@@ -89,6 +93,10 @@ public class SectorMapper {
             dto.setResource(sector.getResourceName());
         }
         dto.setNeighbors(new ArrayList<>(sector.getNeighbors()));
+
+        // Coordonnées
+        dto.setX(sector.getX());
+        dto.setY(sector.getY());
 
         // Conversion des stats
         if (sector.getStats() != null) {

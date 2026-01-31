@@ -67,6 +67,14 @@ public class BoardImportService {
 
                 sector.setIncome(sectorDto.income);
 
+                // Ajouter les coordonnées si présentes
+                if (sectorDto.x != null) {
+                    sector.setX(sectorDto.x);
+                }
+                if (sectorDto.y != null) {
+                    sector.setY(sectorDto.y);
+                }
+
                 // Ajouter la ressource si présente
                 if (sectorDto.resource != null && !sectorDto.resource.isEmpty()) {
                     sector.setResourceName(sectorDto.resource);
@@ -166,6 +174,8 @@ public class BoardImportService {
         public String resource;
         public List<UnitDTO> army;
         public List<Integer> neighbors;
+        public Integer x;
+        public Integer y;
     }
 
     public static class UnitDTO {
