@@ -14,7 +14,7 @@ import { PlayerActions } from '../../store/player/player.actions';
 import { selectEquipments, selectCart, selectCartTotalItems, selectCartTotalPrice, selectShopLoading, selectShopError } from '../../store/shop/shop.selectors';
 import { selectCurrentPlayer } from '../../store/player/player.selectors';
 import { selectUser } from '../../store/auth/auth.selectors';
-import { Equipment } from '../../models';
+import { Equipment, CartItem, Player, EquipmentStack } from '../../models';
 import { filter, take } from 'rxjs/operators';
 
 @Component({
@@ -186,33 +186,37 @@ import { filter, take } from 'rxjs/operators';
                       </div>
                     </div>
 
-                    <!-- Quantité possédée -->
-                    @if (getOwnedQuantity(equipment.name) > 0) {
-                      <p class="owned">Vous en possédez: <strong>{{ getOwnedQuantity(equipment.name) }}</strong></p>
-                    }
+                    <!-- Quantité possédée (toujours présent pour garder l'alignement) -->
+                    <p class="owned">
+                      @if (getOwnedQuantity(equipment.name) > 0) {
+                        Vous en possédez: <strong>{{ getOwnedQuantity(equipment.name) }}</strong>
+                      }
+                    </p>
 
                     <!-- Contrôles d'ajout au panier -->
-                    @if (getCartQuantity(equipment.name) === 0) {
-                      <button mat-raised-button color="primary" class="add-btn" (click)="addToCart(equipment)">
-                        <mat-icon>add_shopping_cart</mat-icon>
-                        Ajouter au panier
-                      </button>
-                    } @else {
-                      <div class="cart-controls">
-                        <button mat-mini-fab color="warn" (click)="removeFromCart(equipment.name)">
-                          <mat-icon>delete</mat-icon>
+                    <div class="card-actions">
+                      @if (getCartQuantity(equipment.name) === 0) {
+                        <button mat-raised-button color="primary" class="add-btn" (click)="addToCart(equipment)">
+                          <mat-icon>add_shopping_cart</mat-icon>
+                          Ajouter au panier
                         </button>
-                        <div class="quantity-stepper">
-                          <button mat-icon-button color="primary" (click)="decrementCartQuantity(equipment.name)">
-                            <mat-icon>remove</mat-icon>
+                      } @else {
+                        <div class="cart-controls">
+                          <button mat-mini-fab color="warn" (click)="removeFromCart(equipment.name)">
+                            <mat-icon>delete</mat-icon>
                           </button>
-                          <span class="qty-value">{{ getCartQuantity(equipment.name) }}</span>
-                          <button mat-icon-button color="primary" (click)="addToCart(equipment)">
-                            <mat-icon>add</mat-icon>
-                          </button>
+                          <div class="quantity-stepper">
+                            <button mat-icon-button color="primary" (click)="decrementCartQuantity(equipment.name)">
+                              <mat-icon>remove</mat-icon>
+                            </button>
+                            <span class="qty-value">{{ getCartQuantity(equipment.name) }}</span>
+                            <button mat-icon-button color="primary" (click)="addToCart(equipment)">
+                              <mat-icon>add</mat-icon>
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    }
+                      }
+                    </div>
                   </mat-card-content>
                 </mat-card>
               }
@@ -326,6 +330,13 @@ import { filter, take } from 'rxjs/operators';
 
     .equipment-card {
       border-radius: 12px;
+      height: 100%;
+
+      mat-card-content {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
     }
 
     .equipment-header {
@@ -390,10 +401,15 @@ import { filter, take } from 'rxjs/operators';
       font-size: 0.875rem;
       color: #64748b;
       margin-bottom: 12px;
+      min-height: 21px; /* Hauteur fixe pour éviter le décalage */
 
       strong {
         color: #6366f1;
       }
+    }
+
+    .card-actions {
+      margin-top: auto;
     }
 
     .add-btn {
@@ -590,8 +606,8 @@ export class BoutiqueComponent implements OnInit {
 
   showCart = signal(false);
 
-  private cartItems: any[] = [];
-  private playerData: any = null;
+  private cartItems: CartItem[] = [];
+  private playerData: Player | null = null;
 
   ngOnInit(): void {
     this.store.dispatch(ShopActions.fetchEquipments());
@@ -639,7 +655,7 @@ export class BoutiqueComponent implements OnInit {
   }
 
   getOwnedQuantity(equipmentName: string): number {
-    const stack = this.playerData?.equipments?.find((e: any) => e.equipment.name === equipmentName);
+    const stack = this.playerData?.equipments?.find((e: EquipmentStack) => e.equipment.name === equipmentName);
     return stack?.quantity || 0;
   }
 
@@ -650,10 +666,12 @@ export class BoutiqueComponent implements OnInit {
 
   canAfford(): boolean {
     const total = this.cartItems.reduce((sum, item) => sum + item.equipment.cost * item.quantity, 0);
-    return this.playerData && this.playerData.stats.money >= total;
+    return this.playerData !== null && this.playerData.stats.money >= total;
   }
 
   checkout(): void {
+    // TODO: Implement real purchase logic (e.g., call backend to process the order,
+    //       update player money and equipments, and clear the cart).
     alert('Fonctionnalité d\'achat en cours d\'implémentation');
   }
 }

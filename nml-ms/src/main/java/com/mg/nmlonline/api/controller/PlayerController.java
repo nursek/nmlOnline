@@ -60,7 +60,7 @@ public class PlayerController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable("id") Long id) {
         if(!playerService.delete(id)) {
-            throw new RuntimeException("Equipment with id " + id + " not found.");
+            throw new RuntimeException("Player with id " + id + " not found.");
         }
     }
 

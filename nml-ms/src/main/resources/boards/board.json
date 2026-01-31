@@ -152,7 +152,7 @@
       "number": 16,
       "name": "Port de Contrebande",
       "income": 4500,
-      "resource": "Alcool",
+      "resource": "alcool",
       "army": [],
       "neighbors": [12, 15],
       "x": 3,

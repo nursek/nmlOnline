@@ -13,6 +13,10 @@ import { Store } from '@ngrx/store';
 import { AuthActions } from '../store/auth/auth.actions';
 import { ApiService } from './api.service';
 
+// Note: These module-level variables are intentionally shared across all interceptor calls
+// to coordinate token refresh across concurrent requests. The isRefreshing flag prevents
+// multiple simultaneous refresh attempts, while refreshTokenSubject queues requests
+// waiting for the new token. This is a common pattern for handling 401s with refresh tokens.
 let isRefreshing = false;
 let refreshTokenSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
 

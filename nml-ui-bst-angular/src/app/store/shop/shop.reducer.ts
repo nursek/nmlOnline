@@ -9,12 +9,30 @@ export interface ShopState {
   error: string | null;
 }
 
-// Charger le panier depuis localStorage
-const storedCart = localStorage.getItem('cart');
+// Charger le panier depuis localStorage avec gestion d'erreur
+function loadCartFromLocalStorage(): CartItem[] {
+  const storedCart = localStorage.getItem('cart');
+  if (!storedCart) return [];
+
+  try {
+    const parsed = JSON.parse(storedCart);
+    // Valider que c'est bien un tableau
+    if (Array.isArray(parsed)) {
+      return parsed as CartItem[];
+    }
+    console.warn('Invalid cart data in localStorage, removing it');
+    localStorage.removeItem('cart');
+    return [];
+  } catch (e) {
+    console.error('Failed to parse cart from localStorage:', e);
+    localStorage.removeItem('cart');
+    return [];
+  }
+}
 
 export const initialState: ShopState = {
   equipments: [],
-  cart: storedCart ? JSON.parse(storedCart) : [],
+  cart: loadCartFromLocalStorage(),
   loading: false,
   error: null,
 };

@@ -10,6 +10,7 @@ import { PlayerActions } from '../../store/player/player.actions';
 import { selectCurrentPlayer, selectPlayerLoading, selectPlayerError } from '../../store/player/player.selectors';
 import { selectUser } from '../../store/auth/auth.selectors';
 import { filter, take } from 'rxjs/operators';
+import { Player } from '../../models';
 
 @Component({
   selector: 'app-joueur',
@@ -161,7 +162,7 @@ import { filter, take } from 'rxjs/operators';
               </div>
             } @else {
               <div class="territories-grid">
-                @for (sector of player.sectors; track sector.number) {
+                @for (sector of player.sectors; track $index) {
                   <div class="territory-card">
                     <h4>{{ sector.name }}</h4>
                     <span class="sector-number">Secteur #{{ sector.number ?? 'N/A' }}</span>
@@ -525,7 +526,7 @@ export class JoueurComponent implements OnInit {
     });
   }
 
-  getMainStats(player: any) {
+  getMainStats(player: Player) {
     return [
       {
         label: 'Argent',

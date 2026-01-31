@@ -93,7 +93,7 @@ interface SectorWithPlayer extends Sector {
           <!-- Carte interactive -->
           <div class="map-container">
             <div class="sector-grid">
-              @for (sector of filteredSectors(); track sector.number) {
+              @for (sector of filteredSectors(); track $index) {
                 <div class="sector-wrapper"
                      [style.grid-row]="(sector.y ?? 0) + 1"
                      [style.grid-column]="(sector.x ?? 0) + 1">
@@ -400,6 +400,9 @@ interface SectorWithPlayer extends Sector {
 
     .sector-grid {
       display: grid;
+      /* Note: Fixed 4x4 grid assumes board data has exactly 16 sectors with coordinates 0-3.
+         If board dimensions change, update these values or make them dynamic based on
+         max x/y coordinates from sector data. */
       grid-template-columns: repeat(4, 1fr);
       grid-template-rows: repeat(4, 1fr);
       gap: 12px;
