@@ -1,5 +1,7 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { Store } from '@ngrx/store';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -9,6 +11,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { ShopActions } from '../../store/shop/shop.actions';
 import { PlayerActions } from '../../store/player/player.actions';
 import { selectEquipments, selectCart, selectCartTotalItems, selectCartTotalPrice, selectShopLoading, selectShopError } from '../../store/shop/shop.selectors';
@@ -16,12 +20,15 @@ import { selectCurrentPlayer } from '../../store/player/player.selectors';
 import { selectUser } from '../../store/auth/auth.selectors';
 import { Equipment, CartItem, Player, EquipmentStack } from '../../models';
 import { filter, take } from 'rxjs/operators';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-boutique',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,
@@ -30,6 +37,20 @@ import { filter, take } from 'rxjs/operators';
     MatBadgeModule,
     MatSidenavModule,
     MatDividerModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
+  animations: [
+    trigger('slideDown', [
+      transition(':enter', [
+        style({ height: '0', opacity: '0', overflow: 'hidden' }),
+        animate('300ms ease-out', style({ height: '*', opacity: '1' }))
+      ]),
+      transition(':leave', [
+        style({ height: '*', opacity: '1', overflow: 'hidden' }),
+        animate('200ms ease-in', style({ height: '0', opacity: '0' }))
+      ])
+    ])
   ],
   template: `
     <mat-sidenav-container class="sidenav-container">
@@ -144,10 +165,138 @@ import { filter, take } from 'rxjs/operators';
               </div>
             }
 
+            <!-- Barre de recherche avec filtres déroulants -->
+            <div class="search-bar-container">
+              <div class="search-wrapper">
+                <mat-icon class="search-icon">search</mat-icon>
+                <input
+                  type="text"
+                  class="search-input"
+                  [(ngModel)]="searchTerm"
+                  placeholder="Rechercher un équipement...">
+
+                <div class="search-actions">
+                  @if (searchTerm()) {
+                    <button class="action-btn clear-btn" (click)="clearSearch()" title="Effacer la recherche">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  }
+
+                  <button
+                    class="action-btn filter-toggle-btn"
+                    [class.active]="showFilters()"
+                    (click)="toggleFilters()"
+                    title="Filtres avancés">
+                    <mat-icon>tune</mat-icon>
+                    @if (hasAdvancedFilters()) {
+                      <span class="filter-badge">{{ getActiveFiltersCount() }}</span>
+                    }
+                  </button>
+                </div>
+              </div>
+
+              <!-- Panneau de filtres déroulant -->
+              @if (showFilters()) {
+                <div class="filters-panel" [@slideDown]>
+                  <div class="filters-chips-container">
+                    <span class="filter-label">
+                      <mat-icon>category</mat-icon>
+                      Catégories
+                    </span>
+                    <div class="chips-wrapper">
+                      <button
+                        class="custom-chip"
+                        [class.active]="selectedCategory() === 'all'"
+                        (click)="selectCategory('all')">
+                        Toutes
+                      </button>
+                      @for (category of categories(); track category) {
+                        <button
+                          class="custom-chip"
+                          [class.active]="selectedCategory() === category"
+                          (click)="selectCategory(category)">
+                          {{ category }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <mat-divider></mat-divider>
+
+                  <div class="filters-chips-container">
+                    <span class="filter-label">
+                      <mat-icon>military_tech</mat-icon>
+                      Types de bonus
+                    </span>
+                    <div class="chips-wrapper">
+                      <button
+                        class="custom-chip bonus-chip all"
+                        [class.active]="selectedBonusFilter() === 'all'"
+                        (click)="selectBonusFilter('all')">
+                        <mat-icon>star</mat-icon>
+                        Tous
+                      </button>
+                      <button
+                        class="custom-chip bonus-chip pdf"
+                        [class.active]="selectedBonusFilter() === 'PDF'"
+                        (click)="selectBonusFilter('PDF')">
+                        PDF
+                      </button>
+                      <button
+                        class="custom-chip bonus-chip pdc"
+                        [class.active]="selectedBonusFilter() === 'PDC'"
+                        (click)="selectBonusFilter('PDC')">
+                        PDC
+                      </button>
+                      <button
+                        class="custom-chip bonus-chip arm"
+                        [class.active]="selectedBonusFilter() === 'ARM'"
+                        (click)="selectBonusFilter('ARM')">
+                        ARM
+                      </button>
+                      <button
+                        class="custom-chip bonus-chip esq"
+                        [class.active]="selectedBonusFilter() === 'ESQ'"
+                        (click)="selectBonusFilter('ESQ')">
+                        ESQ
+                      </button>
+                    </div>
+                  </div>
+
+                  @if (hasAdvancedFilters()) {
+                    <div class="filter-actions">
+                      <button mat-button class="reset-filters-btn" (click)="clearAdvancedFilters()">
+                        <mat-icon>filter_alt_off</mat-icon>
+                        Réinitialiser les filtres
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Compteur et message -->
+            <div class="results-header">
+              <span class="results-count">{{ filteredEquipments().length }} équipement(s) trouvé(s)</span>
+              @if (hasActiveFilters()) {
+                <span class="filters-active">
+                  <mat-icon>filter_list</mat-icon>
+                  Filtres actifs
+                </span>
+              }
+            </div>
+
+            @if (filteredEquipments().length === 0) {
+              <div class="no-results">
+                <mat-icon>inventory_2</mat-icon>
+                <h3>Aucun équipement trouvé</h3>
+                <p>Essayez de modifier vos critères de recherche</p>
+              </div>
+            }
+
             <!-- Liste des équipements -->
-            <h2 class="section-title">Équipements disponibles</h2>
             <div class="equipment-grid">
-              @for (equipment of equipments$ | async; track equipment.name) {
+              @for (equipment of filteredEquipments(); track equipment.name) {
                 <mat-card class="equipment-card hover-lift">
                   <mat-card-content>
                     <div class="equipment-header">
@@ -574,6 +723,366 @@ import { filter, take } from 'rxjs/operators';
       margin-bottom: 24px;
     }
 
+    /* Barre de recherche avec boutons d'action */
+    .search-bar-container {
+      margin-bottom: 24px;
+    }
+
+    .search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+      &:focus-within {
+        border-color: #6366f1;
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15);
+      }
+
+      .search-icon {
+        color: #6366f1;
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+        margin-right: 12px;
+        flex-shrink: 0;
+      }
+
+      .search-input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 1rem;
+        background: transparent;
+        min-width: 0;
+
+        &::placeholder {
+          color: #94a3b8;
+        }
+      }
+
+      .search-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 12px;
+      }
+
+      .action-btn {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: transparent;
+        border-radius: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        color: #64748b;
+
+        mat-icon {
+          font-size: 22px;
+          width: 22px;
+          height: 22px;
+        }
+
+        &:hover {
+          background: #f1f5f9;
+        }
+
+        &.clear-btn:hover {
+          color: #dc2626;
+          background: #fef2f2;
+        }
+
+        &.filter-toggle-btn {
+          &.active {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+
+            &:hover {
+              background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            }
+          }
+
+          .filter-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #dc2626;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+          }
+        }
+      }
+    }
+
+    /* Panneau de filtres déroulant */
+    .filters-panel {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.03) 100%);
+      border: 2px solid #e2e8f0;
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      padding: 20px;
+      margin-top: -2px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+
+    .filters-chips-container {
+      margin-bottom: 16px;
+
+      &:last-of-type {
+        margin-bottom: 0;
+      }
+
+      .filter-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 12px;
+        letter-spacing: 0.025em;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+          color: #6366f1;
+        }
+      }
+
+      .chips-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        .custom-chip {
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border: 2px solid #e2e8f0;
+          background: white;
+          color: #64748b;
+          font-weight: 500;
+          padding: 8px 16px;
+          border-radius: 20px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+          font-size: 0.875rem;
+          outline: none;
+
+          mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+          }
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+            border-color: #6366f1;
+          }
+
+          &.active {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+            transform: translateY(-2px);
+          }
+
+          /* Couleurs spécifiques pour les bonus */
+          &.bonus-chip {
+            &.pdf {
+              &:not(.active) {
+                border-color: #fecaca;
+                color: #dc2626;
+
+                &:hover {
+                  background: #fef2f2;
+                }
+              }
+
+              &.active {
+                background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+              }
+            }
+
+            &.pdc {
+              &:not(.active) {
+                border-color: #a5f3fc;
+                color: #0891b2;
+
+                &:hover {
+                  background: #ecfeff;
+                }
+              }
+
+              &.active {
+                background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+              }
+            }
+
+            &.arm {
+              &:not(.active) {
+                border-color: #a7f3d0;
+                color: #059669;
+
+                &:hover {
+                  background: #d1fae5;
+                }
+              }
+
+              &.active {
+                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+              }
+            }
+
+            &.esq {
+              &:not(.active) {
+                border-color: #fed7aa;
+                color: #d97706;
+
+                &:hover {
+                  background: #ffedd5;
+                }
+              }
+
+              &.active {
+                background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+              }
+            }
+
+            &.all {
+              &:not(.active) {
+                border-color: #e9d5ff;
+                color: #8b5cf6;
+
+                &:hover {
+                  background: #f5f3ff;
+                }
+              }
+
+              &.active {
+                background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .filter-actions {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .reset-filters-btn {
+      color: #dc2626;
+      border: 2px solid #fecaca;
+      border-radius: 10px;
+      padding: 8px 20px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      background: white;
+
+      mat-icon {
+        margin-right: 6px;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+
+      &:hover {
+        background: #fef2f2;
+        border-color: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+      }
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 16px 20px;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+
+      .results-count {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #475569;
+      }
+
+      .filters-active {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.875rem;
+        color: #6366f1;
+        font-weight: 500;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 80px 24px;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.03) 100%);
+      border-radius: 16px;
+      border: 2px dashed #e2e8f0;
+      margin-bottom: 24px;
+
+      mat-icon {
+        font-size: 80px;
+        width: 80px;
+        height: 80px;
+        color: #cbd5e1;
+        margin-bottom: 16px;
+      }
+
+      h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #475569;
+        margin: 0 0 8px;
+      }
+
+      p {
+        color: #94a3b8;
+        font-size: 0.95rem;
+        margin: 0;
+      }
+    }
+
     .fade-in {
       animation: fadeIn 0.3s ease;
     }
@@ -593,8 +1102,9 @@ import { filter, take } from 'rxjs/operators';
     }
   `]
 })
-export class BoutiqueComponent implements OnInit {
-  private store = inject(Store);
+export class BoutiqueComponent implements OnInit, OnDestroy {
+  private readonly store = inject(Store);
+  private readonly destroy$ = new Subject<void>();
 
   equipments$ = this.store.select(selectEquipments);
   cart$ = this.store.select(selectCart);
@@ -605,24 +1115,109 @@ export class BoutiqueComponent implements OnInit {
   player$ = this.store.select(selectCurrentPlayer);
 
   showCart = signal(false);
+  showFilters = signal(false);
 
   private cartItems: CartItem[] = [];
   private playerData: Player | null = null;
+
+  // Filtres et recherche
+  searchTerm = signal('');
+  selectedCategory = signal<string>('all');
+  selectedBonusFilter = signal<string>('all');
+
+  // Liste complète des équipements
+  allEquipments = toSignal(this.equipments$, { initialValue: [] });
+
+  // Catégories uniques
+  categories = computed(() => {
+    const cats = new Set<string>();
+    this.allEquipments().forEach(eq => {
+      if (eq.category) cats.add(eq.category);
+    });
+    return Array.from(cats).sort((a, b) => a.localeCompare(b));
+  });
+
+  // Équipements filtrés
+  filteredEquipments = computed(() => {
+    let filtered = [...this.allEquipments()];
+
+    // Filtre par recherche
+    const search = this.searchTerm().toLowerCase().trim();
+    if (search) {
+      filtered = filtered.filter(eq =>
+        eq.name.toLowerCase().includes(search)
+      );
+    }
+
+    // Filtre par catégorie
+    const category = this.selectedCategory();
+    if (category !== 'all') {
+      filtered = filtered.filter(eq => eq.category === category);
+    }
+
+    // Filtre par bonus
+    const bonus = this.selectedBonusFilter();
+    if (bonus !== 'all') {
+      filtered = filtered.filter(eq => {
+        switch (bonus) {
+          case 'PDF': return eq.pdfBonus > 0;
+          case 'PDC': return eq.pdcBonus > 0;
+          case 'ARM': return eq.armBonus > 0;
+          case 'ESQ': return eq.evasionBonus > 0;
+          default: return true;
+        }
+      });
+    }
+
+    return filtered;
+  });
+
+  // Vérifie si des filtres sont actifs
+  hasActiveFilters = computed(() => {
+    return this.searchTerm() !== '' ||
+      this.selectedCategory() !== 'all' ||
+      this.selectedBonusFilter() !== 'all';
+  });
+
+  // Vérifie si des filtres avancés (catégorie ou bonus) sont actifs
+  hasAdvancedFilters = computed(() => {
+    return this.selectedCategory() !== 'all' ||
+      this.selectedBonusFilter() !== 'all';
+  });
+
+  // Compte le nombre de filtres avancés actifs
+  getActiveFiltersCount = computed(() => {
+    let count = 0;
+    if (this.selectedCategory() !== 'all') count++;
+    if (this.selectedBonusFilter() !== 'all') count++;
+    return count;
+  });
 
   ngOnInit(): void {
     this.store.dispatch(ShopActions.fetchEquipments());
 
     this.store.select(selectUser).pipe(
       filter(user => !!user),
-      take(1)
+      take(1),
+      takeUntil(this.destroy$)
     ).subscribe(user => {
       if (user) {
         this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
       }
     });
 
-    this.cart$.subscribe(cart => this.cartItems = cart);
-    this.player$.subscribe(player => this.playerData = player);
+    this.cart$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(cart => this.cartItems = cart);
+
+    this.player$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(player => this.playerData = player);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   toggleCart(): void {
@@ -673,5 +1268,28 @@ export class BoutiqueComponent implements OnInit {
     // TODO: Implement real purchase logic (e.g., call backend to process the order,
     //       update player money and equipments, and clear the cart).
     alert('Fonctionnalité d\'achat en cours d\'implémentation');
+  }
+
+  // Gestion des filtres
+
+  clearSearch(): void {
+    this.searchTerm.set('');
+  }
+
+  toggleFilters(): void {
+    this.showFilters.update(v => !v);
+  }
+
+  selectCategory(category: string): void {
+    this.selectedCategory.set(category);
+  }
+
+  selectBonusFilter(bonus: string): void {
+    this.selectedBonusFilter.set(bonus);
+  }
+
+  clearAdvancedFilters(): void {
+    this.selectedCategory.set('all');
+    this.selectedBonusFilter.set('all');
   }
 }
