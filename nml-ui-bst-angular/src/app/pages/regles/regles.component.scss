@@ -1,86 +1,33 @@
-.container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 32px 16px;
-}
+// Regles Component - Styles spécifiques uniquement
+// Classes globales disponibles: g-container, g-page-header, g-avatar, g-title, g-subtitle, g-card, fade-in
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.avatar {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  mat-icon {
-    font-size: 40px;
-    width: 40px;
-    height: 40px;
-    color: white;
-  }
-}
-
-.title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
-}
-
-.subtitle {
-  color: #64748b;
-  margin: 4px 0 0;
-}
-
+// === CARDS ===
 .card {
   margin-bottom: 24px;
   border-radius: 12px;
-  &.highlight {
-    border: 2px solid #6366f1;
-  }
+  &.highlight { border: 2px solid #6366f1; }
   &.victory {
     border: 2px solid #f59e0b;
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%);
   }
 }
 
+// === SECTION HEADER ===
 .section-header {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
-  h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-  }
-  .gold {
-    color: #f59e0b;
-  }
+  h2 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+  .gold { color: #f59e0b; }
 }
 
-.section-subtitle {
-  color: #64748b;
-  margin: 0 0 24px;
-  font-size: 0.875rem;
-}
+.section-subtitle { color: #64748b; margin: 0 0 24px; font-size: 0.875rem; }
 
 .text {
   line-height: 1.8;
   margin: 0;
-  .primary {
-    color: #6366f1;
-  }
+  .primary { color: #6366f1; }
 }
 
 .step-item {
@@ -198,18 +145,5 @@
       font-weight: 600;
     }
   }
-  p {
-    margin: 0;
-    font-size: 0.875rem;
-    color: #64748b;
-  }
-}
-
-.fade-in {
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  p { margin: 0; font-size: 0.875rem; color: #64748b; }
 }
