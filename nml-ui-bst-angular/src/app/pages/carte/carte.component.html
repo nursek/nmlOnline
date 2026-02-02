@@ -1,0 +1,227 @@
+@if (loading()) {
+  <div class="loading-container">
+    <mat-spinner diameter="60"></mat-spinner>
+    <p>Chargement de la carte...</p>
+  </div>
+} @else if (error()) {
+  <div class="container">
+    <div class="error-alert">
+      <mat-icon>error</mat-icon>
+      {{ error() }}
+    </div>
+  </div>
+} @else {
+  <div class="container fade-in">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="avatar">
+        <mat-icon>map</mat-icon>
+      </div>
+      <div>
+        <h1 class="title">Carte du Monde</h1>
+        <p class="subtitle">Cliquez sur un secteur pour voir les détails</p>
+      </div>
+    </div>
+
+    <div class="map-layout">
+      <!-- Légende des joueurs -->
+      <mat-card class="legend-card">
+        <mat-card-content>
+          <div class="section-header">
+            <mat-icon color="primary">people</mat-icon>
+            <h2>Joueurs</h2>
+          </div>
+          @for (player of players(); track player.id) {
+            <button class="legend-item"
+                 [class.active]="!selectedPlayer() || selectedPlayer()?.id === player.id"
+                 (click)="togglePlayerFilter(player)"
+                 type="button">
+              <div class="legend-color" [style.background-color]="getPlayerColor(player.id)"></div>
+              <div class="legend-info">
+                <span class="legend-name">{{ player.name }}</span>
+                <span class="legend-count">{{ player.sectors.length }} secteur(s)</span>
+              </div>
+            </button>
+          }
+          <div class="legend-item neutral">
+            <div class="legend-color" style="background-color: #94a3b8"></div>
+            <div class="legend-info">
+              <span class="legend-name">Neutre</span>
+              <span class="legend-count">{{ neutralSectorsCount() }} secteur(s)</span>
+            </div>
+          </div>
+          @if (selectedPlayer()) {
+            <button mat-stroked-button color="primary" class="clear-filter" (click)="clearFilter()">
+              <mat-icon>clear</mat-icon>
+              Effacer le filtre
+            </button>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Carte interactive -->
+      <div class="map-container">
+        <div class="sector-grid">
+          @for (sector of filteredSectors(); track $index) {
+            <div class="sector-wrapper"
+                 [style.grid-row]="(sector.y ?? 0) + 1"
+                 [style.grid-column]="(sector.x ?? 0) + 1">
+              <button class="sector-tile"
+                   [class.selected]="selectedSector()?.number === sector.number"
+                   [class.highlighted]="isNeighbor(sector.number!)"
+                   [class.dimmed]="selectedPlayer() && sector.ownerId !== selectedPlayer()?.id"
+                   [style.--sector-color]="getSectorColor(sector)"
+                   (click)="selectSector(sector)"
+                   type="button"
+                   [matTooltip]="sector.name + ' - ' + (sector.playerName || 'Neutre')">
+                <div class="sector-content">
+                  <span class="sector-number">#{{ sector.number }}</span>
+                  <span class="sector-name">{{ sector.name }}</span>
+                  @if (sector.resource) {
+                    <span class="sector-resource">{{ sector.resource }}</span>
+                  }
+                  @if (sector.playerName) {
+                    <span class="owner-badge" [style.background-color]="getSectorColor(sector)">
+                      {{ getInitials(sector.playerName) }}
+                    </span>
+                  }
+                </div>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Détails du secteur sélectionné -->
+      @if (selectedSector()) {
+        <mat-card class="details-card">
+          <mat-card-content>
+            <div class="sector-header" [style.border-color]="getSectorColor(selectedSector()!)">
+              <div class="sector-color" [style.background-color]="getSectorColor(selectedSector()!)"></div>
+              <div>
+                <h2>{{ selectedSector()!.name }}</h2>
+                <span class="sector-id">Secteur #{{ selectedSector()!.number }}</span>
+              </div>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <div class="detail-section">
+              <h3><mat-icon>person</mat-icon> Propriétaire</h3>
+              <p class="owner-name">{{ selectedSector()!.playerName || 'Territoire neutre' }}</p>
+            </div>
+
+            <div class="detail-section">
+              <h3><mat-icon>attach_money</mat-icon> Économie</h3>
+              <div class="stat-row">
+                <span>Revenus</span>
+                <span class="value gold">{{ selectedSector()!.income || 0 }} ₡/tour</span>
+              </div>
+              @if (selectedSector()!.resource) {
+                <div class="stat-row">
+                  <span>Ressource</span>
+                  <span class="value">{{ selectedSector()!.resource }}</span>
+                </div>
+              }
+            </div>
+
+            @if (selectedSector()!.army && selectedSector()!.army!.length > 0) {
+              <div class="detail-section">
+                <h3><mat-icon>military_tech</mat-icon> Armée</h3>
+                <div class="stat-row">
+                  <span>Unités</span>
+                  <span class="value">{{ selectedSector()!.army!.length }}</span>
+                </div>
+              </div>
+            }
+
+            @if (selectedSector()!.stats) {
+              <div class="detail-section">
+                <h3><mat-icon>shield</mat-icon> Statistiques</h3>
+                <div class="stats-grid">
+                  <div class="mini-stat">
+                    <span class="label">ATK</span>
+                    <span class="value red">{{ selectedSector()!.stats!.totalAtk || 0 }}</span>
+                  </div>
+                  <div class="mini-stat">
+                    <span class="label">DEF</span>
+                    <span class="value green">{{ selectedSector()!.stats!.totalDef || 0 }}</span>
+                  </div>
+                  <div class="mini-stat">
+                    <span class="label">PDF</span>
+                    <span class="value blue">{{ selectedSector()!.stats!.totalPdf || 0 }}</span>
+                  </div>
+                  <div class="mini-stat">
+                    <span class="label">ARM</span>
+                    <span class="value purple">{{ selectedSector()!.stats!.totalArmor || 0 }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <div class="detail-section">
+              <h3><mat-icon>share</mat-icon> Voisins ({{ selectedSector()!.neighbors.length }})</h3>
+              <div class="neighbors-list">
+                @for (neighborNum of selectedSector()!.neighbors; track neighborNum) {
+                  @if (getSectorByNumber(neighborNum); as neighbor) {
+                    <mat-chip (click)="selectSector(neighbor)"
+                              (keydown.enter)="selectSector(neighbor)"
+                              tabindex="0"
+                              class="neighbor-chip">
+                      #{{ neighborNum }} - {{ neighbor.name | slice:0:12 }}
+                    </mat-chip>
+                  }
+                }
+              </div>
+            </div>
+
+            <button mat-stroked-button color="warn" class="close-btn" (click)="selectedSector.set(null)">
+              <mat-icon>close</mat-icon>
+              Fermer
+            </button>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+
+    <!-- Statistiques globales -->
+    <mat-card class="stats-card">
+      <mat-card-content>
+        <div class="section-header">
+          <mat-icon color="primary">analytics</mat-icon>
+          <h2>Statistiques globales</h2>
+        </div>
+        <div class="global-stats">
+          <div class="global-stat">
+            <mat-icon>place</mat-icon>
+            <div>
+              <span class="stat-value">{{ allSectors().length }}</span>
+              <span class="stat-label">Secteurs</span>
+            </div>
+          </div>
+          <div class="global-stat">
+            <mat-icon>people</mat-icon>
+            <div>
+              <span class="stat-value">{{ players().length }}</span>
+              <span class="stat-label">Joueurs</span>
+            </div>
+          </div>
+          <div class="global-stat">
+            <mat-icon>flag</mat-icon>
+            <div>
+              <span class="stat-value">{{ conqueredSectorsCount() }}</span>
+              <span class="stat-label">Conquis</span>
+            </div>
+          </div>
+          <div class="global-stat">
+            <mat-icon>landscape</mat-icon>
+            <div>
+              <span class="stat-value">{{ neutralSectorsCount() }}</span>
+              <span class="stat-label">Neutres</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

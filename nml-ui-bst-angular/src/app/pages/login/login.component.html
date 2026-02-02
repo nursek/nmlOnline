@@ -1,0 +1,64 @@
+<div class="login-page">
+  <div class="login-container">
+    <mat-card class="login-card">
+      <mat-card-content>
+        <!-- Logo et titre -->
+        <div class="header">
+          <div class="avatar">
+            <mat-icon>shield</mat-icon>
+          </div>
+          <h1 class="title">NML Online</h1>
+          <p class="subtitle">Connectez-vous pour conquérir des territoires</p>
+        </div>
+
+        <!-- Formulaire -->
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+          <!-- Erreur -->
+          @if (error$ | async; as error) {
+            <div class="error-alert">
+              <mat-icon>error</mat-icon>
+              {{ error }}
+            </div>
+          }
+
+          <!-- Nom d'utilisateur -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nom d'utilisateur</mat-label>
+            <input matInput type="text" formControlName="username" autocomplete="username">
+            @if (loginForm.get('username')?.hasError('required')) {
+              <mat-error>Le nom d'utilisateur est requis</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Mot de passe -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Mot de passe</mat-label>
+            <input matInput type="password" formControlName="password" autocomplete="current-password">
+            @if (loginForm.get('password')?.hasError('required')) {
+              <mat-error>Le mot de passe est requis</mat-error>
+            }
+          </mat-form-field>
+
+          <!-- Se souvenir de moi -->
+          <mat-checkbox formControlName="rememberMe" color="primary">
+            Se souvenir de moi (30 jours)
+          </mat-checkbox>
+
+          <!-- Bouton de connexion -->
+          <button mat-raised-button
+                  color="primary"
+                  type="submit"
+                  class="submit-btn"
+                  [disabled]="loginForm.invalid || (loading$ | async)">
+            @if (loading$ | async) {
+              <mat-spinner diameter="20"></mat-spinner>
+              Connexion en cours...
+            } @else {
+              Se connecter
+            }
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
