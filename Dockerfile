@@ -37,8 +37,8 @@ WORKDIR /app
 # Copie le JAR Spring Boot
 COPY --from=backend-build /app-ms/nml-ms/target/*.jar app.jar
 
-# Copie la build Angular
-COPY --from=frontend-build /app-ui/dist /app/static
+# Copie la build Angular (Angular 17+ génère dans dist/nom-projet/browser)
+COPY --from=frontend-build /app-ui/dist/nml-ui-copilot-angular/browser /app/static
 
 EXPOSE 8080
 
