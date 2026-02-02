@@ -1,13 +1,65 @@
-// Carte Component - Styles spécifiques uniquement
-// Classes globales disponibles: g-loading-container, g-container, g-page-header, g-avatar, g-title, g-subtitle, g-error-alert, fade-in, hover-lift
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+  gap: 16px;
+  color: #64748b;
+}
 
-// === LAYOUT ===
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: white;
+  }
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.subtitle {
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
 .map-layout {
   display: grid;
   grid-template-columns: 250px 1fr 300px;
   gap: 24px;
   margin-bottom: 24px;
-  @media (max-width: 1200px) { grid-template-columns: 1fr; }
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .legend-card, .details-card, .stats-card {
@@ -15,9 +67,18 @@
   height: fit-content;
 }
 
-.details-card { position: sticky; top: 100px; }
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+}
 
-// === LEGEND ===
 .legend-item {
   display: flex;
   align-items: center;
@@ -27,24 +88,53 @@
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: 8px;
+  // Reset button styles
   border: none;
   background: transparent;
   width: 100%;
   text-align: left;
   font: inherit;
   color: inherit;
-  &:hover { background: #f1f5f9; }
-  &.active { background: #ede9fe; }
-  &.neutral { cursor: default; opacity: 0.7; }
+  &:hover {
+    background: #f1f5f9;
+  }
+  &.active {
+    background: #ede9fe;
+  }
+  &.neutral {
+    cursor: default;
+    opacity: 0.7;
+  }
 }
 
-.legend-color { width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0; }
-.legend-info { display: flex; flex-direction: column; }
-.legend-name { font-weight: 600; font-size: 0.9rem; }
-.legend-count { font-size: 0.75rem; color: #64748b; }
-.clear-filter { width: 100%; margin-top: 8px; }
+.legend-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
 
-// === MAP GRID ===
+.legend-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.legend-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.legend-count {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.clear-filter {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Grille de secteurs */
 .map-container {
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   border-radius: 16px;
@@ -55,6 +145,9 @@
 
 .sector-grid {
   display: grid;
+  /* Note: Fixed 4x4 grid assumes board data has exactly 16 sectors with coordinates 0-3.
+     If board dimensions change, update these values or make them dynamic based on
+     max x/y coordinates from sector data. */
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(4, 1fr);
   gap: 12px;
@@ -62,7 +155,9 @@
   margin: 0 auto;
 }
 
-.sector-wrapper { aspect-ratio: 1; }
+.sector-wrapper {
+  aspect-ratio: 1;
+}
 
 .sector-tile {
   width: 100%;
@@ -77,10 +172,10 @@
   transition: all 0.3s ease;
   position: relative;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  // Reset button styles
   padding: 0;
   font: inherit;
   color: inherit;
-
   &::before {
     content: '';
     position: absolute;
@@ -91,26 +186,25 @@
     background: var(--sector-color, #94a3b8);
     border-radius: 9px 9px 0 0;
   }
-
   &:hover {
     transform: translateY(-4px) scale(1.02);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
     z-index: 10;
   }
-
   &.selected {
     transform: translateY(-4px) scale(1.05);
     box-shadow: 0 0 0 4px #6366f1, 0 12px 24px rgba(99, 102, 241, 0.3);
     z-index: 20;
     background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 100%);
   }
-
   &.highlighted {
     background: linear-gradient(145deg, #fef3c7 0%, #fde68a 100%);
     box-shadow: 0 0 0 2px #f59e0b;
   }
-
-  &.dimmed { opacity: 0.35; filter: grayscale(0.5); }
+  &.dimmed {
+    opacity: 0.35;
+    filter: grayscale(0.5);
+  }
 }
 
 .sector-content {
@@ -144,7 +238,11 @@
   white-space: nowrap;
 }
 
-.sector-resource { font-size: 0.65rem; color: #64748b; font-style: italic; }
+.sector-resource {
+  font-size: 0.65rem;
+  color: #64748b;
+  font-style: italic;
+}
 
 .owner-badge {
   font-size: 0.75rem;
@@ -160,7 +258,12 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-// === SECTOR DETAILS ===
+/* Détails secteur */
+.details-card {
+  position: sticky;
+  top: 100px;
+}
+
 .sector-header {
   display: flex;
   align-items: center;
@@ -168,11 +271,22 @@
   padding-bottom: 16px;
   border-left: 4px solid;
   padding-left: 12px;
-  h2 { margin: 0; font-size: 1.2rem; font-weight: 700; }
-  .sector-id { font-size: 0.8rem; color: #64748b; }
+  h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  .sector-id {
+    font-size: 0.8rem;
+    color: #64748b;
+  }
 }
 
-.sector-color { width: 32px; height: 32px; border-radius: 8px; }
+.sector-color {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
 
 .detail-section {
   padding: 16px 0;
@@ -185,11 +299,19 @@
     font-size: 0.9rem;
     font-weight: 600;
     color: #64748b;
-    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
   }
 }
 
-.owner-name { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.owner-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
 
 .stat-row {
   display: flex;
@@ -217,21 +339,39 @@
   padding: 8px;
   border-radius: 6px;
   text-align: center;
-  .label { display: block; font-size: 0.7rem; color: #64748b; margin-bottom: 2px; }
-  .value { font-size: 1rem; font-weight: 700; }
+  .label {
+    display: block;
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-bottom: 2px;
+  }
+  .value {
+    font-size: 1rem;
+    font-weight: 700;
+  }
 }
 
-.neighbors-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.neighbors-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
 .neighbor-chip {
   cursor: pointer;
   font-size: 0.75rem !important;
-  &:hover { background: #6366f1 !important; color: white !important; }
+  &:hover {
+    background: #6366f1 !important;
+    color: white !important;
+  }
 }
 
-.close-btn { width: 100%; margin-top: 16px; }
+.close-btn {
+  width: 100%;
+  margin-top: 16px;
+}
 
-// === GLOBAL STATS ===
+/* Stats globales */
 .global-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -245,16 +385,40 @@
   padding: 16px;
   background: #f8fafc;
   border-radius: 8px;
-  mat-icon { font-size: 32px; width: 32px; height: 32px; color: #6366f1; }
-  .stat-value { display: block; font-size: 1.5rem; font-weight: 700; color: #1e293b; }
-  .stat-label { font-size: 0.8rem; color: #64748b; }
+  mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: #6366f1;
+  }
+  .stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .stat-label {
+    font-size: 0.8rem;
+    color: #64748b;
+  }
 }
 
-// === SECTION HEADER (local override) ===
-.section-header {
+.error-alert {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
-  h2 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -1,32 +1,14 @@
 // Styles communs partagés entre les composants
-// Ces styles sont aussi exposés globalement dans styles.scss
+// À importer avec @use '../../../styles/shared' as shared;
 
-// ===================
-// VARIABLES
-// ===================
+// Variables
 $primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 $primary-color: #6366f1;
-$secondary-color: #8b5cf6;
 $text-muted: #64748b;
-$text-primary: #1e293b;
-$border-color: #e2e8f0;
-$background-light: #f8fafc;
-$background-hover: #f1f5f9;
 
-// Couleurs bonus
-$color-pdf: #dc2626;
-$color-pdc: #0891b2;
-$color-arm: #059669;
-$color-esq: #d97706;
-$color-gold: #f59e0b;
-$color-error: #dc2626;
-$color-success: #10b981;
-
-// ===================
-// MIXINS DE BASE
-// ===================
-@mixin page-container($max-width: 1400px) {
-  max-width: $max-width;
+// Mixins
+@mixin page-container {
+  max-width: 1400px;
   margin: 0 auto;
   padding: 32px 16px;
 }
@@ -53,6 +35,7 @@ $color-success: #10b981;
   display: flex;
   align-items: center;
   justify-content: center;
+
   mat-icon {
     font-size: $icon-size;
     width: $icon-size;
@@ -61,8 +44,8 @@ $color-success: #10b981;
   }
 }
 
-@mixin gradient-title($size: 1.75rem) {
-  font-size: $size;
+@mixin gradient-title {
+  font-size: 1.75rem;
   font-weight: 700;
   background: $primary-gradient;
   -webkit-background-clip: text;
@@ -81,7 +64,7 @@ $color-success: #10b981;
   align-items: center;
   gap: 8px;
   background: #fef2f2;
-  color: $color-error;
+  color: #dc2626;
   padding: 16px;
   border-radius: 8px;
   border: 1px solid #fecaca;
@@ -97,6 +80,7 @@ $color-success: #10b981;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+
   h2 {
     margin: 0;
     font-size: 1.25rem;
@@ -104,69 +88,30 @@ $color-success: #10b981;
   }
 }
 
-@mixin section-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0 0 16px;
-}
-
-// ===================
-// MIXINS ANIMATIONS
-// ===================
 @mixin fade-in-animation {
   animation: fadeIn 0.3s ease;
 }
 
 @mixin hover-lift {
   transition: transform 0.3s, box-shadow 0.3s;
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   }
 }
 
-// ===================
-// MIXINS BONUS CHIPS
-// ===================
-@mixin bonus-chip-base {
-  font-size: 0.7rem !important;
-  min-height: 24px !important;
-  padding: 0 8px !important;
+// Keyframes
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@mixin bonus-chip-colors {
-  &.pdf { background: $color-pdf !important; color: white !important; }
-  &.pdc { background: $color-pdc !important; color: white !important; }
-  &.arm { background: $color-arm !important; color: white !important; }
-  &.esq { background: $color-esq !important; color: white !important; }
+// Classes utilitaires
+.fade-in {
+  @include fade-in-animation;
 }
 
-// ===================
-// MIXINS UTILITAIRES
-// ===================
-@mixin icon-size($size: 18px) {
-  font-size: $size;
-  width: $size;
-  height: $size;
-}
-
-@mixin detail-item {
-  padding: 16px;
-  background: $background-light;
-  border-radius: 8px;
-}
-
-@mixin stat-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-  .value {
-    font-weight: 600;
-    &.gold { color: $color-gold; }
-    &.red { color: #ef4444; }
-    &.green { color: $color-success; }
-    &.blue { color: #3b82f6; }
-    &.purple { color: $secondary-color; }
-  }
+.hover-lift {
+  @include hover-lift;
 }

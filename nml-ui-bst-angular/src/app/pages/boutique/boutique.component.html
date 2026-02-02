@@ -151,14 +151,14 @@
                 </span>
                 <div class="chips-wrapper">
                   <button
-                    class="g-custom-chip"
+                    class="custom-chip"
                     [class.active]="selectedCategory() === 'all'"
                     (click)="selectCategory('all')">
                     Toutes
                   </button>
                   @for (category of categories(); track category) {
                     <button
-                      class="g-custom-chip"
+                      class="custom-chip"
                       [class.active]="selectedCategory() === category"
                       (click)="selectCategory(category)">
                       {{ category }}
@@ -176,32 +176,32 @@
                 </span>
                 <div class="chips-wrapper">
                   <button
-                    class="g-custom-chip all"
+                    class="custom-chip bonus-chip all"
                     [class.active]="selectedBonusFilter() === 'all'"
                     (click)="selectBonusFilter('all')">
                     <mat-icon>star</mat-icon>
                     Tous
                   </button>
                   <button
-                    class="g-custom-chip pdf"
+                    class="custom-chip bonus-chip pdf"
                     [class.active]="selectedBonusFilter() === 'PDF'"
                     (click)="selectBonusFilter('PDF')">
                     PDF
                   </button>
                   <button
-                    class="g-custom-chip pdc"
+                    class="custom-chip bonus-chip pdc"
                     [class.active]="selectedBonusFilter() === 'PDC'"
                     (click)="selectBonusFilter('PDC')">
                     PDC
                   </button>
                   <button
-                    class="g-custom-chip arm"
+                    class="custom-chip bonus-chip arm"
                     [class.active]="selectedBonusFilter() === 'ARM'"
                     (click)="selectBonusFilter('ARM')">
                     ARM
                   </button>
                   <button
-                    class="g-custom-chip esq"
+                    class="custom-chip bonus-chip esq"
                     [class.active]="selectedBonusFilter() === 'ESQ'"
                     (click)="selectBonusFilter('ESQ')">
                     ESQ
