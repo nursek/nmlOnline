@@ -17,12 +17,9 @@ $theme: mat.m2-define-light-theme((
 
 @include mat.all-component-themes($theme);
 
-// ===================
-// VARIABLES GLOBALES
-// ===================
+// Variables de couleurs personnalisées
 $primary-color: #6366f1;
 $secondary-color: #8b5cf6;
-$primary-gradient: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
 $success-color: #10b981;
 $warning-color: #f59e0b;
 $error-color: #ef4444;
@@ -36,17 +33,7 @@ $text-primary: #1e293b;
 $text-secondary: #64748b;
 $text-muted: #94a3b8;
 
-$border-color: #e2e8f0;
-
-// Couleurs bonus
-$color-pdf: #dc2626;
-$color-pdc: #0891b2;
-$color-arm: #059669;
-$color-esq: #d97706;
-
-// ===================
-// RESET & BASE
-// ===================
+// Reset et styles de base
 * {
   margin: 0;
   padding: 0;
@@ -67,201 +54,38 @@ body {
   min-height: 100vh;
 }
 
-// ===================
-// ANIMATIONS GLOBALES
-// ===================
+// Animations
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-// ===================
-// CLASSES UTILITAIRES GLOBALES
-// ===================
-.fade-in { animation: fadeIn 0.3s ease; }
-.slide-in { animation: slideIn 0.3s ease; }
-
-.text-gradient {
-  background: $primary-gradient;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hover-lift {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
-// ===================
-// LAYOUT CLASSES GLOBALES
-// ===================
-.g-loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 80vh;
+.fade-in {
+  animation: fadeIn 0.3s ease;
 }
 
-.g-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 32px 16px;
-  &--narrow { max-width: 1000px; }
-  &--wide { max-width: 1600px; }
+.slide-in {
+  animation: slideIn 0.3s ease;
 }
 
-.g-page-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
-  &--between {
-    justify-content: space-between;
-    flex-wrap: wrap;
-  }
-}
-
-.g-avatar {
-  width: 64px;
-  height: 64px;
-  background: $primary-gradient;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  mat-icon {
-    font-size: 40px;
-    width: 40px;
-    height: 40px;
-    color: white;
-  }
-  &--lg {
-    width: 80px;
-    height: 80px;
-    mat-icon { font-size: 48px; width: 48px; height: 48px; }
-  }
-}
-
-.g-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  background: $primary-gradient;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
-  &--xl { font-size: 2rem; }
-}
-
-.g-subtitle {
-  color: $text-secondary;
-  margin: 4px 0 0;
-}
-
-.g-error-alert {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #fef2f2;
-  color: $error-color;
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #fecaca;
-  margin-bottom: 24px;
-}
-
-.g-card {
-  margin-bottom: 24px;
-  border-radius: 12px;
-}
-
-.g-section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-  }
-}
-
-.g-section-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0 0 16px;
-}
-
-// ===================
-// BONUS CHIPS GLOBAUX
-// ===================
-.g-bonus-chip {
-  font-size: 0.7rem !important;
-  min-height: 24px !important;
-  &.pdf { background: $color-pdf !important; color: white !important; }
-  &.pdc { background: $color-pdc !important; color: white !important; }
-  &.arm { background: $color-arm !important; color: white !important; }
-  &.esq { background: $color-esq !important; color: white !important; }
-}
-
-// Custom chips avec couleurs bonus (filtres)
-.g-custom-chip {
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid $border-color;
-  background: white;
-  color: $text-secondary;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  font-size: 0.875rem;
-  outline: none;
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
-    border-color: $primary-color;
-  }
-
-  &.active {
-    background: $primary-gradient;
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-    transform: translateY(-2px);
-  }
-
-  // Couleurs bonus
-  &.pdf:not(.active) { border-color: #fecaca; color: $color-pdf; &:hover { background: #fef2f2; } }
-  &.pdf.active { background: linear-gradient(135deg, $color-pdf 0%, #ef4444 100%); }
-  &.pdc:not(.active) { border-color: #a5f3fc; color: $color-pdc; &:hover { background: #ecfeff; } }
-  &.pdc.active { background: linear-gradient(135deg, $color-pdc 0%, #06b6d4 100%); }
-  &.arm:not(.active) { border-color: #a7f3d0; color: $color-arm; &:hover { background: #d1fae5; } }
-  &.arm.active { background: linear-gradient(135deg, $color-arm 0%, $success-color 100%); }
-  &.esq:not(.active) { border-color: #fed7aa; color: $color-esq; &:hover { background: #ffedd5; } }
-  &.esq.active { background: linear-gradient(135deg, $color-esq 0%, $warning-color 100%); }
-  &.all:not(.active) { border-color: #e9d5ff; color: $secondary-color; &:hover { background: #f5f3ff; } }
-  &.all.active { background: linear-gradient(135deg, $secondary-color 0%, #a78bfa 100%); }
-}
-
-// ===================
-// SCROLLBAR
-// ===================
+// Scrollbar personnalisée
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -274,51 +98,38 @@ body {
 ::-webkit-scrollbar-thumb {
   background: $text-muted;
   border-radius: 5px;
-  &:hover { background: $text-secondary; }
+
+  &:hover {
+    background: $text-secondary;
+  }
 }
 
-// ===================
-// MATERIAL OVERRIDES
-// ===================
-.mat-mdc-card { border-radius: 12px !important; }
-.mat-mdc-button, .mat-mdc-raised-button { border-radius: 10px !important; }
-.mat-mdc-chip { font-weight: 600 !important; }
-
-// ===================
-// SHARED COMPONENT PATTERNS
-// ===================
-// Utilisé dans boutique.component.scss et potentiellement ailleurs
-
-// Empty state pattern
-.g-empty-state {
-  text-align: center;
-  padding: 64px 16px;
-  mat-icon { font-size: 64px; width: 64px; height: 64px; color: $text-muted; margin-bottom: 16px; }
-  p { color: $text-secondary; margin: 0; }
+// Classes utilitaires
+.text-gradient {
+  background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-// No results pattern
-.g-no-results {
-  text-align: center;
-  padding: 80px 24px;
-  background: linear-gradient(135deg, rgba($primary-color, 0.03) 0%, rgba($secondary-color, 0.03) 100%);
-  border-radius: 16px;
-  border: 2px dashed $border-color;
-  margin-bottom: 24px;
-  mat-icon { font-size: 80px; width: 80px; height: 80px; color: #cbd5e1; margin-bottom: 16px; }
-  h3 { font-size: 1.25rem; font-weight: 700; color: #475569; margin: 0 0 8px; }
-  p { color: $text-muted; font-size: 0.95rem; margin: 0; }
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
 }
 
-// Results header pattern
-.g-results-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding: 16px 20px;
-  background: white;
-  border-radius: 12px;
-  border: 1px solid $border-color;
+// Personnalisation Material
+.mat-mdc-card {
+  border-radius: 12px !important;
 }
 
+.mat-mdc-button, .mat-mdc-raised-button {
+  border-radius: 10px !important;
+}
+
+.mat-mdc-chip {
+  font-weight: 600 !important;
+}
