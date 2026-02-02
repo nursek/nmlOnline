@@ -6,11 +6,14 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PlayerActions } from '../../store/player/player.actions';
 import { selectCurrentPlayer, selectPlayerLoading, selectPlayerError } from '../../store/player/player.selectors';
 import { selectUser } from '../../store/auth/auth.selectors';
 import { filter, take } from 'rxjs/operators';
-import { Player } from '../../models';
+import { Player, PlayerResource } from '../../models';
+import { ResourceService } from '../../services/resource.service';
 
 @Component({
   selector: 'app-joueur',
@@ -22,6 +25,8 @@ import { Player } from '../../models';
     MatIconModule,
     MatChipsModule,
     MatDividerModule,
+    MatButtonModule,
+    MatSnackBarModule,
   ],
   template: `
     @if (loading$ | async) {
@@ -139,6 +144,49 @@ import { Player } from '../../models';
                       </div>
                     </div>
                     <div class="quantity">×{{ stack.quantity }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Ressources -->
+        <mat-card class="card">
+          <mat-card-content>
+            <div class="section-header">
+              <mat-icon color="primary">diamond</mat-icon>
+              <h2>Ressources possédées</h2>
+            </div>
+            <p class="section-subtitle">Votre inventaire de ressources précieuses</p>
+
+            @if (!player.resources || player.resources.length === 0) {
+              <div class="empty-state">
+                <mat-icon>diamond</mat-icon>
+                <p>Aucune ressource pour le moment. Collectez des ressources dans vos territoires !</p>
+              </div>
+            } @else {
+              <div class="resource-grid">
+                @for (resource of player.resources; track resource.name) {
+                  <div class="resource-card">
+                    <div class="resource-info">
+                      <mat-icon class="resource-icon">diamond</mat-icon>
+                      <div>
+                        <h4>{{ resource.name }}</h4>
+                        <span class="quantity-label">Quantité: {{ resource.quantity }}</span>
+                        @if (resource.baseValue) {
+                          <span class="value-label">Valeur unitaire: {{ resource.baseValue }} ₡</span>
+                        }
+                      </div>
+                    </div>
+                    <button
+                      mat-raised-button
+                      color="accent"
+                      class="sell-button"
+                      (click)="sellResource(resource, 1)">
+                      <mat-icon>sell</mat-icon>
+                      Vendre (×1)
+                    </button>
                   </div>
                 }
               </div>
@@ -353,7 +401,7 @@ import { Player } from '../../models';
       &.warning { color: #f59e0b; }
     }
 
-    .equipment-grid, .territories-grid {
+    .equipment-grid, .territories-grid, .resource-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 16px;
@@ -410,6 +458,56 @@ import { Player } from '../../models';
       font-size: 1.5rem;
       font-weight: 700;
       color: #6366f1;
+    }
+
+    .resource-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 2px solid #f59e0b;
+      border-radius: 8px;
+      transition: all 0.3s;
+
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+      }
+    }
+
+    .resource-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .resource-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+        color: #f59e0b;
+      }
+
+      h4 {
+        margin: 0 0 4px;
+        font-weight: 600;
+        color: #78350f;
+      }
+
+      .quantity-label, .value-label {
+        display: block;
+        font-size: 0.75rem;
+        color: #92400e;
+        margin-top: 2px;
+      }
+    }
+
+    .sell-button {
+      width: 100%;
+
+      mat-icon {
+        margin-right: 4px;
+      }
     }
 
     .territory-card {
@@ -509,7 +607,9 @@ import { Player } from '../../models';
   `]
 })
 export class JoueurComponent implements OnInit {
-  private store = inject(Store);
+  private readonly store = inject(Store);
+  private readonly resourceService = inject(ResourceService);
+  private readonly snackBar = inject(MatSnackBar);
 
   player$ = this.store.select(selectCurrentPlayer);
   loading$ = this.store.select(selectPlayerLoading);
@@ -523,6 +623,47 @@ export class JoueurComponent implements OnInit {
     ).subscribe(user => {
       console.log('Loading player for user:', user.username);
       this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
+    });
+  }
+
+  /**
+   * Vend une ressource du joueur
+   */
+  sellResource(resource: PlayerResource, quantity: number): void {
+    if (!resource.id) {
+      this.snackBar.open('Erreur: ressource invalide', 'Fermer', { duration: 3000 });
+      return;
+    }
+
+    if (resource.quantity < quantity) {
+      this.snackBar.open('Quantité insuffisante', 'Fermer', { duration: 3000 });
+      return;
+    }
+
+    this.resourceService.sellResource(resource.id, quantity).subscribe({
+      next: () => {
+        const saleValue = resource.baseValue ? resource.baseValue * quantity : 0;
+        this.snackBar.open(
+          `✓ ${quantity}x ${resource.name} vendu(s) pour ${saleValue} ₡`,
+          'Fermer',
+          { duration: 4000, panelClass: ['success-snackbar'] }
+        );
+
+        // Recharger le joueur pour mettre à jour les données
+        this.store.select(selectUser).pipe(take(1)).subscribe(user => {
+          if (user?.username) {
+            this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Erreur lors de la vente:', error);
+        const message = error.error?.message || error.message || 'Erreur lors de la vente';
+        this.snackBar.open(`❌ ${message}`, 'Fermer', {
+          duration: 4000,
+          panelClass: ['error-snackbar']
+        });
+      }
     });
   }
 

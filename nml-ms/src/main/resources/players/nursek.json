@@ -3,12 +3,16 @@
   "money": 30000,
   "resources": [
     {
-      "type": "Or",
-      "quantity": 1
+      "resourceId": 6,
+      "quantity": 15
     },
     {
-      "type": "Ivoire",
-      "quantity": 1
+      "resourceId": 3,
+      "quantity": 20
+    },
+    {
+      "resourceId": 1,
+      "quantity": 8
     }
   ],
   "equipments": [

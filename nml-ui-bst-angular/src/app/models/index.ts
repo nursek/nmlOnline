@@ -63,6 +63,14 @@ export interface EquipmentStack {
   available: number;
 }
 
+// Correspondant à PlayerResourceDto du backend
+export interface PlayerResource {
+  id?: number;
+  name: string;
+  quantity: number;
+  baseValue: number | null;
+}
+
 // Correspondant à SectorDto du backend
 export interface Sector {
   number: number | null;
@@ -98,6 +106,7 @@ export interface Player {
   name: string;
   stats: PlayerStats;
   equipments: EquipmentStack[];
+  resources: PlayerResource[];
   sectors: Sector[];
 }
 

@@ -137,7 +137,11 @@ public class PlayerStartupImporter implements ApplicationRunner {
                     playerImportService.importEquipmentsToPlayer(filePath, player);
                     log.info("Équipements importés pour {}", player.getName());
 
-                    // Sauvegarder le joueur avec ses équipements AVANT d'importer les secteurs
+                    // 3b. Importer les ressources
+                    playerImportService.importResourcesToPlayer(filePath, player);
+                    log.info("Ressources importées pour {}", player.getName());
+
+                    // Sauvegarder le joueur avec ses équipements et ressources AVANT d'importer les secteurs
                     player = playerService.save(player);
 
                     // 4. Importer les secteurs et unités dans le Board (en mémoire)

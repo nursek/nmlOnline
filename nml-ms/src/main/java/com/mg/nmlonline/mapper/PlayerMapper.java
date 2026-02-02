@@ -182,6 +182,7 @@ public class PlayerMapper {
         if (resource == null) return null;
 
         PlayerResourceDto dto = new PlayerResourceDto();
+        dto.setId(resource.getId());
         dto.setName(resource.getResourceName());
         dto.setQuantity(resource.getQuantity());
 

@@ -7,6 +7,7 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.service.BoardService;
 import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.domain.service.ResourceService;
 import com.mg.nmlonline.mapper.PlayerMapper;
 import com.mg.nmlonline.mapper.SectorMapper;
 import org.springframework.http.ResponseEntity;
@@ -23,13 +24,16 @@ public class PlayerController {
     private final PlayerMapper playerMapper;
     private final BoardService boardService;
     private final SectorMapper sectorMapper;
+    private final ResourceService resourceService;
 
     public PlayerController(PlayerService playerService, PlayerMapper playerMapper,
-                          BoardService boardService, SectorMapper sectorMapper) {
+                          BoardService boardService, SectorMapper sectorMapper,
+                          ResourceService resourceService) {
         this.playerService = playerService;
         this.playerMapper = playerMapper;
         this.boardService = boardService;
         this.sectorMapper = sectorMapper;
+        this.resourceService = resourceService;
     }
 
     @GetMapping
@@ -61,6 +65,24 @@ public class PlayerController {
     public void delete(@PathVariable("id") Long id) {
         if(!playerService.delete(id)) {
             throw new RuntimeException("Player with id " + id + " not found.");
+        }
+    }
+
+    /**
+     * Vend une ressource de l'inventaire d'un joueur
+     * @param resourceId L'ID de la ressource à vendre (PlayerResource)
+     * @param quantity La quantité à vendre
+     * @return 200 OK si la vente est réussie
+     */
+    @PostMapping("/resources/sell/{resourceId}")
+    public ResponseEntity<String> sellResource(@PathVariable("resourceId") Long resourceId, @RequestParam("quantity") int quantity) {
+        try {
+            resourceService.sellResource(resourceId, quantity);
+            return ResponseEntity.ok("Resource sold successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
         }
     }
 
