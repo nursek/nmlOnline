@@ -30,10 +30,20 @@ public class SecurityConfig {
         // Activer CORS avec la configuration personnalisée
         http.cors(cors -> cors.configurationSource(corsConfigurationSource));
 
-        // Autoriser les endpoints publics (login/register/refresh/logout + console H2)
+        // Autoriser les endpoints publics (login/register/refresh/logout + console H2 + static files)
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/**",
-                        "/h2-console/**"
+                        "/h2-console/**",
+                        "/",
+                        "/index.html",
+                        "/*.js",
+                        "/*.css",
+                        "/*.ico",
+                        "/*.png",
+                        "/*.svg",
+                        "/*.woff",
+                        "/*.woff2",
+                        "/assets/**"
                 ).permitAll()
                 .anyRequest().authenticated()
         );
