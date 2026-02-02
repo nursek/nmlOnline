@@ -9,8 +9,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 	<artifactId>nml-ms</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name>nml-ms</name>
+    <name>nml-ms</name>
 	<description>nml-ms</description>
 	<url/>
 	<licenses>
@@ -119,6 +118,13 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring.boot.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <excludes>
                         <exclude>
