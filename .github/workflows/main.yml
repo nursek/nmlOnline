@@ -37,5 +37,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/lurio/nmlonline:latest
-            ghcr.io/lurio/nmlonline:${{ github.sha }}
+            ghcr.io/nursek/nmlonline:latest
+            ghcr.io/nursek/nmlonline:${{ github.sha }}
