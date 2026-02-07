@@ -45,16 +45,26 @@ export interface PlayerStats {
 // Types pour les unités
 export interface UnitType {
   name: string;
-  code: string;
+  level: number;
+  baseAttack: number;
+  baseDefense: number;
 }
 
 export interface Unit {
   id: number;
+  number: number;
+  experience: number;
   type: UnitType;
-  health: number;
-  maxHealth: number;
-  movement: number;
-  maxMovement: number;
+  classes: UnitClass[];
+  isInjured: boolean;
+  equipments: Equipment[];
+  // Stats calculées
+  attack: number;
+  defense: number;
+  pdf: number;
+  pdc: number;
+  armor: number;
+  evasion: number;
 }
 
 export interface EquipmentStack {

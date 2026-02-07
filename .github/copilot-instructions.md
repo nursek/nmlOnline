@@ -178,6 +178,38 @@ board = signal<Board | null>(null);
 allSectors = computed(() => this.board() ? Object.values(this.board()!.sectors) : []);
 ```
 
+### SCSS - Styles partagés
+Le fichier `src/styles/_shared.scss` contient des variables et mixins réutilisables.
+
+**Import dans un composant :**
+```scss
+@use '../../../styles/shared' as shared;
+
+.container {
+  @include shared.page-container;
+}
+
+.title {
+  @include shared.gradient-title;
+}
+```
+
+**Variables disponibles :**
+- `$primary-gradient` : Gradient principal violet
+- `$primary-color` : Couleur primaire `#6366f1`
+- `$text-muted` : Texte grisé `#64748b`
+
+**Mixins disponibles :**
+- `page-container` : Container de page (max-width, padding)
+- `loading-container` : Centrage du spinner de chargement
+- `page-header` : Header de page avec gap
+- `avatar($size, $icon-size)` : Avatar circulaire avec gradient
+- `gradient-title` : Titre avec gradient
+- `card` : Style de carte Material
+- `section-header` : En-tête de section avec icône
+- `hover-lift` : Animation de survol
+- `error-alert` : Alerte d'erreur stylisée
+
 ---
 
 ## 🎮 Entités métier
@@ -257,6 +289,7 @@ allSectors = computed(() => this.board() ? Object.values(this.board()!.sectors) 
 | `nml-ui-bst-angular/.../app.config.ts` | Providers Angular |
 | `nml-ui-bst-angular/.../store/index.ts` | Export store NgRx |
 | `nml-ui-bst-angular/.../models/index.ts` | Types TypeScript |
+| `nml-ui-bst-angular/src/styles/_shared.scss` | Variables et mixins SCSS partagés |
 
 ---
 
