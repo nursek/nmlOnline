@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { MatCardModule } from '@angular/material/card';
@@ -6,9 +6,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
 import { selectUser, selectCurrentPlayer, selectPlayerLoading, selectPlayerError, PlayerActions } from '../../store';
 import { filter, take } from 'rxjs/operators';
-import { Player } from '../../models';
+import { Player, Unit } from '../../models';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-joueur',
@@ -20,6 +23,8 @@ import { Player } from '../../models';
     MatIconModule,
     MatChipsModule,
     MatDividerModule,
+    MatTooltipModule,
+    MatButtonModule,
   ],
   templateUrl: './joueur.component.html',
   styleUrls: ['./joueur.component.scss']
@@ -31,8 +36,77 @@ export class JoueurComponent implements OnInit {
   loading$ = this.store.select(selectPlayerLoading);
   error$ = this.store.select(selectPlayerError);
 
+  // Signal pour le player
+  player = toSignal(this.player$);
+
+  // Mode d'affichage des unités: 'list' ou 'tile'
+  viewMode = signal<'list' | 'tile'>('list');
+
+  // Filtres
+  showFilters = signal(false);
+  selectedTypeFilter = signal<string>('all');
+  selectedLocationFilter = signal<string>('all');
+  selectedStatusFilter = signal<string>('all');
+
+  // IDs des unités expandées (pour le mode liste)
+  expandedUnitIds = signal<Set<number>>(new Set());
+
+  // Types d'unités disponibles
+  unitTypes = computed(() => {
+    const p = this.player();
+    if (!p) return [];
+    const types = new Set<string>();
+    p.sectors.forEach(s => s.army?.forEach(u => types.add(u.type.name)));
+    return Array.from(types).sort((a, b) => a.localeCompare(b));
+  });
+
+  // Secteurs disponibles (pour filtre par localisation)
+  playerSectors = computed(() => {
+    const p = this.player();
+    if (!p) return [];
+    return p.sectors.filter(s => s.army && s.army.length > 0);
+  });
+
+  // Unités filtrées
+  filteredUnits = computed(() => {
+    const p = this.player();
+    if (!p) return [];
+
+    let units = this.getAllUnitsWithLocation(p);
+
+    // Filtre par type
+    const typeFilter = this.selectedTypeFilter();
+    if (typeFilter !== 'all') {
+      units = units.filter(u => u.unit.type.name === typeFilter);
+    }
+
+    // Filtre par localisation
+    const locationFilter = this.selectedLocationFilter();
+    if (locationFilter !== 'all') {
+      units = units.filter(u => u.sectorNumber === Number.parseInt(locationFilter, 10));
+    }
+
+    // Filtre par statut (blessé ou non)
+    const statusFilter = this.selectedStatusFilter();
+    if (statusFilter === 'injured') {
+      units = units.filter(u => u.unit.isInjured);
+    } else if (statusFilter === 'healthy') {
+      units = units.filter(u => !u.unit.isInjured);
+    }
+
+    return units;
+  });
+
+  // Nombre de filtres actifs
+  activeFiltersCount = computed(() => {
+    let count = 0;
+    if (this.selectedTypeFilter() !== 'all') count++;
+    if (this.selectedLocationFilter() !== 'all') count++;
+    if (this.selectedStatusFilter() !== 'all') count++;
+    return count;
+  });
+
   ngOnInit(): void {
-    // Attendre que l'utilisateur soit authentifié et charger le joueur
     this.store.select(selectUser).pipe(
       filter((user): user is NonNullable<typeof user> => !!user && !!user.username),
       take(1)
@@ -69,5 +143,70 @@ export class JoueurComponent implements OnInit {
         color: '#8b5cf6',
       },
     ];
+  }
+
+  /**
+   * Récupère toutes les unités avec leur localisation
+   */
+  getAllUnitsWithLocation(player: Player): { unit: Unit; sectorName: string; sectorNumber: number }[] {
+    const result: { unit: Unit; sectorName: string; sectorNumber: number }[] = [];
+    player.sectors.forEach(sector => {
+      sector.army?.forEach(unit => {
+        result.push({
+          unit,
+          sectorName: sector.name,
+          sectorNumber: sector.number ?? 0
+        });
+      });
+    });
+    return result.sort((a, b) => {
+      const typeCompare = a.unit.type.name.localeCompare(b.unit.type.name);
+      if (typeCompare !== 0) return typeCompare;
+      return a.unit.number - b.unit.number;
+    });
+  }
+
+  // Toggle view mode
+  setViewMode(mode: 'list' | 'tile') {
+    this.viewMode.set(mode);
+  }
+
+  // Toggle filters panel
+  toggleFilters() {
+    this.showFilters.update(v => !v);
+  }
+
+  // Reset all filters
+  resetFilters() {
+    this.selectedTypeFilter.set('all');
+    this.selectedLocationFilter.set('all');
+    this.selectedStatusFilter.set('all');
+  }
+
+  // Toggle unit expansion (list mode)
+  toggleUnitExpand(unitId: number) {
+    this.expandedUnitIds.update(set => {
+      const newSet = new Set(set);
+      if (newSet.has(unitId)) {
+        newSet.delete(unitId);
+      } else {
+        newSet.add(unitId);
+      }
+      return newSet;
+    });
+  }
+
+  isUnitExpanded(unitId: number): boolean {
+    return this.expandedUnitIds().has(unitId);
+  }
+
+  // Expand/collapse all
+  expandAll() {
+    const allIds = new Set(this.filteredUnits().map(u => u.unit.id));
+    this.expandedUnitIds.set(allIds);
+  }
+
+  collapseAll() {
+    this.expandedUnitIds.set(new Set());
   }
 }

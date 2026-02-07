@@ -132,6 +132,247 @@
       </mat-card>
     </div>
 
+    <!-- Unités -->
+    <mat-card class="card">
+      <mat-card-content>
+        <div class="section-header">
+          <mat-icon color="primary">groups</mat-icon>
+          <h2>Unités</h2>
+          <span class="units-count">({{ filteredUnits().length }})</span>
+
+          <div class="units-toolbar">
+            <!-- Expand/Collapse (uniquement en mode liste) -->
+            @if (viewMode() === 'list' && filteredUnits().length > 0) {
+              <div class="expand-collapse-btns">
+                <button class="text-btn" (click)="expandAll()" matTooltip="Tout déplier">
+                  <mat-icon>unfold_more</mat-icon>
+                </button>
+                <button class="text-btn" (click)="collapseAll()" matTooltip="Tout replier">
+                  <mat-icon>unfold_less</mat-icon>
+                </button>
+              </div>
+            }
+
+            <!-- Toggle filtres -->
+            <button class="filter-btn"
+                    [class.active]="showFilters()"
+                    (click)="toggleFilters()"
+                    matTooltip="Filtres">
+              <mat-icon>tune</mat-icon>
+              @if (activeFiltersCount() > 0) {
+                <span class="filter-badge">{{ activeFiltersCount() }}</span>
+              }
+            </button>
+
+            <!-- Toggle view mode -->
+            <div class="view-mode-toggle">
+              <button class="toggle-btn"
+                      [class.active]="viewMode() === 'list'"
+                      (click)="setViewMode('list')"
+                      matTooltip="Liste">
+                <mat-icon>view_list</mat-icon>
+              </button>
+              <button class="toggle-btn"
+                      [class.active]="viewMode() === 'tile'"
+                      (click)="setViewMode('tile')"
+                      matTooltip="Tuiles">
+                <mat-icon>grid_view</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panneau de filtres -->
+        @if (showFilters()) {
+          <div class="filters-panel">
+            <div class="filters-row">
+              <!-- Filtre par type -->
+              <div class="filter-group">
+                <span class="filter-label">Type</span>
+                <div class="filter-chips">
+                  <button class="filter-chip" [class.active]="selectedTypeFilter() === 'all'" (click)="selectedTypeFilter.set('all')">
+                    Tous
+                  </button>
+                  @for (type of unitTypes(); track type) {
+                    <button class="filter-chip" [class.active]="selectedTypeFilter() === type" (click)="selectedTypeFilter.set(type)">
+                      {{ type }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Filtre par localisation -->
+              <div class="filter-group">
+                <span class="filter-label">Secteur</span>
+                <div class="filter-chips">
+                  <button class="filter-chip" [class.active]="selectedLocationFilter() === 'all'" (click)="selectedLocationFilter.set('all')">
+                    Tous
+                  </button>
+                  @for (sector of playerSectors(); track sector.number) {
+                    <button class="filter-chip" [class.active]="selectedLocationFilter() === '' + sector.number" (click)="selectedLocationFilter.set('' + sector.number)">
+                      {{ sector.name }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Filtre par statut -->
+              <div class="filter-group">
+                <span class="filter-label">Statut</span>
+                <div class="filter-chips">
+                  <button class="filter-chip" [class.active]="selectedStatusFilter() === 'all'" (click)="selectedStatusFilter.set('all')">
+                    Tous
+                  </button>
+                  <button class="filter-chip" [class.active]="selectedStatusFilter() === 'healthy'" (click)="selectedStatusFilter.set('healthy')">
+                    En forme
+                  </button>
+                  <button class="filter-chip" [class.active]="selectedStatusFilter() === 'injured'" (click)="selectedStatusFilter.set('injured')">
+                    Blessés
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            @if (activeFiltersCount() > 0) {
+              <button class="reset-filters-btn" (click)="resetFilters()">
+                <mat-icon>clear</mat-icon>
+                Réinitialiser les filtres
+              </button>
+            }
+          </div>
+        }
+
+        @if (filteredUnits().length === 0) {
+          <div class="empty-state">
+            <mat-icon>groups</mat-icon>
+            @if (activeFiltersCount() > 0) {
+              <p>Aucune unité ne correspond aux filtres sélectionnés.</p>
+            } @else {
+              <p>Aucune unité pour le moment. Recrutez des troupes !</p>
+            }
+          </div>
+        } @else {
+          <div class="units-container">
+            <!-- Mode Liste -->
+            @if (viewMode() === 'list') {
+              <div class="units-list">
+                @for (item of filteredUnits(); track item.unit.id) {
+                  <div class="unit-list-item" [class.injured]="item.unit.isInjured" [class.expanded]="isUnitExpanded(item.unit.id)">
+                    <div class="unit-list-row" (click)="toggleUnitExpand(item.unit.id)">
+                      <mat-icon class="expand-icon">{{ isUnitExpanded(item.unit.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                      <span class="unit-type-badge">{{ item.unit.type.name }}</span>
+                      @if (item.unit.classes && item.unit.classes.length > 0) {
+                        <span class="unit-classes-inline">
+                          @for (c of item.unit.classes; track c.name) {
+                            <span class="class-tag">{{ c.name }}</span>
+                          }
+                        </span>
+                      }
+                      <span class="unit-exp">{{ item.unit.experience | number:'1.1-1' }} Exp</span>
+                      <span class="unit-stats-inline">
+                        <span class="stat atk">{{ item.unit.attack | number:'1.0-0' }}</span>
+                        <span class="stat def">{{ item.unit.defense | number:'1.0-0' }}</span>
+                        <span class="stat pdf">{{ item.unit.pdf | number:'1.0-0' }}</span>
+                        <span class="stat pdc">{{ item.unit.pdc | number:'1.0-0' }}</span>
+                        <span class="stat arm">{{ item.unit.armor | number:'1.0-0' }}</span>
+                        <span class="stat esq">{{ item.unit.evasion | number:'1.0-0' }}</span>
+                      </span>
+                      <span class="unit-location-inline">
+                        <mat-icon>place</mat-icon>{{ item.sectorName }}
+                      </span>
+                      @if (item.unit.isInjured) {
+                        <mat-icon class="injured-icon" matTooltip="Blessé">local_hospital</mat-icon>
+                      }
+                    </div>
+                    @if (isUnitExpanded(item.unit.id)) {
+                      <div class="unit-details">
+                        <div class="details-grid">
+                          <div class="detail-col">
+                            <h5>Statistiques</h5>
+                            <div class="detail-stats">
+                              <div class="detail-stat"><span class="label">Attaque</span><span class="value atk">{{ item.unit.attack | number:'1.0-0' }}</span></div>
+                              <div class="detail-stat"><span class="label">Défense</span><span class="value def">{{ item.unit.defense | number:'1.0-0' }}</span></div>
+                              <div class="detail-stat"><span class="label">PDF</span><span class="value pdf">{{ item.unit.pdf | number:'1.0-0' }}</span></div>
+                              <div class="detail-stat"><span class="label">PDC</span><span class="value pdc">{{ item.unit.pdc | number:'1.0-0' }}</span></div>
+                              <div class="detail-stat"><span class="label">Armure</span><span class="value arm">{{ item.unit.armor | number:'1.0-0' }}</span></div>
+                              <div class="detail-stat"><span class="label">Esquive</span><span class="value esq">{{ item.unit.evasion | number:'1.0-0' }}</span></div>
+                            </div>
+                          </div>
+                          @if (item.unit.equipments && item.unit.equipments.length > 0) {
+                            <div class="detail-col">
+                              <h5>Équipements</h5>
+                              <div class="detail-equipments">
+                                @for (eq of item.unit.equipments; track eq.name) {
+                                  <span class="equipment-tag">{{ eq.name }}</span>
+                                }
+                              </div>
+                            </div>
+                          }
+                          @if (item.unit.classes && item.unit.classes.length > 0) {
+                            <div class="detail-col">
+                              <h5>Classes</h5>
+                              <div class="detail-classes">
+                                @for (c of item.unit.classes; track c.name) {
+                                  <span class="class-tag-full">{{ c.name }}</span>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Mode Tuiles -->
+            @if (viewMode() === 'tile') {
+              <div class="units-grid">
+                @for (item of filteredUnits(); track item.unit.id) {
+                  <div class="unit-card" [class.injured]="item.unit.isInjured">
+                    <div class="unit-header">
+                      <div class="unit-type-badge">{{ item.unit.type.name }}</div>
+                      <span class="unit-exp">{{ item.unit.experience | number:'1.1-1' }} Exp</span>
+                      @if (item.unit.isInjured) {
+                        <mat-icon class="injured-icon" matTooltip="Blessé">local_hospital</mat-icon>
+                      }
+                    </div>
+                    @if (item.unit.classes && item.unit.classes.length > 0) {
+                      <div class="unit-classes">
+                        @for (unitClass of item.unit.classes; track unitClass.name) {
+                          <span class="class-tag">{{ unitClass.name }}</span>
+                        }
+                      </div>
+                    }
+                    <div class="unit-stats-compact">
+                      <span class="stat atk" matTooltip="Attaque">{{ item.unit.attack | number:'1.0-0' }}</span>
+                      <span class="stat def" matTooltip="Défense">{{ item.unit.defense | number:'1.0-0' }}</span>
+                      <span class="stat pdf" matTooltip="PDF">{{ item.unit.pdf | number:'1.0-0' }}</span>
+                      <span class="stat pdc" matTooltip="PDC">{{ item.unit.pdc | number:'1.0-0' }}</span>
+                      <span class="stat arm" matTooltip="Armure">{{ item.unit.armor | number:'1.0-0' }}</span>
+                      <span class="stat esq" matTooltip="Esquive">{{ item.unit.evasion | number:'1.0-0' }}</span>
+                    </div>
+                    @if (item.unit.equipments && item.unit.equipments.length > 0) {
+                      <div class="unit-equipments">
+                        @for (eq of item.unit.equipments; track eq.name; let last = $last) {
+                          <span class="eq-name">{{ eq.name }}{{ last ? '' : ', ' }}</span>
+                        }
+                      </div>
+                    }
+                    <div class="unit-location">
+                      <mat-icon>place</mat-icon>
+                      <span>{{ item.sectorName }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
     <!-- Équipements -->
     <mat-card class="card">
       <mat-card-content>
