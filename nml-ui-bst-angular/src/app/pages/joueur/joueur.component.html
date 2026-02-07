@@ -270,12 +270,12 @@
                       }
                       <span class="unit-exp">{{ item.unit.experience | number:'1.1-1' }} Exp</span>
                       <span class="unit-stats-inline">
-                        <span class="stat atk">{{ item.unit.attack | number:'1.0-0' }}</span>
-                        <span class="stat def">{{ item.unit.defense | number:'1.0-0' }}</span>
-                        <span class="stat pdf">{{ item.unit.pdf | number:'1.0-0' }}</span>
-                        <span class="stat pdc">{{ item.unit.pdc | number:'1.0-0' }}</span>
-                        <span class="stat arm">{{ item.unit.armor | number:'1.0-0' }}</span>
-                        <span class="stat esq">{{ item.unit.evasion | number:'1.0-0' }}</span>
+                        <span class="stat atk" matTooltip="Attaque">{{ item.unit.attack | number:'1.0-0' }}</span>
+                        <span class="stat def" matTooltip="Défense">{{ item.unit.defense | number:'1.0-0' }}</span>
+                        <span class="stat pdf" matTooltip="PDF">{{ item.unit.pdf | number:'1.0-0' }}</span>
+                        <span class="stat pdc" matTooltip="PDC">{{ item.unit.pdc | number:'1.0-0' }}</span>
+                        <span class="stat arm" matTooltip="Armure">{{ item.unit.armor | number:'1.0-0' }}</span>
+                        <span class="stat esq" matTooltip="Esquive">{{ item.unit.evasion | number:'1.0-0' }}</span>
                       </span>
                       <span class="unit-location-inline">
                         <mat-icon>place</mat-icon>{{ item.sectorName }}
