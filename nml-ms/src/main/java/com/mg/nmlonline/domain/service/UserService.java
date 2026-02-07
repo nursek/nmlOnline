@@ -2,8 +2,9 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -13,10 +14,22 @@ import java.util.Base64;
 
 @Service
 public class UserService {
-    @Autowired
-    private UserRepository userRepo;
 
-    private final PasswordEncoder encoder = new BCryptPasswordEncoder();
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
+    private final UserRepository userRepo;
+    private final PasswordEncoder encoder;
+    private final String pepper;
+
+    public UserService(
+            UserRepository userRepo,
+            PasswordEncoder encoder,
+            @Value("${jwt.pepper:default-pepper-secret-change-in-production}") String pepper
+    ) {
+        this.userRepo = userRepo;
+        this.encoder = encoder;
+        this.pepper = pepper;
+    }
 
     public User findByUsername(String username) {
         return userRepo.findByUsername(username);
@@ -45,9 +58,17 @@ public class UserService {
         userRepo.save(user);
     }
 
+    /**
+     * Trouve un utilisateur par son refresh token.
+     * Itère sur les utilisateurs ayant un token actif pour vérifier le hash.
+     * Note: En production avec beaucoup d'utilisateurs, considérer
+     * stocker un identifiant unique (jti) du token pour recherche directe.
+     */
     public User findByRefreshToken(String refreshToken) {
         String transformed = hashInput(refreshToken);
-        for (User user : userRepo.findAll()) {
+
+        // Filtrer uniquement les utilisateurs avec un refresh token actif
+        for (User user : userRepo.findAllWithActiveRefreshToken()) {
             String hash = user.getRefreshTokenHash();
             if (hash != null && encoder.matches(transformed, hash)) {
                 return user;
@@ -58,12 +79,12 @@ public class UserService {
 
     private String hashInput(String value) {
         try {
-            String PEPPER = "un-secret-tres-long-a-mettre-en-env";
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((value + PEPPER).getBytes());
+            byte[] hash = digest.digest((value + pepper).getBytes());
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            logger.error("SHA-256 algorithm not available", e);
+            throw new RuntimeException("Hashing algorithm not available", e);
         }
     }
 

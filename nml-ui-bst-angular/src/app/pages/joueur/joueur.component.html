@@ -388,30 +388,32 @@
             <p>Aucun équipement pour le moment. Visitez la boutique !</p>
           </div>
         } @else {
-          <div class="equipment-grid">
-            @for (stack of player.equipments; track stack.equipment.name) {
-              <div class="equipment-card">
-                <div class="equipment-info">
-                  <h4>{{ stack.equipment.name }}</h4>
-                  <span class="category">{{ stack.equipment.category }}</span>
-                  <div class="chips">
-                    @if (stack.equipment.pdfBonus > 0) {
-                      <mat-chip class="bonus-chip pdf">+{{ stack.equipment.pdfBonus }} PDF</mat-chip>
-                    }
-                    @if (stack.equipment.pdcBonus > 0) {
-                      <mat-chip class="bonus-chip pdc">+{{ stack.equipment.pdcBonus }} PDC</mat-chip>
-                    }
-                    @if (stack.equipment.armBonus > 0) {
-                      <mat-chip class="bonus-chip arm">+{{ stack.equipment.armBonus }} ARM</mat-chip>
-                    }
-                    @if (stack.equipment.evasionBonus > 0) {
-                      <mat-chip class="bonus-chip esq">+{{ stack.equipment.evasionBonus }} ESQ</mat-chip>
-                    }
+          <div class="equipment-container">
+            <div class="equipment-grid">
+              @for (stack of player.equipments; track stack.equipment.name) {
+                <div class="equipment-card">
+                  <div class="equipment-info">
+                    <h4>{{ stack.equipment.name }}</h4>
+                    <span class="category">{{ stack.equipment.category }}</span>
+                    <div class="chips">
+                      @if (stack.equipment.pdfBonus > 0) {
+                        <mat-chip class="bonus-chip pdf">+{{ stack.equipment.pdfBonus }} PDF</mat-chip>
+                      }
+                      @if (stack.equipment.pdcBonus > 0) {
+                        <mat-chip class="bonus-chip pdc">+{{ stack.equipment.pdcBonus }} PDC</mat-chip>
+                      }
+                      @if (stack.equipment.armBonus > 0) {
+                        <mat-chip class="bonus-chip arm">+{{ stack.equipment.armBonus }} ARM</mat-chip>
+                      }
+                      @if (stack.equipment.evasionBonus > 0) {
+                        <mat-chip class="bonus-chip esq">+{{ stack.equipment.evasionBonus }} ESQ</mat-chip>
+                      }
+                    </div>
                   </div>
+                  <div class="quantity">×{{ stack.quantity }}</div>
                 </div>
-                <div class="quantity">×{{ stack.quantity }}</div>
-              </div>
-            }
+              }
+            </div>
           </div>
         }
       </mat-card-content>

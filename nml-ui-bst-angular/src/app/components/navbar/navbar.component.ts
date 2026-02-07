@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect } from '@angular/core';
+import { Component, inject, signal, effect, HostBinding } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -9,8 +9,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatListModule } from '@angular/material/list';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map } from 'rxjs/operators';
-import { selectIsAuthenticated, selectUser } from '../../store/auth/auth.selectors';
-import { AuthActions } from '../../store/auth/auth.actions';
+import { AuthActions, selectIsAuthenticated, selectUser } from '../../store';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-navbar',
@@ -105,6 +105,10 @@ import { AuthActions } from '../../store/auth/auth.actions';
   `,
   styles: [`
     :host {
+      display: none; /* Hidden by default */
+    }
+
+    :host.visible {
       display: block;
       height: 56px; /* Reserve space for fixed navbar */
     }
@@ -204,7 +208,6 @@ import { AuthActions } from '../../store/auth/auth.actions';
       left: 0;
       width: 280px;
       max-width: 80vw;
-      height: calc(100vh - 56px);
       height: calc(100dvh - 56px);
       background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
       z-index: 1000;
@@ -253,11 +256,18 @@ import { AuthActions } from '../../store/auth/auth.actions';
   `]
 })
 export class NavbarComponent {
-  private store = inject(Store);
-  private breakpointObserver = inject(BreakpointObserver);
-  private document = inject(DOCUMENT);
+  private readonly store = inject(Store);
+  private readonly breakpointObserver = inject(BreakpointObserver);
+  private readonly document = inject(DOCUMENT);
 
   isAuthenticated$ = this.store.select(selectIsAuthenticated);
+  private readonly isAuthenticatedSignal = toSignal(this.isAuthenticated$, { initialValue: false });
+
+  @HostBinding('class.visible')
+  get isVisible(): boolean {
+    return this.isAuthenticatedSignal();
+  }
+
   user$ = this.store.select(selectUser);
 
   isMobile$ = this.breakpointObserver.observe([Breakpoints.Handset, Breakpoints.TabletPortrait])

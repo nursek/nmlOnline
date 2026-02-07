@@ -6,103 +6,90 @@ import {
   HttpInterceptorFn,
   HttpHandlerFn
 } from '@angular/common/http';
-import { Observable, throwError, BehaviorSubject } from 'rxjs';
-import { catchError, filter, switchMap, take } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { AuthActions } from '../store/auth/auth.actions';
-import { ApiService } from './api.service';
+import { AuthActions } from '../store';
+import { TokenService } from './token.service';
 
-// Note: These module-level variables are intentionally shared across all interceptor calls
-// to coordinate token refresh across concurrent requests. The isRefreshing flag prevents
-// multiple simultaneous refresh attempts, while refreshTokenSubject queues requests
-// waiting for the new token. This is a common pattern for handling 401s with refresh tokens.
-let isRefreshing = false;
-let refreshTokenSubject: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
-
+/**
+ * Intercepteur HTTP qui gère l'authentification JWT.
+ * - Ajoute le token aux requêtes si présent
+ * - Gère le refresh automatique sur erreur 401
+ * - Redirige vers /login si le refresh échoue
+ */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const token = localStorage.getItem('accessToken');
+  const tokenService = inject(TokenService);
   const router = inject(Router);
   const store = inject(Store);
-  const apiService = inject(ApiService);
+
+  // Ne pas intercepter les requêtes d'authentification
+  if (isAuthRequest(req.url)) {
+    return next(req);
+  }
 
   // Ajouter le token si présent
-  let authReq = req;
-  if (token) {
-    authReq = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-  }
+  const token = tokenService.getAccessToken();
+  const authReq = token ? addTokenToRequest(req, token) : req;
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !req.url.includes('/auth/refresh') && !req.url.includes('/login')) {
-        return handleUnauthorized(req, next, router, store, apiService);
+      // Gérer les erreurs 401 (token expiré)
+      if (error.status === 401) {
+        return handleUnauthorized(req, next, tokenService, router, store);
       }
+
+      // Propager les autres erreurs
       return throwError(() => error);
     })
   );
 };
 
+/**
+ * Vérifie si la requête est une requête d'authentification.
+ */
+function isAuthRequest(url: string): boolean {
+  return url.includes('/auth/refresh') ||
+         url.includes('/login') ||
+         url.includes('/register') ||
+         url.includes('/auth/logout');
+}
+
+/**
+ * Ajoute le token d'authentification à la requête.
+ */
+function addTokenToRequest(req: HttpRequest<unknown>, token: string): HttpRequest<unknown> {
+  return req.clone({
+    setHeaders: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
+/**
+ * Gère une erreur 401 en tentant un refresh du token.
+ */
 function handleUnauthorized(
   req: HttpRequest<unknown>,
   next: HttpHandlerFn,
+  tokenService: TokenService,
   router: Router,
-  store: Store,
-  apiService: ApiService
+  store: Store
 ): Observable<HttpEvent<unknown>> {
-  if (!isRefreshing) {
-    isRefreshing = true;
-    refreshTokenSubject.next(null);
 
-    return apiService.refreshToken().pipe(
-      switchMap((response) => {
-        isRefreshing = false;
-
-        if (response.valid && response.token) {
-          // Stocker le nouveau token
-          localStorage.setItem('accessToken', response.token);
-
-          // Restaurer le user dans le localStorage
-          if (response.id && response.name) {
-            const user = { id: response.id, username: response.name };
-            localStorage.setItem('user', JSON.stringify(user));
-          }
-
-          refreshTokenSubject.next(response.token);
-
-          return next(req.clone({
-            setHeaders: {
-              Authorization: `Bearer ${response.token}`
-            }
-          }));
-        } else {
-          // Token invalide, déconnecter
-          throw new Error('Invalid refresh token');
-        }
-      }),
-      catchError((refreshError) => {
-        isRefreshing = false;
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
-        store.dispatch(AuthActions.logoutSuccess());
-        router.navigate(['/login']);
-        return throwError(() => refreshError);
-      })
-    );
-  }
-
-  return refreshTokenSubject.pipe(
-    filter(token => token !== null),
-    take(1),
-    switchMap(token => {
-      return next(req.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`
-        }
-      }));
+  return tokenService.refreshToken().pipe(
+    switchMap((newToken) => {
+      // Réessayer la requête originale avec le nouveau token
+      return next(addTokenToRequest(req, newToken));
+    }),
+    catchError((refreshError) => {
+      // Le refresh a échoué, déconnecter l'utilisateur
+      tokenService.clearAuth();
+      store.dispatch(AuthActions.logoutSuccess());
+      router.navigate(['/login']);
+      return throwError(() => refreshError);
     })
   );
 }
+
