@@ -121,7 +121,33 @@
   font-size: 0.875rem;
 }
 
-details-grid {
+// Layout côte à côte pour Statistiques détaillées + Territoires
+.stats-territories-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
+
+  > .card {
+    flex: 1;
+    min-width: 0; // Permet au flex-item de rétrécir en dessous de son contenu
+    margin-bottom: 0; // Retire le margin-bottom individuel des cartes dans ce conteneur
+  }
+
+  // Responsive : sur mobile, empiler les cartes
+  @media (max-width: 768px) {
+    flex-direction: column;
+
+    > .card {
+      margin-bottom: 24px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+.details-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
