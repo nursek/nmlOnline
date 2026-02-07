@@ -9,15 +9,19 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 public class SecurityConfig {
 
     private final CorsConfigurationSource corsConfigurationSource;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(CorsConfigurationSource corsConfigurationSource) {
+    public SecurityConfig(CorsConfigurationSource corsConfigurationSource,
+                          JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.corsConfigurationSource = corsConfigurationSource;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
@@ -30,10 +34,19 @@ public class SecurityConfig {
         // Activer CORS avec la configuration personnalisée
         http.cors(cors -> cors.configurationSource(corsConfigurationSource));
 
-        // Autoriser les endpoints publics (login/register/refresh/logout + console H2 + static files)
+        // Configuration des autorisations
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/**",
-                        "/h2-console/**",
+                // Endpoints publics (authentification)
+                .requestMatchers(
+                        "/api/login",
+                        "/api/register",
+                        "/api/auth/refresh",
+                        "/api/auth/logout"
+                ).permitAll()
+                // Console H2 (dev uniquement)
+                .requestMatchers("/h2-console/**").permitAll()
+                // Fichiers statiques Angular
+                .requestMatchers(
                         "/",
                         "/index.html",
                         "/*.js",
@@ -45,19 +58,21 @@ public class SecurityConfig {
                         "/*.woff2",
                         "/assets/**"
                 ).permitAll()
-                .anyRequest().authenticated()
+                // Tous les autres endpoints API nécessitent une authentification
+                .requestMatchers("/api/**").authenticated()
+                .anyRequest().permitAll()
         );
+
+        // Ajouter le filtre JWT avant UsernamePasswordAuthenticationFilter
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         // Désactiver CSRF pour une API REST stateless (JWT)
         http.csrf(AbstractHttpConfigurer::disable);
 
-        // Ne pas appliquer CSRF sur la console H2 (sécurisé pour dev) - redondant mais inoffensif
-        // http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
-
-        // Autoriser l'affichage dans un iframe de la même origine (résout X-Frame-Options: DENY)
+        // Autoriser l'affichage dans un iframe de la même origine (console H2)
         http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
-        // Mode sans état : pour JWT.
+        // Mode sans état : pour JWT (pas de session côté serveur)
         http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
