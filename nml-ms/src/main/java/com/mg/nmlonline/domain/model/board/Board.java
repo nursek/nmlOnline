@@ -24,6 +24,13 @@ public class Board {
     @Column(nullable = false, unique = true)
     private String name;
 
+    // URLs des assets de la carte (image JPG + overlay SVG)
+    @Column(name = "map_image_url")
+    private String mapImageUrl;
+
+    @Column(name = "svg_overlay_url")
+    private String svgOverlayUrl;
+
     // Tous les secteurs de la carte
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Sector> sectorsList = new ArrayList<>();

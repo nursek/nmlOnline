@@ -1,5 +1,7 @@
 {
   "name": "Carte Principale",
+  "mapImageUrl": "/assets/maps/main-map.jpg",
+  "svgOverlayUrl": "/assets/maps/main-map-overlay.svg",
   "sectors": [
     {
       "number": 1,

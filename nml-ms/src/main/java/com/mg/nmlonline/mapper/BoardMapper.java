@@ -30,6 +30,9 @@ public class BoardMapper {
 
         Board board = new Board();
         board.setId(dto.getId());
+        board.setName(dto.getName());
+        board.setMapImageUrl(dto.getMapImageUrl());
+        board.setSvgOverlayUrl(dto.getSvgOverlayUrl());
 
         // Conversion de tous les secteurs
         if (dto.getSectors() != null) {
@@ -52,6 +55,9 @@ public class BoardMapper {
 
         BoardDto dto = new BoardDto();
         dto.setId(board.getId());
+        dto.setName(board.getName());
+        dto.setMapImageUrl(board.getMapImageUrl());
+        dto.setSvgOverlayUrl(board.getSvgOverlayUrl());
 
         // Conversion des secteurs en Map
         if (board.getAllSectors() != null) {

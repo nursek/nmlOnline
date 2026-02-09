@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SVG Overlay pour la carte principale NML Online
+
+  INSTRUCTIONS POUR CRÉER UNE CARTE PERSONNALISÉE :
+
+  1. PRÉREQUIS DU SVG :
+     - Le viewBox doit correspondre aux dimensions de l'image JPG (ex: viewBox="0 0 1920 1080")
+     - Chaque secteur doit être un élément <path> ou <polygon>
+     - Chaque secteur DOIT avoir un attribut id="sector-{number}" où {number} correspond au numéro du secteur en base
+
+  2. EXPORT DEPUIS ILLUSTRATOR/INKSCAPE :
+     - Dessiner les contours de chaque zone/secteur
+     - Nommer chaque calque/path avec le bon id (sector-1, sector-2, etc.)
+     - Exporter en SVG optimisé (pas de styles inline, pas de fill/stroke)
+
+  3. LE SVG SERA SUPERPOSÉ SUR L'IMAGE JPG :
+     - Les paths sont invisibles (fill: transparent)
+     - Au hover : highlight avec la couleur du propriétaire
+     - Au clic : sélection du secteur
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+  <!-- Ligne 1 : Secteurs 1-4 -->
+  <path id="sector-1" d="M10,10 L190,10 L190,140 L10,140 Z" />
+  <path id="sector-2" d="M210,10 L390,10 L390,140 L210,140 Z" />
+  <path id="sector-3" d="M410,10 L590,10 L590,140 L410,140 Z" />
+  <path id="sector-4" d="M610,10 L790,10 L790,140 L610,140 Z" />
+
+  <!-- Ligne 2 : Secteurs 5-8 -->
+  <path id="sector-5" d="M10,160 L190,160 L190,290 L10,290 Z" />
+  <path id="sector-6" d="M210,160 L390,160 L390,290 L210,290 Z" />
+  <path id="sector-7" d="M410,160 L590,160 L590,290 L410,290 Z" />
+  <path id="sector-8" d="M610,160 L790,160 L790,290 L610,290 Z" />
+
+  <!-- Ligne 3 : Secteurs 9-12 -->
+  <path id="sector-9" d="M10,310 L190,310 L190,440 L10,440 Z" />
+  <path id="sector-10" d="M210,310 L390,310 L390,440 L210,440 Z" />
+  <path id="sector-11" d="M410,310 L590,310 L590,440 L410,440 Z" />
+  <path id="sector-12" d="M610,310 L790,310 L790,440 L610,440 Z" />
+
+  <!-- Ligne 4 : Secteurs 13-16 -->
+  <path id="sector-13" d="M10,460 L190,460 L190,590 L10,590 Z" />
+  <path id="sector-14" d="M210,460 L390,460 L390,590 L210,590 Z" />
+  <path id="sector-15" d="M410,460 L590,460 L590,590 L410,590 Z" />
+  <path id="sector-16" d="M610,460 L790,460 L790,590 L610,590 Z" />
+</svg>
+
