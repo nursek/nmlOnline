@@ -9,8 +9,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 	<artifactId>nml-ms</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name>nml-ms</name>
+    <name>nml-ms</name>
 	<description>nml-ms</description>
 	<url/>
 	<licenses>
@@ -104,7 +103,6 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <parameters>true</parameters>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>

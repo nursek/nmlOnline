@@ -71,6 +71,14 @@ export interface PlayerResource {
   baseValue: number | null;
 }
 
+// Correspondant à ResourceSaleResponseDto du backend
+export interface ResourceSaleResponse {
+  message: string;
+  saleValue: number;
+  resourceName: string | null;
+  quantitySold: number;
+}
+
 // Correspondant à SectorDto du backend
 export interface Sector {
   number: number | null;

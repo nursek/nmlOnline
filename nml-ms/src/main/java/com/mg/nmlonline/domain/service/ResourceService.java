@@ -123,11 +123,12 @@ public class ResourceService {
      * Vend une ressource d'un joueur et ajoute l'argent correspondant
      * @param resourceId L'ID de la ressource à vendre (PlayerResource)
      * @param quantity La quantité à vendre
+     * @return Les informations de la vente (nom, quantité, montant)
      * @throws IllegalArgumentException si la quantité est insuffisante
      * @throws RuntimeException si la ressource n'est pas trouvée
      */
     @Transactional
-    public void sellResource(Long resourceId, int quantity) {
+    public SaleResult sellResource(Long resourceId, int quantity) {
         // Récupérer la ressource du joueur
         PlayerResource playerResource = playerResourceRepository.findById(resourceId)
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
@@ -137,8 +138,10 @@ public class ResourceService {
             throw new IllegalArgumentException("Insufficient quantity");
         }
 
+        String resourceName = playerResource.getResourceName();
+
         // Calculer le prix de vente avec multiplicateur
-        double sellPrice = calculateSaleValue(playerResource.getResourceName(), quantity);
+        double sellPrice = calculateSaleValue(resourceName, quantity);
 
         // Récupérer le joueur
         Player player = playerResource.getPlayer();
@@ -147,14 +150,15 @@ public class ResourceService {
         }
 
         // Ajouter l'argent au joueur
-        player.getStats().setMoney(player.getStats().getMoney() + sellPrice);
+        player.incrementMoney(sellPrice);
+
 
         // Retirer la quantité de ressources
-        playerResource.setQuantity(playerResource.getQuantity() - quantity);
+        playerResource.removeQuantity(quantity);
 
         // Si la quantité atteint 0, supprimer l'entrée
         if (playerResource.getQuantity() == 0) {
-            player.getResources().remove(playerResource);
+            player.removeResource(playerResource.getResourceName(), quantity);
             playerResourceRepository.delete(playerResource);
         } else {
             playerResourceRepository.save(playerResource);
@@ -162,6 +166,18 @@ public class ResourceService {
 
         // Sauvegarder le joueur
         playerRepository.save(player);
+
+        // Retourner les informations de la vente
+        return new SaleResult(resourceName, quantity, sellPrice);
+    }
+
+    /**
+     * Classe interne représentant le résultat d'une vente
+     */
+    public record SaleResult(
+            String resourceName,
+            int quantitySold,
+            double saleValue) {
     }
 
 }

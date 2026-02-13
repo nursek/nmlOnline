@@ -335,6 +335,21 @@ public class Player {
 
     // === GESTION DES RESSOURCES DU JOUEUR ===
 
+    public void incrementMoney(double amount) {
+        if (amount > 0) {
+            stats.setMoney(stats.getMoney() + amount);
+            calculateTotalEconomyPower();
+        }
+    }
+
+    public void decrementMoney(double amount) {
+        if (amount > 0 && stats.getMoney() >= amount) {
+            stats.setMoney(stats.getMoney() - amount);
+            calculateTotalEconomyPower();
+        }
+    }
+
+
     /**
      * Ajoute une ressource au joueur (sans baseValue - récupéré depuis Resource)
      */
@@ -366,6 +381,10 @@ public class Player {
             return removed;
         }
         return false;
+    }
+
+    public void removePlayerResourceEntity(PlayerResource resource) {
+        resources.remove(resource);
     }
 
     /**

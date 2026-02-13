@@ -1,6 +1,7 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.PlayerDto;
+import com.mg.nmlonline.api.dto.ResourceSaleResponseDto;
 import com.mg.nmlonline.api.dto.SectorDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -44,7 +45,7 @@ public class PlayerController {
     }
 
     @GetMapping("/{name}")
-    public ResponseEntity<PlayerDto> findByName(@PathVariable("name") String name) {
+    public ResponseEntity<PlayerDto> findByName(@PathVariable String name) {
         Player player = playerService.findByName(name);
         if (player == null) {
             return ResponseEntity.notFound().build();
@@ -62,7 +63,7 @@ public class PlayerController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable("id") Long id) {
+    public void delete(@PathVariable Long id) {
         if(!playerService.delete(id)) {
             throw new RuntimeException("Player with id " + id + " not found.");
         }
@@ -72,17 +73,23 @@ public class PlayerController {
      * Vend une ressource de l'inventaire d'un joueur
      * @param resourceId L'ID de la ressource à vendre (PlayerResource)
      * @param quantity La quantité à vendre
-     * @return 200 OK si la vente est réussie
+     * @return 200 OK avec les détails de la vente (nom, quantité, montant) si la vente est réussie
      */
     @PostMapping("/resources/sell/{resourceId}")
-    public ResponseEntity<String> sellResource(@PathVariable("resourceId") Long resourceId, @RequestParam("quantity") int quantity) {
+    public ResponseEntity<ResourceSaleResponseDto> sellResource(@PathVariable Long resourceId, @RequestParam("quantity") int quantity) {
         try {
-            resourceService.sellResource(resourceId, quantity);
-            return ResponseEntity.ok("Resource sold successfully");
+            ResourceService.SaleResult result = resourceService.sellResource(resourceId, quantity);
+            ResourceSaleResponseDto response = new ResourceSaleResponseDto(
+                "Resource sold successfully",
+                result.saleValue(),
+                result.resourceName(),
+                result.quantitySold()
+            );
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(new ResourceSaleResponseDto(e.getMessage(), 0, null, 0));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(e.getMessage());
+            return ResponseEntity.status(404).body(new ResourceSaleResponseDto(e.getMessage(), 0, null, 0));
         }
     }
 

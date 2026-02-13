@@ -8,9 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { PlayerActions } from '../../store/player/player.actions';
-import { selectCurrentPlayer, selectPlayerLoading, selectPlayerError } from '../../store/player/player.selectors';
-import { selectUser } from '../../store/auth/auth.selectors';
+import { PlayerActions, selectCurrentPlayer, selectPlayerLoading, selectPlayerError, selectUser} from '../../store';
 import { filter, take } from 'rxjs/operators';
 import { Player, PlayerResource } from '../../models';
 import { ResourceService } from '../../services/resource.service';
@@ -635,16 +633,10 @@ export class JoueurComponent implements OnInit {
       return;
     }
 
-    if (resource.quantity < quantity) {
-      this.snackBar.open('Quantité insuffisante', 'Fermer', { duration: 3000 });
-      return;
-    }
-
     this.resourceService.sellResource(resource.id, quantity).subscribe({
-      next: () => {
-        const saleValue = resource.baseValue ? resource.baseValue * quantity : 0;
+      next: (response) => {
         this.snackBar.open(
-          `✓ ${quantity}x ${resource.name} vendu(s) pour ${saleValue} ₡`,
+          `✓ ${response.quantitySold}x ${response.resourceName} vendu(s) pour ${response.saleValue.toFixed(2)}$`,
           'Fermer',
           { duration: 4000, panelClass: ['success-snackbar'] }
         );
