@@ -17,12 +17,14 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Autoriser le frontend React et Angular
+        // Autoriser le frontend React et Angular + env de dev
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:5174",
             "http://localhost:5173",
             "http://localhost:3000",
-            "http://localhost:4200"
+            "http://localhost:4200",
+            "https://nml.lurio.fr",
+            "http://nml.lurio.fr"
         ));
 
         // Autoriser toutes les méthodes HTTP

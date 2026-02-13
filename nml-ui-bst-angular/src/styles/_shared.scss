@@ -1,6 +1,8 @@
 // Styles communs partagés entre les composants
 // À importer avec @use '../../../styles/shared' as shared;
 
+@use 'sass:map';
+
 // Variables
 $primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 $primary-color: #6366f1;
@@ -115,3 +117,126 @@ $text-muted: #64748b;
 .hover-lift {
   @include hover-lift;
 }
+
+// Couleurs des stats
+$stat-colors: (
+  atk: #dc2626,
+  def: #059669,
+  pdf: #ea580c,
+  pdc: #0891b2,
+  arm: #16a34a,
+  esq: #d97706
+);
+
+@mixin stat-colors {
+  &.atk { color: map.get($stat-colors, atk); }
+  &.def { color: map.get($stat-colors, def); }
+  &.pdf { color: map.get($stat-colors, pdf); }
+  &.pdc { color: map.get($stat-colors, pdc); }
+  &.arm { color: map.get($stat-colors, arm); }
+  &.esq { color: map.get($stat-colors, esq); }
+}
+
+// Mixin pour les scrollbar personnalisées
+@mixin custom-scrollbar($width: 6px) {
+  &::-webkit-scrollbar {
+    width: $width;
+  }
+  &::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: calc($width / 2);
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: calc($width / 2);
+    &:hover {
+      background: #94a3b8;
+    }
+  }
+}
+
+// Mixin pour les filter chips
+@mixin filter-chip {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: white;
+  color: $text-muted;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: $primary-color;
+    color: $primary-color;
+  }
+
+  &.active {
+    background: $primary-color;
+    color: white;
+    border-color: $primary-color;
+  }
+}
+
+// Mixin pour les boutons icône
+@mixin icon-button($size: 36px) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: $size;
+  height: $size;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: $text-muted;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    border-color: $primary-color;
+    color: $primary-color;
+    background: #f8fafc;
+  }
+
+  &.active {
+    background: $primary-color;
+    border-color: $primary-color;
+    color: white;
+  }
+}
+
+// Mixin pour les tags/badges
+@mixin tag($bg: #e0e7ff, $color: #4f46e5) {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  background: $bg;
+  color: $color;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+// Mixin empty state
+@mixin empty-state {
+  text-align: center;
+  padding: 64px 16px;
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #94a3b8;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 0;
+    color: $text-muted;
+  }
+}
+
