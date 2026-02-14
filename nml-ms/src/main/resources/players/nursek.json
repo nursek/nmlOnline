@@ -59,7 +59,7 @@
   ],
   "sectors": [
     {
-      "number": 12,
+      "number": 2,
       "name": "Quartier Sombre",
       "income": 2000,
       "neighbors": [8, 11, 16],

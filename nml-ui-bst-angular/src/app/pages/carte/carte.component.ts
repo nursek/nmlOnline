@@ -85,9 +85,6 @@ export class CarteComponent implements OnInit, AfterViewInit {
     return map;
   });
 
-  // filteredSectors est identique à allSectors (le filtre se fait via CSS avec .dimmed)
-  filteredSectors = this.allSectors;
-
   neutralSectorsCount = computed(() =>
     this.allSectors().filter(s => !s.ownerId).length
   );
@@ -100,8 +97,6 @@ export class CarteComponent implements OnInit, AfterViewInit {
   mapImageUrl = computed(() => this.board()?.mapImageUrl || null);
   svgOverlayUrl = computed(() => this.board()?.svgOverlayUrl || null);
 
-  // Mode d'affichage : 'svg' si carte SVG disponible, 'grid' sinon (fallback)
-  displayMode = computed(() => this.mapImageUrl() && this.svgOverlayUrl() ? 'svg' : 'grid');
 
   ngOnInit(): void {
     this.loadData();

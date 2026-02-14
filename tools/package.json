@@ -1,0 +1,14 @@
+{
+  "name": "nml-svg-tools",
+  "version": "1.0.0",
+  "description": "Outils pour analyser les cartes SVG de NML Online",
+  "type": "module",
+  "scripts": {
+    "detect-neighbors": "node svg-neighbor-detector.js"
+  },
+  "dependencies": {
+    "svgdom": "^0.1.19",
+    "@svgdotjs/svg.js": "^3.2.4"
+  }
+}
+

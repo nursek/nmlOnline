@@ -129,3 +129,30 @@ Si le SVG ne peut pas être chargé (erreur réseau, fichier manquant), le syst�
 3. **Test** : Ouvrez le SVG dans un navigateur pour vérifier que les zones sont correctes
 4. **IDs uniques** : Vérifiez que chaque `sector-{number}` correspond à un secteur existant en base
 
+## Détection automatique des voisins
+
+Si vos secteurs sont espacés (non collés), vous pouvez utiliser l'outil automatique pour détecter les voisins :
+
+```bash
+cd tools
+npm install
+node svg-neighbor-detector.js --threshold 30
+```
+
+### Options
+
+| Option | Description | Défaut |
+|--------|-------------|--------|
+| `--svg` | Chemin vers le SVG | `../nml-ui-bst-angular/src/assets/maps/main-map-overlay.svg` |
+| `--threshold` | Distance max (px) entre voisins | `30` |
+| `--output` | Fichier JSON de sortie | `neighbors-output.json` |
+
+### Ajuster le seuil
+
+- **Espacement ~20px** entre secteurs → `--threshold 30`
+- **Secteurs collés** → `--threshold 5`
+- **Trop de faux positifs** → Diminuez le seuil
+- **Voisins manquants** → Augmentez le seuil
+
+L'outil génère un fichier JSON avec les relations de voisinage à copier dans `board.json`.
+
