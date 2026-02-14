@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
+import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,15 +30,19 @@ public class PlayerImportService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final PlayerStatsService playerStatsService;
     private final EquipmentRepository equipmentRepository;
+    private final ResourceRepository resourceRepository;
 
     // Cache d'Equipment pour éviter les problèmes de détachement du contexte de persistance
     private final Map<String, Equipment> equipmentCache = new HashMap<>();
 
     // Constructeur pour Spring (injection de dépendances)
     @Autowired
-    public PlayerImportService(PlayerStatsService playerStatsService, EquipmentRepository equipmentRepository) {
+    public PlayerImportService(PlayerStatsService playerStatsService,
+                               EquipmentRepository equipmentRepository,
+                               ResourceRepository resourceRepository) {
         this.playerStatsService = playerStatsService;
         this.equipmentRepository = equipmentRepository;
+        this.resourceRepository = resourceRepository;
     }
 
 
@@ -60,6 +66,15 @@ public class PlayerImportService {
     public void importEquipmentsToPlayer(String filePath, Player player) throws IOException {
         PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
         importGeneralEquipments(player, dto.equipments);
+    }
+
+    /**
+     * Importe les ressources depuis un fichier JSON et les ajoute au Player.
+     * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
+     */
+    public void importResourcesToPlayer(String filePath, Player player) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+        importResources(player, dto.resources);
     }
 
     /**
@@ -123,6 +138,19 @@ public class PlayerImportService {
         }
     }
 
+    private void importResources(Player player, List<ResourceDTO> resources) {
+        if (resources == null) return;
+        for (ResourceDTO resourceDto : resources) {
+            Optional<Resource> resourceOpt = resourceRepository.findById(resourceDto.resourceId);
+            if (resourceOpt.isPresent()) {
+                Resource resource = resourceOpt.get();
+                player.addResource(resource.getName(), resourceDto.quantity);
+            } else {
+                System.err.println("WARN: Ressource avec ID '" + resourceDto.resourceId + "' non trouvée en BDD");
+            }
+        }
+    }
+
     private void importSectors(Player player, Board board, List<SectorDTO> sectors) {
         for (SectorDTO sectorDto : sectors) {
             // Créer ou récupérer le secteur du Board
@@ -169,7 +197,7 @@ public class PlayerImportService {
             return null;
         }
 
-        Unit unit = new Unit(unitDto.experience, UnitClass.valueOf(unitDto.classes.get(0)));
+        Unit unit = new Unit(unitDto.experience, UnitClass.valueOf(unitDto.classes.getFirst()));
         // Définir le playerId pour accès direct
         unit.setPlayerId(player.getId());
         // Convertir le type String en UnitType
@@ -206,6 +234,7 @@ public class PlayerImportService {
     private static class PlayerDTO {
         public String name;
         public List<EquipmentDTO> equipments;
+        public List<ResourceDTO> resources;
         public List<SectorDTO> sectors;
         public double money;
     }
@@ -233,6 +262,12 @@ public class PlayerImportService {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class EquipmentDTO {
         public String name;
+        public int quantity;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class ResourceDTO {
+        public Long resourceId;
         public int quantity;
     }
 }

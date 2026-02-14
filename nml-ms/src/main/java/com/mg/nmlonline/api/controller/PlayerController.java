@@ -1,12 +1,14 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.PlayerDto;
+import com.mg.nmlonline.api.dto.ResourceSaleResponseDto;
 import com.mg.nmlonline.api.dto.SectorDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.service.BoardService;
 import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.domain.service.ResourceService;
 import com.mg.nmlonline.mapper.PlayerMapper;
 import com.mg.nmlonline.mapper.SectorMapper;
 import org.springframework.http.ResponseEntity;
@@ -23,13 +25,16 @@ public class PlayerController {
     private final PlayerMapper playerMapper;
     private final BoardService boardService;
     private final SectorMapper sectorMapper;
+    private final ResourceService resourceService;
 
     public PlayerController(PlayerService playerService, PlayerMapper playerMapper,
-                          BoardService boardService, SectorMapper sectorMapper) {
+                          BoardService boardService, SectorMapper sectorMapper,
+                          ResourceService resourceService) {
         this.playerService = playerService;
         this.playerMapper = playerMapper;
         this.boardService = boardService;
         this.sectorMapper = sectorMapper;
+        this.resourceService = resourceService;
     }
 
     @GetMapping
@@ -40,7 +45,7 @@ public class PlayerController {
     }
 
     @GetMapping("/{name}")
-    public ResponseEntity<PlayerDto> findByName(@PathVariable("name") String name) {
+    public ResponseEntity<PlayerDto> findByName(@PathVariable String name) {
         Player player = playerService.findByName(name);
         if (player == null) {
             return ResponseEntity.notFound().build();
@@ -58,9 +63,37 @@ public class PlayerController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable("id") Long id) {
+    public void delete(@PathVariable Long id) {
         if(!playerService.delete(id)) {
             throw new RuntimeException("Player with id " + id + " not found.");
+        }
+    }
+
+    /**
+     * Vend une ressource de l'inventaire d'un joueur
+     * @param resourceId L'ID de la ressource à vendre (PlayerResource)
+     * @param quantity La quantité à vendre
+     * @return 200 OK avec les détails de la vente (nom, quantité, montant) si la vente est réussie
+     */
+    @PostMapping("/resources/sell/{resourceId}")
+    public ResponseEntity<ResourceSaleResponseDto> sellResource(@PathVariable Long resourceId, @RequestParam("quantity") int quantity) {
+        if (quantity <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(new ResourceSaleResponseDto("Quantity must be greater than 0", 0, null, 0));
+        }
+        try {
+            ResourceService.SaleResult result = resourceService.sellResource(resourceId, quantity);
+            ResourceSaleResponseDto response = new ResourceSaleResponseDto(
+                "Resource sold successfully",
+                result.saleValue(),
+                result.resourceName(),
+                result.quantitySold()
+            );
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ResourceSaleResponseDto(e.getMessage(), 0, null, 0));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(new ResourceSaleResponseDto(e.getMessage(), 0, null, 0));
         }
     }
 

@@ -1,19 +1,29 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.resource.Resource;
+import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.PlayerResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ResourceService {
 
     private final ResourceRepository resourceRepository;
+    private final PlayerResourceRepository playerResourceRepository;
+    private final PlayerRepository playerRepository;
 
     @Autowired
-    public ResourceService(ResourceRepository resourceRepository) {
+    public ResourceService(ResourceRepository resourceRepository,
+                           PlayerResourceRepository playerResourceRepository,
+                           PlayerRepository playerRepository) {
         this.resourceRepository = resourceRepository;
+        this.playerResourceRepository = playerResourceRepository;
+        this.playerRepository = playerRepository;
     }
 
     /**
@@ -107,6 +117,66 @@ public class ResourceService {
 
     public double calculateResourceValue(String resourceName, int quantity) {
         return quantity * getBaseValue(resourceName); // Valeur totale sans multiplicateur
+    }
+
+    /**
+     * Vend une ressource d'un joueur et ajoute l'argent correspondant
+     * @param resourceId L'ID de la ressource à vendre (PlayerResource)
+     * @param quantity La quantité à vendre
+     * @return Les informations de la vente (nom, quantité, montant)
+     * @throws IllegalArgumentException si la quantité est insuffisante
+     * @throws RuntimeException si la ressource n'est pas trouvée
+     */
+    @Transactional
+    public SaleResult sellResource(Long resourceId, int quantity) {
+        // Récupérer la ressource du joueur
+        PlayerResource playerResource = playerResourceRepository.findById(resourceId)
+                .orElseThrow(() -> new RuntimeException("Resource not found"));
+
+        // Vérifier que le joueur a suffisamment de ressources
+        if (playerResource.getQuantity() < quantity) {
+            throw new IllegalArgumentException("Insufficient quantity");
+        }
+
+        String resourceName = playerResource.getResourceName();
+
+        // Calculer le prix de vente avec multiplicateur
+        double sellPrice = calculateSaleValue(resourceName, quantity);
+
+        // Récupérer le joueur
+        Player player = playerResource.getPlayer();
+        if (player == null) {
+            throw new RuntimeException("Player not found");
+        }
+
+        // Ajouter l'argent au joueur
+        player.incrementMoney(sellPrice);
+
+
+        // Retirer la quantité de ressources
+        playerResource.removeQuantity(quantity);
+
+        // Si la quantité atteint 0, supprimer l'entrée
+        if (playerResource.getQuantity() == 0) {
+            playerResourceRepository.delete(playerResource);
+        } else {
+            playerResourceRepository.save(playerResource);
+        }
+
+        // Sauvegarder le joueur
+        playerRepository.save(player);
+
+        // Retourner les informations de la vente
+        return new SaleResult(resourceName, quantity, sellPrice);
+    }
+
+    /**
+     * Classe interne représentant le résultat d'une vente
+     */
+    public record SaleResult(
+            String resourceName,
+            int quantitySold,
+            double saleValue) {
     }
 
 }

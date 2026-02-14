@@ -112,6 +112,7 @@
                     </annotationProcessorPaths>
                     <source>21</source>
                     <target>21</target>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
             <plugin>

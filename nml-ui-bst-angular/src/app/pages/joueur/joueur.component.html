@@ -131,7 +131,6 @@
         </mat-card-content>
       </mat-card>
     </div>
-
     <!-- Unités -->
     <mat-card class="card">
       <mat-card-content>
@@ -418,5 +417,49 @@
         }
       </mat-card-content>
     </mat-card>
+
+    <!-- Ressources -->
+    <mat-card class="card">
+      <mat-card-content>
+        <div class="section-header">
+          <mat-icon color="primary">diamond</mat-icon>
+          <h2>Ressources possédées</h2>
+        </div>
+        <p class="section-subtitle">Votre inventaire de ressources précieuses</p>
+
+        @if (!player.resources || player.resources.length === 0) {
+          <div class="empty-state">
+            <mat-icon>diamond</mat-icon>
+            <p>Aucune ressource pour le moment. Collectez des ressources dans vos territoires !</p>
+          </div>
+        } @else {
+          <div class="details-grid">
+            @for (resource of player.resources; track resource.id) {
+              <div class="resource-card">
+                <div class="resource-info">
+                  <mat-icon class="resource-icon">diamond</mat-icon>
+                  <div>
+                    <h4>{{ resource.name ?? '-' }}</h4>
+                    <span class="quantity-label">Quantité: {{ resource.quantity }}</span>
+                    @if (resource.baseValue) {
+                      <span class="value-label">Valeur unitaire: {{ resource.baseValue }} ₡</span>
+                    }
+                  </div>
+                </div>
+                <button
+                  mat-raised-button
+                  color="accent"
+                  class="sell-button"
+                  (click)="sellResource(resource, 1)">
+                  <mat-icon>sell</mat-icon>
+                  Vendre (×1)
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
   </div>
+
 }

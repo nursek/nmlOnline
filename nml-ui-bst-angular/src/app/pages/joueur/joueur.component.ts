@@ -8,10 +8,12 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { selectUser, selectCurrentPlayer, selectPlayerLoading, selectPlayerError, PlayerActions } from '../../store';
 import { filter, take } from 'rxjs/operators';
-import { Player, Unit } from '../../models';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Player, Unit, PlayerResource } from '../../models';
+import { ResourceService } from '../../services/resource.service';
 
 @Component({
   selector: 'app-joueur',
@@ -25,12 +27,15 @@ import { toSignal } from '@angular/core/rxjs-interop';
     MatDividerModule,
     MatTooltipModule,
     MatButtonModule,
+    MatSnackBarModule,
   ],
   templateUrl: './joueur.component.html',
   styleUrls: ['./joueur.component.scss']
 })
 export class JoueurComponent implements OnInit {
   private readonly store = inject(Store);
+  private readonly resourceService = inject(ResourceService);
+  private readonly snackBar = inject(MatSnackBar);
 
   player$ = this.store.select(selectCurrentPlayer);
   loading$ = this.store.select(selectPlayerLoading);
@@ -39,7 +44,7 @@ export class JoueurComponent implements OnInit {
   // Signal pour le player
   player = toSignal(this.player$);
 
-  // Mode d'affichage des unités: 'list' ou 'tile'
+  // Mode d'affichage des unités : 'list' ou 'tile'
   viewMode = signal<'list' | 'tile'>('list');
 
   // Filtres
@@ -113,6 +118,41 @@ export class JoueurComponent implements OnInit {
     ).subscribe(user => {
       console.log('Loading player for user:', user.username);
       this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
+    });
+  }
+
+  /**
+   * Vend une ressource du joueur
+   */
+  sellResource(resource: PlayerResource, quantity: number): void {
+    if (!resource.id) {
+      this.snackBar.open('Erreur: ressource invalide', 'Fermer', { duration: 3000 });
+      return;
+    }
+
+    this.resourceService.sellResource(resource.id, quantity).subscribe({
+      next: (response) => {
+        this.snackBar.open(
+          `✓ ${response.quantitySold}x ${response.resourceName} vendu(s) pour ${response.saleValue.toFixed(2)}$`,
+          'Fermer',
+          { duration: 4000, panelClass: ['success-snackbar'] }
+        );
+
+        // Recharger le joueur pour mettre à jour les données
+        this.store.select(selectUser).pipe(take(1)).subscribe(user => {
+          if (user?.username) {
+            this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Erreur lors de la vente:', error);
+        const message = error.error?.message || error.message || 'Erreur lors de la vente';
+        this.snackBar.open(`❌ ${message}`, 'Fermer', {
+          duration: 4000,
+          panelClass: ['error-snackbar']
+        });
+      }
     });
   }
 

@@ -442,3 +442,54 @@
   color: #94a3b8;
   mat-icon { font-size: 12px; width: 12px; height: 12px; }
 }
+
+.resource-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+  }
+}
+
+.resource-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .resource-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: #f59e0b;
+  }
+
+  h4 {
+    margin: 0 0 4px;
+    font-weight: 600;
+    color: #78350f;
+  }
+
+  .quantity-label, .value-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #92400e;
+    margin-top: 2px;
+  }
+}
+
+.sell-button {
+  width: 100%;
+
+  mat-icon {
+    margin-right: 4px;
+  }
+}
+
