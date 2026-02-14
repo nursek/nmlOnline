@@ -51,6 +51,17 @@ public class BoardImportService {
     private Board importBoard(BoardDTO dto, Board existingBoard) {
         Board board = existingBoard != null ? existingBoard : new Board();
 
+        // Importer les métadonnées de la carte
+        if (dto.name != null) {
+            board.setName(dto.name);
+        }
+        if (dto.mapImageUrl != null) {
+            board.setMapImageUrl(dto.mapImageUrl);
+        }
+        if (dto.svgOverlayUrl != null) {
+            board.setSvgOverlayUrl(dto.svgOverlayUrl);
+        }
+
         if (dto.sectors != null && !dto.sectors.isEmpty()) {
             for (SectorDTO sectorDto : dto.sectors) {
                 // Vérifier si le secteur existe déjà
@@ -164,6 +175,8 @@ public class BoardImportService {
 
     public static class BoardDTO {
         public String name;
+        public String mapImageUrl;
+        public String svgOverlayUrl;
         public List<SectorDTO> sectors;
     }
 

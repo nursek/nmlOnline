@@ -61,35 +61,29 @@
 
       <!-- Carte interactive -->
       <div class="map-container">
-        <div class="sector-grid">
-          @for (sector of filteredSectors(); track $index) {
-            <div class="sector-wrapper"
-                 [style.grid-row]="(sector.y ?? 0) + 1"
-                 [style.grid-column]="(sector.x ?? 0) + 1">
-              <button class="sector-tile"
-                   [class.selected]="selectedSector()?.number === sector.number"
-                   [class.highlighted]="isNeighbor(sector.number!)"
-                   [class.dimmed]="selectedPlayer() && sector.ownerId !== selectedPlayer()?.id"
-                   [style.--sector-color]="getSectorColor(sector)"
-                   (click)="selectSector(sector)"
-                   type="button"
-                   [matTooltip]="sector.name + ' - ' + (sector.playerName || 'Neutre')">
-                <div class="sector-content">
-                  <span class="sector-number">#{{ sector.number }}</span>
-                  <span class="sector-name">{{ sector.name }}</span>
-                  @if (sector.resource) {
-                    <span class="sector-resource">{{ sector.resource }}</span>
-                  }
-                  @if (sector.playerName) {
-                    <span class="owner-badge" [style.background-color]="getSectorColor(sector)">
-                      {{ getInitials(sector.playerName) }}
-                    </span>
-                  }
-                </div>
-              </button>
-            </div>
-          }
-        </div>
+        @if (svgLoaded()) {
+          <!-- Mode SVG : Image JPG + Overlay SVG -->
+          <div class="svg-map-wrapper">
+            <!-- Image de fond -->
+            @if (mapImageUrl()) {
+              <img [src]="mapImageUrl()" alt="Carte" class="map-background" />
+            }
+            <!-- Overlay SVG interactif -->
+            <div #svgContainer class="svg-overlay" [innerHTML]="svgContent()"></div>
+            <!-- Tooltip flottant -->
+            @if (hoveredSectorNumber() !== null) {
+              <div class="hover-tooltip">
+                {{ getHoveredSectorName() }}
+              </div>
+            }
+          </div>
+        } @else {
+          <!-- Chargement du SVG -->
+          <div class="svg-loading">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Chargement de la carte...</p>
+          </div>
+        }
       </div>
 
       <!-- Détails du secteur sélectionné -->

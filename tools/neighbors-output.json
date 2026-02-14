@@ -1,23 +1,16 @@
 {
-  "name": "Carte Principale",
-  "mapImageUrl": "/assets/maps/main-map.png",
-  "svgOverlayUrl": "/assets/maps/main-map-overlay.svg",
+  "generatedAt": "2026-02-14T00:45:47.036Z",
+  "totalSectors": 43,
+  "threshold": 17,
   "sectors": [
     {
       "number": 1,
-      "name": "QG Central",
-      "income": 4019,
-      "army": [],
       "neighbors": [
         3
-      ],
-      "resource": "or"
+      ]
     },
     {
       "number": 2,
-      "name": "Place du Marché",
-      "income": 1885,
-      "army": [],
       "neighbors": [
         10,
         11,
@@ -27,9 +20,6 @@
     },
     {
       "number": 3,
-      "name": "Entrepôt Abandonné",
-      "income": 3490,
-      "army": [],
       "neighbors": [
         1,
         4,
@@ -38,22 +28,15 @@
     },
     {
       "number": 4,
-      "name": "Zone Industrielle",
-      "income": 4636,
-      "army": [],
       "neighbors": [
         3,
         5,
         15,
         22
-      ],
-      "resource": "acier"
+      ]
     },
     {
       "number": 5,
-      "name": "Marché Noir",
-      "income": 3748,
-      "army": [],
       "neighbors": [
         4,
         15
@@ -61,9 +44,6 @@
     },
     {
       "number": 7,
-      "name": "Dépôt d'Armes",
-      "income": 2146,
-      "army": [],
       "neighbors": [
         3,
         9
@@ -71,21 +51,14 @@
     },
     {
       "number": 9,
-      "name": "Terrain Vague",
-      "income": 3630,
-      "army": [],
       "neighbors": [
         7,
         14,
         18
-      ],
-      "resource": "alcool"
+      ]
     },
     {
       "number": 10,
-      "name": "Bar Clandestin",
-      "income": 3980,
-      "army": [],
       "neighbors": [
         2,
         11
@@ -93,9 +66,6 @@
     },
     {
       "number": 11,
-      "name": "Raffinerie",
-      "income": 1026,
-      "army": [],
       "neighbors": [
         2,
         10,
@@ -104,21 +74,14 @@
     },
     {
       "number": 14,
-      "name": "Parc Abandonné",
-      "income": 1523,
-      "army": [],
       "neighbors": [
         9,
         16,
         18
-      ],
-      "resource": "pièces"
+      ]
     },
     {
       "number": 15,
-      "name": "Station Service",
-      "income": 2007,
-      "army": [],
       "neighbors": [
         4,
         5,
@@ -127,9 +90,6 @@
     },
     {
       "number": 16,
-      "name": "Garage Mécanique",
-      "income": 1627,
-      "army": [],
       "neighbors": [
         14,
         21
@@ -137,22 +97,15 @@
     },
     {
       "number": 17,
-      "name": "Base Militaire",
-      "income": 4004,
-      "army": [],
       "neighbors": [
         2,
         11,
         19,
         28
-      ],
-      "resource": "or"
+      ]
     },
     {
       "number": 18,
-      "name": "Quartier Résidentiel",
-      "income": 3030,
-      "army": [],
       "neighbors": [
         9,
         14
@@ -160,9 +113,6 @@
     },
     {
       "number": 19,
-      "name": "Casino",
-      "income": 2218,
-      "army": [],
       "neighbors": [
         2,
         17,
@@ -171,20 +121,13 @@
     },
     {
       "number": 21,
-      "name": "Port de Contrebande",
-      "income": 2572,
-      "army": [],
       "neighbors": [
         16,
         27
-      ],
-      "resource": "acier"
+      ]
     },
     {
       "number": 22,
-      "name": "Arsenal",
-      "income": 3903,
-      "army": [],
       "neighbors": [
         4,
         15
@@ -192,30 +135,20 @@
     },
     {
       "number": 24,
-      "name": "Usine Chimique",
-      "income": 4780,
-      "army": [],
       "neighbors": [
         19
       ]
     },
     {
       "number": 25,
-      "name": "Entrepôt Naval",
-      "income": 4375,
-      "army": [],
       "neighbors": [
         26,
         34,
         39
-      ],
-      "resource": "alcool"
+      ]
     },
     {
       "number": 26,
-      "name": "Centre Commercial",
-      "income": 3914,
-      "army": [],
       "neighbors": [
         25,
         34
@@ -223,29 +156,19 @@
     },
     {
       "number": 27,
-      "name": "Bunker Souterrain",
-      "income": 1471,
-      "army": [],
       "neighbors": [
         21
       ]
     },
     {
       "number": 28,
-      "name": "Tour de Contrôle",
-      "income": 3559,
-      "army": [],
       "neighbors": [
         17,
         38
-      ],
-      "resource": "pièces"
+      ]
     },
     {
       "number": 34,
-      "name": "Prison Abandonnée",
-      "income": 3109,
-      "army": [],
       "neighbors": [
         25,
         26,
@@ -254,9 +177,6 @@
     },
     {
       "number": 35,
-      "name": "Aéroport",
-      "income": 3403,
-      "army": [],
       "neighbors": [
         40,
         42
@@ -264,19 +184,12 @@
     },
     {
       "number": 36,
-      "name": "Gare de Triage",
-      "income": 1763,
-      "army": [],
       "neighbors": [
         44
-      ],
-      "resource": "or"
+      ]
     },
     {
       "number": 38,
-      "name": "Centrale Électrique",
-      "income": 1347,
-      "army": [],
       "neighbors": [
         28,
         43
@@ -284,9 +197,6 @@
     },
     {
       "number": 39,
-      "name": "Silos à Grain",
-      "income": 4691,
-      "army": [],
       "neighbors": [
         25,
         34
@@ -294,22 +204,15 @@
     },
     {
       "number": 40,
-      "name": "Dock de Pêche",
-      "income": 3580,
-      "army": [],
       "neighbors": [
         35,
         42,
         45,
         46
-      ],
-      "resource": "acier"
+      ]
     },
     {
       "number": 41,
-      "name": "Mine de Charbon",
-      "income": 3404,
-      "army": [],
       "neighbors": [
         47,
         51
@@ -317,9 +220,6 @@
     },
     {
       "number": 42,
-      "name": "Forêt Dense",
-      "income": 1371,
-      "army": [],
       "neighbors": [
         35,
         40,
@@ -330,22 +230,15 @@
     },
     {
       "number": 43,
-      "name": "Marais",
-      "income": 3541,
-      "army": [],
       "neighbors": [
         38,
         47,
         51,
         54
-      ],
-      "resource": "alcool"
+      ]
     },
     {
       "number": 44,
-      "name": "Carrière",
-      "income": 2856,
-      "army": [],
       "neighbors": [
         36,
         48,
@@ -354,9 +247,6 @@
     },
     {
       "number": 45,
-      "name": "Champ de Tir",
-      "income": 3802,
-      "army": [],
       "neighbors": [
         40,
         46,
@@ -365,23 +255,16 @@
     },
     {
       "number": 46,
-      "name": "Camp Militaire",
-      "income": 4878,
-      "army": [],
       "neighbors": [
         40,
         42,
         45,
         50,
         53
-      ],
-      "resource": "pièces"
+      ]
     },
     {
       "number": 47,
-      "name": "Observatoire",
-      "income": 3519,
-      "army": [],
       "neighbors": [
         41,
         43,
@@ -390,9 +273,6 @@
     },
     {
       "number": 48,
-      "name": "Phare",
-      "income": 4991,
-      "army": [],
       "neighbors": [
         44,
         56,
@@ -401,21 +281,14 @@
     },
     {
       "number": 50,
-      "name": "Scierie",
-      "income": 3905,
-      "army": [],
       "neighbors": [
         45,
         46,
         53
-      ],
-      "resource": "or"
+      ]
     },
     {
       "number": 51,
-      "name": "Ferme",
-      "income": 4420,
-      "army": [],
       "neighbors": [
         41,
         43,
@@ -425,9 +298,6 @@
     },
     {
       "number": 53,
-      "name": "Château d'Eau",
-      "income": 1681,
-      "army": [],
       "neighbors": [
         42,
         46,
@@ -436,20 +306,13 @@
     },
     {
       "number": 54,
-      "name": "Station Radio",
-      "income": 4882,
-      "army": [],
       "neighbors": [
         43,
         51
-      ],
-      "resource": "acier"
+      ]
     },
     {
       "number": 55,
-      "name": "Pont Suspendu",
-      "income": 4975,
-      "army": [],
       "neighbors": [
         42,
         56
@@ -457,9 +320,6 @@
     },
     {
       "number": 56,
-      "name": "Tunnel",
-      "income": 4989,
-      "army": [],
       "neighbors": [
         48,
         55,
@@ -468,15 +328,11 @@
     },
     {
       "number": 59,
-      "name": "Dépôt de Bus",
-      "income": 4327,
-      "army": [],
       "neighbors": [
         44,
         48,
         56
-      ],
-      "resource": "alcool"
+      ]
     }
   ]
 }
