@@ -158,7 +158,6 @@ public class ResourceService {
 
         // Si la quantité atteint 0, supprimer l'entrée
         if (playerResource.getQuantity() == 0) {
-            player.removeResource(playerResource.getResourceName(), quantity);
             playerResourceRepository.delete(playerResource);
         } else {
             playerResourceRepository.save(playerResource);

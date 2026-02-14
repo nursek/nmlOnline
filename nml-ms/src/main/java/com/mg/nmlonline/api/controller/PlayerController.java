@@ -77,6 +77,10 @@ public class PlayerController {
      */
     @PostMapping("/resources/sell/{resourceId}")
     public ResponseEntity<ResourceSaleResponseDto> sellResource(@PathVariable Long resourceId, @RequestParam("quantity") int quantity) {
+        if (quantity <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(new ResourceSaleResponseDto("Quantity must be greater than 0", 0, null, 0));
+        }
         try {
             ResourceService.SaleResult result = resourceService.sellResource(resourceId, quantity);
             ResourceSaleResponseDto response = new ResourceSaleResponseDto(
