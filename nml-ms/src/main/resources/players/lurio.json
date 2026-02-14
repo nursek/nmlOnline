@@ -59,10 +59,7 @@
   ],
   "sectors": [
     {
-      "number": 51,
-      "name": "Quartier Nord",
-      "income": 2000,
-      "neighbors": [2, 5],
+      "sectorNumber": 51,
       "army": [
         {
           "id": 1,
@@ -130,10 +127,7 @@
       ]
     },
     {
-      "number": 41,
-      "name": "Quartier Sud",
-      "income": 2500,
-      "neighbors": [1, 3, 6],
+      "sectorNumber": 41,
       "army": [
         {
           "id": 5,

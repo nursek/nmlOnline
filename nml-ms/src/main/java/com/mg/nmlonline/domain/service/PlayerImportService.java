@@ -125,27 +125,16 @@ public class PlayerImportService {
 
     private void importSectors(Player player, Board board, List<SectorDTO> sectors) {
         for (SectorDTO sectorDto : sectors) {
-            // Créer ou récupérer le secteur du Board
-            Sector sector = board.getSector(sectorDto.id);
+            // Récupérer le secteur existant du Board (doit exister dans board.json)
+            Sector sector = board.getSector(sectorDto.sectorNumber);
             if (sector == null) {
-                sector = new Sector(sectorDto.id, sectorDto.name);
-                sector.setIncome(sectorDto.income);
-                board.addSector(sector);
-            } else {
-                sector.setName(sectorDto.name);
-                sector.setIncome(sectorDto.income);
-            }
-
-            // Ajouter les voisins (neighbors) du secteur
-            if (sectorDto.neighbors != null) {
-                for (Integer neighborId : sectorDto.neighbors) {
-                    sector.addNeighbor(neighborId);
-                }
+                System.err.println("WARN: Secteur " + sectorDto.sectorNumber + " non trouvé dans le Board - ignoré");
+                continue;
             }
 
             // Assigner le secteur au joueur
-            board.assignOwner(sectorDto.id, player.getId(), "#ffffff");
-            player.addOwnedSectorId((long) sectorDto.id);
+            board.assignOwner(sectorDto.sectorNumber, player.getId(), "#ffffff");
+            player.addOwnedSectorId((long) sectorDto.sectorNumber);
 
             // Importer les unités
             importUnitsToSector(player, sector, sectorDto.army);
@@ -212,11 +201,8 @@ public class PlayerImportService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class SectorDTO {
-        @JsonProperty("number")
-        public int id;
-        public String name;
-        public double income;
-        public List<Integer> neighbors;
+        @JsonProperty("sectorNumber")
+        public int sectorNumber;
         public List<UnitDTO> army;
     }
 
