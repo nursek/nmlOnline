@@ -165,13 +165,13 @@ export class CarteComponent implements OnInit, AfterViewInit {
     if (!this.svgContainer) return;
 
     const container = this.svgContainer.nativeElement;
-    const paths = container.querySelectorAll('path[id^="sector-"], polygon[id^="sector-"]');
+    const paths = container.querySelectorAll('path[id^="path"], polygon[id^="path"]');
 
     paths.forEach((path) => {
       const id = path.getAttribute('id');
       if (!id) return;
 
-      const sectorNumber = parseInt(id.replace('sector-', ''), 10);
+      const sectorNumber = parseInt(id.replace('path', ''), 10);
       if (isNaN(sectorNumber)) return;
 
       // Configurer les styles de base
@@ -217,13 +217,13 @@ export class CarteComponent implements OnInit, AfterViewInit {
     if (!this.svgContainer) return;
 
     const container = this.svgContainer.nativeElement;
-    const paths = container.querySelectorAll('path[id^="sector-"], polygon[id^="sector-"]');
+    const paths = container.querySelectorAll('path[id^="path"], polygon[id^="path"]');
 
     paths.forEach((path) => {
       const id = path.getAttribute('id');
       if (!id) return;
 
-      const sectorNumber = parseInt(id.replace('sector-', ''), 10);
+      const sectorNumber = parseInt(id.replace('path', ''), 10);
       if (!isNaN(sectorNumber)) {
         this.updatePathStyle(path as SVGElement, sectorNumber);
       }
