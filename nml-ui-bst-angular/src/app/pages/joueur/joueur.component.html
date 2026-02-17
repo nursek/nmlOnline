@@ -1,15 +1,15 @@
-@if (loading$ | async) {
-  <div class="loading-container">
+@if (loading()) {
+  <div class="loading-container" role="status" aria-label="Chargement">
     <mat-spinner diameter="60"></mat-spinner>
   </div>
-} @else if (error$ | async; as error) {
+} @else if (error(); as error) {
   <div class="container">
-    <div class="error-alert">
+    <div class="error-alert" role="alert">
       <mat-icon>error</mat-icon>
       {{ error }}
     </div>
   </div>
-} @else if (player$ | async; as player) {
+} @else if (player(); as player) {
   <div class="container fade-in">
     <!-- Header -->
     <div class="page-header">
@@ -156,7 +156,9 @@
             <button class="filter-btn"
                     [class.active]="showFilters()"
                     (click)="toggleFilters()"
-                    matTooltip="Filtres">
+                    matTooltip="Filtres"
+                    aria-label="Afficher les filtres"
+                    [attr.aria-expanded]="showFilters()">
               <mat-icon>tune</mat-icon>
               @if (activeFiltersCount() > 0) {
                 <span class="filter-badge">{{ activeFiltersCount() }}</span>
@@ -168,13 +170,17 @@
               <button class="toggle-btn"
                       [class.active]="viewMode() === 'list'"
                       (click)="setViewMode('list')"
-                      matTooltip="Liste">
+                      matTooltip="Liste"
+                      aria-label="Vue liste"
+                      [attr.aria-pressed]="viewMode() === 'list'">
                 <mat-icon>view_list</mat-icon>
               </button>
               <button class="toggle-btn"
                       [class.active]="viewMode() === 'tile'"
                       (click)="setViewMode('tile')"
-                      matTooltip="Tuiles">
+                      matTooltip="Tuiles"
+                      aria-label="Vue tuiles"
+                      [attr.aria-pressed]="viewMode() === 'tile'">
                 <mat-icon>grid_view</mat-icon>
               </button>
             </div>
@@ -257,7 +263,7 @@
               <div class="units-list">
                 @for (item of filteredUnits(); track item.unit.id) {
                   <div class="unit-list-item" [class.injured]="item.unit.isInjured" [class.expanded]="isUnitExpanded(item.unit.id)">
-                    <div class="unit-list-row" (click)="toggleUnitExpand(item.unit.id)">
+                    <div class="unit-list-row" (click)="toggleUnitExpand(item.unit.id)" role="button" tabindex="0" (keydown.enter)="toggleUnitExpand(item.unit.id)" [attr.aria-expanded]="isUnitExpanded(item.unit.id)">
                       <mat-icon class="expand-icon">{{ isUnitExpanded(item.unit.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
                       <span class="unit-type-badge">{{ item.unit.type.name }}</span>
                       @if (item.unit.classes && item.unit.classes.length > 0) {

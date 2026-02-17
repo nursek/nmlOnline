@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
-import { filter, map, take } from 'rxjs/operators';
+import { filter, switchMap, map, take } from 'rxjs/operators';
 import { selectIsAuthenticated, selectAuthLoading } from '../store';
 
 /**
@@ -15,26 +15,19 @@ export const authGuard: CanActivateFn = (route, state): Observable<boolean | Url
 
   // Attendre que le loading soit terminé (initSession terminé)
   return store.select(selectAuthLoading).pipe(
-    // Attendre que loading soit false (initialisation terminée)
     filter((loading) => !loading),
     take(1),
-    // Puis vérifier l'authentification
-    map(() => {
-      // Sélectionner isAuthenticated de manière synchrone après que loading soit false
-      let isAuthenticated = false;
-      store.select(selectIsAuthenticated).pipe(take(1)).subscribe(auth => {
-        isAuthenticated = auth;
-      });
-
-      if (isAuthenticated) {
-        return true;
-      }
-
-      // Rediriger vers login avec l'URL de retour
-      return router.createUrlTree(['/login'], {
-        queryParams: { returnUrl: state.url }
-      });
-    })
+    switchMap(() => store.select(selectIsAuthenticated).pipe(
+      take(1),
+      map(isAuthenticated => {
+        if (isAuthenticated) {
+          return true;
+        }
+        return router.createUrlTree(['/login'], {
+          queryParams: { returnUrl: state.url }
+        });
+      })
+    ))
   );
 };
 
@@ -49,18 +42,14 @@ export const noAuthGuard: CanActivateFn = (): Observable<boolean | UrlTree> => {
   return store.select(selectAuthLoading).pipe(
     filter((loading) => !loading),
     take(1),
-    map(() => {
-      let isAuthenticated = false;
-      store.select(selectIsAuthenticated).pipe(take(1)).subscribe(auth => {
-        isAuthenticated = auth;
-      });
-
-      if (!isAuthenticated) {
-        return true;
-      }
-
-      // Déjà connecté, rediriger vers la carte
-      return router.createUrlTree(['/carte']);
-    })
+    switchMap(() => store.select(selectIsAuthenticated).pipe(
+      take(1),
+      map(isAuthenticated => {
+        if (!isAuthenticated) {
+          return true;
+        }
+        return router.createUrlTree(['/carte']);
+      })
+    ))
   );
 };

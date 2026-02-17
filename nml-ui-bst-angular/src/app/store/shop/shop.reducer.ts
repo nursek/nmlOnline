@@ -9,37 +9,12 @@ export interface ShopState {
   error: string | null;
 }
 
-// Charger le panier depuis localStorage avec gestion d'erreur
-function loadCartFromLocalStorage(): CartItem[] {
-  const storedCart = localStorage.getItem('cart');
-  if (!storedCart) return [];
-
-  try {
-    const parsed = JSON.parse(storedCart);
-    // Valider que c'est bien un tableau
-    if (Array.isArray(parsed)) {
-      return parsed as CartItem[];
-    }
-    console.warn('Invalid cart data in localStorage, removing it');
-    localStorage.removeItem('cart');
-    return [];
-  } catch (e) {
-    console.error('Failed to parse cart from localStorage:', e);
-    localStorage.removeItem('cart');
-    return [];
-  }
-}
-
 export const initialState: ShopState = {
   equipments: [],
-  cart: loadCartFromLocalStorage(),
+  cart: [],
   loading: false,
   error: null,
 };
-
-function saveCart(cart: CartItem[]): void {
-  localStorage.setItem('cart', JSON.stringify(cart));
-}
 
 export const shopReducer = createReducer(
   initialState,
@@ -63,7 +38,13 @@ export const shopReducer = createReducer(
     error,
   })),
 
-  // Cart actions
+  // Load cart from localStorage
+  on(ShopActions.loadCartSuccess, (state, { cart }) => ({
+    ...state,
+    cart,
+  })),
+
+  // Cart actions (pure - no side effects)
   on(ShopActions.addToCart, (state, { equipment }) => {
     const existingIndex = state.cart.findIndex(
       (item) => item.equipment.name === equipment.name
@@ -80,33 +61,27 @@ export const shopReducer = createReducer(
       newCart = [...state.cart, { equipment, quantity: 1 }];
     }
 
-    saveCart(newCart);
     return { ...state, cart: newCart };
   }),
 
-  on(ShopActions.removeFromCart, (state, { name }) => {
-    const newCart = state.cart.filter((item) => item.equipment.name !== name);
-    saveCart(newCart);
-    return { ...state, cart: newCart };
-  }),
+  on(ShopActions.removeFromCart, (state, { name }) => ({
+    ...state,
+    cart: state.cart.filter((item) => item.equipment.name !== name),
+  })),
 
   on(ShopActions.updateCartItemQuantity, (state, { name, quantity }) => {
-    let newCart: CartItem[];
-    if (quantity <= 0) {
-      newCart = state.cart.filter((item) => item.equipment.name !== name);
-    } else {
-      newCart = state.cart.map((item) =>
-        item.equipment.name === name ? { ...item, quantity } : item
-      );
-    }
-    saveCart(newCart);
+    const newCart = quantity <= 0
+      ? state.cart.filter((item) => item.equipment.name !== name)
+      : state.cart.map((item) =>
+          item.equipment.name === name ? { ...item, quantity } : item
+        );
     return { ...state, cart: newCart };
   }),
 
-  on(ShopActions.clearCart, (state) => {
-    localStorage.removeItem('cart');
-    return { ...state, cart: [] };
-  }),
+  on(ShopActions.clearCart, (state) => ({
+    ...state,
+    cart: [],
+  })),
 
   on(ShopActions.clearShopError, (state) => ({
     ...state,

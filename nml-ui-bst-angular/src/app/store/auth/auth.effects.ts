@@ -39,7 +39,10 @@ export class AuthEffects {
     () =>
       this.actions$.pipe(
         ofType(AuthActions.loginSuccess),
-        tap(() => {
+        tap(({ response }) => {
+          // Persist to localStorage (side effect belongs in effects, not reducers)
+          this.tokenService.setAccessToken(response.token);
+          this.tokenService.setUser({ id: response.id, username: response.name });
           this.router.navigate(['/carte']);
         })
       ),
@@ -63,15 +66,29 @@ export class AuthEffects {
     )
   );
 
-  // Quand logout success, reset le player state et rediriger
+  // Quand logout success, nettoyer localStorage, reset le player state et rediriger
   logoutSuccess$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.logoutSuccess),
       tap(() => {
+        this.tokenService.clearAuth();
         this.router.navigate(['/login']);
       }),
       map(() => PlayerActions.reset())
     )
+  );
+
+  // Persister le token et l'utilisateur après un refresh session réussi
+  initSessionSuccess$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AuthActions.initSessionSuccess),
+        tap(({ token, id, username }) => {
+          this.tokenService.setAccessToken(token);
+          this.tokenService.setUser({ id, username });
+        })
+      ),
+    { dispatch: false }
   );
 
   // Refresh token au démarrage de l'app
