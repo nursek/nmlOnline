@@ -1,5 +1,6 @@
 package com.mg.nmlonline.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -61,6 +62,14 @@ public class SecurityConfig {
                 // Tous les autres endpoints API nécessitent une authentification
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
+        );
+
+        // Retourner 401 (au lieu de 403) quand l'utilisateur n'est pas authentifié
+        // Permet à l'intercepteur Angular de déclencher le refresh du token
+        http.exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) ->
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expiré ou absent")
+                )
         );
 
         // Ajouter le filtre JWT avant UsernamePasswordAuthenticationFilter

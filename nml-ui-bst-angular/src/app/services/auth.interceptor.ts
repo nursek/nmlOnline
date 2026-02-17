@@ -35,8 +35,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Gérer les erreurs 401 (token expiré)
-      if (error.status === 401) {
+      // Gérer les erreurs 401 (token expiré) et 403 (accès refusé par token invalide)
+      if (error.status === 401 || error.status === 403) {
         return handleUnauthorized(req, next, tokenService, router, store);
       }
 
