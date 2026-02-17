@@ -1,55 +1,31 @@
+@use '../../../styles/shared' as shared;
+
 .loading-container {
-  display: flex;
+  @include shared.loading-container;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: 80vh;
   gap: 16px;
-  color: #64748b;
+  color: shared.$text-muted;
 }
 
 .container {
+  @include shared.page-container;
   max-width: 1600px;
-  margin: 0 auto;
-  padding: 32px 16px;
 }
 
 .page-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
+  @include shared.page-header;
 }
 
 .avatar {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  mat-icon {
-    font-size: 40px;
-    width: 40px;
-    height: 40px;
-    color: white;
-  }
+  @include shared.avatar;
 }
 
 .title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
+  @include shared.gradient-title;
 }
 
 .subtitle {
-  color: #64748b;
-  margin: 4px 0 0;
+  @include shared.subtitle;
 }
 
 .map-layout {
@@ -68,14 +44,11 @@
 }
 
 .section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  @include shared.section-header;
   margin-bottom: 16px;
+
   h2 {
-    margin: 0;
     font-size: 1.1rem;
-    font-weight: 600;
   }
 }
 
@@ -126,7 +99,7 @@
 
 .legend-count {
   font-size: 0.75rem;
-  color: #64748b;
+  color: shared.$text-muted;
 }
 
 .clear-filter {
@@ -193,7 +166,7 @@
   }
   &.selected {
     transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 0 0 4px #6366f1, 0 12px 24px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 0 4px shared.$primary-color, 0 12px 24px rgba(99, 102, 241, 0.3);
     z-index: 20;
     background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 100%);
   }
@@ -220,7 +193,7 @@
 
 .sector-number {
   font-size: 0.7rem;
-  color: #64748b;
+  color: shared.$text-muted;
   font-weight: 700;
   background: #e2e8f0;
   padding: 2px 8px;
@@ -240,7 +213,7 @@
 
 .sector-resource {
   font-size: 0.65rem;
-  color: #64748b;
+  color: shared.$text-muted;
   font-style: italic;
 }
 
@@ -278,7 +251,7 @@
   }
   .sector-id {
     font-size: 0.8rem;
-    color: #64748b;
+    color: shared.$text-muted;
   }
 }
 
@@ -298,7 +271,7 @@
     margin: 0 0 12px;
     font-size: 0.9rem;
     font-weight: 600;
-    color: #64748b;
+    color: shared.$text-muted;
     mat-icon {
       font-size: 18px;
       width: 18px;
@@ -342,7 +315,7 @@
   .label {
     display: block;
     font-size: 0.7rem;
-    color: #64748b;
+    color: shared.$text-muted;
     margin-bottom: 2px;
   }
   .value {
@@ -361,7 +334,7 @@
   cursor: pointer;
   font-size: 0.75rem !important;
   &:hover {
-    background: #6366f1 !important;
+    background: shared.$primary-color !important;
     color: white !important;
   }
 }
@@ -389,7 +362,7 @@
     font-size: 32px;
     width: 32px;
     height: 32px;
-    color: #6366f1;
+    color: shared.$primary-color;
   }
   .stat-value {
     display: block;
@@ -399,19 +372,12 @@
   }
   .stat-label {
     font-size: 0.8rem;
-    color: #64748b;
+    color: shared.$text-muted;
   }
 }
 
 .error-alert {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #fef2f2;
-  color: #dc2626;
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #fecaca;
+  @include shared.error-alert;
 }
 
 /* ========================================
@@ -435,7 +401,7 @@
   justify-content: center;
   min-height: 400px;
   gap: 16px;
-  color: #64748b;
+  color: shared.$text-muted;
   background: #1e293b;
   border-radius: 12px;
 
@@ -509,10 +475,5 @@
    ======================================== */
 
 .fade-in {
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  @include shared.fade-in-animation;
 }

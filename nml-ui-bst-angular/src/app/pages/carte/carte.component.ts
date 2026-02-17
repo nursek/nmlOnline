@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, ElementRef, ViewChild, AfterViewInit, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -10,7 +10,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { HttpClient } from '@angular/common/http';
 import { ApiService } from '../../services/api.service';
 import { Board, Sector, Player } from '../../models';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 interface SectorWithPlayer extends Sector {
@@ -21,6 +22,7 @@ interface SectorWithPlayer extends Sector {
 @Component({
   selector: 'app-carte',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     MatCardModule,
@@ -34,10 +36,12 @@ interface SectorWithPlayer extends Sector {
   templateUrl: './carte.component.html',
   styleUrls: ['./carte.component.scss']
 })
-export class CarteComponent implements OnInit, AfterViewInit {
+export class CarteComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly apiService = inject(ApiService);
   private readonly http = inject(HttpClient);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly destroy$ = new Subject<void>();
+  private readonly eventCleanupFns: (() => void)[] = [];
 
   @ViewChild('svgContainer') svgContainer!: ElementRef<HTMLDivElement>;
 
@@ -106,11 +110,19 @@ export class CarteComponent implements OnInit, AfterViewInit {
     // Le SVG sera initialisé après le chargement des données
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    // Nettoyage des event listeners sur les paths SVG
+    this.eventCleanupFns.forEach(fn => fn());
+    this.eventCleanupFns.length = 0;
+  }
+
   loadData(): void {
     forkJoin({
       boards: this.apiService.getAllBoards(),
       players: this.apiService.getAllPlayers()
-    }).subscribe({
+    }).pipe(takeUntil(this.destroy$)).subscribe({
       next: ({ boards, players }) => {
         // Prendre la première board disponible
         const board = boards.length > 0 ? boards[0] : null;
@@ -131,8 +143,7 @@ export class CarteComponent implements OnInit, AfterViewInit {
           this.loadSvgOverlay(board.svgOverlayUrl);
         }
       },
-      error: (err) => {
-        console.error('Erreur chargement carte:', err);
+      error: () => {
         this.error.set('Impossible de charger la carte. Vérifiez que le serveur est démarré.');
         this.loading.set(false);
       }
@@ -140,7 +151,7 @@ export class CarteComponent implements OnInit, AfterViewInit {
   }
 
   private loadSvgOverlay(url: string): void {
-    this.http.get(url, { responseType: 'text' }).subscribe({
+    this.http.get(url, { responseType: 'text' }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (svgText) => {
         // Injecter le SVG et configurer les handlers
         this.svgContent.set(this.sanitizer.bypassSecurityTrustHtml(svgText));
@@ -149,8 +160,7 @@ export class CarteComponent implements OnInit, AfterViewInit {
         // Attendre que le DOM soit mis à jour puis attacher les événements
         setTimeout(() => this.initializeSvgInteractions(), 0);
       },
-      error: (err) => {
-        console.warn('Impossible de charger le SVG overlay, fallback vers grille:', err);
+      error: () => {
         this.svgLoaded.set(false);
       }
     });
@@ -158,6 +168,10 @@ export class CarteComponent implements OnInit, AfterViewInit {
 
   private initializeSvgInteractions(): void {
     if (!this.svgContainer) return;
+
+    // Nettoyer les anciens listeners avant d'en attacher de nouveaux
+    this.eventCleanupFns.forEach(fn => fn());
+    this.eventCleanupFns.length = 0;
 
     const container = this.svgContainer.nativeElement;
     const paths = container.querySelectorAll('path[id^="path"], polygon[id^="path"]');
@@ -172,10 +186,20 @@ export class CarteComponent implements OnInit, AfterViewInit {
       // Configurer les styles de base
       this.updatePathStyle(path as SVGElement, sectorNumber);
 
-      // Event listeners
-      path.addEventListener('click', () => this.onSectorClick(sectorNumber));
-      path.addEventListener('mouseenter', () => this.onSectorHover(sectorNumber, path as SVGElement));
-      path.addEventListener('mouseleave', () => this.onSectorLeave(sectorNumber, path as SVGElement));
+      // Event listeners avec cleanup
+      const clickHandler = () => this.onSectorClick(sectorNumber);
+      const enterHandler = () => this.onSectorHover(sectorNumber, path as SVGElement);
+      const leaveHandler = () => this.onSectorLeave(sectorNumber, path as SVGElement);
+
+      path.addEventListener('click', clickHandler);
+      path.addEventListener('mouseenter', enterHandler);
+      path.addEventListener('mouseleave', leaveHandler);
+
+      this.eventCleanupFns.push(() => {
+        path.removeEventListener('click', clickHandler);
+        path.removeEventListener('mouseenter', enterHandler);
+        path.removeEventListener('mouseleave', leaveHandler);
+      });
     });
 
     // Appliquer les couleurs initiales

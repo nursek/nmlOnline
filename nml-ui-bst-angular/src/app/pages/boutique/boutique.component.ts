@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Store } from '@ngrx/store';
@@ -13,7 +13,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { selectUser, selectCurrentPlayer, selectEquipments, selectCart, selectCartTotalItems, selectCartTotalPrice, selectShopLoading, selectShopError, PlayerActions, ShopActions } from '../../store';
-import { Equipment, CartItem, Player, EquipmentStack } from '../../models';
+import { Equipment, CartItem, EquipmentStack } from '../../models';
 import { filter, take } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Subject, takeUntil } from 'rxjs';
@@ -21,6 +21,7 @@ import { Subject, takeUntil } from 'rxjs';
 @Component({
   selector: 'app-boutique',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     FormsModule,
@@ -43,18 +44,20 @@ export class BoutiqueComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   equipments$ = this.store.select(selectEquipments);
-  cart$ = this.store.select(selectCart);
-  totalItems$ = this.store.select(selectCartTotalItems);
-  totalPrice$ = this.store.select(selectCartTotalPrice);
+  private readonly cart$ = this.store.select(selectCart);
   loading$ = this.store.select(selectShopLoading);
-  error$ = this.store.select(selectShopError);
   player$ = this.store.select(selectCurrentPlayer);
+
+  // Signals pour le template
+  readonly cart = toSignal(this.cart$, { initialValue: [] as CartItem[] });
+  readonly totalItems = toSignal(this.store.select(selectCartTotalItems), { initialValue: 0 });
+  readonly totalPrice = toSignal(this.store.select(selectCartTotalPrice), { initialValue: 0 });
+  readonly loading = toSignal(this.loading$, { initialValue: false });
+  readonly error = toSignal(this.store.select(selectShopError));
+  readonly player = toSignal(this.player$);
 
   showCart = signal(false);
   showFilters = signal(false);
-
-  private cartItems: CartItem[] = [];
-  private playerData: Player | null = null;
 
   // Filtres et recherche
   searchTerm = signal('');
@@ -141,14 +144,6 @@ export class BoutiqueComponent implements OnInit, OnDestroy {
         this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
       }
     });
-
-    this.cart$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(cart => this.cartItems = cart);
-
-    this.player$.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(player => this.playerData = player);
   }
 
   ngOnDestroy(): void {
@@ -186,18 +181,19 @@ export class BoutiqueComponent implements OnInit, OnDestroy {
   }
 
   getOwnedQuantity(equipmentName: string): number {
-    const stack = this.playerData?.equipments?.find((e: EquipmentStack) => e.equipment.name === equipmentName);
+    const stack = this.player()?.equipments?.find((e: EquipmentStack) => e.equipment.name === equipmentName);
     return stack?.quantity || 0;
   }
 
   getCartQuantity(equipmentName: string): number {
-    const item = this.cartItems.find(i => i.equipment.name === equipmentName);
+    const item = this.cart().find(i => i.equipment.name === equipmentName);
     return item?.quantity || 0;
   }
 
   canAfford(): boolean {
-    const total = this.cartItems.reduce((sum, item) => sum + item.equipment.cost * item.quantity, 0);
-    return this.playerData !== null && this.playerData.stats.money >= total;
+    const total = this.cart().reduce((sum, item) => sum + item.equipment.cost * item.quantity, 0);
+    const p = this.player();
+    return p !== null && p !== undefined && p.stats.money >= total;
   }
 
   checkout(): void {

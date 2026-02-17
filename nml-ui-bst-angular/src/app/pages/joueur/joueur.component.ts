@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Store } from '@ngrx/store';
 import { MatCardModule } from '@angular/material/card';
@@ -13,11 +13,12 @@ import { selectUser, selectCurrentPlayer, selectPlayerLoading, selectPlayerError
 import { filter, take } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Player, Unit, PlayerResource } from '../../models';
-import { ResourceService } from '../../services/resource.service';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-joueur',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     MatCardModule,
@@ -34,15 +35,17 @@ import { ResourceService } from '../../services/resource.service';
 })
 export class JoueurComponent implements OnInit {
   private readonly store = inject(Store);
-  private readonly resourceService = inject(ResourceService);
+  private readonly apiService = inject(ApiService);
   private readonly snackBar = inject(MatSnackBar);
 
   player$ = this.store.select(selectCurrentPlayer);
   loading$ = this.store.select(selectPlayerLoading);
   error$ = this.store.select(selectPlayerError);
 
-  // Signal pour le player
+  // Signals pour le template
   player = toSignal(this.player$);
+  loading = toSignal(this.loading$, { initialValue: false });
+  error = toSignal(this.error$);
 
   // Mode d'affichage des unités : 'list' ou 'tile'
   viewMode = signal<'list' | 'tile'>('list');
@@ -116,7 +119,6 @@ export class JoueurComponent implements OnInit {
       filter((user): user is NonNullable<typeof user> => !!user && !!user.username),
       take(1)
     ).subscribe(user => {
-      console.log('Loading player for user:', user.username);
       this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
     });
   }
@@ -130,7 +132,7 @@ export class JoueurComponent implements OnInit {
       return;
     }
 
-    this.resourceService.sellResource(resource.id, quantity).subscribe({
+    this.apiService.sellResource(resource.id, quantity).subscribe({
       next: (response) => {
         this.snackBar.open(
           `✓ ${response.quantitySold}x ${response.resourceName} vendu(s) pour ${response.saleValue.toFixed(2)}$`,
@@ -146,7 +148,6 @@ export class JoueurComponent implements OnInit {
         });
       },
       error: (error) => {
-        console.error('Erreur lors de la vente:', error);
         const message = error.error?.message || error.message || 'Erreur lors de la vente';
         this.snackBar.open(`❌ ${message}`, 'Fermer', {
           duration: 4000,

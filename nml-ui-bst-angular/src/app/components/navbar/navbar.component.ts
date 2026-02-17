@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect, HostBinding } from '@angular/core';
+import { Component, inject, signal, effect, HostBinding, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -15,6 +15,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-navbar',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     RouterModule,
@@ -25,7 +26,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
     MatListModule,
   ],
   template: `
-    @if (isAuthenticated$ | async) {
+    @if (isAuthenticated()) {
       <mat-toolbar class="navbar">
         <div class="navbar-content">
           <!-- Logo -->
@@ -35,14 +36,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
           </a>
 
           <!-- Menu mobile toggle -->
-          @if (isMobile$ | async) {
-            <button mat-icon-button (click)="toggleDrawer()">
+          @if (isMobile()) {
+            <button mat-icon-button (click)="toggleDrawer()" [attr.aria-label]="drawerOpen() ? 'Fermer le menu' : 'Ouvrir le menu'">
               <mat-icon>{{ drawerOpen() ? 'close' : 'menu' }}</mat-icon>
             </button>
           }
 
           <!-- Menu desktop -->
-          @if (!(isMobile$ | async)) {
+          @if (!isMobile()) {
             <nav class="nav-links">
               @for (item of menuItems; track item.path) {
                 <a mat-button
@@ -59,7 +60,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 
           <!-- User info -->
           <div class="user-section">
-            @if (user$ | async; as user) {
+            @if (user(); as user) {
               @if (user.username) {
                 <mat-chip-set>
                   <mat-chip highlighted>
@@ -70,13 +71,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
               }
             }
 
-            @if (!(isMobile$ | async)) {
+            @if (!isMobile()) {
               <button mat-stroked-button color="warn" (click)="logout()">
                 <mat-icon>logout</mat-icon>
                 Déconnexion
               </button>
             } @else {
-              <button mat-icon-button color="warn" (click)="logout()">
+              <button mat-icon-button color="warn" (click)="logout()" aria-label="Déconnexion">
                 <mat-icon>logout</mat-icon>
               </button>
             }
@@ -85,9 +86,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
       </mat-toolbar>
 
       <!-- Mobile drawer overlay -->
-      @if ((isMobile$ | async) && drawerOpen()) {
-        <div class="mobile-drawer-backdrop" (click)="toggleDrawer()"></div>
-        <div class="mobile-drawer">
+      @if (isMobile() && drawerOpen()) {
+        <div class="mobile-drawer-backdrop" (click)="toggleDrawer()" role="button" tabindex="-1" aria-label="Fermer le menu"></div>
+        <div class="mobile-drawer" role="navigation" aria-label="Menu principal">
           <mat-nav-list>
             @for (item of menuItems; track item.path) {
               <a mat-list-item
@@ -260,18 +261,20 @@ export class NavbarComponent {
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly document = inject(DOCUMENT);
 
-  isAuthenticated$ = this.store.select(selectIsAuthenticated);
-  private readonly isAuthenticatedSignal = toSignal(this.isAuthenticated$, { initialValue: false });
+  readonly isAuthenticated = toSignal(this.store.select(selectIsAuthenticated), { initialValue: false });
 
   @HostBinding('class.visible')
   get isVisible(): boolean {
-    return this.isAuthenticatedSignal();
+    return this.isAuthenticated();
   }
 
-  user$ = this.store.select(selectUser);
+  readonly user = toSignal(this.store.select(selectUser));
 
-  isMobile$ = this.breakpointObserver.observe([Breakpoints.Handset, Breakpoints.TabletPortrait])
-    .pipe(map(result => result.matches));
+  readonly isMobile = toSignal(
+    this.breakpointObserver.observe([Breakpoints.Handset, Breakpoints.TabletPortrait])
+      .pipe(map(result => result.matches)),
+    { initialValue: false }
+  );
 
   drawerOpen = signal(false);
 

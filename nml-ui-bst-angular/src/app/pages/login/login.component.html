@@ -12,10 +12,10 @@
         </div>
 
         <!-- Formulaire -->
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" aria-label="Formulaire de connexion">
           <!-- Erreur -->
-          @if (error$ | async; as error) {
-            <div class="error-alert">
+          @if (error(); as error) {
+            <div class="error-alert" role="alert">
               <mat-icon>error</mat-icon>
               {{ error }}
             </div>
@@ -49,9 +49,9 @@
                   color="primary"
                   type="submit"
                   class="submit-btn"
-                  [disabled]="loginForm.invalid || (loading$ | async)">
-            @if (loading$ | async) {
-              <mat-spinner diameter="20"></mat-spinner>
+                  [disabled]="loginForm.invalid || loading()">
+            @if (loading()) {
+              <mat-spinner diameter="20" aria-label="Chargement en cours"></mat-spinner>
               Connexion en cours...
             } @else {
               Se connecter

@@ -1,11 +1,11 @@
 @if (loading()) {
-  <div class="loading-container">
+  <div class="loading-container" role="status" aria-label="Chargement de la carte">
     <mat-spinner diameter="60"></mat-spinner>
     <p>Chargement de la carte...</p>
   </div>
 } @else if (error()) {
   <div class="container">
-    <div class="error-alert">
+    <div class="error-alert" role="alert">
       <mat-icon>error</mat-icon>
       {{ error() }}
     </div>
@@ -66,10 +66,10 @@
           <div class="svg-map-wrapper">
             <!-- Image de fond -->
             @if (mapImageUrl()) {
-              <img [src]="mapImageUrl()" alt="Carte" class="map-background" />
+              <img [src]="mapImageUrl()" alt="Carte du monde NML Online" class="map-background" />
             }
             <!-- Overlay SVG interactif -->
-            <div #svgContainer class="svg-overlay" [innerHTML]="svgContent()"></div>
+            <div #svgContainer class="svg-overlay" [innerHTML]="svgContent()" role="img" aria-label="Carte interactive des secteurs"></div>
             <!-- Tooltip flottant -->
             @if (hoveredSectorNumber() !== null) {
               <div class="hover-tooltip">
@@ -169,7 +169,7 @@
               </div>
             </div>
 
-            <button mat-stroked-button color="warn" class="close-btn" (click)="selectedSector.set(null)">
+            <button mat-stroked-button color="warn" class="close-btn" (click)="selectedSector.set(null)" aria-label="Fermer les détails du secteur">
               <mat-icon>close</mat-icon>
               Fermer
             </button>

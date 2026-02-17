@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AuthResponse, LoginRequest, Player, Equipment, Board, RefreshResponse } from '../models';
+import { AuthResponse, LoginRequest, Player, Equipment, Board, RefreshResponse, ResourceSaleResponse } from '../models';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -49,5 +49,14 @@ export class ApiService {
 
   getBoardByName(name: string): Observable<Board> {
     return this.http.get<Board>(`${this.baseUrl}/boards/name/${name}`);
+  }
+
+  // Resource endpoints
+  sellResource(resourceId: number, quantity: number): Observable<ResourceSaleResponse> {
+    return this.http.post<ResourceSaleResponse>(
+      `${this.baseUrl}/players/resources/sell/${resourceId}`,
+      null,
+      { params: { quantity: quantity.toString() } }
+    );
   }
 }

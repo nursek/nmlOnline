@@ -1,12 +1,14 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { AuthActions } from './store/auth/auth.actions';
+import { ShopActions } from './store/shop/shop.actions';
 
 @Component({
   selector: 'app-root',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet, NavbarComponent],
   template: `
     <div class="app-container">
@@ -33,5 +35,6 @@ export class App implements OnInit {
 
   ngOnInit(): void {
     this.store.dispatch(AuthActions.initSession());
+    this.store.dispatch(ShopActions.loadCart());
   }
 }

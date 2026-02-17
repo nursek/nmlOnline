@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -12,11 +12,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { selectAuthLoading, selectAuthError, selectIsAuthenticated, AuthActions } from '../../store';
 
 @Component({
   selector: 'app-login',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -37,8 +39,8 @@ export class LoginComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly destroy$ = new Subject<void>();
 
-  loading$ = this.store.select(selectAuthLoading);
-  error$ = this.store.select(selectAuthError);
+  readonly loading = toSignal(this.store.select(selectAuthLoading), { initialValue: false });
+  readonly error = toSignal(this.store.select(selectAuthError));
 
   loginForm: FormGroup = this.fb.group({
     username: ['', Validators.required],
