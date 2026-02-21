@@ -4,6 +4,7 @@ import com.mg.nmlonline.api.dto.EquipmentDto;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.service.EquipmentService;
 import com.mg.nmlonline.mapper.EquipmentMapper;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,6 +35,7 @@ public class EquipmentController {
         return equipmentMapper.toDto(equipment);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public EquipmentDto create(@RequestBody EquipmentDto dto) {
         Equipment equipment = equipmentMapper.toDomain(dto);
@@ -41,6 +43,7 @@ public class EquipmentController {
         return equipmentMapper.toDto(created);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public void delete(@PathVariable("id") Long id) {
         if(!equipmentService.delete(id)) {

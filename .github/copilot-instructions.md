@@ -237,6 +237,92 @@ Le fichier `src/styles/_shared.scss` contient des variables et mixins réutilisa
 
 ---
 
+## 🛡️ Sécurité & Autorisation
+
+### Architecture de sécurité
+- `SecurityConfig` active `@EnableMethodSecurity` pour le support de `@PreAuthorize`
+- `JwtAuthenticationFilter` peuple le `SecurityContext` et stocke le `userId` dans `request.setAttribute("userId", claims.userId())`
+- Le rôle `ROLE_ADMIN` est attribué automatiquement si le JWT contient `role: "ADMIN"`
+
+### 3 niveaux d'accès
+
+| Niveau | Mécanisme | Quand l'utiliser |
+|--------|-----------|------------------|
+| **Public** | `permitAll()` dans `SecurityConfig` | Login, register, refresh, assets |
+| **Authentifié (ownership)** | `authenticated()` + vérification du `userId` dans le controller | Actions du joueur sur SES propres données (vendre ressources, gérer troupes/équipements) |
+| **Admin** | `@PreAuthorize("hasRole('ADMIN')")` sur le endpoint | Opérations destructives ou de gestion (CRUD players, boards, equipment catalogue) |
+
+### Pattern Endpoint Joueur (ownership check)
+Pour tout endpoint où un joueur agit sur ses propres données, **toujours** vérifier l'ownership via le `userId` du JWT. Ne **jamais** utiliser `@PreAuthorize("hasRole('ADMIN')")` pour ces endpoints.
+
+```java
+@PostMapping("/resources/sell/{resourceId}")
+public ResponseEntity<?> sellResource(@PathVariable Long resourceId,
+                                       @RequestParam("quantity") int quantity,
+                                       HttpServletRequest request) {
+    // 1. Extraire l'identité du joueur authentifié
+    Long userId = (Long) request.getAttribute("userId");
+    if (userId == null) {
+        return ResponseEntity.status(401).body("User not authenticated");
+    }
+    // 2. Passer le userId au service pour vérification d'ownership
+    service.doAction(resourceId, quantity, userId);
+}
+```
+
+```java
+// Dans le service : vérifier que la ressource appartient au joueur
+Player owner = entity.getPlayer();
+if (owner == null || !authenticatedUserId.equals(owner.getId())) {
+    throw new SecurityException("Access denied: resource does not belong to authenticated user");
+}
+```
+
+### Pattern Endpoint Admin
+Pour les opérations de gestion/destruction, ajouter `@PreAuthorize` directement sur la méthode du controller.
+Les endpoints admin sont regroupés dans `AdminController` (`/api/admin/**`), protégé à la fois par :
+- `SecurityConfig` : `.requestMatchers("/api/admin/**").hasRole("ADMIN")` (URL-level)
+- `@PreAuthorize("hasRole('ADMIN')")` au niveau de la **classe** (défense en profondeur)
+
+```java
+@PreAuthorize("hasRole('ADMIN')")
+@DeleteMapping("/{id}")
+public void delete(@PathVariable Long id) { /* ... */ }
+```
+
+### Séparation des controllers
+
+| Controller | Responsabilité | Endpoints |
+|------------|---------------|-----------|
+| `PlayerController` | Opérations du joueur sur SES données | `GET /api/players`, `GET /api/players/{name}`, `POST /api/players/resources/sell/{id}` |
+| `AdminController` | CRUD admin (import/export/suppression joueurs) | `/api/admin/**` |
+| `BoardController` | Lecture boards (joueur) + CRUD boards (admin) | `GET /api/boards/**`, `POST/DELETE /api/boards` (admin) |
+| `EquipmentController` | Lecture catalogue (joueur) + CRUD catalogue (admin) | `GET /api/equipment/**`, `POST/DELETE /api/equipment` (admin) |
+
+**Règle** : Ne **jamais** dupliquer un endpoint admin dans un controller joueur. Les opérations admin doivent passer par `AdminController` ou être protégées par `@PreAuthorize("hasRole('ADMIN')")` dans le controller métier.
+
+### Endpoints protégés actuels
+
+| Endpoint | Protection | Raison |
+|----------|-----------|--------|
+| `POST /api/players/resources/sell/{id}` | Ownership | Le joueur vend SES ressources |
+| `POST /api/boards` | `ADMIN` | Création de board |
+| `DELETE /api/boards/{id}` | `ADMIN` | Suppression de board |
+| `PUT /api/boards/.../owner` | `ADMIN` | Réassignation de secteur |
+| `POST /api/equipment` | `ADMIN` | Création d'équipement catalogue |
+| `DELETE /api/equipment/{id}` | `ADMIN` | Suppression d'équipement catalogue |
+| `/api/admin/**` | `ADMIN` (classe) | Import/export/suppression joueurs |
+| `GET /api/**` | Authentifié | Lecture pour tout joueur connecté |
+
+### Règles pour les futurs endpoints
+
+1. **Le joueur gère ses propres données** (troupes, équipements, déplacements) → **Ownership check** via `HttpServletRequest` + `userId`, pas de `@PreAuthorize`
+2. **Opération admin** (CRUD catalogue, gestion monde, suppression joueurs) → **`@PreAuthorize("hasRole('ADMIN')")`**
+3. **Ne jamais** accepter un `playerId` depuis le body/params pour une action joueur — toujours utiliser le `userId` du JWT
+4. **SecurityException** → 403, **RuntimeException** → 404, **IllegalArgumentException** → 400
+
+---
+
 ## 📝 Créer une fonctionnalité
 
 ### Backend

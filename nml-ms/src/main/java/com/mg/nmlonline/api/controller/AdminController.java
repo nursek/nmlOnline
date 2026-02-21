@@ -12,6 +12,9 @@ import com.mg.nmlonline.mapper.PlayerMapper;
 import com.mg.nmlonline.mapper.SectorMapper;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,7 +29,10 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/admin")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
 
     private final AdminService adminService;
     private final PlayerService playerService;
@@ -79,9 +85,12 @@ public class AdminController {
             String jsonContent = new String(file.getBytes(), StandardCharsets.UTF_8);
             Player player = adminService.importPlayer(jsonContent);
             return ResponseEntity.ok(enrichPlayerWithSectors(player));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Données invalides : " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Erreur lors de l'import : " + e.getMessage()));
+                    .body(Map.of("error", "Erreur lors de l'import du joueur"));
         }
     }
 
@@ -99,7 +108,8 @@ public class AdminController {
     }
 
     /**
-     * Enrichit un PlayerDto avec les secteurs complets depuis la board.
+     * Enrichit un PlayerDto avec les secteurs complets depuis la board par défaut.
+     * Note : utilise la première board disponible (le jeu ne supporte qu'une board active).
      */
     private PlayerDto enrichPlayerWithSectors(Player player) {
         if (player == null) return null;

@@ -128,10 +128,16 @@ public class ResourceService {
      * @throws RuntimeException si la ressource n'est pas trouvée
      */
     @Transactional
-    public SaleResult sellResource(Long resourceId, int quantity) {
+    public SaleResult sellResource(Long resourceId, int quantity, Long authenticatedUserId) {
         // Récupérer la ressource du joueur
         PlayerResource playerResource = playerResourceRepository.findById(resourceId)
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
+
+        // Vérifier que la ressource appartient à l'utilisateur authentifié
+        Player owner = playerResource.getPlayer();
+        if (owner == null || !authenticatedUserId.equals(owner.getId())) {
+            throw new SecurityException("Access denied: resource does not belong to authenticated user");
+        }
 
         // Vérifier que le joueur a suffisamment de ressources
         if (playerResource.getQuantity() < quantity) {
@@ -143,14 +149,8 @@ public class ResourceService {
         // Calculer le prix de vente avec multiplicateur
         double sellPrice = calculateSaleValue(resourceName, quantity);
 
-        // Récupérer le joueur
-        Player player = playerResource.getPlayer();
-        if (player == null) {
-            throw new RuntimeException("Player not found");
-        }
-
-        // Ajouter l'argent au joueur
-        player.incrementMoney(sellPrice);
+        // Ajouter l'argent au joueur (owner already validated above)
+        owner.incrementMoney(sellPrice);
 
 
         // Retirer la quantité de ressources
@@ -164,7 +164,7 @@ public class ResourceService {
         }
 
         // Sauvegarder le joueur
-        playerRepository.save(player);
+        playerRepository.save(owner);
 
         // Retourner les informations de la vente
         return new SaleResult(resourceName, quantity, sellPrice);

@@ -103,8 +103,8 @@ export class ApiService {
     return this.http.get<Player[]>(`${this.baseUrl}/admin/players`);
   }
 
-  adminExportPlayer(id: number): Observable<any> {
-    return this.http.get(`${this.baseUrl}/admin/players/${id}/export`);
+  adminExportPlayer(id: number): Observable<Record<string, unknown>> {
+    return this.http.get<Record<string, unknown>>(`${this.baseUrl}/admin/players/${id}/export`);
   }
 
   adminImportPlayer(file: File): Observable<Player> {

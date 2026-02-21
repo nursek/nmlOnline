@@ -160,6 +160,47 @@ public class PlayerImportService {
         playerStatsService.recalculateStats(player, board);
     }
 
+    // === Surcharges acceptant un contenu JSON (String) au lieu d'un chemin de fichier ===
+
+    /**
+     * Importe un joueur depuis un contenu JSON brut (sans les équipements).
+     */
+    public Player importPlayerFromJsonString(String jsonContent) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(jsonContent, PlayerDTO.class);
+        Player player = new Player(dto.name);
+        player.getStats().setMoney(dto.money);
+        return player;
+    }
+
+    /**
+     * Importe les équipements depuis un contenu JSON et les ajoute au Player.
+     */
+    public void importEquipmentsToPlayerFromString(String jsonContent, Player player) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(jsonContent, PlayerDTO.class);
+        importGeneralEquipments(player, dto.equipments);
+    }
+
+    /**
+     * Importe les ressources depuis un contenu JSON et les ajoute au Player.
+     */
+    public void importResourcesToPlayerFromString(String jsonContent, Player player) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(jsonContent, PlayerDTO.class);
+        importResources(player, dto.resources);
+    }
+
+    /**
+     * Importe les secteurs depuis un contenu JSON et les ajoute au Board.
+     */
+    public void importSectorsToBoardFromString(String jsonContent, Player player, Board board) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(jsonContent, PlayerDTO.class);
+
+        if (dto.sectors != null && !dto.sectors.isEmpty()) {
+            importSectors(player, board, dto.sectors);
+        }
+
+        playerStatsService.recalculateStats(player, board);
+    }
+
     /**
      * Récupère un Equipment depuis le cache ou la BDD.
      * Les Equipment sont pré-chargés via equipments.csv, on ne crée jamais de nouveaux Equipment ici.

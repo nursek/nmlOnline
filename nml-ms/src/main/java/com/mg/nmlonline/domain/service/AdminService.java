@@ -14,8 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -50,50 +48,35 @@ public class AdminService {
      */
     @Transactional
     public Player importPlayer(String jsonContent) throws IOException {
-        // Écrire dans un fichier temporaire (PlayerImportService lit depuis un fichier)
-        Path tempFile = Files.createTempFile("admin-import-", ".json");
-        Files.writeString(tempFile, jsonContent);
-
-        try {
-            // 1. Parser pour obtenir le nom
-            Player player = playerImportService.importPlayerFromJson(tempFile.toString());
-            if (player == null) {
-                throw new IllegalArgumentException("Impossible de parser le JSON du joueur");
-            }
-
-            // 2. Supprimer l'ancien joueur si existant
-            Player existing = playerService.findByName(player.getName());
-            if (existing != null) {
-                playerService.delete(existing.getId());
-                entityManager.flush(); // Forcer le flush pour libérer la contrainte d'unicité
-            }
-
-            // 3. Créer le nouveau joueur
-            player = playerService.create(player);
-
-            // 4. Importer les équipements
-            playerImportService.importEquipmentsToPlayer(tempFile.toString(), player);
-            player = playerService.save(player);
-
-            // 5. Importer les ressources
-            playerImportService.importResourcesToPlayer(tempFile.toString(), player);
-            player = playerService.save(player);
-
-            // 6. Importer les secteurs dans le board
-            Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
-            if (board != null) {
-                playerImportService.importSectorsToBoard(tempFile.toString(), player, board);
-                boardService.save(board);
-                player = playerService.save(player);
-            }
-
-            // Vider le cache d'équipements
-            playerImportService.clearEquipmentCache();
-
-            return player;
-        } finally {
-            Files.deleteIfExists(tempFile);
+        Player player = playerImportService.importPlayerFromJsonString(jsonContent);
+        if (player == null) {
+            throw new IllegalArgumentException("Impossible de parser le JSON du joueur");
         }
+
+        Player existing = playerService.findByName(player.getName());
+        if (existing != null) {
+            playerService.delete(existing.getId());
+            entityManager.flush();
+        }
+
+        player = playerService.create(player);
+
+        playerImportService.importEquipmentsToPlayerFromString(jsonContent, player);
+        player = playerService.save(player);
+
+        playerImportService.importResourcesToPlayerFromString(jsonContent, player);
+        player = playerService.save(player);
+
+        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        if (board != null) {
+            playerImportService.importSectorsToBoardFromString(jsonContent, player, board);
+            boardService.save(board);
+            player = playerService.save(player);
+        }
+
+        playerImportService.clearEquipmentCache();
+
+        return player;
     }
 
     /**
@@ -109,7 +92,6 @@ public class AdminService {
         result.put("name", player.getName());
         result.put("money", player.getStats().getMoney());
 
-        // Ressources : { resourceId, quantity }
         List<Map<String, Object>> resources = new ArrayList<>();
         for (PlayerResource pr : player.getResources()) {
             Map<String, Object> res = new LinkedHashMap<>();
@@ -120,7 +102,6 @@ public class AdminService {
         }
         result.put("resources", resources);
 
-        // Équipements : { name, quantity }
         List<Map<String, Object>> equipments = new ArrayList<>();
         for (var stack : player.getEquipments()) {
             Map<String, Object> eq = new LinkedHashMap<>();
@@ -130,7 +111,6 @@ public class AdminService {
         }
         result.put("equipments", equipments);
 
-        // Secteurs avec armée
         List<Map<String, Object>> sectors = new ArrayList<>();
         if (board != null) {
             for (Sector sector : board.getAllSectors()) {
