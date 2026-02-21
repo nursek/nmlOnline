@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AuthResponse, LoginRequest, Player, Equipment, Board, RefreshResponse, ResourceSaleResponse } from '../models';
+import { AuthResponse, LoginRequest, Player, Equipment, Board, RefreshResponse, ResourceSaleResponse, GameCharacter, Building } from '../models';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -58,5 +58,44 @@ export class ApiService {
       null,
       { params: { quantity: quantity.toString() } }
     );
+  }
+
+  // === Character endpoints ===
+
+  getCharacterByPlayerId(playerId: number): Observable<GameCharacter> {
+    return this.http.get<GameCharacter>(`${this.baseUrl}/characters/player/${playerId}`);
+  }
+
+  getCharacterByName(name: string): Observable<GameCharacter> {
+    return this.http.get<GameCharacter>(`${this.baseUrl}/characters/name/${name}`);
+  }
+
+  // === Building endpoints ===
+
+  getHeadquarters(playerId: number): Observable<Building> {
+    return this.http.get<Building>(`${this.baseUrl}/buildings/headquarters/${playerId}`);
+  }
+
+  getBank(playerId: number): Observable<Building> {
+    return this.http.get<Building>(`${this.baseUrl}/buildings/bank/${playerId}`);
+  }
+
+  getWeaponCaches(playerId: number): Observable<Building[]> {
+    return this.http.get<Building[]>(`${this.baseUrl}/buildings/weapon-caches/${playerId}`);
+  }
+
+  isHeadquartersOperational(playerId: number): Observable<boolean> {
+    return this.http.get<boolean>(`${this.baseUrl}/buildings/headquarters/${playerId}/operational`);
+  }
+
+  reconstructHeadquartersSameLocation(playerId: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/buildings/headquarters/${playerId}/reconstruct-same`, {});
+  }
+
+  moveBuilding(buildingId: number, newSectorNumber: number, currentTurn: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/buildings/${buildingId}/move`, {
+      newSectorNumber,
+      currentTurn
+    });
   }
 }

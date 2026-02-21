@@ -13,4 +13,10 @@ public class PlayerDto {
     private List<PlayerResourceDto> resources;
     private Set<Long> ownedSectorIds;
     private List<SectorDto> sectors; // Secteurs complets pour l'affichage
+
+    // Personnage principal du joueur
+    private GameCharacterDto character;
+
+    // Bâtiments du joueur
+    private List<BuildingDto> buildings;
 }
