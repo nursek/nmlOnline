@@ -1,11 +1,13 @@
 package com.mg.nmlonline.mapper;
 
 import com.mg.nmlonline.api.dto.*;
+import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.player.PlayerStats;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
+import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.service.ResourceService;
 import lombok.NonNull;
 import org.springframework.stereotype.Component;
@@ -22,10 +24,15 @@ public class PlayerMapper {
 
     private final EquipmentMapper equipmentMapper;
     private final ResourceService resourceService;
+    private final GameCharacterMapper gameCharacterMapper;
+    private final BuildingMapper buildingMapper;
 
-    public PlayerMapper(EquipmentMapper equipmentMapper, ResourceService resourceService) {
+    public PlayerMapper(EquipmentMapper equipmentMapper, ResourceService resourceService,
+                        GameCharacterMapper gameCharacterMapper, BuildingMapper buildingMapper) {
         this.equipmentMapper = equipmentMapper;
         this.resourceService = resourceService;
+        this.gameCharacterMapper = gameCharacterMapper;
+        this.buildingMapper = buildingMapper;
     }
 
     /**
@@ -124,6 +131,19 @@ public class PlayerMapper {
         // Conversion des IDs de secteurs
         if (player.getOwnedSectorIds() != null) {
             dto.setOwnedSectorIds(new HashSet<>(player.getOwnedSectorIds()));
+        }
+
+        // Conversion du personnage principal
+        if (player.getCharacter() != null) {
+            dto.setCharacter(gameCharacterMapper.toDto(player.getCharacter()));
+        }
+
+        // Conversion des bâtiments
+        if (player.getBuildings() != null) {
+            List<BuildingDto> buildingDtos = player.getBuildings().stream()
+                    .map(buildingMapper::toDto)
+                    .toList();
+            dto.setBuildings(buildingDtos);
         }
 
         return dto;

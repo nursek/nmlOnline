@@ -1,9 +1,11 @@
 package com.mg.nmlonline.domain.model.player;
 
+import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
+import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -34,6 +36,16 @@ public class Player {
     // Bonuses du joueur (embedded)
     @Embedded
     private PlayerBonuses bonuses = new PlayerBonuses();
+
+    // Personnage principal du joueur (leader unique)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "character_id")
+    private GameCharacter character;
+
+    // Bâtiments du joueur (QG, Cache d'armes, Banque)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "player_id")
+    private List<Building> buildings = new ArrayList<>();
 
     // Inventaire d'équipements du joueur
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
