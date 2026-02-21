@@ -42,7 +42,7 @@ export class AuthEffects {
         tap(({ response }) => {
           // Persist to localStorage (side effect belongs in effects, not reducers)
           this.tokenService.setAccessToken(response.token);
-          this.tokenService.setUser({ id: response.id, username: response.name });
+          this.tokenService.setUser({ id: response.id, username: response.name, role: response.role });
           this.router.navigate(['/carte']);
         })
       ),
@@ -83,9 +83,9 @@ export class AuthEffects {
     () =>
       this.actions$.pipe(
         ofType(AuthActions.initSessionSuccess),
-        tap(({ token, id, username }) => {
+        tap(({ token, id, username, role }) => {
           this.tokenService.setAccessToken(token);
-          this.tokenService.setUser({ id, username });
+          this.tokenService.setUser({ id, username, role });
         })
       ),
     { dispatch: false }
@@ -113,7 +113,8 @@ export class AuthEffects {
               return AuthActions.initSessionSuccess({
                 token: token,
                 id: user.id,
-                username: user.username
+                username: user.username,
+                role: user.role || 'USER'
               });
             } else {
               return AuthActions.initSessionFailure();
@@ -128,7 +129,8 @@ export class AuthEffects {
                 return of(AuthActions.initSessionSuccess({
                   token: token,
                   id: user.id,
-                  username: user.username
+                  username: user.username,
+                  role: user.role || 'USER'
                 }));
               }
             }

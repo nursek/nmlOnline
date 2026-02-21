@@ -59,6 +59,8 @@ public class SecurityConfig {
                         "/*.woff2",
                         "/assets/**"
                 ).permitAll()
+                // Endpoints admin (nécessitent le rôle ADMIN)
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Tous les autres endpoints API nécessitent une authentification
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()

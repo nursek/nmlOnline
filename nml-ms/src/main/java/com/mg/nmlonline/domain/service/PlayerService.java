@@ -66,8 +66,10 @@ public class PlayerService {
     @Transactional
     public boolean delete(Long id) {
         if (!playerRepository.existsById(id)) return false;
-        playerRepository.deleteById(id);
+        // D'abord nettoyer les secteurs (réinitialiser ownership, supprimer armées)
         sectorService.removePlayerFromSectors(id);
+        // Ensuite supprimer le joueur (cascade vers EquipmentStack, PlayerResource)
+        playerRepository.deleteById(id);
         return true;
     }
 }

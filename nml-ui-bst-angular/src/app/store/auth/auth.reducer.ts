@@ -35,7 +35,7 @@ export const authReducer = createReducer(
     loading: false,
     isAuthenticated: true,
     accessToken: response.token,
-    user: { id: response.id, username: response.name },
+    user: { id: response.id, username: response.name, role: response.role },
     error: null,
     initialized: true,
   })),
@@ -68,12 +68,12 @@ export const authReducer = createReducer(
     loading: true,
   })),
 
-  on(AuthActions.initSessionSuccess, (state, { token, id, username }) => ({
+  on(AuthActions.initSessionSuccess, (state, { token, id, username, role }) => ({
     ...state,
     loading: false,
     isAuthenticated: true,
     accessToken: token,
-    user: { id, username },
+    user: { id, username, role },
     initialized: true,
   })),
 

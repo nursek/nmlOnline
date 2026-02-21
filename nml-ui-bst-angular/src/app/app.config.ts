@@ -10,6 +10,7 @@ import { reducers } from './store';
 import { AuthEffects } from './store/auth/auth.effects';
 import { PlayerEffects } from './store/player/player.effects';
 import { ShopEffects } from './store/shop/shop.effects';
+import { AdminEffects } from './store/admin/admin.effects';
 import { authInterceptor } from './services/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
@@ -19,6 +20,6 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
     provideStore(reducers),
-    provideEffects([AuthEffects, PlayerEffects, ShopEffects]),
+    provideEffects([AuthEffects, PlayerEffects, ShopEffects, AdminEffects]),
   ]
 };

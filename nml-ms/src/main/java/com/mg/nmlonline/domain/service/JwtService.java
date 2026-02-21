@@ -35,7 +35,7 @@ public class JwtService {
     /**
      * Record contenant les informations extraites du token JWT.
      */
-    public record JwtClaims(Long userId, String username) {}
+    public record JwtClaims(Long userId, String username, String role) {}
 
     /**
      * Génère un token JWT pour un utilisateur.
@@ -52,6 +52,7 @@ public class JwtService {
                 .subject(user.getUsername())
                 .claim("id", user.getId())
                 .claim("name", user.getUsername())
+                .claim("role", user.getRole() != null ? user.getRole() : "USER")
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(key)
@@ -75,13 +76,14 @@ public class JwtService {
 
             Long userId = claims.get("id", Long.class);
             String username = claims.getSubject();
+            String role = claims.get("role", String.class);
 
             if (userId == null || username == null || username.isBlank()) {
                 logger.warn("Token missing required claims");
                 return null;
             }
 
-            return new JwtClaims(userId, username);
+            return new JwtClaims(userId, username, role != null ? role : "USER");
 
         } catch (ExpiredJwtException e) {
             logger.debug("Token expired: {}", e.getMessage());

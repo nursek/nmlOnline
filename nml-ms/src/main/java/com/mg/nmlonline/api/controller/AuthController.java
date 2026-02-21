@@ -116,7 +116,7 @@ public class AuthController {
             cookie.setSecure(appCookieSecure);
             cookie.setAttribute("SameSite", "Lax");
             response.addCookie(cookie);
-            return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername()));
+            return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername(), user.getRole()));
         } else {
             att.count++;
             att.lastAttempt = now;
@@ -217,7 +217,8 @@ public class AuthController {
                 "valid", true,
                 "token", accessToken,
                 "id", user.getId(),
-                "name", user.getUsername()
+                "name", user.getUsername(),
+                "role", user.getRole() != null ? user.getRole() : "USER"
         );
 
         // Mettre à jour le throttle avec les infos pour la grace period

@@ -97,4 +97,23 @@ export class ApiService {
       newSectorNumber
     });
   }
+
+  // Admin endpoints
+  adminGetAllPlayers(): Observable<Player[]> {
+    return this.http.get<Player[]>(`${this.baseUrl}/admin/players`);
+  }
+
+  adminExportPlayer(id: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/admin/players/${id}/export`);
+  }
+
+  adminImportPlayer(file: File): Observable<Player> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Player>(`${this.baseUrl}/admin/players/import`, formData);
+  }
+
+  adminDeletePlayer(id: number): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/admin/players/${id}`);
+  }
 }

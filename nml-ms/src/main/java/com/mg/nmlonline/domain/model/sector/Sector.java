@@ -15,9 +15,11 @@ import com.mg.nmlonline.domain.model.unit.UnitType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.io.IOException;
 import java.util.*;
@@ -31,6 +33,8 @@ import java.util.*;
 @NoArgsConstructor
 @Getter
 @Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"board", "army"})
 @IdClass(Sector.SectorId.class)
 @JsonDeserialize(using = Sector.SectorDeserializer.class)
 public class Sector {
@@ -43,6 +47,7 @@ public class Sector {
 
     @Id
     @Column(nullable = false)
+    @EqualsAndHashCode.Include
     private int number;
 
     @Column(nullable = false)
