@@ -49,7 +49,7 @@ public class AuthController {
             UserService userService,
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
-            @Value("${jwt.pepper:default-pepper-secret-change-in-production}") String pepper,
+            @Value("${jwt.pepper}") String pepper,
             @Value("${app.cookie.secure:false}") boolean appCookieSecure
     ) {
         this.userService = userService;

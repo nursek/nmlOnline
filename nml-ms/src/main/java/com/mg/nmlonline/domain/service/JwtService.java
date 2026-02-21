@@ -24,7 +24,7 @@ public class JwtService {
 
     private final SecretKey key;
 
-    public JwtService(@Value("${jwt.secret:default-secret-key-very-long-for-hmac-sha256-change-in-prod}") String secret) {
+    public JwtService(@Value("${jwt.secret}") String secret) {
         // S'assurer que la clé fait au moins 32 caractères pour HS256
         if (secret.length() < 32) {
             secret = secret + "0".repeat(32 - secret.length());

@@ -24,7 +24,7 @@ public class UserService {
     public UserService(
             UserRepository userRepo,
             PasswordEncoder encoder,
-            @Value("${jwt.pepper:default-pepper-secret-change-in-production}") String pepper
+            @Value("${jwt.pepper}") String pepper
     ) {
         this.userRepo = userRepo;
         this.encoder = encoder;

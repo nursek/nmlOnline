@@ -44,8 +44,6 @@ public class SecurityConfig {
                         "/api/auth/refresh",
                         "/api/auth/logout"
                 ).permitAll()
-                // Console H2 (dev uniquement)
-                .requestMatchers("/h2-console/**").permitAll()
                 // Fichiers statiques Angular
                 .requestMatchers(
                         "/",
@@ -80,8 +78,8 @@ public class SecurityConfig {
         // Désactiver CSRF pour une API REST stateless (JWT)
         http.csrf(AbstractHttpConfigurer::disable);
 
-        // Autoriser l'affichage dans un iframe de la même origine (console H2)
-        http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+        // Bloquer l'affichage dans un iframe (clickjacking protection)
+        http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::deny));
 
         // Mode sans état : pour JWT (pas de session côté serveur)
         http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
