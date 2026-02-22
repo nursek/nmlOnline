@@ -143,7 +143,17 @@ export interface GameCharacter {
  * If you add, remove or rename a building type in the backend enum,
  * you MUST update this union accordingly to keep the frontend and backend in sync.
  */
-export type BuildingType = 'HEADQUARTERS' | 'WEAPON_CACHE' | 'BANK';
+export const BUILDING_TYPES = ['HEADQUARTERS', 'WEAPON_CACHE', 'BANK'] as const;
+
+export type BuildingType = (typeof BUILDING_TYPES)[number];
+
+/**
+ * Runtime guard to validate building types received from the API.
+ * Use this when mapping raw API data to the `Building` model.
+ */
+export function isBuildingType(value: unknown): value is BuildingType {
+  return typeof value === 'string' && BUILDING_TYPES.includes(value as BuildingType);
+}
 
 export interface Building {
   id: number | null;

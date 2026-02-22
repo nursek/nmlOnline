@@ -26,6 +26,7 @@ public class GameCharacterController {
     /**
      * Récupère le personnage d'un joueur.
      */
+    //TODO : verify authentication and authorization to prevent data leak (ex: only allow access to own character or admin access)
     @GetMapping("/player/{playerId}")
     public ResponseEntity<GameCharacterDto> getCharacterByPlayerId(@PathVariable Long playerId) {
         return characterService.getCharacter(playerId)
@@ -37,6 +38,7 @@ public class GameCharacterController {
     /**
      * Récupère un personnage par son nom.
      */
+    //TODO : verify authentication and authorization to prevent data leak (ex: only allow access to own character or admin access)
     @GetMapping("/name/{name}")
     public ResponseEntity<GameCharacterDto> getCharacterByName(@PathVariable String name) {
         return characterService.getCharacterByName(name)
@@ -44,45 +46,5 @@ public class GameCharacterController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    /**
-     * Crée un nouveau personnage pour un joueur.
-     */
-    @PostMapping
-    public ResponseEntity<GameCharacterDto> createCharacter(@RequestBody CreateCharacterRequest request) {
-        try {
-            GameCharacter character = characterService.createCharacter(
-                    request.playerId(),
-                    request.name(),
-                    request.baseAttack(),
-                    request.basePdf(),
-                    request.basePdc(),
-                    request.baseDefense(),
-                    request.baseArmor(),
-                    request.baseEvasion()
-            );
-            return ResponseEntity.ok(characterMapper.toDto(character));
-        } catch (IllegalStateException e) {
-            // Conflit : le joueur a déjà un personnage
-            return ResponseEntity.status(409).build();
-        } catch (IllegalArgumentException e) {
-            // Requête invalide : par exemple, nom de personnage déjà utilisé ou données incorrectes
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /**
-     * Record pour la création d'un personnage.
-     */
-    public record CreateCharacterRequest(
-            Long playerId,
-            String name,
-            double baseAttack,
-            double basePdf,
-            double basePdc,
-            double baseDefense,
-            double baseArmor,
-            double baseEvasion
-    ) {}
 }
 

@@ -20,10 +20,10 @@ public enum BuildingType {
     /**
      * Cache d'armes - Stockage des équipements
      * Stats : 100 Atk / 100 Def
-     * Déplacement : tous les tours
+     * Déplacement : tous les tours (cooldown = 0)
      * Capacité max : 300 équipements
      */
-    WEAPON_CACHE("Cache d'armes", "CA", 100, 100, 1),
+    WEAPON_CACHE("Cache d'armes", "CA", 100, 100, 0),
 
     /**
      * Banque - Stockage de l'argent et des ressources

@@ -16,7 +16,7 @@ import java.util.List;
  * Caractéristiques :
  * - Stats : 100 Atk / 100 Def
  * - Capacité max : 300 équipements
- * - Déplaçable tous les 2 tours
+ * - Déplaçable tous les tours.
  * - Si capturé, l'adversaire récupère tous les équipements stockés
  * - Possibilité de fonder d'autres caches (un par quartier max)
  * - Les équipements peuvent être jetés (action irréversible)
@@ -122,16 +122,14 @@ public class WeaponCache extends Building {
         Iterator<EquipmentStack> iterator = storedEquipments.iterator();
         while (iterator.hasNext()) {
             EquipmentStack stack = iterator.next();
-            if (stack.getEquipment().getName().equals(equipmentName)) {
-                if (stack.getQuantity() >= quantity) {
-                    for (int i = 0; i < quantity; i++) {
-                        stack.decrement();
-                    }
-                    if (stack.getQuantity() <= 0) {
-                        iterator.remove();
-                    }
-                    return true;
+            if (stack.getEquipment().getName().equals(equipmentName) && stack.getQuantity() >= quantity) {
+                for (int i = 0; i < quantity; i++) {
+                    stack.decrement();
                 }
+                if (stack.getQuantity() <= 0) {
+                    iterator.remove();
+                }
+                return true;
             }
         }
         return false;
