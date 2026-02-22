@@ -156,6 +156,12 @@ public class PlayerStartupImporter implements ApplicationRunner {
                     playerImportService.importSectorsToBoard(filePath, player, board);
                     log.info("Secteurs et unités importés pour {} (en mémoire)", player.getName());
 
+                    // 4b. Importer les bâtiments dans le Board
+                    var buildings = playerImportService.importBuildingsToBoard(filePath, player, board);
+                    if (!buildings.isEmpty()) {
+                        log.info("{} bâtiment(s) importé(s) pour {}", buildings.size(), player.getName());
+                    }
+
                     // Afficher les stats calculées
                     log.info("✓ Stats {} : ATK={}, DEF={}, ARMOR={}, Income={}, EconomyPower={}",
                              player.getName(),

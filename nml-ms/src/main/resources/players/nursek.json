@@ -137,5 +137,19 @@
     "basePdc": 0,
     "baseArmor": 0,
     "baseEvasion": 0
-  }
+  },
+  "buildings": [
+    {
+      "type": "HEADQUARTERS",
+      "sectorNumber": 2
+    },
+    {
+      "type": "WEAPON_CACHE",
+      "sectorNumber": 2
+    },
+    {
+      "type": "BANK",
+      "sectorNumber": 2
+    }
+  ]
 }

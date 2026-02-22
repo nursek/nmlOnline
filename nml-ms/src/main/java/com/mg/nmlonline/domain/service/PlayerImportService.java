@@ -4,6 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.building.Bank;
+import com.mg.nmlonline.domain.model.building.Building;
+import com.mg.nmlonline.domain.model.building.BuildingType;
+import com.mg.nmlonline.domain.model.building.Headquarters;
+import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.Resource;
@@ -103,6 +108,40 @@ public class PlayerImportService {
         player.setCharacter(character);
 
         return character;
+    }
+
+    /**
+     * Importe les bâtiments depuis un fichier JSON et les ajoute au Player et au Board.
+     * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
+     *
+     * @return la liste des bâtiments créés
+     */
+    public List<Building> importBuildingsToBoard(String filePath, Player player, Board board) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+        if (dto.buildings == null || dto.buildings.isEmpty()) {
+            return List.of();
+        }
+
+        List<Building> buildings = new ArrayList<>();
+        for (BuildingDTO buildingDto : dto.buildings) {
+            BuildingType type = BuildingType.valueOf(buildingDto.type);
+            Building building = switch (type) {
+                case HEADQUARTERS -> new Headquarters(player.getId());
+                case WEAPON_CACHE -> new WeaponCache(player.getId());
+                case BANK -> new Bank(player.getId());
+            };
+
+            // Placer le bâtiment dans le secteur du Board
+            Sector sector = board.getSector(buildingDto.sectorNumber);
+            if (sector != null) {
+                building.setSector(sector);
+            }
+
+            player.getBuildings().add(building);
+            buildings.add(building);
+        }
+
+        return buildings;
     }
 
     /**
@@ -256,6 +295,7 @@ public class PlayerImportService {
         public List<SectorDTO> sectors;
         public double money;
         public CharacterDTO character;
+        public List<BuildingDTO> buildings;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -284,6 +324,12 @@ public class PlayerImportService {
         public double basePdc;
         public double baseArmor;
         public double baseEvasion;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class BuildingDTO {
+        public String type; // HEADQUARTERS, WEAPON_CACHE, BANK
+        public int sectorNumber;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
