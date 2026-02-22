@@ -42,9 +42,8 @@ public class Player {
     @JoinColumn(name = "character_id")
     private GameCharacter character;
 
-    // Bâtiments du joueur (QG, Cache d'armes, Banque)
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "player_id")
+    // Bâtiments du joueur (relation bidirectionnelle, côté inverse via mappedBy = "player" en cohérence avec @ManyToOne dans Building)
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Building> buildings = new ArrayList<>();
 
     // Inventaire d'équipements du joueur

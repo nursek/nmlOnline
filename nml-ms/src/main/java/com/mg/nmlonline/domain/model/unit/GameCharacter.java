@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class GameCharacter extends CombatEntity {
 
-    @Column(name = "character_name", length = 100)
+    @Column(name = "character_name", length = 100, unique = true)
     private String name;
 
     /**

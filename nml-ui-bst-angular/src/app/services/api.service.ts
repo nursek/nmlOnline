@@ -92,10 +92,9 @@ export class ApiService {
     return this.http.post<void>(`${this.baseUrl}/buildings/headquarters/${playerId}/reconstruct-same`, {});
   }
 
-  moveBuilding(buildingId: number, newSectorNumber: number, currentTurn: number): Observable<void> {
+  moveBuilding(buildingId: number, newSectorNumber: number): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/buildings/${buildingId}/move`, {
-      newSectorNumber,
-      currentTurn
+      newSectorNumber
     });
   }
 }

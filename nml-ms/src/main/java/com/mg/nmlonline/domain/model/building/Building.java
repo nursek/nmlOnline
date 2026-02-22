@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.model.building;
 
+import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.EntityCategory;
 import jakarta.persistence.*;
@@ -46,6 +47,15 @@ public abstract class Building extends CombatEntity {
      */
     @Column(name = "captured_turn")
     private Integer capturedTurn;
+
+    /**
+     * Référence bidirectionnelle au joueur propriétaire du bâtiment.
+     * Important : JPA gère cette relation via la colonne player_id dans la table BUILDINGS.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "player_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
+    private Player player;
 
     /**
      * Constructeur de base pour les bâtiments.

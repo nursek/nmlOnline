@@ -62,7 +62,11 @@ public class GameCharacterController {
                     request.baseEvasion()
             );
             return ResponseEntity.ok(characterMapper.toDto(character));
-        } catch (IllegalStateException | IllegalArgumentException e) {
+        } catch (IllegalStateException e) {
+            // Conflit : le joueur a déjà un personnage
+            return ResponseEntity.status(409).build();
+        } catch (IllegalArgumentException e) {
+            // Requête invalide : par exemple, nom de personnage déjà utilisé ou données incorrectes
             return ResponseEntity.badRequest().build();
         }
     }

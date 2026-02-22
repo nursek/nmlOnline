@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -118,14 +119,16 @@ public class WeaponCache extends Building {
      * @return true si l'équipement a été jeté
      */
     public boolean discardEquipment(String equipmentName, int quantity) {
-        for (EquipmentStack stack : storedEquipments) {
+        Iterator<EquipmentStack> iterator = storedEquipments.iterator();
+        while (iterator.hasNext()) {
+            EquipmentStack stack = iterator.next();
             if (stack.getEquipment().getName().equals(equipmentName)) {
                 if (stack.getQuantity() >= quantity) {
                     for (int i = 0; i < quantity; i++) {
                         stack.decrement();
                     }
                     if (stack.getQuantity() <= 0) {
-                        storedEquipments.remove(stack);
+                        iterator.remove();
                     }
                     return true;
                 }
