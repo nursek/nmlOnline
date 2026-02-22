@@ -225,10 +225,12 @@ public class BuildingService {
             return false;
         }
 
-        // La logique de changement de secteur sera implémentée ici
-        building.recordMove(currentTurn);
-        buildingRepository.save(building);
-        return true;
+        // La logique de changement de secteur n'est pas encore implémentée.
+        // On lève une exception explicite plutôt que de prétendre que le déplacement a réussi.
+        throw new UnsupportedOperationException(
+            "Le déplacement de bâtiment n'est pas encore implémenté (buildingId=" + buildingId
+                + ", newSectorNumber=" + newSectorNumber + ", currentTurn=" + currentTurn + ")"
+        );
     }
 
     // === CLASSES UTILITAIRES ===
