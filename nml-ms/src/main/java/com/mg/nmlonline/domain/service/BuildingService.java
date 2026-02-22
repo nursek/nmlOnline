@@ -43,19 +43,19 @@ public class BuildingService {
      */
     public void createInitialBuildings(Player player) {
         // Création du QG
-        Headquarters headquarters = new Headquarters(player.getId());
+        Headquarters headquarters = new Headquarters();
         headquarters.setPlayer(player);
         player.getBuildings().add(headquarters);
         buildingRepository.save(headquarters);
 
         // Création de la Cache d'armes
-        WeaponCache weaponCache = new WeaponCache(player.getId());
+        WeaponCache weaponCache = new WeaponCache();
         weaponCache.setPlayer(player);
         player.getBuildings().add(weaponCache);
         buildingRepository.save(weaponCache);
 
         // Création de la Banque
-        Bank bank = new Bank(player.getId());
+        Bank bank = new Bank();
         bank.setPlayer(player);
         player.getBuildings().add(bank);
         buildingRepository.save(bank);
