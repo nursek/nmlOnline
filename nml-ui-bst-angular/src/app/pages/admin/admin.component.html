@@ -1,0 +1,281 @@
+<div class="admin-container">
+  <!-- Header -->
+  <div class="admin-header">
+    <div class="header-left">
+      <div class="admin-avatar">
+        <mat-icon>admin_panel_settings</mat-icon>
+      </div>
+      <div class="header-info">
+        <h1 class="admin-title">Console Admin</h1>
+        <p class="admin-subtitle">Gestion avancée des joueurs</p>
+      </div>
+    </div>
+    <button mat-flat-button color="primary" (click)="triggerImport()" [disabled]="importing()">
+      @if (importing()) {
+        <mat-spinner diameter="20"></mat-spinner>
+      } @else {
+        <mat-icon>upload_file</mat-icon>
+      }
+      Importer un joueur
+    </button>
+  </div>
+
+  <!-- Import progress -->
+  @if (importing()) {
+    <mat-progress-bar mode="indeterminate" class="import-progress"></mat-progress-bar>
+  }
+
+  <!-- Search -->
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-icon matPrefix>search</mat-icon>
+    <mat-label>Rechercher un joueur...</mat-label>
+    <input matInput
+           [ngModel]="searchQuery()"
+           (ngModelChange)="onSearchChange($event)"
+           placeholder="Nom du joueur">
+  </mat-form-field>
+
+  <!-- Loading state -->
+  @if (loading() && !importing()) {
+    <div class="loading-container">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  }
+
+  <!-- Player count -->
+  @if (!loading()) {
+    <div class="player-count">
+      {{ filteredPlayers().length }} joueur{{ filteredPlayers().length > 1 ? 's' : '' }}
+      @if (searchQuery()) {
+        <span class="filter-info">(filtrés)</span>
+      }
+    </div>
+  }
+
+  <!-- Player list -->
+  @if (!loading()) {
+    <mat-accordion multi>
+      @for (player of filteredPlayers(); track player.id) {
+        <mat-expansion-panel class="player-panel">
+          <!-- Panel header -->
+          <mat-expansion-panel-header>
+            <mat-panel-title class="panel-title">
+              <mat-icon class="player-icon">person</mat-icon>
+              <span class="player-name">{{ player.name }}</span>
+            </mat-panel-title>
+            <mat-panel-description class="panel-desc">
+              <div class="stats-chips">
+                <span class="stat-chip money" matTooltip="Argent">
+                  <mat-icon>payments</mat-icon>
+                  {{ formatMoney(player.stats.money) }}$
+                </span>
+                <span class="stat-chip sectors" matTooltip="Secteurs">
+                  <mat-icon>map</mat-icon>
+                  {{ player.sectors?.length || 0 }}
+                </span>
+                <span class="stat-chip army" matTooltip="Unités totales">
+                  <mat-icon>groups</mat-icon>
+                  {{ getTotalArmySize(player) }}
+                </span>
+                <span class="stat-chip equipment" matTooltip="Équipements">
+                  <mat-icon>shield</mat-icon>
+                  {{ getEquipmentCount(player) }}
+                </span>
+              </div>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <!-- Panel content -->
+          <div class="panel-content">
+            <!-- Stats résumé -->
+            <div class="section">
+              <div class="section-title">
+                <mat-icon>bar_chart</mat-icon>
+                <span>Statistiques</span>
+              </div>
+              <div class="stats-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Argent</span>
+                  <span class="stat-value money">{{ player.stats.money | number:'1.0-0' }}$</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Revenu total</span>
+                  <span class="stat-value">{{ player.stats.totalIncome | number:'1.0-0' }}$</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">ATK</span>
+                  <span class="stat-value atk">{{ player.stats.totalAtk | number:'1.0-0' }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">DEF</span>
+                  <span class="stat-value def">{{ player.stats.totalDef | number:'1.0-0' }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">PDF</span>
+                  <span class="stat-value pdf">{{ player.stats.totalPdf | number:'1.0-0' }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">PDC</span>
+                  <span class="stat-value pdc">{{ player.stats.totalPdc | number:'1.0-0' }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Armure</span>
+                  <span class="stat-value arm">{{ player.stats.totalArmor | number:'1.0-0' }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Puissance éco</span>
+                  <span class="stat-value">{{ formatMoney(player.stats.totalEconomyPower) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <!-- Équipements -->
+            @if (player.equipments && player.equipments.length > 0) {
+              <div class="section">
+                <div class="section-title">
+                  <mat-icon>shield</mat-icon>
+                  <span>Équipements ({{ getEquipmentCount(player) }})</span>
+                </div>
+                <div class="equipment-list">
+                  @for (eq of player.equipments; track eq.equipment.name) {
+                    <span class="eq-chip">
+                      {{ eq.equipment.name }}
+                      <span class="eq-qty">×{{ eq.quantity }}</span>
+                      @if (eq.available < eq.quantity) {
+                        <span class="eq-used">({{ eq.available }} dispo)</span>
+                      }
+                    </span>
+                  }
+                </div>
+              </div>
+              <mat-divider></mat-divider>
+            }
+
+            <!-- Ressources -->
+            @if (player.resources && player.resources.length > 0) {
+              <div class="section">
+                <div class="section-title">
+                  <mat-icon>inventory_2</mat-icon>
+                  <span>Ressources</span>
+                </div>
+                <div class="equipment-list">
+                  @for (res of player.resources; track res.name) {
+                    <span class="eq-chip resource-chip">
+                      {{ res.name }}
+                      <span class="eq-qty">×{{ res.quantity }}</span>
+                      @if (res.baseValue) {
+                        <span class="eq-used">({{ res.baseValue }}$/u)</span>
+                      }
+                    </span>
+                  }
+                </div>
+              </div>
+              <mat-divider></mat-divider>
+            }
+
+            <!-- Secteurs et armée -->
+            @if (player.sectors && player.sectors.length > 0) {
+              <div class="section">
+                <div class="section-title">
+                  <mat-icon>map</mat-icon>
+                  <span>Secteurs ({{ player.sectors.length }})</span>
+                </div>
+                @for (sector of player.sectors; track sector.number) {
+                  <div class="sector-block">
+                    <div class="sector-header">
+                      <span class="sector-name">{{ sector.name }}</span>
+                      <span class="sector-meta">
+                        #{{ sector.number }} • {{ sector.income | number:'1.0-0' }}$/tour
+                        @if (sector.resource) {
+                          • {{ sector.resource }}
+                        }
+                      </span>
+                      <span class="sector-army-count">{{ sector.army?.length || 0 }} unités</span>
+                    </div>
+                    @if (sector.army && sector.army.length > 0) {
+                      <div class="army-list">
+                        @for (unit of sector.army; track unit.id) {
+                          <div class="unit-row">
+                            <span class="unit-type" [matTooltip]="getClassNames(unit.classes)">
+                              {{ getUnitTypeLabel(unit.type) }} #{{ unit.number }}
+                            </span>
+                            <span class="unit-exp">Exp: {{ unit.experience }}</span>
+                            <span class="unit-stats">
+                              <span class="atk">{{ unit.attack | number:'1.0-0' }}A</span>
+                              <span class="def">{{ unit.defense | number:'1.0-0' }}D</span>
+                              @if (unit.pdf) {
+                                <span class="pdf">{{ unit.pdf | number:'1.0-0' }}P</span>
+                              }
+                              @if (unit.armor) {
+                                <span class="arm">{{ unit.armor | number:'1.0-0' }}Ar</span>
+                              }
+                            </span>
+                            <span class="unit-classes">{{ getClassNames(unit.classes) }}</span>
+                            @if (unit.isInjured) {
+                              <mat-icon class="injured-icon" matTooltip="Blessé">local_hospital</mat-icon>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                    @if (sector.stats) {
+                      <div class="sector-stats-row">
+                        Total:
+                        <span class="atk">{{ sector.stats.totalAtk | number:'1.0-0' }} ATK</span>
+                        <span class="def">{{ sector.stats.totalDef | number:'1.0-0' }} DEF</span>
+                        <span class="arm">{{ sector.stats.totalArmor | number:'1.0-0' }} ARM</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="section">
+                <div class="section-title">
+                  <mat-icon>map</mat-icon>
+                  <span>Secteurs</span>
+                </div>
+                <p class="empty-text">Aucun secteur possédé</p>
+              </div>
+            }
+
+            <mat-divider></mat-divider>
+
+            <!-- Actions -->
+            <div class="actions-row">
+              <button mat-stroked-button (click)="exportPlayer(player)" matTooltip="Télécharger le JSON du joueur">
+                <mat-icon>download</mat-icon>
+                Exporter JSON
+              </button>
+              <button mat-stroked-button color="warn" (click)="confirmDelete(player)" matTooltip="Supprime le joueur et rend ses secteurs neutres">
+                <mat-icon>delete_forever</mat-icon>
+                Supprimer
+              </button>
+            </div>
+          </div>
+        </mat-expansion-panel>
+      }
+    </mat-accordion>
+  }
+
+  <!-- Empty state -->
+  @if (!loading() && filteredPlayers().length === 0 && searchQuery()) {
+    <div class="empty-state">
+      <mat-icon>search_off</mat-icon>
+      <p>Aucun joueur trouvé pour "{{ searchQuery() }}"</p>
+    </div>
+  }
+
+  @if (!loading() && players().length === 0 && !searchQuery()) {
+    <div class="empty-state">
+      <mat-icon>group_off</mat-icon>
+      <p>Aucun joueur enregistré</p>
+      <button mat-flat-button color="primary" (click)="triggerImport()">
+        <mat-icon>upload_file</mat-icon>
+        Importer un joueur
+      </button>
+    </div>
+  }
+</div>

@@ -42,3 +42,11 @@ export const selectIsAppReady = createSelector(
   (state) => state.initialized && !state.loading
 );
 
+/**
+ * Selector pour vérifier si l'utilisateur connecté est un admin.
+ */
+export const selectIsAdmin = createSelector(
+  selectUser,
+  (user) => user?.role === 'ADMIN'
+);
+

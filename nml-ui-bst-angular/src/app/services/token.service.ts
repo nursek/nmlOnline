@@ -121,7 +121,7 @@ export class TokenService {
   /**
    * Récupère l'utilisateur depuis le localStorage.
    */
-  getUser(): { id: number; username: string } | null {
+  getUser(): { id: number; username: string; role?: string } | null {
     const stored = localStorage.getItem('user');
     if (!stored) return null;
 
@@ -141,7 +141,7 @@ export class TokenService {
   /**
    * Stocke l'utilisateur dans le localStorage.
    */
-  setUser(user: { id: number; username: string }): void {
+  setUser(user: { id: number; username: string; role?: string }): void {
     localStorage.setItem('user', JSON.stringify(user));
   }
 
@@ -223,7 +223,7 @@ export class TokenService {
 
           // Stocker l'utilisateur si présent
           if (response.id && response.name) {
-            this.setUser({ id: response.id, username: response.name });
+            this.setUser({ id: response.id, username: response.name, role: response.role });
           }
 
           // Notifier les requêtes en attente

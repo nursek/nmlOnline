@@ -42,4 +42,6 @@ COPY --from=frontend-build /app-ui/dist/nml-ui-copilot-angular/browser /app/stat
 
 EXPOSE 8080
 
+# JWT_SECRET and JWT_PEPPER must be provided at runtime:
+#   docker run -e JWT_SECRET=<secret> -e JWT_PEPPER=<pepper> ...
 ENTRYPOINT ["java", "-jar", "app.jar"]

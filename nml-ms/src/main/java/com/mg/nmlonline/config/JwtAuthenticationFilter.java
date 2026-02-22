@@ -13,7 +13,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * Filtre JWT qui valide le token sur chaque requête protégée.
@@ -50,11 +54,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             JwtService.JwtClaims claims = jwtService.validateAndExtractClaims(jwt);
 
             if (claims != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // Créer l'authentification avec le username et l'ID de l'utilisateur
+                // Créer l'authentification avec le username, l'ID et le rôle
+                List<GrantedAuthority> authorities = new ArrayList<>();
+                if ("ADMIN".equals(claims.role())) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                }
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         claims.username(),
                         null,
-                        Collections.emptyList()
+                        authorities
                 );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
@@ -79,8 +87,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return path.equals("/api/login") ||
                path.equals("/api/register") ||
                path.equals("/api/auth/refresh") ||
-               path.equals("/api/auth/logout") ||
-               path.startsWith("/h2-console");
+               path.equals("/api/auth/logout");
     }
 }
 

@@ -9,7 +9,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.mg.nmlonline.domain.model.player.Player;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.io.IOException;
 
@@ -17,11 +19,14 @@ import java.io.IOException;
 @Table(name = "PLAYER_RESOURCES")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = "player")
 @JsonDeserialize(using = PlayerResource.PlayerResourceDeserializer.class)
 public class PlayerResource {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

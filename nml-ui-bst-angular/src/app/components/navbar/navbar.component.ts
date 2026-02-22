@@ -9,7 +9,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatListModule } from '@angular/material/list';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map } from 'rxjs/operators';
-import { AuthActions, selectIsAuthenticated, selectUser } from '../../store';
+import { AuthActions, selectIsAuthenticated, selectIsAdmin, selectUser } from '../../store';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
@@ -269,6 +269,7 @@ export class NavbarComponent {
   }
 
   readonly user = toSignal(this.store.select(selectUser));
+  readonly isAdmin = toSignal(this.store.select(selectIsAdmin), { initialValue: false });
 
   readonly isMobile = toSignal(
     this.breakpointObserver.observe([Breakpoints.Handset, Breakpoints.TabletPortrait])
@@ -289,12 +290,18 @@ export class NavbarComponent {
     });
   }
 
-  menuItems = [
+  readonly baseMenuItems = [
     { path: '/carte', label: 'Carte', icon: 'map' },
     { path: '/joueur', label: 'Mon Joueur', icon: 'person' },
     { path: '/boutique', label: 'Boutique', icon: 'shopping_bag' },
     { path: '/regles', label: 'Règles', icon: 'menu_book' },
   ];
+
+  get menuItems() {
+    return this.isAdmin()
+      ? [...this.baseMenuItems, { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' }]
+      : this.baseMenuItems;
+  }
 
   toggleDrawer(): void {
     this.drawerOpen.update(v => !v);

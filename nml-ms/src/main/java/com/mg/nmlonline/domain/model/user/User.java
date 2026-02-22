@@ -16,4 +16,5 @@ public class User {
     private String password;
     private String refreshTokenHash;
     private Long refreshTokenExpiry;
+    private String role;
 }

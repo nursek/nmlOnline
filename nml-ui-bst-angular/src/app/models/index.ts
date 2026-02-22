@@ -10,6 +10,7 @@ export interface AuthResponse {
   token: string;
   id: number;
   name: string;
+  role: string;
 }
 
 export interface RefreshResponse {
@@ -17,12 +18,14 @@ export interface RefreshResponse {
   token?: string;
   id?: number;
   name?: string;
+  role?: string;
   error?: string;
 }
 
 export interface User {
   id: number;
   username: string;
+  role?: string;
 }
 
 // Types pour les joueurs - Correspondant à PlayerStatsDto du backend

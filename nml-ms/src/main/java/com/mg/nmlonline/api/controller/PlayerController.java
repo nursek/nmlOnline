@@ -11,6 +11,7 @@ import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.ResourceService;
 import com.mg.nmlonline.mapper.PlayerMapper;
 import com.mg.nmlonline.mapper.SectorMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -53,22 +54,6 @@ public class PlayerController {
         return ResponseEntity.ok(enrichPlayerWithSectors(player));
     }
 
-    @PostMapping
-    public PlayerDto create(@RequestBody PlayerDto dto) {
-        System.out.println("Created player: " + dto.getName());
-        Player player = playerMapper.toDomain(dto);
-        Player created = playerService.create(player);
-        System.out.println("Created player: " + created.getName());
-        return enrichPlayerWithSectors(created);
-    }
-
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        if(!playerService.delete(id)) {
-            throw new RuntimeException("Player with id " + id + " not found.");
-        }
-    }
-
     /**
      * Vend une ressource de l'inventaire d'un joueur
      * @param resourceId L'ID de la ressource à vendre (PlayerResource)
@@ -76,13 +61,18 @@ public class PlayerController {
      * @return 200 OK avec les détails de la vente (nom, quantité, montant) si la vente est réussie
      */
     @PostMapping("/resources/sell/{resourceId}")
-    public ResponseEntity<ResourceSaleResponseDto> sellResource(@PathVariable Long resourceId, @RequestParam("quantity") int quantity) {
+    public ResponseEntity<ResourceSaleResponseDto> sellResource(@PathVariable Long resourceId, @RequestParam("quantity") int quantity, HttpServletRequest request) {
         if (quantity <= 0) {
             return ResponseEntity.badRequest()
                     .body(new ResourceSaleResponseDto("Quantity must be greater than 0", 0, null, 0));
         }
+        Long authenticatedUserId = (Long) request.getAttribute("userId");
+        if (authenticatedUserId == null) {
+            return ResponseEntity.status(401)
+                    .body(new ResourceSaleResponseDto("User not authenticated", 0, null, 0));
+        }
         try {
-            ResourceService.SaleResult result = resourceService.sellResource(resourceId, quantity);
+            ResourceService.SaleResult result = resourceService.sellResource(resourceId, quantity, authenticatedUserId);
             ResourceSaleResponseDto response = new ResourceSaleResponseDto(
                 "Resource sold successfully",
                 result.saleValue(),
@@ -92,13 +82,16 @@ public class PlayerController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ResourceSaleResponseDto(e.getMessage(), 0, null, 0));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(new ResourceSaleResponseDto(e.getMessage(), 0, null, 0));
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(new ResourceSaleResponseDto(e.getMessage(), 0, null, 0));
         }
     }
 
     /**
-     * Enrichit un PlayerDto avec les secteurs complets depuis la board par défaut
+     * Enrichit un PlayerDto avec les secteurs complets depuis la board par défaut.
+     * Note : utilise la première board disponible (le jeu ne supporte qu'une board active).
      */
     private PlayerDto enrichPlayerWithSectors(Player player) {
         if (player == null) {

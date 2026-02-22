@@ -6,6 +6,7 @@ import com.mg.nmlonline.domain.service.BoardService;
 import com.mg.nmlonline.mapper.BoardMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -59,6 +60,7 @@ public class BoardController {
     /**
      * Crée ou met à jour une board
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<BoardDto> createBoard(@RequestBody BoardDto boardDto, @RequestParam("name") String name) {
         Board board = boardMapper.toDomain(boardDto);
@@ -69,6 +71,7 @@ public class BoardController {
     /**
      * Supprime une board
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBoard(@PathVariable("id") Long id) {
         boardService.deleteBoard(id);
@@ -78,6 +81,7 @@ public class BoardController {
     /**
      * Assigne un propriétaire à un secteur
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{boardId}/sectors/{sectorNumber}/owner")
     public ResponseEntity<Void> assignOwnerToSector(
             @PathVariable("boardId") Long boardId,

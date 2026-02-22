@@ -3,6 +3,7 @@ package com.mg.nmlonline.config;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
@@ -14,6 +15,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final CorsConfigurationSource corsConfigurationSource;
@@ -44,8 +46,6 @@ public class SecurityConfig {
                         "/api/auth/refresh",
                         "/api/auth/logout"
                 ).permitAll()
-                // Console H2 (dev uniquement)
-                .requestMatchers("/h2-console/**").permitAll()
                 // Fichiers statiques Angular
                 .requestMatchers(
                         "/",
@@ -59,6 +59,8 @@ public class SecurityConfig {
                         "/*.woff2",
                         "/assets/**"
                 ).permitAll()
+                // Endpoints admin (nécessitent le rôle ADMIN)
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 // Tous les autres endpoints API nécessitent une authentification
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
@@ -78,8 +80,8 @@ public class SecurityConfig {
         // Désactiver CSRF pour une API REST stateless (JWT)
         http.csrf(AbstractHttpConfigurer::disable);
 
-        // Autoriser l'affichage dans un iframe de la même origine (console H2)
-        http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+        // Bloquer l'affichage dans un iframe (clickjacking protection)
+        http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::deny));
 
         // Mode sans état : pour JWT (pas de session côté serveur)
         http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

@@ -3,7 +3,9 @@ package com.mg.nmlonline.domain.model.unit;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Table de liaison entre Unit et Equipment
@@ -13,10 +15,13 @@ import lombok.NoArgsConstructor;
 @Table(name = "UNIT_EQUIPMENTS")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = "unit")
 public class UnitEquipment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

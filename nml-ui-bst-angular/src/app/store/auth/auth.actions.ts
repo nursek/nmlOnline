@@ -12,7 +12,7 @@ export const AuthActions = createActionGroup({
     'Clear Error': emptyProps(),
     // Refresh token au démarrage
     'Init Session': emptyProps(),
-    'Init Session Success': props<{ token: string; id: number; username: string }>(),
+    'Init Session Success': props<{ token: string; id: number; username: string; role: string }>(),
     'Init Session Failure': emptyProps(),
   },
 });

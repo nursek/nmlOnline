@@ -24,6 +24,7 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequestMapping("/api")
@@ -44,13 +45,15 @@ public class AuthController {
     private static final long REFRESH_MIN_INTERVAL_MS = 1000; // 1 seconde minimum entre chaque refresh
     private static final long GRACE_PERIOD_MS = 3000; // 3 secondes de grâce pour les requêtes en doublon (spam F5)
     private static final long ACCESS_TOKEN_EXPIRATION = 10 * 60 * 1000L; // 10 min
+    private static final long CLEANUP_INTERVAL_MS = TimeUnit.MINUTES.toMillis(5);
+    private final AtomicLong lastCleanup = new AtomicLong(System.currentTimeMillis());
 
     public AuthController(
             UserService userService,
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
-            @Value("${jwt.pepper:default-pepper-secret-change-in-production}") String pepper,
-            @Value("${app.cookie.secure:false}") boolean appCookieSecure
+            @Value("${jwt.pepper}") String pepper,
+            @Value("${app.cookie.secure:true}") boolean appCookieSecure
     ) {
         this.userService = userService;
         this.jwtService = jwtService;
@@ -83,9 +86,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest req, HttpServletRequest request, HttpServletResponse response) {
+        long now = System.currentTimeMillis();
+        cleanupStaleEntries(now);
+
         String key = request.getRemoteAddr() + ":" + req.getUsername();
         Attempt att = attempts.computeIfAbsent(key, k -> new Attempt());
-        long now = System.currentTimeMillis();
 
         if (att.blockedUntil > now) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
@@ -116,7 +121,7 @@ public class AuthController {
             cookie.setSecure(appCookieSecure);
             cookie.setAttribute("SameSite", "Lax");
             response.addCookie(cookie);
-            return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername()));
+            return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername(), user.getRole()));
         } else {
             att.count++;
             att.lastAttempt = now;
@@ -132,6 +137,7 @@ public class AuthController {
     public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
         String clientIp = request.getRemoteAddr();
         long now = System.currentTimeMillis();
+        cleanupStaleEntries(now);
 
         // Protection anti-spam : vérifier le throttling par IP AVANT toute opération
         RefreshThrottle throttle = refreshThrottles.computeIfAbsent(clientIp, k -> new RefreshThrottle());
@@ -217,7 +223,8 @@ public class AuthController {
                 "valid", true,
                 "token", accessToken,
                 "id", user.getId(),
-                "name", user.getUsername()
+                "name", user.getUsername(),
+                "role", user.getRole() != null ? user.getRole() : "USER"
         );
 
         // Mettre à jour le throttle avec les infos pour la grace period
@@ -240,13 +247,14 @@ public class AuthController {
         User user = new User();
         user.setUsername(req.getUsername());
         user.setPassword(userService.encodePassword(req.getPassword()));
+        user.setRole("USER");
         userService.save(user);
         return ResponseEntity.ok("Utilisateur créé");
     }
 
     @PostMapping("/auth/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
-        System.out.println("Logout called");
+        logger.debug("Logout called");
         Cookie cookie = WebUtils.getCookie(request, "refresh_token");
         if (cookie != null) {
             String refreshToken = cookie.getValue();
@@ -281,5 +289,21 @@ public class AuthController {
             logger.error("SHA-256 algorithm not available", e);
             throw new RuntimeException("Hashing algorithm not available", e);
         }
+    }
+
+    /**
+     * Nettoie les entrées obsolètes des maps attempts et refreshThrottles
+     * pour éviter les fuites mémoire. Exécuté au maximum toutes les 5 minutes.
+     */
+    private void cleanupStaleEntries(long now) {
+        if (now - lastCleanup.get() < CLEANUP_INTERVAL_MS) return;
+        lastCleanup.set(now);
+
+        attempts.entrySet().removeIf(e ->
+                now - e.getValue().lastAttempt > BLOCK_TIME_MS * 2
+                        && e.getValue().blockedUntil < now);
+
+        refreshThrottles.entrySet().removeIf(e ->
+                now - e.getValue().lastRefresh > CLEANUP_INTERVAL_MS);
     }
 }
