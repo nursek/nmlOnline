@@ -53,7 +53,7 @@ public abstract class Building extends CombatEntity {
      * Important : JPA gère cette relation via la colonne player_id dans la table BUILDINGS.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "player_id", nullable = false)
+    @JoinColumn(name = "player_id", nullable = false, insertable = false, updatable = false)
     @com.fasterxml.jackson.annotation.JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
     private Player player;
 
