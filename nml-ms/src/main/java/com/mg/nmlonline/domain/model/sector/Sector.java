@@ -338,8 +338,8 @@ public class Sector {
                 return null;
             }
 
-            Unit unit = new Unit(experience, classes.get(0));
-            unit.setId(id);
+            Unit unit = new Unit(experience, classes.getFirst());
+            unit.setId(Long.valueOf(id));
             unit.setNumber(number);
             unit.setType(UnitType.valueOf(unitNode.get("type").asText()));
 
@@ -375,8 +375,7 @@ public class Sector {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof SectorId)) return false;
-            SectorId sectorId = (SectorId) o;
+            if (!(o instanceof SectorId sectorId)) return false;
             return number == sectorId.number &&
                    java.util.Objects.equals(board, sectorId.board);
         }

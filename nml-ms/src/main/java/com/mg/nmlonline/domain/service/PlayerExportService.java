@@ -43,7 +43,7 @@ public class PlayerExportService {
             sectorDTO.army = new ArrayList<>();
             for (Unit unit : sector.getUnits()) {
                 UnitDTO unitDTO = new UnitDTO();
-                unitDTO.id = unit.getId();
+                unitDTO.id = unit.getId() != null ? unit.getId().intValue() : 0;
                 unitDTO.type = String.valueOf(unit.getType());
                 unitDTO.experience = unit.getExperience();
                 unitDTO.classes = new ArrayList<>();

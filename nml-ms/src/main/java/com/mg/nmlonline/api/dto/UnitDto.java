@@ -7,6 +7,7 @@ import java.util.List;
 public class UnitDto {
     private Integer id;
     private Integer number;
+    private String name; // Nom optionnel pour les personnages
     private Double experience;
     private UnitTypeDto type;
     private List<UnitClassDto> classes;

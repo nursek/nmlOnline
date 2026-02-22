@@ -4,10 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.building.Bank;
+import com.mg.nmlonline.domain.model.building.Building;
+import com.mg.nmlonline.domain.model.building.BuildingType;
+import com.mg.nmlonline.domain.model.building.Headquarters;
+import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
@@ -75,6 +81,67 @@ public class PlayerImportService {
     public void importResourcesToPlayer(String filePath, Player player) throws IOException {
         PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
         importResources(player, dto.resources);
+    }
+
+    /**
+     * Importe le personnage principal (GameCharacter) depuis un fichier JSON et l'associe au Player.
+     * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
+     *
+     * @return le GameCharacter créé, ou null si aucun personnage n'est défini dans le JSON
+     */
+    public GameCharacter importCharacterToPlayer(String filePath, Player player) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+        if (dto.character == null || dto.character.name == null) {
+            return null;
+        }
+
+        GameCharacter character = new GameCharacter(
+                dto.character.name,
+                dto.character.baseAttack,
+                dto.character.basePdf,
+                dto.character.basePdc,
+                dto.character.baseDefense,
+                dto.character.baseArmor,
+                dto.character.baseEvasion
+        );
+        character.setPlayerId(player.getId());
+        player.setCharacter(character);
+
+        return character;
+    }
+
+    /**
+     * Importe les bâtiments depuis un fichier JSON et les ajoute au Player et au Board.
+     * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
+     *
+     * @return la liste des bâtiments créés
+     */
+    public List<Building> importBuildingsToBoard(String filePath, Player player, Board board) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+        if (dto.buildings == null || dto.buildings.isEmpty()) {
+            return List.of();
+        }
+
+        List<Building> buildings = new ArrayList<>();
+        for (BuildingDTO buildingDto : dto.buildings) {
+            BuildingType type = BuildingType.valueOf(buildingDto.type);
+            Building building = switch (type) {
+                case HEADQUARTERS -> new Headquarters(player.getId());
+                case WEAPON_CACHE -> new WeaponCache(player.getId());
+                case BANK -> new Bank(player.getId());
+            };
+
+            // Placer le bâtiment dans le secteur du Board
+            Sector sector = board.getSector(buildingDto.sectorNumber);
+            if (sector != null) {
+                building.setSector(sector);
+            }
+
+            player.getBuildings().add(building);
+            buildings.add(building);
+        }
+
+        return buildings;
     }
 
     /**
@@ -201,6 +268,7 @@ public class PlayerImportService {
             unit.setInjured(true);
         }
 
+
         if (unitDto.equipments != null) {
             for (String equipmentName : unitDto.equipments) {
                 Equipment equipment = getEquipmentByName(equipmentName);
@@ -226,6 +294,8 @@ public class PlayerImportService {
         public List<ResourceDTO> resources;
         public List<SectorDTO> sectors;
         public double money;
+        public CharacterDTO character;
+        public List<BuildingDTO> buildings;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -243,6 +313,23 @@ public class PlayerImportService {
         public double experience;
         public List<String> equipments = new ArrayList<>();
         public boolean isInjured;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class CharacterDTO {
+        public String name;
+        public double baseAttack;
+        public double baseDefense;
+        public double basePdf;
+        public double basePdc;
+        public double baseArmor;
+        public double baseEvasion;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class BuildingDTO {
+        public String type; // HEADQUARTERS, WEAPON_CACHE, BANK
+        public int sectorNumber;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

@@ -141,12 +141,26 @@ public class PlayerStartupImporter implements ApplicationRunner {
                     playerImportService.importResourcesToPlayer(filePath, player);
                     log.info("Ressources importées pour {}", player.getName());
 
+                    // 3c. Importer le personnage principal (GameCharacter) si défini
+                    var character = playerImportService.importCharacterToPlayer(filePath, player);
+                    if (character != null) {
+                        log.info("Personnage '{}' importé pour {} (ATK={}, DEF={}, PDF={})",
+                                character.getName(), player.getName(),
+                                character.getBaseAttack(), character.getBaseDefense(), character.getBasePdf());
+                    }
+
                     // Sauvegarder le joueur avec ses équipements et ressources AVANT d'importer les secteurs
                     player = playerService.save(player);
 
                     // 4. Importer les secteurs et unités dans le Board (en mémoire)
                     playerImportService.importSectorsToBoard(filePath, player, board);
                     log.info("Secteurs et unités importés pour {} (en mémoire)", player.getName());
+
+                    // 4b. Importer les bâtiments dans le Board
+                    var buildings = playerImportService.importBuildingsToBoard(filePath, player, board);
+                    if (!buildings.isEmpty()) {
+                        log.info("{} bâtiment(s) importé(s) pour {}", buildings.size(), player.getName());
+                    }
 
                     // Afficher les stats calculées
                     log.info("✓ Stats {} : ATK={}, DEF={}, ARMOR={}, Income={}, EconomyPower={}",

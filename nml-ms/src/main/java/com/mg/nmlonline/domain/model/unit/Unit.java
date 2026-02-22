@@ -1,12 +1,11 @@
 package com.mg.nmlonline.domain.model.unit;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
-import com.mg.nmlonline.domain.model.sector.Sector;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
@@ -19,43 +18,29 @@ import static com.mg.nmlonline.domain.model.unit.UnitType.*;
 
 /**
  * Represents a unit with various attributes for combat - Entité JPA
+ * Hérite de CombatEntity pour partager les propriétés communes avec les bâtiments et personnages.
  */
 @Entity
-@Table(name = "UNITS")
+@DiscriminatorValue("UNIT")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Unit {
+public class Unit extends CombatEntity {
     // ===== CONSTANTES =====
-    private static final double INJURED_STAT_MULTIPLIER = 0.5;
     private static final int MIN_EXPERIENCE_FOR_SECOND_CLASS = 5;
 
-    // ===== IDENTIFIANT UNIQUE =====
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    // ID du joueur propriétaire de l'unité (accès direct)
-    @Column(name = "player_id")
-    private Long playerId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumns({
-        @JoinColumn(name = "board_id", referencedColumnName = "board_id", nullable = false),
-        @JoinColumn(name = "sector_number", referencedColumnName = "number", nullable = false)
-    })
-    @JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
-    private Sector sector;
 
     // ===== INFORMATIONS DE BASE =====
-    @Column(nullable = false)
+    // Note : nullable = true requis par l'héritage SINGLE_TABLE (colonnes partagées avec GameCharacter)
+    @Column(nullable = true)
     private int number = 0; // Numéro de l'unité dans l'armée
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private double experience = 0.0;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private UnitType type;
 
     @ElementCollection(targetClass = UnitClass.class)
@@ -65,28 +50,9 @@ public class Unit {
     private Set<UnitClass> classesSet = new HashSet<>();
 
     // ===== ÉTAT DE L'UNITÉ =====
-    @Column(name = "is_injured", nullable = false)
+    @Column(name = "is_injured", nullable = true)
     private boolean isInjured = false;
 
-    // ===== STATISTIQUES DE BASE =====
-    @Column(nullable = false)
-    private double attack;
-
-    @Column(nullable = false)
-    private double defense;
-
-    // ===== STATISTIQUES CALCULÉES =====
-    @Column(nullable = false)
-    private double pdf;
-
-    @Column(nullable = false)
-    private double pdc;
-
-    @Column(nullable = false)
-    private double armor;
-
-    @Column(nullable = false)
-    private double evasion;
 
     // ===== ÉQUIPEMENTS =====
     @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -120,16 +86,23 @@ public class Unit {
         this.classesSet = new HashSet<>(classes);
     }
 
-    // Pour compatibilité avec l'ancien code qui utilise int
-    public int getId() {
-        return id != null ? id.intValue() : 0;
+    // ===== IMPLÉMENTATION DES MÉTHODES ABSTRAITES =====
+
+    @Override
+    public EntityCategory getEntityCategory() {
+        return EntityCategory.INFANTRY;
     }
 
-    public void setId(int id) {
-        this.id = (long) id;
+    @Override
+    public String getDisplayName() {
+        if (type == PERSONNAGE) {
+            return type.name();
+        }
+        return type.name() + " n°" + number;
     }
 
     // Recalcule les statistiques de base (sans bonus joueur)
+    @Override
     public void recalculateBaseStats() {
         if (type == null) return;
 
@@ -313,21 +286,6 @@ public class Unit {
 
     // ===== MÉTHODES UTILITAIRES POUR LE COMBAT =====
 
-    public double getTotalAttack() {
-        return attack + pdf + pdc;
-    }
-
-    public double getTotalDefense() {
-        return defense + armor;
-    }
-
-    private String formatStat(double value) {
-        if (value == Math.floor(value)) {
-            return String.valueOf((int) value);
-        } else {
-            return String.format("%.2f", value).replaceAll("0+$", "").replaceAll(",$", "");
-        }
-    }
 
     private String formatEvasion(double value) {
         return String.valueOf((int) Math.ceil(value));
@@ -336,7 +294,7 @@ public class Unit {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Unique id: ").append(id).append(" - ");
+        sb.append("Unique id: ").append(getId()).append(" - ");
 
         if (type == PERSONNAGE) {
             sb.append(type.name());
