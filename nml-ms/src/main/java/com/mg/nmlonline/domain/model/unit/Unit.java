@@ -32,14 +32,15 @@ public class Unit extends CombatEntity {
 
 
     // ===== INFORMATIONS DE BASE =====
-    @Column(nullable = false)
+    // Note : nullable = true requis par l'héritage SINGLE_TABLE (colonnes partagées avec GameCharacter)
+    @Column(nullable = true)
     private int number = 0; // Numéro de l'unité dans l'armée
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private double experience = 0.0;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private UnitType type;
 
     @ElementCollection(targetClass = UnitClass.class)
@@ -49,7 +50,7 @@ public class Unit extends CombatEntity {
     private Set<UnitClass> classesSet = new HashSet<>();
 
     // ===== ÉTAT DE L'UNITÉ =====
-    @Column(name = "is_injured", nullable = false)
+    @Column(name = "is_injured", nullable = true)
     private boolean isInjured = false;
 
 

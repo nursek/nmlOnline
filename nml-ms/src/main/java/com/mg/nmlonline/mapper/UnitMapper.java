@@ -31,7 +31,7 @@ public class UnitMapper {
         if (dto == null) return null;
 
         Unit unit = new Unit();
-        unit.setId(dto.getId() != null ? dto.getId() : 0);
+        unit.setId(dto.getId() != null ? dto.getId().longValue() : null);
         unit.setNumber(dto.getNumber() != null ? dto.getNumber() : 0);
         unit.setExperience(dto.getExperience() != null ? dto.getExperience() : 0.0);
 
@@ -81,7 +81,13 @@ public class UnitMapper {
         if (unit == null) return null;
 
         UnitDto dto = new UnitDto();
-        dto.setId(unit.getId());
+        Long unitId = unit.getId();
+        if (unitId != null) {
+            if (unitId > Integer.MAX_VALUE || unitId < Integer.MIN_VALUE) {
+                throw new IllegalArgumentException("Unit id out of Integer range: " + unitId);
+            }
+            dto.setId(unitId.intValue());
+        }
         dto.setNumber(unit.getNumber());
         dto.setExperience(unit.getExperience());
 

@@ -49,6 +49,14 @@ public class GameCharacter extends CombatEntity {
         this.baseDefense = baseDefense;
         this.baseArmor = baseArmor;
         this.baseEvasion = baseEvasion;
+
+        // Initialize inherited combat stats
+        this.attack = baseAttack;
+        this.pdf = basePdf;
+        this.pdc = basePdc;
+        this.defense = baseDefense;
+        this.armor = baseArmor;
+        this.evasion = baseEvasion;
     }
 
     @Override

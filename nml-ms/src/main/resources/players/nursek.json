@@ -128,5 +128,14 @@
         }
       ]
     }
-  ]
+  ],
+  "character": {
+    "name": "Ratcatcher",
+    "baseAttack": 100,
+    "baseDefense": 250,
+    "basePdf": 100,
+    "basePdc": 0,
+    "baseArmor": 0,
+    "baseEvasion": 0
+  }
 }

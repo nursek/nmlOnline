@@ -113,7 +113,7 @@ public class Battle {
     }
 
     private List<Unit> replaceWithInjured(List<Unit> survivors, List<Unit> casualties) {
-        Set<Integer> casualtiesIds = casualties.stream().map(Unit::getId).collect(Collectors.toSet());
+        Set<Long> casualtiesIds = casualties.stream().map(Unit::getId).collect(Collectors.toSet());
         List<Unit> result = new ArrayList<>();
         for (Unit unit : survivors) {
             if (casualtiesIds.contains(unit.getId()) ||

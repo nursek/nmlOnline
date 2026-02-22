@@ -295,7 +295,6 @@ Le fichier `src/styles/_shared.scss` contient des variables et mixins réutilisa
 
 ## 📚 Documentation
 
-- `MOVE_ORDER_IMPLEMENTATION.md` : Système de déplacement d'unités
 - `nml-ui-bst-angular/GUIDE_ANGULAR_POUR_DEVS_REACT.md` : Guide React → Angular
 
 ## 🌐 Langue

@@ -8,6 +8,7 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
@@ -75,6 +76,33 @@ public class PlayerImportService {
     public void importResourcesToPlayer(String filePath, Player player) throws IOException {
         PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
         importResources(player, dto.resources);
+    }
+
+    /**
+     * Importe le personnage principal (GameCharacter) depuis un fichier JSON et l'associe au Player.
+     * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
+     *
+     * @return le GameCharacter créé, ou null si aucun personnage n'est défini dans le JSON
+     */
+    public GameCharacter importCharacterToPlayer(String filePath, Player player) throws IOException {
+        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+        if (dto.character == null || dto.character.name == null) {
+            return null;
+        }
+
+        GameCharacter character = new GameCharacter(
+                dto.character.name,
+                dto.character.baseAttack,
+                dto.character.basePdf,
+                dto.character.basePdc,
+                dto.character.baseDefense,
+                dto.character.baseArmor,
+                dto.character.baseEvasion
+        );
+        character.setPlayerId(player.getId());
+        player.setCharacter(character);
+
+        return character;
     }
 
     /**
@@ -201,6 +229,7 @@ public class PlayerImportService {
             unit.setInjured(true);
         }
 
+
         if (unitDto.equipments != null) {
             for (String equipmentName : unitDto.equipments) {
                 Equipment equipment = getEquipmentByName(equipmentName);
@@ -226,6 +255,7 @@ public class PlayerImportService {
         public List<ResourceDTO> resources;
         public List<SectorDTO> sectors;
         public double money;
+        public CharacterDTO character;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -243,6 +273,17 @@ public class PlayerImportService {
         public double experience;
         public List<String> equipments = new ArrayList<>();
         public boolean isInjured;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class CharacterDTO {
+        public String name;
+        public double baseAttack;
+        public double baseDefense;
+        public double basePdf;
+        public double basePdc;
+        public double baseArmor;
+        public double baseEvasion;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
