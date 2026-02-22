@@ -235,7 +235,8 @@ public class BuildingService {
 
     // === CLASSES UTILITAIRES ===
 
-    /**     * Retourne le tour courant du jeu.
+    /**
+     * Retourne le tour courant du jeu.
      */
     public int getCurrentTurn(Long playerId) {
         return 1; // TODO implémenter la logique pour récupérer le tour courant du jeu à partir du contexte ou d'un service de gestion de partie
