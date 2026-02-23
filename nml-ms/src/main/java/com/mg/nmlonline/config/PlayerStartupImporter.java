@@ -142,7 +142,7 @@ public class PlayerStartupImporter implements ApplicationRunner {
                     log.info("Ressources importées pour {}", player.getName());
 
                     // 3c. Importer le personnage principal (GameCharacter) si défini
-                    var character = playerImportService.importCharacterToPlayer(filePath, player);
+                    var character = playerImportService.importCharacterToPlayer(filePath, player, board);
                     if (character != null) {
                         log.info("Personnage '{}' importé pour {} (ATK={}, DEF={}, PDF={})",
                                 character.getName(), player.getName(),
@@ -172,10 +172,10 @@ public class PlayerStartupImporter implements ApplicationRunner {
                              player.getStats().getTotalEconomyPower());
 
                     // 5. Sauvegarder le joueur avec les stats à jour (pas les équipements qui sont déjà sauvés)
-                    player = playerService.save(player);
                     log.info("✓ Joueur {} sauvegardé en base", player.getName());
-
                     log.info("Joueur {} prêt avec {} secteurs", player.getName(), player.getOwnedSectorCount());
+                    playerService.save(player);
+
                 }
 
                 // Nettoyer le fichier temporaire

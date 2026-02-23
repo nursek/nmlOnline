@@ -99,6 +99,9 @@ export interface Sector {
   income: number | null;
   army: Unit[] | null;
   stats?: SectorStats;
+  // Entités combattantes du secteur
+  buildings?: Building[] | null;
+  character?: GameCharacter | null;
   // Propriétés pour la carte
   ownerId: number | null;
   color: string | null;

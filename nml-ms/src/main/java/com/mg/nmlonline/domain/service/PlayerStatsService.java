@@ -5,6 +5,7 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import org.springframework.stereotype.Service;
 
@@ -43,30 +44,30 @@ public class PlayerStatsService {
             sector.recalculateMilitaryPower();
         }
 
-        // Calculer les stats totales de combat
+        // Calculer les stats totales de combat (unités + bâtiments + personnages)
         double totalAtk = playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .mapToDouble(Unit::getAttack)
+                .flatMap(sector -> sector.getCombatEntities().stream())
+                .mapToDouble(CombatEntity::getAttack)
                 .sum();
 
         double totalPdf = playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .mapToDouble(Unit::getPdf)
+                .flatMap(sector -> sector.getCombatEntities().stream())
+                .mapToDouble(CombatEntity::getPdf)
                 .sum();
 
         double totalPdc = playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .mapToDouble(Unit::getPdc)
+                .flatMap(sector -> sector.getCombatEntities().stream())
+                .mapToDouble(CombatEntity::getPdc)
                 .sum();
 
         double totalDef = playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .mapToDouble(Unit::getDefense)
+                .flatMap(sector -> sector.getCombatEntities().stream())
+                .mapToDouble(CombatEntity::getDefense)
                 .sum();
 
         double totalArmor = playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .mapToDouble(Unit::getArmor)
+                .flatMap(sector -> sector.getCombatEntities().stream())
+                .mapToDouble(CombatEntity::getArmor)
                 .sum();
 
         // Mettre à jour les stats du joueur
@@ -260,14 +261,14 @@ public class PlayerStatsService {
      * @param board Le plateau de jeu contenant les secteurs
      * @return Liste des secteurs avec au moins une unité
      */
-    public List<Sector> getSectorsWithArmy(Player player, Board board) {
+    public List<Sector> getSectorsWithCombatEntities(Player player, Board board) {
         if (player == null || board == null) {
             return List.of();
         }
 
         List<Sector> playerSectors = board.getSectorsByOwner(player.getId());
         return playerSectors.stream()
-                .filter(sector -> !sector.getUnits().isEmpty())
+                .filter(sector -> !sector.getCombatEntities().isEmpty())
                 .toList();
     }
 
@@ -284,7 +285,7 @@ public class PlayerStatsService {
 
         System.out.println("=== ARMÉES DE " + player.getName().toUpperCase() + " ===");
 
-        List<Sector> sectorsWithArmy = getSectorsWithArmy(player, board);
+        List<Sector> sectorsWithArmy = getSectorsWithCombatEntities(player, board);
         if (sectorsWithArmy.isEmpty()) {
             System.out.println("Aucune unité dans les secteurs.");
         } else {

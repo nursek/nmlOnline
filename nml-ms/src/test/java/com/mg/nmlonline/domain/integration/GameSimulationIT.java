@@ -382,7 +382,7 @@ class GameSimulationIT {
         @Test
         @DisplayName("Récupération des secteurs avec armée")
         void shouldGetSectorsWithArmy() {
-            List<Sector> sectorsWithArmy = playerStatsService.getSectorsWithArmy(player1, board);
+            List<Sector> sectorsWithArmy = playerStatsService.getSectorsWithCombatEntities(player1, board);
 
             for (Sector sector : sectorsWithArmy) {
                 assertTrue(sector.getArmySize() > 0);

@@ -9,6 +9,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentFactory;
+import com.mg.nmlonline.domain.model.building.Building;
+import com.mg.nmlonline.domain.model.unit.CombatEntity;
+import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
@@ -90,6 +93,14 @@ public class Sector {
     @OneToMany(mappedBy = "sector", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Unit> army = new ArrayList<>();
 
+    // Bâtiments dans ce secteur (relation lecture seule, le bâtiment est géré via Player)
+    @OneToMany(mappedBy = "sector")
+    private List<Building> buildings = new ArrayList<>();
+
+    // Personnage dans ce secteur (relation lecture seule, le personnage est géré via Player)
+    @OneToMany(mappedBy = "sector")
+    private List<GameCharacter> characters = new ArrayList<>();
+
     // === CONSTRUCTEURS ===
 
     public Sector(int number) {
@@ -144,20 +155,22 @@ public class Sector {
     // === GESTION DES STATISTIQUES DU SECTEUR ===
 
     public void recalculateMilitaryPower(){
-        stats.setTotalAtk(army.stream()
-                .mapToDouble(Unit::getAttack)
+        List<CombatEntity> allEntities = getCombatEntities();
+
+        stats.setTotalAtk(allEntities.stream()
+                .mapToDouble(CombatEntity::getAttack)
                 .sum());
-        stats.setTotalPdf(army.stream()
-                .mapToDouble(Unit::getPdf)
+        stats.setTotalPdf(allEntities.stream()
+                .mapToDouble(CombatEntity::getPdf)
                 .sum());
-        stats.setTotalPdc(army.stream()
-                .mapToDouble(Unit::getPdc)
+        stats.setTotalPdc(allEntities.stream()
+                .mapToDouble(CombatEntity::getPdc)
                 .sum());
-        stats.setTotalDef(army.stream()
-                .mapToDouble(Unit::getDefense)
+        stats.setTotalDef(allEntities.stream()
+                .mapToDouble(CombatEntity::getDefense)
                 .sum());
-        stats.setTotalArmor(army.stream()
-                .mapToDouble(Unit::getArmor)
+        stats.setTotalArmor(allEntities.stream()
+                .mapToDouble(CombatEntity::getArmor)
                 .sum());
 
         stats.setTotalOffensive(stats.getTotalAtk() + stats.getTotalPdf() + stats.getTotalPdc());
@@ -230,6 +243,21 @@ public class Sector {
         return army;
     }
 
+    /**
+     * Retourne toutes les entités combattantes du secteur (unités + bâtiments + personnages).
+     * Vue unifiée pour le combat et le calcul de stats.
+     */
+    public List<CombatEntity> getCombatEntities() {
+        List<CombatEntity> all = new ArrayList<>(army);
+        if (buildings != null) {
+            all.addAll(buildings);
+        }
+        if (characters != null) {
+            all.addAll(characters);
+        }
+        return all;
+    }
+
     // === TRI ET RÉASSIGNATION DES IDS ===
 
     public void sortArmy() {
@@ -237,7 +265,8 @@ public class Sector {
                 .comparingDouble(Unit::getExperience).reversed()
                 .thenComparing(Unit::getTotalDefense, Comparator.reverseOrder())
                 .thenComparing(Unit::getTotalAttack, Comparator.reverseOrder())
-                .thenComparing(Unit::getId)
+                .thenComparing(Unit::getId, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparingInt(System::identityHashCode)
         );
     }
 
@@ -258,11 +287,28 @@ public class Sector {
     public void displayArmy() {
         System.out.printf("=== %s ===%n", name.toUpperCase());
 
-        if (army.isEmpty()) {
-            System.out.println("Aucune unité dans ce secteur.");
+        List<CombatEntity> allEntities = getCombatEntities();
+
+        if (allEntities.isEmpty()) {
+            System.out.println("Aucune entité dans ce secteur.");
             return;
         }
 
+        // Afficher les personnages
+        if (characters != null) {
+            for (GameCharacter character : characters) {
+                System.out.println("🎭 " + character);
+            }
+        }
+
+        // Afficher les bâtiments
+        if (buildings != null) {
+            for (Building building : buildings) {
+                System.out.println("🏛️ " + building);
+            }
+        }
+
+        // Afficher les unités
         for (Unit unit : army) {
             System.out.println(unit);
         }
@@ -344,7 +390,7 @@ public class Sector {
             }
 
             Unit unit = new Unit(experience, classes.getFirst());
-            unit.setId(Long.valueOf(id));
+            unit.setId((long) id);
             unit.setNumber(number);
             unit.setType(UnitType.valueOf(unitNode.get("type").asText()));
 

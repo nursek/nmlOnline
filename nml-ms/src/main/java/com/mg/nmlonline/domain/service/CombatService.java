@@ -33,7 +33,7 @@ public class CombatService {
             return Optional.empty();
         }
 
-        List<Sector> sectorsWithArmy = playerStatsService.getSectorsWithArmy(player, board);
+        List<Sector> sectorsWithArmy = playerStatsService.getSectorsWithCombatEntities(player, board);
         return sectorsWithArmy.stream().findFirst();
     }
 

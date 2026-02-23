@@ -17,9 +17,13 @@ import java.util.List;
 public class SectorMapper {
 
     private final UnitMapper unitMapper;
+    private final BuildingMapper buildingMapper;
+    private final GameCharacterMapper gameCharacterMapper;
 
-    public SectorMapper(UnitMapper unitMapper) {
+    public SectorMapper(UnitMapper unitMapper, BuildingMapper buildingMapper, GameCharacterMapper gameCharacterMapper) {
         this.unitMapper = unitMapper;
+        this.buildingMapper = buildingMapper;
+        this.gameCharacterMapper = gameCharacterMapper;
     }
 
     /**
@@ -118,6 +122,18 @@ public class SectorMapper {
             dto.setArmy(sector.getArmy().stream()
                     .map(unitMapper::toDto)
                     .toList());
+        }
+
+        // Conversion des bâtiments
+        if (sector.getBuildings() != null && !sector.getBuildings().isEmpty()) {
+            dto.setBuildings(sector.getBuildings().stream()
+                    .map(buildingMapper::toDto)
+                    .toList());
+        }
+
+        // Conversion du personnage (un seul par secteur au max)
+        if (sector.getCharacters() != null && !sector.getCharacters().isEmpty()) {
+            dto.setCharacter(gameCharacterMapper.toDto(sector.getCharacters().getFirst()));
         }
 
         return dto;

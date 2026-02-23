@@ -84,12 +84,12 @@ public class PlayerImportService {
     }
 
     /**
-     * Importe le personnage principal (GameCharacter) depuis un fichier JSON et l'associe au Player.
+     * Importe le personnage principal (GameCharacter) depuis un fichier JSON et l'associe au Player et au Sector.
      * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
      *
      * @return le GameCharacter créé, ou null si aucun personnage n'est défini dans le JSON
      */
-    public GameCharacter importCharacterToPlayer(String filePath, Player player) throws IOException {
+    public GameCharacter importCharacterToPlayer(String filePath, Player player, Board board) throws IOException {
         PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
         if (dto.character == null || dto.character.name == null) {
             return null;
@@ -106,6 +106,16 @@ public class PlayerImportService {
         );
         character.setPlayerId(player.getId());
         player.setCharacter(character);
+
+        // Lier le personnage au secteur via CombatEntity.sector
+        if (dto.character.sectorNumber > 0) {
+            Sector sector = board.getSector(dto.character.sectorNumber);
+            if (sector != null) {
+                character.setSector(sector);
+            } else {
+                System.err.println("WARN: Secteur " + dto.character.sectorNumber + " non trouvé pour le personnage " + character.getName());
+            }
+        }
 
         return character;
     }
@@ -359,6 +369,7 @@ public class PlayerImportService {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class CharacterDTO {
         public String name;
+        public int sectorNumber;
         public double baseAttack;
         public double baseDefense;
         public double basePdf;

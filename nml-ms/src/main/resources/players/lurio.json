@@ -42,7 +42,7 @@
     },
     {
       "name": "Tenue ultra légère",
-      "quantity": 2
+      "quantity": 5
     },
     {
       "name": "Mitrailleuse",
@@ -57,8 +57,12 @@
       "quantity": 10
     },
     {
-      "name": "HK-MP7",
+      "name": "Hache de bûcheron",
       "quantity": 1
+    },
+    {
+      "name": "HK-MP7",
+      "quantity": 4
     }
   ],
   "sectors": [
