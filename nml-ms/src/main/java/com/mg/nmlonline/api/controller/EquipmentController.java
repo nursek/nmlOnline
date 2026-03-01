@@ -4,6 +4,7 @@ import com.mg.nmlonline.api.dto.EquipmentDto;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.service.EquipmentService;
 import com.mg.nmlonline.mapper.EquipmentMapper;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,7 +32,7 @@ public class EquipmentController {
     @GetMapping("/{id}")
     public EquipmentDto findById(@PathVariable("id") Long id) {
         Equipment equipment = equipmentService.findById(id)
-                .orElseThrow(() -> new RuntimeException("Equipment with id " + id + " not found."));
+                .orElseThrow(() -> new EntityNotFoundException("Equipment not found"));
         return equipmentMapper.toDto(equipment);
     }
 
@@ -47,7 +48,7 @@ public class EquipmentController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable("id") Long id) {
         if(!equipmentService.delete(id)) {
-            throw new RuntimeException("Equipment with id " + id + " not found.");
+            throw new EntityNotFoundException("Equipment not found");
         }
     }
 }

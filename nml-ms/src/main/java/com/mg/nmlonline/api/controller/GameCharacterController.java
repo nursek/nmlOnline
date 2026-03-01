@@ -4,11 +4,13 @@ import com.mg.nmlonline.api.dto.GameCharacterDto;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.service.GameCharacterService;
 import com.mg.nmlonline.mapper.GameCharacterMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
  * Contrôleur REST pour la gestion des personnages principaux.
+ * Vérification d'ownership sur tous les endpoints.
  */
 @RestController
 @RequestMapping("/api/characters")
@@ -24,11 +26,18 @@ public class GameCharacterController {
     }
 
     /**
-     * Récupère le personnage d'un joueur.
+     * Récupère le personnage du joueur authentifié.
      */
-    //TODO : verify authentication and authorization to prevent data leak (ex: only allow access to own character or admin access)
     @GetMapping("/player/{playerId}")
-    public ResponseEntity<GameCharacterDto> getCharacterByPlayerId(@PathVariable Long playerId) {
+    public ResponseEntity<GameCharacterDto> getCharacterByPlayerId(@PathVariable Long playerId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        // Vérifier que le joueur demandé correspond à l'utilisateur authentifié
+        if (!userId.equals(playerId)) {
+            return ResponseEntity.status(403).build();
+        }
         return characterService.getCharacter(playerId)
                 .map(characterMapper::toDto)
                 .map(ResponseEntity::ok)
@@ -36,15 +45,19 @@ public class GameCharacterController {
     }
 
     /**
-     * Récupère un personnage par son nom.
+     * Récupère le personnage du joueur authentifié par nom.
      */
-    //TODO : verify authentication and authorization to prevent data leak (ex: only allow access to own character or admin access)
     @GetMapping("/name/{name}")
-    public ResponseEntity<GameCharacterDto> getCharacterByName(@PathVariable String name) {
+    public ResponseEntity<GameCharacterDto> getCharacterByName(@PathVariable String name, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
         return characterService.getCharacterByName(name)
+                .filter(character -> userId.equals(character.getPlayerId()))
                 .map(characterMapper::toDto)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElse(ResponseEntity.status(403).build());
     }
 }
 

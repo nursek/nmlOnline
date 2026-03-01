@@ -25,9 +25,12 @@ public class JwtService {
     private final SecretKey key;
 
     public JwtService(@Value("${jwt.secret}") String secret) {
-        // S'assurer que la clé fait au moins 32 caractères pour HS256
-        if (secret.length() < 32) {
-            secret = secret + "0".repeat(32 - secret.length());
+        // Refuser de démarrer si la clé est trop courte (minimum 32 caractères pour HMAC-SHA256)
+        if (secret == null || secret.length() < 32) {
+            throw new IllegalArgumentException(
+                "La clé JWT doit faire au moins 32 caractères. " +
+                "Configurez la variable d'environnement JWT_SECRET avec une clé suffisamment longue."
+            );
         }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }

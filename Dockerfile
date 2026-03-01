@@ -34,13 +34,26 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
+# Créer un utilisateur non-root pour exécuter l'application
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 # Copie le JAR Spring Boot
 COPY --from=backend-build /app-ms/nml-ms/target/*.jar app.jar
 
 # Copie la build Angular (Angular 17+ génère dans dist/nom-projet/browser)
 COPY --from=frontend-build /app-ui/dist/nml-ui-copilot-angular/browser /app/static
 
+# S'assurer que l'utilisateur a accès en lecture
+RUN chown -R appuser:appgroup /app
+
+# Exécuter en tant qu'utilisateur non-root (principe du moindre privilège)
+USER appuser
+
 EXPOSE 8080
+
+# Vérification de santé — wget est disponible dans Alpine
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
 
 # JWT_SECRET and JWT_PEPPER must be provided at runtime:
 #   docker run -e JWT_SECRET=<secret> -e JWT_PEPPER=<pepper> ...

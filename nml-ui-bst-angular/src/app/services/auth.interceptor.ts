@@ -35,12 +35,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Gérer les erreurs 401 (token expiré) et 403 (accès refusé par token invalide)
-      if (error.status === 401 || error.status === 403) {
+      // Seul un 401 déclenche un refresh — le 403 signifie un accès interdit
+      // (pas un token expiré) et doit être propagé tel quel.
+      if (error.status === 401) {
         return handleUnauthorized(req, next, tokenService, router, store);
       }
 
-      // Propager les autres erreurs
+      // Propager les autres erreurs (dont 403)
       return throwError(() => error);
     })
   );

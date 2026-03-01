@@ -13,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/boards")
-@CrossOrigin(origins = "*")
 public class BoardController {
 
     private final BoardService boardService;

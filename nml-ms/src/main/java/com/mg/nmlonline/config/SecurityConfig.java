@@ -81,7 +81,17 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable);
 
         // Bloquer l'affichage dans un iframe (clickjacking protection)
-        http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::deny));
+        http.headers(headers -> headers
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
+                // Empêcher le MIME-type sniffing
+                .contentTypeOptions(contentTypeOptions -> {})
+                // Politique de référent
+                .referrerPolicy(referrer -> referrer
+                        .policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                // Politique de permissions (désactiver caméra, micro, géoloc, etc.)
+                .permissionsPolicy(permissions -> permissions
+                        .policy("camera=(), microphone=(), geolocation=(), payment=()"))
+        );
 
         // Mode sans état : pour JWT (pas de session côté serveur)
         http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

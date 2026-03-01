@@ -85,7 +85,7 @@ public class PlayerController {
         } catch (SecurityException e) {
             return ResponseEntity.status(403).body(new ResourceSaleResponseDto(e.getMessage(), 0, null, 0));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(new ResourceSaleResponseDto(e.getMessage(), 0, null, 0));
+            return ResponseEntity.status(404).body(new ResourceSaleResponseDto("Ressource introuvable", 0, null, 0));
         }
     }
 

@@ -60,21 +60,11 @@ public class UserService {
 
     /**
      * Trouve un utilisateur par son refresh token.
-     * Itère sur les utilisateurs ayant un token actif pour vérifier le hash.
-     * Note: En production avec beaucoup d'utilisateurs, considérer
-     * stocker un identifiant unique (jti) du token pour recherche directe.
+     * Utilise une recherche directe par hash SHA-256+pepper (O(1) en DB).
      */
     public User findByRefreshToken(String refreshToken) {
-        String transformed = hashInput(refreshToken);
-
-        // Filtrer uniquement les utilisateurs avec un refresh token actif
-        for (User user : userRepo.findAllWithActiveRefreshToken()) {
-            String hash = user.getRefreshTokenHash();
-            if (hash != null && encoder.matches(transformed, hash)) {
-                return user;
-            }
-        }
-        return null;
+        String hash = hashInput(refreshToken);
+        return userRepo.findByRefreshTokenHash(hash).orElse(null);
     }
 
     private String hashInput(String value) {

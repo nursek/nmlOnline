@@ -97,59 +97,55 @@ export class TokenService {
     sessionStorage.setItem(this.REFRESH_TIME_KEY, Date.now().toString());
   }
 
+  // Stockage en mémoire : le token n'est jamais écrit dans localStorage/sessionStorage,
+  // ce qui empêche son vol via XSS (document.cookie, localStorage, etc.)
+  private accessToken: string | null = null;
+
   /**
-   * Récupère le token d'accès depuis le localStorage.
+   * Récupère le token d'accès depuis la mémoire.
    */
   getAccessToken(): string | null {
-    return localStorage.getItem('accessToken');
+    return this.accessToken;
   }
 
   /**
-   * Stocke le token d'accès dans le localStorage.
+   * Stocke le token d'accès en mémoire uniquement.
+   * Le token sera perdu au rechargement — c'est voulu :
+   * le refresh cookie HttpOnly restaurera la session.
    */
   setAccessToken(token: string): void {
-    localStorage.setItem('accessToken', token);
+    this.accessToken = token;
   }
 
   /**
-   * Supprime le token d'accès du localStorage.
+   * Supprime le token d'accès de la mémoire.
    */
   removeAccessToken(): void {
-    localStorage.removeItem('accessToken');
+    this.accessToken = null;
   }
 
+  // Stockage utilisateur en mémoire uniquement (pas de localStorage)
+  private currentUser: { id: number; username: string; role?: string } | null = null;
+
   /**
-   * Récupère l'utilisateur depuis le localStorage.
+   * Récupère l'utilisateur depuis la mémoire.
    */
   getUser(): { id: number; username: string; role?: string } | null {
-    const stored = localStorage.getItem('user');
-    if (!stored) return null;
-
-    try {
-      const parsed = JSON.parse(stored);
-      if (parsed && typeof parsed.id === 'number' && typeof parsed.username === 'string') {
-        return parsed;
-      }
-    } catch {
-      // Ignore parsing errors
-    }
-
-    localStorage.removeItem('user');
-    return null;
+    return this.currentUser;
   }
 
   /**
-   * Stocke l'utilisateur dans le localStorage.
+   * Stocke l'utilisateur en mémoire uniquement.
    */
   setUser(user: { id: number; username: string; role?: string }): void {
-    localStorage.setItem('user', JSON.stringify(user));
+    this.currentUser = user;
   }
 
   /**
-   * Supprime l'utilisateur du localStorage.
+   * Supprime l'utilisateur de la mémoire.
    */
   removeUser(): void {
-    localStorage.removeItem('user');
+    this.currentUser = null;
   }
 
   /**

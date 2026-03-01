@@ -56,6 +56,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (claims != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 // Créer l'authentification avec le username, l'ID et le rôle
                 List<GrantedAuthority> authorities = new ArrayList<>();
+                // Toujours attribuer ROLE_USER pour les utilisateurs authentifiés
+                authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
                 if ("ADMIN".equals(claims.role())) {
                     authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                 }

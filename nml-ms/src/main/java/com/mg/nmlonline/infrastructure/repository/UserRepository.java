@@ -6,9 +6,23 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     User findByUsername(String username);
+
+    /**
+     * Recherche directe par hash du refresh token (O(1)).
+     */
+    @Query("SELECT u FROM User u WHERE u.refreshTokenHash = :hash AND u.refreshTokenExpiry > :currentTime")
+    Optional<User> findByRefreshTokenHash(@Param("hash") String hash, @Param("currentTime") long currentTime);
+
+    /**
+     * Variante sans paramètre de temps, utilise le temps actuel.
+     */
+    default Optional<User> findByRefreshTokenHash(String hash) {
+        return findByRefreshTokenHash(hash, System.currentTimeMillis());
+    }
 
     /**
      * Trouve tous les utilisateurs ayant un refresh token actif (non expiré).

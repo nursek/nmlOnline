@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.web.util.WebUtils;
 import jakarta.servlet.http.Cookie;
 
@@ -85,7 +86,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req, HttpServletRequest request, HttpServletResponse response) {
         long now = System.currentTimeMillis();
         cleanupStaleEntries(now);
 
@@ -240,7 +241,22 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody LoginRequest req) {
+    public ResponseEntity<?> register(@Valid @RequestBody LoginRequest req, HttpServletRequest request) {
+        // Rate limiting sur l'enregistrement par IP
+        long now = System.currentTimeMillis();
+        String registerKey = "register:" + request.getRemoteAddr();
+        Attempt att = attempts.computeIfAbsent(registerKey, k -> new Attempt());
+        if (att.blockedUntil > now) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body("Trop de tentatives d'inscription, réessayez plus tard");
+        }
+        att.count++;
+        att.lastAttempt = now;
+        if (att.count >= MAX_ATTEMPTS) {
+            att.blockedUntil = now + BLOCK_TIME_MS * 5; // Blocage plus long pour les inscriptions
+            att.count = 0;
+        }
+
         if (userService.findByUsername(req.getUsername()) != null) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Utilisateur déjà existant");
         }
@@ -280,11 +296,15 @@ public class AuthController {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    /**
+     * Hash un refresh token avec SHA-256 + pepper.
+     * Résultat stocké directement en DB pour une recherche O(1).
+     */
     private String hash(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest((value + pepper).getBytes());
-            return passwordEncoder.encode(Base64.getEncoder().encodeToString(hash));
+            return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
             logger.error("SHA-256 algorithm not available", e);
             throw new RuntimeException("Hashing algorithm not available", e);

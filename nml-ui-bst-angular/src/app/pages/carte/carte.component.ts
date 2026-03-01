@@ -150,11 +150,46 @@ export class CarteComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Nettoie le contenu SVG en supprimant les scripts et gestionnaires d'événements.
+   * Empêche les attaques XSS via du SVG malveillant.
+   */
+  private sanitizeSvg(svgText: string): string {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgText, 'image/svg+xml');
+
+    // Supprimer tous les éléments <script>
+    doc.querySelectorAll('script').forEach(el => el.remove());
+
+    // Supprimer les éléments potentiellement dangereux
+    doc.querySelectorAll('foreignObject, iframe, embed, object').forEach(el => el.remove());
+
+    // Supprimer tous les attributs on* (onclick, onload, onerror, etc.)
+    const allElements = doc.querySelectorAll('*');
+    allElements.forEach(el => {
+      const attrs = Array.from(el.attributes);
+      attrs.forEach(attr => {
+        if (attr.name.toLowerCase().startsWith('on')) {
+          el.removeAttribute(attr.name);
+        }
+      });
+      // Supprimer les href javascript:
+      const href = el.getAttribute('href') || el.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+      if (href && href.trim().toLowerCase().startsWith('javascript:')) {
+        el.removeAttribute('href');
+        el.removeAttributeNS('http://www.w3.org/1999/xlink', 'href');
+      }
+    });
+
+    return new XMLSerializer().serializeToString(doc);
+  }
+
   private loadSvgOverlay(url: string): void {
     this.http.get(url, { responseType: 'text' }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (svgText) => {
-        // Injecter le SVG et configurer les handlers
-        this.svgContent.set(this.sanitizer.bypassSecurityTrustHtml(svgText));
+        // Nettoyer le SVG avant de l'injecter (protection XSS)
+        const cleanSvg = this.sanitizeSvg(svgText);
+        this.svgContent.set(this.sanitizer.bypassSecurityTrustHtml(cleanSvg));
         this.svgLoaded.set(true);
 
         // Attendre que le DOM soit mis à jour puis attacher les événements
