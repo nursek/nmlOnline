@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 import java.util.*;
 
@@ -18,7 +17,6 @@ import java.util.*;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@ToString(exclude = "sectorsList")
 public class Board {
 
     @Id
@@ -173,6 +171,88 @@ public class Board {
         return s1.getOwnerId() != null
                 && s2.getOwnerId() != null
                 && !s1.getOwnerId().equals(s2.getOwnerId());
+    }
+
+    // === PATHFINDING ===
+
+    /**
+     * Valide qu'une route est un enchaînement contigu de secteurs voisins.
+     * Ne vérifie PAS la propriété des secteurs.
+     *
+     * @param route Liste ordonnée de numéros de secteurs (départ inclus)
+     * @return true si chaque paire consécutive est voisine
+     */
+    public boolean isInvalidRoute(List<Integer> route) {
+        if (route == null || route.size() < 2) return true;
+        for (int i = 0; i < route.size() - 1; i++) {
+            if (!areNeighbors(route.get(i), route.get(i + 1))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Valide qu'une route ne traverse que des secteurs alliés.
+     * Le secteur de destination doit aussi être allié.
+     *
+     * @param route Liste ordonnée de numéros de secteurs
+     * @param ownerId ID du joueur propriétaire
+     * @return true si la route est valide et tous les secteurs sont alliés
+     */
+    public boolean isAlliedRoute(List<Integer> route, Long ownerId) {
+        if (isInvalidRoute(route)) return false;
+        for (int sectorNumber : route) {
+            Sector sector = getSector(sectorNumber);
+            if (sector == null || !sector.isOwnedBy(ownerId)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Recherche un chemin le plus court entre deux secteurs via BFS.
+     * Retourne null si aucun chemin n'existe.
+     *
+     * @param from Numéro du secteur de départ
+     * @param to Numéro du secteur d'arrivée
+     * @param maxHops Nombre maximum de sauts autorisés
+     * @return La route (liste de secteurs de départ à arrivée) ou null
+     */
+    public List<Integer> findRoute(int from, int to, int maxHops) {
+        if (from == to) return List.of(from);
+        if (!hasSector(from) || !hasSector(to)) return Collections.emptyList();
+
+        // BFS
+        Queue<List<Integer>> queue = new LinkedList<>();
+        Set<Integer> visited = new HashSet<>();
+        queue.add(List.of(from));
+        visited.add(from);
+
+        while (!queue.isEmpty()) {
+            List<Integer> path = queue.poll();
+            if (path.size() > maxHops + 1) break; // +1, car le départ compte
+
+            int current = path.getLast();
+            Sector currentSector = getSector(current);
+            if (currentSector == null) continue;
+
+            for (int neighbor : currentSector.getNeighbors()) {
+                if (neighbor == to) {
+                    List<Integer> fullPath = new ArrayList<>(path);
+                    fullPath.add(to);
+                    return fullPath;
+                }
+                if (!visited.contains(neighbor) && path.size() < maxHops + 1) {
+                    visited.add(neighbor);
+                    List<Integer> newPath = new ArrayList<>(path);
+                    newPath.add(neighbor);
+                    queue.add(newPath);
+                }
+            }
+        }
+        return Collections.emptyList(); // Aucun chemin trouvé dans la limite de hops
     }
 
     @Override

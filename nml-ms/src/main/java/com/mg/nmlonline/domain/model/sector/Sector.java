@@ -15,6 +15,7 @@ import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
+import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -100,6 +101,10 @@ public class Sector {
     // Personnage dans ce secteur (relation lecture seule, le personnage est géré via Player)
     @OneToMany(mappedBy = "sector")
     private List<GameCharacter> characters = new ArrayList<>();
+
+    // Véhicules dans ce secteur
+    @OneToMany(mappedBy = "sector")
+    private List<Vehicle> vehicles = new ArrayList<>();
 
     // === CONSTRUCTEURS ===
 
@@ -255,6 +260,9 @@ public class Sector {
         if (characters != null) {
             all.addAll(characters);
         }
+        if (vehicles != null) {
+            all.addAll(vehicles);
+        }
         return all;
     }
 
@@ -305,6 +313,13 @@ public class Sector {
         if (buildings != null) {
             for (Building building : buildings) {
                 System.out.println("🏛️ " + building);
+            }
+        }
+
+        // Afficher les véhicules
+        if (vehicles != null) {
+            for (Vehicle vehicle : vehicles) {
+                System.out.println("🚗 " + vehicle);
             }
         }
 

@@ -5,7 +5,14 @@ import lombok.Getter;
 // Énumération pour les classes de spécialisation
 @Getter
 public enum UnitClass {
-    LEGER("L") {},
+
+    /** Unité légère — peut se déplacer de 2 secteurs par tour. */
+    LEGER("L") {
+        @Override
+        public int getMaxMovementHops() {
+            return 2;
+        }
+    },
 
     ELEMENTAIRE("E") {},
 
@@ -52,6 +59,11 @@ public enum UnitClass {
 
     public double getCriticalMultiplier() {
         return 1.0;
+    }
+
+    /** Nombre maximum de secteurs parcourus par tour. Par défaut : 1. */
+    public int getMaxMovementHops() {
+        return 1;
     }
 
 }
