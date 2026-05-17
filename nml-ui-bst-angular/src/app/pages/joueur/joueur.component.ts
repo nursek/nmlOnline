@@ -12,7 +12,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { selectUser, selectCurrentPlayer, selectPlayerLoading, selectPlayerError, PlayerActions } from '../../store';
 import { filter, take } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
-  import { Player, Unit, PlayerResource, Vehicle } from '../../models';
+import { Player, Unit, PlayerResource, Vehicle } from '../../models';
 import { ApiService } from '../../services/api.service';
 
 @Component({
