@@ -12,7 +12,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { selectUser, selectCurrentPlayer, selectPlayerLoading, selectPlayerError, PlayerActions } from '../../store';
 import { filter, take } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Player, Unit, PlayerResource } from '../../models';
+  import { Player, Unit, PlayerResource, Vehicle } from '../../models';
 import { ApiService } from '../../services/api.service';
 
 @Component({
@@ -49,6 +49,23 @@ export class JoueurComponent implements OnInit {
 
   // Mode d'affichage des unités : 'list' ou 'tile'
   viewMode = signal<'list' | 'tile'>('list');
+
+  // Personnage du joueur
+  playerCharacter = computed(() => this.player()?.character ?? null);
+
+  // Bâtiments du joueur
+  allBuildings = computed(() => this.player()?.buildings ?? []);
+
+  // Véhicules du joueur (agrégés depuis tous les secteurs)
+  allVehicles = computed(() => {
+    const p = this.player();
+    if (!p) return [];
+    const result: { vehicle: Vehicle; sectorName: string }[] = [];
+    p.sectors.forEach(s => {
+      s.vehicles?.forEach(v => result.push({ vehicle: v, sectorName: s.name }));
+    });
+    return result;
+  });
 
   // Filtres
   showFilters = signal(false);

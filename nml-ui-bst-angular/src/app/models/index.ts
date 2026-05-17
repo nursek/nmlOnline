@@ -102,6 +102,7 @@ export interface Sector {
   // Entités combattantes du secteur
   buildings?: Building[] | null;
   character?: GameCharacter | null;
+  vehicles?: Vehicle[] | null;
   // Propriétés pour la carte
   ownerId: number | null;
   color: string | null;
@@ -123,6 +124,22 @@ export interface SectorStats {
   totalOffensive?: number;
   totalDefensive?: number;
   globalStats?: number;
+}
+
+// Types pour les véhicules
+export interface Vehicle {
+  id: number | null;
+  playerId: number | null;
+  vehicleType: string;
+  displayName: string;
+  pdf: number;
+  defense: number;
+  isDestroyed: boolean;
+  speed: number;
+  capacity: number;
+  passengerCount: number;
+  hasPilot: boolean;
+  sectorNumber: number | null;
 }
 
 // Types pour les personnages principaux (leaders)

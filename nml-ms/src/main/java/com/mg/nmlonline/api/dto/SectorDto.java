@@ -11,9 +11,10 @@ public class SectorDto {
     private List<UnitDto> army;
     private SectorStatsDto stats;
 
-    // Entités combattantes du secteur (bâtiments et personnage)
+    // Entités combattantes du secteur (bâtiments, personnage et véhicules)
     private List<BuildingDto> buildings;
     private GameCharacterDto character;
+    private List<VehicleDto> vehicles;
 
     // Nouvelles propriétés pour la carte
     private Long ownerId;

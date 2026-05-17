@@ -445,7 +445,7 @@
                 <div class="resource-info">
                   <mat-icon class="resource-icon">diamond</mat-icon>
                   <div>
-                    <h4>{{ resource.name ?? '-' }}</h4>
+                    <h4>{{ resource.name }}</h4>
                     <span class="quantity-label">Quantité: {{ resource.quantity }}</span>
                     @if (resource.baseValue) {
                       <span class="value-label">Valeur unitaire: {{ resource.baseValue }} ₡</span>
@@ -466,6 +466,109 @@
         }
       </mat-card-content>
     </mat-card>
+
+    <!-- Personnage -->
+    @if (playerCharacter()) {
+      <mat-card class="card">
+        <mat-card-content>
+          <div class="section-header">
+            <mat-icon color="primary">face</mat-icon>
+            <h2>Personnage</h2>
+          </div>
+          <p class="section-subtitle">Votre leader sur le terrain</p>
+          <div class="details-grid">
+            <div class="resource-card">
+              <div class="resource-info">
+                <mat-icon class="resource-icon">person</mat-icon>
+                <div>
+                  <h4>{{ playerCharacter()!.name }}</h4>
+                  @if (playerCharacter()!.sectorNumber !== null && playerCharacter()!.sectorNumber !== undefined) {
+                    <span class="quantity-label">Secteur : {{ playerCharacter()!.sectorNumber }}</span>
+                  }
+                    <span class="value-label">Attaque : {{ playerCharacter()!.baseAttack }} | Défense : {{ playerCharacter()!.baseDefense }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Bâtiments -->
+    @if (allBuildings().length > 0) {
+      <mat-card class="card">
+        <mat-card-content>
+          <div class="section-header">
+            <mat-icon color="primary">business</mat-icon>
+            <h2>Bâtiments</h2>
+          </div>
+          <p class="section-subtitle">Vos infrastructures militaires et économiques</p>
+          <div class="details-grid">
+            @for (building of allBuildings(); track building.id) {
+              <div class="resource-card">
+                <div class="resource-info">
+                  <mat-icon class="resource-icon">{{ building.isDestroyed ? 'delete_forever' : 'apartment' }}</mat-icon>
+                  <div>
+                    <h4>{{ building.displayName }}</h4>
+                    @if (building.buildingType) {
+                      <span class="badge">{{ building.buildingType }}</span>
+                    }
+                    @if (building.sectorNumber !== null && building.sectorNumber !== undefined) {
+                      <span class="quantity-label">Secteur : {{ building.sectorNumber }}</span>
+                    }
+                    <span class="value-label">Attaque : {{ building.attack }} | Défense : {{ building.defense }}</span>
+                    @if (building.isDestroyed) {
+                      <span class="badge badge-danger">Détruit</span>
+                    }
+                    @if (building.isCaptured) {
+                      <span class="badge badge-warning">Capturé</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Véhicules -->
+    @if (allVehicles().length > 0) {
+      <mat-card class="card">
+        <mat-card-content>
+          <div class="section-header">
+            <mat-icon color="primary">local_shipping</mat-icon>
+            <h2>Véhicules</h2>
+          </div>
+          <p class="section-subtitle">Votre parc de véhicules militaires</p>
+          <div class="details-grid">
+            @for (entry of allVehicles(); track entry.vehicle.id) {
+              <div class="resource-card">
+                <div class="resource-info">
+                  <mat-icon class="resource-icon">{{ entry.vehicle.isDestroyed ? 'car_crash' : 'local_shipping' }}</mat-icon>
+                  <div>
+                    <h4>{{ entry.vehicle.displayName }}</h4>
+                    @if (entry.vehicle.vehicleType) {
+                      <span class="badge">{{ entry.vehicle.vehicleType }}</span>
+                    }
+                    <span class="quantity-label">Secteur : {{ entry.sectorName }}</span>
+                    <span class="value-label">PDF : {{ entry.vehicle.pdf }} | Défense : {{ entry.vehicle.defense }}</span>
+                    <span class="value-label">
+                      Passagers : {{ entry.vehicle.passengerCount }}/{{ entry.vehicle.capacity }}
+                      @if (!entry.vehicle.hasPilot) { | <em>Sans pilote</em> }
+                    </span>
+                    @if (entry.vehicle.isDestroyed) {
+                      <span class="badge badge-danger">Détruit</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
   </div>
 
 }

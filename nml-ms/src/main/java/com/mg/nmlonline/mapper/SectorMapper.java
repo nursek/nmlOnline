@@ -19,11 +19,14 @@ public class SectorMapper {
     private final UnitMapper unitMapper;
     private final BuildingMapper buildingMapper;
     private final GameCharacterMapper gameCharacterMapper;
+    private final VehicleMapper vehicleMapper;
 
-    public SectorMapper(UnitMapper unitMapper, BuildingMapper buildingMapper, GameCharacterMapper gameCharacterMapper) {
+    public SectorMapper(UnitMapper unitMapper, BuildingMapper buildingMapper,
+                        GameCharacterMapper gameCharacterMapper, VehicleMapper vehicleMapper) {
         this.unitMapper = unitMapper;
         this.buildingMapper = buildingMapper;
         this.gameCharacterMapper = gameCharacterMapper;
+        this.vehicleMapper = vehicleMapper;
     }
 
     /**
@@ -134,6 +137,13 @@ public class SectorMapper {
         // Conversion du personnage (un seul par secteur au max)
         if (sector.getCharacters() != null && !sector.getCharacters().isEmpty()) {
             dto.setCharacter(gameCharacterMapper.toDto(sector.getCharacters().getFirst()));
+        }
+
+        // Conversion des véhicules
+        if (sector.getVehicles() != null && !sector.getVehicles().isEmpty()) {
+            dto.setVehicles(sector.getVehicles().stream()
+                    .map(vehicleMapper::toDto)
+                    .toList());
         }
 
         return dto;
