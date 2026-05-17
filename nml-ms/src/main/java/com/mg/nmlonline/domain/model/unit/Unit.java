@@ -208,6 +208,19 @@ public class Unit extends CombatEntity {
         return classesSet != null && !classesSet.isEmpty();
     }
 
+    /**
+     * Nombre maximum de secteurs que cette unité peut parcourir par tour.
+     * Vaut le maximum parmi toutes ses classes (ex : LEGER = 2, autres = 1).
+     * Une unité sans classe retourne 1 par défaut.
+     */
+    public int getMaxMovementHops() {
+        if (classesSet == null || classesSet.isEmpty()) return 1;
+        return classesSet.stream()
+                .mapToInt(UnitClass::getMaxMovementHops)
+                .max()
+                .orElse(1);
+    }
+
     public boolean canAddSecondClass() {
         long effectiveClassCount = classesSet.size();
         if (type == UnitType.LARBIN || type == UnitType.VOYOU) {

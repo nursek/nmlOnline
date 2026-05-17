@@ -14,10 +14,7 @@ public enum UnitType {
     BRUTE(4, 8, Integer.MAX_VALUE, 100, 100, 1, 3, 4),
 
     // Characters units
-    PERSONNAGE(0, -1, -1, 0, 0, 0, 0, 0), // Expérience fixe -1 : personnage principal
-
-    // Vehicle units
-    VEHICULE(0, -1, -1, 0, 0, 0, 0, 0); // Expérience fixe -1 : véhicule / Rework
+    PERSONNAGE(0, -1, -1, 0, 0, 0, 0, 0); // Expérience fixe -1
 
 
     private final int level;
