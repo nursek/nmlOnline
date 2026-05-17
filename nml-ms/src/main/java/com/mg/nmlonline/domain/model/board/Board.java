@@ -180,7 +180,7 @@ public class Board {
      * Ne vérifie PAS la propriété des secteurs.
      *
      * @param route Liste ordonnée de numéros de secteurs (départ inclus)
-     * @return true si chaque paire consécutive est voisine
+     * @return true si la route est invalide (null, trop courte ou secteurs non adjacents)
      */
     public boolean isInvalidRoute(List<Integer> route) {
         if (route == null || route.size() < 2) return true;
@@ -213,12 +213,12 @@ public class Board {
 
     /**
      * Recherche un chemin le plus court entre deux secteurs via BFS.
-     * Retourne null si aucun chemin n'existe.
+     * Retourne une liste vide si aucun chemin n'existe dans la limite de hops.
      *
      * @param from Numéro du secteur de départ
      * @param to Numéro du secteur d'arrivée
      * @param maxHops Nombre maximum de sauts autorisés
-     * @return La route (liste de secteurs de départ à arrivée) ou null
+     * @return La route (liste de secteurs de départ à arrivée) ou liste vide si aucun chemin trouvé
      */
     public List<Integer> findRoute(int from, int to, int maxHops) {
         if (from == to) return List.of(from);

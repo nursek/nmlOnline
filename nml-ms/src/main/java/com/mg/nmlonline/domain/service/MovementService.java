@@ -8,6 +8,7 @@ import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.movement.TransitCombatResult;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
+import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
@@ -126,6 +127,17 @@ public class MovementService {
             throw new SecurityException("Ce véhicule n'appartient pas au joueur.");
         }
 
+        // Vérifier que le véhicule est effectivement dans le secteur de départ de la route
+        Sector vehicleSector = vehicle.getSector();
+        if (vehicleSector == null || vehicleSector.getNumber() != from) {
+            throw new IllegalArgumentException(
+                    "Le véhicule n'est pas dans le secteur de départ de la route (secteur " + from + ").");
+        }
+        if (vehicleSector.getBoard() != null && board.getId() != null
+                && !vehicleSector.getBoard().getId().equals(board.getId())) {
+            throw new IllegalArgumentException("Le véhicule n'appartient pas à ce plateau de jeu.");
+        }
+
         if (vehicle.cantMove()) {
             throw new IllegalArgumentException("Le véhicule ne peut pas se déplacer (détruit ou sans pilote).");
         }
@@ -242,8 +254,22 @@ public class MovementService {
 
                 List<MovementOrder> arriving = entry.getValue();
 
+                // Tous les arrivants, croiseurs inclus (ils peuvent combattre des défenseurs présents)
                 Set<Long> arrivingPlayerIds = arriving.stream()
+                        .map(MovementOrder::getPlayerId)
+                        .collect(Collectors.toSet());
+
+                // Arrivants non-croiseurs uniquement (pour les conflits entre arrivants)
+                Set<Long> nonCrossingArrivingPlayerIds = arriving.stream()
                         .filter(o -> !crossingIds.contains(o.getId()))
+                        .map(MovementOrder::getPlayerId)
+                        .collect(Collectors.toSet());
+
+                // Joueurs dont les unités quittent ce secteur en croisement avec un arrivant :
+                // leur présence dans le secteur est transitoire, ils ne sont pas défenseurs
+                Set<Long> leavingCrosserPlayerIds = validOrders.stream()
+                        .filter(o -> crossingIds.contains(o.getId()) && !stoppedIds.contains(o.getId()))
+                        .filter(o -> currentPosition.get(o.getId()).equals(targetNum))
                         .map(MovementOrder::getPlayerId)
                         .collect(Collectors.toSet());
 
@@ -252,7 +278,7 @@ public class MovementService {
                 Set<Long> defenderPlayerIds = targetSector.getCombatEntities().stream()
                         .map(CombatEntity::getPlayerId)
                         .filter(Objects::nonNull)
-                        .filter(pid -> !arrivingPlayerIds.contains(pid))
+                        .filter(pid -> !arrivingPlayerIds.contains(pid) && !leavingCrosserPlayerIds.contains(pid))
                         .collect(Collectors.toSet());
 
                 // Déplacer physiquement toutes les entités vers ce secteur
@@ -261,17 +287,17 @@ public class MovementService {
                     currentPosition.put(order.getId(), targetNum);
                 }
 
-                if (arrivingPlayerIds.isEmpty()) continue; // Que des croisements, pas de combat
+                if (arrivingPlayerIds.isEmpty()) continue; // Aucun arrivant, pas de combat
 
-                // Conflit arrivants vs défenseurs déjà en place
+                // Conflit arrivants (y compris croiseurs) vs défenseurs déjà en place
                 for (Long attacker : arrivingPlayerIds) {
                     for (Long defender : defenderPlayerIds) {
                         result.addConflict(new DestinationConflict(targetNum, attacker, defender));
                     }
                 }
 
-                // Conflit entre arrivants de joueurs différents
-                List<Long> arrivingList = new ArrayList<>(arrivingPlayerIds);
+                // Conflit entre arrivants non-croiseurs (les croiseurs A⇔B ne se combattent pas entre eux)
+                List<Long> arrivingList = new ArrayList<>(nonCrossingArrivingPlayerIds);
                 for (int i = 0; i < arrivingList.size(); i++) {
                     for (int j = i + 1; j < arrivingList.size(); j++) {
                         result.addConflict(new DestinationConflict(
@@ -295,6 +321,11 @@ public class MovementService {
                         if (vehicle.isDestroyed()) {
                             for (CombatEntity occupant : vehicle.disembarkAll()) {
                                 occupant.setSector(targetSector);
+                                if (occupant instanceof Unit unit) {
+                                    targetSector.getArmy().add(unit);
+                                } else if (occupant instanceof GameCharacter character) {
+                                    targetSector.getCharacters().add(character);
+                                }
                             }
                             order.block("Véhicule détruit en transit au secteur " + targetNum);
                             orderRepository.save(order);
@@ -367,6 +398,8 @@ public class MovementService {
         if (order.isVehicleMovement()) {
             Vehicle vehicle = vehicleRepository.findById(order.getVehicleId()).orElse(null);
             if (vehicle != null && !vehicle.isDestroyed()) {
+                if (fromSector != null) fromSector.getVehicles().remove(vehicle);
+                targetSector.getVehicles().add(vehicle);
                 vehicle.setSector(targetSector);
             }
         } else if (fromSector != null) {
@@ -376,9 +409,12 @@ public class MovementService {
                     .toList();
             for (CombatEntity entity : toMove) {
                 entity.setSector(targetSector);
-                if (entity instanceof com.mg.nmlonline.domain.model.unit.Unit unit) {
+                if (entity instanceof Unit unit) {
                     fromSector.getArmy().remove(unit);
                     targetSector.getArmy().add(unit);
+                } else if (entity instanceof GameCharacter character) {
+                    fromSector.getCharacters().remove(character);
+                    targetSector.getCharacters().add(character);
                 }
             }
         }
@@ -404,7 +440,7 @@ public class MovementService {
         if (sector == null) throw new IllegalArgumentException("Secteur source introuvable.");
 
         Set<Long> sectorEntityIds = sector.getCombatEntities().stream()
-                .filter(e -> e.getPlayerId().equals(playerId))
+                .filter(e -> playerId.equals(e.getPlayerId()))
                 .map(CombatEntity::getId)
                 .collect(Collectors.toSet());
 
@@ -422,7 +458,7 @@ public class MovementService {
      */
     private void validateFootHops(Sector sector, List<Long> entityIds, Long playerId, int hops) {
         sector.getCombatEntities().stream()
-                .filter(e -> e.getPlayerId().equals(playerId) && entityIds.contains(e.getId()))
+                .filter(e -> playerId.equals(e.getPlayerId()) && entityIds.contains(e.getId()))
                 .forEach(e -> {
                     int maxHops = (e instanceof Unit unit) ? unit.getMaxMovementHops() : 1;
                     if (hops > maxHops) {
