@@ -2,10 +2,12 @@ package com.mg.nmlonline.config;
 
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.BoardImportService;
 import com.mg.nmlonline.domain.service.BoardService;
 import com.mg.nmlonline.domain.service.PlayerImportService;
 import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -30,6 +32,7 @@ public class PlayerStartupImporter implements ApplicationRunner {
     private final PlayerService playerService;
     private final BoardService boardService;
     private final BoardImportService boardImportService;
+    private final UserRepository userRepository;
 
     @Value("classpath:boards/board.json")
     private Resource boardResource;
@@ -43,11 +46,13 @@ public class PlayerStartupImporter implements ApplicationRunner {
     public PlayerStartupImporter(PlayerImportService playerImportService,
                                  PlayerService playerService,
                                  BoardService boardService,
-                                 BoardImportService boardImportService) {
+                                 BoardImportService boardImportService,
+                                 UserRepository userRepository) {
         this.playerImportService = playerImportService;
         this.playerService = playerService;
         this.boardService = boardService;
         this.boardImportService = boardImportService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -126,8 +131,28 @@ public class PlayerStartupImporter implements ApplicationRunner {
                     if (existingPlayer != null) {
                         log.info("Joueur {} déjà existant, mise à jour...", player.getName());
                         player.setId(existingPlayer.getId());
+                        // Conserver le userId ou le résoudre si absent
+                        if (existingPlayer.getUserId() != null) {
+                            player.setUserId(existingPlayer.getUserId());
+                        } else {
+                            User user = userRepository.findByUsername(player.getName());
+                            if (user != null) {
+                                player.setUserId(user.getId());
+                                log.info("userId {} lié au joueur {}", user.getId(), player.getName());
+                            } else {
+                                log.warn("Aucun compte CREDENTIALS trouvé pour le joueur '{}'", player.getName());
+                            }
+                        }
                         player = playerService.save(player);
                     } else {
+                        // Lier le userId avant la création
+                        User user = userRepository.findByUsername(player.getName());
+                        if (user != null) {
+                            player.setUserId(user.getId());
+                            log.info("userId {} lié au joueur {}", user.getId(), player.getName());
+                        } else {
+                            log.warn("Aucun compte CREDENTIALS trouvé pour le joueur '{}'", player.getName());
+                        }
                         // Créer le joueur en base pour obtenir un ID (SANS équipements)
                         player = playerService.create(player);
                         log.info("Joueur {} créé avec l'ID {}", player.getName(), player.getId());

@@ -7,8 +7,8 @@ import { AdminActions } from './admin.actions';
 
 @Injectable()
 export class AdminEffects {
-  private actions$ = inject(Actions);
-  private apiService = inject(ApiService);
+  private readonly actions$ = inject(Actions);
+  private readonly apiService = inject(ApiService);
 
   fetchAdminPlayers$ = createEffect(() =>
     this.actions$.pipe(

@@ -22,3 +22,18 @@ export const selectPlayerError = createSelector(
   selectPlayerState,
   (state) => state.error
 );
+
+export const selectPlayerVehicles = createSelector(
+  selectPlayerState,
+  (state) => state.playerVehicles
+);
+
+export const selectUndeployedVehicles = createSelector(
+  selectPlayerState,
+  (state) => state.playerVehicles.filter((v) => v.sectorNumber === null)
+);
+
+export const selectVehiclesLoading = createSelector(
+  selectPlayerState,
+  (state) => state.vehiclesLoading
+);

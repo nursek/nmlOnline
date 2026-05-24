@@ -18,6 +18,7 @@ public class SectorDto {
 
     // Nouvelles propriétés pour la carte
     private Long ownerId;
+    private Long boardId;
     private String color;
     private String resource;
     private List<Integer> neighbors;

@@ -39,6 +39,10 @@ public class PlayerService {
         return playerRepository.findByName(name).orElse(null);
     }
 
+    public Player findByUserId(Long userId) {
+        return playerRepository.findByUserId(userId).orElse(null);
+    }
+
     @Transactional
     public Player create(Player player) {
         return playerRepository.save(player);

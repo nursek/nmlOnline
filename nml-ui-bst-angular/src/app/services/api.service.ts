@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AuthResponse, LoginRequest, Player, Equipment, Board, RefreshResponse, ResourceSaleResponse, GameCharacter, Building } from '../models';
+import { AuthResponse, LoginRequest, Player, Equipment, Board, RefreshResponse, ResourceSaleResponse, GameCharacter, Building, VehicleTypeInfo, BuyEquipmentItem, Vehicle } from '../models';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -115,5 +115,26 @@ export class ApiService {
 
   adminDeletePlayer(id: number): Observable<any> {
     return this.http.delete(`${this.baseUrl}/admin/players/${id}`);
+  }
+
+  // Véhicules
+  getVehicleTypes(): Observable<VehicleTypeInfo[]> {
+    return this.http.get<VehicleTypeInfo[]>(`${this.baseUrl}/vehicles/types`);
+  }
+
+  getPlayerVehicles(): Observable<Vehicle[]> {
+    return this.http.get<Vehicle[]>(`${this.baseUrl}/vehicles/my`);
+  }
+
+  buyVehicle(vehicleTypeName: string, quantity: number = 1): Observable<Vehicle[]> {
+    return this.http.post<Vehicle[]>(`${this.baseUrl}/vehicles/buy`, { vehicleType: vehicleTypeName, quantity });
+  }
+
+  placeVehicle(vehicleId: number, boardId: number, sectorNumber: number): Observable<Vehicle> {
+    return this.http.post<Vehicle>(`${this.baseUrl}/vehicles/${vehicleId}/place`, { boardId, sectorNumber });
+  }
+
+  buyEquipments(items: BuyEquipmentItem[]): Observable<Player> {
+    return this.http.post<Player>(`${this.baseUrl}/players/equipment/buy`, items);
   }
 }

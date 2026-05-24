@@ -452,14 +452,6 @@
                     }
                   </div>
                 </div>
-                <button
-                  mat-raised-button
-                  color="accent"
-                  class="sell-button"
-                  (click)="sellResource(resource, 1)">
-                  <mat-icon>sell</mat-icon>
-                  Vendre (×1)
-                </button>
               </div>
             }
           </div>
@@ -532,15 +524,15 @@
       </mat-card>
     }
 
-    <!-- Véhicules -->
+    <!-- Véhicules déployés -->
     @if (allVehicles().length > 0) {
       <mat-card class="card">
         <mat-card-content>
           <div class="section-header">
             <mat-icon color="primary">local_shipping</mat-icon>
-            <h2>Véhicules</h2>
+            <h2>Véhicules déployés</h2>
           </div>
-          <p class="section-subtitle">Votre parc de véhicules militaires</p>
+          <p class="section-subtitle">Votre parc de véhicules militaires déployés sur vos secteurs</p>
           <div class="details-grid">
             @for (entry of allVehicles(); track entry.vehicle.id) {
               <div class="resource-card">
@@ -562,6 +554,43 @@
                     }
                   </div>
                 </div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Véhicules non-déployés (inventaire) -->
+    @if (undeployedVehicles().length > 0) {
+      <mat-card class="card">
+        <mat-card-content>
+          <div class="section-header">
+            <mat-icon color="accent">inventory_2</mat-icon>
+            <h2>Véhicules en réserve</h2>
+          </div>
+          <p class="section-subtitle">Ces véhicules sont achetés mais pas encore déployés. Choisissez un secteur pour les placer.</p>
+          <div class="details-grid">
+            @for (vehicle of undeployedVehicles(); track vehicle.id) {
+              <div class="resource-card">
+                <div class="resource-info">
+                  <mat-icon class="resource-icon">directions_car</mat-icon>
+                  <div>
+                    <h4>{{ vehicle.displayName }}</h4>
+                    @if (vehicle.vehicleType) {
+                      <span class="badge">{{ vehicle.vehicleType }}</span>
+                    }
+                    <span class="value-label">PDF : {{ vehicle.pdf }} | Défense : {{ vehicle.defense }}</span>
+                    <span class="value-label">Capacité : {{ vehicle.capacity }}</span>
+                  </div>
+                </div>
+                <button mat-stroked-button color="primary"
+                        [disabled]="vehiclesLoading()"
+                        (click)="openPlacementModal(vehicle)"
+                        class="deploy-btn">
+                  <mat-icon>place</mat-icon>
+                  Déployer
+                </button>
               </div>
             }
           </div>
