@@ -1,18 +1,22 @@
 import { createReducer, on } from '@ngrx/store';
-import { Player } from '../../models';
+import { Player, Vehicle } from '../../models';
 import { PlayerActions } from './player.actions';
 
 export interface PlayerState {
   currentPlayer: Player | null;
   players: Player[];
+  playerVehicles: Vehicle[];
   loading: boolean;
+  vehiclesLoading: boolean;
   error: string | null;
 }
 
 export const initialState: PlayerState = {
   currentPlayer: null,
   players: [],
+  playerVehicles: [],
   loading: false,
+  vehiclesLoading: false,
   error: null,
 };
 
@@ -64,4 +68,43 @@ export const playerReducer = createReducer(
 
   // Reset complet du state (lors du logout)
   on(PlayerActions.reset, () => initialState),
+
+  // Véhicules du joueur
+  on(PlayerActions.fetchPlayerVehicles, (state) => ({
+    ...state,
+    vehiclesLoading: true,
+    error: null,
+  })),
+
+  on(PlayerActions.fetchPlayerVehiclesSuccess, (state, { vehicles }) => ({
+    ...state,
+    vehiclesLoading: false,
+    playerVehicles: vehicles,
+  })),
+
+  on(PlayerActions.fetchPlayerVehiclesFailure, (state, { error }) => ({
+    ...state,
+    vehiclesLoading: false,
+    error,
+  })),
+
+  on(PlayerActions.placeVehicle, (state) => ({
+    ...state,
+    vehiclesLoading: true,
+    error: null,
+  })),
+
+  on(PlayerActions.placeVehicleSuccess, (state, { vehicle }) => ({
+    ...state,
+    vehiclesLoading: false,
+    playerVehicles: state.playerVehicles.map((v) =>
+      v.id === vehicle.id ? vehicle : v
+    ),
+  })),
+
+  on(PlayerActions.placeVehicleFailure, (state, { error }) => ({
+    ...state,
+    vehiclesLoading: false,
+    error,
+  })),
 );

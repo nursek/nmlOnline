@@ -27,4 +27,5 @@ public class VehicleDto {
 
     // Localisation
     private Integer sectorNumber;
+    private Long boardId;
 }

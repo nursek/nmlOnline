@@ -105,6 +105,7 @@ export interface Sector {
   vehicles?: Vehicle[] | null;
   // Propriétés pour la carte
   ownerId: number | null;
+  boardId?: number | null;
   color: string | null;
   resource: string | null;
   neighbors: number[];
@@ -140,6 +141,7 @@ export interface Vehicle {
   passengerCount: number;
   hasPilot: boolean;
   sectorNumber: number | null;
+  boardId: number | null;
 }
 
 // Types pour les personnages principaux (leaders)
@@ -258,5 +260,36 @@ export interface Equipment {
 // Types pour le panier
 export interface CartItem {
   equipment: Equipment;
+  quantity: number;
+}
+
+// Types pour la boutique véhicules
+export interface VehicleTypeInfo {
+  name: string;
+  displayName: string;
+  cost: number;
+  basePdf: number;
+  baseDefense: number;
+  speed: number;
+  capacity: number;
+  resistance: number;
+  firesInTransit: boolean;
+  aerial: boolean;
+}
+
+export interface BuyEquipmentItem {
+  name: string;
+  quantity: number;
+}
+
+// Panier véhicules
+export interface VehicleCartItem {
+  vehicleType: VehicleTypeInfo;
+  quantity: number;
+}
+
+// Panier revente de ressources
+export interface SellCartItem {
+  resource: PlayerResource;
   quantity: number;
 }

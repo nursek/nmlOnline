@@ -95,6 +95,7 @@ public class SectorMapper {
 
         // Propriétés pour la carte
         dto.setOwnerId(sector.getOwnerId());
+        dto.setBoardId(sector.getBoard() != null ? sector.getBoard().getId() : null);
         dto.setColor(sector.getColor());
         if (sector.getResourceName() != null && !sector.getResourceName().isEmpty()) {
             dto.setResource(sector.getResourceName());

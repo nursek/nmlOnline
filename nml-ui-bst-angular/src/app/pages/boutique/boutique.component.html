@@ -10,61 +10,143 @@
       </div>
       <mat-divider></mat-divider>
 
-      @if (cart().length === 0) {
+      @if (totalCartBadge() === 0 && sellCart().length === 0) {
         <div class="empty-cart">
           <mat-icon>shopping_cart</mat-icon>
           <p>Votre panier est vide</p>
         </div>
-      } @else {
+      }
+
+      <!-- ── SECTION ÉQUIPEMENTS ── -->
+      @if (cart().length > 0) {
+        <div class="cart-section-title">
+          <mat-icon>build</mat-icon>
+          Équipements
+        </div>
         <div class="cart-items">
           @for (item of cart(); track item.equipment.name) {
             <div class="cart-item">
               <div class="item-header">
                 <h4>{{ item.equipment.name }}</h4>
-                <button mat-icon-button color="warn" (click)="removeFromCart(item.equipment.name)" [attr.aria-label]="'Supprimer ' + item.equipment.name + ' du panier'">
+                <button mat-icon-button color="warn" (click)="removeFromCart(item.equipment.name)" [attr.aria-label]="'Supprimer ' + item.equipment.name">
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
               <p class="item-price">{{ item.equipment.cost }} ₡ × {{ item.quantity }} = {{ item.equipment.cost * item.quantity }} ₡</p>
               <div class="quantity-controls">
-                <button mat-icon-button [disabled]="item.quantity <= 1" (click)="updateQuantity(item.equipment.name, item.quantity - 1)" [attr.aria-label]="'Réduire la quantité de ' + item.equipment.name">
+                <button mat-icon-button [disabled]="item.quantity <= 1" (click)="updateQuantity(item.equipment.name, item.quantity - 1)">
                   <mat-icon>remove</mat-icon>
                 </button>
-                <span class="quantity" aria-label="Quantité" role="status">{{ item.quantity }}</span>
-                <button mat-icon-button (click)="updateQuantity(item.equipment.name, item.quantity + 1)" [attr.aria-label]="'Augmenter la quantité de ' + item.equipment.name">
+                <span class="quantity">{{ item.quantity }}</span>
+                <button mat-icon-button (click)="updateQuantity(item.equipment.name, item.quantity + 1)">
                   <mat-icon>add</mat-icon>
                 </button>
               </div>
             </div>
           }
         </div>
-
-        <mat-divider></mat-divider>
-
-        <div class="cart-total">
-          <div class="total-row">
-            <span>Total:</span>
-            <span class="total-value">{{ totalPrice() }} ₡</span>
-          </div>
-          <div class="total-row">
-            <span>Argent disponible:</span>
-            <span>{{ player()?.stats?.money | number:'1.0-0' }} ₡</span>
-          </div>
+        <div class="cart-subtotal">
+          <span>Sous-total :</span>
+          <span class="total-value">{{ totalPrice() }} ₡</span>
         </div>
-
         <button mat-raised-button
                 [color]="canAfford() ? 'primary' : 'warn'"
-                [disabled]="!canAfford()"
+                [disabled]="!canAfford() || purchaseLoading()"
                 class="checkout-btn"
                 (click)="checkout()">
           <mat-icon>attach_money</mat-icon>
-          {{ canAfford() ? 'Acheter' : 'Fonds insuffisants' }}
+          {{ canAfford() ? 'Commander équipements' : 'Fonds insuffisants' }}
         </button>
-
-        <button mat-stroked-button color="warn" class="clear-btn" (click)="clearCart()">
-          Vider le panier
-        </button>
+        <button mat-stroked-button color="warn" class="clear-btn" (click)="clearCart()">Vider</button>
+        <mat-divider></mat-divider>
       }
+
+      <!-- ── SECTION VÉHICULES ── -->
+      @if (vehicleCart().length > 0) {
+        <div class="cart-section-title">
+          <mat-icon>directions_car</mat-icon>
+          Véhicules
+        </div>
+        <div class="cart-items">
+          @for (item of vehicleCart(); track item.vehicleType.name) {
+            <div class="cart-item">
+              <div class="item-header">
+                <h4>{{ item.vehicleType.displayName }}</h4>
+                <button mat-icon-button color="warn" (click)="removeVehicleFromCart(item.vehicleType.name)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+              <p class="item-price">{{ item.vehicleType.cost }} ₡ × {{ item.quantity }} = {{ item.vehicleType.cost * item.quantity }} ₡</p>
+              <div class="quantity-controls">
+                <button mat-icon-button [disabled]="item.quantity <= 1" (click)="decrementVehicleCartQuantity(item.vehicleType.name)">
+                  <mat-icon>remove</mat-icon>
+                </button>
+                <span class="quantity">{{ item.quantity }}</span>
+                <button mat-icon-button (click)="addVehicleToCart(item.vehicleType)">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="cart-subtotal">
+          <span>Sous-total :</span>
+          <span class="total-value">{{ vehicleCartTotalPrice() }} ₡</span>
+        </div>
+        <button mat-raised-button
+                [color]="canAffordVehicleCart() ? 'primary' : 'warn'"
+                [disabled]="!canAffordVehicleCart() || purchaseLoading()"
+                class="checkout-btn"
+                (click)="checkoutVehicles()">
+          @if (purchaseLoading()) {
+            <mat-spinner diameter="18" style="display:inline-block"></mat-spinner>
+          } @else {
+            <mat-icon>directions_car</mat-icon>
+            {{ canAffordVehicleCart() ? 'Commander véhicules' : 'Fonds insuffisants' }}
+          }
+        </button>
+        <button mat-stroked-button color="warn" class="clear-btn" (click)="clearVehicleCart()">Vider</button>
+        <mat-divider></mat-divider>
+      }
+
+      <!-- ── SECTION REVENTE ── -->
+      @if (sellCart().length > 0) {
+        <div class="cart-section-title sell-section">
+          <mat-icon>sell</mat-icon>
+          Revente
+        </div>
+        <div class="cart-items">
+          @for (item of sellCart(); track item.resource.id) {
+            <div class="cart-item">
+              <div class="item-header">
+                <h4>{{ item.resource.name }}</h4>
+                <button mat-icon-button color="warn" (click)="removeFromSellCart(item.resource.id!)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+              <p class="item-price sell-price">{{ item.quantity }}× @ {{ item.resource.baseValue }} ₡ ≈ {{ (item.resource.baseValue ?? 0) * item.quantity | number:'1.0-0' }} ₡</p>
+            </div>
+          }
+        </div>
+        <div class="cart-subtotal sell-total">
+          <span>Estimation :</span>
+          <span class="total-value sell-value">~{{ sellCartTotalValue() | number:'1.0-0' }} ₡</span>
+        </div>
+        <button mat-raised-button color="accent" class="checkout-btn" [disabled]="purchaseLoading()" (click)="checkoutSellCart()">
+          @if (purchaseLoading()) {
+            <mat-spinner diameter="18" style="display:inline-block"></mat-spinner>
+          } @else {
+            <mat-icon>sell</mat-icon>
+            Vendre tout
+          }
+        </button>
+        <button mat-stroked-button color="warn" class="clear-btn" (click)="clearSellCartAll()">Vider</button>
+      }
+
+      <div class="money-summary">
+        <mat-icon>account_balance_wallet</mat-icon>
+        Disponible : <strong>{{ player()?.stats?.money | number:'1.0-0' }} ₡</strong>
+      </div>
     </div>
   </mat-sidenav>
 
@@ -82,9 +164,8 @@
               <mat-icon>shopping_bag</mat-icon>
             </div>
             <div>
-              <h1 class="title">Boutique d'Équipements</h1>
-              <p class="subtitle">
-Équipez vos troupes pour la victoire</p>
+              <h1 class="title">Boutique</h1>
+              <p class="subtitle">Équipez vos troupes pour la victoire</p>
             </div>
           </div>
 
@@ -95,11 +176,11 @@
             </div>
             <button mat-raised-button
                     [color]="showCart() ? 'primary' : 'basic'"
-                    [matBadge]="totalItems() || 0"
+                    [matBadge]="totalCartBadge() || null"
                     matBadgeColor="accent"
                     (click)="toggleCart()">
               <mat-icon>shopping_cart</mat-icon>
-              Panier ({{ cart().length || 0 }})
+              Panier ({{ totalCartBadge() }})
             </button>
           </div>
         </div>
@@ -111,14 +192,21 @@
           </div>
         }
 
-        <!-- Barre de recherche avec filtres déroulants -->
-        <div class="search-bar-container">
+        <!-- Onglets Équipements / Véhicules -->
+        <mat-tab-group animationDuration="200ms">
+
+          <!-- ===== ONGLET ÉQUIPEMENTS ===== -->
+          <mat-tab label="Équipements">
+
+            <!-- Barre de recherche avec filtres déroulants -->
+            <div class="search-bar-container">
           <div class="search-wrapper">
             <mat-icon class="search-icon">search</mat-icon>
             <input
               type="text"
               class="search-input"
-              [(ngModel)]="searchTerm"
+              [ngModel]="searchTerm()"
+              (ngModelChange)="searchTerm.set($event)"
               placeholder="Rechercher un équipement..."
               aria-label="Rechercher un équipement">
 
@@ -318,6 +406,172 @@
             </mat-card>
           }
         </div>
+
+          </mat-tab>
+          <!-- Fin onglet Équipements -->
+
+          <!-- ===== ONGLET VÉHICULES ===== -->
+          <mat-tab label="Véhicules">
+            <div class="vehicles-section">
+
+              @if (error(); as vehicleError) {
+                <div class="error-alert" role="alert">
+                  <mat-icon>error</mat-icon>
+                  {{ vehicleError }}
+                </div>
+              }
+
+              <div class="equipment-grid">
+                @for (vt of vehicleTypes(); track vt.name) {
+                  <mat-card class="equipment-card hover-lift" [class.disabled-card]="!canAffordVehicle(vt.cost)">
+                    <mat-card-content>
+                      <div class="equipment-header">
+                        <h3>{{ vt.displayName }}</h3>
+                        <mat-chip [color]="canAffordVehicle(vt.cost) ? 'warn' : 'accent'" highlighted>
+                          {{ vt.cost | number }} ₡
+                        </mat-chip>
+                      </div>
+
+                      <!-- Stats de combat -->
+                      <div class="bonus-chips">
+                        @if (vt.basePdf > 0) {
+                          <mat-chip class="bonus pdf">{{ vt.basePdf }} PDF</mat-chip>
+                        }
+                        <mat-chip class="bonus arm">{{ vt.baseDefense }} DEF</mat-chip>
+                      </div>
+
+                      <!-- Caractéristiques -->
+                      <div class="vehicle-stats">
+                        <span class="stat-item">
+                          <mat-icon>speed</mat-icon>
+                          Vitesse&nbsp;: {{ vt.speed }}
+                        </span>
+                        @if (vt.capacity > 0) {
+                          <span class="stat-item">
+                            <mat-icon>groups</mat-icon>
+                            Capacité&nbsp;: {{ vt.capacity }}
+                          </span>
+                        }
+                        @if (vt.resistance > 0) {
+                          <span class="stat-item">
+                            <mat-icon>shield</mat-icon>
+                            Résistance&nbsp;: {{ vt.resistance }}&nbsp;%
+                          </span>
+                        }
+                        @if (vt.firesInTransit) {
+                          <span class="stat-item stat-highlight">
+                            <mat-icon>local_fire_department</mat-icon>
+                            Tir en transit
+                          </span>
+                        }
+                        @if (vt.aerial) {
+                          <span class="stat-item stat-highlight">
+                            <mat-icon>flight</mat-icon>
+                            Aérien
+                          </span>
+                        }
+                      </div>
+
+                      <div class="card-actions">
+                        <div class="quantity-controls">
+                          <button mat-icon-button
+                                  (click)="setVehicleQuantity(vt.name, getVehicleQuantity(vt.name) - 1)"
+                                  [disabled]="getVehicleQuantity(vt.name) <= 1">
+                            <mat-icon>remove</mat-icon>
+                          </button>
+                          <span class="quantity-display">{{ getVehicleQuantity(vt.name) }}</span>
+                          <button mat-icon-button
+                                  (click)="setVehicleQuantity(vt.name, getVehicleQuantity(vt.name) + 1)">
+                            <mat-icon>add</mat-icon>
+                          </button>
+                        </div>
+                        <button mat-raised-button
+                                color="primary"
+                                [disabled]="!canAffordVehicle(vt.cost, getVehicleQuantity(vt.name))"
+                                [matTooltip]="!canAffordVehicle(vt.cost, getVehicleQuantity(vt.name)) ? 'Fonds insuffisants (' + (vt.cost * getVehicleQuantity(vt.name)) + ' ₡)' : 'Ajouter au panier'"
+                                (click)="addVehicleToCart(vt)"
+                                class="add-btn">
+                          <mat-icon>add_shopping_cart</mat-icon>
+                          Panier ({{ vt.cost * getVehicleQuantity(vt.name) }}&nbsp;₡)
+                        </button>
+                        @if (getVehicleCartQuantity(vt.name) > 0) {
+                          <span class="in-cart-badge">{{ getVehicleCartQuantity(vt.name) }} dans le panier</span>
+                        }
+                      </div>
+                    </mat-card-content>
+                  </mat-card>
+                }
+              </div>
+
+            </div>
+          </mat-tab>
+          <!-- Fin onglet Véhicules -->
+
+          <!-- ===== ONGLET REVENTE ===== -->
+          <mat-tab label="Revente">
+            <div class="vehicles-section">
+              @if (!(player()?.resources?.length)) {
+                <div class="no-results">
+                  <mat-icon>inventory_2</mat-icon>
+                  <h3>Aucune ressource à vendre</h3>
+                  <p>Capturez des secteurs pour collecter des ressources</p>
+                </div>
+              } @else {
+                <div class="resources-grid">
+                  @for (resource of player()!.resources; track resource.id) {
+                    <mat-card class="equipment-card hover-lift">
+                      <mat-card-content>
+                        <div class="equipment-header">
+                          <h3>{{ resource.name }}</h3>
+                          <mat-chip color="primary" highlighted>Stock&nbsp;: {{ resource.quantity }}</mat-chip>
+                        </div>
+
+                        <div class="resource-value-info">
+                          <mat-icon>attach_money</mat-icon>
+                          Valeur de base&nbsp;: {{ resource.baseValue ?? '?' }} ₡/unité
+                        </div>
+
+                        @if (isInSellCart(resource.id!)) {
+                          <div class="in-sell-cart-badge">
+                            <mat-icon>check_circle</mat-icon>
+                            {{ getSellCartQuantity(resource.id!) }} dans le panier de vente
+                          </div>
+                        }
+
+                        <div class="card-actions">
+                          <div class="quantity-controls">
+                            <button mat-icon-button
+                                    [disabled]="getSellQty(resource) <= 1"
+                                    (click)="setSellQty(resource, getSellQty(resource) - 1)">
+                              <mat-icon>remove</mat-icon>
+                            </button>
+                            <span class="quantity-display">{{ getSellQty(resource) }}</span>
+                            <button mat-icon-button
+                                    [disabled]="getSellQty(resource) >= resource.quantity"
+                                    (click)="setSellQty(resource, getSellQty(resource) + 1)">
+                              <mat-icon>add</mat-icon>
+                            </button>
+                          </div>
+                          <button mat-raised-button
+                                  color="accent"
+                                  class="add-btn"
+                                  [matTooltip]="'Ajouter ' + getSellQty(resource) + ' unité(s) au panier de vente'"
+                                  (click)="addToSellCart(resource)">
+                            <mat-icon>sell</mat-icon>
+                            Panier vente (~{{ (resource.baseValue ?? 0) * getSellQty(resource) | number:'1.0-0' }}&nbsp;₡)
+                          </button>
+                        </div>
+                      </mat-card-content>
+                    </mat-card>
+                  }
+                </div>
+              }
+            </div>
+          </mat-tab>
+          <!-- Fin onglet Revente -->
+
+        </mat-tab-group>
+
       </div>
     }
   </mat-sidenav-content>

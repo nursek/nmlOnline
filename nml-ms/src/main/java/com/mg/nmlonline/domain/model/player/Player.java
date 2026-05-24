@@ -7,6 +7,7 @@ import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
+import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -33,6 +34,9 @@ public class Player {
 
     @Column(nullable = false, unique = true)
     private String name;
+
+    @Column(name = "user_id", unique = true)
+    private Long userId;
 
     // Stats du joueur (embedded)
     @Embedded
@@ -117,6 +121,18 @@ public class Player {
             stats.setMoney(stats.getMoney() - totalCost);
             addEquipmentToStack(equipment, quantity);
             setTotalEquipmentValue();
+            calculateTotalEconomyPower();
+            return true;
+        }
+        return false;
+    }
+
+    public boolean buyVehicle(VehicleType vehicleType) {
+        if (vehicleType == null) return false;
+        int cost = vehicleType.getCost();
+        if (stats.getMoney() >= cost) {
+            stats.setMoney(stats.getMoney() - cost);
+            stats.setTotalVehiclesValue(stats.getTotalVehiclesValue() + cost);
             calculateTotalEconomyPower();
             return true;
         }

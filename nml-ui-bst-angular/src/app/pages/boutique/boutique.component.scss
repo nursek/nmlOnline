@@ -158,6 +158,21 @@
   margin-top: auto;
 }
 
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  .quantity-display {
+    min-width: 28px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+}
+
 .add-btn {
   width: 100%;
 }
@@ -636,4 +651,161 @@ mat-sidenav {
 
 .hover-lift {
   @include shared.hover-lift;
+}
+
+// Onglet Véhicules
+.vehicles-section {
+  padding: 24px 0;
+}
+
+.disabled-card {
+  opacity: 0.6;
+}
+
+.vehicle-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  color: shared.$text-muted;
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .stat-highlight {
+    color: shared.$primary-color;
+    font-weight: 600;
+  }
+}
+
+/* ─── Sidenav : sections multi-paniers ─────────────────────── */
+
+.cart-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: shared.$primary-color;
+  padding: 12px 0 4px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &.sell-section {
+    color: #10b981;
+  }
+}
+
+.cart-subtotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-weight: 600;
+
+  .total-value {
+    color: #f59e0b;
+    font-weight: 700;
+  }
+
+  &.sell-total .sell-value {
+    color: #10b981;
+  }
+}
+
+.money-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 4px;
+  font-size: 0.9rem;
+  color: #64748b;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 8px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #f59e0b;
+  }
+}
+
+/* Badge "dans le panier" sur la carte véhicule */
+.in-cart-badge {
+  font-size: 0.78rem;
+  color: #6366f1;
+  font-weight: 600;
+  background: #ede9fe;
+  border-radius: 999px;
+  padding: 2px 10px;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+/* Badge "dans le panier de vente" */
+.in-sell-cart-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #10b981;
+  font-weight: 600;
+  background: #d1fae5;
+  border-radius: 999px;
+  padding: 4px 12px;
+  margin-bottom: 8px;
+  width: fit-content;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Prix de vente (vert) */
+.sell-price {
+  color: #10b981 !important;
+}
+
+/* Valeur de base ressource */
+.resource-value-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 8px;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #f59e0b;
+  }
+}
+
+/* Grille ressources (revente) — reprend .equipment-grid */
+.resources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 24px 0;
 }

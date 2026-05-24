@@ -7,8 +7,8 @@ import { PlayerActions } from './player.actions';
 
 @Injectable()
 export class PlayerEffects {
-  private actions$ = inject(Actions);
-  private apiService = inject(ApiService);
+  private readonly actions$ = inject(Actions);
+  private readonly apiService = inject(ApiService);
 
   fetchCurrentPlayer$ = createEffect(() =>
     this.actions$.pipe(
@@ -43,6 +43,40 @@ export class PlayerEffects {
               error: error.error?.message || error.message || 'Erreur lors de la récupération des joueurs'
             }))
           )
+        )
+      )
+    )
+  );
+
+  fetchPlayerVehicles$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(PlayerActions.fetchPlayerVehicles),
+      exhaustMap(() =>
+        this.apiService.getPlayerVehicles().pipe(
+          map((vehicles) => PlayerActions.fetchPlayerVehiclesSuccess({ vehicles })),
+          catchError((error) =>
+            of(PlayerActions.fetchPlayerVehiclesFailure({
+              error: error.error?.message || error.message || 'Erreur lors de la récupération des véhicules'
+            }))
+          )
+        )
+      )
+    )
+  );
+
+  placeVehicle$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(PlayerActions.placeVehicle),
+      exhaustMap(({ vehicleId, boardId, sectorNumber }) =>
+        this.apiService.placeVehicle(vehicleId, boardId, sectorNumber).pipe(
+          map((vehicle) => PlayerActions.placeVehicleSuccess({ vehicle })),
+          catchError((error) => {
+            const message =
+              error.status === 403
+                ? error.error?.message || 'Vous ne possédez pas ce secteur'
+                : error.error?.message || error.message || 'Erreur lors du déploiement du véhicule';
+            return of(PlayerActions.placeVehicleFailure({ error: message }));
+          })
         )
       )
     )

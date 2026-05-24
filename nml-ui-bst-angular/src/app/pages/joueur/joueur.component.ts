@@ -9,11 +9,13 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { selectUser, selectCurrentPlayer, selectPlayerLoading, selectPlayerError, PlayerActions } from '../../store';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { selectUser, selectCurrentPlayer, selectPlayerLoading, selectPlayerError, selectUndeployedVehicles, selectVehiclesLoading, PlayerActions } from '../../store';
 import { filter, take } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Player, Unit, PlayerResource, Vehicle } from '../../models';
+import { Player, Unit, PlayerResource, Vehicle, Sector } from '../../models';
 import { ApiService } from '../../services/api.service';
+import { VehiclePlacementModalComponent, VehiclePlacementDialogData } from './vehicle-placement-modal.component';
 
 @Component({
   selector: 'app-joueur',
@@ -29,6 +31,7 @@ import { ApiService } from '../../services/api.service';
     MatTooltipModule,
     MatButtonModule,
     MatSnackBarModule,
+    MatDialogModule,
   ],
   templateUrl: './joueur.component.html',
   styleUrls: ['./joueur.component.scss']
@@ -37,6 +40,7 @@ export class JoueurComponent implements OnInit {
   private readonly store = inject(Store);
   private readonly apiService = inject(ApiService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   player$ = this.store.select(selectCurrentPlayer);
   loading$ = this.store.select(selectPlayerLoading);
@@ -46,6 +50,10 @@ export class JoueurComponent implements OnInit {
   player = toSignal(this.player$);
   loading = toSignal(this.loading$, { initialValue: false });
   error = toSignal(this.error$);
+
+  // Véhicules non-déployés (inventaire)
+  undeployedVehicles = toSignal(this.store.select(selectUndeployedVehicles), { initialValue: [] as Vehicle[] });
+  vehiclesLoading = toSignal(this.store.select(selectVehiclesLoading), { initialValue: false });
 
   // Mode d'affichage des unités : 'list' ou 'tile'
   viewMode = signal<'list' | 'tile'>('list');
@@ -137,6 +145,29 @@ export class JoueurComponent implements OnInit {
       take(1)
     ).subscribe(user => {
       this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
+      this.store.dispatch(PlayerActions.fetchPlayerVehicles());
+    });
+  }
+
+  /**
+   * Ouvre le modal de déploiement d'un véhicule sur un secteur
+   */
+  openPlacementModal(vehicle: Vehicle): void {
+    const ownedSectors: Sector[] = this.player()?.sectors ?? [];
+    const dialogData: VehiclePlacementDialogData = { vehicle, ownedSectors };
+    const dialogRef = this.dialog.open(VehiclePlacementModalComponent, {
+      width: '420px',
+      data: dialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((sector: Sector | null) => {
+      if (sector && vehicle.id != null && sector.boardId != null && sector.number != null) {
+        this.store.dispatch(PlayerActions.placeVehicle({
+          vehicleId: vehicle.id,
+          boardId: sector.boardId,
+          sectorNumber: sector.number,
+        }));
+      }
     });
   }
 

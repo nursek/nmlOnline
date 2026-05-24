@@ -128,14 +128,17 @@ public class ResourceService {
      * @throws RuntimeException si la ressource n'est pas trouvée
      */
     @Transactional
-    public SaleResult sellResource(Long resourceId, int quantity, Long authenticatedUserId) {
+    public SaleResult sellResource(Long resourceId, int quantity, Long userId) {
+        Player player = playerRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Joueur introuvable : " + userId));
+
         // Récupérer la ressource du joueur
         PlayerResource playerResource = playerResourceRepository.findById(resourceId)
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
 
-        // Vérifier que la ressource appartient à l'utilisateur authentifié
+        // Vérifier que la ressource appartient au joueur authentifié
         Player owner = playerResource.getPlayer();
-        if (owner == null || !authenticatedUserId.equals(owner.getId())) {
+        if (owner == null || !player.getId().equals(owner.getId())) {
             throw new SecurityException("Access denied: resource does not belong to authenticated user");
         }
 
