@@ -102,64 +102,6 @@ public class BuildingMapper {
         }
     }
 
-    /**
-     * Convertit un DTO en Building du domaine.
-     * Note : Crée le type de bâtiment approprié selon buildingType.
-     */
-    public Building toDomain(BuildingDto dto) {
-        if (dto == null || dto.getBuildingType() == null) return null;
-
-        BuildingType type = BuildingType.valueOf(dto.getBuildingType());
-
-        Building building = switch (type) {
-            case HEADQUARTERS -> createHeadquarters(dto);
-            case WEAPON_CACHE -> createWeaponCache(dto);
-            case BANK -> createBank(dto);
-        };
-
-        // Propriétés communes
-        if (dto.getId() != null) {
-            building.setId(dto.getId());
-        }
-        building.setPlayerId(dto.getPlayerId());
-        building.setLastMovedTurn(dto.getLastMovedTurn());
-        building.setCapturedByPlayerId(dto.getCapturedByPlayerId());
-        building.setCapturedTurn(dto.getCapturedTurn());
-
-        if (dto.getIsDestroyed() != null && dto.getIsDestroyed()) {
-            building.setDestroyed(true);
-        }
-
-        return building;
-    }
-
-    private Headquarters createHeadquarters(BuildingDto dto) {
-        Headquarters hq = new Headquarters(dto.getPlayerId());
-        if (dto.getIsOperational() != null) {
-            hq.setOperational(dto.getIsOperational());
-        }
-        return hq;
-    }
-
-    private WeaponCache createWeaponCache(BuildingDto dto) {
-        WeaponCache cache = new WeaponCache(dto.getPlayerId());
-        if (dto.getMaxCapacity() != null) {
-            cache.setMaxCapacity(dto.getMaxCapacity());
-        }
-        return cache;
-    }
-
-    private Bank createBank(BuildingDto dto) {
-        Bank bank = new Bank(dto.getPlayerId());
-        if (dto.getHasMoved() != null) {
-            bank.setHasMoved(dto.getHasMoved());
-        }
-        if (dto.getStoredMoney() != null) {
-            bank.setStoredMoney(dto.getStoredMoney());
-        }
-        return bank;
-    }
-
     // === Helpers ===
 
     private EquipmentStackDto toEquipmentStackDto(EquipmentStack stack) {

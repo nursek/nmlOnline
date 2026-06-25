@@ -1,6 +1,5 @@
-import { Component, inject, OnInit, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Store } from '@ngrx/store';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,21 +7,21 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { selectUser, selectCurrentPlayer, selectPlayerLoading, selectPlayerError, selectUndeployedVehicles, selectVehiclesLoading, PlayerActions } from '../../store';
-import { filter, take } from 'rxjs/operators';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { Player, Unit, PlayerResource, Vehicle, Sector } from '../../models';
-import { ApiService } from '../../services/api.service';
-import { VehiclePlacementModalComponent, VehiclePlacementDialogData } from './vehicle-placement-modal.component';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Player, Sector, Unit, Vehicle } from '../../models';
+import { PlayerService } from '../../services/player.service';
+import {
+  VehiclePlacementModalComponent,
+  VehiclePlacementDialogData,
+} from './vehicle-placement-modal.component';
 
 @Component({
   selector: 'app-joueur',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
+    DecimalPipe,
+    NgTemplateOutlet,
     MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,
@@ -30,108 +29,92 @@ import { VehiclePlacementModalComponent, VehiclePlacementDialogData } from './ve
     MatDividerModule,
     MatTooltipModule,
     MatButtonModule,
-    MatSnackBarModule,
     MatDialogModule,
   ],
   templateUrl: './joueur.component.html',
-  styleUrls: ['./joueur.component.scss']
+  styleUrls: ['./joueur.component.scss'],
 })
-export class JoueurComponent implements OnInit {
-  private readonly store = inject(Store);
-  private readonly apiService = inject(ApiService);
-  private readonly snackBar = inject(MatSnackBar);
+export class JoueurComponent {
+  private readonly playerService = inject(PlayerService);
   private readonly dialog = inject(MatDialog);
 
-  player$ = this.store.select(selectCurrentPlayer);
-  loading$ = this.store.select(selectPlayerLoading);
-  error$ = this.store.select(selectPlayerError);
+  readonly player = this.playerService.player;
+  readonly loading = this.playerService.loading;
+  readonly error = this.playerService.error;
+  readonly undeployedVehicles = this.playerService.undeployedVehicles;
+  readonly vehiclesLoading = this.playerService.vehiclesLoading;
 
-  // Signals pour le template
-  player = toSignal(this.player$);
-  loading = toSignal(this.loading$, { initialValue: false });
-  error = toSignal(this.error$);
+  constructor() {
+    // Bootstrap: fetch the player profile & vehicles for the logged-in user.
+    void this.playerService.loadCurrent();
+    void this.playerService.loadVehicles();
+  }
 
-  // Véhicules non-déployés (inventaire)
-  undeployedVehicles = toSignal(this.store.select(selectUndeployedVehicles), { initialValue: [] as Vehicle[] });
-  vehiclesLoading = toSignal(this.store.select(selectVehiclesLoading), { initialValue: false });
+  // Display mode: 'list' or 'tile'.
+  readonly viewMode = signal<'list' | 'tile'>('list');
 
-  // Mode d'affichage des unités : 'list' ou 'tile'
-  viewMode = signal<'list' | 'tile'>('list');
+  readonly playerCharacter = computed(() => this.player()?.character ?? null);
+  readonly allBuildings = computed(() => this.player()?.buildings ?? []);
 
-  // Personnage du joueur
-  playerCharacter = computed(() => this.player()?.character ?? null);
-
-  // Bâtiments du joueur
-  allBuildings = computed(() => this.player()?.buildings ?? []);
-
-  // Véhicules du joueur (agrégés depuis tous les secteurs)
-  allVehicles = computed(() => {
+  /** Vehicles owned by the player, aggregated across their sectors. */
+  readonly allVehicles = computed(() => {
     const p = this.player();
     if (!p) return [];
     const result: { vehicle: Vehicle; sectorName: string }[] = [];
-    p.sectors.forEach(s => {
-      s.vehicles?.forEach(v => result.push({ vehicle: v, sectorName: s.name }));
-    });
+    p.sectors.forEach((s) =>
+      s.vehicles?.forEach((v) => result.push({ vehicle: v, sectorName: s.name })),
+    );
     return result;
   });
 
-  // Filtres
-  showFilters = signal(false);
-  selectedTypeFilter = signal<string>('all');
-  selectedLocationFilter = signal<string>('all');
-  selectedStatusFilter = signal<string>('all');
+  // Filters.
+  readonly showFilters = signal(false);
+  readonly selectedTypeFilter = signal<string>('all');
+  readonly selectedLocationFilter = signal<string>('all');
+  readonly selectedStatusFilter = signal<string>('all');
 
-  // IDs des unités expandées (pour le mode liste)
-  expandedUnitIds = signal<Set<number>>(new Set());
+  readonly expandedUnitIds = signal<Set<number>>(new Set());
 
-  // Types d'unités disponibles
-  unitTypes = computed(() => {
+  readonly unitTypes = computed(() => {
     const p = this.player();
     if (!p) return [];
     const types = new Set<string>();
-    p.sectors.forEach(s => s.army?.forEach(u => types.add(u.type.name)));
+    p.sectors.forEach((s) => s.army?.forEach((u) => types.add(u.type.name)));
     return Array.from(types).sort((a, b) => a.localeCompare(b));
   });
 
-  // Secteurs disponibles (pour filtre par localisation)
-  playerSectors = computed(() => {
+  readonly playerSectors = computed(() => {
     const p = this.player();
     if (!p) return [];
-    return p.sectors.filter(s => s.army && s.army.length > 0);
+    return p.sectors.filter((s) => s.army && s.army.length > 0);
   });
 
-  // Unités filtrées
-  filteredUnits = computed(() => {
+  readonly filteredUnits = computed(() => {
     const p = this.player();
     if (!p) return [];
-
     let units = this.getAllUnitsWithLocation(p);
 
-    // Filtre par type
     const typeFilter = this.selectedTypeFilter();
     if (typeFilter !== 'all') {
-      units = units.filter(u => u.unit.type.name === typeFilter);
+      units = units.filter((u) => u.unit.type.name === typeFilter);
     }
 
-    // Filtre par localisation
     const locationFilter = this.selectedLocationFilter();
     if (locationFilter !== 'all') {
-      units = units.filter(u => u.sectorNumber === Number.parseInt(locationFilter, 10));
+      units = units.filter((u) => u.sectorNumber === Number.parseInt(locationFilter, 10));
     }
 
-    // Filtre par statut (blessé ou non)
     const statusFilter = this.selectedStatusFilter();
     if (statusFilter === 'injured') {
-      units = units.filter(u => u.unit.isInjured);
+      units = units.filter((u) => u.unit.isInjured);
     } else if (statusFilter === 'healthy') {
-      units = units.filter(u => !u.unit.isInjured);
+      units = units.filter((u) => !u.unit.isInjured);
     }
 
     return units;
   });
 
-  // Nombre de filtres actifs
-  activeFiltersCount = computed(() => {
+  readonly activeFiltersCount = computed(() => {
     let count = 0;
     if (this.selectedTypeFilter() !== 'all') count++;
     if (this.selectedLocationFilter() !== 'all') count++;
@@ -139,19 +122,7 @@ export class JoueurComponent implements OnInit {
     return count;
   });
 
-  ngOnInit(): void {
-    this.store.select(selectUser).pipe(
-      filter((user): user is NonNullable<typeof user> => !!user && !!user.username),
-      take(1)
-    ).subscribe(user => {
-      this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
-      this.store.dispatch(PlayerActions.fetchPlayerVehicles());
-    });
-  }
-
-  /**
-   * Ouvre le modal de déploiement d'un véhicule sur un secteur
-   */
+  /** Open the vehicle-placement modal and dispatch the placement on confirm. */
   openPlacementModal(vehicle: Vehicle): void {
     const ownedSectors: Sector[] = this.player()?.sectors ?? [];
     const dialogData: VehiclePlacementDialogData = { vehicle, ownedSectors };
@@ -160,49 +131,14 @@ export class JoueurComponent implements OnInit {
       data: dialogData,
     });
 
-    dialogRef.afterClosed().subscribe((sector: Sector | null) => {
-      if (sector && vehicle.id != null && sector.boardId != null && sector.number != null) {
-        this.store.dispatch(PlayerActions.placeVehicle({
-          vehicleId: vehicle.id,
-          boardId: sector.boardId,
-          sectorNumber: sector.number,
-        }));
-      }
-    });
-  }
-
-  /**
-   * Vend une ressource du joueur
-   */
-  sellResource(resource: PlayerResource, quantity: number): void {
-    if (!resource.id) {
-      this.snackBar.open('Erreur: ressource invalide', 'Fermer', { duration: 3000 });
-      return;
-    }
-
-    this.apiService.sellResource(resource.id, quantity).subscribe({
-      next: (response) => {
-        this.snackBar.open(
-          `✓ ${response.quantitySold}x ${response.resourceName} vendu(s) pour ${response.saleValue.toFixed(2)}$`,
-          'Fermer',
-          { duration: 4000, panelClass: ['success-snackbar'] }
-        );
-
-        // Recharger le joueur pour mettre à jour les données
-        this.store.select(selectUser).pipe(take(1)).subscribe(user => {
-          if (user?.username) {
-            this.store.dispatch(PlayerActions.fetchCurrentPlayer({ username: user.username }));
-          }
-        });
-      },
-      error: (error) => {
-        const message = error.error?.message || error.message || 'Erreur lors de la vente';
-        this.snackBar.open(`❌ ${message}`, 'Fermer', {
-          duration: 4000,
-          panelClass: ['error-snackbar']
-        });
-      }
-    });
+    dialogRef
+      .afterClosed()
+      .pipe(takeUntilDestroyed())
+      .subscribe((sector: Sector | null) => {
+        if (sector && vehicle.id != null && sector.boardId != null && sector.number != null) {
+          void this.playerService.placeVehicle(vehicle.id, sector.boardId, sector.number);
+        }
+      });
   }
 
   getMainStats(player: Player) {
@@ -225,27 +161,17 @@ export class JoueurComponent implements OnInit {
         icon: 'shield',
         color: '#6366f1',
       },
-      {
-        label: 'Territoires',
-        value: player.sectors.length,
-        icon: 'place',
-        color: '#8b5cf6',
-      },
+      { label: 'Territoires', value: player.sectors.length, icon: 'place', color: '#8b5cf6' },
     ];
   }
 
-  /**
-   * Récupère toutes les unités avec leur localisation
-   */
-  getAllUnitsWithLocation(player: Player): { unit: Unit; sectorName: string; sectorNumber: number }[] {
+  getAllUnitsWithLocation(
+    player: Player,
+  ): { unit: Unit; sectorName: string; sectorNumber: number }[] {
     const result: { unit: Unit; sectorName: string; sectorNumber: number }[] = [];
-    player.sectors.forEach(sector => {
-      sector.army?.forEach(unit => {
-        result.push({
-          unit,
-          sectorName: sector.name,
-          sectorNumber: sector.number ?? 0
-        });
+    player.sectors.forEach((sector) => {
+      sector.army?.forEach((unit) => {
+        result.push({ unit, sectorName: sector.name, sectorNumber: sector.number ?? 0 });
       });
     });
     return result.sort((a, b) => {
@@ -255,32 +181,25 @@ export class JoueurComponent implements OnInit {
     });
   }
 
-  // Toggle view mode
-  setViewMode(mode: 'list' | 'tile') {
+  setViewMode(mode: 'list' | 'tile'): void {
     this.viewMode.set(mode);
   }
 
-  // Toggle filters panel
-  toggleFilters() {
-    this.showFilters.update(v => !v);
+  toggleFilters(): void {
+    this.showFilters.update((v) => !v);
   }
 
-  // Reset all filters
-  resetFilters() {
+  resetFilters(): void {
     this.selectedTypeFilter.set('all');
     this.selectedLocationFilter.set('all');
     this.selectedStatusFilter.set('all');
   }
 
-  // Toggle unit expansion (list mode)
-  toggleUnitExpand(unitId: number) {
-    this.expandedUnitIds.update(set => {
+  toggleUnitExpand(unitId: number): void {
+    this.expandedUnitIds.update((set) => {
       const newSet = new Set(set);
-      if (newSet.has(unitId)) {
-        newSet.delete(unitId);
-      } else {
-        newSet.add(unitId);
-      }
+      if (newSet.has(unitId)) newSet.delete(unitId);
+      else newSet.add(unitId);
       return newSet;
     });
   }
@@ -289,13 +208,11 @@ export class JoueurComponent implements OnInit {
     return this.expandedUnitIds().has(unitId);
   }
 
-  // Expand/collapse all
-  expandAll() {
-    const allIds = new Set(this.filteredUnits().map(u => u.unit.id));
-    this.expandedUnitIds.set(allIds);
+  expandAll(): void {
+    this.expandedUnitIds.set(new Set(this.filteredUnits().map((u) => u.unit.id)));
   }
 
-  collapseAll() {
+  collapseAll(): void {
     this.expandedUnitIds.set(new Set());
   }
 }

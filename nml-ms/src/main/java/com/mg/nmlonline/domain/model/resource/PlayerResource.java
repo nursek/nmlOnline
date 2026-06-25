@@ -1,27 +1,21 @@
 package com.mg.nmlonline.domain.model.resource;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.mg.nmlonline.domain.model.player.Player;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
-
-import java.io.IOException;
 
 @Entity
 @Table(name = "PLAYER_RESOURCES")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(exclude = "player")
-@JsonDeserialize(using = PlayerResource.PlayerResourceDeserializer.class)
 public class PlayerResource {
 
     @Id
@@ -83,17 +77,5 @@ public class PlayerResource {
      */
     public boolean hasQuantity(int amount) {
         return this.quantity >= amount;
-    }
-
-    public static class PlayerResourceDeserializer extends JsonDeserializer<PlayerResource> {
-        @Override
-        public PlayerResource deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            JsonNode node = p.getCodec().readTree(p);
-
-            String type = node.has("type") ? node.get("type").asText() : "";
-            int quantity = node.has("quantity") ? node.get("quantity").asInt() : 0;
-
-            return new PlayerResource(type, quantity);
-        }
     }
 }

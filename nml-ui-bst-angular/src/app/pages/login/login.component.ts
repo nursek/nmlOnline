@@ -1,10 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { Store } from '@ngrx/store';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -12,16 +6,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { selectAuthLoading, selectAuthError, selectIsAuthenticated, AuthActions } from '../../store';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
-    ReactiveFormsModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -31,44 +21,41 @@ import { selectAuthLoading, selectAuthError, selectIsAuthenticated, AuthActions 
     MatIconModule,
   ],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss']
+  styleUrls: ['./login.component.scss'],
 })
-export class LoginComponent implements OnInit, OnDestroy {
-  private readonly fb = inject(FormBuilder);
-  private readonly store = inject(Store);
-  private readonly router = inject(Router);
-  private readonly destroy$ = new Subject<void>();
+export class LoginComponent {
+  private readonly auth = inject(AuthService);
 
-  readonly loading = toSignal(this.store.select(selectAuthLoading), { initialValue: false });
-  readonly error = toSignal(this.store.select(selectAuthError));
+  readonly loading = this.auth.loading;
+  readonly error = this.auth.error;
 
-  loginForm: FormGroup = this.fb.group({
-    username: ['', Validators.required],
-    password: ['', Validators.required],
-    rememberMe: [false],
-  });
+  readonly username = signal('');
+  readonly password = signal('');
+  readonly rememberMe = signal(false);
 
-  ngOnInit(): void {
-    this.store.select(selectIsAuthenticated)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(isAuth => {
-        if (isAuth) {
-          this.router.navigate(['/carte']);
-        }
+  /** Becomes true after the first submit attempt so errors only show afterwards. */
+  readonly submitted = signal(false);
+
+  readonly usernameError = computed(() =>
+    this.username().trim().length === 0 ? "Le nom d'utilisateur est requis" : null,
+  );
+  readonly passwordError = computed(() =>
+    this.password().length === 0 ? 'Le mot de passe est requis' : null,
+  );
+  readonly invalid = computed(() => this.usernameError() !== null || this.passwordError() !== null);
+
+  async onSubmit(event: Event): Promise<void> {
+    event.preventDefault();
+    this.submitted.set(true);
+    if (this.invalid()) return;
+    try {
+      await this.auth.login({
+        username: this.username().trim(),
+        password: this.password(),
+        rememberMe: this.rememberMe(),
       });
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-    this.store.dispatch(AuthActions.clearError());
-  }
-
-  onSubmit(): void {
-    if (this.loginForm.valid) {
-      this.store.dispatch(AuthActions.login({
-        credentials: this.loginForm.value
-      }));
+    } catch {
+      // AuthService.login already set the error signal; swallow here.
     }
   }
 }

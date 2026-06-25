@@ -6,10 +6,12 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
+import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +24,8 @@ import java.util.Optional;
 @Service
 public class BoardImportService {
 
+    private static final Logger logger = LoggerFactory.getLogger(BoardImportService.class);
+
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final EquipmentRepository equipmentRepository;
 
@@ -33,23 +37,15 @@ public class BoardImportService {
     }
 
     /**
-     * Importe un Board depuis un fichier JSON
+     * Importe un Board depuis un contenu JSON
      */
-    public Board importBoardFromJson(String filePath) throws IOException {
-        BoardDTO dto = objectMapper.readValue(new File(filePath), BoardDTO.class);
-        return importBoard(dto, null);
+    public Board importBoardFromJson(String jsonContent) throws IOException {
+        BoardDTO dto = objectMapper.readValue(jsonContent, BoardDTO.class);
+        return importBoard(dto);
     }
 
-    /**
-     * Importe un Board depuis un fichier JSON dans un Board existant
-     */
-    public Board importBoardFromJson(String filePath, Board existingBoard) throws IOException {
-        BoardDTO dto = objectMapper.readValue(new File(filePath), BoardDTO.class);
-        return importBoard(dto, existingBoard);
-    }
-
-    private Board importBoard(BoardDTO dto, Board existingBoard) {
-        Board board = existingBoard != null ? existingBoard : new Board();
+    private Board importBoard(BoardDTO dto) {
+        Board board = new Board();
 
         // Importer les métadonnées de la carte
         if (dto.name != null) {
@@ -117,22 +113,34 @@ public class BoardImportService {
         return board;
     }
 
-    private Unit createUnitFromDTO(UnitDTO unitDto) {
-        // Une unité sans classe est inutilisable
-        if (unitDto.classes == null || unitDto.classes.isEmpty()) {
-            System.err.println("Impossible de créer une unité sans classe - unité ignorée");
+    /**
+     * Crée une Unit à partir des champs communs des DTOs d'import (classes, type, expérience).
+     * Retourne null si aucune classe n'est fournie (une unité sans classe est inutilisable).
+     * Si type est null, le type déduit de l'expérience par le constructeur est conservé.
+     */
+    public static Unit createUnit(List<String> classes, UnitType type, double experience) {
+        if (classes == null || classes.isEmpty()) {
             return null;
         }
 
-        Unit unit = new Unit(
-            unitDto.experience,
-            UnitClass.valueOf(unitDto.classes.get(0))
-        );
-        unit.setType(unitDto.type);
+        Unit unit = new Unit(experience, UnitClass.valueOf(classes.getFirst()));
+        if (type != null) {
+            unit.setType(type);
+        }
 
         // Ajouter la deuxième classe si présente
-        if (unitDto.classes.size() > 1) {
-            unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
+        if (classes.size() > 1) {
+            unit.addSecondClass(UnitClass.valueOf(classes.get(1)));
+        }
+
+        return unit;
+    }
+
+    private Unit createUnitFromDTO(UnitDTO unitDto) {
+        Unit unit = createUnit(unitDto.classes, unitDto.type, unitDto.experience);
+        if (unit == null) {
+            logger.warn("Impossible de créer une unité sans classe - unité ignorée");
+            return null;
         }
 
         // Ajouter les équipements (depuis la BDD, pas de création)
@@ -167,7 +175,7 @@ public class BoardImportService {
         }
 
         // L'equipment n'existe pas - c'est une erreur
-        System.err.println("WARN: Équipement '" + equipmentName + "' non trouvé en BDD (vérifier data.sql)");
+        logger.warn("Équipement '{}' non trouvé en BDD (vérifier data.sql)", equipmentName);
         return null;
     }
 

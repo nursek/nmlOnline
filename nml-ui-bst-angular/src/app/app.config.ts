@@ -1,25 +1,19 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { provideStore } from '@ngrx/store';
-import { provideEffects } from '@ngrx/effects';
-
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+  provideZonelessChangeDetection,
+} from '@angular/core';
+import { provideRouter, withComponentInputBinding, withViewTransitions } from '@angular/router';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
-import { reducers } from './store';
-import { AuthEffects } from './store/auth/auth.effects';
-import { PlayerEffects } from './store/player/player.effects';
-import { ShopEffects } from './store/shop/shop.effects';
-import { AdminEffects } from './store/admin/admin.effects';
 import { authInterceptor } from './services/auth.interceptor';
+import { httpErrorInterceptor } from './core/http-error.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
-    provideAnimationsAsync(),
-    provideStore(reducers),
-    provideEffects([AuthEffects, PlayerEffects, ShopEffects, AdminEffects]),
-  ]
+    provideZonelessChangeDetection(),
+    provideRouter(routes, withComponentInputBinding(), withViewTransitions()),
+    provideHttpClient(withInterceptors([authInterceptor, httpErrorInterceptor])),
+  ],
 };

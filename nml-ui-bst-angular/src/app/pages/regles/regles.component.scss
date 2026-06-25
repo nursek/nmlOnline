@@ -192,7 +192,3 @@
     color: shared.$text-muted;
   }
 }
-
-.fade-in {
-  @include shared.fade-in-animation;
-}

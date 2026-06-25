@@ -1,6 +1,4 @@
-import { Component, inject, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,17 +13,8 @@ export interface VehiclePlacementDialogData {
 
 @Component({
   selector: 'app-vehicle-placement-modal',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatIconModule,
-  ],
+  imports: [MatDialogModule, MatButtonModule, MatFormFieldModule, MatSelectModule, MatIconModule],
   template: `
     <h2 mat-dialog-title>
       <mat-icon>place</mat-icon>
@@ -34,13 +23,13 @@ export interface VehiclePlacementDialogData {
 
     <mat-dialog-content>
       <p class="vehicle-info">
-        <strong>{{ data.vehicle.displayName }}</strong> &mdash;
-        PDF&nbsp;: {{ data.vehicle.pdf }} | Défense&nbsp;: {{ data.vehicle.defense }}
+        <strong>{{ data.vehicle.displayName }}</strong> &mdash; PDF&nbsp;: {{ data.vehicle.pdf }} |
+        Défense&nbsp;: {{ data.vehicle.defense }}
       </p>
 
-      <mat-form-field appearance="outline" style="width: 100%; margin-top: 12px;">
+      <mat-form-field appearance="outline" class="sector-select">
         <mat-label>Choisir un secteur</mat-label>
-        <mat-select [(ngModel)]="selectedSector">
+        <mat-select [value]="selectedSector()" (valueChange)="selectedSector.set($event)">
           @for (sector of eligibleSectors(); track sector.number) {
             <mat-option [value]="sector">
               Secteur {{ sector.number }} — {{ sector.name }}
@@ -56,33 +45,48 @@ export interface VehiclePlacementDialogData {
 
     <mat-dialog-actions align="end">
       <button mat-button (click)="cancel()">Annuler</button>
-      <button mat-raised-button color="primary"
-              [disabled]="!selectedSector"
-              (click)="confirm()">
+      <button mat-raised-button color="primary" [disabled]="!selectedSector()" (click)="confirm()">
         <mat-icon>check</mat-icon>
         Déployer
       </button>
     </mat-dialog-actions>
   `,
-  styles: [`
-    h2 mat-icon { vertical-align: middle; margin-right: 8px; }
-    .vehicle-info { color: #aaa; font-size: 0.9rem; margin-bottom: 8px; }
-    .no-sectors { color: #f44336; font-size: 0.9rem; }
-  `],
+  styles: [
+    `
+      h2 mat-icon {
+        vertical-align: middle;
+        margin-right: 8px;
+      }
+      .vehicle-info {
+        color: #aaa;
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+      }
+      .no-sectors {
+        color: #f44336;
+        font-size: 0.9rem;
+      }
+      .sector-select {
+        width: 100%;
+        margin-top: 12px;
+      }
+    `,
+  ],
 })
 export class VehiclePlacementModalComponent {
   readonly dialogRef = inject(MatDialogRef<VehiclePlacementModalComponent>);
   readonly data: VehiclePlacementDialogData = inject(MAT_DIALOG_DATA);
 
-  selectedSector: Sector | null = null;
+  readonly selectedSector = signal<Sector | null>(null);
 
   readonly eligibleSectors = computed(() =>
-    this.data.ownedSectors.filter(s => s.number != null && s.boardId != null)
+    this.data.ownedSectors.filter((s) => s.number != null && s.boardId != null),
   );
 
   confirm(): void {
-    if (!this.selectedSector) return;
-    this.dialogRef.close(this.selectedSector);
+    const sector = this.selectedSector();
+    if (!sector) return;
+    this.dialogRef.close(sector);
   }
 
   cancel(): void {

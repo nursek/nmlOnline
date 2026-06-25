@@ -2,10 +2,11 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -20,8 +21,8 @@ public class EquipmentService {
         this.equipmentRepository = equipmentRepository;
     }
 
-    public List<Equipment> findAll() {
-        return equipmentRepository.findAll();
+    public Page<Equipment> findAll(Pageable pageable) {
+        return equipmentRepository.findAll(pageable);
     }
 
     public Optional<Equipment> findById(Long id) {
@@ -34,11 +35,6 @@ public class EquipmentService {
 
     @Transactional
     public Equipment create(Equipment equipment) {
-        return equipmentRepository.save(equipment);
-    }
-
-    @Transactional
-    public Equipment save(Equipment equipment) {
         return equipmentRepository.save(equipment);
     }
 

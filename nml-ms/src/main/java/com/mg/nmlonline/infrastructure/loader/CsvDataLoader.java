@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * Charge les données de base depuis les fichiers CSV au démarrage de l'application
@@ -39,6 +40,36 @@ public class CsvDataLoader implements CommandLineRunner {
     }
 
     /**
+     * Lit un CSV du classpath (header ignoré) et mappe chaque ligne non vide.
+     * Les lignes pour lesquelles le mapper retourne null sont ignorées.
+     */
+    private <T> List<T> load(String path, Function<String[], T> mapper) {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(Objects.requireNonNull(
+                        getClass().getResourceAsStream(path)), StandardCharsets.UTF_8))) {
+
+            String header = reader.readLine(); // Skip header
+            log.debug("CSV header ({}): {}", path, header);
+
+            List<T> result = new ArrayList<>();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    T item = mapper.apply(line.split(","));
+                    if (item != null) {
+                        result.add(item);
+                    }
+                }
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("Failed to load data from CSV {}", path, e);
+            return List.of();
+        }
+    }
+
+    /**
      * Charge les ressources depuis resources.csv
      */
     private void loadResources() {
@@ -47,32 +78,11 @@ public class CsvDataLoader implements CommandLineRunner {
             return;
         }
 
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(Objects.requireNonNull(
-                        getClass().getResourceAsStream("/resources.csv")), StandardCharsets.UTF_8))) {
+        List<Resource> resources = load("/resources.csv", parts ->
+                parts.length >= 2 ? new Resource(parts[0], Double.parseDouble(parts[1])) : null);
+        resources.forEach(resourceRepository::save);
 
-            String header = reader.readLine(); // Skip header (name,baseValue)
-            log.debug("Resources CSV header: {}", header);
-            String line;
-            int count = 0;
-
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (!line.isEmpty()) {
-                    String[] parts = line.split(",");
-                    if (parts.length >= 2) {
-                        Resource resource = new Resource(parts[0], Double.parseDouble(parts[1]));
-                        resourceRepository.save(resource);
-                        count++;
-                        log.debug("Loaded resource: {}", resource);
-                    }
-                }
-            }
-
-            log.info("Successfully loaded {} resources from CSV", count);
-        } catch (Exception e) {
-            log.error("Failed to load resources from CSV", e);
-        }
+        log.info("Successfully loaded {} resources from CSV", resources.size());
     }
 
     /**
@@ -84,47 +94,25 @@ public class CsvDataLoader implements CommandLineRunner {
             return;
         }
 
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(Objects.requireNonNull(
-                        getClass().getResourceAsStream("/equipments.csv")), StandardCharsets.UTF_8))) {
+        List<Equipment> equipments = load("/equipments.csv", parts ->
+                parts.length >= 8 ? new Equipment(
+                        parts[0],                                    // name
+                        Integer.parseInt(parts[1]),                  // cost
+                        Double.parseDouble(parts[2]),                // pdfBonus
+                        Double.parseDouble(parts[3]),                // pdcBonus
+                        Double.parseDouble(parts[4]),                // armBonus
+                        Double.parseDouble(parts[5]),                // evasionBonus
+                        new HashSet<>(),                             // compatibleClasses (chargé après)
+                        EquipmentCategory.valueOf(parts[7])          // category
+                ) : null);
+        equipments.forEach(equipmentRepository::save);
 
-            String header = reader.readLine(); // Skip header
-            log.debug("Equipments CSV header: {}", header);
-            String line;
-            int count = 0;
+        log.info("Successfully loaded {} equipments from CSV", equipments.size());
 
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (!line.isEmpty()) {
-                    String[] parts = line.split(",");
-                    if (parts.length >= 8) {
-                        Equipment equipment = new Equipment(
-                            parts[0],                                    // name
-                            Integer.parseInt(parts[1]),                  // cost
-                            Double.parseDouble(parts[2]),                // pdfBonus
-                            Double.parseDouble(parts[3]),                // pdcBonus
-                            Double.parseDouble(parts[4]),                // armBonus
-                            Double.parseDouble(parts[5]),                // evasionBonus
-                            new HashSet<>(),                             // compatibleClasses (chargé après)
-                            EquipmentCategory.valueOf(parts[7])          // category
-                        );
-
-                        equipmentRepository.save(equipment);
-                        count++;
-                        log.debug("Loaded equipment: {}", equipment.getName());
-                    }
-                }
-            }
-
-            log.info("Successfully loaded {} equipments from CSV", count);
-
-            // Log des équipements chargés pour vérification
-            if (log.isDebugEnabled()) {
-                equipmentRepository.findAll().forEach(eq ->
-                    log.debug("Equipment in DB: {}", eq.getName()));
-            }
-        } catch (Exception e) {
-            log.error("Failed to load equipments from CSV", e);
+        // Log des équipements chargés pour vérification
+        if (log.isDebugEnabled()) {
+            equipmentRepository.findAll().forEach(eq ->
+                log.debug("Equipment in DB: {}", eq.getName()));
         }
     }
 
@@ -132,42 +120,27 @@ public class CsvDataLoader implements CommandLineRunner {
      * Charge les compatibilités depuis compatibility.csv
      */
     private void loadCompatibilities() {
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(Objects.requireNonNull(
-                        getClass().getResourceAsStream("/compatibility.csv")), StandardCharsets.UTF_8))) {
+        List<Map.Entry<Long, UnitClass>> entries = load("/compatibility.csv", parts ->
+                parts.length >= 2
+                        ? Map.entry(Long.parseLong(parts[0]), UnitClass.valueOf(parts[1]))
+                        : null);
 
-            String header = reader.readLine(); // Skip header (equipmentId,unitClass)
-            log.debug("Compatibility CSV header: {}", header);
-            String line;
-            Map<Long, Set<UnitClass>> compatibilities = new HashMap<>();
-
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (!line.isEmpty()) {
-                    String[] parts = line.split(",");
-                    if (parts.length >= 2) {
-                        Long equipmentId = Long.parseLong(parts[0]);
-                        UnitClass unitClass = UnitClass.valueOf(parts[1]);
-
-                        compatibilities.computeIfAbsent(equipmentId, k -> new HashSet<>()).add(unitClass);
-                    }
-                }
-            }
-
-            // Appliquer les compatibilités aux équipements
-            int count = 0;
-            for (Map.Entry<Long, Set<UnitClass>> entry : compatibilities.entrySet()) {
-                equipmentRepository.findById(entry.getKey()).ifPresent(equipment -> {
-                    equipment.setCompatibleClasses(entry.getValue());
-                    equipmentRepository.save(equipment);
-                    log.debug("Set compatibilities for equipment {}: {}", equipment.getName(), entry.getValue());
-                });
-                count++;
-            }
-
-            log.info("Successfully loaded compatibilities for {} equipments from CSV", count);
-        } catch (Exception e) {
-            log.error("Failed to load compatibilities from CSV", e);
+        Map<Long, Set<UnitClass>> compatibilities = new HashMap<>();
+        for (Map.Entry<Long, UnitClass> entry : entries) {
+            compatibilities.computeIfAbsent(entry.getKey(), k -> new HashSet<>()).add(entry.getValue());
         }
+
+        // Appliquer les compatibilités aux équipements
+        int count = 0;
+        for (Map.Entry<Long, Set<UnitClass>> entry : compatibilities.entrySet()) {
+            equipmentRepository.findById(entry.getKey()).ifPresent(equipment -> {
+                equipment.setCompatibleClasses(entry.getValue());
+                equipmentRepository.save(equipment);
+                log.debug("Set compatibilities for equipment {}: {}", equipment.getName(), entry.getValue());
+            });
+            count++;
+        }
+
+        log.info("Successfully loaded compatibilities for {} equipments from CSV", count);
     }
 }

@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "CREDENTIALS")
+@Table(name = "CREDENTIALS", indexes = {
+    @Index(name = "idx_refresh_token_jti", columnList = "refreshTokenJti")
+})
 @Getter
 @Setter
 public class User {
@@ -16,5 +18,6 @@ public class User {
     private String password;
     private String refreshTokenHash;
     private Long refreshTokenExpiry;
+    private String refreshTokenJti;
     private String role;
 }

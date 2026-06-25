@@ -33,12 +33,15 @@
   grid-template-columns: 250px 1fr 300px;
   gap: 24px;
   margin-bottom: 24px;
+  align-items: start;
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;
   }
 }
 
-.legend-card, .details-card, .stats-card {
+.legend-card,
+.details-card,
+.stats-card {
   border-radius: 12px;
   height: fit-content;
 }
@@ -61,6 +64,7 @@
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: 8px;
+  opacity: 0.55;
   // Reset button styles
   border: none;
   background: transparent;
@@ -69,14 +73,15 @@
   font: inherit;
   color: inherit;
   &:hover {
+    opacity: 1;
     background: #f1f5f9;
   }
   &.active {
+    opacity: 1;
     background: #ede9fe;
   }
   &.neutral {
-    cursor: default;
-    opacity: 0.7;
+    cursor: pointer;
   }
 }
 
@@ -114,121 +119,6 @@
   padding: 24px;
   overflow: auto;
   min-height: 500px;
-}
-
-.sector-grid {
-  display: grid;
-  /* Note: Fixed 4x4 grid assumes board data has exactly 16 sectors with coordinates 0-3.
-     If board dimensions change, update these values or make them dynamic based on
-     max x/y coordinates from sector data. */
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 12px;
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-.sector-wrapper {
-  aspect-ratio: 1;
-}
-
-.sector-tile {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(145deg, #ffffff 0%, #f1f5f9 100%);
-  border: 3px solid var(--sector-color, #94a3b8);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  // Reset button styles
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background: var(--sector-color, #94a3b8);
-    border-radius: 9px 9px 0 0;
-  }
-  &:hover {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
-    z-index: 10;
-  }
-  &.selected {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 0 0 4px shared.$primary-color, 0 12px 24px rgba(99, 102, 241, 0.3);
-    z-index: 20;
-    background: linear-gradient(145deg, #ede9fe 0%, #ddd6fe 100%);
-  }
-  &.highlighted {
-    background: linear-gradient(145deg, #fef3c7 0%, #fde68a 100%);
-    box-shadow: 0 0 0 2px #f59e0b;
-  }
-  &.dimmed {
-    opacity: 0.35;
-    filter: grayscale(0.5);
-  }
-}
-
-.sector-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 12px 8px;
-  gap: 4px;
-  width: 100%;
-}
-
-.sector-number {
-  font-size: 0.7rem;
-  color: shared.$text-muted;
-  font-weight: 700;
-  background: #e2e8f0;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.sector-name {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #1e293b;
-  line-height: 1.2;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sector-resource {
-  font-size: 0.65rem;
-  color: shared.$text-muted;
-  font-style: italic;
-}
-
-.owner-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: white;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Détails secteur */
@@ -293,11 +183,21 @@
   font-size: 0.9rem;
   .value {
     font-weight: 600;
-    &.gold { color: #f59e0b; }
-    &.red { color: #ef4444; }
-    &.green { color: #10b981; }
-    &.blue { color: #3b82f6; }
-    &.purple { color: #8b5cf6; }
+    &.gold {
+      color: #f59e0b;
+    }
+    &.red {
+      color: #ef4444;
+    }
+    &.green {
+      color: #10b981;
+    }
+    &.blue {
+      color: #3b82f6;
+    }
+    &.purple {
+      color: #8b5cf6;
+    }
   }
 }
 
@@ -392,6 +292,7 @@
   border-radius: 12px;
   overflow: hidden;
   background: #1e293b;
+  display: inline-block;
 }
 
 .svg-loading {
@@ -430,13 +331,12 @@
     height: 100%;
     pointer-events: none;
 
-    path, polygon {
+    path,
+    polygon {
       pointer-events: all;
-      fill: transparent;
-      stroke: #94a3b8;
-      stroke-width: 2;
       cursor: pointer;
       transition: all 0.2s ease;
+      vector-effect: non-scaling-stroke;
     }
   }
 }
@@ -473,7 +373,3 @@
 /* ========================================
    FIN MODE SVG
    ======================================== */
-
-.fade-in {
-  @include shared.fade-in-animation;
-}

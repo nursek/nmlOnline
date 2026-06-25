@@ -2,7 +2,6 @@ package com.mg.nmlonline.api.dto;
 
 import lombok.Data;
 import java.util.List;
-import java.util.Set;
 
 @Data
 public class PlayerDto {
@@ -11,7 +10,6 @@ public class PlayerDto {
     private PlayerStatsDto stats;
     private List<EquipmentStackDto> equipments;
     private List<PlayerResourceDto> resources;
-    private Set<Long> ownedSectorIds;
     private List<SectorDto> sectors; // Secteurs complets pour l'affichage
 
     // Personnage principal du joueur

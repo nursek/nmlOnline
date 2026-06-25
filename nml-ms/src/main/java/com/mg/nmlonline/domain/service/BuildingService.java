@@ -4,6 +4,7 @@ import com.mg.nmlonline.domain.model.building.*;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
+import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.springframework.stereotype.Service;
@@ -20,12 +21,18 @@ import java.util.Optional;
 @Transactional
 public class BuildingService {
 
+    private static final double HQ_RECONSTRUCTION_SAME_LOCATION_COST = 75000;
+
     private final BuildingRepository buildingRepository;
     private final PlayerRepository playerRepository;
+    private final BoardService boardService;
 
-    public BuildingService(BuildingRepository buildingRepository, PlayerRepository playerRepository) {
+    public BuildingService(BuildingRepository buildingRepository,
+                           PlayerRepository playerRepository,
+                           BoardService boardService) {
         this.buildingRepository = buildingRepository;
         this.playerRepository = playerRepository;
+        this.boardService = boardService;
     }
 
     // === CRÉATION DES BÂTIMENTS INITIAUX ===
@@ -91,13 +98,16 @@ public class BuildingService {
         Player player = playerRepository.findById(playerId).orElse(null);
         if (player == null) return false;
 
-        if (hq.reconstructSameLocation(player.getStats().getMoney())) {
-            player.getStats().setMoney(player.getStats().getMoney() - Headquarters.RECONSTRUCTION_SAME_LOCATION_COST);
-            playerRepository.save(player);
-            buildingRepository.save(hq);
-            return true;
+        double cost = HQ_RECONSTRUCTION_SAME_LOCATION_COST;
+        if (player.getStats().getMoney() < cost) {
+            return false;
         }
-        return false;
+
+        hq.reconstructSameLocation();
+        player.getStats().setMoney(player.getStats().getMoney() - cost);
+        playerRepository.save(player);
+        buildingRepository.save(hq);
+        return true;
     }
 
     /**
@@ -218,19 +228,36 @@ public class BuildingService {
 
     /**
      * Déplace un bâtiment vers un nouveau secteur.
+     *
+     * @param buildingId      ID du bâtiment à déplacer
+     * @param boardId         ID de la board contenant le secteur cible
+     * @param newSectorNumber numéro du secteur cible
+     * @param currentTurn     tour courant
+     * @return true si le déplacement a réussi
+     * @throws IllegalArgumentException si le secteur cible n'existe pas ou n'appartient pas au propriétaire
+     * @throws IllegalStateException    si le bâtiment ne peut pas se déplacer ce tour
      */
-    public boolean moveBuilding(Long buildingId, int newSectorNumber, int currentTurn) {
+    public boolean moveBuilding(Long buildingId, Long boardId, int newSectorNumber, int currentTurn) {
         Building building = buildingRepository.findById(buildingId).orElse(null);
-        if (building == null || !building.canMove(currentTurn)) {
-            return false;
+        if (building == null) {
+            throw new IllegalArgumentException("Bâtiment introuvable : " + buildingId);
+        }
+        if (!building.canMove(currentTurn)) {
+            throw new IllegalStateException("Le bâtiment ne peut pas se déplacer ce tour-ci");
         }
 
-        // La logique de changement de secteur n'est pas encore implémentée.
-        // On lève une exception explicite plutôt que de prétendre que le déplacement a réussi.
-        throw new UnsupportedOperationException(
-            "Le déplacement de bâtiment n'est pas encore implémenté (buildingId=" + buildingId
-                + ", newSectorNumber=" + newSectorNumber + ", currentTurn=" + currentTurn + ")"
-        );
+        Sector targetSector = boardService.getSectorFromBoard(boardId, newSectorNumber)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Secteur " + newSectorNumber + " introuvable sur la board " + boardId));
+
+        if (!Long.valueOf(building.getPlayerId()).equals(targetSector.getOwnerId())) {
+            throw new IllegalStateException("Le secteur cible n'appartient pas au propriétaire du bâtiment");
+        }
+
+        building.setSector(targetSector);
+        building.recordMove(currentTurn);
+        buildingRepository.save(building);
+        return true;
     }
 
     // === CLASSES UTILITAIRES ===

@@ -1,11 +1,21 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.BuildingDto;
-import com.mg.nmlonline.domain.model.building.*;
+import com.mg.nmlonline.domain.model.building.Bank;
+import com.mg.nmlonline.domain.model.building.Building;
+import com.mg.nmlonline.domain.model.building.Headquarters;
+import com.mg.nmlonline.domain.model.building.WeaponCache;
+import com.mg.nmlonline.domain.service.AuthorizationService;
 import com.mg.nmlonline.domain.service.BuildingService;
 import com.mg.nmlonline.mapper.BuildingMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -18,20 +28,33 @@ public class BuildingController {
 
     private final BuildingService buildingService;
     private final BuildingMapper buildingMapper;
+    private final AuthorizationService authorizationService;
 
-    public BuildingController(BuildingService buildingService, BuildingMapper buildingMapper) {
+    public BuildingController(BuildingService buildingService,
+                              BuildingMapper buildingMapper,
+                              AuthorizationService authorizationService) {
         this.buildingService = buildingService;
         this.buildingMapper = buildingMapper;
+        this.authorizationService = authorizationService;
+    }
+
+    private Long getAuthenticatedUserId(HttpServletRequest request) {
+        return (Long) request.getAttribute("userId");
     }
 
     // === ENDPOINTS GÉNÉRAUX ===
 
     /**
      * Récupère le QG d'un joueur.
+     * L'utilisateur doit être authentifié et propriétaire du joueur.
      */
-    //TODO : verify authentication and authorization to prevent data leak (ex: only allow access to own character or admin access)
     @GetMapping("/headquarters/{playerId}")
-    public ResponseEntity<BuildingDto> getHeadquarters(@PathVariable Long playerId) {
+    public ResponseEntity<BuildingDto> getHeadquarters(@PathVariable Long playerId,
+                                                       HttpServletRequest request) {
+        Long userId = getAuthenticatedUserId(request);
+        if (userId == null) return ResponseEntity.status(401).build();
+        if (!authorizationService.isPlayerOwner(userId, playerId)) return ResponseEntity.status(403).build();
+
         return buildingService.getHeadquarters(playerId)
                 .map(buildingMapper::toDto)
                 .map(ResponseEntity::ok)
@@ -40,10 +63,15 @@ public class BuildingController {
 
     /**
      * Récupère la banque d'un joueur.
+     * L'utilisateur doit être authentifié et propriétaire du joueur.
      */
-    //TODO : verify authentication and authorization to prevent data leak (ex: only allow access to own character or admin access)
     @GetMapping("/bank/{playerId}")
-    public ResponseEntity<BuildingDto> getBank(@PathVariable Long playerId) {
+    public ResponseEntity<BuildingDto> getBank(@PathVariable Long playerId,
+                                               HttpServletRequest request) {
+        Long userId = getAuthenticatedUserId(request);
+        if (userId == null) return ResponseEntity.status(401).build();
+        if (!authorizationService.isPlayerOwner(userId, playerId)) return ResponseEntity.status(403).build();
+
         return buildingService.getBank(playerId)
                 .map(buildingMapper::toDto)
                 .map(ResponseEntity::ok)
@@ -52,10 +80,15 @@ public class BuildingController {
 
     /**
      * Récupère les caches d'armes d'un joueur.
+     * L'utilisateur doit être authentifié et propriétaire du joueur.
      */
-    //TODO : verify authentication and authorization to prevent data leak (ex: only allow access to own character or admin access)
     @GetMapping("/weapon-caches/{playerId}")
-    public ResponseEntity<List<BuildingDto>> getWeaponCaches(@PathVariable Long playerId) {
+    public ResponseEntity<List<BuildingDto>> getWeaponCaches(@PathVariable Long playerId,
+                                                             HttpServletRequest request) {
+        Long userId = getAuthenticatedUserId(request);
+        if (userId == null) return ResponseEntity.status(401).build();
+        if (!authorizationService.isPlayerOwner(userId, playerId)) return ResponseEntity.status(403).build();
+
         List<BuildingDto> caches = buildingService.getWeaponCaches(playerId).stream()
                 .map(buildingMapper::toDto)
                 .toList();
@@ -66,19 +99,29 @@ public class BuildingController {
 
     /**
      * Vérifie si un joueur a un QG opérationnel.
+     * L'utilisateur doit être authentifié et propriétaire du joueur.
      */
-    //TODO : verify authentication and authorization to prevent data leak (ex: only allow access to own character or admin access)
     @GetMapping("/headquarters/{playerId}/operational")
-    public ResponseEntity<Boolean> isHeadquartersOperational(@PathVariable Long playerId) {
+    public ResponseEntity<Boolean> isHeadquartersOperational(@PathVariable Long playerId,
+                                                             HttpServletRequest request) {
+        Long userId = getAuthenticatedUserId(request);
+        if (userId == null) return ResponseEntity.status(401).build();
+        if (!authorizationService.isPlayerOwner(userId, playerId)) return ResponseEntity.status(403).build();
+
         return ResponseEntity.ok(buildingService.hasOperationalHeadquarters(playerId));
     }
 
     /**
      * Reconstruit le QG sur place.
+     * L'utilisateur doit être authentifié et propriétaire du joueur.
      */
-    //TODO : verify authentication and authorization to prevent data leak (ex: only allow access to own character or admin access)
     @PostMapping("/headquarters/{playerId}/reconstruct-same")
-    public ResponseEntity<Void> reconstructHeadquartersSame(@PathVariable Long playerId) {
+    public ResponseEntity<Void> reconstructHeadquartersSame(@PathVariable Long playerId,
+                                                            HttpServletRequest request) {
+        Long userId = getAuthenticatedUserId(request);
+        if (userId == null) return ResponseEntity.status(401).build();
+        if (!authorizationService.isPlayerOwner(userId, playerId)) return ResponseEntity.status(403).build();
+
         if (buildingService.reconstructHeadquartersSameLocation(playerId)) {
             return ResponseEntity.ok().build();
         }
@@ -89,22 +132,22 @@ public class BuildingController {
 
     /**
      * Déplace un bâtiment vers un nouveau secteur.
+     * L'utilisateur doit être authentifié et propriétaire du bâtiment.
      */
-    //TODO : verify authentication and authorization to prevent data leak (ex: only allow access to own character or admin access)
     @PostMapping("/{buildingId}/move")
     public ResponseEntity<Void> moveBuilding(
             @PathVariable Long buildingId,
-            @RequestBody MoveBuildingRequest request) {
-        // TODO: remplacer cet appel par une récupération du tour réel via un service de gestion de tours.
-        int currentTurnFromServer = /* turnService.getCurrentTurnForBuilding(buildingId) */ 0;
+            @RequestBody MoveBuildingRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = getAuthenticatedUserId(httpRequest);
+        if (userId == null) return ResponseEntity.status(401).build();
+        if (!authorizationService.isBuildingOwner(userId, buildingId)) return ResponseEntity.status(403).build();
 
-        if (buildingService.moveBuilding(buildingId, request.newSectorNumber(), currentTurnFromServer)) {
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.badRequest().build();
+        buildingService.moveBuilding(buildingId, request.boardId(), request.newSectorNumber(), request.currentTurn());
+        return ResponseEntity.ok().build();
     }
 
     // === RECORDS POUR LES REQUÊTES/RÉPONSES ===
 
-    public record MoveBuildingRequest(int newSectorNumber) {}
+    public record MoveBuildingRequest(Long boardId, int newSectorNumber, int currentTurn) {}
 }

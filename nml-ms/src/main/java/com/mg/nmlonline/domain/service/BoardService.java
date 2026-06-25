@@ -26,40 +26,28 @@ public class BoardService {
      * Récupère toutes les boards
      */
     public List<Board> getAllBoards() {
-        List<Board> boards = boardRepository.findAll();
-        // Initialiser les maps de secteurs après chargement
-        boards.forEach(Board::initSectorsMap);
-        return boards;
+        return boardRepository.findAll();
     }
 
     /**
      * Récupère une board par son ID
      */
     public Optional<Board> getBoardById(Long id) {
-        Optional<Board> board = boardRepository.findById(id);
-        board.ifPresent(Board::initSectorsMap);
-        return board;
+        return boardRepository.findById(id);
     }
 
     /**
      * Récupère une board par son nom
      */
     public Optional<Board> getBoardByName(String name) {
-        Optional<Board> board = boardRepository.findByName(name);
-        board.ifPresent(Board::initSectorsMap);
-        return board;
+        return boardRepository.findByName(name);
     }
 
     /**
      * Récupère une board par son nom (retourne null si non trouvée)
      */
     public Board findByName(String name) {
-        return boardRepository.findByName(name)
-                .map(board -> {
-                    board.initSectorsMap();
-                    return board;
-                })
-                .orElse(null);
+        return boardRepository.findByName(name).orElse(null);
     }
 
     /**
@@ -73,6 +61,10 @@ public class BoardService {
             // Board existe → Mettre à jour
             Board existingBoard = existingBoardOpt.get();
 
+            // Mettre à jour les URLs de la carte
+            existingBoard.setMapImageUrl(board.getMapImageUrl());
+            existingBoard.setSvgOverlayUrl(board.getSvgOverlayUrl());
+
             // Remplacer les secteurs
             existingBoard.getSectorsList().clear();
             if (board.getSectorsList() != null) {
@@ -81,17 +73,12 @@ public class BoardService {
                     existingBoard.getSectorsList().add(sector);
                 }
             }
-            existingBoard.initSectorsMap();
 
-            Board saved = boardRepository.save(existingBoard);
-            saved.initSectorsMap();
-            return saved;
+            return boardRepository.save(existingBoard);
         } else {
             // Nouvelle board
             board.setName(boardName);
-            Board saved = boardRepository.save(board);
-            saved.initSectorsMap();
-            return saved;
+            return boardRepository.save(board);
         }
     }
 
@@ -99,9 +86,7 @@ public class BoardService {
      * Sauvegarde simple d'une board
      */
     public Board save(Board board) {
-        Board saved = boardRepository.save(board);
-        saved.initSectorsMap();
-        return saved;
+        return boardRepository.save(board);
     }
 
     /**

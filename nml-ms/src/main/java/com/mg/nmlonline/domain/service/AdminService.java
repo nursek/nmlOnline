@@ -1,6 +1,5 @@
 package com.mg.nmlonline.domain.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -28,7 +27,6 @@ public class AdminService {
     private final BoardService boardService;
     private final ResourceRepository resourceRepository;
     private final EntityManager entityManager;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public AdminService(PlayerImportService playerImportService,
                         PlayerService playerService,
@@ -48,7 +46,8 @@ public class AdminService {
      */
     @Transactional
     public Player importPlayer(String jsonContent) throws IOException {
-        Player player = playerImportService.importPlayerFromJsonString(jsonContent);
+        PlayerImportService.PlayerDTO dto = playerImportService.parse(jsonContent);
+        Player player = playerImportService.importPlayer(dto);
         if (player == null) {
             throw new IllegalArgumentException("Impossible de parser le JSON du joueur");
         }
@@ -59,17 +58,17 @@ public class AdminService {
             entityManager.flush();
         }
 
-        player = playerService.create(player);
-
-        playerImportService.importEquipmentsToPlayerFromString(jsonContent, player);
         player = playerService.save(player);
 
-        playerImportService.importResourcesToPlayerFromString(jsonContent, player);
+        playerImportService.importEquipments(dto, player);
+        player = playerService.save(player);
+
+        playerImportService.importResources(dto, player);
         player = playerService.save(player);
 
         Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
         if (board != null) {
-            playerImportService.importSectorsToBoardFromString(jsonContent, player, board);
+            playerImportService.importSectors(dto, player, board);
             boardService.save(board);
             player = playerService.save(player);
         }

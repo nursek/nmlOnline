@@ -1,5 +1,18 @@
-import { Component, inject, OnInit, signal, computed, ElementRef, ViewChild, AfterViewInit, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  afterRenderEffect,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  SecurityContext,
+  computed,
+  inject,
+  linkedSignal,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { SlicePipe } from '@angular/common';
+import { httpResource } from '@angular/common/http';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,24 +20,19 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { HttpClient } from '@angular/common/http';
-import { ApiService } from '../../services/api.service';
-import { Board, Sector, Player } from '../../models';
-import { forkJoin, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Board, PageResult, Player, Sector } from '../../models';
+import { environment } from '../../../environments/environment';
 
 interface SectorWithPlayer extends Sector {
-  playerName?: string;
+  playerName?: string | null;
   playerColor?: string;
 }
 
 @Component({
   selector: 'app-carte',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
+    SlicePipe,
     MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,
@@ -34,160 +42,168 @@ interface SectorWithPlayer extends Sector {
     MatTooltipModule,
   ],
   templateUrl: './carte.component.html',
-  styleUrls: ['./carte.component.scss']
+  styleUrls: ['./carte.component.scss'],
 })
-export class CarteComponent implements OnInit, AfterViewInit, OnDestroy {
-  private readonly apiService = inject(ApiService);
-  private readonly http = inject(HttpClient);
+export class CarteComponent {
   private readonly sanitizer = inject(DomSanitizer);
-  private readonly destroy$ = new Subject<void>();
-  private readonly eventCleanupFns: (() => void)[] = [];
-
-  @ViewChild('svgContainer') svgContainer!: ElementRef<HTMLDivElement>;
-
-  // State avec signals
-  loading = signal(true);
-  error = signal<string | null>(null);
-  board = signal<Board | null>(null);
-  players = signal<Player[]>([]);
-  selectedSector = signal<SectorWithPlayer | null>(null);
-  selectedPlayer = signal<Player | null>(null);
-  hoveredSectorNumber = signal<number | null>(null);
-
-  // SVG content
-  svgContent = signal<SafeHtml | null>(null);
-  svgLoaded = signal(false);
-
-  // Couleurs des joueurs par ID
-  private readonly playerColorMap = new Map<number, string>();
-  private readonly colors = [
-    '#6366f1', '#ef4444', '#10b981', '#f59e0b',
-    '#8b5cf6', '#ec4899', '#f97316', '#06b6d4',
-    '#84cc16', '#14b8a6', '#f43f5e', '#a855f7',
+  private static readonly COLORS = [
+    '#6366f1',
+    '#ef4444',
+    '#10b981',
+    '#f59e0b',
+    '#8b5cf6',
+    '#ec4899',
+    '#f97316',
+    '#06b6d4',
+    '#84cc16',
+    '#14b8a6',
+    '#f43f5e',
+    '#a855f7',
   ];
 
-  // Computed values
-  allSectors = computed(() => {
-    const b = this.board();
-    if (!b) return [];
+  // Re-read-only catalogs via httpResource.
+  private readonly boardsRef = httpResource<Board[]>(() => ({
+    url: `${environment.apiBaseUrl}/boards`,
+  }));
+  private readonly playersRef = httpResource<PageResult<Player>>(() => ({
+    url: `${environment.apiBaseUrl}/players`,
+    params: { page: '0', size: '50' },
+  }));
 
-    return Object.values(b.sectors).map(sector => ({
-      ...sector,
-      playerName: this.getPlayerName(sector.ownerId),
-      playerColor: this.getPlayerColor(sector.ownerId),
-    })) as SectorWithPlayer[];
+  readonly loading = computed(() => this.boardsRef.isLoading() || this.playersRef.isLoading());
+  readonly error = computed(() => {
+    const e = this.boardsRef.error() || this.playersRef.error();
+    return e ? 'Impossible de charger la carte. Vérifiez que le serveur est démarré.' : null;
   });
 
-  // Map pour accès rapide aux secteurs par numéro
-  sectorsMap = computed(() => {
-    const map = new Map<number, SectorWithPlayer>();
-    this.allSectors().forEach(s => {
-      if (s.number !== null) {
-        map.set(s.number, s);
+  readonly board = computed(() => this.boardsRef.value()?.[0] ?? null);
+  readonly players = computed(() => this.playersRef.value()?.content ?? []);
+
+  private readonly playerColorMap = computed(() => {
+    const map = new Map<number, string>();
+    this.players().forEach((player, index) => {
+      if (player.id != null) {
+        map.set(player.id, CarteComponent.COLORS[index % CarteComponent.COLORS.length]);
       }
     });
     return map;
   });
 
-  neutralSectorsCount = computed(() =>
-    this.allSectors().filter(s => !s.ownerId).length
-  );
+  private readonly svgOverlayUrl = computed(() => this.board()?.svgOverlayUrl || null);
+  private readonly svgTextRef = httpResource.text(() => this.svgOverlayUrl() ?? undefined);
 
-  conqueredSectorsCount = computed(() =>
-    this.allSectors().filter(s => s.ownerId).length
-  );
+  readonly svgContent = computed<SafeHtml | null>(() => {
+    const text = this.svgTextRef.value();
+    if (!text) return null;
+    const sanitized = this.sanitizer.sanitize(SecurityContext.HTML, text) ?? '';
+    return sanitized ? this.sanitizer.bypassSecurityTrustHtml(sanitized) : null;
+  });
+  readonly svgLoaded = computed(() => this.svgContent() !== null);
 
-  // URLs de la carte
-  mapImageUrl = computed(() => this.board()?.mapImageUrl || null);
-  svgOverlayUrl = computed(() => this.board()?.svgOverlayUrl || null);
+  readonly mapImageUrl = computed(() => this.board()?.mapImageUrl || null);
 
+  // Interactive state.
+  readonly selectedSector = signal<SectorWithPlayer | null>(null);
+  // Default to all players selected; linked to the players signal so a refresh
+  // of the players list reinitializes the selection set.
+  readonly selectedPlayerIds = linkedSignal<Player[], Set<number>>({
+    source: this.players,
+    computation: (players) =>
+      new Set(players.map((p) => p.id).filter((id): id is number => id != null)),
+  });
+  readonly showNeutral = signal(true);
+  readonly hoveredSectorNumber = signal<number | null>(null);
 
-  ngOnInit(): void {
-    this.loadData();
-  }
+  private readonly svgContainer = viewChild<ElementRef<HTMLDivElement>>('svgContainer');
 
-  ngAfterViewInit(): void {
-    // Le SVG sera initialisé après le chargement des données
-  }
+  // Derived sector lookups.
+  private readonly playerMap = computed(() => {
+    const map = new Map<number, Player>();
+    this.players().forEach((p) => {
+      if (p.id != null) map.set(p.id, p);
+    });
+    return map;
+  });
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-    // Nettoyage des event listeners sur les paths SVG
-    this.eventCleanupFns.forEach(fn => fn());
-    this.eventCleanupFns.length = 0;
-  }
+  readonly allSectors = computed(() => {
+    const b = this.board();
+    if (!b) return [];
+    const playersById = this.playerMap();
+    return Object.values(b.sectors).map((sector) => ({
+      ...sector,
+      playerName: sector.ownerId != null ? (playersById.get(sector.ownerId)?.name ?? null) : null,
+      playerColor: this.getPlayerColor(sector.ownerId),
+    })) as SectorWithPlayer[];
+  });
 
-  loadData(): void {
-    forkJoin({
-      boards: this.apiService.getAllBoards(),
-      players: this.apiService.getAllPlayers()
-    }).pipe(takeUntil(this.destroy$)).subscribe({
-      next: ({ boards, players }) => {
-        // Prendre la première board disponible
-        const board = boards.length > 0 ? boards[0] : null;
-
-        // Assigner les couleurs aux joueurs
-        players.forEach((player, index) => {
-          if (player.id) {
-            this.playerColorMap.set(player.id, this.colors[index % this.colors.length]);
-          }
+  readonly sectorsMap = computed(() => {
+    const b = this.board();
+    const playersById = this.playerMap();
+    const map = new Map<number, SectorWithPlayer>();
+    if (!b) return map;
+    Object.values(b.sectors).forEach((sector) => {
+      if (sector.number !== null) {
+        map.set(sector.number, {
+          ...sector,
+          playerName:
+            sector.ownerId != null ? (playersById.get(sector.ownerId)?.name ?? null) : null,
+          playerColor: this.getPlayerColor(sector.ownerId),
         });
-
-        this.board.set(board);
-        this.players.set(players);
-        this.loading.set(false);
-
-        // Charger le SVG overlay si disponible
-        if (board?.svgOverlayUrl) {
-          this.loadSvgOverlay(board.svgOverlayUrl);
-        }
-      },
-      error: () => {
-        this.error.set('Impossible de charger la carte. Vérifiez que le serveur est démarré.');
-        this.loading.set(false);
       }
+    });
+    return map;
+  });
+
+  readonly neutralSectorsCount = computed(
+    () => Object.values(this.board()?.sectors ?? {}).filter((s) => !s.ownerId).length,
+  );
+
+  readonly conqueredSectorsCount = computed(
+    () => Object.values(this.board()?.sectors ?? {}).filter((s) => s.ownerId).length,
+  );
+
+  private readonly eventCleanupFns: (() => void)[] = [];
+
+  constructor() {
+    // Attach SVG listeners once whenever a fresh SVG is rendered. Cleanup drops
+    // them before re-attaching on the next SVG.
+    afterRenderEffect((onCleanup) => {
+      if (!this.svgLoaded()) return;
+      const container = this.svgContainer()?.nativeElement;
+      if (!container) return;
+      this.ensureNeutralPattern(container);
+      this.attachSectorListeners(container);
+      onCleanup(() => {
+        this.eventCleanupFns.forEach((fn) => fn());
+        this.eventCleanupFns.length = 0;
+      });
+    });
+
+    // Repaint path styles whenever the SVG or any interactive signal changes.
+    afterRenderEffect(() => {
+      if (!this.svgLoaded()) return;
+      const container = this.svgContainer()?.nativeElement;
+      if (!container) return;
+      // Tracking these signals re-runs this effect on each filter change.
+      void this.selectedSector();
+      void this.selectedPlayerIds();
+      void this.showNeutral();
+      this.updateAllPathColors(container);
     });
   }
 
-  private loadSvgOverlay(url: string): void {
-    this.http.get(url, { responseType: 'text' }).pipe(takeUntil(this.destroy$)).subscribe({
-      next: (svgText) => {
-        // Injecter le SVG et configurer les handlers
-        this.svgContent.set(this.sanitizer.bypassSecurityTrustHtml(svgText));
-        this.svgLoaded.set(true);
-
-        // Attendre que le DOM soit mis à jour puis attacher les événements
-        setTimeout(() => this.initializeSvgInteractions(), 0);
-      },
-      error: () => {
-        this.svgLoaded.set(false);
-      }
-    });
-  }
-
-  private initializeSvgInteractions(): void {
-    if (!this.svgContainer) return;
-
-    // Nettoyer les anciens listeners avant d'en attacher de nouveaux
-    this.eventCleanupFns.forEach(fn => fn());
-    this.eventCleanupFns.length = 0;
-
-    const container = this.svgContainer.nativeElement;
+  private attachSectorListeners(container: HTMLElement): void {
     const paths = container.querySelectorAll('path[id^="path"], polygon[id^="path"]');
-
     paths.forEach((path) => {
       const id = path.getAttribute('id');
       if (!id) return;
-
       const sectorNumber = parseInt(id.replace('path', ''), 10);
-      if (isNaN(sectorNumber)) return;
+      if (Number.isNaN(sectorNumber)) return;
 
-      // Configurer les styles de base
-      this.updatePathStyle(path as SVGElement, sectorNumber);
-
-      // Event listeners avec cleanup
-      const clickHandler = () => this.onSectorClick(sectorNumber);
+      const clickHandler = (event: Event) => {
+        event.stopPropagation();
+        this.onSectorClick(sectorNumber);
+      };
       const enterHandler = () => this.onSectorHover(sectorNumber, path as SVGElement);
       const leaveHandler = () => this.onSectorLeave(sectorNumber, path as SVGElement);
 
@@ -201,49 +217,69 @@ export class CarteComponent implements OnInit, AfterViewInit, OnDestroy {
         path.removeEventListener('mouseleave', leaveHandler);
       });
     });
+  }
 
-    // Appliquer les couleurs initiales
-    this.updateAllPathColors();
+  private ensureNeutralPattern(container: HTMLElement): void {
+    const svg = container.querySelector('svg');
+    if (!svg || svg.querySelector('#neutral-stripes')) return;
+
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const defs = document.createElementNS(svgNs, 'defs');
+    const pattern = document.createElementNS(svgNs, 'pattern');
+    pattern.setAttribute('id', 'neutral-stripes');
+    pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+    pattern.setAttribute('width', '8');
+    pattern.setAttribute('height', '8');
+    pattern.setAttribute('patternTransform', 'rotate(45)');
+
+    const bg = document.createElementNS(svgNs, 'rect');
+    bg.setAttribute('width', '8');
+    bg.setAttribute('height', '8');
+    bg.setAttribute('fill', '#ffffff');
+
+    const stripe = document.createElementNS(svgNs, 'rect');
+    stripe.setAttribute('width', '3');
+    stripe.setAttribute('height', '8');
+    stripe.setAttribute('fill', '#94a3b8');
+
+    pattern.appendChild(bg);
+    pattern.appendChild(stripe);
+    defs.appendChild(pattern);
+    svg.appendChild(defs);
   }
 
   private updatePathStyle(path: SVGElement, sectorNumber: number): void {
     const sector = this.sectorsMap().get(sectorNumber);
     const color = sector ? this.getSectorColor(sector) : '#94a3b8';
+    const isNeutral = sector?.ownerId == null;
     const isSelected = this.selectedSector()?.number === sectorNumber;
-    const isHighlighted = this.isNeighbor(sectorNumber);
-    const isDimmed = this.selectedPlayer() && sector?.ownerId !== this.selectedPlayer()?.id;
+    const isDimmed =
+      (sector?.ownerId != null && !this.selectedPlayerIds().has(sector.ownerId)) ||
+      (sector?.ownerId == null && !this.showNeutral());
 
-    // Styles de base
-    path.style.fill = 'transparent';
+    path.style.fill = isNeutral ? 'url(#neutral-stripes)' : color + '66';
     path.style.stroke = color;
-    path.style.strokeWidth = isSelected ? '4' : '2';
+    path.style.strokeWidth = '2';
     path.style.cursor = 'pointer';
     path.style.transition = 'all 0.2s ease';
-    path.style.opacity = isDimmed ? '0.3' : '1';
+    path.style.opacity = isDimmed ? '0.25' : '1';
 
     if (isSelected) {
-      path.style.fill = color + '40'; // 25% opacity
-      path.style.filter = 'drop-shadow(0 0 8px ' + color + ')';
-    } else if (isHighlighted) {
-      path.style.fill = '#f59e0b30';
-      path.style.stroke = '#f59e0b';
+      path.style.fill = isNeutral ? '#94a3b8' : color;
+      path.style.strokeWidth = '5';
+      path.style.filter = 'drop-shadow(0 0 12px ' + color + ')';
     } else {
       path.style.filter = 'none';
     }
   }
 
-  private updateAllPathColors(): void {
-    if (!this.svgContainer) return;
-
-    const container = this.svgContainer.nativeElement;
+  private updateAllPathColors(container: HTMLElement): void {
     const paths = container.querySelectorAll('path[id^="path"], polygon[id^="path"]');
-
     paths.forEach((path) => {
       const id = path.getAttribute('id');
       if (!id) return;
-
       const sectorNumber = parseInt(id.replace('path', ''), 10);
-      if (!isNaN(sectorNumber)) {
+      if (!Number.isNaN(sectorNumber)) {
         this.updatePathStyle(path as SVGElement, sectorNumber);
       }
     });
@@ -253,7 +289,6 @@ export class CarteComponent implements OnInit, AfterViewInit, OnDestroy {
     const sector = this.sectorsMap().get(sectorNumber);
     if (sector) {
       this.selectSector(sector);
-      this.updateAllPathColors();
     }
   }
 
@@ -261,9 +296,8 @@ export class CarteComponent implements OnInit, AfterViewInit, OnDestroy {
     this.hoveredSectorNumber.set(sectorNumber);
     const sector = this.sectorsMap().get(sectorNumber);
     const color = sector ? this.getSectorColor(sector) : '#94a3b8';
-
     if (this.selectedSector()?.number !== sectorNumber) {
-      path.style.fill = color + '30'; // 20% opacity on hover
+      path.style.fill = color + 'B3';
       path.style.strokeWidth = '3';
     }
   }
@@ -274,42 +308,56 @@ export class CarteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getPlayerColor(playerId: number | null): string {
-    if (!playerId) return '#94a3b8';  // Gris pour neutre
-    return this.playerColorMap.get(playerId) || '#94a3b8';
-  }
-
-  getPlayerName(playerId: number | null): string | undefined {
-    if (!playerId) return undefined;
-    return this.players().find(p => p.id === playerId)?.name;
+    if (!playerId) return '#94a3b8';
+    return this.playerColorMap().get(playerId) || '#94a3b8';
   }
 
   getSectorColor(sector: Sector | SectorWithPlayer): string {
     return this.getPlayerColor(sector.ownerId);
   }
 
+  /** Readable text color (white or dark) for a given hex background. */
+  getContrastColor(hexColor: string): string {
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 128 ? '#1e293b' : '#ffffff';
+  }
+
   selectSector(sector: SectorWithPlayer): void {
-    this.selectedSector.set(sector);
-    this.updateAllPathColors();
+    this.selectedSector.set(this.selectedSector()?.number === sector.number ? null : sector);
+  }
+
+  onMapBackgroundClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('path, polygon')) {
+      this.selectedSector.set(null);
+    }
   }
 
   togglePlayerFilter(player: Player): void {
-    if (this.selectedPlayer()?.id === player.id) {
-      this.selectedPlayer.set(null);
-    } else {
-      this.selectedPlayer.set(player);
-    }
-    this.updateAllPathColors();
+    if (player.id == null) return;
+    const next = new Set(this.selectedPlayerIds());
+    if (next.has(player.id)) next.delete(player.id);
+    else next.add(player.id);
+    this.selectedPlayerIds.set(next);
+  }
+
+  toggleNeutralFilter(): void {
+    this.showNeutral.update((v) => !v);
   }
 
   clearFilter(): void {
-    this.selectedPlayer.set(null);
-    this.updateAllPathColors();
-  }
-
-  isNeighbor(sectorNumber: number): boolean {
-    const selected = this.selectedSector();
-    if (!selected) return false;
-    return selected.neighbors?.includes(sectorNumber) || false;
+    this.selectedPlayerIds.set(
+      new Set(
+        this.players()
+          .map((p) => p.id)
+          .filter((id): id is number => id != null),
+      ),
+    );
+    this.showNeutral.set(true);
   }
 
   getSectorByNumber(number: number): SectorWithPlayer | undefined {
@@ -317,8 +365,9 @@ export class CarteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   getInitials(name: string): string {
-    return name.split(' ')
-      .map(word => word[0])
+    return name
+      .split(' ')
+      .map((word) => word[0])
       .join('')
       .toUpperCase()
       .substring(0, 2);

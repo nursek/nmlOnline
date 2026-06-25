@@ -4,27 +4,27 @@ import {
   HttpRequest,
   HttpErrorResponse,
   HttpInterceptorFn,
-  HttpHandlerFn
+  HttpHandlerFn,
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { Router } from '@angular/router';
-import { Store } from '@ngrx/store';
-import { AuthActions } from '../store';
 import { TokenService } from './token.service';
+import { AuthService } from './auth.service';
 
 /**
  * Intercepteur HTTP qui gère l'authentification JWT.
  * - Ajoute le token aux requêtes si présent
  * - Gère le refresh automatique sur erreur 401
+ * - Propage les 403 comme des erreurs d'autorisation (pas de refresh)
  * - Redirige vers /login si le refresh échoue
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const tokenService = inject(TokenService);
+  const authService = inject(AuthService);
   const router = inject(Router);
-  const store = inject(Store);
 
-  // Ne pas intercepter les requêtes d'authentification
+  // Ne pas intercepter les requêtes d'authentification de base
   if (isAuthRequest(req.url)) {
     return next(req);
   }
@@ -35,25 +35,28 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Gérer les erreurs 401 (token expiré) et 403 (accès refusé par token invalide)
-      if (error.status === 401 || error.status === 403) {
-        return handleUnauthorized(req, next, tokenService, router, store);
+      // 401 = token expiré/absent : tenter un refresh une seule fois
+      if (error.status === 401) {
+        return handleUnauthorized(req, next, tokenService, authService, router);
+      }
+
+      // 403 = autorisations insuffisantes : ne PAS tenter de refresh
+      if (error.status === 403) {
+        authService.reportForbidden(error.error?.message || 'Accès refusé');
       }
 
       // Propager les autres erreurs
       return throwError(() => error);
-    })
+    }),
   );
 };
 
 /**
- * Vérifie si la requête est une requête d'authentification.
+ * Vérifie si la requête est une requête d'authentification de base.
+ * /auth/logout garde le token attaché si le backend en a besoin.
  */
 function isAuthRequest(url: string): boolean {
-  return url.includes('/auth/refresh') ||
-         url.includes('/login') ||
-         url.includes('/register') ||
-         url.includes('/auth/logout');
+  return url.includes('/auth/refresh') || url.includes('/login') || url.includes('/register');
 }
 
 /**
@@ -62,34 +65,44 @@ function isAuthRequest(url: string): boolean {
 function addTokenToRequest(req: HttpRequest<unknown>, token: string): HttpRequest<unknown> {
   return req.clone({
     setHeaders: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 }
 
+const RETRY_HEADER = 'X-Retry-After-Refresh';
+
 /**
  * Gère une erreur 401 en tentant un refresh du token.
+ * Utilise un header personnalisé pour éviter les boucles infinies.
  */
 function handleUnauthorized(
   req: HttpRequest<unknown>,
   next: HttpHandlerFn,
   tokenService: TokenService,
+  authService: AuthService,
   router: Router,
-  store: Store
 ): Observable<HttpEvent<unknown>> {
+  // Si la requête a déjà été retentée après un refresh, ne pas boucler
+  if (req.headers.has(RETRY_HEADER)) {
+    authService.clear();
+    void router.navigate(['/login']);
+    return throwError(() => new Error('Token refresh failed after retry'));
+  }
 
   return tokenService.refreshToken().pipe(
     switchMap((newToken) => {
-      // Réessayer la requête originale avec le nouveau token
-      return next(addTokenToRequest(req, newToken));
+      // Marquer la requête comme déjà retentée après refresh
+      const retriedReq = req.clone({
+        setHeaders: { [RETRY_HEADER]: '1' },
+      });
+      return next(addTokenToRequest(retriedReq, newToken));
     }),
     catchError((refreshError) => {
       // Le refresh a échoué, déconnecter l'utilisateur
-      tokenService.clearAuth();
-      store.dispatch(AuthActions.logoutSuccess());
-      router.navigate(['/login']);
+      authService.clear();
+      void router.navigate(['/login']);
       return throwError(() => refreshError);
-    })
+    }),
   );
 }
-

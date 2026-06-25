@@ -1,55 +1,48 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
-import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
-import { filter, switchMap, map, take } from 'rxjs/operators';
-import { selectIsAuthenticated, selectAuthLoading } from '../store';
+import { firstValueFrom } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { AuthService } from '../services/auth.service';
 
 /**
- * Guard qui protège les routes nécessitant une authentification.
- * Attend que l'initialisation de la session soit terminée avant de vérifier.
+ * Wait until `AuthService.initSession()` has finished. Returns synchronously
+ * if the session is already initialized, otherwise resolves the first time
+ * the `initialized` signal flips to `true`.
  */
-export const authGuard: CanActivateFn = (route, state): Observable<boolean | UrlTree> => {
-  const store = inject(Store);
+export async function waitForInitialization(auth: AuthService): Promise<void> {
+  if (auth.initialized()) return;
+  await firstValueFrom(
+    toObservable(auth.initialized).pipe(
+      filter((v) => v),
+      take(1),
+    ),
+  );
+}
+
+/**
+ * Guard: routes requiring authentication.
+ * Waits for session initialization, then checks `isAuthenticated`.
+ */
+export const authGuard: CanActivateFn = async (_route, state): Promise<boolean | UrlTree> => {
+  const auth = inject(AuthService);
   const router = inject(Router);
 
-  // Attendre que le loading soit terminé (initSession terminé)
-  return store.select(selectAuthLoading).pipe(
-    filter((loading) => !loading),
-    take(1),
-    switchMap(() => store.select(selectIsAuthenticated).pipe(
-      take(1),
-      map(isAuthenticated => {
-        if (isAuthenticated) {
-          return true;
-        }
-        return router.createUrlTree(['/login'], {
-          queryParams: { returnUrl: state.url }
-        });
-      })
-    ))
-  );
+  await waitForInitialization(auth);
+
+  if (auth.isAuthenticated()) return true;
+  return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
 };
 
 /**
- * Guard pour les routes qui ne doivent être accessibles que si NON authentifié.
- * Exemple: page de login, register.
+ * Guard: routes only accessible when NOT authenticated (e.g. /login).
  */
-export const noAuthGuard: CanActivateFn = (): Observable<boolean | UrlTree> => {
-  const store = inject(Store);
+export const noAuthGuard: CanActivateFn = async (): Promise<boolean | UrlTree> => {
+  const auth = inject(AuthService);
   const router = inject(Router);
 
-  return store.select(selectAuthLoading).pipe(
-    filter((loading) => !loading),
-    take(1),
-    switchMap(() => store.select(selectIsAuthenticated).pipe(
-      take(1),
-      map(isAuthenticated => {
-        if (!isAuthenticated) {
-          return true;
-        }
-        return router.createUrlTree(['/carte']);
-      })
-    ))
-  );
+  await waitForInitialization(auth);
+
+  if (!auth.isAuthenticated()) return true;
+  return router.createUrlTree(['/carte']);
 };

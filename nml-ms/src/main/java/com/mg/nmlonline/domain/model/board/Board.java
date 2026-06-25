@@ -2,9 +2,10 @@ package com.mg.nmlonline.domain.model.board;
 
 import com.mg.nmlonline.domain.model.sector.Sector;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.*;
 
@@ -14,7 +15,8 @@ import java.util.*;
  */
 @Entity
 @Table(name = "BOARDS")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Board {
@@ -34,28 +36,25 @@ public class Board {
     @Column(name = "svg_overlay_url")
     private String svgOverlayUrl;
 
-    // Tous les secteurs de la carte
+    // Tous les secteurs de la carte (source unique de vérité)
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Sector> sectorsList = new ArrayList<>();
 
-    // Map transient pour accès rapide par numéro (utilisé par le code métier)
-    @Transient
-    private Map<Integer, Sector> sectors = new LinkedHashMap<>();
+    // === GESTION DES SECTEURS ===
 
     /**
-     * Initialise la map des secteurs à partir de la liste (après chargement JPA)
+     * Construit une map numéro -> secteur à partir de la liste persistante.
+     * Utilisé en interne pour les accès rapides sans maintenir de double source.
      */
-    @PostLoad
-    public void initSectorsMap() {
-        sectors = new LinkedHashMap<>();
+    private Map<Integer, Sector> sectorMap() {
+        Map<Integer, Sector> map = new LinkedHashMap<>();
         if (sectorsList != null) {
             for (Sector sector : sectorsList) {
-                sectors.put(sector.getNumber(), sector);
+                map.put(sector.getNumber(), sector);
             }
         }
+        return map;
     }
-
-    // === GESTION DES SECTEURS ===
 
     /**
      * Ajoute un secteur à la carte. Le numéro du secteur doit être unique.
@@ -67,11 +66,10 @@ public class Board {
         if (sector.getNumber() < 1) {
             throw new IllegalArgumentException("Sector number must be >= 1");
         }
-        if (sectors.containsKey(sector.getNumber())) {
+        if (sectorMap().containsKey(sector.getNumber())) {
             throw new IllegalStateException("Sector " + sector.getNumber() + " already exists");
         }
         sector.setBoard(this);
-        sectors.put(sector.getNumber(), sector);
         sectorsList.add(sector);
     }
 
@@ -79,39 +77,46 @@ public class Board {
      * Récupère un secteur par son numéro.
      */
     public Sector getSector(int number) {
-        return sectors.get(number);
+        if (sectorsList == null) return null;
+        for (Sector sector : sectorsList) {
+            if (sector.getNumber() == number) {
+                return sector;
+            }
+        }
+        return null;
     }
 
     /**
      * Retourne tous les secteurs de la carte.
      */
     public Collection<Sector> getAllSectors() {
-        return Collections.unmodifiableCollection(sectors.values());
+        if (sectorsList == null) return Collections.emptyList();
+        return Collections.unmodifiableList(sectorsList);
     }
 
     /**
      * Retourne le nombre total de secteurs.
      */
     public int getSectorCount() {
-        return sectors.size();
+        return sectorsList == null ? 0 : sectorsList.size();
     }
 
     /**
      * Vérifie si un secteur existe.
      */
     public boolean hasSector(int number) {
-        return sectors.containsKey(number);
+        return getSector(number) != null;
     }
 
     /**
      * Supprime un secteur de la carte.
      */
     public void removeSector(int number) {
-        Sector removed = sectors.remove(number);
+        Sector removed = getSector(number);
         if (removed != null) {
             sectorsList.remove(removed);
             // Nettoyer les références dans les voisins
-            for (Sector s : sectors.values()) {
+            for (Sector s : sectorsList) {
                 s.removeNeighbor(number);
             }
         }
@@ -134,7 +139,8 @@ public class Board {
      * Retourne tous les secteurs possédés par un joueur.
      */
     public List<Sector> getSectorsByOwner(Long playerId) {
-        return sectors.values().stream()
+        if (sectorsList == null) return Collections.emptyList();
+        return sectorsList.stream()
                 .filter(s -> s.isOwnedBy(playerId))
                 .toList();
     }
@@ -143,7 +149,8 @@ public class Board {
      * Retourne tous les secteurs neutres (sans propriétaire).
      */
     public List<Sector> getNeutralSectors() {
-        return sectors.values().stream()
+        if (sectorsList == null) return Collections.emptyList();
+        return sectorsList.stream()
                 .filter(Sector::isNeutral)
                 .toList();
     }
@@ -257,6 +264,6 @@ public class Board {
 
     @Override
     public String toString() {
-        return String.format("Board{id=%d, name='%s', sectors=%d}", id, name, sectors.size());
+        return String.format("Board{id=%d, name='%s', sectors=%d}", id, name, getSectorCount());
     }
 }

@@ -115,10 +115,22 @@
   .bonus {
     font-size: 0.7rem !important;
     min-height: 24px !important;
-    &.pdf { background: #dc2626 !important; color: white !important; }
-    &.pdc { background: #0891b2 !important; color: white !important; }
-    &.arm { background: #059669 !important; color: white !important; }
-    &.esq { background: #d97706 !important; color: white !important; }
+    &.pdf {
+      background: #dc2626 !important;
+      color: white !important;
+    }
+    &.pdc {
+      background: #0891b2 !important;
+      color: white !important;
+    }
+    &.arm {
+      background: #059669 !important;
+      color: white !important;
+    }
+    &.esq {
+      background: #d97706 !important;
+      color: white !important;
+    }
   }
 }
 
@@ -412,7 +424,9 @@ mat-sidenav {
   grid-template-rows: 0fr;
   opacity: 0;
   overflow: hidden;
-  transition: grid-template-rows 0.3s ease-out, opacity 0.3s ease-out;
+  transition:
+    grid-template-rows 0.3s ease-out,
+    opacity 0.3s ease-out;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(139, 92, 246, 0.03) 100%);
   border: 2px solid #e2e8f0;
   border-top: none;
@@ -645,14 +659,6 @@ mat-sidenav {
   }
 }
 
-.fade-in {
-  @include shared.fade-in-animation;
-}
-
-.hover-lift {
-  @include shared.hover-lift;
-}
-
 // Onglet Véhicules
 .vehicles-section {
   padding: 24px 0;
@@ -808,4 +814,12 @@ mat-sidenav {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   padding: 24px 0;
+}
+
+.inline-spinner {
+  display: inline-block;
+}
+
+.hidden-spinner {
+  display: none !important;
 }

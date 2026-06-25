@@ -3,9 +3,10 @@ package com.mg.nmlonline.domain.model.building;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Quartier Général - Le centre névralgique de l'empire du joueur.
@@ -24,16 +25,14 @@ import lombok.NoArgsConstructor;
  */
 @Entity
 @DiscriminatorValue("HEADQUARTERS")
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public class Headquarters extends Building {
 
-    // Constantes de coût
-    public static final double RECONSTRUCTION_SAME_LOCATION_COST = 75000; //TODO : revoir les coûts de reconstruction une fois la monnaie choisie
-    public static final double RECONSTRUCTION_OTHER_LOCATION_COST = 150000; //TODO : revoir les coûts de reconstruction une fois la monnaie choisie
-    public static final double WEALTH_STORAGE_PERCENTAGE = 0.25; // 25%
-    public static final int MOVE_COOLDOWN = 5;
+    public static final double DEFAULT_WEALTH_STORAGE_PERCENTAGE = 0.25;
+    public static final int DEFAULT_MOVE_COOLDOWN = 5;
 
     /**
      * Indique si le QG est actuellement opérationnel.
@@ -51,18 +50,22 @@ public class Headquarters extends Building {
 
     @Override
     public boolean canMove(int currentTurn) {
+        return canMove(currentTurn, DEFAULT_MOVE_COOLDOWN);
+    }
+
+    public boolean canMove(int currentTurn, int moveCooldown) {
         if (!isOperational || isDestroyed()) {
             return false;
         }
         if (getLastMovedTurn() == null) {
             return true;
         }
-        return currentTurn - getLastMovedTurn() >= MOVE_COOLDOWN;
+        return currentTurn - getLastMovedTurn() >= moveCooldown;
     }
 
     @Override
     public int getMoveCooldown() {
-        return MOVE_COOLDOWN;
+        return DEFAULT_MOVE_COOLDOWN;
     }
 
     /**
@@ -72,7 +75,7 @@ public class Headquarters extends Building {
      * @return Montant stocké dans le QG
      */
     public double getStoredWealth(double totalWealth) {
-        return totalWealth * WEALTH_STORAGE_PERCENTAGE;
+        return totalWealth * DEFAULT_WEALTH_STORAGE_PERCENTAGE;
     }
 
     /**
@@ -86,36 +89,13 @@ public class Headquarters extends Building {
 
     /**
      * Reconstruit le QG sur place.
-     *
-     * @param playerMoney Argent disponible du joueur
-     * @return true si la reconstruction a réussi
+     * La vérification du coût est faite par le service.
      */
-    public boolean reconstructSameLocation(double playerMoney) {
-        if (playerMoney < RECONSTRUCTION_SAME_LOCATION_COST) {
-            return false;
-        }
+    public void reconstructSameLocation() {
         setDestroyed(false);
         this.isOperational = true;
         this.attack = BuildingType.HEADQUARTERS.getBaseAttack();
         this.defense = BuildingType.HEADQUARTERS.getBaseDefense();
-        return true;
-    }
-
-    /**
-     * Reconstruit le QG dans un autre quartier.
-     *
-     * @param playerMoney Argent disponible du joueur
-     * @return true si la reconstruction a réussi
-     */
-    public boolean reconstructOtherLocation(double playerMoney) {
-        if (playerMoney < RECONSTRUCTION_OTHER_LOCATION_COST) {
-            return false;
-        }
-        setDestroyed(false);
-        this.isOperational = true;
-        this.attack = BuildingType.HEADQUARTERS.getBaseAttack();
-        this.defense = BuildingType.HEADQUARTERS.getBaseDefense();
-        return true;
     }
 
     /**

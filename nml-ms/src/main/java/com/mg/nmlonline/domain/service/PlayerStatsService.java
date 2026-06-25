@@ -1,17 +1,12 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.board.Board;
-import com.mg.nmlonline.domain.model.equipment.Equipment;
-import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
-import com.mg.nmlonline.domain.model.unit.Unit;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Service pour calculer et mettre à jour les statistiques d'un joueur.
@@ -160,101 +155,6 @@ public class PlayerStatsService {
     }
 
     /**
-     * Rafraîchit la disponibilité des équipements dans l'inventaire du joueur.
-     * Compare le nombre total d'équipements avec ceux actuellement équipés par les unités.
-     *
-     * @param player Le joueur dont on veut rafraîchir l'inventaire
-     * @param board Le plateau de jeu contenant les secteurs
-     */
-    public void refreshEquipmentAvailability(Player player, Board board) {
-        if (player == null || board == null) {
-            return;
-        }
-
-        // Récupérer tous les secteurs du joueur
-        List<Sector> playerSectors = board.getSectorsByOwner(player.getId());
-
-        // Compter le nombre d'exemplaires portés pour chaque équipement
-        Map<Equipment, Integer> equippedCount = new HashMap<>();
-        for (Sector sector : playerSectors) {
-            for (Unit unit : sector.getUnits()) {
-                for (Equipment eq : unit.getEquipments()) {
-                    equippedCount.put(eq, equippedCount.getOrDefault(eq, 0) + 1);
-                }
-            }
-        }
-
-        // Mettre à jour l'attribut available de chaque stack
-        for (EquipmentStack stack : player.getEquipments()) {
-            int total = stack.getQuantity();
-            int used = equippedCount.getOrDefault(stack.getEquipment(), 0);
-            int available = total - used;
-            stack.setAvailable(available);
-        }
-    }
-
-    /**
-     * Réassigne les numéros d'unités pour un joueur.
-     * Parcourt toutes les unités du joueur et leur assigne un numéro séquentiel par type.
-     *
-     * @param player Le joueur dont on veut réassigner les numéros d'unités
-     * @param board Le plateau de jeu contenant les secteurs
-     */
-    public void reassignUnitNumbers(Player player, Board board) {
-        if (player == null || board == null) {
-            return;
-        }
-
-        List<Sector> playerSectors = board.getSectorsByOwner(player.getId());
-        Map<String, Integer> typeCounters = new HashMap<>();
-
-        for (Sector sector : playerSectors) {
-            for (Unit unit : sector.getUnits()) {
-                String unitType = unit.getType().name();
-                int currentCount = typeCounters.getOrDefault(unitType, 0) + 1;
-                typeCounters.put(unitType, currentCount);
-                unit.setNumber(currentCount);
-            }
-        }
-    }
-
-    /**
-     * Récupère toutes les unités d'un joueur sur tout le plateau.
-     *
-     * @param player Le joueur dont on veut récupérer les unités
-     * @param board Le plateau de jeu contenant les secteurs
-     * @return Liste de toutes les unités du joueur
-     */
-    public List<Unit> getAllPlayerUnits(Player player, Board board) {
-        if (player == null || board == null) {
-            return List.of();
-        }
-
-        List<Sector> playerSectors = board.getSectorsByOwner(player.getId());
-        return playerSectors.stream()
-                .flatMap(sector -> sector.getUnits().stream())
-                .toList();
-    }
-
-    /**
-     * Compte le nombre total d'unités d'un joueur.
-     *
-     * @param player Le joueur dont on veut compter les unités
-     * @param board Le plateau de jeu contenant les secteurs
-     * @return Le nombre total d'unités
-     */
-    public int getTotalArmySize(Player player, Board board) {
-        if (player == null || board == null) {
-            return 0;
-        }
-
-        List<Sector> playerSectors = board.getSectorsByOwner(player.getId());
-        return playerSectors.stream()
-                .mapToInt(Sector::getArmySize)
-                .sum();
-    }
-
-    /**
      * Récupère les secteurs du joueur qui contiennent des unités.
      *
      * @param player Le joueur dont on veut récupérer les secteurs avec armée
@@ -270,78 +170,6 @@ public class PlayerStatsService {
         return playerSectors.stream()
                 .filter(sector -> !sector.getCombatEntities().isEmpty())
                 .toList();
-    }
-
-    /**
-     * Affiche toutes les armées des secteurs du joueur.
-     *
-     * @param player Le joueur dont on veut afficher l'armée
-     * @param board Le plateau de jeu contenant les secteurs
-     */
-    public void displayArmy(Player player, Board board) {
-        if (player == null || board == null) {
-            return;
-        }
-
-        System.out.println("=== ARMÉES DE " + player.getName().toUpperCase() + " ===");
-
-        List<Sector> sectorsWithArmy = getSectorsWithCombatEntities(player, board);
-        if (sectorsWithArmy.isEmpty()) {
-            System.out.println("Aucune unité dans les secteurs.");
-        } else {
-            for (Sector sector : sectorsWithArmy) {
-                sector.displayArmy();
-                System.out.println();
-            }
-        }
-
-        int totalUnits = getTotalArmySize(player, board);
-        int totalSectors = (int) player.getOwnedSectorIds().size();
-        System.out.printf("TOTAL : %d unités réparties dans %d secteurs%n", totalUnits, totalSectors);
-    }
-
-    /**
-     * Affiche les statistiques complètes d'un joueur.
-     *
-     * @param player Le joueur dont on veut afficher les stats
-     * @param board Le plateau de jeu contenant les secteurs
-     */
-    public void displayStats(Player player, Board board) {
-        if (player == null || board == null) {
-            return;
-        }
-
-        // Recalculer les stats avant affichage
-        recalculateStats(player, board);
-
-        System.out.printf("=== %s ===%n", player.getName().toUpperCase());
-
-        System.out.println("--- Statistiques Économiques ---");
-        System.out.println(formatStat(player.getStats().getMoney(), "$ "));
-        System.out.println(formatStat(player.getStats().getTotalIncome(), "revenu quotidien"));
-        System.out.println(formatStat(player.getStats().getTotalVehiclesValue(), "valeur des véhicules"));
-        System.out.println(formatStat(player.getStats().getTotalEquipmentValue(), "valeur des équipements"));
-        System.out.println(formatStat(player.getStats().getTotalEconomyPower(), "puissance économique totale"));
-        System.out.println();
-
-        System.out.println("--- Statistiques Militaires ---");
-        System.out.println(formatStat(player.getStats().getTotalOffensivePower(), "puissance offensive totale"));
-        System.out.println(formatStat(player.getStats().getTotalDefensivePower(), "puissance défensive totale"));
-        System.out.println(formatStat(player.getStats().getGlobalPower(), "puissance globale"));
-        System.out.println();
-    }
-
-    private static final String FORMAT_INT = "%,.0f";
-    private static final String FORMAT_FLOAT = "%,.2f";
-
-    /**
-     * Formate une statistique pour l'affichage.
-     */
-    private String formatStat(double value, String label) {
-        String formatted = (value % 1 == 0)
-            ? String.format(FORMAT_INT, value)
-            : String.format(FORMAT_FLOAT, value);
-        return formatted + " " + label;
     }
 }
 

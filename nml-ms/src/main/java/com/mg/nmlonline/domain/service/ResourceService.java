@@ -1,23 +1,27 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.SellResourceBatchItemDto;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class ResourceService {
+
+    private static final double[] SALE_MULTIPLIERS = {1.0, 3.0, 6.0, 9.0, 13.0, 19.5, 24.5, 33.0, 45.0};
 
     private final ResourceRepository resourceRepository;
     private final PlayerResourceRepository playerResourceRepository;
     private final PlayerRepository playerRepository;
 
-    @Autowired
     public ResourceService(ResourceRepository resourceRepository,
                            PlayerResourceRepository playerResourceRepository,
                            PlayerRepository playerRepository) {
@@ -26,22 +30,6 @@ public class ResourceService {
         this.playerRepository = playerRepository;
     }
 
-    /**
-     * Multiplicateurs de vente basés sur la quantité vendue
-     * 1 unité = x1, 2 unités = x3, 3 unités = x6, etc.
-     */
-    private static final double[] SALE_MULTIPLIERS = {
-        1.0,    // 1 unité = x1
-        3.0,    // 2 unités = x3
-        6.0,    // 3 unités = x6
-        9.0,    // 4 unités = x9
-        13.0,   // 5 unités = x13
-        19.5,   // 6 unités = x19.5
-        24.5,   // 7 unités = x24.5
-        33.0,   // 8 unités = x33
-        45.0    // 9 unités = x45
-    };
-
     public double getBaseValue(String resourceName) {
         return resourceRepository.findByName(resourceName)
                 .map(Resource::getBaseValue)
@@ -49,8 +37,8 @@ public class ResourceService {
     }
 
     /**
-     * Calcule le multiplicateur de vente basé sur la quantité
-     * Au-delà de 9 unités, impossible d'atteindre un multiplicateur plus élevé
+     * Calcule le multiplicateur de vente basé sur la quantité.
+     * Au-delà de la dernière entrée configurée, le multiplicateur max est utilisé.
      */
     private double getMultiplier(int quantity) {
         if (quantity <= 0) return 0.0;
@@ -64,30 +52,8 @@ public class ResourceService {
         return getBaseValue(resourceName) * getMultiplier(quantity);
     }
 
-    public double sellResourceWithMultiplier(Player player, String resourceName, int quantity) {
-        if (player == null || resourceName == null || quantity <= 0) {
-            return 0.0;
-        }
-
-        // Vérifier que le joueur a suffisamment de ressources
-        if (!player.hasResource(resourceName, quantity)) {
-            return 0.0;
-        }
-
-        double saleValue = calculateSaleValue(resourceName, quantity);
-
-        // Retirer la ressource et ajouter l'argent
-        boolean removed = player.removeResource(resourceName, quantity);
-        if (removed) {
-            player.getStats().setMoney(player.getStats().getMoney() + saleValue);
-            return saleValue;
-        }
-
-        return 0.0;
-    }
-
     public boolean transferResource(Player fromPlayer, Player toPlayer,
-                                     String resourceName, int quantity) {
+                                    String resourceName, int quantity) {
         if (fromPlayer == null || toPlayer == null || resourceName == null || quantity <= 0) {
             return false;
         }
@@ -107,16 +73,11 @@ public class ResourceService {
         return false;
     }
 
-
     public void collectSectorResource(Player player, String resourceName, int quantity) {
         if (player != null && resourceName != null && quantity > 0) {
             player.addResource(resourceName, quantity);
         }
-        // Ajouter un nouvel attribut au secteur, indiquant que la ressource a été collectée.
-    }
-
-    public double calculateResourceValue(String resourceName, int quantity) {
-        return quantity * getBaseValue(resourceName); // Valeur totale sans multiplicateur
+        // TODO: Ajouter un nouvel attribut au secteur, indiquant que la ressource a été collectée.
     }
 
     /**
@@ -171,6 +132,27 @@ public class ResourceService {
 
         // Retourner les informations de la vente
         return new SaleResult(resourceName, quantity, sellPrice);
+    }
+
+    /**
+     * Vend un lot de ressources de manière atomique pour le joueur authentifié.
+     *
+     * @param userId l'id de l'utilisateur authentifié
+     * @param items  liste des lignes de vente (PlayerResource.id + quantité)
+     * @return la liste des résultats de chaque ligne de vente
+     */
+    @Transactional
+    public List<SaleResult> sellResourcesBatch(Long userId, List<SellResourceBatchItemDto> items) {
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("Le panier de vente est vide");
+        }
+
+        List<SaleResult> results = new ArrayList<>();
+        for (SellResourceBatchItemDto item : items) {
+            results.add(sellResource(item.getPlayerResourceId(), item.getQuantity(), userId));
+        }
+
+        return results;
     }
 
     /**

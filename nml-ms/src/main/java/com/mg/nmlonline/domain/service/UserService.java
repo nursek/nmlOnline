@@ -19,15 +19,18 @@ public class UserService {
 
     private final UserRepository userRepo;
     private final PasswordEncoder encoder;
+    private final JwtService jwtService;
     private final String pepper;
 
     public UserService(
             UserRepository userRepo,
             PasswordEncoder encoder,
+            JwtService jwtService,
             @Value("${jwt.pepper}") String pepper
     ) {
         this.userRepo = userRepo;
         this.encoder = encoder;
+        this.jwtService = jwtService;
         this.pepper = pepper;
     }
 
@@ -36,43 +39,61 @@ public class UserService {
     }
 
     public boolean checkPassword(String raw, String hashed) {
+        // Schéma actuel : mot de passe + pepper
+        if (encoder.matches(applyPepper(raw), hashed)) {
+            return true;
+        }
+        // Rétro-compatibilité : anciens hashes encodés sans pepper.
+        // Nécessaire après le refactoring qui a introduit le pepper, pour ne pas
+        // invalider les comptes existants tant qu'ils ne sont pas re-hashés.
         return encoder.matches(raw, hashed);
     }
 
     public String encodePassword(String raw) {
-        return encoder.encode(raw);
+        return encoder.encode(applyPepper(raw));
+    }
+
+    private String applyPepper(String raw) {
+        return raw + pepper;
     }
 
     public void save(User user) {
         userRepo.save(user);
     }
 
-    public void saveRefreshToken(User user, String refreshTokenHash) {
+    public void saveRefreshToken(User user, String refreshTokenHash, String refreshTokenJti, Long refreshTokenExpiry) {
         user.setRefreshTokenHash(refreshTokenHash);
+        user.setRefreshTokenJti(refreshTokenJti);
+        user.setRefreshTokenExpiry(refreshTokenExpiry);
         userRepo.save(user);
     }
 
     public void resetRefreshToken(User user) {
         user.setRefreshTokenHash(null);
+        user.setRefreshTokenJti(null);
         user.setRefreshTokenExpiry(null);
         userRepo.save(user);
     }
 
     /**
-     * Trouve un utilisateur par son refresh token.
-     * Itère sur les utilisateurs ayant un token actif pour vérifier le hash.
-     * Note: En production avec beaucoup d'utilisateurs, considérer
-     * stocker un identifiant unique (jti) du token pour recherche directe.
+     * Trouve un utilisateur par son refresh token via une recherche indexée sur le JTI,
+     * puis vérifie le hash stocké.
      */
     public User findByRefreshToken(String refreshToken) {
-        String transformed = hashInput(refreshToken);
+        String jti = jwtService.extractJti(refreshToken);
+        if (jti == null) {
+            return null;
+        }
 
-        // Filtrer uniquement les utilisateurs avec un refresh token actif
-        for (User user : userRepo.findAllWithActiveRefreshToken()) {
-            String hash = user.getRefreshTokenHash();
-            if (hash != null && encoder.matches(transformed, hash)) {
-                return user;
-            }
+        String transformed = hashInput(refreshToken);
+        User user = userRepo.findByRefreshTokenJti(jti).orElse(null);
+        if (user == null) {
+            return null;
+        }
+
+        String hash = user.getRefreshTokenHash();
+        if (hash != null && encoder.matches(transformed, hash)) {
+            return user;
         }
         return null;
     }

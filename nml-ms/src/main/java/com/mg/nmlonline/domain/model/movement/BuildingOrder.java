@@ -1,8 +1,9 @@
 package com.mg.nmlonline.domain.model.movement;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Ordre de déplacement d'un bâtiment donné par un joueur pour un tour.
@@ -19,7 +20,8 @@ import lombok.NoArgsConstructor;
  */
 @Entity
 @Table(name = "BUILDING_ORDERS")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class BuildingOrder {
 

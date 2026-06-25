@@ -5,6 +5,8 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.battle.Battle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,8 @@ import java.util.Optional;
  */
 @Service
 public class CombatService {
+
+    private static final Logger logger = LoggerFactory.getLogger(CombatService.class);
 
     @Autowired
     private PlayerStatsService playerStatsService;
@@ -50,15 +54,15 @@ public class CombatService {
             return new BattleResult(false, "Paramètres invalides");
         }
 
-        System.out.println("⚔️  DÉBUT DE LA BATAILLE\n");
-        System.out.println("  Attaquant: " + attacker.getName());
-        System.out.println("  Défenseur: " + defender.getName() + "\n");
+        logger.info("⚔️  DÉBUT DE LA BATAILLE\n");
+        logger.info("  Attaquant: {}", attacker.getName());
+        logger.info("  Défenseur: {}\n", defender.getName());
 
         // Trouver un secteur du défenseur avec une armée
         Optional<Sector> defenderSectorOpt = findSectorWithArmy(defender, board);
         if (defenderSectorOpt.isEmpty()) {
             String message = "❌ Le défenseur n'a pas d'armée disponible pour le combat.";
-            System.out.println(message);
+            logger.info(message);
             return new BattleResult(false, message);
         }
         Sector defenderSector = defenderSectorOpt.get();
@@ -67,14 +71,14 @@ public class CombatService {
         Optional<Sector> attackerSectorOpt = findSectorWithArmy(attacker, board);
         if (attackerSectorOpt.isEmpty()) {
             String message = "❌ L'attaquant n'a pas d'armée disponible pour le combat.";
-            System.out.println(message);
+            logger.info(message);
             return new BattleResult(false, message);
         }
         Sector attackerSector = attackerSectorOpt.get();
 
-        System.out.println("  📍 Secteur attaqué: " + defenderSector.getName() + " (n°" + defenderSector.getNumber() + ")");
-        System.out.println("  📍 Secteur d'origine: " + attackerSector.getName() + " (n°" + attackerSector.getNumber() + ")");
-        System.out.println("\n" + "=".repeat(60) + "\n");
+        logger.info("  📍 Secteur attaqué: {} (n°{})", defenderSector.getName(), defenderSector.getNumber());
+        logger.info("  📍 Secteur d'origine: {} (n°{})", attackerSector.getName(), attackerSector.getNumber());
+        logger.info("\n{}\n", "=".repeat(60));
 
         // Mettre à jour les stats de combat avant la bataille
         playerStatsService.updateCombatStats(defender, board);
@@ -88,8 +92,8 @@ public class CombatService {
         Battle battle = new Battle();
         battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
 
-        System.out.println("\n" + "=".repeat(60));
-        System.out.println("⚔️  FIN DE LA BATAILLE");
+        logger.info("\n{}", "=".repeat(60));
+        logger.info("⚔️  FIN DE LA BATAILLE");
 
         return new BattleResult(true, "Bataille terminée", battle.getWinner());
     }
