@@ -19,7 +19,7 @@ export class TokenService {
 
   // État du refresh - partagé entre toutes les requêtes de cette instance
   private isRefreshing = false;
-  private refreshTokenSubject = new BehaviorSubject<string | null>(null);
+  private readonly refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
   // Timeout pour le refresh (10 secondes max)
   private readonly REFRESH_TIMEOUT_MS = 10_000;
