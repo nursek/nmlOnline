@@ -19,20 +19,10 @@ import java.util.Optional;
 public interface BuildingRepository extends JpaRepository<Building, Long> {
 
     /**
-     * Trouve tous les bâtiments d'un joueur.
-     */
-    List<Building> findByPlayerId(Long playerId);
-
-    /**
      * Trouve un bâtiment par type pour un joueur.
      * Ex: findByPlayerIdAndBuildingType(playerId, BuildingType.HEADQUARTERS)
      */
     Optional<Building> findByPlayerIdAndBuildingType(Long playerId, BuildingType buildingType);
-
-    /**
-     * Trouve tous les bâtiments d'un type donné (tous joueurs).
-     */
-    List<Building> findByBuildingType(BuildingType buildingType);
 
     /**
      * Trouve tous les bâtiments capturés par un joueur.

@@ -1,5 +1,4 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
@@ -7,16 +6,9 @@ import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
   selector: 'app-regles',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    MatCardModule,
-    MatIconModule,
-    MatListModule,
-    MatDividerModule,
-  ],
+  imports: [MatCardModule, MatIconModule, MatListModule, MatDividerModule],
   templateUrl: './regles.component.html',
-  styleUrls: ['./regles.component.scss']
+  styleUrls: ['./regles.component.scss'],
 })
 export class ReglesComponent {}

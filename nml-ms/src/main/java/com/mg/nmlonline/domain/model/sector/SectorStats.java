@@ -2,14 +2,16 @@ package com.mg.nmlonline.domain.model.sector;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Statistiques d'un secteur - Classe Embeddable pour JPA
  */
 @Embeddable
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class SectorStats {
     @Column(name = "sector_total_atk")

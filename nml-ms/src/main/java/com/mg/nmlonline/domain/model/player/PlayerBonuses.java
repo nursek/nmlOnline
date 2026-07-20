@@ -3,14 +3,16 @@ package com.mg.nmlonline.domain.model.player;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Structure pour gérer les bonus/malus d'un joueur - Classe Embeddable pour JPA
  */
 @Embeddable
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlayerBonuses {

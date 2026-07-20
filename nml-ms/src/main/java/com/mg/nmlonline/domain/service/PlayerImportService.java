@@ -19,10 +19,11 @@ import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +33,8 @@ import java.util.Optional;
 
 @Service
 public class PlayerImportService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PlayerImportService.class);
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final PlayerStatsService playerStatsService;
@@ -53,12 +56,19 @@ public class PlayerImportService {
 
 
     /**
-     * Importe un joueur depuis un fichier JSON (sans les équipements).
-     * Les équipements doivent être ajoutés via importEquipmentsToPlayer après persistance.
-     * Les secteurs doivent être ajoutés au Board via importSectorsToBoard.
+     * Parse le contenu JSON d'un joueur en PlayerDTO.
+     * Point d'entrée unique : le DTO parsé est passé aux méthodes d'import ci-dessous.
      */
-    public Player importPlayerFromJson(String filePath) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+    public PlayerDTO parse(String jsonContent) throws IOException {
+        return objectMapper.readValue(jsonContent, PlayerDTO.class);
+    }
+
+    /**
+     * Importe un joueur depuis le DTO (sans les équipements).
+     * Les équipements doivent être ajoutés via importEquipments après persistance.
+     * Les secteurs doivent être ajoutés au Board via importSectors.
+     */
+    public Player importPlayer(PlayerDTO dto) {
         Player player = new Player(dto.name);
         player.getStats().setMoney(dto.money);
         // Note: les équipements seront ajoutés après persistance du Player
@@ -66,31 +76,28 @@ public class PlayerImportService {
     }
 
     /**
-     * Importe les équipements depuis un fichier JSON et les ajoute au Player.
+     * Importe les équipements depuis le DTO et les ajoute au Player.
      * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
      */
-    public void importEquipmentsToPlayer(String filePath, Player player) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+    public void importEquipments(PlayerDTO dto, Player player) {
         importGeneralEquipments(player, dto.equipments);
     }
 
     /**
-     * Importe les ressources depuis un fichier JSON et les ajoute au Player.
+     * Importe les ressources depuis le DTO et les ajoute au Player.
      * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
      */
-    public void importResourcesToPlayer(String filePath, Player player) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+    public void importResources(PlayerDTO dto, Player player) {
         importResources(player, dto.resources);
     }
 
     /**
-     * Importe le personnage principal (GameCharacter) depuis un fichier JSON et l'associe au Player et au Sector.
+     * Importe le personnage principal (GameCharacter) depuis le DTO et l'associe au Player et au Sector.
      * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
      *
      * @return le GameCharacter créé, ou null si aucun personnage n'est défini dans le JSON
      */
-    public GameCharacter importCharacterToPlayer(String filePath, Player player, Board board) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+    public GameCharacter importCharacter(PlayerDTO dto, Player player, Board board) {
         if (dto.character == null || dto.character.name == null) {
             return null;
         }
@@ -113,7 +120,7 @@ public class PlayerImportService {
             if (sector != null) {
                 character.setSector(sector);
             } else {
-                System.err.println("WARN: Secteur " + dto.character.sectorNumber + " non trouvé pour le personnage " + character.getName());
+                logger.warn("Secteur {} non trouvé pour le personnage {}", dto.character.sectorNumber, character.getName());
             }
         }
 
@@ -121,13 +128,12 @@ public class PlayerImportService {
     }
 
     /**
-     * Importe les bâtiments depuis un fichier JSON et les ajoute au Player et au Board.
+     * Importe les bâtiments depuis le DTO et les ajoute au Player et au Board.
      * Le Player doit être persisté (avoir un ID) avant d'appeler cette méthode.
      *
      * @return la liste des bâtiments créés
      */
-    public List<Building> importBuildingsToBoard(String filePath, Player player, Board board) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
+    public List<Building> importBuildings(PlayerDTO dto, Player player, Board board) {
         if (dto.buildings == null || dto.buildings.isEmpty()) {
             return List.of();
         }
@@ -155,59 +161,16 @@ public class PlayerImportService {
     }
 
     /**
-     * Importe les secteurs depuis un fichier JSON et les ajoute au Board.
+     * Importe les secteurs depuis le DTO et les ajoute au Board.
      * Les secteurs sont assignés au joueur dans le Board.
      * Recalcule automatiquement les stats du joueur après l'import.
      */
-    public void importSectorsToBoard(String filePath, Player player, Board board) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(new File(filePath), PlayerDTO.class);
-
+    public void importSectors(PlayerDTO dto, Player player, Board board) {
         if (dto.sectors != null && !dto.sectors.isEmpty()) {
             importSectors(player, board, dto.sectors);
         }
 
         // Recalculer toutes les stats du joueur maintenant que les secteurs et unités sont chargés
-        playerStatsService.recalculateStats(player, board);
-    }
-
-    // === Surcharges acceptant un contenu JSON (String) au lieu d'un chemin de fichier ===
-
-    /**
-     * Importe un joueur depuis un contenu JSON brut (sans les équipements).
-     */
-    public Player importPlayerFromJsonString(String jsonContent) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(jsonContent, PlayerDTO.class);
-        Player player = new Player(dto.name);
-        player.getStats().setMoney(dto.money);
-        return player;
-    }
-
-    /**
-     * Importe les équipements depuis un contenu JSON et les ajoute au Player.
-     */
-    public void importEquipmentsToPlayerFromString(String jsonContent, Player player) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(jsonContent, PlayerDTO.class);
-        importGeneralEquipments(player, dto.equipments);
-    }
-
-    /**
-     * Importe les ressources depuis un contenu JSON et les ajoute au Player.
-     */
-    public void importResourcesToPlayerFromString(String jsonContent, Player player) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(jsonContent, PlayerDTO.class);
-        importResources(player, dto.resources);
-    }
-
-    /**
-     * Importe les secteurs depuis un contenu JSON et les ajoute au Board.
-     */
-    public void importSectorsToBoardFromString(String jsonContent, Player player, Board board) throws IOException {
-        PlayerDTO dto = objectMapper.readValue(jsonContent, PlayerDTO.class);
-
-        if (dto.sectors != null && !dto.sectors.isEmpty()) {
-            importSectors(player, board, dto.sectors);
-        }
-
         playerStatsService.recalculateStats(player, board);
     }
 
@@ -222,7 +185,7 @@ public class PlayerImportService {
         }
 
         if (equipmentRepository == null) {
-            System.err.println("WARN: equipmentRepository est null - mode standalone non supporté");
+            logger.warn("equipmentRepository est null - mode standalone non supporté");
             return null;
         }
 
@@ -235,7 +198,7 @@ public class PlayerImportService {
         }
 
         // L'équipement n'existe pas — c'est une erreur (devrait être dans equipments.csv).
-        System.err.println("WARN: Équipement '" + equipmentName + "' non trouvé en BDD (vérifier equipments.csv)");
+        logger.warn("Équipement '{}' non trouvé en BDD (vérifier equipments.csv)", equipmentName);
         return null;
     }
 
@@ -264,7 +227,7 @@ public class PlayerImportService {
                 Resource resource = resourceOpt.get();
                 player.addResource(resource.getName(), resourceDto.quantity);
             } else {
-                System.err.println("WARN: Ressource avec ID '" + resourceDto.resourceId + "' non trouvée en BDD");
+                logger.warn("Ressource avec ID '{}' non trouvée en BDD", resourceDto.resourceId);
             }
         }
     }
@@ -274,13 +237,12 @@ public class PlayerImportService {
             // Récupérer le secteur existant du Board (doit exister dans board.json)
             Sector sector = board.getSector(sectorDto.sectorNumber);
             if (sector == null) {
-                System.err.println("WARN: Secteur " + sectorDto.sectorNumber + " non trouvé dans le Board - ignoré");
+                logger.warn("Secteur {} non trouvé dans le Board - ignoré", sectorDto.sectorNumber);
                 continue;
             }
 
-            // Assigner le secteur au joueur
+            // Assigner le secteur au joueur (source unique de vérité : Sector.ownerId)
             board.assignOwner(sectorDto.sectorNumber, player.getId(), "#ffffff");
-            player.addOwnedSectorId((long) sectorDto.sectorNumber);
 
             // Importer les unités
             importUnitsToSector(player, sector, sectorDto.army);
@@ -298,22 +260,17 @@ public class PlayerImportService {
     }
 
     private Unit createUnitFromDTO(Player player, UnitDTO unitDto) {
-        // Une unité sans classe est inutilisable
-        if (unitDto.classes == null || unitDto.classes.isEmpty()) {
-            System.err.println("Impossible de créer une unité sans classe - unité ignorée");
+        // Convertir le type String en UnitType
+        UnitType type = (unitDto.type != null && !unitDto.type.isEmpty())
+                ? UnitType.valueOf(unitDto.type) : null;
+        Unit unit = BoardImportService.createUnit(unitDto.classes, type, unitDto.experience);
+        if (unit == null) {
+            logger.warn("Impossible de créer une unité sans classe - unité ignorée");
             return null;
         }
 
-        Unit unit = new Unit(unitDto.experience, UnitClass.valueOf(unitDto.classes.getFirst()));
         // Définir le playerId pour accès direct
         unit.setPlayerId(player.getId());
-        // Convertir le type String en UnitType
-        if (unitDto.type != null && !unitDto.type.isEmpty()) {
-            unit.setType(UnitType.valueOf(unitDto.type));
-        }
-        if (unitDto.classes.size() > 1) {
-            unit.addSecondClass(UnitClass.valueOf(unitDto.classes.get(1)));
-        }
         // Handle "BLESSE" class if present
         if (unitDto.isInjured) {
             unit.setInjured(true);
@@ -324,9 +281,9 @@ public class PlayerImportService {
             for (String equipmentName : unitDto.equipments) {
                 Equipment equipment = getEquipmentByName(equipmentName);
                 if (equipment == null) {
-                    System.err.println("WARN: Équipement '" + equipmentName + "' n'existe pas en BDD (absent de equipments.csv)");
+                    logger.warn("Équipement '{}' n'existe pas en BDD (absent de equipments.csv)", equipmentName);
                 } else if (!player.isEquipmentAvailable(equipmentName)) {
-                    System.err.println("WARN: Équipement '" + equipmentName + "' non disponible dans l'inventaire du joueur " + player.getName());
+                    logger.warn("Équipement '{}' non disponible dans l'inventaire du joueur {}", equipmentName, player.getName());
                 } else {
                     if (unit.addEquipment(equipment)) {
                         player.decrementEquipmentAvailability(equipmentName);
@@ -339,7 +296,7 @@ public class PlayerImportService {
 
     // --- DTOs internes pour l'import JSON ---
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class PlayerDTO {
+    public static class PlayerDTO {
         public String name;
         public List<EquipmentDTO> equipments;
         public List<ResourceDTO> resources;

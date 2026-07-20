@@ -1,8 +1,9 @@
 package com.mg.nmlonline.domain.model.resource;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Entité JPA représentant un type de ressource disponible dans le jeu
@@ -11,7 +12,8 @@ import lombok.NoArgsConstructor;
  */
 @Entity
 @Table(name = "RESOURCE")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class Resource {
 

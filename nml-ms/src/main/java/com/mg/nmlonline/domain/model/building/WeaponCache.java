@@ -2,9 +2,10 @@ package com.mg.nmlonline.domain.model.building;
 
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -23,7 +24,8 @@ import java.util.List;
  */
 @Entity
 @DiscriminatorValue("WEAPON_CACHE")
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public class WeaponCache extends Building {

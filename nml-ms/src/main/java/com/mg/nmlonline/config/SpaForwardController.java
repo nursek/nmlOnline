@@ -26,7 +26,11 @@ public class SpaForwardController {
             "/regles",
             "/regles/**",
             "/login",
-            "/login/**"
+            "/login/**",
+            "/admin",
+            "/admin/**",
+            "/not-found",
+            "/not-found/**"
     })
     public String forward() {
         return "forward:/index.html";

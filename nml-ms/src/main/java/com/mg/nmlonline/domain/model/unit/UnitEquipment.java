@@ -2,9 +2,10 @@ package com.mg.nmlonline.domain.model.unit;
 
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 /**
@@ -13,7 +14,8 @@ import lombok.ToString;
  */
 @Entity
 @Table(name = "UNIT_EQUIPMENTS")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(exclude = "unit")

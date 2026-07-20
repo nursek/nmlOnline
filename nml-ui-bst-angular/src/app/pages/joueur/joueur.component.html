@@ -55,27 +55,37 @@
           <div class="details-grid">
             <div class="detail-item">
               <span class="detail-label">Puissance offensive</span>
-              <span class="detail-value error">{{ player.stats.totalOffensivePower | number:'1.0-0' }}</span>
+              <span class="detail-value error">{{
+                player.stats.totalOffensivePower | number: '1.0-0'
+              }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Puissance défensive</span>
-              <span class="detail-value success">{{ player.stats.totalDefensivePower | number:'1.0-0' }}</span>
+              <span class="detail-value success">{{
+                player.stats.totalDefensivePower | number: '1.0-0'
+              }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Puissance économique</span>
-              <span class="detail-value warning">{{ player.stats.totalEconomyPower | number:'1.0-0' }}</span>
+              <span class="detail-value warning">{{
+                player.stats.totalEconomyPower | number: '1.0-0'
+              }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Valeur des véhicules</span>
-              <span class="detail-value">{{ player.stats.totalVehiclesValue | number:'1.0-0' }} ₡</span>
+              <span class="detail-value"
+                >{{ player.stats.totalVehiclesValue | number: '1.0-0' }} ₡</span
+              >
             </div>
             <div class="detail-item">
               <span class="detail-label">Valeur des équipements</span>
-              <span class="detail-value">{{ player.stats.totalEquipmentValue | number:'1.0-0' }} ₡</span>
+              <span class="detail-value"
+                >{{ player.stats.totalEquipmentValue | number: '1.0-0' }} ₡</span
+              >
             </div>
             <div class="detail-item">
               <span class="detail-label">Armure totale</span>
-              <span class="detail-value">{{ player.stats.totalArmor | number:'1.0-0' }}</span>
+              <span class="detail-value">{{ player.stats.totalArmor | number: '1.0-0' }}</span>
             </div>
           </div>
         </mat-card-content>
@@ -97,7 +107,7 @@
             </div>
           } @else {
             <div class="territories-grid">
-              @for (sector of player.sectors; track $index) {
+              @for (sector of player.sectors; track sector.number) {
                 <div class="territory-card">
                   <h4>{{ sector.name }}</h4>
                   <span class="sector-number">Secteur #{{ sector.number ?? 'N/A' }}</span>
@@ -153,12 +163,14 @@
             }
 
             <!-- Toggle filtres -->
-            <button class="filter-btn"
-                    [class.active]="showFilters()"
-                    (click)="toggleFilters()"
-                    matTooltip="Filtres"
-                    aria-label="Afficher les filtres"
-                    [attr.aria-expanded]="showFilters()">
+            <button
+              class="filter-btn"
+              [class.active]="showFilters()"
+              (click)="toggleFilters()"
+              matTooltip="Filtres"
+              aria-label="Afficher les filtres"
+              [attr.aria-expanded]="showFilters()"
+            >
               <mat-icon>tune</mat-icon>
               @if (activeFiltersCount() > 0) {
                 <span class="filter-badge">{{ activeFiltersCount() }}</span>
@@ -167,20 +179,24 @@
 
             <!-- Toggle view mode -->
             <div class="view-mode-toggle">
-              <button class="toggle-btn"
-                      [class.active]="viewMode() === 'list'"
-                      (click)="setViewMode('list')"
-                      matTooltip="Liste"
-                      aria-label="Vue liste"
-                      [attr.aria-pressed]="viewMode() === 'list'">
+              <button
+                class="toggle-btn"
+                [class.active]="viewMode() === 'list'"
+                (click)="setViewMode('list')"
+                matTooltip="Liste"
+                aria-label="Vue liste"
+                [attr.aria-pressed]="viewMode() === 'list'"
+              >
                 <mat-icon>view_list</mat-icon>
               </button>
-              <button class="toggle-btn"
-                      [class.active]="viewMode() === 'tile'"
-                      (click)="setViewMode('tile')"
-                      matTooltip="Tuiles"
-                      aria-label="Vue tuiles"
-                      [attr.aria-pressed]="viewMode() === 'tile'">
+              <button
+                class="toggle-btn"
+                [class.active]="viewMode() === 'tile'"
+                (click)="setViewMode('tile')"
+                matTooltip="Tuiles"
+                aria-label="Vue tuiles"
+                [attr.aria-pressed]="viewMode() === 'tile'"
+              >
                 <mat-icon>grid_view</mat-icon>
               </button>
             </div>
@@ -195,11 +211,19 @@
               <div class="filter-group">
                 <span class="filter-label">Type</span>
                 <div class="filter-chips">
-                  <button class="filter-chip" [class.active]="selectedTypeFilter() === 'all'" (click)="selectedTypeFilter.set('all')">
+                  <button
+                    class="filter-chip"
+                    [class.active]="selectedTypeFilter() === 'all'"
+                    (click)="selectedTypeFilter.set('all')"
+                  >
                     Tous
                   </button>
                   @for (type of unitTypes(); track type) {
-                    <button class="filter-chip" [class.active]="selectedTypeFilter() === type" (click)="selectedTypeFilter.set(type)">
+                    <button
+                      class="filter-chip"
+                      [class.active]="selectedTypeFilter() === type"
+                      (click)="selectedTypeFilter.set(type)"
+                    >
                       {{ type }}
                     </button>
                   }
@@ -210,11 +234,19 @@
               <div class="filter-group">
                 <span class="filter-label">Secteur</span>
                 <div class="filter-chips">
-                  <button class="filter-chip" [class.active]="selectedLocationFilter() === 'all'" (click)="selectedLocationFilter.set('all')">
+                  <button
+                    class="filter-chip"
+                    [class.active]="selectedLocationFilter() === 'all'"
+                    (click)="selectedLocationFilter.set('all')"
+                  >
                     Tous
                   </button>
                   @for (sector of playerSectors(); track sector.number) {
-                    <button class="filter-chip" [class.active]="selectedLocationFilter() === '' + sector.number" (click)="selectedLocationFilter.set('' + sector.number)">
+                    <button
+                      class="filter-chip"
+                      [class.active]="selectedLocationFilter() === '' + sector.number"
+                      (click)="selectedLocationFilter.set('' + sector.number)"
+                    >
                       {{ sector.name }}
                     </button>
                   }
@@ -225,13 +257,25 @@
               <div class="filter-group">
                 <span class="filter-label">Statut</span>
                 <div class="filter-chips">
-                  <button class="filter-chip" [class.active]="selectedStatusFilter() === 'all'" (click)="selectedStatusFilter.set('all')">
+                  <button
+                    class="filter-chip"
+                    [class.active]="selectedStatusFilter() === 'all'"
+                    (click)="selectedStatusFilter.set('all')"
+                  >
                     Tous
                   </button>
-                  <button class="filter-chip" [class.active]="selectedStatusFilter() === 'healthy'" (click)="selectedStatusFilter.set('healthy')">
+                  <button
+                    class="filter-chip"
+                    [class.active]="selectedStatusFilter() === 'healthy'"
+                    (click)="selectedStatusFilter.set('healthy')"
+                  >
                     En forme
                   </button>
-                  <button class="filter-chip" [class.active]="selectedStatusFilter() === 'injured'" (click)="selectedStatusFilter.set('injured')">
+                  <button
+                    class="filter-chip"
+                    [class.active]="selectedStatusFilter() === 'injured'"
+                    (click)="selectedStatusFilter.set('injured')"
+                  >
                     Blessés
                   </button>
                 </div>
@@ -262,25 +306,35 @@
             @if (viewMode() === 'list') {
               <div class="units-list">
                 @for (item of filteredUnits(); track item.unit.id) {
-                  <div class="unit-list-item" [class.injured]="item.unit.isInjured" [class.expanded]="isUnitExpanded(item.unit.id)">
-                    <div class="unit-list-row" (click)="toggleUnitExpand(item.unit.id)" role="button" tabindex="0" (keydown.enter)="toggleUnitExpand(item.unit.id)" [attr.aria-expanded]="isUnitExpanded(item.unit.id)">
-                      <mat-icon class="expand-icon">{{ isUnitExpanded(item.unit.id) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  <div
+                    class="unit-list-item"
+                    [class.injured]="item.unit.isInjured"
+                    [class.expanded]="isUnitExpanded(item.unit.id)"
+                  >
+                    <div
+                      class="unit-list-row"
+                      (click)="toggleUnitExpand(item.unit.id)"
+                      role="button"
+                      tabindex="0"
+                      (keydown.enter)="toggleUnitExpand(item.unit.id)"
+                      [attr.aria-expanded]="isUnitExpanded(item.unit.id)"
+                    >
+                      <mat-icon class="expand-icon">{{
+                        isUnitExpanded(item.unit.id) ? 'expand_less' : 'expand_more'
+                      }}</mat-icon>
                       <span class="unit-type-badge">{{ item.unit.type.name }}</span>
                       @if (item.unit.classes && item.unit.classes.length > 0) {
                         <span class="unit-classes-inline">
-                          @for (c of item.unit.classes; track c.name) {
-                            <span class="class-tag">{{ c.name }}</span>
-                          }
+                          <ng-container
+                            *ngTemplateOutlet="unitClasses; context: { $implicit: item.unit }"
+                          ></ng-container>
                         </span>
                       }
-                      <span class="unit-exp">{{ item.unit.experience | number:'1.1-1' }} Exp</span>
+                      <span class="unit-exp">{{ item.unit.experience | number: '1.1-1' }} Exp</span>
                       <span class="unit-stats-inline">
-                        <span class="stat atk" matTooltip="Attaque">{{ item.unit.attack | number:'1.0-0' }}</span>
-                        <span class="stat def" matTooltip="Défense">{{ item.unit.defense | number:'1.0-0' }}</span>
-                        <span class="stat pdf" matTooltip="PDF">{{ item.unit.pdf | number:'1.0-0' }}</span>
-                        <span class="stat pdc" matTooltip="PDC">{{ item.unit.pdc | number:'1.0-0' }}</span>
-                        <span class="stat arm" matTooltip="Armure">{{ item.unit.armor | number:'1.0-0' }}</span>
-                        <span class="stat esq" matTooltip="Esquive">{{ item.unit.evasion | number:'1.0-0' }}</span>
+                        <ng-container
+                          *ngTemplateOutlet="unitStats; context: { $implicit: item.unit }"
+                        ></ng-container>
                       </span>
                       <span class="unit-location-inline">
                         <mat-icon>place</mat-icon>{{ item.sectorName }}
@@ -295,12 +349,42 @@
                           <div class="detail-col">
                             <h5>Statistiques</h5>
                             <div class="detail-stats">
-                              <div class="detail-stat"><span class="label">Attaque</span><span class="value atk">{{ item.unit.attack | number:'1.0-0' }}</span></div>
-                              <div class="detail-stat"><span class="label">Défense</span><span class="value def">{{ item.unit.defense | number:'1.0-0' }}</span></div>
-                              <div class="detail-stat"><span class="label">PDF</span><span class="value pdf">{{ item.unit.pdf | number:'1.0-0' }}</span></div>
-                              <div class="detail-stat"><span class="label">PDC</span><span class="value pdc">{{ item.unit.pdc | number:'1.0-0' }}</span></div>
-                              <div class="detail-stat"><span class="label">Armure</span><span class="value arm">{{ item.unit.armor | number:'1.0-0' }}</span></div>
-                              <div class="detail-stat"><span class="label">Esquive</span><span class="value esq">{{ item.unit.evasion | number:'1.0-0' }}</span></div>
+                              <div class="detail-stat">
+                                <span class="label">Attaque</span
+                                ><span class="value atk">{{
+                                  item.unit.attack | number: '1.0-0'
+                                }}</span>
+                              </div>
+                              <div class="detail-stat">
+                                <span class="label">Défense</span
+                                ><span class="value def">{{
+                                  item.unit.defense | number: '1.0-0'
+                                }}</span>
+                              </div>
+                              <div class="detail-stat">
+                                <span class="label">PDF</span
+                                ><span class="value pdf">{{
+                                  item.unit.pdf | number: '1.0-0'
+                                }}</span>
+                              </div>
+                              <div class="detail-stat">
+                                <span class="label">PDC</span
+                                ><span class="value pdc">{{
+                                  item.unit.pdc | number: '1.0-0'
+                                }}</span>
+                              </div>
+                              <div class="detail-stat">
+                                <span class="label">Armure</span
+                                ><span class="value arm">{{
+                                  item.unit.armor | number: '1.0-0'
+                                }}</span>
+                              </div>
+                              <div class="detail-stat">
+                                <span class="label">Esquive</span
+                                ><span class="value esq">{{
+                                  item.unit.evasion | number: '1.0-0'
+                                }}</span>
+                              </div>
                             </div>
                           </div>
                           @if (item.unit.equipments && item.unit.equipments.length > 0) {
@@ -338,25 +422,22 @@
                   <div class="unit-card" [class.injured]="item.unit.isInjured">
                     <div class="unit-header">
                       <div class="unit-type-badge">{{ item.unit.type.name }}</div>
-                      <span class="unit-exp">{{ item.unit.experience | number:'1.1-1' }} Exp</span>
+                      <span class="unit-exp">{{ item.unit.experience | number: '1.1-1' }} Exp</span>
                       @if (item.unit.isInjured) {
                         <mat-icon class="injured-icon" matTooltip="Blessé">local_hospital</mat-icon>
                       }
                     </div>
                     @if (item.unit.classes && item.unit.classes.length > 0) {
                       <div class="unit-classes">
-                        @for (unitClass of item.unit.classes; track unitClass.name) {
-                          <span class="class-tag">{{ unitClass.name }}</span>
-                        }
+                        <ng-container
+                          *ngTemplateOutlet="unitClasses; context: { $implicit: item.unit }"
+                        ></ng-container>
                       </div>
                     }
                     <div class="unit-stats-compact">
-                      <span class="stat atk" matTooltip="Attaque">{{ item.unit.attack | number:'1.0-0' }}</span>
-                      <span class="stat def" matTooltip="Défense">{{ item.unit.defense | number:'1.0-0' }}</span>
-                      <span class="stat pdf" matTooltip="PDF">{{ item.unit.pdf | number:'1.0-0' }}</span>
-                      <span class="stat pdc" matTooltip="PDC">{{ item.unit.pdc | number:'1.0-0' }}</span>
-                      <span class="stat arm" matTooltip="Armure">{{ item.unit.armor | number:'1.0-0' }}</span>
-                      <span class="stat esq" matTooltip="Esquive">{{ item.unit.evasion | number:'1.0-0' }}</span>
+                      <ng-container
+                        *ngTemplateOutlet="unitStats; context: { $implicit: item.unit }"
+                      ></ng-container>
                     </div>
                     @if (item.unit.equipments && item.unit.equipments.length > 0) {
                       <div class="unit-equipments">
@@ -402,16 +483,24 @@
                     <span class="category">{{ stack.equipment.category }}</span>
                     <div class="chips">
                       @if (stack.equipment.pdfBonus > 0) {
-                        <mat-chip class="bonus-chip pdf">+{{ stack.equipment.pdfBonus }} PDF</mat-chip>
+                        <mat-chip class="bonus-chip pdf"
+                          >+{{ stack.equipment.pdfBonus }} PDF</mat-chip
+                        >
                       }
                       @if (stack.equipment.pdcBonus > 0) {
-                        <mat-chip class="bonus-chip pdc">+{{ stack.equipment.pdcBonus }} PDC</mat-chip>
+                        <mat-chip class="bonus-chip pdc"
+                          >+{{ stack.equipment.pdcBonus }} PDC</mat-chip
+                        >
                       }
                       @if (stack.equipment.armBonus > 0) {
-                        <mat-chip class="bonus-chip arm">+{{ stack.equipment.armBonus }} ARM</mat-chip>
+                        <mat-chip class="bonus-chip arm"
+                          >+{{ stack.equipment.armBonus }} ARM</mat-chip
+                        >
                       }
                       @if (stack.equipment.evasionBonus > 0) {
-                        <mat-chip class="bonus-chip esq">+{{ stack.equipment.evasionBonus }} ESQ</mat-chip>
+                        <mat-chip class="bonus-chip esq"
+                          >+{{ stack.equipment.evasionBonus }} ESQ</mat-chip
+                        >
                       }
                     </div>
                   </div>
@@ -474,10 +563,18 @@
                 <mat-icon class="resource-icon">person</mat-icon>
                 <div>
                   <h4>{{ playerCharacter()!.name }}</h4>
-                  @if (playerCharacter()!.sectorNumber !== null && playerCharacter()!.sectorNumber !== undefined) {
-                    <span class="quantity-label">Secteur : {{ playerCharacter()!.sectorNumber }}</span>
+                  @if (
+                    playerCharacter()!.sectorNumber !== null &&
+                    playerCharacter()!.sectorNumber !== undefined
+                  ) {
+                    <span class="quantity-label"
+                      >Secteur : {{ playerCharacter()!.sectorNumber }}</span
+                    >
                   }
-                    <span class="value-label">Attaque : {{ playerCharacter()!.baseAttack }} | Défense : {{ playerCharacter()!.baseDefense }}</span>
+                  <span class="value-label"
+                    >Attaque : {{ playerCharacter()!.baseAttack }} | Défense :
+                    {{ playerCharacter()!.baseDefense }}</span
+                  >
                 </div>
               </div>
             </div>
@@ -499,7 +596,9 @@
             @for (building of allBuildings(); track building.id) {
               <div class="resource-card">
                 <div class="resource-info">
-                  <mat-icon class="resource-icon">{{ building.isDestroyed ? 'delete_forever' : 'apartment' }}</mat-icon>
+                  <mat-icon class="resource-icon">{{
+                    building.isDestroyed ? 'delete_forever' : 'apartment'
+                  }}</mat-icon>
                   <div>
                     <h4>{{ building.displayName }}</h4>
                     @if (building.buildingType) {
@@ -508,7 +607,9 @@
                     @if (building.sectorNumber !== null && building.sectorNumber !== undefined) {
                       <span class="quantity-label">Secteur : {{ building.sectorNumber }}</span>
                     }
-                    <span class="value-label">Attaque : {{ building.attack }} | Défense : {{ building.defense }}</span>
+                    <span class="value-label"
+                      >Attaque : {{ building.attack }} | Défense : {{ building.defense }}</span
+                    >
                     @if (building.isDestroyed) {
                       <span class="badge badge-danger">Détruit</span>
                     }
@@ -532,22 +633,30 @@
             <mat-icon color="primary">local_shipping</mat-icon>
             <h2>Véhicules déployés</h2>
           </div>
-          <p class="section-subtitle">Votre parc de véhicules militaires déployés sur vos secteurs</p>
+          <p class="section-subtitle">
+            Votre parc de véhicules militaires déployés sur vos secteurs
+          </p>
           <div class="details-grid">
             @for (entry of allVehicles(); track entry.vehicle.id) {
               <div class="resource-card">
                 <div class="resource-info">
-                  <mat-icon class="resource-icon">{{ entry.vehicle.isDestroyed ? 'car_crash' : 'local_shipping' }}</mat-icon>
+                  <mat-icon class="resource-icon">{{
+                    entry.vehicle.isDestroyed ? 'car_crash' : 'local_shipping'
+                  }}</mat-icon>
                   <div>
                     <h4>{{ entry.vehicle.displayName }}</h4>
                     @if (entry.vehicle.vehicleType) {
                       <span class="badge">{{ entry.vehicle.vehicleType }}</span>
                     }
                     <span class="quantity-label">Secteur : {{ entry.sectorName }}</span>
-                    <span class="value-label">PDF : {{ entry.vehicle.pdf }} | Défense : {{ entry.vehicle.defense }}</span>
+                    <span class="value-label"
+                      >PDF : {{ entry.vehicle.pdf }} | Défense : {{ entry.vehicle.defense }}</span
+                    >
                     <span class="value-label">
                       Passagers : {{ entry.vehicle.passengerCount }}/{{ entry.vehicle.capacity }}
-                      @if (!entry.vehicle.hasPilot) { | <em>Sans pilote</em> }
+                      @if (!entry.vehicle.hasPilot) {
+                        | <em>Sans pilote</em>
+                      }
                     </span>
                     @if (entry.vehicle.isDestroyed) {
                       <span class="badge badge-danger">Détruit</span>
@@ -561,6 +670,21 @@
       </mat-card>
     }
 
+    <!-- Fragments partagés liste/tuiles -->
+    <ng-template #unitStats let-unit>
+      <span class="stat atk" matTooltip="Attaque">{{ unit.attack | number: '1.0-0' }}</span>
+      <span class="stat def" matTooltip="Défense">{{ unit.defense | number: '1.0-0' }}</span>
+      <span class="stat pdf" matTooltip="PDF">{{ unit.pdf | number: '1.0-0' }}</span>
+      <span class="stat pdc" matTooltip="PDC">{{ unit.pdc | number: '1.0-0' }}</span>
+      <span class="stat arm" matTooltip="Armure">{{ unit.armor | number: '1.0-0' }}</span>
+      <span class="stat esq" matTooltip="Esquive">{{ unit.evasion | number: '1.0-0' }}</span>
+    </ng-template>
+    <ng-template #unitClasses let-unit>
+      @for (c of unit.classes; track c.name) {
+        <span class="class-tag">{{ c.name }}</span>
+      }
+    </ng-template>
+
     <!-- Véhicules non-déployés (inventaire) -->
     @if (undeployedVehicles().length > 0) {
       <mat-card class="card">
@@ -569,7 +693,10 @@
             <mat-icon color="accent">inventory_2</mat-icon>
             <h2>Véhicules en réserve</h2>
           </div>
-          <p class="section-subtitle">Ces véhicules sont achetés mais pas encore déployés. Choisissez un secteur pour les placer.</p>
+          <p class="section-subtitle">
+            Ces véhicules sont achetés mais pas encore déployés. Choisissez un secteur pour les
+            placer.
+          </p>
           <div class="details-grid">
             @for (vehicle of undeployedVehicles(); track vehicle.id) {
               <div class="resource-card">
@@ -580,14 +707,19 @@
                     @if (vehicle.vehicleType) {
                       <span class="badge">{{ vehicle.vehicleType }}</span>
                     }
-                    <span class="value-label">PDF : {{ vehicle.pdf }} | Défense : {{ vehicle.defense }}</span>
+                    <span class="value-label"
+                      >PDF : {{ vehicle.pdf }} | Défense : {{ vehicle.defense }}</span
+                    >
                     <span class="value-label">Capacité : {{ vehicle.capacity }}</span>
                   </div>
                 </div>
-                <button mat-stroked-button color="primary"
-                        [disabled]="vehiclesLoading()"
-                        (click)="openPlacementModal(vehicle)"
-                        class="deploy-btn">
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  [disabled]="vehiclesLoading()"
+                  (click)="openPlacementModal(vehicle)"
+                  class="deploy-btn"
+                >
                   <mat-icon>place</mat-icon>
                   Déployer
                 </button>
@@ -597,7 +729,5 @@
         </mat-card-content>
       </mat-card>
     }
-
   </div>
-
 }

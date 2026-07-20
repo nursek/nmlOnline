@@ -2,14 +2,16 @@ package com.mg.nmlonline.domain.model.player;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Statistiques du joueur - Classe Embeddable pour JPA
  */
 @Embeddable
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class PlayerStats {
     @Column(name = "money")

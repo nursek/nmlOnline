@@ -15,17 +15,7 @@ public interface SectorRepository extends JpaRepository<Sector, Sector.SectorId>
     List<Sector> findByOwnerId(Long ownerId);
 
     /**
-     * Trouve un secteur par son propriétaire et son numéro
-     */
-    Optional<Sector> findByOwnerIdAndNumber(Long ownerId, int number);
-
-    /**
      * Trouve un secteur par son board et son numéro
      */
     Optional<Sector> findByBoard_IdAndNumber(Long boardId, int number);
-
-    /**
-     * Trouve tous les secteurs d'un board
-     */
-    List<Sector> findByBoard_Id(Long boardId);
 }

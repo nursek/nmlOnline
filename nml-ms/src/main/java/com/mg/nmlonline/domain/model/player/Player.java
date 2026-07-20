@@ -7,12 +7,17 @@ import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
+import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.BatchSize;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -22,11 +27,15 @@ import java.util.*;
  */
 @Entity
 @Table(name = "PLAYERS")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(exclude = {"equipments", "resources"})
 public class Player {
+
+    private static final Logger logger = LoggerFactory.getLogger(Player.class);
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
@@ -53,51 +62,21 @@ public class Player {
 
     // Bâtiments du joueur (relation bidirectionnelle, côté inverse via mappedBy = "player" en cohérence avec @ManyToOne dans Building)
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 20)
     private List<Building> buildings = new ArrayList<>();
 
     // Inventaire d'équipements du joueur
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 20)
     private List<EquipmentStack> equipments = new ArrayList<>(); // Équipements possédés par le joueur
 
     // Inventaire de ressources du joueur
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 20)
     private List<PlayerResource> resources = new ArrayList<>(); // Ressources possédées par le joueur (Or, Ivoire, etc.)
-
-    // Note : Les secteurs contrôlés sont stockés via Sector.ownerId (source unique de vérité)
-    // Cette collection transient est utilisée pour compatibilité avec l'ancien code
-    @Transient
-    private Set<Long> ownedSectorIds = new HashSet<>();
 
     public Player(String name) {
         this.name = name;
-    }
-
-    // === GESTION DES SECTEURS DU JOUEUR ===
-    // Note: Les secteurs sont désormais gérés via Board (single source of truth)
-    // Player ne stocke que les IDs des secteurs qu'il possède
-
-    public void addOwnedSectorId(Long sectorId) {
-        if (sectorId != null) {
-            ownedSectorIds.add(sectorId);
-        }
-    }
-
-    public void removeOwnedSectorId(Long sectorId) {
-        if (ownedSectorIds.remove(sectorId)) {
-            System.out.println("Sector ID " + sectorId + " has been removed from player ownership");
-        }
-    }
-
-    public boolean ownsSector(Long sectorId) {
-        return ownedSectorIds.contains(sectorId);
-    }
-
-    public Set<Long> getOwnedSectorIds() {
-        return Collections.unmodifiableSet(ownedSectorIds);
-    }
-
-    public int getOwnedSectorCount() {
-        return ownedSectorIds.size();
     }
 
     // === MÉTHODES NÉCESSITANT BOARD ===
@@ -127,16 +106,22 @@ public class Player {
         return false;
     }
 
-    public boolean buyVehicle(VehicleType vehicleType) {
-        if (vehicleType == null) return false;
+    /**
+     * Achète un véhicule pour le joueur et retourne l'entité créée.
+     *
+     * @param vehicleType type de véhicule à acheter
+     * @return le véhicule créé, ou null si l'achat a échoué
+     */
+    public Vehicle buyVehicle(VehicleType vehicleType) {
+        if (vehicleType == null) return null;
         int cost = vehicleType.getCost();
         if (stats.getMoney() >= cost) {
             stats.setMoney(stats.getMoney() - cost);
             stats.setTotalVehiclesValue(stats.getTotalVehiclesValue() + cost);
             calculateTotalEconomyPower();
-            return true;
+            return new Vehicle(vehicleType, this.id);
         }
-        return false;
+        return null;
     }
 
     public void addEquipmentToStack(Equipment equipment, int number) {
@@ -279,7 +264,7 @@ public class Player {
 
         // Vérifier que le nouvel équipement est disponible
         if (isEquipmentUnavailable(newEquipment)) {
-            System.out.println("Équipement non disponible : " + newEquipment.getName());
+            logger.warn("Équipement non disponible : {}", newEquipment.getName());
             return false;
         }
 
@@ -289,9 +274,9 @@ public class Player {
             if (removed) {
                 // Rendre l'équipement à l'inventaire
                 incrementEquipmentAvailability(oldEquipment);
-                System.out.println("Équipement retiré : " + oldEquipment.getName());
+                logger.info("Équipement retiré : {}", oldEquipment.getName());
             } else {
-                System.out.println("Impossible de retirer l'équipement : " + oldEquipment.getName());
+                logger.warn("Impossible de retirer l'équipement : {}", oldEquipment.getName());
                 return false;
             }
         }
@@ -301,7 +286,7 @@ public class Player {
         if (equipped) {
             decrementEquipmentAvailability(newEquipment);
             setTotalEquipmentValue();
-            System.out.println("Nouvel équipement ajouté : " + newEquipment.getName());
+            logger.info("Nouvel équipement ajouté : {}", newEquipment.getName());
             return true;
         } else {
             // Si l'équipement échoue, remettre l'ancien si on l'avait retiré
@@ -309,7 +294,7 @@ public class Player {
                 unit.addEquipment(oldEquipment);
                 decrementEquipmentAvailability(oldEquipment);
             }
-            System.out.println("Impossible d'équiper : " + newEquipment.getName());
+            logger.warn("Impossible d'équiper : {}", newEquipment.getName());
             return false;
         }
     }

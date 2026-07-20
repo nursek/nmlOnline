@@ -1,0 +1,35 @@
+# Git
+.git
+.github
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# Backend build artifacts
+target/
+build/
+
+# Frontend
+nml-ui-bst-angular/node_modules/
+nml-ui-bst-angular/dist/
+nml-ui-bst-angular/.angular/
+nml-ui-bst-angular/coverage/
+
+# Documentation (not needed inside the image)
+*.md
+
+# Local env files
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

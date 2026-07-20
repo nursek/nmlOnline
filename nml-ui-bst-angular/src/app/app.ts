@@ -1,13 +1,11 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Store } from '@ngrx/store';
 import { NavbarComponent } from './components/navbar/navbar.component';
-import { AuthActions } from './store/auth/auth.actions';
-import { ShopActions } from './store/shop/shop.actions';
+import { AuthService } from './services/auth.service';
+import { ShopService } from './services/shop.service';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet, NavbarComponent],
   template: `
@@ -18,23 +16,28 @@ import { ShopActions } from './store/shop/shop.actions';
       </main>
     </div>
   `,
-  styles: [`
-    .app-container {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+  styles: [
+    `
+      .app-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
 
-    .main-content {
-      flex: 1;
-    }
-  `]
+      .main-content {
+        flex: 1;
+      }
+    `,
+  ],
 })
-export class App implements OnInit {
-  private store = inject(Store);
+export class App {
+  private readonly auth = inject(AuthService);
+  // Eagerly instantiate ShopService so the cart is hydrated from session storage
+  // at bootstrap (matches the previous ShopActions.loadCart behaviour).
+  private readonly shop = inject(ShopService);
 
-  ngOnInit(): void {
-    this.store.dispatch(AuthActions.initSession());
-    this.store.dispatch(ShopActions.loadCart());
+  constructor() {
+    void this.auth.initSession();
+    void this.shop;
   }
 }

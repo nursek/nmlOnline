@@ -1,6 +1,8 @@
 package com.mg.nmlonline.infrastructure.repository;
 
 import com.mg.nmlonline.domain.model.player.Player;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,4 +12,6 @@ import java.util.Optional;
 public interface PlayerRepository extends JpaRepository<Player, Long> {
     Optional<Player> findByName(String name);
     Optional<Player> findByUserId(Long userId);
+
+    Page<Player> findAllByOrderByNameAsc(Pageable pageable);
 }

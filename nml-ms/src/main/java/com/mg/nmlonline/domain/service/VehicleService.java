@@ -1,5 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.BuyVehicleRequestDto;
+import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
@@ -67,11 +69,63 @@ public class VehicleService {
 
         List<Vehicle> created = new ArrayList<>();
         for (int i = 0; i < quantity; i++) {
-            boolean success = player.buyVehicle(vehicleType);
-            if (!success) {
-                throw new IllegalStateException("Fonds insuffisants pour acheter ce véhicule (coût : " + vehicleType.getCost() + " ₡)");
+            Vehicle vehicle = player.buyVehicle(vehicleType);
+            if (vehicle == null) {
+                throw new InsufficientFundsException("Fonds insuffisants pour acheter ce véhicule (coût : " + vehicleType.getCost() + " ₡)");
             }
-            Vehicle vehicle = new Vehicle(vehicleType, player.getId());
+            created.add(vehicleRepository.save(vehicle));
+        }
+        playerRepository.save(player);
+        return created;
+    }
+
+    /**
+     * Achète un lot de véhicules de manière atomique.
+     * Valide le coût total avant de débiter le joueur et de créer les entités.
+     *
+     * @param userId l'id de l'utilisateur authentifié
+     * @param items  liste des lignes d'achat (type + quantité)
+     * @return la liste de tous les véhicules créés
+     */
+    @Transactional
+    public List<Vehicle> buyVehiclesBatch(Long userId, List<BuyVehicleRequestDto> items) {
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("Le panier de véhicules est vide");
+        }
+
+        Player player = playerRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
+
+        List<VehicleType> toCreate = new ArrayList<>();
+        for (BuyVehicleRequestDto item : items) {
+            if (item.getVehicleType() == null || item.getVehicleType().isBlank()) {
+                throw new IllegalArgumentException("Le type de véhicule est requis");
+            }
+            if (item.getQuantity() < 1) {
+                throw new IllegalArgumentException("La quantité doit être au moins 1");
+            }
+            VehicleType vehicleType;
+            try {
+                vehicleType = VehicleType.valueOf(item.getVehicleType());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Type de véhicule invalide : " + item.getVehicleType());
+            }
+            for (int i = 0; i < item.getQuantity(); i++) {
+                toCreate.add(vehicleType);
+            }
+        }
+
+        long totalCost = toCreate.stream().mapToLong(VehicleType::getCost).sum();
+        if (player.getStats().getMoney() < totalCost) {
+            throw new InsufficientFundsException("Fonds insuffisants pour acheter ces véhicules (coût total : " + totalCost + " ₡)");
+        }
+
+        List<Vehicle> created = new ArrayList<>();
+        for (VehicleType vehicleType : toCreate) {
+            Vehicle vehicle = player.buyVehicle(vehicleType);
+            if (vehicle == null) {
+                throw new InsufficientFundsException("Fonds insuffisants pour acheter le véhicule " + vehicleType.name());
+            }
             created.add(vehicleRepository.save(vehicle));
         }
         playerRepository.save(player);

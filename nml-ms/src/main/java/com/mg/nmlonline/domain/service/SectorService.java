@@ -1,14 +1,11 @@
 package com.mg.nmlonline.domain.service;
 
-import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.sector.Sector;
-import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.SectorRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Service simplifié pour Sector - utilise directement les classes du domaine
@@ -17,18 +14,9 @@ import java.util.Optional;
 public class SectorService {
 
     private final SectorRepository sectorRepository;
-    private final BoardRepository boardRepository;
 
-    public SectorService(SectorRepository sectorRepository, BoardRepository boardRepository) {
+    public SectorService(SectorRepository sectorRepository) {
         this.sectorRepository = sectorRepository;
-        this.boardRepository = boardRepository;
-    }
-
-    /**
-     * Récupère tous les secteurs d'un board
-     */
-    public List<Sector> findByBoardId(Long boardId) {
-        return sectorRepository.findByBoard_Id(boardId);
     }
 
     /**
@@ -36,27 +24,6 @@ public class SectorService {
      */
     public List<Sector> findByOwnerId(Long ownerId) {
         return sectorRepository.findByOwnerId(ownerId);
-    }
-
-    /**
-     * Récupère un secteur par board et numéro
-     */
-    public Optional<Sector> findByBoardIdAndNumber(Long boardId, int number) {
-        return sectorRepository.findByBoard_IdAndNumber(boardId, number);
-    }
-
-    /**
-     * Sauvegarde ou met à jour un secteur
-     */
-    @Transactional
-    public Sector save(Sector sector, Long boardId) {
-        sector.recalculateMilitaryPower();
-
-        Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new IllegalArgumentException("Board with ID " + boardId + " not found"));
-
-        sector.setBoard(board);
-        return sectorRepository.save(sector);
     }
 
     /**

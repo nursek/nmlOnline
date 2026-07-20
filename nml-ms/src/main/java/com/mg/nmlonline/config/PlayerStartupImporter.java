@@ -16,9 +16,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Service d'import automatique des joueurs au démarrage de l'application.
@@ -88,17 +86,12 @@ public class PlayerStartupImporter implements ApplicationRunner {
             }
 
             try (InputStream is = boardResource.getInputStream()) {
-                Path tmp = Files.createTempFile("board-import-", ".json");
-                Files.copy(is, tmp, StandardCopyOption.REPLACE_EXISTING);
-                String filePath = tmp.toString();
-
                 log.info("Import du Board depuis : {}", boardResource.getFilename());
 
                 // Importer le Board (en mémoire uniquement, pas encore sauvegardé)
-                Board board = boardImportService.importBoardFromJson(filePath);
+                Board board = boardImportService.importBoardFromJson(new String(is.readAllBytes(), StandardCharsets.UTF_8));
                 log.info("Board importé en mémoire avec {} secteurs", board.getAllSectors().size());
 
-                Files.deleteIfExists(tmp);
                 return board;
             }
         } catch (Exception e) {
@@ -115,15 +108,14 @@ public class PlayerStartupImporter implements ApplicationRunner {
             }
 
             try (InputStream is = resource.getInputStream()) {
-                // Créer un fichier temporaire pour l'import
-                Path tmp = Files.createTempFile("player-import-", ".json");
-                Files.copy(is, tmp, StandardCopyOption.REPLACE_EXISTING);
-                String filePath = tmp.toString();
-
                 log.info("Import du joueur depuis : {}", resource.getFilename());
 
+                // Parser le JSON une seule fois, puis passer le DTO aux imports
+                PlayerImportService.PlayerDTO dto = playerImportService.parse(
+                        new String(is.readAllBytes(), StandardCharsets.UTF_8));
+
                 // 1. Importer le joueur (stats uniquement, SANS équipements)
-                Player player = playerImportService.importPlayerFromJson(filePath);
+                Player player = playerImportService.importPlayer(dto);
 
                 if (player != null) {
                     // 2. Vérifier si le joueur existe déjà ou le créer
@@ -154,20 +146,20 @@ public class PlayerStartupImporter implements ApplicationRunner {
                             log.warn("Aucun compte CREDENTIALS trouvé pour le joueur '{}'", player.getName());
                         }
                         // Créer le joueur en base pour obtenir un ID (SANS équipements)
-                        player = playerService.create(player);
+                        player = playerService.save(player);
                         log.info("Joueur {} créé avec l'ID {}", player.getName(), player.getId());
                     }
 
                     // 3. Maintenant que le Player est persisté, ajouter les équipements
-                    playerImportService.importEquipmentsToPlayer(filePath, player);
+                    playerImportService.importEquipments(dto, player);
                     log.info("Équipements importés pour {}", player.getName());
 
                     // 3b. Importer les ressources
-                    playerImportService.importResourcesToPlayer(filePath, player);
+                    playerImportService.importResources(dto, player);
                     log.info("Ressources importées pour {}", player.getName());
 
                     // 3c. Importer le personnage principal (GameCharacter) si défini
-                    var character = playerImportService.importCharacterToPlayer(filePath, player, board);
+                    var character = playerImportService.importCharacter(dto, player, board);
                     if (character != null) {
                         log.info("Personnage '{}' importé pour {} (ATK={}, DEF={}, PDF={})",
                                 character.getName(), player.getName(),
@@ -178,11 +170,11 @@ public class PlayerStartupImporter implements ApplicationRunner {
                     player = playerService.save(player);
 
                     // 4. Importer les secteurs et unités dans le Board (en mémoire)
-                    playerImportService.importSectorsToBoard(filePath, player, board);
+                    playerImportService.importSectors(dto, player, board);
                     log.info("Secteurs et unités importés pour {} (en mémoire)", player.getName());
 
                     // 4b. Importer les bâtiments dans le Board
-                    var buildings = playerImportService.importBuildingsToBoard(filePath, player, board);
+                    var buildings = playerImportService.importBuildings(dto, player, board);
                     if (!buildings.isEmpty()) {
                         log.info("{} bâtiment(s) importé(s) pour {}", buildings.size(), player.getName());
                     }
@@ -198,13 +190,10 @@ public class PlayerStartupImporter implements ApplicationRunner {
 
                     // 5. Sauvegarder le joueur avec les stats à jour (pas les équipements qui sont déjà sauvés)
                     log.info("✓ Joueur {} sauvegardé en base", player.getName());
-                    log.info("Joueur {} prêt avec {} secteurs", player.getName(), player.getOwnedSectorCount());
+                    log.info("Joueur {} prêt avec {} secteurs", player.getName(), board.getSectorsByOwner(player.getId()).size());
                     playerService.save(player);
 
                 }
-
-                // Nettoyer le fichier temporaire
-                Files.deleteIfExists(tmp);
             }
         } catch (Exception e) {
             log.error("Échec import {} : {}", resource.getFilename(), e.getMessage(), e);

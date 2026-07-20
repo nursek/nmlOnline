@@ -3,8 +3,10 @@ package com.mg.nmlonline.api.controller;
 import com.mg.nmlonline.domain.service.JwtService;
 import com.mg.nmlonline.domain.model.user.AuthResponse;
 import com.mg.nmlonline.domain.model.user.LoginRequest;
+import com.mg.nmlonline.domain.model.user.RegisterRequest;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.UserService;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.util.WebUtils;
@@ -19,11 +22,12 @@ import jakarta.servlet.http.Cookie;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
@@ -38,14 +42,27 @@ public class AuthController {
     private final String pepper;
     private final boolean appCookieSecure;
 
-    private final ConcurrentHashMap<String, Attempt> attempts = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, RefreshThrottle> refreshThrottles = new ConcurrentHashMap<>();
     private static final int MAX_ATTEMPTS = 5;
     private static final long BLOCK_TIME_MS = TimeUnit.MINUTES.toMillis(1);
     private static final long REFRESH_MIN_INTERVAL_MS = 1000; // 1 seconde minimum entre chaque refresh
     private static final long GRACE_PERIOD_MS = 3000; // 3 secondes de grâce pour les requêtes en doublon (spam F5)
     private static final long ACCESS_TOKEN_EXPIRATION = 10 * 60 * 1000L; // 10 min
     private static final long CLEANUP_INTERVAL_MS = TimeUnit.MINUTES.toMillis(5);
+    private static final int MAX_ATTEMPT_ENTRIES = 10_000;
+    private static final int MAX_THROTTLE_ENTRIES = 10_000;
+
+    private final Map<String, Attempt> attempts = Collections.synchronizedMap(new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Attempt> eldest) {
+            return size() > MAX_ATTEMPT_ENTRIES;
+        }
+    });
+    private final Map<String, RefreshThrottle> refreshThrottles = Collections.synchronizedMap(new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, RefreshThrottle> eldest) {
+            return size() > MAX_THROTTLE_ENTRIES;
+        }
+    });
     private final AtomicLong lastCleanup = new AtomicLong(System.currentTimeMillis());
 
     public AuthController(
@@ -63,9 +80,9 @@ public class AuthController {
     }
 
     private static class Attempt {
-        int count;
-        long lastAttempt;
-        long blockedUntil;
+        final AtomicInteger count = new AtomicInteger(0);
+        final AtomicLong lastAttempt = new AtomicLong(0);
+        final AtomicLong blockedUntil = new AtomicLong(0);
     }
 
     /**
@@ -85,51 +102,42 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req, HttpServletRequest request, HttpServletResponse response) {
         long now = System.currentTimeMillis();
         cleanupStaleEntries(now);
 
         String key = request.getRemoteAddr() + ":" + req.getUsername();
         Attempt att = attempts.computeIfAbsent(key, k -> new Attempt());
 
-        if (att.blockedUntil > now) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body("Trop de tentatives, réessayez plus tard");
+        if (att.blockedUntil.get() > now) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Trop de tentatives, réessayez plus tard");
         }
 
         User user = userService.findByUsername(req.getUsername());
         boolean valid = user != null && userService.checkPassword(req.getPassword(), user.getPassword());
-        try { Thread.sleep(500); } catch (InterruptedException ignored) {}
 
         if (valid) {
-            att.count = 0;
+            att.count.set(0);
             String accessToken = jwtService.generateToken(user, ACCESS_TOKEN_EXPIRATION);
-            String refreshToken = generateRefreshToken();
-            String refreshTokenHash = hash(refreshToken);
 
             // Durée selon rememberMe
             long refreshTokenDurationMs = req.isRememberMe() ? (30L * 24 * 60 * 60 * 1000) : (24L * 60 * 60 * 1000);
-            long refreshTokenExpiry = now + refreshTokenDurationMs;
-            user.setRefreshTokenExpiry(refreshTokenExpiry);
-            userService.saveRefreshToken(user, refreshTokenHash);
+            JwtService.RefreshToken refresh = jwtService.generateRefreshToken(user, refreshTokenDurationMs);
+            String refreshTokenHash = hash(refresh.token());
+            userService.saveRefreshToken(user, refreshTokenHash, refresh.jti(), refresh.expiry());
 
             int refreshTokenMaxAge = (int) (refreshTokenDurationMs / 1000);
-            Cookie cookie = new Cookie("refresh_token", refreshToken);
-            cookie.setHttpOnly(true);
-            cookie.setPath("/api/auth");
-            cookie.setMaxAge(refreshTokenMaxAge);
-            cookie.setSecure(appCookieSecure);
-            cookie.setAttribute("SameSite", "Lax");
-            response.addCookie(cookie);
+            addRefreshCookie(response, refresh.token(), refreshTokenMaxAge);
             return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername(), user.getRole()));
         } else {
-            att.count++;
-            att.lastAttempt = now;
-            if (att.count >= MAX_ATTEMPTS) {
-                att.blockedUntil = now + BLOCK_TIME_MS;
-                att.count = 0;
+            int currentCount = att.count.incrementAndGet();
+            att.lastAttempt.set(now);
+            if (currentCount >= MAX_ATTEMPTS) {
+                att.blockedUntil.set(now + BLOCK_TIME_MS);
+                att.count.set(0);
             }
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Identifiants invalides");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identifiants invalides");
         }
     }
 
@@ -162,13 +170,7 @@ public class AuthController {
                     // Retourner le résultat précédent (le nouveau token déjà généré)
                     if (throttle.lastResponse != null) {
                         // Renvoyer le même cookie avec le nouveau token
-                        Cookie sameCookie = new Cookie("refresh_token", throttle.newToken);
-                        sameCookie.setHttpOnly(true);
-                        sameCookie.setPath("/api/auth");
-                        sameCookie.setMaxAge(throttle.lastCookieMaxAge);
-                        sameCookie.setSecure(appCookieSecure);
-                        sameCookie.setAttribute("SameSite", "Lax");
-                        response.addCookie(sameCookie);
+                        addRefreshCookie(response, throttle.newToken, throttle.lastCookieMaxAge);
                         return ResponseEntity.ok(throttle.lastResponse);
                     }
                 }
@@ -202,18 +204,12 @@ public class AuthController {
         }
 
         // Générer le nouveau refresh token
-        String newRefreshToken = generateRefreshToken();
-        String newRefreshTokenHash = hash(newRefreshToken);
-        userService.saveRefreshToken(user, newRefreshTokenHash);
+        JwtService.RefreshToken newRefresh = jwtService.generateRefreshToken(user, user.getRefreshTokenExpiry() - now);
+        String newRefreshTokenHash = hash(newRefresh.token());
+        userService.saveRefreshToken(user, newRefreshTokenHash, newRefresh.jti(), newRefresh.expiry());
 
         // Créer le cookie avec le nouveau token
-        Cookie newCookie = new Cookie("refresh_token", newRefreshToken);
-        newCookie.setHttpOnly(true);
-        newCookie.setPath("/api/auth");
-        newCookie.setMaxAge((int) maxAge);
-        newCookie.setSecure(appCookieSecure);
-        newCookie.setAttribute("SameSite", "Lax");
-        response.addCookie(newCookie);
+        addRefreshCookie(response, newRefresh.token(), (int) maxAge);
 
         // Générer le nouveau access token
         String accessToken = jwtService.generateToken(user, ACCESS_TOKEN_EXPIRATION);
@@ -229,9 +225,9 @@ public class AuthController {
 
         // Mettre à jour le throttle avec les infos pour la grace period
         throttle.lastRefresh = now;
-        throttle.previousToken = refreshToken;  // L'ancien token (celui qu'on vient de recevoir)
-        throttle.newToken = newRefreshToken;    // Le nouveau token (celui qu'on envoie)
-        throttle.lastToken = newRefreshToken;
+        throttle.previousToken = refreshToken;           // L'ancien token (celui qu'on vient de recevoir)
+        throttle.newToken = newRefresh.token();          // Le nouveau token (celui qu'on envoie)
+        throttle.lastToken = newRefresh.token();
         throttle.lastResponse = responseData;
         throttle.lastCookieMaxAge = (int) maxAge;
 
@@ -240,16 +236,16 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody LoginRequest req) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
         if (userService.findByUsername(req.getUsername()) != null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Utilisateur déjà existant");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Utilisateur déjà existant");
         }
         User user = new User();
         user.setUsername(req.getUsername());
         user.setPassword(userService.encodePassword(req.getPassword()));
         user.setRole("USER");
         userService.save(user);
-        return ResponseEntity.ok("Utilisateur créé");
+        return ResponseEntity.ok(Map.of("message", "Utilisateur créé"));
     }
 
     @PostMapping("/auth/logout")
@@ -263,23 +259,24 @@ public class AuthController {
                 userService.resetRefreshToken(user);
             }
         }
-        Cookie clearCookie = new Cookie("refresh_token", "");
-        clearCookie.setHttpOnly(true);
-        clearCookie.setPath("/api/auth");
-        clearCookie.setMaxAge(0);
-        clearCookie.setSecure(appCookieSecure);
-        clearCookie.setAttribute("SameSite", "Lax");
-        response.addCookie(clearCookie);
+        addRefreshCookie(response, "", 0);
         return ResponseEntity.ok().build();
     }
 
     // Helpers
-    private String generateRefreshToken() {
-        byte[] bytes = new byte[64];
-        new SecureRandom().nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
 
+    /**
+     * Crée et ajoute le cookie refresh_token (HttpOnly, SameSite=Lax) à la réponse.
+     */
+    private void addRefreshCookie(HttpServletResponse response, String value, int maxAge) {
+        Cookie cookie = new Cookie("refresh_token", value);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/api/auth");
+        cookie.setMaxAge(maxAge);
+        cookie.setSecure(appCookieSecure);
+        cookie.setAttribute("SameSite", "Lax");
+        response.addCookie(cookie);
+    }
     private String hash(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -300,8 +297,8 @@ public class AuthController {
         lastCleanup.set(now);
 
         attempts.entrySet().removeIf(e ->
-                now - e.getValue().lastAttempt > BLOCK_TIME_MS * 2
-                        && e.getValue().blockedUntil < now);
+                now - e.getValue().lastAttempt.get() > BLOCK_TIME_MS * 2
+                        && e.getValue().blockedUntil.get() < now);
 
         refreshThrottles.entrySet().removeIf(e ->
                 now - e.getValue().lastRefresh > CLEANUP_INTERVAL_MS);

@@ -4,15 +4,18 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 public class Battle {
+
+    private static final Logger logger = LoggerFactory.getLogger(Battle.class);
+
     private int sectorId; // ID of the sector where the battle takes place
 
     private List<Player> defenders = new ArrayList<>();
@@ -21,18 +24,22 @@ public class Battle {
     // A battle can have a winner, but not mandatory. A winner claims or keeps the sector.
     private Player winner;
 
-    private static final Random RANDOM = new Random();
+    private Random random;
+
+    public Battle() {
+        this.random = new Random();
+    }
 
     /**
      * Génère un nombre aléatoire entre 1 et 100 (inclus)
      */
     private int rand() {
-        return RANDOM.nextInt(100) + 1;
+        return random.nextInt(100) + 1;
     }
 
     public PhaseResult classicPhaseConfiguration(List<Unit> defender, double availableAttackerPoints, String damageType) {
         List<Unit> casualties = new ArrayList<>();
-        System.out.println("    Points d'attaque disponibles : " + availableAttackerPoints);
+        logger.info("    Points d'attaque disponibles : {}", availableAttackerPoints);
 
         while (availableAttackerPoints > 0 && !defender.isEmpty()) {
             Unit targetUnit = defender.getLast();
@@ -43,7 +50,7 @@ public class Battle {
 
             // Gestion de l'évasion
             if (evasion > 0 && rand() <= evasion) {
-                System.out.println("      > " + targetUnit.getType().name() + " esquive l'attaque !");
+                logger.info("      > {} esquive l'attaque !", targetUnit.getType().name());
                 availableAttackerPoints -= (defense + armor);
                 continue;
             }
@@ -51,37 +58,37 @@ public class Battle {
             // Calcul des dégâts avec résistance
             double effectivePoints = availableAttackerPoints * (1 - resistance);
             if (availableAttackerPoints != effectivePoints) {
-                System.out.printf("      > Résistance de %.0f%% appliquée. Dégâts effectifs : %.2f%n", resistance * 100, effectivePoints);
+                logger.info("      > Résistance de {}% appliquée. Dégâts effectifs : {}", String.format("%.0f", resistance * 100), String.format("%.2f", effectivePoints));
             }
 
             if ((armor + defense) <= effectivePoints) {
-                System.out.println("      > " + targetUnit.getType().name() + " (ID: " + targetUnit.getId() + ") est détruit pendant la phase " + damageType + " !");
+                logger.info("      > {} (ID: {}) est détruit pendant la phase {} !", targetUnit.getType().name(), targetUnit.getId(), damageType);
                 availableAttackerPoints -= (defense + armor) / (1 - resistance);
                 defender.remove(targetUnit);
                 casualties.add(targetUnit);
             } else if (effectivePoints <= armor) {
                 targetUnit.setArmor(armor - effectivePoints);
-                System.out.printf("      > %s perd %.2f d'armure (reste: %.2f)%n", targetUnit.getType().name(), effectivePoints, targetUnit.getArmor());
+                logger.info("      > {} perd {} d'armure (reste: {})", targetUnit.getType().name(), String.format("%.2f", effectivePoints), String.format("%.2f", targetUnit.getArmor()));
                 availableAttackerPoints = 0;
             } else {
                 targetUnit.setArmor(0);
                 double remainingPoints = effectivePoints - armor;
                 targetUnit.setDefense(defense - remainingPoints);
-                System.out.printf("      > %s perd toute son armure et %.2f de défense (reste: %.2f)%n", targetUnit.getType().name(), remainingPoints, targetUnit.getDefense());
+                logger.info("      > {} perd toute son armure et {} de défense (reste: {})", targetUnit.getType().name(), String.format("%.2f", remainingPoints), String.format("%.2f", targetUnit.getDefense()));
                 availableAttackerPoints = 0;
             }
         }
 
         if (!defender.isEmpty()) {
-            System.out.println("    Unités restantes après la phase " + damageType + " :");
+            logger.info("    Unités restantes après la phase {} :", damageType);
             for (Unit unit : defender) {
-                System.out.println("      - " + unit);
+                logger.info("      - {}", unit);
             }
         }
         if (!casualties.isEmpty()) {
-            System.out.println("    Pertes pendant la phase " + damageType + " :");
+            logger.info("    Pertes pendant la phase {} :", damageType);
             for (Unit unit : casualties) {
-                System.out.println("      - " + unit);
+                logger.info("      - {}", unit);
             }
         }
         return new PhaseResult(casualties, defender, availableAttackerPoints);
@@ -133,7 +140,7 @@ public class Battle {
         printUnitsIndented(defenderUnits, "Défenseurs début");
         printUnitsIndented(attackerUnits, "Attaquants début");
 
-        System.out.println("\n=== Début du combat entre " + attacker.getName() + " et " + defender.getName() + " ===");
+        logger.info("\n=== Début du combat entre {} et {} ===", attacker.getName(), defender.getName());
 
         // Phase PDF
         printPhaseHeader("PDF");
@@ -153,7 +160,7 @@ public class Battle {
         printUnitsIndented(attackerUnits, "Attaquants restants");
 
         if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
-            System.out.println("\n=== Combat terminé après la phase PDF ! ===");
+            logger.info("\n=== Combat terminé après la phase PDF ! ===");
             return;
         }
 
@@ -176,7 +183,7 @@ public class Battle {
             printUnitsIndented(attackerUnits, "Attaquants restants");
 
             if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
-                System.out.println("\n=== Combat terminé après la phase PDF round 2 ! ===");
+                logger.info("\n=== Combat terminé après la phase PDF round 2 ! ===");
                 return;
             }
         }
@@ -199,7 +206,7 @@ public class Battle {
         printUnitsIndented(attackerUnits, "Attaquants restants");
 
         if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
-            System.out.println("\n=== Combat terminé après la phase PDC ! ===");
+            logger.info("\n=== Combat terminé après la phase PDC ! ===");
             return;
         }
 
@@ -221,7 +228,7 @@ public class Battle {
             printUnitsIndented(attackerUnits, "Attaquants restants");
 
             if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
-                System.out.println("\n=== Combat terminé après la phase PDC round 2 ! ===");
+                logger.info("\n=== Combat terminé après la phase PDC round 2 ! ===");
                 return;
             }
         }
@@ -250,20 +257,20 @@ public class Battle {
         printUnitsIndented(attackerUnits, "Attaquants restants");
 
         if (defenderUnits.isEmpty() || attackerUnits.isEmpty()) {
-            System.out.println("\n=== Combat terminé après la phase ATK ! ===");
+            logger.info("\n=== Combat terminé après la phase ATK ! ===");
         } else {
-            System.out.println("\n=== Combat terminé, il reste des unités dans les deux camps. ===");
+            logger.info("\n=== Combat terminé, il reste des unités dans les deux camps. ===");
         }
     }
 
     private void printPhaseHeader(String phase) {
-        System.out.println("\n  === Phase " + phase + " ===");
+        logger.info("\n  === Phase {} ===", phase);
     }
 
     private void printUnitsIndented(List<Unit> units, String label) {
-        System.out.println("    " + label + " :");
+        logger.info("    {} :", label);
         for (Unit unit : units) {
-            System.out.println("      - " + unit);
+            logger.info("      - {}", unit);
         }
     }
 

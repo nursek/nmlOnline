@@ -36,28 +36,5 @@ public class GameCharacterMapper {
 
         return dto;
     }
-
-    /**
-     * Convertit un DTO en GameCharacter du domaine.
-     */
-    public GameCharacter toDomain(GameCharacterDto dto) {
-        if (dto == null) return null;
-
-        GameCharacter character = new GameCharacter(
-            dto.getName(),
-            dto.getBaseAttack() != null ? dto.getBaseAttack() : 0,
-            dto.getBasePdf() != null ? dto.getBasePdf() : 0,
-            dto.getBasePdc() != null ? dto.getBasePdc() : 0,
-            dto.getBaseDefense() != null ? dto.getBaseDefense() : 0,
-            dto.getBaseArmor() != null ? dto.getBaseArmor() : 0,
-            dto.getBaseEvasion() != null ? dto.getBaseEvasion() : 0
-        );
-
-        if (dto.getId() != null) {
-            character.setId(dto.getId());
-        }
-        character.setPlayerId(dto.getPlayerId());
-        return character;
-    }
 }
 

@@ -189,12 +189,10 @@
       font-weight: 600;
       color: #1e293b;
 
-      &.money { color: #d97706; }
-      &.atk { color: #dc2626; }
-      &.def { color: #059669; }
-      &.pdf { color: #ea580c; }
-      &.pdc { color: #0891b2; }
-      &.arm { color: #16a34a; }
+      &.money {
+        color: #d97706;
+      }
+      @include shared.stat-colors;
     }
   }
 }
@@ -299,10 +297,9 @@
       gap: 6px;
       font-weight: 500;
 
-      .atk { color: #dc2626; }
-      .def { color: #059669; }
-      .pdf { color: #ea580c; }
-      .arm { color: #16a34a; }
+      span {
+        @include shared.stat-colors;
+      }
     }
 
     .unit-classes {
@@ -330,9 +327,9 @@
   color: shared.$text-muted;
   border-top: 1px dashed #e2e8f0;
 
-  .atk { color: #dc2626; }
-  .def { color: #059669; }
-  .arm { color: #16a34a; }
+  span {
+    @include shared.stat-colors;
+  }
 }
 
 // === Actions ===

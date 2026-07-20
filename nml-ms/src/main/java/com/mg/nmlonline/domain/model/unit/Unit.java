@@ -4,9 +4,12 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,11 +25,15 @@ import static com.mg.nmlonline.domain.model.unit.UnitType.*;
  */
 @Entity
 @DiscriminatorValue("UNIT")
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class Unit extends CombatEntity {
+
+    private static final Logger logger = LoggerFactory.getLogger(Unit.class);
+
     // ===== CONSTANTES =====
     private static final int MIN_EXPERIENCE_FOR_SECOND_CLASS = 5;
 
@@ -234,7 +241,7 @@ public class Unit extends CombatEntity {
             classesSet.add(secondClass);
             recalculateBaseStats();
         } else {
-            System.out.println("Impossible d'ajouter la classe : " + secondClass);
+            logger.warn("Impossible d'ajouter la classe : {}", secondClass);
         }
     }
 

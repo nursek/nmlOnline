@@ -1,18 +1,16 @@
 package com.mg.nmlonline.mapper;
 
 import com.mg.nmlonline.api.dto.*;
-import com.mg.nmlonline.domain.model.building.Building;
-import com.mg.nmlonline.domain.model.equipment.Equipment;
+import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.player.PlayerStats;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
-import com.mg.nmlonline.domain.model.unit.GameCharacter;
+import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.service.ResourceService;
-import lombok.NonNull;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,74 +24,16 @@ public class PlayerMapper {
     private final ResourceService resourceService;
     private final GameCharacterMapper gameCharacterMapper;
     private final BuildingMapper buildingMapper;
+    private final SectorMapper sectorMapper;
 
     public PlayerMapper(EquipmentMapper equipmentMapper, ResourceService resourceService,
-                        GameCharacterMapper gameCharacterMapper, BuildingMapper buildingMapper) {
+                        GameCharacterMapper gameCharacterMapper, BuildingMapper buildingMapper,
+                        SectorMapper sectorMapper) {
         this.equipmentMapper = equipmentMapper;
         this.resourceService = resourceService;
         this.gameCharacterMapper = gameCharacterMapper;
         this.buildingMapper = buildingMapper;
-    }
-
-    /**
-     * Convertit un DTO PlayerDto en objet Player du domaine
-     */
-    public Player toDomain(PlayerDto dto) {
-        if (dto == null) return new Player();
-
-        Player player = new Player(dto.getName());
-        player.setId(dto.getId());
-
-        // Conversion des stats
-        if (dto.getStats() != null) {
-            PlayerStats stats = getPlayerStats(dto);
-            player.setStats(stats);
-        }
-
-        // Conversion des équipements
-        if (dto.getEquipments() != null) {
-            List<EquipmentStack> equipmentStacks = dto.getEquipments().stream()
-                    .map(this::equipmentStackFromDto)
-                    .toList();
-            player.setEquipments(equipmentStacks);
-        }
-
-        // Conversion des ressources
-        if (dto.getResources() != null) {
-            List<PlayerResource> playerResources = dto.getResources().stream()
-                    .map(this::playerResourceFromDto)
-                    .toList();
-
-            // Assure la cohérence de la relation bidirectionnelle Player <-> PlayerResource
-            playerResources.forEach(resource -> resource.setPlayer(player));
-            player.setResources(playerResources);
-        }
-
-        // Conversion des IDs de secteurs
-        if (dto.getOwnedSectorIds() != null) {
-            player.setOwnedSectorIds(new HashSet<>(dto.getOwnedSectorIds()));
-        }
-
-        return player;
-    }
-
-    private static @NonNull PlayerStats getPlayerStats(PlayerDto dto) {
-        PlayerStats stats = new PlayerStats();
-        PlayerStatsDto statsDto = dto.getStats();
-        stats.setMoney(statsDto.getMoney());
-        stats.setTotalIncome(statsDto.getTotalIncome());
-        stats.setTotalVehiclesValue(statsDto.getTotalVehiclesValue());
-        stats.setTotalEquipmentValue(statsDto.getTotalEquipmentValue());
-        stats.setTotalOffensivePower(statsDto.getTotalOffensivePower());
-        stats.setTotalDefensivePower(statsDto.getTotalDefensivePower());
-        stats.setGlobalPower(statsDto.getGlobalPower());
-        stats.setTotalEconomyPower(statsDto.getTotalEconomyPower());
-        stats.setTotalAtk(statsDto.getTotalAtk());
-        stats.setTotalPdf(statsDto.getTotalPdf());
-        stats.setTotalPdc(statsDto.getTotalPdc());
-        stats.setTotalDef(statsDto.getTotalDef());
-        stats.setTotalArmor(statsDto.getTotalArmor());
-        return stats;
+        this.sectorMapper = sectorMapper;
     }
 
     /**
@@ -128,11 +68,6 @@ public class PlayerMapper {
             dto.setResources(resourceDtos);
         }
 
-        // Conversion des IDs de secteurs
-        if (player.getOwnedSectorIds() != null) {
-            dto.setOwnedSectorIds(new HashSet<>(player.getOwnedSectorIds()));
-        }
-
         // Conversion du personnage principal
         if (player.getCharacter() != null) {
             dto.setCharacter(gameCharacterMapper.toDto(player.getCharacter()));
@@ -145,6 +80,31 @@ public class PlayerMapper {
                     .toList();
             dto.setBuildings(buildingDtos);
         }
+
+        return dto;
+    }
+
+    /**
+     * Convertit un Player en DTO enrichi avec les secteurs complets depuis la board fournie.
+     * Note : utilise la première board disponible (le jeu ne supporte qu'une board active).
+     */
+    public PlayerDto toDtoWithSectors(Player player, Board board) {
+        if (player == null) {
+            return null;
+        }
+
+        PlayerDto dto = toDto(player);
+
+        // Enrichir avec les secteurs du joueur
+        List<SectorDto> playerSectors = new ArrayList<>();
+        if (board != null && player.getId() != null) {
+            for (Sector sector : board.getAllSectors()) {
+                if (player.getId().equals(sector.getOwnerId())) {
+                    playerSectors.add(sectorMapper.toDto(sector));
+                }
+            }
+        }
+        dto.setSectors(playerSectors);
 
         return dto;
     }
@@ -170,16 +130,6 @@ public class PlayerMapper {
 
     // === Méthodes utilitaires pour EquipmentStack ===
 
-    private EquipmentStack equipmentStackFromDto(EquipmentStackDto dto) {
-        if (dto == null || dto.getEquipment() == null) return null;
-
-        Equipment equipment = equipmentMapper.toDomain(dto.getEquipment());
-        EquipmentStack stack = new EquipmentStack(equipment);
-        stack.setQuantity(dto.getQuantity());
-        stack.setAvailable(dto.getAvailable());
-        return stack;
-    }
-
     private EquipmentStackDto equipmentStackToDto(EquipmentStack stack) {
         if (stack == null || stack.getEquipment() == null) return null;
 
@@ -191,12 +141,6 @@ public class PlayerMapper {
     }
 
     // === Méthodes utilitaires pour PlayerResource ===
-
-    private PlayerResource playerResourceFromDto(PlayerResourceDto dto) {
-        if (dto == null || dto.getName() == null) return null;
-
-        return new PlayerResource(dto.getName(), dto.getQuantity());
-    }
 
     private PlayerResourceDto playerResourceToDto(PlayerResource resource) {
         if (resource == null) return null;

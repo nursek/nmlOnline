@@ -3,8 +3,9 @@ package com.mg.nmlonline.domain.model.unit;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Classe abstraite représentant une entité combattante (unité, personnage ou bâtiment).
@@ -14,7 +15,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "COMBAT_ENTITIES")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "entity_type", discriminatorType = DiscriminatorType.STRING)
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public abstract class CombatEntity {
 

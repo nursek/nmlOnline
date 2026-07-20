@@ -32,10 +32,12 @@
             <h2>Joueurs</h2>
           </div>
           @for (player of players(); track player.id) {
-            <button class="legend-item"
-                 [class.active]="!selectedPlayer() || selectedPlayer()?.id === player.id"
-                 (click)="togglePlayerFilter(player)"
-                 type="button">
+            <button
+              class="legend-item"
+              [class.active]="player.id !== null && selectedPlayerIds().has(player.id)"
+              (click)="togglePlayerFilter(player)"
+              type="button"
+            >
               <div class="legend-color" [style.background-color]="getPlayerColor(player.id)"></div>
               <div class="legend-info">
                 <span class="legend-name">{{ player.name }}</span>
@@ -43,17 +45,22 @@
               </div>
             </button>
           }
-          <div class="legend-item neutral">
+          <button
+            class="legend-item neutral"
+            [class.active]="showNeutral()"
+            (click)="toggleNeutralFilter()"
+            type="button"
+          >
             <div class="legend-color" style="background-color: #94a3b8"></div>
             <div class="legend-info">
               <span class="legend-name">Neutre</span>
               <span class="legend-count">{{ neutralSectorsCount() }} secteur(s)</span>
             </div>
-          </div>
-          @if (selectedPlayer()) {
+          </button>
+          @if (selectedPlayerIds().size < players().length || !showNeutral()) {
             <button mat-stroked-button color="primary" class="clear-filter" (click)="clearFilter()">
               <mat-icon>clear</mat-icon>
-              Effacer le filtre
+              Tout afficher
             </button>
           }
         </mat-card-content>
@@ -63,13 +70,31 @@
       <div class="map-container">
         @if (svgLoaded()) {
           <!-- Mode SVG : Image JPG + Overlay SVG -->
-          <div class="svg-map-wrapper">
+          <div
+            class="svg-map-wrapper"
+            role="button"
+            tabindex="0"
+            aria-label="Carte interactive des secteurs — cliquez ou appuyez sur Entrée pour annuler la sélection"
+            (click)="onMapBackgroundClick($event)"
+            (keydown.enter)="selectedSector.set(null)"
+          >
             <!-- Image de fond -->
-            @if (mapImageUrl()) {
-              <img [src]="mapImageUrl()" alt="Carte du monde NML Online" class="map-background" />
+            @if (mapImageUrl(); as url) {
+              <img
+                [src]="url"
+                alt="Carte du monde NML Online"
+                class="map-background"
+                #mapImg
+              />
             }
             <!-- Overlay SVG interactif -->
-            <div #svgContainer class="svg-overlay" [innerHTML]="svgContent()" role="img" aria-label="Carte interactive des secteurs"></div>
+            <div
+              #svgContainer
+              class="svg-overlay"
+              [innerHTML]="svgContent()"
+              role="img"
+              aria-label="Carte interactive des secteurs"
+            ></div>
             <!-- Tooltip flottant -->
             @if (hoveredSectorNumber() !== null) {
               <div class="hover-tooltip">
@@ -91,7 +116,10 @@
         <mat-card class="details-card">
           <mat-card-content>
             <div class="sector-header" [style.border-color]="getSectorColor(selectedSector()!)">
-              <div class="sector-color" [style.background-color]="getSectorColor(selectedSector()!)"></div>
+              <div
+                class="sector-color"
+                [style.background-color]="getSectorColor(selectedSector()!)"
+              ></div>
               <div>
                 <h2>{{ selectedSector()!.name }}</h2>
                 <span class="sector-id">Secteur #{{ selectedSector()!.number }}</span>
@@ -158,18 +186,32 @@
               <div class="neighbors-list">
                 @for (neighborNum of selectedSector()!.neighbors; track neighborNum) {
                   @if (getSectorByNumber(neighborNum); as neighbor) {
-                    <mat-chip (click)="selectSector(neighbor)"
-                              (keydown.enter)="selectSector(neighbor)"
-                              tabindex="0"
-                              class="neighbor-chip">
-                      #{{ neighborNum }} - {{ neighbor.name | slice:0:12 }}
+                    <mat-chip
+                      (click)="selectSector(neighbor)"
+                      (keydown.enter)="selectSector(neighbor)"
+                      tabindex="0"
+                      role="button"
+                      [attr.aria-label]="'Sélectionner le secteur ' + neighborNum"
+                      class="neighbor-chip"
+                      [style.background-color]="getSectorColor(neighbor) + '26'"
+                      [style.color]="getContrastColor(getSectorColor(neighbor))"
+                      [style.border-color]="getSectorColor(neighbor)"
+                      style="border: 1px solid;"
+                    >
+                      #{{ neighborNum }} - {{ neighbor.name | slice: 0 : 12 }}
                     </mat-chip>
                   }
                 }
               </div>
             </div>
 
-            <button mat-stroked-button color="warn" class="close-btn" (click)="selectedSector.set(null)" aria-label="Fermer les détails du secteur">
+            <button
+              mat-stroked-button
+              color="warn"
+              class="close-btn"
+              (click)="selectedSector.set(null)"
+              aria-label="Fermer les détails du secteur"
+            >
               <mat-icon>close</mat-icon>
               Fermer
             </button>

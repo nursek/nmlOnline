@@ -4,9 +4,10 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.EntityCategory;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Classe abstraite représentant un bâtiment du jeu.
@@ -18,7 +19,8 @@ import lombok.NoArgsConstructor;
  */
 @Entity
 @DiscriminatorValue("BUILDING")
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public abstract class Building extends CombatEntity {

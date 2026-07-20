@@ -29,10 +29,12 @@
   <mat-form-field appearance="outline" class="search-field">
     <mat-icon matPrefix>search</mat-icon>
     <mat-label>Rechercher un joueur...</mat-label>
-    <input matInput
-           [ngModel]="searchQuery()"
-           (ngModelChange)="onSearchChange($event)"
-           placeholder="Nom du joueur">
+    <input
+      matInput
+      [value]="searchQuery()"
+      (input)="onSearchChange($any($event.target).value)"
+      placeholder="Nom du joueur"
+    />
   </mat-form-field>
 
   <!-- Loading state -->
@@ -96,31 +98,33 @@
               <div class="stats-grid">
                 <div class="stat-item">
                   <span class="stat-label">Argent</span>
-                  <span class="stat-value money">{{ player.stats.money | number:'1.0-0' }}$</span>
+                  <span class="stat-value money">{{ player.stats.money | number: '1.0-0' }}$</span>
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">Revenu total</span>
-                  <span class="stat-value">{{ player.stats.totalIncome | number:'1.0-0' }}$</span>
+                  <span class="stat-value">{{ player.stats.totalIncome | number: '1.0-0' }}$</span>
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">ATK</span>
-                  <span class="stat-value atk">{{ player.stats.totalAtk | number:'1.0-0' }}</span>
+                  <span class="stat-value atk">{{ player.stats.totalAtk | number: '1.0-0' }}</span>
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">DEF</span>
-                  <span class="stat-value def">{{ player.stats.totalDef | number:'1.0-0' }}</span>
+                  <span class="stat-value def">{{ player.stats.totalDef | number: '1.0-0' }}</span>
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">PDF</span>
-                  <span class="stat-value pdf">{{ player.stats.totalPdf | number:'1.0-0' }}</span>
+                  <span class="stat-value pdf">{{ player.stats.totalPdf | number: '1.0-0' }}</span>
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">PDC</span>
-                  <span class="stat-value pdc">{{ player.stats.totalPdc | number:'1.0-0' }}</span>
+                  <span class="stat-value pdc">{{ player.stats.totalPdc | number: '1.0-0' }}</span>
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">Armure</span>
-                  <span class="stat-value arm">{{ player.stats.totalArmor | number:'1.0-0' }}</span>
+                  <span class="stat-value arm">{{
+                    player.stats.totalArmor | number: '1.0-0'
+                  }}</span>
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">Puissance éco</span>
@@ -187,7 +191,7 @@
                     <div class="sector-header">
                       <span class="sector-name">{{ sector.name }}</span>
                       <span class="sector-meta">
-                        #{{ sector.number }} • {{ sector.income | number:'1.0-0' }}$/tour
+                        #{{ sector.number }} • {{ sector.income | number: '1.0-0' }}$/tour
                         @if (sector.resource) {
                           • {{ sector.resource }}
                         }
@@ -203,18 +207,20 @@
                             </span>
                             <span class="unit-exp">Exp: {{ unit.experience }}</span>
                             <span class="unit-stats">
-                              <span class="atk">{{ unit.attack | number:'1.0-0' }}A</span>
-                              <span class="def">{{ unit.defense | number:'1.0-0' }}D</span>
+                              <span class="atk">{{ unit.attack | number: '1.0-0' }}A</span>
+                              <span class="def">{{ unit.defense | number: '1.0-0' }}D</span>
                               @if (unit.pdf) {
-                                <span class="pdf">{{ unit.pdf | number:'1.0-0' }}P</span>
+                                <span class="pdf">{{ unit.pdf | number: '1.0-0' }}P</span>
                               }
                               @if (unit.armor) {
-                                <span class="arm">{{ unit.armor | number:'1.0-0' }}Ar</span>
+                                <span class="arm">{{ unit.armor | number: '1.0-0' }}Ar</span>
                               }
                             </span>
                             <span class="unit-classes">{{ getClassNames(unit.classes) }}</span>
                             @if (unit.isInjured) {
-                              <mat-icon class="injured-icon" matTooltip="Blessé">local_hospital</mat-icon>
+                              <mat-icon class="injured-icon" matTooltip="Blessé"
+                                >local_hospital</mat-icon
+                              >
                             }
                           </div>
                         }
@@ -223,9 +229,9 @@
                     @if (sector.stats) {
                       <div class="sector-stats-row">
                         Total:
-                        <span class="atk">{{ sector.stats.totalAtk | number:'1.0-0' }} ATK</span>
-                        <span class="def">{{ sector.stats.totalDef | number:'1.0-0' }} DEF</span>
-                        <span class="arm">{{ sector.stats.totalArmor | number:'1.0-0' }} ARM</span>
+                        <span class="atk">{{ sector.stats.totalAtk | number: '1.0-0' }} ATK</span>
+                        <span class="def">{{ sector.stats.totalDef | number: '1.0-0' }} DEF</span>
+                        <span class="arm">{{ sector.stats.totalArmor | number: '1.0-0' }} ARM</span>
                       </div>
                     }
                   </div>
@@ -245,11 +251,20 @@
 
             <!-- Actions -->
             <div class="actions-row">
-              <button mat-stroked-button (click)="exportPlayer(player)" matTooltip="Télécharger le JSON du joueur">
+              <button
+                mat-stroked-button
+                (click)="exportPlayer(player)"
+                matTooltip="Télécharger le JSON du joueur"
+              >
                 <mat-icon>download</mat-icon>
                 Exporter JSON
               </button>
-              <button mat-stroked-button color="warn" (click)="confirmDelete(player)" matTooltip="Supprime le joueur et rend ses secteurs neutres">
+              <button
+                mat-stroked-button
+                color="warn"
+                (click)="confirmDelete(player)"
+                matTooltip="Supprime le joueur et rend ses secteurs neutres"
+              >
                 <mat-icon>delete_forever</mat-icon>
                 Supprimer
               </button>
