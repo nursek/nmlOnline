@@ -3,7 +3,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  SecurityContext,
   computed,
   inject,
   linkedSignal,
@@ -95,8 +94,9 @@ export class CarteComponent {
   readonly svgContent = computed<SafeHtml | null>(() => {
     const text = this.svgTextRef.value();
     if (!text) return null;
-    const sanitized = this.sanitizer.sanitize(SecurityContext.HTML, text) ?? '';
-    return sanitized ? this.sanitizer.bypassSecurityTrustHtml(sanitized) : null;
+    // ponytail: bypass direct — le sanitizer HTML d'Angular jette les balises SVG.
+    // OK car c'est un asset statique embarqué (assets/maps), pas de l'input utilisateur.
+    return this.sanitizer.bypassSecurityTrustHtml(text);
   });
   readonly svgLoaded = computed(() => this.svgContent() !== null);
 
