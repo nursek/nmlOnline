@@ -3,7 +3,7 @@
 ## 🎯 Objectif
 Projet full-stack de jeu de stratégie :
 - Backend : Spring Boot 3.5 (Java 21, JPA, JWT)
-- Frontend : Angular 21 (standalone, NgRx, Material)
+- Frontend : Angular 22 (standalone, signaux, Material)
 
 Réponses et commentaires générés en **français**.
 
@@ -47,8 +47,8 @@ Toujours respecter cette séparation.
 ## 🧩 Frontend
 
 - Composants standalone uniquement
-- NgRx obligatoire pour état global
-- État immutable (spread operator)
+- Pas de NgRx — état global dans des services à base de signaux
+  (`signal`/`computed`, `httpResource` pour les données serveur)
 - Lazy loading via `loadComponent`
 
 ---
@@ -56,6 +56,11 @@ Toujours respecter cette séparation.
 ## ⚠️ Règles générales
 
 - Ne pas dupliquer de logique.
-- Ne pas sur-complexifier.
+- Ne pas sur-complexifier (YAGNI : pas d'abstraction spéculative, diff minimal, suppression > ajout).
+- Pas de nouvelle dépendance quand quelques lignes de code suffisent.
+- Raccourci délibéré → commentaire `ponytail:` indiquant la limite connue et le chemin d'amélioration.
 - Respecter les conventions existantes.
 - Générer du code cohérent avec l’existant.
+- Tout changement de schéma (entité, colonne, index) s'accompagne d'un script Flyway
+  `V<n>__description.sql` dans `nml-ms/src/main/resources/db/migration/` (actif en profil `prod`
+  uniquement ; ne jamais modifier une migration déjà appliquée). Voir `AGENTS.md`.

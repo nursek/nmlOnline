@@ -1,12 +1,12 @@
 # NML Online - Angular UI
 
-Application Angular 21 migrée depuis React (nml-ui-copilot).
+Application Angular 22 migrée depuis React (nml-ui-copilot).
 
 ## Technologies utilisées
 
-- **Angular 21** - Framework frontend
+- **Angular 22** - Framework frontend (standalone, signaux)
 - **Angular Material** - Composants UI
-- **NgRx** - Gestion d'état (équivalent Redux)
+- **Signaux + httpResource** - Gestion d'état dans les services (pas de NgRx)
 - **SCSS** - Styles
 - **TypeScript** - Langage
 
@@ -16,7 +16,7 @@ Application Angular 21 migrée depuis React (nml-ui-copilot).
 
 - Connexion avec JWT token
 - Refresh token automatique via interceptor HTTP
-- Stockage local du token et des infos utilisateur
+- Stockage du token en `sessionStorage`
 - Route guard pour les pages protégées
 
 ### Pages
@@ -25,13 +25,15 @@ Application Angular 21 migrée depuis React (nml-ui-copilot).
 - **Carte** : Vue d'ensemble des territoires et joueurs
 - **Joueur** : Statistiques détaillées du joueur connecté
 - **Boutique** : Achat d'équipements avec panier persistant
+- **Admin** : Panneau d'administration (rôle ADMIN)
 - **Règles** : Documentation du jeu
 
-### Gestion d'état (NgRx)
+### Gestion d'état (services à signaux)
 
-- **Auth Store** : Gestion de l'authentification
-- **Player Store** : Données joueurs (current + all)
-- **Shop Store** : Équipements et panier
+- **AuthService** : Gestion de l'authentification
+- **PlayerService** : Données du joueur connecté
+- **ShopService** : Équipements et panier (`httpResource` pour les catalogues)
+- **AdminService** : Panneau admin (`httpResource`)
 
 ## Running unit tests
 
