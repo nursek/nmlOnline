@@ -49,6 +49,28 @@ public class UserService {
         return encoder.matches(raw, hashed);
     }
 
+    /**
+     * Vérifie le mot de passe et, si le hash stocké est un hash legacy sans pepper qui matche,
+     * re-hashe immédiatement avec le pepper et persiste le hash upgradé.
+     * Évite qu'un dump DB laisse les comptes pré-refactor craquables offline sans le pepper.
+     * À supprimer une fois tous les comptes legacy re-hashés.
+     * ponytail: ceiling = transparent re-hash on login ; une fois la migration one-shot faite,
+     * retirer la branche legacy + ce upgrade.
+     */
+    public boolean checkAndUpgradePassword(User user, String raw) {
+        String hashed = user.getPassword();
+        if (encoder.matches(applyPepper(raw), hashed)) {
+            return true;
+        }
+        if (encoder.matches(raw, hashed)) {
+            user.setPassword(encodePassword(raw));
+            userRepo.save(user);
+            logger.info("Hash de mot de passe upgradé avec pepper pour l'utilisateur '{}'", user.getUsername());
+            return true;
+        }
+        return false;
+    }
+
     public String encodePassword(String raw) {
         return encoder.encode(applyPepper(raw));
     }

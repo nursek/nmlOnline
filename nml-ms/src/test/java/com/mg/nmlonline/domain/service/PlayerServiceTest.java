@@ -75,7 +75,7 @@ class PlayerServiceTest {
     @Test
     @DisplayName("Joueur introuvable est rejeté")
     void shouldRejectUnknownPlayer() {
-        when(playerRepository.findById(99L)).thenReturn(Optional.empty());
+        when(playerRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,
                 () -> playerService.buyEquipments(99L, List.of(item("Pistolet", 1))));
@@ -84,7 +84,7 @@ class PlayerServiceTest {
     @Test
     @DisplayName("Panier null ou vide est rejeté")
     void shouldRejectNullOrEmptyCart() {
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
 
         assertThrows(IllegalArgumentException.class,
                 () -> playerService.buyEquipments(1L, null));
@@ -95,7 +95,7 @@ class PlayerServiceTest {
     @Test
     @DisplayName("Item null dans le panier est rejeté")
     void shouldRejectNullItemInCart() {
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
         List<BuyEquipmentItemDto> items = new ArrayList<>();
         items.add(null);
 
@@ -106,7 +106,7 @@ class PlayerServiceTest {
     @Test
     @DisplayName("Quantité <= 0 est rejetée")
     void shouldRejectNonPositiveQuantity() {
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
 
         assertThrows(IllegalArgumentException.class,
                 () -> playerService.buyEquipments(1L, List.of(item("Pistolet", 0))));
@@ -115,7 +115,7 @@ class PlayerServiceTest {
     @Test
     @DisplayName("Équipement inconnu est rejeté")
     void shouldRejectUnknownEquipment() {
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
         when(equipmentService.findByName("Inconnu")).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,
@@ -125,7 +125,7 @@ class PlayerServiceTest {
     @Test
     @DisplayName("Coût total supérieur au solde lève InsufficientFundsException avant tout débit")
     void shouldThrowInsufficientFundsBeforeAnyDebit() {
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
         Equipment gun = equipment("Pistolet", 500);
         Equipment rifle = equipment("Fusil", 300);
         when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(gun));
@@ -143,7 +143,7 @@ class PlayerServiceTest {
     @Test
     @DisplayName("Achat réussi débite le coût total et empile les équipements")
     void shouldBuyAllItemsAtomically() {
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
         when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(equipment("Pistolet", 500)));
         when(equipmentService.findByName("Fusil")).thenReturn(Optional.of(equipment("Fusil", 300)));
         when(playerRepository.save(player)).thenReturn(player);
@@ -161,7 +161,7 @@ class PlayerServiceTest {
     @Test
     @DisplayName("Achat à coût exact égal au solde est accepté")
     void shouldAcceptPurchaseAtExactBalance() {
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
         when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(equipment("Pistolet", 1000)));
         when(playerRepository.save(player)).thenReturn(player);
 

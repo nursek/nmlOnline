@@ -27,6 +27,11 @@ interface SectorWithPlayer extends Sector {
   playerColor?: string;
 }
 
+// Accepte uniquement les chemins relatifs same-origin ("/assets/...", pas "//host" ni "https://...").
+function isSameOriginAssetUrl(url: string): boolean {
+  return url.startsWith('/') && !url.startsWith('//');
+}
+
 @Component({
   selector: 'app-carte',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -91,11 +96,17 @@ export class CarteComponent {
   private readonly svgOverlayUrl = computed(() => this.board()?.svgOverlayUrl || null);
   private readonly svgTextRef = httpResource.text(() => this.svgOverlayUrl() ?? undefined);
 
-  readonly svgContent = computed<SafeHtml | null>(() => {
+  readonly svgContent = computed<SafeHtml | string | null>(() => {
     const text = this.svgTextRef.value();
     if (!text) return null;
     // ponytail: bypass direct — le sanitizer HTML d'Angular jette les balises SVG.
     // OK car c'est un asset statique embarqué (assets/maps), pas de l'input utilisateur.
+    // Defense-in-depth: on ne bypass que si l'URL est same-origin (chemin relatif en "/").
+    // Sinon on renvoie la string brute — Angular sanitize lui-même au binding [innerHTML].
+    const url = this.svgOverlayUrl();
+    if (!url || !isSameOriginAssetUrl(url)) {
+      return text;
+    }
     return this.sanitizer.bypassSecurityTrustHtml(text);
   });
   readonly svgLoaded = computed(() => this.svgContent() !== null);

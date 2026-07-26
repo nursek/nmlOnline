@@ -87,7 +87,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Joueur introuvable est rejeté")
         void shouldRejectUnknownPlayer() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.empty());
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.empty());
 
             assertThrows(RuntimeException.class,
                     () -> vehicleService.buyVehicle(10L, "TANK", 1));
@@ -97,7 +97,7 @@ class VehicleServiceTest {
         @DisplayName("Fonds insuffisants lèvent InsufficientFundsException")
         void shouldThrowWhenInsufficientFunds() {
             player.getStats().setMoney(5000.0); // TANK = 7 500
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
 
             assertThrows(InsufficientFundsException.class,
                     () -> vehicleService.buyVehicle(10L, "TANK", 1));
@@ -106,7 +106,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Achat réussi crée les véhicules et débite le coût")
         void shouldCreateVehiclesAndDebitCost() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
             List<Vehicle> created = vehicleService.buyVehicle(10L, "VTT_LEGER", 2); // 2 × 4 000
@@ -125,7 +125,7 @@ class VehicleServiceTest {
             // En test unitaire (pas de transaction), l'argent reste débité après l'exception ;
             // en production c'est le rollback @Transactional qui annule tout.
             player.getStats().setMoney(9000.0); // 2 VTT_LEGER (8000) OK, le 3e échoue
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
             assertThrows(InsufficientFundsException.class,
@@ -152,7 +152,7 @@ class VehicleServiceTest {
         @DisplayName("Coût total validé AVANT tout débit")
         void shouldValidateTotalCostBeforeAnyDebit() {
             player.getStats().setMoney(9000.0); // TANK(7500) + VTT_LEGER(4000) = 11500 > 9000
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
 
             assertThrows(InsufficientFundsException.class,
                     () -> vehicleService.buyVehiclesBatch(10L,
@@ -166,7 +166,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Ligne invalide dans le lot est rejetée")
         void shouldRejectInvalidLineInBatch() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
 
             assertThrows(IllegalArgumentException.class,
                     () -> vehicleService.buyVehiclesBatch(10L, List.of(item("TANK", 0))));
@@ -179,7 +179,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Lot réussi crée tous les véhicules")
         void shouldCreateAllVehiclesInBatch() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
             List<Vehicle> created = vehicleService.buyVehiclesBatch(10L,
