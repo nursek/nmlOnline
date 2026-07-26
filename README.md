@@ -1,6 +1,6 @@
 # NML Online
 
-A turn-based strategy game where players manage territories, armies, vehicles, and resources on an interactive map. Built with **Spring Boot 3.5 / Java 21** on the backend and **Angular 21** on the frontend.
+A turn-based strategy game where players manage territories, armies, vehicles, and resources on an interactive map. Built with **Spring Boot 3.5 / Java 21** on the backend and **Angular 22** on the frontend.
 
 ## Table of Contents
 
@@ -8,6 +8,7 @@ A turn-based strategy game where players manage territories, armies, vehicles, a
 - [Quick Start (Local Development)](#quick-start-local-development)
 - [Environment Variables Reference](#environment-variables-reference)
 - [Spring Profiles](#spring-profiles)
+- [Database Migrations (Flyway)](#database-migrations-flyway)
 - [Docker Deployment](#docker-deployment)
 - [CI/CD](#cicd)
 - [CORS](#cors)
@@ -27,16 +28,15 @@ A turn-based strategy game where players manage territories, armies, vehicles, a
 nmlOnline/
 ├── nml-ms/                    # Spring Boot backend
 │   ├── src/main/java/          # Java 21 source
-│   ├── src/main/resources/     # Configuration, SQL, JSON data
+│   ├── src/main/resources/     # Configuration, Flyway migrations (db/migration)
 │   ├── src/test/               # Integration & unit tests
 │   ├── Dockerfile              # Multi-stage container build
 │   └── pom.xml                 # Maven build
 │
-├── nml-ui-bst-angular/         # Angular 21 frontend
+├── nml-ui-bst-angular/         # Angular 22 frontend
 │   ├── src/app/                # Application source
 │   │   ├── pages/              # Route pages (login, carte, joueur, boutique, admin…)
-│   │   ├── services/           # HTTP & token services
-│   │   ├── store/              # NgRx state (auth, player, shop, admin)
+│   │   ├── services/           # HTTP, token & signal-based state services
 │   │   ├── guards/             # Auth & admin route guards
 │   │   ├── models/             # TypeScript interfaces
 │   │   └── core/               # Constants, interceptors
@@ -52,14 +52,15 @@ nmlOnline/
 
 - Java 21, Spring Boot 3.5.6, Spring Data JPA, Spring Security
 - H2 (dev/test) or PostgreSQL (production)
+- Flyway for schema migrations (production PostgreSQL only)
 - JWT authentication with HttpOnly refresh-token cookie
 - Lombok, MapStruct, SpringDoc OpenAPI (Swagger)
 
 ### Frontend stack
 
-- Angular 21, standalone components, signals, control flow (`@if`/`@for`)
+- Angular 22, standalone components, signals, control flow (`@if`/`@for`)
 - Angular Material, SCSS
-- NgRx Store + Effects
+- Signal-based state in services (`signal`/`computed`/`httpResource`) — no NgRx
 - Jest for unit tests, ESLint + Prettier for linting/formatting
 
 ---
@@ -208,10 +209,33 @@ export DATABASE_PASSWORD="your-secure-password"
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
 ```
 
-- `ddl-auto=validate` — schema must already exist
+- `ddl-auto=validate` — schema is managed by Flyway (see below)
 - `app.cookie.secure=true` — refresh cookies are `Secure`
 - Actuator: `/actuator/health`, `/actuator/info`, `/actuator/metrics`
 - No seed data
+
+---
+
+## Database Migrations (Flyway)
+
+Schema migrations are handled by **Flyway**, enabled in the `prod` profile only
+(`spring.flyway.enabled=false` by default, so H2 dev/test keep using `ddl-auto` and are completely unaffected).
+
+- Migration scripts live in `nml-ms/src/main/resources/db/migration/`, named `V<n>__description.sql`.
+- `V1__baseline.sql` is a `pg_dump --schema-only` of the production database as of 2026-07-23.
+- On the **existing prod database**: `baseline-on-migrate=true` marks it as version 1 **without executing V1**,
+  then applies any newer migrations on startup.
+- On a **fresh/empty database** (new server, staging): V1 runs and creates the full schema.
+
+### Adding a migration
+
+Any schema change (new entity, new column, new index…) MUST ship as a migration script:
+
+1. Create `V2__add_score_column_to_players.sql` (next free version number) in `db/migration/`.
+2. Update the JPA entity accordingly — `ddl-auto=validate` will refuse to start if they diverge.
+3. Commit both together. Migrations run automatically at application startup.
+
+Never edit an already-applied migration file — always add a new one.
 
 ---
 
@@ -406,7 +430,7 @@ npm run format
 npx ng build
 ```
 
-65 tests across reducers, selectors, and guards.
+Jest unit tests on services and guards (NgRx was removed in favor of signal-based services).
 
 ---
 
@@ -484,21 +508,20 @@ src/app/
 │   └── purchase-success-dialog/  # Purchase feedback
 ├── services/
 │   ├── api.service.ts          # Centralized HTTP calls
+│   ├── auth.service.ts         # Auth state (signals)
+│   ├── player.service.ts       # Player state (signals)
+│   ├── shop.service.ts         # Shop catalogs (httpResource) + cart state
+│   ├── admin.service.ts        # Admin state (httpResource)
 │   ├── auth.interceptor.ts     # JWT refresh interceptor
-│   ├── http-error.interceptor.ts # Timeout & retry
 │   ├── token.service.ts        # JWT token management (sessionStorage)
 │   └── cart-storage.service.ts # Cart validation & sessionStorage
-├── store/
-│   ├── auth/             # Auth actions/reducer/effects/selectors
-│   ├── player/           # Player state
-│   ├── shop/             # Shop state + cart
-│   └── admin/           # Admin state
 ├── guards/
 │   ├── auth.guard.ts     # Requires authentication
 │   └── admin.guard.ts    # Requires admin role
 ├── models/               # Feature-split TypeScript interfaces
 └── core/
-    └── constants.ts      # Timeouts, SnackBar durations, etc.
+    ├── constants.ts            # Timeouts, SnackBar durations, etc.
+    └── http-error.interceptor.ts  # Timeout & retry
 ```
 
 ---
