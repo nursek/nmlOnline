@@ -71,7 +71,8 @@ public class AdminService {
         player = playerService.save(player);
 
         if (password != null && !password.isBlank()) {
-            ensureCredential(player.getName(), password);
+            User user = ensureCredential(player.getName(), password);
+            player.setUserId(user.getId());
         }
 
         playerImportService.importEquipments(dto, player);
@@ -97,7 +98,7 @@ public class AdminService {
         return importPlayer(jsonContent, null);
     }
 
-    private void ensureCredential(String username, String password) {
+    private User ensureCredential(String username, String password) {
         User user = userRepository.findByUsername(username);
         if (user == null) {
             user = new User();
@@ -105,7 +106,7 @@ public class AdminService {
             user.setRole("USER");
         }
         user.setPassword(userService.encodePassword(password));
-        userRepository.save(user);
+        return userRepository.save(user);
     }
 
     /**
