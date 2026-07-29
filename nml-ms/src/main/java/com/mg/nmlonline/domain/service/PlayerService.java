@@ -5,6 +5,7 @@ import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,13 +21,16 @@ public class PlayerService {
     private final PlayerRepository playerRepository;
     private final SectorService sectorService;
     private final EquipmentService equipmentService;
+    private final VehicleRepository vehicleRepository;
 
     public PlayerService(PlayerRepository playerRepository,
                           SectorService sectorService,
-                          EquipmentService equipmentService) {
+                          EquipmentService equipmentService,
+                          VehicleRepository vehicleRepository) {
         this.playerRepository = playerRepository;
         this.sectorService = sectorService;
         this.equipmentService = equipmentService;
+        this.vehicleRepository = vehicleRepository;
     }
 
     // --- Lecture ---
@@ -114,9 +118,17 @@ public class PlayerService {
     @Transactional
     public boolean delete(Long id) {
         if (!playerRepository.existsById(id)) return false;
-        // D'abord nettoyer les secteurs (réinitialiser ownership, supprimer armées)
+        // 1. Nettoyer les secteurs (réinitialiser ownership, supprimer armées via orphanRemoval)
         sectorService.removePlayerFromSectors(id);
-        // Ensuite supprimer le joueur (cascade vers EquipmentStack, PlayerResource)
+        // 2. Supprimer les véhicules du joueur : Vehicle étend CombatEntity
+        //    (player_id dans combat_entities) mais n'a PAS de relation @ManyToOne
+        //    vers Player, donc le cascade de Player ne les atteint pas.
+        //    Sans ça : FK violation combat_entities.player_id -> players.id.
+        //    ponytail: ceiling = nettoyage par findByPlayerId puis deleteAll ; pour
+        //    de gros parcs, passer à une méthode void deleteByPlayerId(Long) dérivée.
+        vehicleRepository.deleteAll(vehicleRepository.findByPlayerId(id));
+        // 3. Supprimer le joueur (cascade vers EquipmentStack, PlayerResource,
+        //    Buildings, GameCharacter).
         playerRepository.deleteById(id);
         return true;
     }
