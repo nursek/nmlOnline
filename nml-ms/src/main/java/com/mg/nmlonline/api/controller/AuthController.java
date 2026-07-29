@@ -115,7 +115,7 @@ public class AuthController {
         }
 
         User user = userService.findByUsername(req.getUsername());
-        boolean valid = user != null && userService.checkPassword(req.getPassword(), user.getPassword());
+        boolean valid = user != null && userService.checkAndUpgradePassword(user, req.getPassword());
 
         if (valid) {
             att.count.set(0);

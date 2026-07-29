@@ -64,7 +64,7 @@ public class VehicleService {
             throw new IllegalArgumentException("Type de véhicule invalide : " + vehicleTypeName);
         }
 
-        Player player = playerRepository.findByUserId(userId)
+        Player player = playerRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
 
         List<Vehicle> created = new ArrayList<>();
@@ -93,7 +93,7 @@ public class VehicleService {
             throw new IllegalArgumentException("Le panier de véhicules est vide");
         }
 
-        Player player = playerRepository.findByUserId(userId)
+        Player player = playerRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
 
         List<VehicleType> toCreate = new ArrayList<>();

@@ -71,7 +71,7 @@ public class PlayerService {
         if (playerId == null) {
             throw new IllegalArgumentException("Player ID is required");
         }
-        Player player = playerRepository.findById(playerId)
+        Player player = playerRepository.findByIdForUpdate(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Player not found"));
 
         if (items == null || items.isEmpty()) {

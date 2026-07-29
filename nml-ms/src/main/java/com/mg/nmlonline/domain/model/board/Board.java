@@ -36,6 +36,26 @@ public class Board {
     @Column(name = "svg_overlay_url")
     private String svgOverlayUrl;
 
+    /**
+     * Valide que l'URL de l'overlay SVG est same-origin (chemin relatif commençant par "/" mais
+     * pas par "//" qui serait protocol-relative). Refuse tout host/schéma externe pour éviter
+     * qu'un admin compromis ne fasse charger du JS arbitraire dans le navigateur des joueurs.
+     * ponytail: ceiling = same-origin only ; pour héberger un overlay hors-origin, le mettre
+     * derrière le même domaine via un reverse-proxy.
+     */
+    public void setSvgOverlayUrl(String svgOverlayUrl) {
+        if (svgOverlayUrl != null && !isSameOriginPath(svgOverlayUrl)) {
+            throw new IllegalArgumentException(
+                    "svgOverlayUrl doit être un chemin relatif same-origin (commençant par '/' mais pas par '//') : "
+                            + svgOverlayUrl);
+        }
+        this.svgOverlayUrl = svgOverlayUrl;
+    }
+
+    private static boolean isSameOriginPath(String url) {
+        return url.startsWith("/") && !url.startsWith("//");
+    }
+
     // Tous les secteurs de la carte (source unique de vérité)
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Sector> sectorsList = new ArrayList<>();
