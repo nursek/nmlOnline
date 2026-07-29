@@ -50,9 +50,12 @@ export class ApiService {
     return this.http.get<Record<string, unknown>>(`${this.baseUrl}/admin/players/${id}/export`);
   }
 
-  adminImportPlayer(file: File): Observable<Player> {
+  adminImportPlayer(file: File, password?: string): Observable<Player> {
     const formData = new FormData();
     formData.append('file', file);
+    if (password) {
+      formData.append('password', password);
+    }
     return this.http.post<Player>(`${this.baseUrl}/admin/players/import`, formData);
   }
 

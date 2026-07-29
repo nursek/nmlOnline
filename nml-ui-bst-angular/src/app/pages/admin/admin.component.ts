@@ -99,11 +99,26 @@ export class AdminComponent {
     input.accept = '.json';
     input.onchange = (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
-      if (file) {
-        void this.admin.importPlayer(file).catch(() => {
+      if (!file) {
+        return;
+      }
+      // ponytail: window.prompt au lieu d'un dialog MatDialog — un seul champ,
+      // pas assez de valeur pour un composant dédié. Upgrade: dialog custom si
+      // on veut validation/policy de mot de passe (longueur min, confirmation).
+      const password = window.prompt(
+        `Mot de passe pour le compte lié au joueur "${file.name.replace(/\.json$/i, '')}" ?\n` +
+          '(Laisser vide = importer sans compte de connexion.)',
+        '',
+      );
+      // prompt renvoie null si l'utilisateur annule : on abandonne l'import.
+      if (password === null) {
+        return;
+      }
+      void this.admin
+        .importPlayer(file, password === '' ? undefined : password)
+        .catch(() => {
           // AdminService already set the error signal; ignore here.
         });
-      }
     };
     input.click();
   }

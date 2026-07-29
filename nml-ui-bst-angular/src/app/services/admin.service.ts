@@ -36,12 +36,12 @@ export class AdminService {
   }
 
   /** Import a player JSON file; reloads the catalog on success. */
-  async importPlayer(file: File): Promise<Player> {
+  async importPlayer(file: File, password?: string): Promise<Player> {
     this._importing.set(true);
     this._error.set(null);
     this._successMessage.set(null);
     try {
-      const player = await firstValueFrom(this.api.adminImportPlayer(file));
+      const player = await firstValueFrom(this.api.adminImportPlayer(file, password));
       this._successMessage.set(`Joueur "${player.name}" importé avec succès`);
       this.reloadPlayers();
       return player;

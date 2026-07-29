@@ -7,7 +7,9 @@ import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitEquipment;
+import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
+import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,17 +27,23 @@ public class AdminService {
     private final PlayerImportService playerImportService;
     private final PlayerService playerService;
     private final BoardService boardService;
+    private final UserService userService;
+    private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
     private final EntityManager entityManager;
 
     public AdminService(PlayerImportService playerImportService,
                         PlayerService playerService,
                         BoardService boardService,
+                        UserService userService,
+                        UserRepository userRepository,
                         ResourceRepository resourceRepository,
                         EntityManager entityManager) {
         this.playerImportService = playerImportService;
         this.playerService = playerService;
         this.boardService = boardService;
+        this.userService = userService;
+        this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
         this.entityManager = entityManager;
     }
@@ -43,9 +51,11 @@ public class AdminService {
     /**
      * Importe un joueur depuis un contenu JSON.
      * Si un joueur avec le même nom existe, il est supprimé au préalable.
+     * Si {@code password} est non nul, crée/met à jour le compte User portant
+     * le même nom pour permettre la connexion.
      */
     @Transactional
-    public Player importPlayer(String jsonContent) throws IOException {
+    public Player importPlayer(String jsonContent, String password) throws IOException {
         PlayerImportService.PlayerDTO dto = playerImportService.parse(jsonContent);
         Player player = playerImportService.importPlayer(dto);
         if (player == null) {
@@ -59,6 +69,10 @@ public class AdminService {
         }
 
         player = playerService.save(player);
+
+        if (password != null && !password.isBlank()) {
+            ensureCredential(player.getName(), password);
+        }
 
         playerImportService.importEquipments(dto, player);
         player = playerService.save(player);
@@ -76,6 +90,22 @@ public class AdminService {
         playerImportService.clearEquipmentCache();
 
         return player;
+    }
+
+    /** Pour compatibilité : import sans création de compte. */
+    public Player importPlayer(String jsonContent) throws IOException {
+        return importPlayer(jsonContent, null);
+    }
+
+    private void ensureCredential(String username, String password) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            user = new User();
+            user.setUsername(username);
+            user.setRole("USER");
+        }
+        user.setPassword(userService.encodePassword(password));
+        userRepository.save(user);
     }
 
     /**
@@ -156,12 +186,21 @@ public class AdminService {
     }
 
     /**
-     * Supprime un joueur et réinitialise tous ses secteurs.
+     * Supprime un joueur, réinitialise ses secteurs, et supprime le compte User
+     * portant le même nom (s'il existe et n'est pas admin) pour éviter un
+     * compte orphelin permettant une connexion sur un joueur absent.
      */
     @Transactional
     public void deletePlayer(Long playerId) {
+        Player player = playerService.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable avec l'ID " + playerId));
+        String name = player.getName();
         if (!playerService.delete(playerId)) {
             throw new IllegalArgumentException("Joueur introuvable avec l'ID " + playerId);
+        }
+        User user = userRepository.findByUsername(name);
+        if (user != null && !"ADMIN".equals(user.getRole())) {
+            userRepository.delete(user);
         }
     }
 }

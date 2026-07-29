@@ -68,11 +68,18 @@ public class AdminController {
     /**
      * Importe un joueur depuis un fichier JSON.
      * Si un joueur avec le même nom existe, il est remplacé.
+     * Si {@code password} est fourni, un compte {@link com.mg.nmlonline.domain.model.user.User}
+     * (rôle USER) est créé/mis à jour avec ce mot de passe haché+pepper, pour permettre
+     * la connexion sous le nom du joueur. Sans password, le joueur est importé sans compte
+     * (utile en dev où les comptes sont seedés par ailleurs).
      */
     @PostMapping(value = "/players/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<PlayerDto> importPlayer(@RequestParam("file") MultipartFile file) throws java.io.IOException {
+    public ResponseEntity<PlayerDto> importPlayer(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "password", required = false) String password
+    ) throws java.io.IOException {
         String jsonContent = new String(file.getBytes(), StandardCharsets.UTF_8);
-        Player player = adminService.importPlayer(jsonContent);
+        Player player = adminService.importPlayer(jsonContent, password);
         Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
         return ResponseEntity.ok(playerMapper.toDtoWithSectors(player, board));
     }
