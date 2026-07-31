@@ -208,19 +208,19 @@
   padding: 0 8px !important;
   &.pdf {
     background: #dc2626 !important;
-    color: white !important;
+    color: black !important;
   }
   &.pdc {
     background: #0891b2 !important;
-    color: white !important;
+    color: black !important;
   }
   &.arm {
     background: #059669 !important;
-    color: white !important;
+    color: black !important;
   }
   &.esq {
     background: #d97706 !important;
-    color: white !important;
+    color: black !important;
   }
 }
 
@@ -273,20 +273,6 @@
   }
 }
 
-// Units toolbar buttons
-.expand-collapse-btns {
-  display: flex;
-  gap: 4px;
-  .text-btn {
-    @include shared.icon-button(32px);
-    border: none;
-    background: transparent;
-    &:hover {
-      background: #f1f5f9;
-    }
-  }
-}
-
 .filter-btn {
   @include shared.icon-button;
   position: relative;
@@ -305,42 +291,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-}
-
-.view-mode-toggle {
-  display: flex;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-  background: white;
-  .toggle-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: none;
-    background: transparent;
-    color: shared.$text-muted;
-    cursor: pointer;
-    transition: all 0.2s;
-    mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-    }
-    &:hover:not(.active) {
-      background: #f8fafc;
-      color: shared.$primary-color;
-    }
-    &.active {
-      background: shared.$primary-color;
-      color: white;
-    }
-    &:first-child {
-      border-right: 1px solid #e2e8f0;
-    }
   }
 }
 
@@ -443,7 +393,7 @@
     width: 20px;
     height: 20px;
   }
-  .unit-type-badge {
+.unit-type-badge {
     background: shared.$primary-gradient;
     color: white;
     padding: 2px 8px;
@@ -453,28 +403,11 @@
     text-transform: uppercase;
     white-space: nowrap;
   }
-  .unit-classes-inline {
-    display: flex;
-    gap: 4px;
-  }
   .unit-exp {
     font-size: 0.7rem;
     color: shared.$text-muted;
     white-space: nowrap;
-  }
-  .unit-stats-inline {
-    display: flex;
-    gap: 4px;
     margin-left: auto;
-    .stat {
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 2px 6px;
-      background: white;
-      border-radius: 4px;
-      border: 1px solid #e2e8f0;
-      @include shared.stat-colors;
-    }
   }
   .unit-location-inline {
     display: flex;
@@ -494,162 +427,6 @@
     font-size: 16px;
     width: 16px;
     height: 16px;
-  }
-}
-
-// Unit details (expanded)
-.unit-details {
-  padding: 12px 16px 16px 44px;
-  border-top: 1px dashed #e2e8f0;
-  background: white;
-  .details-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-  }
-  .detail-col {
-    min-width: 150px;
-    h5 {
-      margin: 0 0 8px;
-      font-size: 0.75rem;
-      color: shared.$text-muted;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-  }
-  .detail-stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-  }
-  .detail-stat {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    .label {
-      color: shared.$text-muted;
-    }
-    .value {
-      font-weight: 600;
-      @include shared.stat-colors;
-    }
-  }
-  .detail-equipments,
-  .detail-classes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .equipment-tag {
-    font-size: 0.75rem;
-    padding: 2px 8px;
-    background: #fef3c7;
-    color: #92400e;
-    border-radius: 12px;
-  }
-  .class-tag-full {
-    @include shared.tag;
-  }
-}
-
-// Units tile mode
-.units-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-}
-
-.unit-card {
-  padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  transition: all 0.2s;
-  &:hover {
-    border-color: shared.$primary-color;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-  &.injured {
-    border-color: #f87171;
-    background: linear-gradient(135deg, #fef2f2 0%, #f8fafc 100%);
-  }
-}
-
-.unit-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.unit-type-badge {
-  background: shared.$primary-gradient;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.unit-exp {
-  font-size: 0.7rem;
-  color: shared.$text-muted;
-  margin-left: auto;
-}
-.injured-icon {
-  color: #ef4444;
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-}
-.unit-classes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 6px;
-}
-.class-tag {
-  @include shared.tag;
-}
-
-.unit-stats-compact {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 6px;
-  .stat {
-    flex: 1;
-    text-align: center;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 3px 2px;
-    background: white;
-    border-radius: 4px;
-    border: 1px solid #e2e8f0;
-    @include shared.stat-colors;
-  }
-}
-
-.unit-equipments {
-  font-size: 0.7rem;
-  color: shared.$text-muted;
-  margin-bottom: 4px;
-  .eq-name {
-    color: #4f46e5;
-  }
-}
-
-.unit-location {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 0.7rem;
-  color: #94a3b8;
-  mat-icon {
-    font-size: 12px;
-    width: 12px;
-    height: 12px;
   }
 }
 

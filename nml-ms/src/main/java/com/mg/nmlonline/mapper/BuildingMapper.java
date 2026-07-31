@@ -6,6 +6,7 @@ import com.mg.nmlonline.api.dto.PlayerResourceDto;
 import com.mg.nmlonline.domain.model.building.*;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
+import com.mg.nmlonline.domain.service.TurnService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -18,9 +19,11 @@ import java.util.stream.Collectors;
 public class BuildingMapper {
 
     private final EquipmentMapper equipmentMapper;
+    private final TurnService turnService;
 
-    public BuildingMapper(EquipmentMapper equipmentMapper) {
+    public BuildingMapper(EquipmentMapper equipmentMapper, TurnService turnService) {
         this.equipmentMapper = equipmentMapper;
+        this.turnService = turnService;
     }
 
     /**
@@ -122,12 +125,10 @@ public class BuildingMapper {
     }
 
     /**
-     * Retourne le tour actuel (à injecter depuis le contexte du jeu).
-     * Pour l'instant, retourne une valeur par défaut.
+     * Tour courant — source unique de vérité via {@link TurnService}.
      */
     private int getCurrentTurn() {
-        // TODO: Injecter depuis le contexte du jeu
-        return 1;
+        return turnService.getCurrentTurn();
     }
 }
 

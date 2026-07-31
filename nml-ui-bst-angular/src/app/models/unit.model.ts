@@ -6,6 +6,10 @@ export interface UnitType {
   level: number;
   baseAttack: number;
   baseDefense: number;
+  // Caps d'équipement par catégorie (exposés par UnitTypeDto côté backend).
+  maxFirearms: number;
+  maxMeleeWeapons: number;
+  maxDefensiveEquipment: number;
 }
 
 export interface Unit {
@@ -55,4 +59,6 @@ export interface UnitClass {
   criticalMultiplier: number | null;
   damageReductionPdf: number | null;
   damageReductionPdc: number | null;
+  /** Nombre max de secteurs parcourus par tour (LEGER = 2, autres = 1). */
+  maxMovementHops: number;
 }

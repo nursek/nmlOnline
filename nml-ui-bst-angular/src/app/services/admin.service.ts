@@ -26,13 +26,44 @@ export class AdminService {
   private readonly _importing = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _successMessage = signal<string | null>(null);
+  private readonly _advancingTurn = signal(false);
+  private readonly _currentTurn = signal<number | null>(null);
 
   readonly importing = this._importing.asReadonly();
   readonly error = this._error.asReadonly();
   readonly successMessage = this._successMessage.asReadonly();
+  readonly advancingTurn = this._advancingTurn.asReadonly();
+  readonly currentTurn = this._currentTurn.asReadonly();
 
   reloadPlayers(): void {
     this.playersRef.reload();
+  }
+
+  /** Charge le tour courant depuis la source unique de vérité (TurnService). */
+  async loadCurrentTurn(): Promise<void> {
+    try {
+      const res = await firstValueFrom(this.api.adminGetCurrentTurn());
+      this._currentTurn.set(res.currentTurn);
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, 'Erreur lors de la récupération du tour courant'));
+    }
+  }
+
+  /** Termine le tour courant : résout les mouvements PENDING puis incrémente. */
+  async advanceTurn(): Promise<void> {
+    this._advancingTurn.set(true);
+    this._error.set(null);
+    this._successMessage.set(null);
+    try {
+      const res = await firstValueFrom(this.api.adminAdvanceTurn());
+      this._currentTurn.set(res.currentTurn);
+      this._successMessage.set(`Tour ${res.currentTurn} en cours — mouvements résolus.`);
+      this.reloadPlayers();
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, 'Erreur lors du passage au tour suivant'));
+    } finally {
+      this._advancingTurn.set(false);
+    }
   }
 
   /** Import a player JSON file; reloads the catalog on success. */

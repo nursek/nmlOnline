@@ -25,6 +25,28 @@
     <mat-progress-bar mode="indeterminate" class="import-progress"></mat-progress-bar>
   }
 
+  <!-- Gestion du tour — source unique de vérité TurnService (bouton admin) -->
+  <div class="turn-panel">
+    <div class="turn-info">
+      <mat-icon>event_repeat</mat-icon>
+      <span class="turn-label">Tour courant</span>
+      <span class="turn-value">{{ currentTurnLabel() }}</span>
+    </div>
+    <button
+      mat-stroked-button
+      color="accent"
+      (click)="onAdvanceTurn()"
+      [disabled]="advancingTurn()"
+    >
+      @if (advancingTurn()) {
+        <mat-spinner diameter="20"></mat-spinner>
+      } @else {
+        <mat-icon>skip_next</mat-icon>
+      }
+      Finir le tour
+    </button>
+  </div>
+
   <!-- Search -->
   <mat-form-field appearance="outline" class="search-field">
     <mat-icon matPrefix>search</mat-icon>

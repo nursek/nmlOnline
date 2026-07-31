@@ -1,0 +1,71 @@
+<div class="usp">
+  <div class="usp-header">
+    <h2 mat-dialog-title>
+      <mat-icon>inventory_2</mat-icon>
+      {{ data.categoryLabel }}
+    </h2>
+    <button mat-icon-button (click)="close()" aria-label="Fermer">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    @if (!eligible().length && !ineligible().length) {
+      <p class="usp-empty">Aucun équipement de cette catégorie dans l'inventaire.</p>
+    } @else {
+      @if (eligible().length) {
+        <div class="usp-subhead">Disponibles</div>
+        @for (st of eligible(); track st.equipment.name) {
+          <div class="usp-row usp-ok">
+            <div class="usp-info">
+              <span class="usp-name">{{ st.equipment.name }}</span>
+              <span class="usp-bonuses">
+                @if (st.equipment.pdfBonus > 0) {
+                  <span class="usp-bonus pdf">+{{ st.equipment.pdfBonus }} PDF</span>
+                }
+                @if (st.equipment.pdcBonus > 0) {
+                  <span class="usp-bonus pdc">+{{ st.equipment.pdcBonus }} PDC</span>
+                }
+                @if (st.equipment.armBonus > 0) {
+                  <span class="usp-bonus arm">+{{ st.equipment.armBonus }} ARM</span>
+                }
+                @if (st.equipment.evasionBonus > 0) {
+                  <span class="usp-bonus esq">+{{ st.equipment.evasionBonus }} ESQ</span>
+                }
+              </span>
+              <span class="usp-cat">x{{ st.available }} dispo</span>
+            </div>
+            <button
+              mat-mini-fab
+              color="primary"
+              [disabled]="busy()"
+              (click)="equip(st.equipment)"
+              matTooltip="Équiper"
+            >
+              <mat-icon>add</mat-icon>
+            </button>
+          </div>
+        }
+      }
+
+      @if (ineligible().length) {
+        <div class="usp-subhead">Non disponibles</div>
+        @for (st of ineligible(); track st.equipment.name) {
+          <div class="usp-row usp-na" [matTooltip]="ineligibleReason(st.equipment)">
+            <div class="usp-info">
+              <span class="usp-name">{{ st.equipment.name }}</span>
+              <span class="usp-cat">x{{ st.available }} dispo</span>
+            </div>
+            <button mat-mini-fab disabled>
+              <mat-icon>block</mat-icon>
+            </button>
+          </div>
+        }
+      }
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="close()">Fermer</button>
+  </mat-dialog-actions>
+</div>

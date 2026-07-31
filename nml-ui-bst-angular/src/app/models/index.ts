@@ -7,6 +7,7 @@ export * from './vehicle.model';
 export * from './building.model';
 export * from './board.model';
 export * from './shop.model';
+export * from './movement.model';
 
 /** Minimal Spring Data page wrapper — only `content` is ever read. */
 export interface PageResult<T> {

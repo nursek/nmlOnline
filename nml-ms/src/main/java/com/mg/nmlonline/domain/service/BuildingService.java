@@ -26,13 +26,16 @@ public class BuildingService {
     private final BuildingRepository buildingRepository;
     private final PlayerRepository playerRepository;
     private final BoardService boardService;
+    private final TurnService turnService;
 
     public BuildingService(BuildingRepository buildingRepository,
                            PlayerRepository playerRepository,
-                           BoardService boardService) {
+                           BoardService boardService,
+                           TurnService turnService) {
         this.buildingRepository = buildingRepository;
         this.playerRepository = playerRepository;
         this.boardService = boardService;
+        this.turnService = turnService;
     }
 
     // === CRÉATION DES BÂTIMENTS INITIAUX ===
@@ -263,10 +266,11 @@ public class BuildingService {
     // === CLASSES UTILITAIRES ===
 
     /**
-     * Retourne le tour courant du jeu.
+     * Retourne le tour courant du jeu (source unique de vérité : {@link TurnService}).
+     * Le {@code playerId} est conservé pour compatibilité mais ignoré — le tour est global au plateau.
      */
     public int getCurrentTurn(Long playerId) {
-        return 1; // TODO implémenter la logique pour récupérer le tour courant du jeu à partir du contexte ou d'un service de gestion de partie
+        return turnService.getCurrentTurn();
     }
 
     public record CaptureResult(double money, List<PlayerResource> resources) {}

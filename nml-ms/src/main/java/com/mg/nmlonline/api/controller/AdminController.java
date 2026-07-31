@@ -6,6 +6,7 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.service.AdminService;
 import com.mg.nmlonline.domain.service.BoardService;
 import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.domain.service.TurnService;
 import com.mg.nmlonline.mapper.PlayerMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,15 +36,18 @@ public class AdminController {
     private final PlayerService playerService;
     private final PlayerMapper playerMapper;
     private final BoardService boardService;
+    private final TurnService turnService;
 
     public AdminController(AdminService adminService,
                            PlayerService playerService,
                            PlayerMapper playerMapper,
-                           BoardService boardService) {
+                           BoardService boardService,
+                           TurnService turnService) {
         this.adminService = adminService;
         this.playerService = playerService;
         this.playerMapper = playerMapper;
         this.boardService = boardService;
+        this.turnService = turnService;
     }
 
     /**
@@ -91,5 +95,31 @@ public class AdminController {
     public ResponseEntity<Map<String, String>> deletePlayer(@PathVariable Long id) {
         adminService.deletePlayer(id);
         return ResponseEntity.ok(Map.of("message", "Joueur supprimé avec succès"));
+    }
+
+    // ==========================================================
+    // === GESTION DU TOUR (source unique : TurnService) =========
+    // ==========================================================
+
+    /**
+     * Tour courant du plateau.
+     */
+    @GetMapping("/turn/current")
+    public Map<String, Object> getCurrentTurn() {
+        return Map.of("currentTurn", turnService.getCurrentTurn());
+    }
+
+    /**
+     * Termine le tour courant : résout les ordres de déplacement PENDING puis
+     * incrémente le compteur. Retourne le nouveau numéro de tour.
+     *
+     * <p>ponytail: déclenchement manuel admin — remplacé plus tard par un scheduler
+     * automatique end-of-turn (avec calcul des revenus/effets de bâtiments).
+     */
+    @PostMapping("/turn/next")
+    public Map<String, Object> advanceTurn() {
+        int newTurn = turnService.advanceTurn();
+        logger.info("[ADMIN] Tour avancé -> {}", newTurn);
+        return Map.of("currentTurn", newTurn);
     }
 }

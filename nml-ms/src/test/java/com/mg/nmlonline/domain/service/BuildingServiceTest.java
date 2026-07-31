@@ -43,6 +43,9 @@ class BuildingServiceTest {
     @Mock
     BoardService boardService;
 
+    @Mock
+    TurnService turnService;
+
     @InjectMocks
     BuildingService buildingService;
 
@@ -311,11 +314,10 @@ class BuildingServiceTest {
     class CurrentTurnTests {
 
         @Test
-        @DisplayName("getCurrentTurn retourne 1 en dur (TODO non implémenté)")
-        void shouldPinHardcodedCurrentTurn() {
-            // comportement actuel piné : tant que cette méthode retourne 1,
-            // cooldowns, banque (tour 5+) et vampirisation sont gelés en production
-            assertEquals(1, buildingService.getCurrentTurn(1L));
+        @DisplayName("getCurrentTurn délègue à TurnService (source unique de vérité)")
+        void shouldDelegateToTurnService() {
+            when(turnService.getCurrentTurn()).thenReturn(7);
+            assertEquals(7, buildingService.getCurrentTurn(1L));
         }
     }
 }

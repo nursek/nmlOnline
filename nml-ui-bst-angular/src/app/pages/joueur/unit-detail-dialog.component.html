@@ -1,0 +1,192 @@
+<div class="udd">
+  <div class="udd-header">
+    <h2 mat-dialog-title>
+      <mat-icon>badge</mat-icon>
+      {{ unit()?.type?.name }} #{{ unit()?.number }}
+      <span class="udd-sub">— {{ data.sectorName }} (secteur {{ data.sectorNumber }})</span>
+    </h2>
+    <button mat-icon-button (click)="close()" aria-label="Fermer">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <div class="udd-body">
+      <!-- Colonne gauche : slots offensifs -->
+      <div class="udd-col udd-col-left">
+        <h3><mat-icon>inventory_2</mat-icon> Offensif</h3>
+        @for (group of offensiveSlots(); track group.category) {
+          <div class="udd-slot-group">
+            <div class="udd-slot-head">
+              <span class="udd-slot-label">{{ group.label }}</span>
+              <span class="udd-slot-cap">{{ group.filled.length }}/{{ group.cap }}</span>
+            </div>
+            <div class="udd-slots">
+              @for (eq of group.filled; track eq.name) {
+                <div class="udd-slot udd-slot-filled" (click)="openSlotPicker(group)" role="button" tabindex="0" matTooltip="Cliquer pour échanger">
+                  <span class="udd-slot-name">{{ eq.name }}</span>
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    [disabled]="busy()"
+                    (click)="$event.stopPropagation(); unequip(eq)"
+                    matTooltip="Retirer"
+                  >
+                    <mat-icon>remove_circle_outline</mat-icon>
+                  </button>
+                </div>
+              }
+              @for (i of emptySlots(group); track i) {
+                <button
+                  class="udd-slot udd-slot-empty"
+                  (click)="openSlotPicker(group)"
+                  matTooltip="Ajouter un équipement"
+                >
+                  <mat-icon>add</mat-icon>
+                </button>
+              }
+            </div>
+          </div>
+        }
+        @if (!offensiveSlots().length) {
+          <span class="udd-empty">Aucun slot offensif.</span>
+        }
+      </div>
+
+      <!-- Colonne centre : stats (haut) + portrait (sous) -->
+      <div class="udd-col udd-col-center">
+        <section class="udd-stats-section">
+          <h3><mat-icon>analytics</mat-icon> Statistiques</h3>
+          <div class="udd-stats">
+            <div class="udd-stat atk"><span class="udd-label">ATK</span><span class="udd-val">{{ unit()?.attack }}</span></div>
+            <div class="udd-stat pdf"><span class="udd-label">PDF</span><span class="udd-val">{{ unit()?.pdf }}</span></div>
+            <div class="udd-stat pdc"><span class="udd-label">PDC</span><span class="udd-val">{{ unit()?.pdc }}</span></div>
+            <div class="udd-stat def"><span class="udd-label">DEF</span><span class="udd-val">{{ unit()?.defense }}</span></div>
+            <div class="udd-stat arm"><span class="udd-label">ARM</span><span class="udd-val">{{ unit()?.armor }}</span></div>
+            <div class="udd-stat esq"><span class="udd-label">ESQ</span><span class="udd-val">{{ unit()?.evasion }}</span></div>
+          </div>
+
+          @if (unit()?.classes?.length) {
+            <div class="udd-classes">
+              @for (c of unit()?.classes ?? []; track c.code) {
+                <span class="udd-class">{{ c.name }}</span>
+              }
+            </div>
+          }
+        </section>
+
+        <div class="udd-portrait">
+          @if (portraitUrl() && !imgError()) {
+            <img [src]="portraitUrl()" (error)="onImgError()" alt="Portrait {{ unit()?.type?.name }}" />
+          } @else {
+            <div class="udd-portrait-fallback">
+              <mat-icon>image_not_supported</mat-icon>
+              <span>{{ unit()?.type?.name }}</span>
+            </div>
+          }
+          <div class="udd-meta">
+            <span>{{ unit()?.experience | number: '1.1-1' }} Exp</span>
+            @if (unit()?.isInjured) {
+              <span class="udd-injured"><mat-icon>local_hospital</mat-icon> Blessé</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne droite : slots défensifs -->
+      <div class="udd-col udd-col-right">
+        <h3><mat-icon>shield</mat-icon> Défensif</h3>
+        @for (group of defensiveSlots(); track group.category) {
+          <div class="udd-slot-group">
+            <div class="udd-slot-head">
+              <span class="udd-slot-label">{{ group.label }}</span>
+              <span class="udd-slot-cap">{{ group.filled.length }}/{{ group.cap }}</span>
+            </div>
+            <div class="udd-slots">
+              @for (eq of group.filled; track eq.name) {
+                <div class="udd-slot udd-slot-filled" (click)="openSlotPicker(group)" role="button" tabindex="0" matTooltip="Cliquer pour échanger">
+                  <span class="udd-slot-name">{{ eq.name }}</span>
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    [disabled]="busy()"
+                    (click)="$event.stopPropagation(); unequip(eq)"
+                    matTooltip="Retirer"
+                  >
+                    <mat-icon>remove_circle_outline</mat-icon>
+                  </button>
+                </div>
+              }
+              @for (i of emptySlots(group); track i) {
+                <button
+                  class="udd-slot udd-slot-empty"
+                  (click)="openSlotPicker(group)"
+                  matTooltip="Ajouter un équipement"
+                >
+                  <mat-icon>add</mat-icon>
+                </button>
+              }
+            </div>
+          </div>
+        }
+        @if (!defensiveSlots().length) {
+          <span class="udd-empty">Aucun slot défensif.</span>
+        }
+      </div>
+    </div>
+
+    <!-- Bas pleine largeur : ordre de déplacement -->
+    <section class="udd-move-section">
+      <h3><mat-icon>directions_walk</mat-icon> Ordre de déplacement</h3>
+      <div class="udd-move">
+        <div class="udd-move-from">
+          <span class="udd-label">Depuis</span>
+          <span class="udd-pill">Secteur {{ data.sectorNumber }}</span>
+        </div>
+        <mat-icon class="udd-arrow">arrow_forward</mat-icon>
+        <mat-form-field appearance="outline" class="udd-move-to">
+          <mat-label>Vers</mat-label>
+          <mat-select [value]="targetSector()" (valueChange)="targetSector.set($event)">
+            @for (n of reachableTargets(); track $index) {
+              <mat-option [value]="n">Secteur {{ n }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="udd-move-hint">
+        @if (maxHops() === 1) {
+          <span>Déplacement 1 secteur — {{ reachableTargets().length }} destination(s) atteignable(s).</span>
+        } @else {
+          <span>Déplacement jusqu'à {{ maxHops() }} secteurs — {{ reachableTargets().length }} destination(s) atteignable(s).</span>
+        }
+      </div>
+
+      @if (pendingOrdersForUnit().length) {
+        <div class="udd-move-pending">
+          <div class="udd-subhead">Ordres en attente</div>
+          @for (o of pendingOrdersForUnit(); track o.id) {
+            <div class="udd-pending-row">
+              <span>Secteur {{ o.fromSectorNumber }} → {{ o.toSectorNumber }} ({{ o.status }})</span>
+              <button mat-icon-button color="warn" [disabled]="busy()" (click)="cancelOrder(o.id)">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="close()">Fermer</button>
+    <button
+      mat-raised-button
+      color="primary"
+      [disabled]="busy() || targetSector() === null"
+      (click)="submitMove()"
+    >
+      <mat-icon>directions_walk</mat-icon>
+      Donner l'ordre
+    </button>
+  </mat-dialog-actions>
+</div>

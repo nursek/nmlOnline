@@ -1,10 +1,12 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.user.User;
@@ -84,6 +86,8 @@ public class AdminService {
         Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
         if (board != null) {
             playerImportService.importSectors(dto, player, board);
+            playerImportService.importCharacter(dto, player, board);
+            playerImportService.importBuildings(dto, player, board);
             boardService.save(board);
             player = playerService.save(player);
         }
@@ -111,7 +115,10 @@ public class AdminService {
 
     /**
      * Exporte un joueur au format JSON compatible avec l'import.
+     * Lecture seule : on parcourt les relations LAZY (character, buildings, sectors)
+     * donc une transaction ouverte est nécessaire (open-in-view est désactivé).
      */
+    @Transactional(readOnly = true)
     public Map<String, Object> exportPlayer(Long playerId) {
         Player player = playerService.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable avec l'ID " + playerId));
@@ -182,6 +189,33 @@ public class AdminService {
             }
         }
         result.put("sectors", sectors);
+
+        // character — leader du joueur (null si absent), symétrique avec PlayerImportService.CharacterDTO
+        GameCharacter character = player.getCharacter();
+        if (character != null) {
+            Map<String, Object> cMap = new LinkedHashMap<>();
+            cMap.put("name", character.getName());
+            cMap.put("sectorNumber", character.getSector() != null ? character.getSector().getNumber() : 0);
+            cMap.put("baseAttack", character.getBaseAttack());
+            cMap.put("baseDefense", character.getBaseDefense());
+            cMap.put("basePdf", character.getBasePdf());
+            cMap.put("basePdc", character.getBasePdc());
+            cMap.put("baseArmor", character.getBaseArmor());
+            cMap.put("baseEvasion", character.getBaseEvasion());
+            result.put("character", cMap);
+        } else {
+            result.put("character", null);
+        }
+
+        // buildings — bâtiments possédés par le joueur, symétrique avec PlayerImportService.BuildingDTO
+        List<Map<String, Object>> buildingsList = new ArrayList<>();
+        for (Building building : player.getBuildings()) {
+            Map<String, Object> bMap = new LinkedHashMap<>();
+            bMap.put("type", building.getBuildingType() != null ? building.getBuildingType().name() : null);
+            bMap.put("sectorNumber", building.getSector() != null ? building.getSector().getNumber() : 0);
+            buildingsList.add(bMap);
+        }
+        result.put("buildings", buildingsList);
 
         return result;
     }
