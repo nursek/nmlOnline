@@ -13,6 +13,7 @@ import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -153,18 +154,30 @@ public class MovementService {
         MovementOrder order = MovementOrder.createVehicleOrder(playerId, turn, vehicleId, route);
         return orderRepository.save(order);
     }
-
+    
     /**
-     * Annule un ordre PENDING d'un joueur.
+     * Annule un ordre PENDING d'un joueur en levant une exception dédiée
+     * selon la cause d'échec, pour mapper vers des codes HTTP distincts :
+     * <ul>
+     *   <li>{@link EntityNotFoundException} → 404 : ordre introuvable.</li>
+     *   <li>{@link SecurityException} → 403 : l'ordre n'appartient pas à ce joueur.</li>
+     *   <li>{@link IllegalStateException} → 409 : ordre déjà annulé/résolu (non PENDING).</li>
+     * </ul>
      */
-    public boolean cancelOrder(Long playerId, Long orderId) {
-        MovementOrder order = orderRepository.findById(orderId).orElse(null);
-        if (order == null || !order.getPlayerId().equals(playerId) || order.isNotPending()) {
-            return false;
+    public void cancelOrderOrThrow(Long playerId, Long orderId) {
+        MovementOrder order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Ordre de déplacement #" + orderId + " introuvable."));
+        if (!order.getPlayerId().equals(playerId)) {
+            throw new SecurityException(
+                    "L'ordre #" + orderId + " n'appartient pas au joueur " + playerId + ".");
+        }
+        if (order.isNotPending()) {
+            throw new IllegalStateException(
+                    "L'ordre #" + orderId + " n'est plus PENDING (statut=" + order.getStatus() + ").");
         }
         order.cancel();
         orderRepository.save(order);
-        return true;
     }
 
     /**

@@ -44,6 +44,15 @@ public class PlayerStartupImporter implements ApplicationRunner {
     @Value("classpath:players/nursek.json")
     private Resource player2;
 
+    @Value("classpath:players/mortarion.json")
+    private Resource player3;
+
+    @Value("classpath:players/angron.json")
+    private Resource player4;
+
+    @Value("classpath:players/cegorach.json")
+    private Resource player5;
+
     public PlayerStartupImporter(PlayerImportService playerImportService,
                                  PlayerService playerService,
                                  BoardService boardService,
@@ -73,6 +82,9 @@ public class PlayerStartupImporter implements ApplicationRunner {
         if (importDemoPlayers) {
             importIfPresent(player1, board);
             importIfPresent(player2, board);
+            importIfPresent(player3, board);
+            importIfPresent(player4, board);
+            importIfPresent(player5, board);
         } else {
             log.info("Import des joueurs de démo désactivé (app.import-demo-players=false).");
         }
@@ -80,10 +92,7 @@ public class PlayerStartupImporter implements ApplicationRunner {
         // Sauvegarder le Board UNE SEULE FOIS avec TOUS les secteurs (neutres + players)
         log.info("Sauvegarde du Board complet avec {} secteurs...", board.getAllSectors().size());
         boardService.saveBoard(board, "Carte Principale");
-        int neutralCount = importDemoPlayers ? board.getAllSectors().size() - 3 : board.getAllSectors().size();
-        int playerCount = importDemoPlayers ? 3 : 0;
-        log.info("✅ Board sauvegardé : {} secteurs neutres + {} secteurs de players",
-                 neutralCount, playerCount);
+        log.info("✅ Board sauvegardé : {} secteurs", board.getAllSectors().size());
 
         log.info("=== Import des données terminé ===");
     }

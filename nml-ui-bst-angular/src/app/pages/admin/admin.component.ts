@@ -58,8 +58,15 @@ export class AdminComponent {
   readonly importing = this.admin.importing;
   readonly successMessage = this.admin.successMessage;
   readonly errorMessage = this.admin.error;
+  readonly currentTurn = this.admin.currentTurn;
+  readonly advancingTurn = this.admin.advancingTurn;
 
   readonly searchQuery = signal('');
+
+  readonly currentTurnLabel = computed(() => {
+    const t = this.currentTurn();
+    return t === null || t === undefined ? '—' : `Tour ${t}`;
+  });
 
   readonly filteredPlayers = computed(() => {
     const query = this.searchQuery().toLowerCase();
@@ -68,10 +75,11 @@ export class AdminComponent {
   });
 
   constructor() {
-    // Bootstrap: trigger the admin players fetch.
+    // Bootstrap: trigger the admin players fetch and load the current turn.
     this.admin.reloadPlayers();
+    void this.admin.loadCurrentTurn();
 
-    // Surface admin success/error messages as snackbars (DOM side-effect only).
+    // Surface admin success/error messages as snackbars (DOM side effect only).
     effect(() => {
       const msg = this.successMessage();
       if (msg) {
@@ -90,6 +98,28 @@ export class AdminComponent {
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);
+  }
+
+  // === Tour — finir le tour (résout les mouvements + incrémente) ===
+  onAdvanceTurn(): void {
+    this.dialog
+      .open(ConfirmDialogComponent, {
+        data: {
+          title: 'Finir le tour',
+          message:
+            'Terminer le tour courant ? Les ordres de déplacement PENDING seront résolus, puis le compteur passera au tour suivant.',
+          confirmLabel: 'Finir le tour',
+          cancelLabel: 'Annuler',
+        },
+      })
+      .afterClosed()
+      .subscribe((confirmed: boolean) => {
+        if (confirmed) {
+          void this.admin.advanceTurn().catch(() => {
+            // AdminService already set the error signal; ignore here.
+          });
+        }
+      });
   }
 
   // === Import ===
@@ -114,11 +144,9 @@ export class AdminComponent {
       if (password === null) {
         return;
       }
-      void this.admin
-        .importPlayer(file, password === '' ? undefined : password)
-        .catch(() => {
-          // AdminService already set the error signal; ignore here.
-        });
+      void this.admin.importPlayer(file, password === '' ? undefined : password).catch(() => {
+        // AdminService already set the error signal; ignore here.
+      });
     };
     input.click();
   }

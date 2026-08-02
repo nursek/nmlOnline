@@ -11,4 +11,6 @@ public class UnitClassDto {
     private Double criticalMultiplier;
     private Double damageReductionPdf;
     private Double damageReductionPdc;
+    /** Nombre max de secteurs parcourus par tour (LEGER = 2, autres = 1). */
+    private Integer maxMovementHops;
 }

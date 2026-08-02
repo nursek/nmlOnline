@@ -3,16 +3,32 @@
   "money": 30000,
   "resources": [
     {
-      "resourceId": 6,
-      "quantity": 15
+      "resourceId": 1,
+      "quantity": 9
+    },
+    {
+      "resourceId": 2,
+      "quantity": 9
     },
     {
       "resourceId": 3,
-      "quantity": 20
+      "quantity": 9
     },
     {
-      "resourceId": 1,
-      "quantity": 8
+      "resourceId": 4,
+      "quantity": 9
+    },
+    {
+      "resourceId": 5,
+      "quantity": 9
+    },
+    {
+      "resourceId": 6,
+      "quantity": 9
+    },
+    {
+      "resourceId": 7,
+      "quantity": 9
     }
   ],
   "equipments": [
@@ -66,6 +82,14 @@
     }
   ],
   "sectors": [
+    {
+      "sectorNumber": 15,
+      "army": []
+    },
+    {
+      "sectorNumber": 22,
+      "army": []
+    },
     {
       "sectorNumber": 2,
       "army": [

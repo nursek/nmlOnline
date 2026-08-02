@@ -37,6 +37,16 @@ public class Board {
     private String svgOverlayUrl;
 
     /**
+     * Tour de jeu courant — source unique de vérité pour tout le plateau.
+     * Initialisé à 1 ; incrémenté par {@code TurnService.advanceTurn} via
+     * le bouton admin « Finir le tour » (résolution des mouvements puis +1).
+     * ponytail: ceiling = déclenchement manuel par l'admin ; upgrade path = scheduler
+     * automatique end-of-turn + calcul des revenus à l'advanceTurn.
+     */
+    @Column(name = "current_turn", nullable = false)
+    private int currentTurn = 1;
+
+    /**
      * Valide que l'URL de l'overlay SVG est same-origin (chemin relatif commençant par "/" mais
      * pas par "//" qui serait protocol-relative). Refuse tout host/schéma externe pour éviter
      * qu'un admin compromis ne fasse charger du JS arbitraire dans le navigateur des joueurs.

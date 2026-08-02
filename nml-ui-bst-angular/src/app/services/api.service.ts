@@ -5,6 +5,8 @@ import {
   AuthResponse,
   LoginRequest,
   Player,
+  MovementOrder,
+  Unit,
   VehicleTypeInfo,
   BuyEquipmentItem,
   Vehicle,
@@ -63,6 +65,15 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/admin/players/${id}`);
   }
 
+  // Tour courant (admin) — source unique de vérité gérée par TurnService côté backend.
+  adminGetCurrentTurn(): Observable<{ currentTurn: number }> {
+    return this.http.get<{ currentTurn: number }>(`${this.baseUrl}/admin/turn/current`);
+  }
+
+  adminAdvanceTurn(): Observable<{ currentTurn: number }> {
+    return this.http.post<{ currentTurn: number }>(`${this.baseUrl}/admin/turn/next`, {});
+  }
+
   // Véhicules
   getVehicleTypes(): Observable<VehicleTypeInfo[]> {
     return this.http.get<VehicleTypeInfo[]>(`${this.baseUrl}/vehicles/types`);
@@ -85,5 +96,33 @@ export class ApiService {
 
   buyEquipments(items: BuyEquipmentItem[]): Observable<Player> {
     return this.http.post<Player>(`${this.baseUrl}/players/equipment/buy`, items);
+  }
+
+  // Unités (joueur authentifié) — équipement et ordres de déplacement.
+  assignUnitEquipment(unitId: number, equipmentName: string): Observable<Unit> {
+    return this.http.post<Unit>(`${this.baseUrl}/units/${unitId}/equipment`, {
+      equipmentName,
+    });
+  }
+
+  removeUnitEquipment(unitId: number, equipmentName: string): Observable<Unit> {
+    return this.http.delete<Unit>(`${this.baseUrl}/units/${unitId}/equipment`, {
+      body: { equipmentName },
+    });
+  }
+
+  placeFootOrder(entityIds: number[], route: number[]): Observable<MovementOrder> {
+    return this.http.post<MovementOrder>(`${this.baseUrl}/units/movement/foot`, {
+      entityIds,
+      route,
+    });
+  }
+
+  getPlayerMovementOrders(): Observable<MovementOrder[]> {
+    return this.http.get<MovementOrder[]>(`${this.baseUrl}/units/movement`);
+  }
+
+  cancelMovementOrder(orderId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/units/movement/${orderId}`);
   }
 }

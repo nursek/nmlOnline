@@ -96,8 +96,13 @@ public class UnitMapper {
             UnitTypeDto typeDto = new UnitTypeDto();
             typeDto.setName(unit.getType().name());
             typeDto.setLevel(unit.getType().getLevel());
+            typeDto.setMinExp(unit.getType().getMinExp());
+            typeDto.setMaxExp(unit.getType().getMaxExp());
             typeDto.setBaseAttack(unit.getType().getBaseAttack());
             typeDto.setBaseDefense(unit.getType().getBaseDefense());
+            typeDto.setMaxFirearms(unit.getType().getMaxFirearms());
+            typeDto.setMaxMeleeWeapons(unit.getType().getMaxMeleeWeapons());
+            typeDto.setMaxDefensiveEquipment(unit.getType().getMaxDefensiveEquipment());
             dto.setType(typeDto);
         }
 
@@ -146,6 +151,11 @@ public class UnitMapper {
         UnitClassDto dto = new UnitClassDto();
         dto.setName(unitClass.name());
         dto.setCode(unitClass.getCode());
+        dto.setCriticalChance(unitClass.getCriticalChance());
+        dto.setCriticalMultiplier(unitClass.getCriticalMultiplier());
+        dto.setDamageReductionPdf(unitClass.getDamageReduction("PDF"));
+        dto.setDamageReductionPdc(unitClass.getDamageReduction("PDC"));
+        dto.setMaxMovementHops(unitClass.getMaxMovementHops());
         return dto;
     }
 }

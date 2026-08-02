@@ -1,0 +1,45 @@
+{
+  "name": "cegorach",
+  "money": 20000,
+  "resources": [
+    {
+      "resourceId": 1,
+      "quantity": 9
+    }
+  ],
+  "equipments": [],
+  "sectors": [
+    {
+      "sectorNumber": 32,
+      "army": []
+    },
+    {
+      "sectorNumber": 27,
+      "army": []
+    }
+  ],
+  "character": {
+    "name": "Cegorach",
+    "sectorNumber": 1,
+    "baseAttack": 500,
+    "baseDefense": 550,
+    "basePdf": 0,
+    "basePdc": 50,
+    "baseArmor": 0,
+    "baseEvasion": 10
+  },
+  "buildings": [
+    {
+      "type": "HEADQUARTERS",
+      "sectorNumber": 1
+    },
+    {
+      "type": "WEAPON_CACHE",
+      "sectorNumber": 1
+    },
+    {
+      "type": "BANK",
+      "sectorNumber": 1
+    }
+  ]
+}

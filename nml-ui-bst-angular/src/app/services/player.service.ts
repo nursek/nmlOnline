@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
-import { Player, Vehicle } from '../models';
+import { Player, Unit, Vehicle } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 
 /**
@@ -87,5 +87,32 @@ export class PlayerService {
       return `Aucun profil de joueur trouvé pour "${username}". Créez un joueur avec ce nom dans le jeu.`;
     }
     return httpErrorMessage(error, fallback);
+  }
+
+  // === Équipement d'unité (depuis l'inventaire du joueur) ===
+  // Recharge le player après succès pour rafraîchir sectors[].army et equipments[].available.
+
+  async assignUnitEquipment(unitId: number, equipmentName: string): Promise<Unit | null> {
+    this._error.set(null);
+    try {
+      const unit = await firstValueFrom(this.api.assignUnitEquipment(unitId, equipmentName));
+      void this.loadCurrent();
+      return unit;
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, "Erreur lors de l'équipement de l'unité"));
+      return null;
+    }
+  }
+
+  async removeUnitEquipment(unitId: number, equipmentName: string): Promise<Unit | null> {
+    this._error.set(null);
+    try {
+      const unit = await firstValueFrom(this.api.removeUnitEquipment(unitId, equipmentName));
+      void this.loadCurrent();
+      return unit;
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, "Erreur lors du retrait de l'équipement"));
+      return null;
+    }
   }
 }

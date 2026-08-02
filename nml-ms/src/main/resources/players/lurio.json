@@ -67,7 +67,7 @@
   ],
   "sectors": [
     {
-      "sectorNumber": 51,
+      "sectorNumber": 13,
       "army": [
         {
           "id": 1,
@@ -214,6 +214,30 @@
           ]
         }
       ]
+    }
+  ],
+  "character": {
+    "name": "Lurio",
+    "sectorNumber": 13,
+    "baseAttack": 100,
+    "baseDefense": 150,
+    "basePdf": 50,
+    "basePdc": 300,
+    "baseArmor": 300,
+    "baseEvasion": 5
+  },
+  "buildings": [
+    {
+      "type": "HEADQUARTERS",
+      "sectorNumber": 13
+    },
+    {
+      "type": "WEAPON_CACHE",
+      "sectorNumber": 13
+    },
+    {
+      "type": "BANK",
+      "sectorNumber": 13
     }
   ]
 }

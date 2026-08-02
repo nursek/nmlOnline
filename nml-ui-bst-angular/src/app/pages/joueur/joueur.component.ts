@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,13 +15,13 @@ import {
   VehiclePlacementModalComponent,
   VehiclePlacementDialogData,
 } from './vehicle-placement-modal.component';
+import { UnitDetailDialogComponent, UnitDetailDialogData } from './unit-detail-dialog.component';
 
 @Component({
   selector: 'app-joueur',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DecimalPipe,
-    NgTemplateOutlet,
     MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,
@@ -50,8 +50,7 @@ export class JoueurComponent {
     void this.playerService.loadVehicles();
   }
 
-  // Display mode: 'list' or 'tile'.
-  readonly viewMode = signal<'list' | 'tile'>('list');
+  // Display mode: liste uniquement. Détails via le popup horizontal.
 
   readonly playerCharacter = computed(() => this.player()?.character ?? null);
   readonly allBuildings = computed(() => this.player()?.buildings ?? []);
@@ -72,8 +71,6 @@ export class JoueurComponent {
   readonly selectedTypeFilter = signal<string>('all');
   readonly selectedLocationFilter = signal<string>('all');
   readonly selectedStatusFilter = signal<string>('all');
-
-  readonly expandedUnitIds = signal<Set<number>>(new Set());
 
   readonly unitTypes = computed(() => {
     const p = this.player();
@@ -181,10 +178,6 @@ export class JoueurComponent {
     });
   }
 
-  setViewMode(mode: 'list' | 'tile'): void {
-    this.viewMode.set(mode);
-  }
-
   toggleFilters(): void {
     this.showFilters.update((v) => !v);
   }
@@ -195,24 +188,18 @@ export class JoueurComponent {
     this.selectedStatusFilter.set('all');
   }
 
-  toggleUnitExpand(unitId: number): void {
-    this.expandedUnitIds.update((set) => {
-      const newSet = new Set(set);
-      if (newSet.has(unitId)) newSet.delete(unitId);
-      else newSet.add(unitId);
-      return newSet;
+  /** Ouvre le popup détaillé d'une unité. */
+  openUnitDialog(item: { unit: Unit; sectorName: string; sectorNumber: number }): void {
+    const dialogData: UnitDetailDialogData = {
+      unit: item.unit,
+      sectorNumber: item.sectorNumber,
+      sectorName: item.sectorName,
+    };
+    this.dialog.open(UnitDetailDialogComponent, {
+      width: '90vw',
+      maxWidth: '1100px',
+      minWidth: '320px',
+      data: dialogData,
     });
-  }
-
-  isUnitExpanded(unitId: number): boolean {
-    return this.expandedUnitIds().has(unitId);
-  }
-
-  expandAll(): void {
-    this.expandedUnitIds.set(new Set(this.filteredUnits().map((u) => u.unit.id)));
-  }
-
-  collapseAll(): void {
-    this.expandedUnitIds.set(new Set());
   }
 }

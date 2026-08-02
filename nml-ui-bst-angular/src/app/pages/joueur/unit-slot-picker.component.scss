@@ -1,0 +1,84 @@
+@use '../../../styles/shared' as shared;
+
+.usp {
+  min-width: 320px;
+  max-width: 480px;
+
+  .usp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 0 4px;
+
+    h2 mat-icon {
+      vertical-align: middle;
+    }
+  }
+
+  .usp-empty {
+    color: shared.$text-muted;
+    font-style: italic;
+    font-size: 0.9rem;
+    padding: 16px 0;
+    text-align: center;
+  }
+
+  .usp-subhead {
+    font-size: 0.78rem;
+    color: shared.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 10px 0 6px;
+  }
+
+  .usp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+
+    &.usp-ok {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+    &.usp-na {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      opacity: 0.6;
+    }
+
+    .usp-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      .usp-name {
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .usp-bonuses {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 2px;
+      }
+      .usp-bonus {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 1px 6px;
+        border-radius: 8px;
+        &.pdf { background: #ffedd5; color: #ea580c; }
+        &.pdc { background: #cffafe; color: #0891b2; }
+        &.arm { background: #dcfce7; color: #16a34a; }
+        &.esq { background: #fef3c7; color: #d97706; }
+      }
+      .usp-cat {
+        font-size: 0.72rem;
+        color: shared.$text-muted;
+      }
+    }
+  }
+}

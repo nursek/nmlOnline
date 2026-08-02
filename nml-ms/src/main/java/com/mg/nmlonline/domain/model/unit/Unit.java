@@ -281,12 +281,17 @@ public class Unit extends CombatEntity {
 
     public boolean removeEquipment(Equipment equipment) {
         if (equipment == null) return false;
-        boolean removed = equipments != null && equipments.remove(equipment);
+        // Retrait par nom (et non par référence) : les unités chargées depuis la BDD
+        // peuplent unitEquipments mais laissent la liste transient `equipments` vide,
+        // donc equipments.remove(eq) échouerait. On couvre les deux sources.
+        boolean removed = false;
+        if (equipments != null) {
+            removed = equipments.removeIf(e -> e.getName().equals(equipment.getName()));
+        }
+        if (unitEquipments != null) {
+            removed = unitEquipments.removeIf(ue -> ue.getEquipment().getName().equals(equipment.getName())) || removed;
+        }
         if (removed) {
-            // Retirer aussi de unitEquipments pour la persistance
-            if (unitEquipments != null) {
-                unitEquipments.removeIf(ue -> ue.getEquipment().getName().equals(equipment.getName()));
-            }
             recalculateBaseStats();
         }
         return removed;
