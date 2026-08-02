@@ -28,6 +28,7 @@ const BASE_MENU_ITEMS: NavLink[] = [
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/joueur', label: 'Mon Joueur', icon: 'person' },
   { path: '/boutique', label: 'Boutique', icon: 'shopping_bag' },
+  { path: '/ordres', label: 'Mes ordres', icon: 'list_alt' },
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
 ];
 

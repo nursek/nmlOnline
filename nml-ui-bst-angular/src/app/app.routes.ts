@@ -35,6 +35,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'ordres',
+    loadComponent: () => import('./pages/ordres/ordres.component').then((m) => m.OrdresComponent),
+    canActivate: [authGuard],
+  },
+  {
     path: '',
     redirectTo: 'carte',
     pathMatch: 'full',

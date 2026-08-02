@@ -344,7 +344,9 @@
                       }
                     </div>
                   </div>
-                  <div class="quantity">×{{ stack.quantity }}</div>
+                  <div class="quantity" matTooltip="Disponible / total possédé">
+                  {{ stack.available }}/{{ stack.quantity }}
+                </div>
                 </div>
               }
             </div>

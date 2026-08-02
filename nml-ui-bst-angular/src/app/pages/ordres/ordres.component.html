@@ -1,0 +1,84 @@
+@if (loading() && !orders().length) {
+  <div class="loading-container" role="status" aria-label="Chargement">
+    <mat-spinner diameter="60"></mat-spinner>
+  </div>
+} @else if (error(); as error) {
+  <div class="container">
+    <div class="error-alert" role="alert">
+      <mat-icon>error</mat-icon>
+      {{ error }}
+    </div>
+  </div>
+} @else {
+  <div class="container fade-in">
+    <div class="page-header">
+      <div class="header-icon">
+        <mat-icon>list_alt</mat-icon>
+      </div>
+      <div>
+        <h1 class="title">Mes ordres</h1>
+        <p class="subtitle">Ordres de déplacement en attente pour le tour courant</p>
+      </div>
+      <div class="header-actions">
+        <span class="count-pill">{{ orders().length }} en attente</span>
+        <button mat-icon-button (click)="refresh()" matTooltip="Rafraîchir" [disabled]="busy()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    @if (orders().length === 0) {
+      <mat-card class="card">
+        <mat-card-content>
+          <div class="empty-state">
+            <mat-icon>event_available</mat-icon>
+            <p>Aucun ordre en attente pour ce tour.</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    } @else {
+      <div class="orders-list">
+        @for (o of orders(); track o.id) {
+          <mat-card class="card order-card">
+            <mat-card-content>
+              <div class="order-row">
+                <div class="order-route">
+                  <span class="order-seg">Secteur {{ o.fromSectorNumber }}</span>
+                  <mat-icon class="order-arrow">arrow_forward</mat-icon>
+                  <span class="order-seg order-seg-to">Secteur {{ o.toSectorNumber }}</span>
+                </div>
+                <div class="order-route-full" matTooltip="Route complète">
+                  @for (s of o.route; track $index) {
+                    <span>{{ s }}</span>
+                    @if (!$last) {
+                      <mat-icon>chevron_right</mat-icon>
+                    }
+                  }
+                </div>
+                <div class="order-status">
+                  <span class="status-badge status-{{ o.status }}">{{ o.status }}</span>
+                  @if (o.statusMessage) {
+                    <span class="status-msg">{{ o.statusMessage }}</span>
+                  }
+                </div>
+                <div class="order-entities" matTooltip="Entités concernées">
+                  <mat-icon>groups</mat-icon>
+                  <span>{{ o.entityIds?.length ?? 0 }}</span>
+                </div>
+                <button
+                  mat-icon-button
+                  color="warn"
+                  [disabled]="busy()"
+                  (click)="cancelOrder(o.id)"
+                  matTooltip="Annuler l'ordre"
+                >
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    }
+  </div>
+}

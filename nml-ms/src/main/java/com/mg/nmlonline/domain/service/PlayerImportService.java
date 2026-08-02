@@ -15,7 +15,6 @@ import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
-import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
@@ -324,7 +323,7 @@ public class PlayerImportService {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class CharacterDTO {
+    static class CharacterDTO {
         public String name;
         public int sectorNumber;
         public double baseAttack;

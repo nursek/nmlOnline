@@ -6,7 +6,6 @@ export interface UnitType {
   level: number;
   baseAttack: number;
   baseDefense: number;
-  // Caps d'équipement par catégorie (exposés par UnitTypeDto côté backend).
   maxFirearms: number;
   maxMeleeWeapons: number;
   maxDefensiveEquipment: number;

@@ -1,5 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { httpResource } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import {
   MatDialog,
@@ -12,7 +20,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Unit, Equipment } from '../../models';
+import { Board, Unit, Equipment } from '../../models';
+import { environment } from '../../../environments/environment';
 import { PlayerService } from '../../services/player.service';
 import { MovementStateService } from '../../services/movement-state.service';
 import { UnitSlotPickerComponent, UnitSlotPickerData } from './unit-slot-picker.component';
@@ -67,9 +76,22 @@ export class UnitDetailDialogComponent {
 
   readonly player = this.playerService.player;
 
+  // Board complète (secteurs neutres inclus) — nécessaire pour résoudre l'adjacence
+  // des secteurs non possédés par le joueur lors du calcul des routes de déplacement.
+  // Une seule board active (convention boards[0], cf. carte.component).
+  private readonly boardsRef = httpResource<Board[]>(() => ({
+    url: `${environment.apiBaseUrl}/boards`,
+  }));
+  readonly allSectors = computed(() => Object.values(this.boardsRef.value()?.[0]?.sectors ?? {}));
+
   constructor() {
-    // Charge les ordres PENDING du tour courant pour afficher les ordres existants.
-    void this.movementState.loadOrders();
+    // imgError doit se reset dès que portraitUrl se recalcule (ex: unité évolue
+    // et change de type → nouvelle URL potentiellement valide). Sans cela, un
+    // 1er échec d'image verrouillerait le fallback même après recompute valide.
+    effect(() => {
+      this.portraitUrl();
+      this.imgError.set(false);
+    });
   }
 
   readonly imgError = signal(false);
@@ -101,14 +123,17 @@ export class UnitDetailDialogComponent {
 
   /** Voisins directs du secteur de départ (adjacence côté serveur via SectorDto.neighbors). */
   readonly neighbors = computed<number[]>(() => {
-    const p = this.player();
-    const sec = p?.sectors?.find((s) => s.number === this.data.sectorNumber);
+    const sec = this.allSectors().find((s) => s.number === this.data.sectorNumber);
     return sec?.neighbors ?? [];
   });
 
-  /** Secteurs atteignables en <= maxHops (route adjacente) pour le sélecteur de destination. */
+  /**
+   * Secteurs atteignables en <= maxHops (route adjacente). BFS traversant aussi
+   * les secteurs neutres (non possédés) — règle : le 1er hop peut cibler un
+   * quartier neutre, et un 2e hop peut traverser un secteur neutre comme mid.
+   */
   readonly reachableTargets = computed<number[]>(() => {
-    const all = this.player()?.sectors ?? [];
+    const all = this.allSectors();
     const from = this.data.sectorNumber;
     const max = this.maxHops();
     const sectorOf = (n: number) => all.find((s) => s.number === n) ?? null;
@@ -211,6 +236,7 @@ export class UnitDetailDialogComponent {
       const order = await this.movementState.placeFootOrder(this.unit().id, route);
       if (order) {
         this.snackBar.open(`Ordre: secteur ${from} -> ${to}`, 'OK', { duration: 2500 });
+        this.targetSector.set(null);
       } else {
         const err = this.movementState.error();
         if (err) this.snackBar.open(err, 'Fermer', { duration: 5000 });
@@ -243,7 +269,7 @@ export class UnitDetailDialogComponent {
   /** Construit une route adjacente from->to d'au plus maxHops (BFS borné). */
   private computeRoute(from: number, to: number): number[] {
     if (from === to) return [];
-    const all = this.player()?.sectors ?? [];
+    const all = this.allSectors();
     const neighborsOf = (n: number) => all.find((s) => s.number === n)?.neighbors ?? [];
     const max = this.maxHops();
 

@@ -97,8 +97,8 @@ public class UnitController {
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        boolean cancelled = unitService.cancelOrder(userId, orderId);
-        return ResponseEntity.status(cancelled ? 204 : 404).build();
+        unitService.cancelOrder(userId, orderId);
+        return ResponseEntity.noContent().build();
     }
 
     private MovementOrderDto toDto(MovementOrder order) {

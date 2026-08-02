@@ -23,6 +23,11 @@ class UnitTest {
                 Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
     }
 
+    private Equipment firearm(String name, double pdfBonus) {
+        return new Equipment(name, 100, pdfBonus, 0, 0, 0,
+                Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
+    }
+
     private Equipment defensive(double armBonus, double evasionBonus) {
         return new Equipment("Protection", 100, 0, 0, armBonus, evasionBonus,
                 Set.of(UnitClass.TIREUR), EquipmentCategory.DEFENSIVE);
@@ -209,6 +214,63 @@ class UnitTest {
 
             assertEquals(0.0, unit.getPdf());
             assertTrue(unit.getEquipments().isEmpty());
+        }
+
+        @Test
+        @DisplayName("removeEquipment(null) retourne false sans exception")
+        void shouldReturnFalseForNullEquipment() {
+            Unit unit = new Unit(5, UnitClass.TIREUR);
+            assertFalse(unit.removeEquipment(null));
+            assertEquals(0.0, unit.getPdf());
+        }
+
+        @Test
+        @DisplayName("removeEquipment d'un équipement non porté retourne false et ne change pas les stats")
+        void shouldReturnFalseForUnownedEquipment() {
+            Unit unit = new Unit(5, UnitClass.TIREUR);
+            unit.addEquipment(firearm("Arme à feu", 50));
+            double pdfBefore = unit.getPdf();
+
+            Equipment gun = firearm("Autre arme", 20);
+            assertFalse(unit.removeEquipment(gun));
+
+            assertEquals(pdfBefore, unit.getPdf());
+            assertEquals(1, unit.getEquipments().size());
+        }
+
+        @Test
+        @DisplayName("removeEquipment fonctionne depuis unitEquipments seul (cas unité chargée BDD)")
+        void shouldRemoveFromUnitEquipmentsOnly() {
+            Unit unit = new Unit(5, UnitClass.TIREUR);
+            Equipment gun = firearm(50);
+            // Simule une unité chargée depuis la BDD : unitEquipments peuplée,
+            // liste transient `equipments` vide. Setter Lombok public.
+            unit.setEquipments(new java.util.ArrayList<>());
+            unit.getUnitEquipments().add(new UnitEquipment(unit, gun));
+            unit.recalculateBaseStats(); // recalcule pdf sur la nouvelle source
+            assertEquals(25.0, unit.getPdf());
+
+            assertTrue(unit.removeEquipment(gun));
+
+            assertEquals(0.0, unit.getPdf());
+            assertTrue(unit.getUnitEquipments().isEmpty());
+        }
+
+        @Test
+        @DisplayName("removeEquipment retire des deux listes equipments + unitEquipments")
+        void shouldRemoveFromBothLists() {
+            Unit unit = new Unit(5, UnitClass.TIREUR);
+            Equipment gun = firearm(50);
+            unit.addEquipment(gun); // peuple les deux listes via addEquipment
+            // Force une entrée supplémentaire dans unitEquipments pour simuler
+            // un état mixte (ne devrait pas arriver en prod, test de robustesse).
+            assertEquals(25.0, unit.getPdf());
+
+            assertTrue(unit.removeEquipment(gun));
+
+            assertEquals(0.0, unit.getPdf());
+            assertTrue(unit.getEquipments().isEmpty());
+            assertTrue(unit.getUnitEquipments().isEmpty());
         }
     }
 

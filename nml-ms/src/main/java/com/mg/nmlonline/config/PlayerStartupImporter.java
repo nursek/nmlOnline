@@ -47,6 +47,12 @@ public class PlayerStartupImporter implements ApplicationRunner {
     @Value("classpath:players/mortarion.json")
     private Resource player3;
 
+    @Value("classpath:players/angron.json")
+    private Resource player4;
+
+    @Value("classpath:players/cegorach.json")
+    private Resource player5;
+
     public PlayerStartupImporter(PlayerImportService playerImportService,
                                  PlayerService playerService,
                                  BoardService boardService,
@@ -77,6 +83,8 @@ public class PlayerStartupImporter implements ApplicationRunner {
             importIfPresent(player1, board);
             importIfPresent(player2, board);
             importIfPresent(player3, board);
+            importIfPresent(player4, board);
+            importIfPresent(player5, board);
         } else {
             log.info("Import des joueurs de démo désactivé (app.import-demo-players=false).");
         }

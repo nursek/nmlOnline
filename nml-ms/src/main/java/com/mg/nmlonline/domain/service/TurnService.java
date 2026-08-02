@@ -5,6 +5,8 @@ import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Source unique de vérité du tour courant du plateau.
  *
@@ -22,6 +24,17 @@ public class TurnService {
 
     private final BoardRepository boardRepository;
     private final MovementService movementService;
+
+    /**
+     * Verrou anti double-clic (bouton admin « Finir le tour ») : un seul
+     * advanceTurn peut tourner à la fois dans cette JVM.
+     *
+     * <p>ponytail: ceiling = JVM unique, guard in-process ; le verrou est relâché
+     * dans {@code finally} avant le commit transactionnel, donc une fenêtre
+     * (infime) reste ouverte entre deux threads en rafale. Upgrade path = lock
+     * pessimiste JPA sur {@link Board} ou DistributedLock si multi-instance.
+     */
+    private final AtomicBoolean advancing = new AtomicBoolean(false);
 
     public TurnService(BoardRepository boardRepository, MovementService movementService) {
         this.boardRepository = boardRepository;
@@ -49,17 +62,24 @@ public class TurnService {
      * {@code Board.currentTurn}).
      */
     public int advanceTurn() {
-        Board board = boardRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Aucun plateau trouvé pour avancer le tour"));
+        if (!advancing.compareAndSet(false, true)) {
+            throw new IllegalStateException("Un advanceTurn est déjà en cours");
+        }
+        try {
+            Board board = boardRepository.findAll().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Aucun plateau trouvé pour avancer le tour"));
 
-        int turnEnding = board.getCurrentTurn();
+            int turnEnding = board.getCurrentTurn();
 
-        // Résolution des mouvements du tour qui se termine, AVANT l'incrément.
-        movementService.resolveAllMovements(turnEnding, board);
+            // Résolution des mouvements du tour qui se termine, AVANT l'incrément.
+            movementService.resolveAllMovements(turnEnding, board);
 
-        board.setCurrentTurn(turnEnding + 1);
-        board = boardRepository.save(board);
-        return board.getCurrentTurn();
+            board.setCurrentTurn(turnEnding + 1);
+            board = boardRepository.save(board);
+            return board.getCurrentTurn();
+        } finally {
+            advancing.set(false);
+        }
     }
 }

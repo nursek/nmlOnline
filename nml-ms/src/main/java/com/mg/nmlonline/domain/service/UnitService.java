@@ -126,9 +126,9 @@ public class UnitService {
         return movementService.getPlayerOrders(player.getId(), turn);
     }
 
-    public boolean cancelOrder(Long userId, Long orderId) {
+    public void cancelOrder(Long userId, Long orderId) {
         Player player = requirePlayerByUserId(userId);
-        return movementService.cancelOrder(player.getId(), orderId);
+        movementService.cancelOrderOrThrow(player.getId(), orderId);
     }
 
     // ============================================================

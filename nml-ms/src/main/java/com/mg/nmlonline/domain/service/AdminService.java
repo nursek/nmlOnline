@@ -190,7 +190,6 @@ public class AdminService {
         }
         result.put("sectors", sectors);
 
-        // character — leader du joueur (null si absent), symétrique avec PlayerImportService.CharacterDTO
         GameCharacter character = player.getCharacter();
         if (character != null) {
             Map<String, Object> cMap = new LinkedHashMap<>();
@@ -207,7 +206,6 @@ public class AdminService {
             result.put("character", null);
         }
 
-        // buildings — bâtiments possédés par le joueur, symétrique avec PlayerImportService.BuildingDTO
         List<Map<String, Object>> buildingsList = new ArrayList<>();
         for (Building building : player.getBuildings()) {
             Map<String, Object> bMap = new LinkedHashMap<>();
