@@ -8,13 +8,13 @@ import com.mg.nmlonline.api.dto.UnitDto;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.service.UnitService;
+import com.mg.nmlonline.mapper.MovementMapper;
 import com.mg.nmlonline.mapper.UnitMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,10 +30,12 @@ public class UnitController {
 
     private final UnitService unitService;
     private final UnitMapper unitMapper;
+    private final MovementMapper movementMapper;
 
-    public UnitController(UnitService unitService, UnitMapper unitMapper) {
+    public UnitController(UnitService unitService, UnitMapper unitMapper, MovementMapper movementMapper) {
         this.unitService = unitService;
         this.unitMapper = unitMapper;
+        this.movementMapper = movementMapper;
     }
 
     // ==========================================================
@@ -76,7 +78,7 @@ public class UnitController {
             return ResponseEntity.status(401).build();
         }
         MovementOrder order = unitService.placeFootOrder(userId, request.getEntityIds(), request.getRoute());
-        return ResponseEntity.ok(toDto(order));
+        return ResponseEntity.ok(movementMapper.toDto(order));
     }
 
     @GetMapping("/movement")
@@ -86,7 +88,7 @@ public class UnitController {
             return ResponseEntity.status(401).build();
         }
         List<MovementOrderDto> orders = unitService.getPlayerPendingOrders(userId).stream()
-                .map(this::toDto)
+                .map(movementMapper::toDto)
                 .toList();
         return ResponseEntity.ok(orders);
     }
@@ -99,20 +101,5 @@ public class UnitController {
         }
         unitService.cancelOrder(userId, orderId);
         return ResponseEntity.noContent().build();
-    }
-
-    private MovementOrderDto toDto(MovementOrder order) {
-        MovementOrderDto dto = new MovementOrderDto();
-        dto.setId(order.getId());
-        dto.setTurn(order.getTurn());
-        dto.setPlayerId(order.getPlayerId());
-        dto.setStatus(order.getStatus() != null ? order.getStatus().name() : null);
-        dto.setFromSectorNumber(order.getFromSectorNumber());
-        dto.setToSectorNumber(order.getToSectorNumber());
-        dto.setRoute(order.getRoute() != null ? new ArrayList<>(order.getRoute()) : null);
-        dto.setEntityIds(order.getEntityIds() != null ? new ArrayList<>(order.getEntityIds()) : null);
-        dto.setVehicleId(order.getVehicleId());
-        dto.setStatusMessage(order.getStatusMessage());
-        return dto;
     }
 }

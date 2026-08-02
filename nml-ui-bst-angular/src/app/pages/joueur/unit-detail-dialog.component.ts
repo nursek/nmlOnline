@@ -112,7 +112,7 @@ export class UnitDetailDialogComponent {
     const p = this.player();
     const u = this.unit();
     if (!p?.name || !u?.type.name) return '';
-    return `assets/units/${p.name.toLowerCase()}/${u.type.name.toLowerCase()}/portrait.png`;
+    return `assets/${p.name.toLowerCase()}/units/${u.type.name.toLowerCase()}/portrait.png`;
   });
 
   readonly maxHops = computed<number>(() => {
