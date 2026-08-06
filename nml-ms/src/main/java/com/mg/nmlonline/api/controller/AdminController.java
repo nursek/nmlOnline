@@ -1,12 +1,15 @@
 package com.mg.nmlonline.api.controller;
 
+import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.service.AdminService;
+import com.mg.nmlonline.domain.service.BoardAssetStorageService;
 import com.mg.nmlonline.domain.service.BoardService;
 import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.TurnService;
+import com.mg.nmlonline.mapper.BoardMapper;
 import com.mg.nmlonline.mapper.PlayerMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,17 +39,23 @@ public class AdminController {
     private final PlayerService playerService;
     private final PlayerMapper playerMapper;
     private final BoardService boardService;
+    private final BoardMapper boardMapper;
+    private final BoardAssetStorageService boardAssetStorageService;
     private final TurnService turnService;
 
     public AdminController(AdminService adminService,
                            PlayerService playerService,
                            PlayerMapper playerMapper,
                            BoardService boardService,
+                           BoardMapper boardMapper,
+                           BoardAssetStorageService boardAssetStorageService,
                            TurnService turnService) {
         this.adminService = adminService;
         this.playerService = playerService;
         this.playerMapper = playerMapper;
         this.boardService = boardService;
+        this.boardMapper = boardMapper;
+        this.boardAssetStorageService = boardAssetStorageService;
         this.turnService = turnService;
     }
 
@@ -95,6 +104,40 @@ public class AdminController {
     public ResponseEntity<Map<String, String>> deletePlayer(@PathVariable Long id) {
         adminService.deletePlayer(id);
         return ResponseEntity.ok(Map.of("message", "Joueur supprimé avec succès"));
+    }
+
+    /**
+     * Upload des assets visuels du Board (image de fond + SVG overlay des secteurs).
+     * Étape 1 du flux de création du board en prod : durations les fichiers sur disque,
+     * renvoie les URLs à passer à {@code /import} + le compte de secteurs détectés dans le SVG
+     * pour valider la cohérence avec le board.json que l'admin uploadera ensuite.
+     */
+    @PostMapping(value = "/boards/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Object>> uploadBoardAssets(
+            @RequestParam("mapImage") MultipartFile mapImage,
+            @RequestParam("svgOverlay") MultipartFile svgOverlay) throws java.io.IOException {
+        String mapUrl = boardAssetStorageService.storeImage(mapImage);
+        BoardAssetStorageService.StoredSvg svg = boardAssetStorageService.storeSvg(svgOverlay);
+        return ResponseEntity.ok(Map.of(
+                "mapImageUrl", mapUrl,
+                "svgOverlayUrl", svg.url(),
+                "svgSectorCount", svg.sectorCount()
+        ));
+    }
+
+    /**
+     * Importe le Board depuis un board.json (liste plate de secteurs).
+     * Étape 2 : prend en plus les URLs renvoyées par {@code /boards/assets} pour
+     * override celles éventuellement présentes dans le JSON.
+     */
+    @PostMapping(value = "/boards/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<BoardDto> importBoard(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "mapImageUrl", required = false) String mapImageUrl,
+            @RequestParam(value = "svgOverlayUrl", required = false) String svgOverlayUrl) throws java.io.IOException {
+        String jsonContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+        Board board = adminService.importBoard(jsonContent, mapImageUrl, svgOverlayUrl);
+        return ResponseEntity.ok(boardMapper.toDto(board));
     }
 
     // ==========================================================

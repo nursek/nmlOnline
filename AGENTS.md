@@ -13,7 +13,7 @@ Details live in [README.md](README.md) — read it first. This file is only the 
 ```bash
 # Backend (from nml-ms/)
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"   # run (needs JWT_SECRET + JWT_PEPPER env)
-.\mvnw.cmd test                                                # 214 tests, H2, no config needed
+.\mvnw.cmd test                                                # ~240 tests, H2, no config needed
 .\mvnw.cmd package "-DskipTests"
 
 # Frontend (from nml-ui-bst-angular/)
@@ -52,6 +52,29 @@ npm start / npm test / npm run lint / npm run format
 - Single source of sector ownership: `Sector.ownerId`.
 - `Board.sectors` is a transient map populated via `@PostLoad` — don't persist it directly.
 - JPA relations: `@JsonIgnore` on the many side to avoid JSON loops.
+
+## Prod data persistence
+
+- **Sources of truth are the DB, not JSON files.** `boards/board.json` and
+  `players/*.json` are *classpath demo fixtures*. They are only read at boot when
+  `app.import-demo-data=true` (dev/test default). In prod `app.import-demo-data=false`
+  → `PlayerStartupImporter` returns early, nothing is imported, the admin creates the
+  board and players via the API. Don't treat those JSON as prod state.
+- **`BoardService.saveBoard` is non-destructive.** It merges sectors by number: it
+  refreshes `income/name/resourceName/x/y/neighbors` on existing sectors and adds
+  new ones, but NEVER clears `sectorsList` — that used to cascade-delete sectors +
+  armies and wipe `owner_id` on every boot (the prod bug). Removing a sector is no
+  longer possible through this path on purpose; it must stay an explicit op.
+- **Schema change = Flyway `V<n>__*.sql`** under `db/migration/` (prod only; H2
+  stays on `ddl-auto`). Never edit an applied migration. If a destructive/migration
+  is impossible to express in Flyway (data repair, backfill), put a one-shot manual
+  script next to it, NOT under `db/migration/` (Flyway would auto-run it). See
+  `db/recovery/rebuild-sector-owners.sql` for the pattern.
+- **Recovery after an owner_id wipe:** if units/buildings survived, run
+  `rebuild-sector-owners.sql` (derives `owner_id` from surviving
+  `combat_entities.player_id`). If they were cascade-deleted, no SQL can rebuild —
+  restore a dump or re-import players from exported `players/*.json` via
+  `POST /api/admin/players/import`.
 
 ## Frontend conventions
 

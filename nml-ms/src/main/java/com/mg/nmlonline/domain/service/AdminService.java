@@ -28,6 +28,7 @@ public class AdminService {
 
     private final PlayerImportService playerImportService;
     private final PlayerService playerService;
+    private final BoardImportService boardImportService;
     private final BoardService boardService;
     private final UserService userService;
     private final UserRepository userRepository;
@@ -36,6 +37,7 @@ public class AdminService {
 
     public AdminService(PlayerImportService playerImportService,
                         PlayerService playerService,
+                        BoardImportService boardImportService,
                         BoardService boardService,
                         UserService userService,
                         UserRepository userRepository,
@@ -43,6 +45,7 @@ public class AdminService {
                         EntityManager entityManager) {
         this.playerImportService = playerImportService;
         this.playerService = playerService;
+        this.boardImportService = boardImportService;
         this.boardService = boardService;
         this.userService = userService;
         this.userRepository = userRepository;
@@ -235,5 +238,24 @@ public class AdminService {
         if (user != null && !"ADMIN".equals(user.getRole())) {
             userRepository.delete(user);
         }
+    }
+
+    /**
+     * Importe un Board depuis un contenu JSON au format board.json (liste plate de secteurs).
+     * Si {@code mapImageUrl} / {@code svgOverlayUrl} sont fournis, ils override les URLs du JSON
+     * (typiquement les URLs renvoyées par {@code POST /api/admin/boards/assets}).
+     * L'upsert se fait par nom via {@link BoardService#saveBoard(Board, String)}.
+     */
+    @Transactional
+    public Board importBoard(String jsonContent, String mapImageUrl, String svgOverlayUrl) throws IOException {
+        Board board = boardImportService.importBoardFromJson(jsonContent);
+        if (mapImageUrl != null && !mapImageUrl.isBlank()) {
+            board.setMapImageUrl(mapImageUrl);
+        }
+        if (svgOverlayUrl != null && !svgOverlayUrl.isBlank()) {
+            board.setSvgOverlayUrl(svgOverlayUrl);
+        }
+        String boardName = board.getName() != null ? board.getName() : "Carte Principale";
+        return boardService.saveBoard(board, boardName);
     }
 }

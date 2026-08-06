@@ -32,8 +32,8 @@ public class PlayerStartupImporter implements ApplicationRunner {
     private final BoardImportService boardImportService;
     private final UserRepository userRepository;
 
-    @Value("${app.import-demo-players:true}")
-    private boolean importDemoPlayers;
+    @Value("${app.import-demo-data:true}")
+    private boolean importDemoData;
 
     @Value("classpath:boards/board.json")
     private Resource boardResource;
@@ -69,6 +69,15 @@ public class PlayerStartupImporter implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         log.info("=== Démarrage de l'import des données ===");
 
+        // En prod (app.import-demo-data=false), rien n'est importé au boot :
+        // ni le board, ni les joueurs de démo. L'admin crée le board et les
+        // joueurs via l'API (POST /api/admin/boards/*  et  /api/admin/players/import).
+        if (!importDemoData) {
+            log.info("Import des données de démo désactivé (app.import-demo-data=false). " +
+                     "L'admin doit importer le board et les joueurs via l'API.");
+            return;
+        }
+
         // Importer le Board depuis board.json (secteurs neutres en mémoire)
         Board board = importBoard();
         if (board == null) {
@@ -78,21 +87,18 @@ public class PlayerStartupImporter implements ApplicationRunner {
         log.info("Board importé en mémoire avec {} secteurs neutres", board.getAllSectors().size());
 
         // Importer les joueurs qui ajouteront leurs secteurs au Board en mémoire.
-        // Désactivé en prod : seul le board neutre est importé, l'admin crée les joueurs via l'API.
-        if (importDemoPlayers) {
-            importIfPresent(player1, board);
-            importIfPresent(player2, board);
-            importIfPresent(player3, board);
-            importIfPresent(player4, board);
-            importIfPresent(player5, board);
-        } else {
-            log.info("Import des joueurs de démo désactivé (app.import-demo-players=false).");
-        }
+        importIfPresent(player1, board);
+        importIfPresent(player2, board);
+        importIfPresent(player3, board);
+        importIfPresent(player4, board);
+        importIfPresent(player5, board);
 
         // Sauvegarder le Board UNE SEULE FOIS avec TOUS les secteurs (neutres + players)
         log.info("Sauvegarde du Board complet avec {} secteurs...", board.getAllSectors().size());
         boardService.saveBoard(board, "Carte Principale");
-        log.info("✅ Board sauvegardé : {} secteurs", board.getAllSectors().size());
+        long ownedCount = board.getAllSectors().stream().filter(s -> !s.isNeutral()).count();
+        log.info("✅ Board sauvegardé : {} secteurs neutres + {} secteurs de players",
+                 board.getAllSectors().size() - ownedCount, ownedCount);
 
         log.info("=== Import des données terminé ===");
     }
