@@ -53,6 +53,12 @@ class AdminExportImportTest {
         Map<String, Object> character = (Map<String, Object>) characterObj;
         assertEquals("Ratcatcher", character.get("name"));
         assertTrue(character.containsKey("sectorNumber"), "La section character doit porter sectorNumber");
+        // Comportement actuel pinné — à revoir : sectorNumber doit valoir 2 (secteur d'affectation
+        // du personnage dans nursek.json). Historiquement null/0 car l'import startup persistait
+        // le character avant le Board → FK sector nulle. Fix : PlayerStartupImporter persiste le
+        // Board avant l'import des joueurs.
+        assertEquals(2, ((Number) character.get("sectorNumber")).intValue(),
+                "Le personnage doit être affecté au secteur 2");
         assertEquals(300.0, ((Number) character.get("baseAttack")).doubleValue());
         assertEquals(250.0, ((Number) character.get("baseDefense")).doubleValue());
         assertEquals(100.0, ((Number) character.get("basePdf")).doubleValue());
@@ -73,6 +79,10 @@ class AdminExportImportTest {
         assertTrue(types.contains("BANK"));
         for (Map<String, Object> b : buildings) {
             assertTrue(b.containsKey("sectorNumber"), "Chaque bâtiment doit porter sectorNumber");
+            // Comportement actuel pinné — à revoir : sectorNumber doit valoir 2 (cf. commentaire
+            // du test character ci-dessus).
+            assertEquals(2, ((Number) b.get("sectorNumber")).intValue(),
+                    "Chaque bâtiment doit être affecté au secteur 2");
         }
 
         // --- Symétrie : le JSON exporté doit être relisable par l'import ---

@@ -77,6 +77,17 @@ public class PlayerStartupImporter implements ApplicationRunner {
         }
         log.info("Board importé en mémoire avec {} secteurs neutres", board.getAllSectors().size());
 
+        // Persister le Board neutre MAINTENANT pour que les secteurs aient un board_id
+        // avant l'import des joueurs. Sinon, lors du playerService.save(player) ci-dessous,
+        // le cascade persiste le character et les bâtiments avec une référence @ManyToOne sector
+        // (FK composite board_id+sector_number, sans cascade) pointant vers des secteurs encore
+        // transients → Hibernate écrit board_id/sector_number à NULL, et sectorNumber devient
+        // null dans l'API (cf. GameCharacterMapper/BuildingMapper qui omettent le secteur si null).
+        // ponytail: ceiling = ordonnancement manuel de l'import startup ; upgrade path = importer
+        // character/bâtiments via un service @Transactional après persistance du board (cf. AdminService.importPlayer).
+        board = boardService.saveBoard(board, "Carte Principale");
+        log.info("Board neutre persisté avec {} secteurs (board_id={})", board.getAllSectors().size(), board.getId());
+
         // Importer les joueurs qui ajouteront leurs secteurs au Board en mémoire.
         // Désactivé en prod : seul le board neutre est importé, l'admin crée les joueurs via l'API.
         if (importDemoPlayers) {
@@ -89,9 +100,12 @@ public class PlayerStartupImporter implements ApplicationRunner {
             log.info("Import des joueurs de démo désactivé (app.import-demo-players=false).");
         }
 
-        // Sauvegarder le Board UNE SEULE FOIS avec TOUS les secteurs (neutres + players)
-        log.info("Sauvegarde du Board complet avec {} secteurs...", board.getAllSectors().size());
-        boardService.saveBoard(board, "Carte Principale");
+        // Flush final : merge simple du Board pour persister les assignations ownerId et les
+        // unités importées dans les secteurs. On n'appelle PAS saveBoard() ici : il ferait
+        // getSectorsList().clear() puis re-add, ce qui orphelinerait les Unit/Building/Character
+        // déjà rattachés aux secteurs via leurs FK sector (cf. AdminService.importPlayer:91).
+        log.info("Sauvegarde finale du Board (merge) avec {} secteurs...", board.getAllSectors().size());
+        boardService.save(board);
         log.info("✅ Board sauvegardé : {} secteurs", board.getAllSectors().size());
 
         log.info("=== Import des données terminé ===");
