@@ -66,15 +66,14 @@ npm start / npm test / npm run lint / npm run format
   armies and wipe `owner_id` on every boot (the prod bug). Removing a sector is no
   longer possible through this path on purpose; it must stay an explicit op.
 - **Schema change = Flyway `V<n>__*.sql`** under `db/migration/` (prod only; H2
-  stays on `ddl-auto`). Never edit an applied migration. If a destructive/migration
-  is impossible to express in Flyway (data repair, backfill), put a one-shot manual
-  script next to it, NOT under `db/migration/` (Flyway would auto-run it). See
-  `db/recovery/rebuild-sector-owners.sql` for the pattern.
-- **Recovery after an owner_id wipe:** if units/buildings survived, run
-  `rebuild-sector-owners.sql` (derives `owner_id` from surviving
-  `combat_entities.player_id`). If they were cascade-deleted, no SQL can rebuild —
-  restore a dump or re-import players from exported `players/*.json` via
-  `POST /api/admin/players/import`.
+  stays on `ddl-auto`). Never edit an applied migration. A destructive op that
+  is impossible to express in Flyway (data repair, backfill) stays a one-shot
+  manual script, NOT under `db/migration/` (Flyway would auto-run it).
+- **Recovery after an owner_id wipe:** if units/buildings survived in DB, a
+  best-effort SQL can re-derive `owner_id` from surviving
+  `combat_entities.player_id`. If they were cascade-deleted, no SQL can
+  rebuild — restore a dump or re-import players from exported `players/*.json`
+  via `POST /api/admin/players/import`.
 
 ## Frontend conventions
 
