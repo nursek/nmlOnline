@@ -86,6 +86,17 @@ public class PlayerStartupImporter implements ApplicationRunner {
         }
         log.info("Board importé en mémoire avec {} secteurs neutres", board.getAllSectors().size());
 
+        // Persister le Board neutre MAINTENANT pour que les secteurs aient un board_id
+        // avant l'import des joueurs. Sinon, lors du playerService.save(player) ci-dessous,
+        // le cascade persiste le character et les bâtiments avec une référence @ManyToOne sector
+        // (FK composite board_id+sector_number, sans cascade) pointant vers des secteurs encore
+        // transients → Hibernate écrit board_id/sector_number à NULL, et sectorNumber devient
+        // null/0 dans l'API (cf. GameCharacterMapper/BuildingMapper).
+        // ponytail: ceiling = ordonnancement manuel de l'import startup ; upgrade path = importer
+        // character/bâtiments via un service @Transactional après persistance du board (cf. AdminService.importPlayer).
+        board = boardService.saveBoard(board, "Carte Principale");
+        log.info("Board neutre persisté avec {} secteurs (board_id={})", board.getAllSectors().size(), board.getId());
+
         // Importer les joueurs qui ajouteront leurs secteurs au Board en mémoire.
         importIfPresent(player1, board);
         importIfPresent(player2, board);
@@ -93,9 +104,10 @@ public class PlayerStartupImporter implements ApplicationRunner {
         importIfPresent(player4, board);
         importIfPresent(player5, board);
 
-        // Sauvegarder le Board UNE SEULE FOIS avec TOUS les secteurs (neutres + players)
-        log.info("Sauvegarde du Board complet avec {} secteurs...", board.getAllSectors().size());
-        boardService.saveBoard(board, "Carte Principale");
+        // Flush final : merge simple du Board pour persister les assignations ownerId et les
+        // unités importées dans les secteurs.
+        log.info("Sauvegarde finale du Board (merge) avec {} secteurs...", board.getAllSectors().size());
+        boardService.save(board);
         long ownedCount = board.getAllSectors().stream().filter(s -> !s.isNeutral()).count();
         log.info("✅ Board sauvegardé : {} secteurs neutres + {} secteurs de players",
                  board.getAllSectors().size() - ownedCount, ownedCount);
