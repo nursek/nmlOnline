@@ -6,7 +6,10 @@ import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -51,26 +54,54 @@ public class BoardService {
     }
 
     /**
-     * Crée ou met à jour une board
+     * Crée ou met à jour une board.
+     * <p>
+     * Uphsert NON destructif : on fusionne les secteurs par numéro. Un secteur déjà présent
+     * (avec son ownerId / color / army / buildings) est conservé ; seules income, name,
+     * resourceName, x/y et les neighbors sont rafraîchis depuis le JSON. Les nouveaux secteurs
+     * du JSON sont ajoutés comme neutres.
+     * <p>
+     * ponytail: on ne fait JAMAIS getSectorsList().clear() ici — l'ancienne version supprimait
+     * en cascade tous les secteurs + armées en base à chaque re-import (boot prod ou API admin),
+     * ce qui réinitialisait l'appartenance des joueurs à leurs quartiers (bug prod).
+     * Ceiling : retirer un secteur n'est plus possible via ce chemin (intentionnel — c'est une
+     * opération destructive qui doit rester explicite, à outiller plus tard).
      */
     public Board saveBoard(Board board, String boardName) {
         // Chercher si une board avec ce nom existe déjà
         Optional<Board> existingBoardOpt = boardRepository.findByName(boardName);
 
         if (existingBoardOpt.isPresent()) {
-            // Board existe → Mettre à jour
+            // Board existe → Mettre à jour (sans détruire l'existant)
             Board existingBoard = existingBoardOpt.get();
 
             // Mettre à jour les URLs de la carte
             existingBoard.setMapImageUrl(board.getMapImageUrl());
             existingBoard.setSvgOverlayUrl(board.getSvgOverlayUrl());
 
-            // Remplacer les secteurs
-            existingBoard.getSectorsList().clear();
-            if (board.getSectorsList() != null) {
-                for (Sector sector : board.getSectorsList()) {
-                    sector.setBoard(existingBoard);
-                    existingBoard.getSectorsList().add(sector);
+            // Index des secteurs existants par numéro
+            Map<Integer, Sector> existingByNumber = new HashMap<>();
+            for (Sector s : existingBoard.getSectorsList()) {
+                existingByNumber.put(s.getNumber(), s);
+            }
+
+            // Fusionner secteur par secteur
+            for (Sector incoming : board.getSectorsList()) {
+                Sector existing = existingByNumber.get(incoming.getNumber());
+                if (existing != null) {
+                    // Rafraîchir la géométrie SANS toucher à owner_id / color / army / buildings
+                    existing.setName(incoming.getName());
+                    existing.setIncome(incoming.getIncome());
+                    if (incoming.getResourceName() != null) {
+                        existing.setResourceName(incoming.getResourceName());
+                    }
+                    existing.setX(incoming.getX());
+                    existing.setY(incoming.getY());
+                    existing.setNeighbors(new ArrayList<>(incoming.getNeighbors()));
+                } else {
+                    // Nouveau secteur neutre non couvert par le board.json précédent
+                    incoming.setBoard(existingBoard);
+                    existingBoard.getSectorsList().add(incoming);
                 }
             }
 
