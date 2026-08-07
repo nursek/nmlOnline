@@ -83,6 +83,303 @@
     margin-right: 8px;
   }
 }
+
+// === Consultation & résolution des ordres ===
+.orders-panel {
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+
+  .orders-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+
+    .orders-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+
+      mat-icon {
+        color: shared.$primary-color;
+      }
+    }
+
+    .orders-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+
+      button mat-spinner {
+        display: inline-block;
+        margin-right: 8px;
+      }
+    }
+  }
+
+  .status-chips {
+    margin-bottom: 12px;
+
+    mat-chip-option {
+      font-size: 12px;
+    }
+  }
+
+  .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 360px;
+    overflow-y: auto;
+
+    .order-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+
+      .order-main {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+
+        .order-player {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-weight: 600;
+
+          mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+            color: rgba(255, 255, 255, 0.6);
+          }
+        }
+
+        .order-route {
+          font-weight: 600;
+          color: #f59e0b;
+
+          .order-route-detail {
+            margin-left: 6px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            cursor: help;
+          }
+        }
+
+        .order-type {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 12px;
+
+          mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+          }
+        }
+      }
+
+      .status-badge {
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .status-badge.status-pending {
+        background: rgba(59, 130, 246, 0.18);
+        color: #93c5fd;
+      }
+      .status-badge.status-resolved {
+        background: rgba(34, 197, 94, 0.18);
+        color: #86efac;
+      }
+      .status-badge.status-blocked {
+        background: rgba(239, 68, 68, 0.18);
+        color: #fca5a5;
+      }
+      .status-badge.status-cancelled {
+        background: rgba(148, 163, 184, 0.18);
+        color: #cbd5e1;
+      }
+    }
+
+    .order-message {
+      padding: 4px 10px 6px;
+      margin-top: -2px;
+      color: #fca5a5;
+      font-size: 11px;
+    }
+  }
+}
+
+// === Compte-rendu de résolution ===
+.resolution-report {
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+
+  .report-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+
+    .report-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+
+      mat-icon {
+        color: #f59e0b;
+      }
+    }
+  }
+
+  .report-summary {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+
+    .summary-chip {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .summary-chip.conflicts.active,
+    .summary-chip.transit.active {
+      background: rgba(239, 68, 68, 0.18);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      font-weight: 700;
+    }
+  }
+
+  .report-section {
+    margin-top: 10px;
+
+    .report-section-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 6px;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: rgba(255, 255, 255, 0.6);
+      }
+    }
+
+    .conflicts-list,
+    .transit-list,
+    .blocked-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .conflict-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: rgba(239, 68, 68, 0.08);
+
+      .conflict-sector {
+        font-weight: 700;
+        color: #fca5a5;
+        min-width: 110px;
+      }
+      .conflict-players {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        mat-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+          color: rgba(255, 255, 255, 0.5);
+        }
+      }
+    }
+
+    .transit-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+
+      .transit-sector {
+        font-weight: 700;
+        min-width: 110px;
+      }
+      .transit-fired.fired {
+        color: #fca5a5;
+        font-weight: 600;
+      }
+      .transit-fired.no-fire {
+        color: rgba(255, 255, 255, 0.5);
+      }
+    }
+
+    .blocked-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: rgba(239, 68, 68, 0.06);
+      font-size: 12px;
+
+      .blocked-player {
+        font-weight: 600;
+        min-width: 100px;
+      }
+      .blocked-route {
+        color: #f59e0b;
+      }
+      .blocked-msg {
+        color: #fca5a5;
+        flex: 1;
+      }
+    }
+  }
+}
+
 .search-field {
   width: 100%;
   margin-bottom: 8px;

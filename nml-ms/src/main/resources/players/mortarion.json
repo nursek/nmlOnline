@@ -11,7 +11,22 @@
   "sectors": [
     {
       "sectorNumber": 1,
-      "army": []
+      "army": [
+        {
+          "id": 1,
+          "type": "BRUTE",
+          "classes": [
+            "LEGER",
+            "TIREUR"
+          ],
+          "experience": 9,
+          "equipments": [
+            "Mini machine gun",
+            "Gilet pare-balles moyen",
+            "Équipement militaire complet"
+          ]
+        }
+      ]
     },
     {
       "sectorNumber": 3,

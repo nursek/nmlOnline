@@ -57,6 +57,195 @@
     </button>
   </div>
 
+  <!-- Consultation & résolution des ordres de déplacement (admin) -->
+  <div class="orders-panel">
+    <div class="orders-header">
+      <div class="orders-title">
+        <mat-icon>route</mat-icon>
+        <span>Ordres du tour {{ currentTurnLabel() }}</span>
+      </div>9
+      <div class="orders-actions">
+        <button
+          mat-stroked-button
+          color="accent"
+          (click)="onPreviewMovements()"
+          [disabled]="previewing() || resolving()"
+          matTooltip="Calcule les conflits potentiels sans modifier l'état (aperçu)"
+        >
+          @if (previewing()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <mat-icon>visibility</mat-icon>
+          }
+          Aperçu des conflits
+        </button>
+        <button
+          mat-flat-button
+          color="primary"
+          (click)="onResolveMovements()"
+          [disabled]="resolving() || previewing()"
+          matTooltip="Applique la résolution, déplace les entités et marque les ordres (mutant)"
+        >
+          @if (resolving()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <mat-icon>play_arrow</mat-icon>
+          }
+          Résoudre les mouvements
+        </button>
+      </div>
+    </div>
+
+    <!-- Filtres par statut -->
+    <mat-chip-listbox
+      aria-label="Filtrer les ordres par statut"
+      (change)="onOrderStatusChange($any($event)?.value ?? 'ALL')"
+      [value]="orderStatusFilter()"
+      class="status-chips"
+    >
+      @for (s of statusFilters; track s) {
+        <mat-chip-option [value]="s" [selected]="orderStatusFilter() === s">
+          {{ s }}
+        </mat-chip-option>
+      }
+    </mat-chip-listbox>
+
+    <!-- Liste des ordres -->
+    @if (ordersLoading()) {
+      <div class="loading-container">
+        <mat-spinner diameter="32"></mat-spinner>
+      </div>
+    } @else if (orders().length === 0) {
+      <p class="empty-text">Aucun ordre pour ce tour/filtre.</p>
+    } @else {
+      <div class="orders-list">
+        @for (o of orders(); track o.id) {
+          <div class="order-row">
+            <div class="order-main">
+              <span class="order-player" matTooltip="Joueur">
+                <mat-icon>person</mat-icon>
+                {{ o.playerName ?? '#' + o.playerId }}
+              </span>
+              <span class="order-route">
+                {{ o.fromSectorNumber }} → {{ o.toSectorNumber }}
+                @if (o.route && o.route.length > 2) {
+                  <span class="order-route-detail" [matTooltip]="o.route.join(' → ')">
+                    via {{ o.route.length - 1 }} hops
+                  </span>
+                }
+              </span>
+              <span class="order-type">
+                @if (o.vehicleId) {
+                  <mat-icon matTooltip="Mouvement véhicule">directions_car</mat-icon>
+                  #{{ o.vehicleId }}
+                } @else {
+                  <mat-icon matTooltip="Mouvement à pied">directions_walk</mat-icon>
+                  {{ o.entityIds?.length || 0 }} ent.
+                }
+              </span>
+            </div>
+            <span class="status-badge status-{{ o.status.toLowerCase() }}">{{ o.status }}</span>
+          </div>
+          @if (o.statusMessage) {
+            <div class="order-message">{{ o.statusMessage }}</div>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Compte-rendu de résolution / aperçu -->
+  @if (resolutionReport(); as r) {
+    <div class="resolution-report">
+      <div class="report-header">
+        <div class="report-title">
+          <mat-icon>{{ r.hasConflicts ? 'warning' : 'check_circle' }}</mat-icon>
+          <span>Compte-rendu — tour {{ r.turn }}</span>
+        </div>
+        <button
+          mat-icon-button
+          (click)="clearResolutionReport()"
+          matTooltip="Fermer le compte-rendu"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="report-summary">
+        <span class="summary-chip resolved">Résolus : {{ r.resolved.length }}</span>
+        <span class="summary-chip blocked">Bloqués : {{ r.blocked.length }}</span>
+        <span class="summary-chip conflicts {{ r.hasConflicts ? 'active' : '' }}">
+          Conflits : {{ r.conflicts.length }}
+        </span>
+        <span class="summary-chip transit {{ r.hasTransitCombats ? 'active' : '' }}">
+          Combats transit : {{ r.transitCombats.length }}
+        </span>
+      </div>
+
+      @if (r.conflicts.length > 0) {
+        <div class="report-section">
+          <div class="report-section-title">
+            <mat-icon>gavel</mat-icon>
+            <span>Conflits potentiels ({{ r.conflicts.length }})</span>
+          </div>
+          <div class="conflicts-list">
+            @for (c of r.conflicts; track $index) {
+              <div class="conflict-row">
+                <span class="conflict-sector">Secteur {{ c.sectorNumber }}</span>
+                <span class="conflict-players">
+                  <mat-icon>arrow_right_alt</mat-icon>
+                  {{ c.attackerName ?? '#' + c.attackerPlayerId }}
+                  vs
+                  {{ c.defenderName ?? '#' + c.defenderPlayerId }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (r.transitCombats.length > 0) {
+        <div class="report-section">
+          <div class="report-section-title">
+            <mat-icon>local_shipping</mat-icon>
+            <span>Combats de transit ({{ r.transitCombats.length }})</span>
+          </div>
+          <div class="transit-list">
+            @for (t of r.transitCombats; track $index) {
+              <div class="transit-row">
+                <span class="transit-sector">Secteur {{ t.sectorNumber }}</span>
+                <span class="transit-vehicle">Véhicule #{{ t.vehicleId }}</span>
+                <span class="transit-fired {{ t.vehicleFired ? 'fired' : 'no-fire' }}">
+                  {{ t.vehicleFired ? 'a tiré' : 'passif' }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (r.blocked.length > 0) {
+        <div class="report-section">
+          <div class="report-section-title">
+            <mat-icon>block</mat-icon>
+            <span>Ordres bloqués ({{ r.blocked.length }})</span>
+          </div>
+          <div class="blocked-list">
+            @for (o of r.blocked; track o.id) {
+              <div class="blocked-row">
+                <span class="blocked-player">{{ o.playerName ?? '#' + o.playerId }}</span>
+                <span class="blocked-route">{{ o.fromSectorNumber }} → {{ o.toSectorNumber }}</span>
+                @if (o.statusMessage) {
+                  <span class="blocked-msg">{{ o.statusMessage }}</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
   <!-- Search -->
   <mat-form-field appearance="outline" class="search-field">
     <mat-icon matPrefix>search</mat-icon>

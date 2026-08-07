@@ -43,8 +43,8 @@ public class DevDataInitializer {
         this.userRepository = userRepository;
         this.userService = userService;
 
-        devAccounts.put("test", "USER");
-        devAccounts.put("a", "USER");
+        devAccounts.put("cegorach", "USER");
+        devAccounts.put("mortarion", "USER");
         devAccounts.put("lurio", "USER");
         devAccounts.put("nursek", "USER");
         devAccounts.put("admin", "ADMIN");

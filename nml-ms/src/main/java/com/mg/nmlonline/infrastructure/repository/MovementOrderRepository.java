@@ -19,6 +19,11 @@ public interface MovementOrderRepository extends JpaRepository<MovementOrder, Lo
     List<MovementOrder> findByTurnAndStatus(int turn, MovementStatus status);
 
     /**
+     * Tous les ordres d'un tour donné (tout statut confondu) — vue admin.
+     */
+    List<MovementOrder> findByTurn(int turn);
+
+    /**
      * Tous les ordres PENDING d'un tour.
      */
     default List<MovementOrder> findPendingByTurn(int turn) {
