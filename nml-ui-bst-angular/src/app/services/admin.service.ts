@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
-import { PageResult, Player } from '../models';
+import { PageResult, Player, Board } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 import { environment } from '../../environments/environment';
 
@@ -97,6 +97,39 @@ export class AdminService {
       const message = httpErrorMessage(error, 'Erreur lors de la suppression');
       this._error.set(message);
       throw new Error(message);
+    }
+  }
+
+  /**
+   * Importe le Board depuis un board.json. Si mapImage + svgOverlay sont fournis,
+   * ils sont uploadés d'abord (POST /boards/assets) et les URLs renvoyées sont
+   * passées à l'import. Réutilise le signal `_importing` commun au header.
+   */
+  async importBoard(file: File, mapImage?: File, svgOverlay?: File): Promise<Board> {
+    this._importing.set(true);
+    this._error.set(null);
+    this._successMessage.set(null);
+    try {
+      let mapImageUrl: string | undefined;
+      let svgOverlayUrl: string | undefined;
+      if (mapImage && svgOverlay) {
+        const assets = await firstValueFrom(this.api.adminUploadBoardAssets(mapImage, svgOverlay));
+        mapImageUrl = assets.mapImageUrl;
+        svgOverlayUrl = assets.svgOverlayUrl;
+      }
+      const board = await firstValueFrom(
+        this.api.adminImportBoard(file, mapImageUrl, svgOverlayUrl),
+      );
+      this._successMessage.set(
+        `Board "${board.name}" importé (${Object.keys(board.sectors ?? {}).length} secteurs)`,
+      );
+      return board;
+    } catch (error) {
+      const message = httpErrorMessage(error, "Erreur lors de l'import du board");
+      this._error.set(message);
+      throw new Error(message);
+    } finally {
+      this._importing.set(false);
     }
   }
 

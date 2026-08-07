@@ -24,6 +24,10 @@ import { Player, UnitClass, UnitType } from '../../models';
 import { AdminService } from '../../services/admin.service';
 import { ApiService } from '../../services/api.service';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
+import {
+  BoardImportDialogComponent,
+  BoardImportResult,
+} from '../../shared/board-import-dialog/board-import-dialog.component';
 import { APP_CONSTANTS } from '../../core/constants';
 
 @Component({
@@ -122,7 +126,7 @@ export class AdminComponent {
       });
   }
 
-  // === Import ===
+  // === Import joueur ===
   triggerImport(): void {
     const input = document.createElement('input');
     input.type = 'file';
@@ -149,6 +153,21 @@ export class AdminComponent {
       });
     };
     input.click();
+  }
+
+  // === Import board (board.json + assets optionnels) ===
+  triggerBoardImport(): void {
+    this.dialog
+      .open(BoardImportDialogComponent)
+      .afterClosed()
+      .subscribe((result: BoardImportResult | undefined) => {
+        if (!result) {
+          return;
+        }
+        void this.admin.importBoard(result.file, result.mapImage, result.svgOverlay).catch(() => {
+          // AdminService already set the error signal; ignore here.
+        });
+      });
   }
 
   // === Export ===

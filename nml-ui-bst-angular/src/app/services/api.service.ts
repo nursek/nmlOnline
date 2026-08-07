@@ -13,6 +13,7 @@ import {
   BuyVehicleBatchItem,
   SellResourceBatchItem,
   ResourceBatchSaleResponse,
+  Board,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -63,6 +64,29 @@ export class ApiService {
 
   adminDeletePlayer(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/admin/players/${id}`);
+  }
+
+  // Board — import en 2 étapes : upload des assets visuels (image + SVG),
+  // puis import du board.json en lui passant les URLs renvoyées par l'étape 1.
+  adminUploadBoardAssets(
+    mapImage: File,
+    svgOverlay: File,
+  ): Observable<{ mapImageUrl: string; svgOverlayUrl: string; svgSectorCount: number }> {
+    const formData = new FormData();
+    formData.append('mapImage', mapImage);
+    formData.append('svgOverlay', svgOverlay);
+    return this.http.post<{ mapImageUrl: string; svgOverlayUrl: string; svgSectorCount: number }>(
+      `${this.baseUrl}/admin/boards/assets`,
+      formData,
+    );
+  }
+
+  adminImportBoard(file: File, mapImageUrl?: string, svgOverlayUrl?: string): Observable<Board> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (mapImageUrl) formData.append('mapImageUrl', mapImageUrl);
+    if (svgOverlayUrl) formData.append('svgOverlayUrl', svgOverlayUrl);
+    return this.http.post<Board>(`${this.baseUrl}/admin/boards/import`, formData);
   }
 
   // Tour courant (admin) — source unique de vérité gérée par TurnService côté backend.

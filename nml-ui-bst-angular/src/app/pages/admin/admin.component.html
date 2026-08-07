@@ -18,6 +18,16 @@
       }
       Importer un joueur
     </button>
+    <button
+      mat-stroked-button
+      color="accent"
+      (click)="triggerBoardImport()"
+      [disabled]="importing()"
+      matTooltip="Créer/remplacer le board depuis un board.json (+ assets visuels)"
+    >
+      <mat-icon>map</mat-icon>
+      Importer le board
+    </button>
   </div>
 
   <!-- Import progress -->
