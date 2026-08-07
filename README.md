@@ -302,7 +302,7 @@ Runs on every pull request and on pushes to non-master branches:
 - Backend: `./mvnw test` + `./mvnw package -DskipTests`
 - Frontend: `npm run lint` + `npm test -- --ci --coverage` + `npm run build`
 
-### `main.yml` — Build & Push Docker Image
+### `cd.yml` — Build & Push Docker Image
 
 Runs on pushes to `master` and version tags (`v*`):
 
