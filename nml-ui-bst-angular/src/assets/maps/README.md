@@ -11,8 +11,8 @@ Pour chaque carte, vous devez fournir :
 
 ## Fichiers actuels
 
-- `main-map-overlay.svg` : SVG exemple avec 16 secteurs (grille 4x4)
-- `main-map.jpg` : **À CRÉER** - Remplacez ce placeholder par votre image de carte
+- `main-map-overlay.svg` : SVG de la carte principale (43 secteurs)
+- `main-map.png` : Image de fond de la carte principale
 
 ## Comment créer votre carte
 
@@ -23,15 +23,15 @@ Consultez le guide complet : **[SVG_MAP_GUIDE.md](../../../SVG_MAP_GUIDE.md)** �
 1. Créez votre image JPG aux dimensions souhaitées (ex: 800x600, 1920x1080)
 2. Créez un SVG avec le même viewBox que les dimensions de l'image
 3. Dessinez les contours de chaque secteur avec des `<path>` ou `<polygon>`
-4. Attribuez à chaque élément un `id="sector-{number}"` correspondant au numéro en base
+4. Attribuez à chaque élément un `id="path{number}"` correspondant au numéro en base (ex: `path1`, `path2`…). Le frontend (`CarteComponent`) lit le numéro en supprimant le préfixe `path`.
 5. N'ajoutez PAS de styles (fill, stroke) - le système les appliquera automatiquement
 
 ### Exemple de SVG
 
 ```xml
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
-  <path id="sector-1" d="M10,10 L190,10 L190,140 L10,140 Z" />
-  <path id="sector-2" d="M210,10 L390,10 L390,140 L210,140 Z" />
+  <path id="path1" d="M10,10 L190,10 L190,140 L10,140 Z" />
+  <path id="path2" d="M210,10 L390,10 L390,140 L210,140 Z" />
   <!-- ... autres secteurs ... -->
 </svg>
 ```

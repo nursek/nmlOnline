@@ -2,7 +2,7 @@
   <div class="udd-header">
     <h2 mat-dialog-title>
       <mat-icon>badge</mat-icon>
-      {{ unit()?.type?.name }} #{{ unit()?.number }}
+      {{ unit()?.type?.name }} n°{{ unit()?.number }}
       <span class="udd-sub">— {{ data.sectorName }} (secteur {{ data.sectorNumber }})</span>
     </h2>
     <button mat-icon-button (click)="close()" aria-label="Fermer">

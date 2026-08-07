@@ -183,6 +183,7 @@ export class CarteComponent {
       const container = this.svgContainer()?.nativeElement;
       if (!container) return;
       this.ensureNeutralPattern(container);
+      this.renderSectorLabels(container);
       this.attachSectorListeners(container);
       onCleanup(() => {
         this.eventCleanupFns.forEach((fn) => fn());
@@ -200,6 +201,7 @@ export class CarteComponent {
       void this.selectedPlayerIds();
       void this.showNeutral();
       this.updateAllPathColors(container);
+      this.updateSectorLabelColors(container);
     });
   }
 
@@ -257,6 +259,165 @@ export class CarteComponent {
     pattern.appendChild(stripe);
     defs.appendChild(pattern);
     svg.appendChild(defs);
+  }
+
+  /**
+   * Positionne le label au « pôle d'inaccessibilité » : le point intérieur
+   * le plus éloigné de la bordure. Approximé par échantillonnage d'une grille
+   * dans la bbox (filtrée via isPointInFill) puis max de la distance min aux
+   * points du contour. Contrairement au centroïde, l'étiquette reste loin des
+   * bords même sur les secteurs en L ou étroits (28, 2, 25, 42, 8, 16, 12, 6).
+   * Retombe sur le centre de la bbox si la géométrie n'est pas mesurable.
+   * ponytail: coût O(samples² × boundary) par secteur — OK pour ~50 secteurs
+   * au chargement ; revoir si la carte devient très dense.
+   */
+  private renderSectorLabels(container: HTMLElement): void {
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+    const svgNs = 'http://www.w3.org/2000/svg';
+
+    let labelsGroup = svg.querySelector<SVGGElement>('#sector-labels');
+    if (!labelsGroup) {
+      labelsGroup = document.createElementNS(svgNs, 'g');
+      labelsGroup.setAttribute('id', 'sector-labels');
+      labelsGroup.setAttribute('pointer-events', 'none');
+      svg.appendChild(labelsGroup);
+    }
+    // Recrée les <text> à chaque cycle : simple et idempotent.
+    labelsGroup.replaceChildren();
+
+    const paths = svg.querySelectorAll('path[id^="path"], polygon[id^="path"]');
+    paths.forEach((path) => {
+      const id = path.getAttribute('id');
+      if (!id) return;
+      const sectorNumber = parseInt(id.replace('path', ''), 10);
+      if (Number.isNaN(sectorNumber)) return;
+
+      const center = this.computeVisualCenter(path as SVGGeometryElement);
+      const text = document.createElementNS(svgNs, 'text');
+      text.setAttribute('x', String(center.x));
+      text.setAttribute('y', String(center.y));
+      // Centre le glyphe sur le pôle d'inaccessibilité : sans ça, l'ancrage
+      // par défaut (start/alphabetic) fait déborder le numéro vers la droite
+      // et le haut, surtout sur les secteurs étroits/allongés.
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'central');
+      text.setAttribute('class', 'sector-label');
+      text.setAttribute('data-sector', String(sectorNumber));
+      text.textContent = String(sectorNumber);
+      labelsGroup.appendChild(text);
+    });
+  }
+
+  /**
+   * Pôle d'inaccessibilité approximé. 1) échantillonne le contour, 2) égrène
+   * une grille dans la bbox en ne gardant que les points intérieurs
+   * (isPointInFill), 3) retourne celui dont la distance min au contour est max.
+   */
+  private computeVisualCenter(el: SVGGeometryElement): { x: number; y: number } {
+    const bbox = el.getBBox();
+    const fallback = { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
+
+    // Échantillonne le contour. getTotalLength/getPointAtLength n'existent que
+    // sur SVGPathElement ; pour les <polygon> on décode les points.
+    const boundary: { x: number; y: number }[] = [];
+    const pathEl = el.tagName.toLowerCase() === 'path' ? (el as SVGPathElement) : null;
+    try {
+      if (pathEl) {
+        const total = pathEl.getTotalLength();
+        if (total <= 0) return fallback;
+        const BOUNDARY_SAMPLES = Math.min(
+          128,
+          Math.max(32, Math.ceil(total / 6)),
+        );
+        for (let i = 0; i < BOUNDARY_SAMPLES; i++) {
+          const pt = pathEl.getPointAtLength((i * total) / (BOUNDARY_SAMPLES - 1));
+          boundary.push({ x: pt.x, y: pt.y });
+        }
+      } else {
+        const ptsStr = el.getAttribute('points') ?? '';
+        for (const pair of ptsStr.trim().split(/[\s,]+/).reduce<string[][]>(
+          (acc, v, i) => {
+            if (i % 2 === 0) acc.push([v]);
+            else acc[acc.length - 1].push(v);
+            return acc;
+          },
+          [],
+        )) {
+          const x = Number(pair[0]);
+          const y = Number(pair[1]);
+          if (Number.isFinite(x) && Number.isFinite(y)) boundary.push({ x, y });
+        }
+        if (boundary.length === 0) return fallback;
+      }
+    } catch {
+      return fallback;
+    }
+
+    // isPointInFill requiert une géométrie « fillable » ; on retombe au besoin.
+    const canFillTest = typeof el.isPointInFill === 'function';
+    // Pas fin pour résoudre les secteurs étroits/allongés (ex. 2, 28, 8, 5,
+    // 42, 43, 14, 25). Coût acceptable au chargement.
+    const step = 4;
+    // Marge préférentielle : on privilégie les candidats dont la distance min
+    // au contour dépasse le demi-glyphe (~12 unités), pour garder le numéro
+    // à l'intérieur même après centrage du texte.
+    const MARGIN = 12;
+    const candidates: { x: number; y: number }[] = [];
+    for (let gy = bbox.y; gy <= bbox.y + bbox.height; gy += step) {
+      for (let gx = bbox.x; gx <= bbox.x + bbox.width; gx += step) {
+        if (canFillTest) {
+          try {
+            if (!el.isPointInFill({ x: gx, y: gy })) continue;
+          } catch {
+            continue;
+          }
+        }
+        candidates.push({ x: gx, y: gy });
+      }
+    }
+    if (candidates.length === 0) return fallback;
+
+    let best = candidates[0];
+    let bestDist = -Infinity;
+    let bestAboveMargin = false;
+    for (const c of candidates) {
+      let minDist = Infinity;
+      for (const b of boundary) {
+        const dx = c.x - b.x;
+        const dy = c.y - b.y;
+        const d = dx * dx + dy * dy;
+        if (d < minDist) minDist = d;
+      }
+      const above = minDist >= MARGIN * MARGIN;
+      if (bestAboveMargin) {
+        // Ne garder que les candidats sous marge, et le max parmi eux.
+        if (!above || minDist <= bestDist) continue;
+      } else if (above) {
+        // Premier candidat sous marge : il devient le nouveau best.
+        bestAboveMargin = true;
+      } else if (minDist <= bestDist) {
+        continue;
+      }
+      bestDist = minDist;
+      best = c;
+    }
+    return best;
+  }
+
+  /**
+   * Applique la couleur du joueur propriétaire à chaque <text> de label,
+   * recalculée à chaque changement de filtre/sélection (en phase avec
+   * updateAllPathColors). Le halo blanc est porté par le CSS.
+   */
+  private updateSectorLabelColors(container: HTMLElement): void {
+    const labels = container.querySelectorAll('text.sector-label');
+    labels.forEach((label) => {
+      const num = parseInt(label.getAttribute('data-sector') ?? '', 10);
+      if (Number.isNaN(num)) return;
+      const sector = this.sectorsMap().get(num);
+      (label as SVGTextElement).style.fill = sector ? this.getSectorColor(sector) : '#94a3b8';
+    });
   }
 
   private updatePathStyle(path: SVGElement, sectorNumber: number): void {

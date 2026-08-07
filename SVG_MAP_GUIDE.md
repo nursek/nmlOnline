@@ -13,16 +13,16 @@ Ce guide explique comment créer une carte personnalisée pour NML Online en uti
 
 Chaque secteur doit être un élément `<path>` ou `<polygon>` avec un attribut `id` au format :
 ```
-id="sector-{number}"
+id="path{number}"
 ```
 où `{number}` correspond au numéro du secteur en base de données.
 
 **Exemple :**
 ```xml
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
-  <path id="sector-1" d="M100,100 L300,100 L300,250 L100,250 Z" />
-  <path id="sector-2" d="M320,100 L520,100 L500,280 L310,260 Z" />
-  <polygon id="sector-3" points="550,100 750,100 730,280 540,260" />
+  <path id="path1" d="M100,100 L300,100 L300,250 L100,250 Z" />
+  <path id="path2" d="M320,100 L520,100 L500,280 L310,260 Z" />
+  <polygon id="path3" points="550,100 750,100 730,280 540,260" />
 </svg>
 ```
 
@@ -39,17 +39,17 @@ N'ajoutez **PAS** de `fill`, `stroke`, ou `style` aux éléments path. Le systè
 
 ❌ **Mauvais :**
 ```xml
-<path id="sector-1" fill="red" stroke="black" d="..." />
+<path id="path1" fill="red" stroke="black" d="..." />
 ```
 
 ✅ **Bon :**
 ```xml
-<path id="sector-1" d="..." />
+<path id="path1" d="..." />
 ```
 
 ### 4. Attributs supportés
 
-- `id` : **Obligatoire** - Identifiant du secteur (format : `sector-{number}`)
+- `id` : **Obligatoire** - Identifiant du secteur (format : `path{number}`)
 - `d` : Chemin du path (pour `<path>`)
 - `points` : Points du polygone (pour `<polygon>`)
 
@@ -58,7 +58,7 @@ N'ajoutez **PAS** de `fill`, `stroke`, ou `style` aux éléments path. Le systè
 1. **Nouveau document** : Créez un document aux dimensions exactes de votre image JPG
 2. **Importer l'image** : Placez votre image JPG en arrière-plan (calque verrouillé)
 3. **Dessiner les zones** : Sur un nouveau calque, dessinez les contours de chaque secteur avec l'outil Plume
-4. **Nommer les calques** : Renommez chaque path avec `sector-1`, `sector-2`, etc.
+4. **Nommer les calques** : Renommez chaque path avec `path1`, `path2`, etc.
 5. **Exporter** :
    - Fichier → Exporter → Exporter pour les écrans
    - Format : SVG
@@ -69,7 +69,7 @@ N'ajoutez **PAS** de `fill`, `stroke`, ou `style` aux éléments path. Le systè
 1. **Nouveau document** : Définissez les dimensions aux dimensions de votre image JPG
 2. **Importer l'image** : Fichier → Importer votre JPG (calque de référence)
 3. **Dessiner les zones** : Utilisez l'outil Bézier pour tracer les contours
-4. **Définir les IDs** : Sélectionnez chaque path → Objet → Propriétés de l'objet → ID = `sector-1`, etc.
+4. **Définir les IDs** : Sélectionnez chaque path → Objet → Propriétés de l'objet → ID = `path1`, etc.
 5. **Exporter** :
    - Fichier → Enregistrer sous → SVG simple
    - Supprimer le JPG de référence avant l'export
@@ -99,7 +99,7 @@ nml-ui-bst-angular/src/assets/maps/
       "income": 2500,
       "neighbors": [2, 5]
     },
-    ...
+    "..."
   ]
 }
 ```
@@ -127,7 +127,7 @@ Si le SVG ne peut pas être chargé (erreur réseau, fichier manquant), le syst�
 1. **Zones bien définies** : Assurez-vous que les zones ne se chevauchent pas
 2. **Contours fermés** : Les paths doivent être fermés (terminer par `Z` ou revenir au point de départ)
 3. **Test** : Ouvrez le SVG dans un navigateur pour vérifier que les zones sont correctes
-4. **IDs uniques** : Vérifiez que chaque `sector-{number}` correspond à un secteur existant en base
+4. **IDs uniques** : Vérifiez que chaque `path{number}` correspond à un secteur existant en base
 
 ## Détection automatique des voisins
 

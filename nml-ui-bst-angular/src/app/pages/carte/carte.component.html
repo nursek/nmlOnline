@@ -112,7 +112,7 @@
       </div>
 
       <!-- Détails du secteur sélectionné -->
-      @if (selectedSector()) {
+      @if (selectedSector(); as sector) {
         <mat-card class="details-card">
           <mat-card-content>
             <div class="sector-header" [style.border-color]="getSectorColor(selectedSector()!)">
@@ -122,7 +122,7 @@
               ></div>
               <div>
                 <h2>{{ selectedSector()!.name }}</h2>
-                <span class="sector-id">Secteur #{{ selectedSector()!.number }}</span>
+                <span class="sector-id">Secteur n°{{ selectedSector()!.number }}</span>
               </div>
             </div>
 
@@ -147,35 +147,60 @@
               }
             </div>
 
-            @if (selectedSector()!.army && selectedSector()!.army!.length > 0) {
-              <div class="detail-section">
-                <h3><mat-icon>military_tech</mat-icon> Armée</h3>
+            <div class="detail-section">
+              <h3>
+                <mat-icon>military_tech</mat-icon>
+                Armée
+              </h3>
+              @if (sector.character) {
+                <div class="stat-row">
+                  <span>Personnage</span>
+                  <span class="value">{{ sector.character?.name }}</span>
+                </div>
+              }
+              @if (sector.army?.length) {
                 <div class="stat-row">
                   <span>Unités</span>
-                  <span class="value">{{ selectedSector()!.army!.length }}</span>
+                  <span class="value">{{ sector.army!.length }}</span>
                 </div>
-              </div>
-            }
+              }
+              @if (sector.vehicles?.length) {
+                <div class="stat-row">
+                  <span>Véhicules</span>
+                  <span class="value">{{ sector.vehicles!.length }}</span>
+                </div>
+              }
+              @if (sector.buildings?.length) {
+                <div class="stat-row">
+                  <span>Batiments</span>
+                  <span class="value">{{ sector.buildings!.length }}</span>
+                </div>
+              }
+            </div>
 
-            @if (selectedSector()!.stats) {
+            @if (sector.stats) {
               <div class="detail-section">
                 <h3><mat-icon>shield</mat-icon> Statistiques</h3>
                 <div class="stats-grid">
                   <div class="mini-stat">
                     <span class="label">ATK</span>
-                    <span class="value red">{{ selectedSector()!.stats!.totalAtk || 0 }}</span>
-                  </div>
-                  <div class="mini-stat">
-                    <span class="label">DEF</span>
-                    <span class="value green">{{ selectedSector()!.stats!.totalDef || 0 }}</span>
+                    <span class="value red">{{ sector.stats!.totalAtk || 0 }}</span>
                   </div>
                   <div class="mini-stat">
                     <span class="label">PDF</span>
-                    <span class="value blue">{{ selectedSector()!.stats!.totalPdf || 0 }}</span>
+                    <span class="value blue">{{ sector.stats!.totalPdf || 0 }}</span>
+                  </div>
+                  <div class="mini-stat">
+                    <span class="label">PDC</span>
+                    <span class="value blue">{{ sector.stats!.totalPdc || 0 }}</span>
+                  </div>
+                  <div class="mini-stat">
+                    <span class="label">DEF</span>
+                    <span class="value green">{{ sector.stats!.totalDef || 0 }}</span>
                   </div>
                   <div class="mini-stat">
                     <span class="label">ARM</span>
-                    <span class="value purple">{{ selectedSector()!.stats!.totalArmor || 0 }}</span>
+                    <span class="value purple">{{ sector.stats!.totalArmor || 0 }}</span>
                   </div>
                 </div>
               </div>
@@ -239,7 +264,7 @@
             <mat-icon>people</mat-icon>
             <div>
               <span class="stat-value">{{ players().length }}</span>
-              <span class="stat-label">Joueurs</span>
+              <span class="stat-label">Joueurs en vie</span>
             </div>
           </div>
           <div class="global-stat">

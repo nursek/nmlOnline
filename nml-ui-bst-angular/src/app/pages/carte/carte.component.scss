@@ -338,6 +338,17 @@
       transition: all 0.2s ease;
       vector-effect: non-scaling-stroke;
     }
+
+    .sector-label {
+      pointer-events: none;
+      font-weight: 800;
+      font-size: 20px;
+      paint-order: stroke;
+      stroke: black;
+      stroke-width: 3px;
+      stroke-linejoin: round;
+      user-select: none;
+    }
   }
 }
 
