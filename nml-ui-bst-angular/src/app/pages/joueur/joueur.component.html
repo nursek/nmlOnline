@@ -269,10 +269,7 @@
             <!-- Liste unique (détails via popup horizontal) -->
             <div class="units-list">
               @for (item of filteredUnits(); track item.unit.id) {
-                <div
-                  class="unit-list-item"
-                  [class.injured]="item.unit.isInjured"
-                >
+                <div class="unit-list-item" [class.injured]="item.unit.isInjured">
                   <div
                     class="unit-list-row"
                     (click)="openUnitDialog(item)"
@@ -345,8 +342,8 @@
                     </div>
                   </div>
                   <div class="quantity" matTooltip="Disponible / total possédé">
-                  {{ stack.available }}/{{ stack.quantity }}
-                </div>
+                    {{ stack.available }}/{{ stack.quantity }}
+                  </div>
                 </div>
               }
             </div>

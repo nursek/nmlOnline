@@ -115,7 +115,6 @@ Le système gère automatiquement :
 | Normal | Contour avec la couleur du propriétaire, fond transparent |
 | Hover | Fond semi-transparent (20% opacité) |
 | Sélectionné | Fond semi-transparent (25% opacité) + ombre portée + contour épais |
-| Voisin du sélectionné | Fond jaune semi-transparent + contour jaune |
 | Filtré (autre joueur) | Opacité réduite (30%) |
 
 ## Fallback

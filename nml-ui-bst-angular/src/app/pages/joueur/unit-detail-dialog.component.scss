@@ -34,7 +34,9 @@ $stat-colors: (
     justify-content: space-between;
     padding: 8px 4px 0 4px;
 
-    h2 mat-icon { vertical-align: middle; }
+    h2 mat-icon {
+      vertical-align: middle;
+    }
     .udd-sub {
       font-weight: 400;
       color: $text-secondary;
@@ -73,7 +75,9 @@ $stat-colors: (
   .udd-col-center {
     align-items: center;
 
-    > h3 { align-self: stretch; }
+    > h3 {
+      align-self: stretch;
+    }
   }
 
   // === Slots ===
@@ -126,7 +130,10 @@ $stat-colors: (
       color: #3730a3;
       cursor: pointer;
 
-      &:hover { background: #e0e7ff; border-color: #a5b4fc; }
+      &:hover {
+        background: #e0e7ff;
+        border-color: #a5b4fc;
+      }
     }
 
     &.udd-slot-empty {
@@ -137,14 +144,26 @@ $stat-colors: (
       width: 34px;
       justify-content: center;
 
-      mat-icon { font-size: 18px; width: 18px; height: 18px; }
-      &:hover { border-color: shared.$primary-color; color: shared.$primary-color; background: $bg-soft; }
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+      &:hover {
+        border-color: shared.$primary-color;
+        color: shared.$primary-color;
+        background: $bg-soft;
+      }
     }
 
-    .udd-slot-name { font-weight: 600; }
+    .udd-slot-name {
+      font-weight: 600;
+    }
 
     button {
-      width: 26px; height: 26px; line-height: 26px;
+      width: 26px;
+      height: 26px;
+      line-height: 26px;
     }
   }
 
@@ -182,7 +201,9 @@ $stat-colors: (
       border-radius: 6px;
 
       @each $key, $val in $stat-colors {
-        &.#{$key} .udd-val { color: $val; }
+        &.#{$key} .udd-val {
+          color: $val;
+        }
       }
 
       .udd-label {
@@ -243,7 +264,11 @@ $stat-colors: (
       text-transform: uppercase;
       letter-spacing: 0.05em;
 
-      mat-icon { font-size: 40px; width: 40px; height: 40px; }
+      mat-icon {
+        font-size: 40px;
+        width: 40px;
+        height: 40px;
+      }
     }
 
     .udd-meta {
@@ -259,7 +284,11 @@ $stat-colors: (
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        mat-icon { font-size: 18px; width: 18px; height: 18px; }
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
       }
     }
   }
@@ -295,9 +324,17 @@ $stat-colors: (
     gap: 8px;
     flex-wrap: wrap;
 
-    .udd-move-from { display: flex; flex-direction: column; }
-    .udd-move-to { flex: 1; min-width: 160px; }
-    .udd-arrow { color: $text-muted; }
+    .udd-move-from {
+      display: flex;
+      flex-direction: column;
+    }
+    .udd-move-to {
+      flex: 1;
+      min-width: 160px;
+    }
+    .udd-arrow {
+      color: $text-muted;
+    }
 
     .udd-pill {
       padding: 6px 10px;

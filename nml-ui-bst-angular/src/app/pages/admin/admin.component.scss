@@ -40,49 +40,49 @@
 }
 
 .import-progress {
-    margin-bottom: 16px;
-  }
+  margin-bottom: 16px;
+}
 
-  // === Gestion du tour ===
-  .turn-panel {
+// === Gestion du tour ===
+.turn-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  flex-wrap: wrap;
+
+  .turn-info {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    flex-wrap: wrap;
+    gap: 8px;
 
-    .turn-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      mat-icon {
-        color: rgba(255, 255, 255, 0.7);
-      }
-
-      .turn-label {
-        color: rgba(255, 255, 255, 0.6);
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-
-      .turn-value {
-        font-weight: 600;
-        color: #f59e0b;
-      }
+    mat-icon {
+      color: rgba(255, 255, 255, 0.7);
     }
 
-    button mat-spinner {
-      display: inline-block;
-      margin-right: 8px;
+    .turn-label {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .turn-value {
+      font-weight: 600;
+      color: #f59e0b;
     }
   }
+
+  button mat-spinner {
+    display: inline-block;
+    margin-right: 8px;
+  }
+}
 .search-field {
   width: 100%;
   margin-bottom: 8px;
