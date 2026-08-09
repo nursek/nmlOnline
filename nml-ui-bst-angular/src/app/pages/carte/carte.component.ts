@@ -2,25 +2,26 @@ import {
   afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   computed,
+  ElementRef,
   inject,
   linkedSignal,
   signal,
   viewChild,
 } from '@angular/core';
-import { SlicePipe } from '@angular/common';
-import { httpResource } from '@angular/common/http';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { MatCardModule } from '@angular/material/card';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { Board, PageResult, Player, Sector } from '../../models';
-import { environment } from '../../../environments/environment';
+import {SlicePipe} from '@angular/common';
+import {httpResource} from '@angular/common/http';
+import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
+import {MatCardModule} from '@angular/material/card';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import {MatIconModule} from '@angular/material/icon';
+import {MatChipsModule} from '@angular/material/chips';
+import {MatDividerModule} from '@angular/material/divider';
+import {MatButtonModule} from '@angular/material/button';
+import {MatTooltipModule} from '@angular/material/tooltip';
+import {Board, PageResult, Player, Sector} from '../../models';
+import {environment} from '../../../environments/environment';
+import {MAP_THEME} from './carte.config';
 
 interface SectorWithPlayer extends Sector {
   playerName?: string | null;
@@ -50,20 +51,18 @@ function isSameOriginAssetUrl(url: string): boolean {
 })
 export class CarteComponent {
   private readonly sanitizer = inject(DomSanitizer);
-  private static readonly COLORS = [
-    '#6366f1',
-    '#ef4444',
-    '#10b981',
-    '#f59e0b',
-    '#8b5cf6',
-    '#ec4899',
-    '#f97316',
-    '#06b6d4',
-    '#84cc16',
-    '#14b8a6',
-    '#f43f5e',
-    '#a855f7',
-  ];
+
+  // Couleur neutre exposée au template (légende) et au SCSS.
+  readonly neutralColor = MAP_THEME.neutralColor;
+  readonly labelFontPx = MAP_THEME.label.fontPx;
+  readonly labelWeight = MAP_THEME.label.weight;
+  readonly labelStrokeColor = MAP_THEME.label.strokeColor;
+  readonly labelStrokeWidth = MAP_THEME.label.strokeWidthPx;
+  // Décalage (px CSS) de l'overlay par rapport à l'image de fond, pour rattraper
+  // un mismatch de calage entre le SVG et le PNG. Valeur négative tire l'overlay
+  // vers le haut (corrige un overlay « trop bas »), positive vers le bas.
+  readonly overlayOffsetY = MAP_THEME.overlay.offsetY;
+  readonly overlayOffsetX = MAP_THEME.overlay.offsetX;
 
   // Re-read-only catalogs via httpResource.
   private readonly boardsRef = httpResource<Board[]>(() => ({
@@ -85,10 +84,14 @@ export class CarteComponent {
 
   private readonly playerColorMap = computed(() => {
     const map = new Map<number, string>();
-    this.players().forEach((player, index) => {
-      if (player.id != null) {
-        map.set(player.id, CarteComponent.COLORS[index % CarteComponent.COLORS.length]);
-      }
+    // Indexation par id trié : la couleur d'un joueur ne dépend plus de
+    // l'ordre d'insertion renvoyé par l'API, donc reste stable au refresh.
+    const sorted = [...this.players()]
+      .filter((p) => p.id != null)
+      .sort((a, b) => (a.id as number) - (b.id as number));
+    const palette = MAP_THEME.playerPalette;
+    sorted.forEach((player, index) => {
+      map.set(player.id as number, palette[index % palette.length]);
     });
     return map;
   });
@@ -182,7 +185,7 @@ export class CarteComponent {
       if (!this.svgLoaded()) return;
       const container = this.svgContainer()?.nativeElement;
       if (!container) return;
-      this.ensureNeutralPattern(container);
+      this.ensureDefs(container);
       this.renderSectorLabels(container);
       this.attachSectorListeners(container);
       onCleanup(() => {
@@ -232,33 +235,77 @@ export class CarteComponent {
     });
   }
 
-  private ensureNeutralPattern(container: HTMLElement): void {
+  private ensureDefs(container: HTMLElement): void {
     const svg = container.querySelector('svg');
-    if (!svg || svg.querySelector('#neutral-stripes')) return;
-
+    if (!svg) return;
     const svgNs = 'http://www.w3.org/2000/svg';
-    const defs = document.createElementNS(svgNs, 'defs');
-    const pattern = document.createElementNS(svgNs, 'pattern');
-    pattern.setAttribute('id', 'neutral-stripes');
-    pattern.setAttribute('patternUnits', 'userSpaceOnUse');
-    pattern.setAttribute('width', '8');
-    pattern.setAttribute('height', '8');
-    pattern.setAttribute('patternTransform', 'rotate(45)');
 
-    const bg = document.createElementNS(svgNs, 'rect');
-    bg.setAttribute('width', '8');
-    bg.setAttribute('height', '8');
-    bg.setAttribute('fill', '#ffffff');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.style.display = 'block';
 
-    const stripe = document.createElementNS(svgNs, 'rect');
-    stripe.setAttribute('width', '3');
-    stripe.setAttribute('height', '8');
-    stripe.setAttribute('fill', '#94a3b8');
+    let defs = svg.querySelector<SVGDefsElement>('defs');
+    if (!defs) {
+      defs = document.createElementNS(svgNs, 'defs');
+      svg.appendChild(defs);
+    }
 
-    pattern.appendChild(bg);
-    pattern.appendChild(stripe);
-    defs.appendChild(pattern);
-    svg.appendChild(defs);
+    // Motif de hachures neutres.
+    if (!svg.querySelector('#neutral-stripes')) {
+      const np = MAP_THEME.neutralPattern;
+      const pattern = document.createElementNS(svgNs, 'pattern');
+      pattern.setAttribute('id', 'neutral-stripes');
+      pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+      pattern.setAttribute('width', String(np.width));
+      pattern.setAttribute('height', String(np.height));
+      pattern.setAttribute('patternTransform', `rotate(${np.rotateDeg})`);
+
+      const bg = document.createElementNS(svgNs, 'rect');
+      bg.setAttribute('width', String(np.width));
+      bg.setAttribute('height', String(np.height));
+      bg.setAttribute('fill', np.background);
+
+      const stripe = document.createElementNS(svgNs, 'rect');
+      stripe.setAttribute('width', String(np.stripeWidth));
+      stripe.setAttribute('height', String(np.height));
+      stripe.setAttribute('fill', MAP_THEME.neutralColor);
+
+      pattern.appendChild(bg);
+      pattern.appendChild(stripe);
+      defs.appendChild(pattern);
+    }
+
+    // Filtre de débordement de contour à la sélection (feMorphology dilate).
+    // Identique pour tous les secteurs : conserve la couleur du SourceGraphic,
+    // puis remet l'original au-dessus via feMerge.
+    if (!svg.querySelector('#selection-overflow')) {
+      const filter = document.createElementNS(svgNs, 'filter');
+      filter.setAttribute('id', 'selection-overflow');
+      // Laisser de la marge autour pour que la zone dilatée ne soit pas rognée.
+      filter.setAttribute('x', '-20%');
+      filter.setAttribute('y', '-20%');
+      filter.setAttribute('width', '160%');
+      filter.setAttribute('height', '160%');
+
+      const morph = document.createElementNS(svgNs, 'feMorphology');
+      morph.setAttribute('in', 'SourceGraphic');
+      morph.setAttribute('operator', 'dilate');
+      morph.setAttribute('radius', String(MAP_THEME.selection.overflowRadius));
+      morph.setAttribute('result', 'dilated');
+
+      const merge = document.createElementNS(svgNs, 'feMerge');
+      const node1 = document.createElementNS(svgNs, 'feMergeNode');
+      node1.setAttribute('in', 'dilated');
+      const node2 = document.createElementNS(svgNs, 'feMergeNode');
+      node2.setAttribute('in', 'SourceGraphic');
+      merge.appendChild(node1);
+      merge.appendChild(node2);
+
+      filter.appendChild(morph);
+      filter.appendChild(merge);
+      defs.appendChild(filter);
+    }
   }
 
   /**
@@ -326,24 +373,21 @@ export class CarteComponent {
       if (pathEl) {
         const total = pathEl.getTotalLength();
         if (total <= 0) return fallback;
-        const BOUNDARY_SAMPLES = Math.min(
-          128,
-          Math.max(32, Math.ceil(total / 6)),
-        );
+        const BOUNDARY_SAMPLES = Math.min(128, Math.max(32, Math.ceil(total / 6)));
         for (let i = 0; i < BOUNDARY_SAMPLES; i++) {
           const pt = pathEl.getPointAtLength((i * total) / (BOUNDARY_SAMPLES - 1));
           boundary.push({ x: pt.x, y: pt.y });
         }
       } else {
         const ptsStr = el.getAttribute('points') ?? '';
-        for (const pair of ptsStr.trim().split(/[\s,]+/).reduce<string[][]>(
-          (acc, v, i) => {
+        for (const pair of ptsStr
+          .trim()
+          .split(/[\s,]+/)
+          .reduce<string[][]>((acc, v, i) => {
             if (i % 2 === 0) acc.push([v]);
             else acc[acc.length - 1].push(v);
             return acc;
-          },
-          [],
-        )) {
+          }, [])) {
           const x = Number(pair[0]);
           const y = Number(pair[1]);
           if (Number.isFinite(x) && Number.isFinite(y)) boundary.push({ x, y });
@@ -408,40 +452,60 @@ export class CarteComponent {
   /**
    * Applique la couleur du joueur propriétaire à chaque <text> de label,
    * recalculée à chaque changement de filtre/sélection (en phase avec
-   * updateAllPathColors). Le halo blanc est porté par le CSS.
+   * updateAllPathColors). Le halo noir par défaut est porté par le CSS. Sur
+   * sélection, le fond devient opaque : on recolore le chiffre via
+   * getContrastColor pour garantir la lisibilité (configuré par
+   * MAP_THEME.label.contrastOnSelect) et on inverse le halo — blanc si le
+   * texte est gris foncé, gris si le texte est blanc (cf carte.config.ts).
    */
   private updateSectorLabelColors(container: HTMLElement): void {
     const labels = container.querySelectorAll('text.sector-label');
+    const selectedNum = this.selectedSector()?.number ?? null;
+    const lbl = MAP_THEME.label;
     labels.forEach((label) => {
       const num = parseInt(label.getAttribute('data-sector') ?? '', 10);
       if (Number.isNaN(num)) return;
       const sector = this.sectorsMap().get(num);
-      (label as SVGTextElement).style.fill = sector ? this.getSectorColor(sector) : '#94a3b8';
+      const color = sector ? this.getSectorColor(sector) : MAP_THEME.neutralColor;
+      const txt = label as SVGTextElement;
+      if (lbl.contrastOnSelect && selectedNum === num) {
+        txt.style.fill = this.getContrastColor();
+        txt.style.stroke = lbl.selectedStroke;
+      } else {
+        txt.style.fill = color;
+        // Rend la main au halo par défaut porté par la CSS var.
+        txt.style.stroke = '';
+      }
     });
   }
 
   private updatePathStyle(path: SVGElement, sectorNumber: number): void {
     const sector = this.sectorsMap().get(sectorNumber);
-    const color = sector ? this.getSectorColor(sector) : '#94a3b8';
+    const color = sector ? this.getSectorColor(sector) : MAP_THEME.neutralColor;
     const isNeutral = sector?.ownerId == null;
-    const isSelected = this.selectedSector()?.number === sectorNumber;
+    const selected = this.selectedSector();
+    const isSelected = selected?.number === sectorNumber;
+
     const isDimmed =
       (sector?.ownerId != null && !this.selectedPlayerIds().has(sector.ownerId)) ||
       (sector?.ownerId == null && !this.showNeutral());
 
-    path.style.fill = isNeutral ? 'url(#neutral-stripes)' : color + '66';
+    path.style.fill = isNeutral ? 'url(#neutral-stripes)' : color + MAP_THEME.fill.normalAlpha;
     path.style.stroke = color;
-    path.style.strokeWidth = '2';
+    path.style.strokeWidth = String(MAP_THEME.stroke.normal);
     path.style.cursor = 'pointer';
     path.style.transition = 'all 0.2s ease';
-    path.style.opacity = isDimmed ? '0.25' : '1';
+    path.style.opacity = isDimmed ? String(MAP_THEME.fill.dimmedOpacity) : '1';
+    path.style.filter = 'none';
 
     if (isSelected) {
-      path.style.fill = isNeutral ? '#94a3b8' : color;
-      path.style.strokeWidth = '5';
-      path.style.filter = 'drop-shadow(0 0 12px ' + color + ')';
-    } else {
-      path.style.filter = 'none';
+      path.style.fill = isNeutral ? MAP_THEME.neutralColor : color;
+      path.style.strokeWidth = String(MAP_THEME.stroke.selected);
+      const filters: string[] = ['url(#selection-overflow)'];
+      if (MAP_THEME.selection.glowRadius > 0) {
+        filters.push(`drop-shadow(0 0 ${MAP_THEME.selection.glowRadius}px ${color})`);
+      }
+      path.style.filter = filters.join(' ');
     }
   }
 
@@ -467,10 +531,10 @@ export class CarteComponent {
   private onSectorHover(sectorNumber: number, path: SVGElement): void {
     this.hoveredSectorNumber.set(sectorNumber);
     const sector = this.sectorsMap().get(sectorNumber);
-    const color = sector ? this.getSectorColor(sector) : '#94a3b8';
+    const color = sector ? this.getSectorColor(sector) : MAP_THEME.neutralColor;
     if (this.selectedSector()?.number !== sectorNumber) {
-      path.style.fill = color + 'B3';
-      path.style.strokeWidth = '3';
+      path.style.fill = color + MAP_THEME.fill.hoverAlpha;
+      path.style.strokeWidth = String(MAP_THEME.stroke.hover);
     }
   }
 
@@ -480,8 +544,8 @@ export class CarteComponent {
   }
 
   getPlayerColor(playerId: number | null): string {
-    if (!playerId) return '#94a3b8';
-    return this.playerColorMap().get(playerId) || '#94a3b8';
+    if (!playerId) return MAP_THEME.neutralColor;
+    return this.playerColorMap().get(playerId) || MAP_THEME.neutralColor;
   }
 
   getSectorColor(sector: Sector | SectorWithPlayer): string {
@@ -489,13 +553,8 @@ export class CarteComponent {
   }
 
   /** Readable text color (white or dark) for a given hex background. */
-  getContrastColor(hexColor: string): string {
-    const hex = hexColor.replace('#', '');
-    const r = Number.parseInt(hex.substring(0, 2), 16);
-    const g = Number.parseInt(hex.substring(2, 4), 16);
-    const b = Number.parseInt(hex.substring(4, 6), 16);
-    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-    return yiq >= 128 ? '#1e293b' : '#ffffff';
+  getContrastColor(): string {
+    return '#1e293b' ;
   }
 
   selectSector(sector: SectorWithPlayer): void {

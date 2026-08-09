@@ -51,7 +51,7 @@
             (click)="toggleNeutralFilter()"
             type="button"
           >
-            <div class="legend-color" style="background-color: #94a3b8"></div>
+            <div class="legend-color" [style.background-color]="neutralColor"></div>
             <div class="legend-info">
               <span class="legend-name">Neutre</span>
               <span class="legend-count">{{ neutralSectorsCount() }} secteur(s)</span>
@@ -77,15 +77,16 @@
             aria-label="Carte interactive des secteurs — cliquez ou appuyez sur Entrée pour annuler la sélection"
             (click)="onMapBackgroundClick($event)"
             (keydown.enter)="selectedSector.set(null)"
+            [style.--map-label-fontPx.px]="labelFontPx"
+            [style.--map-label-weight]="labelWeight"
+            [style.--map-label-stroke]="labelStrokeColor"
+            [style.--map-label-strokeWidth.px]="labelStrokeWidth"
+            [style.--map-overlay-offset-y.px]="overlayOffsetY"
+            [style.--map-overlay-offset-x.px]="overlayOffsetX"
           >
             <!-- Image de fond -->
             @if (mapImageUrl(); as url) {
-              <img
-                [src]="url"
-                alt="Carte du monde NML Online"
-                class="map-background"
-                #mapImg
-              />
+              <img [src]="url" alt="Carte du monde NML Online" class="map-background" #mapImg />
             }
             <!-- Overlay SVG interactif -->
             <div
@@ -219,9 +220,9 @@
                       [attr.aria-label]="'Sélectionner le secteur ' + neighborNum"
                       class="neighbor-chip"
                       [style.background-color]="getSectorColor(neighbor) + '26'"
-                      [style.color]="getContrastColor(getSectorColor(neighbor))"
+                      [style.color]="getContrastColor()"
                       [style.border-color]="getSectorColor(neighbor)"
-                      style="border: 1px solid;"
+                      style="border: 1px solid"
                     >
                       #{{ neighborNum }} - {{ neighbor.name | slice: 0 : 12 }}
                     </mat-chip>

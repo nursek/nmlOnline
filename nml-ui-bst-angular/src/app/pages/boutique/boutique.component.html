@@ -161,7 +161,7 @@
                 </button>
               </div>
               <p class="item-price sell-price">
-                {{ item.quantity }}× @ {{ item.resource.baseValue }} ₡ ≈
+                {{ item.quantity }}× &#64; {{ item.resource.baseValue }} ₡ ≈
                 {{ (item.resource.baseValue ?? 0) * item.quantity | number: '1.0-0' }} ₡
               </p>
             </div>
@@ -408,16 +408,16 @@
                     <!-- Bonus -->
                     <div class="bonus-chips">
                       @if (equipment.pdfBonus > 0) {
-                        <mat-chip class="bonus pdf">+{{ equipment.pdfBonus }} PDF</mat-chip>
+                        <mat-chip class="bonus pdf">+{{ equipment.pdfBonus }} % PDF</mat-chip>
                       }
                       @if (equipment.pdcBonus > 0) {
-                        <mat-chip class="bonus pdc">+{{ equipment.pdcBonus }} PDC</mat-chip>
+                        <mat-chip class="bonus pdc">+{{ equipment.pdcBonus }} % PDC</mat-chip>
                       }
                       @if (equipment.armBonus > 0) {
-                        <mat-chip class="bonus arm">+{{ equipment.armBonus }} ARM</mat-chip>
+                        <mat-chip class="bonus arm">+{{ equipment.armBonus }} % ARM</mat-chip>
                       }
                       @if (equipment.evasionBonus > 0) {
-                        <mat-chip class="bonus esq">+{{ equipment.evasionBonus }} ESQ</mat-chip>
+                        <mat-chip class="bonus esq">+{{ equipment.evasionBonus }} % ESQ</mat-chip>
                       }
                     </div>
 
