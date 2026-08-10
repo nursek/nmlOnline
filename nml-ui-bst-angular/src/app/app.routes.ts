@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, noAuthGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
+import { playerGuard } from './guards/player.guard';
 
 export const routes: Routes = [
   {
@@ -21,13 +22,13 @@ export const routes: Routes = [
   {
     path: 'joueur',
     loadComponent: () => import('./pages/joueur/joueur.component').then((m) => m.JoueurComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, playerGuard],
   },
   {
     path: 'boutique',
     loadComponent: () =>
       import('./pages/boutique/boutique.component').then((m) => m.BoutiqueComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, playerGuard],
   },
   {
     path: 'regles',
@@ -37,7 +38,7 @@ export const routes: Routes = [
   {
     path: 'ordres',
     loadComponent: () => import('./pages/ordres/ordres.component').then((m) => m.OrdresComponent),
-    canActivate: [authGuard],
+    canActivate: [authGuard, playerGuard],
   },
   {
     path: '',

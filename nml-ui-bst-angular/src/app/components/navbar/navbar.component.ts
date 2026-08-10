@@ -32,7 +32,7 @@ const BASE_MENU_ITEMS: NavLink[] = [
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
 ];
 
-const ADMIN_LINK: NavLink[] = [
+const ADMIN_MENU_ITEMS: NavLink[] = [
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' },
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
@@ -322,7 +322,9 @@ export class NavbarComponent {
 
   readonly drawerOpen = signal(false);
 
-  readonly menuItems = computed<NavLink[]>(() => (this.isAdmin() ? ADMIN_LINK : BASE_MENU_ITEMS));
+  readonly menuItems = computed<NavLink[]>(() =>
+    this.isAdmin() ? ADMIN_MENU_ITEMS : BASE_MENU_ITEMS,
+  );
 
   // Block body scroll while the mobile drawer is open (DOM/3rd-party sync effect).
   constructor() {
