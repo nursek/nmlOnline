@@ -6,9 +6,7 @@ import {
   LoginRequest,
   Player,
   MovementOrder,
-  AdminMovementOrder,
   MovementResolutionResult,
-  MovementStatusFilter,
   Unit,
   VehicleTypeInfo,
   BuyEquipmentItem,
@@ -101,16 +99,8 @@ export class ApiService {
     return this.http.post<{ currentTurn: number }>(`${this.baseUrl}/admin/turn/next`, {});
   }
 
-  // Ordres de déplacement du tour courant (admin) — filtrables par statut.
-  adminGetOrders(status?: MovementStatusFilter): Observable<AdminMovementOrder[]> {
-    const params = status && status !== 'ALL' ? { status } : undefined;
-    return this.http.get<AdminMovementOrder[]>(`${this.baseUrl}/admin/turn/orders`, {
-      params,
-    });
-  }
-
   // Aperçu (dry-run) de la résolution des mouvements du tour courant :
-  // calcule les conflits potentiels sans persister (ordres laissés PENDING).
+  // calcule les conflits potentiels sans persister (ordres laissés PENDING).Q
   adminPreviewMovements(): Observable<MovementResolutionResult> {
     return this.http.post<MovementResolutionResult>(
       `${this.baseUrl}/admin/turn/movements/preview`,
