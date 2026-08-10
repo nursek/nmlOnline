@@ -21,16 +21,16 @@
               <span class="usp-name">{{ st.equipment.name }}</span>
               <span class="usp-bonuses">
                 @if (st.equipment.pdfBonus > 0) {
-                  <span class="usp-bonus pdf">+{{ st.equipment.pdfBonus }} PDF</span>
+                  <span class="usp-bonus pdf">+{{ st.equipment.pdfBonus }} % PDF</span>
                 }
                 @if (st.equipment.pdcBonus > 0) {
-                  <span class="usp-bonus pdc">+{{ st.equipment.pdcBonus }} PDC</span>
+                  <span class="usp-bonus pdc">+{{ st.equipment.pdcBonus }} % PDC</span>
                 }
                 @if (st.equipment.armBonus > 0) {
-                  <span class="usp-bonus arm">+{{ st.equipment.armBonus }} ARM</span>
+                  <span class="usp-bonus arm">+{{ st.equipment.armBonus }} % ARM</span>
                 }
                 @if (st.equipment.evasionBonus > 0) {
-                  <span class="usp-bonus esq">+{{ st.equipment.evasionBonus }} ESQ</span>
+                  <span class="usp-bonus esq">+{{ st.equipment.evasionBonus }} % ESQ</span>
                 }
               </span>
               <span class="usp-cat">x{{ st.available }} dispo</span>

@@ -235,7 +235,7 @@
                         @for (unit of sector.army; track unit.id) {
                           <div class="unit-row">
                             <span class="unit-type" [matTooltip]="getClassNames(unit.classes)">
-                              {{ getUnitTypeLabel(unit.type) }} #{{ unit.number }}
+                              {{ getUnitTypeLabel(unit.type) }} n°{{ unit.number }}
                             </span>
                             <span class="unit-exp">Exp: {{ unit.experience }}</span>
                             <span class="unit-stats">

@@ -27,12 +27,16 @@ interface NavLink {
 const BASE_MENU_ITEMS: NavLink[] = [
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/joueur', label: 'Mon Joueur', icon: 'person' },
-  { path: '/boutique', label: 'Boutique', icon: 'shopping_bag' },
   { path: '/ordres', label: 'Mes ordres', icon: 'list_alt' },
+  { path: '/boutique', label: 'Boutique', icon: 'shopping_bag' },
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
 ];
 
-const ADMIN_LINK: NavLink = { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' };
+const ADMIN_MENU_ITEMS: NavLink[] = [
+  { path: '/carte', label: 'Carte', icon: 'map' },
+  { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' },
+  { path: '/regles', label: 'Règles', icon: 'menu_book' },
+];
 
 @Component({
   selector: 'app-navbar',
@@ -319,7 +323,7 @@ export class NavbarComponent {
   readonly drawerOpen = signal(false);
 
   readonly menuItems = computed<NavLink[]>(() =>
-    this.isAdmin() ? [...BASE_MENU_ITEMS, ADMIN_LINK] : BASE_MENU_ITEMS,
+    this.isAdmin() ? ADMIN_MENU_ITEMS : BASE_MENU_ITEMS,
   );
 
   // Block body scroll while the mobile drawer is open (DOM/3rd-party sync effect).

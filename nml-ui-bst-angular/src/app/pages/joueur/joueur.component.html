@@ -110,7 +110,7 @@
               @for (sector of player.sectors; track sector.number) {
                 <div class="territory-card">
                   <h4>{{ sector.name }}</h4>
-                  <span class="sector-number">Secteur #{{ sector.number ?? 'N/A' }}</span>
+                  <span class="sector-number">Secteur n°{{ sector.number ?? 'N/A' }}</span>
                   <mat-divider></mat-divider>
                   <div class="territory-stats">
                     <div class="stat-row">
@@ -269,10 +269,7 @@
             <!-- Liste unique (détails via popup horizontal) -->
             <div class="units-list">
               @for (item of filteredUnits(); track item.unit.id) {
-                <div
-                  class="unit-list-item"
-                  [class.injured]="item.unit.isInjured"
-                >
+                <div class="unit-list-item" [class.injured]="item.unit.isInjured">
                   <div
                     class="unit-list-row"
                     (click)="openUnitDialog(item)"
@@ -345,8 +342,8 @@
                     </div>
                   </div>
                   <div class="quantity" matTooltip="Disponible / total possédé">
-                  {{ stack.available }}/{{ stack.quantity }}
-                </div>
+                    {{ stack.available }}/{{ stack.quantity }}
+                  </div>
                 </div>
               }
             </div>

@@ -2,7 +2,7 @@
   <div class="udd-header">
     <h2 mat-dialog-title>
       <mat-icon>badge</mat-icon>
-      {{ unit()?.type?.name }} #{{ unit()?.number }}
+      {{ unit()?.type?.name }} n°{{ unit()?.number }}
       <span class="udd-sub">— {{ data.sectorName }} (secteur {{ data.sectorNumber }})</span>
     </h2>
     <button mat-icon-button (click)="close()" aria-label="Fermer">
@@ -23,7 +23,13 @@
             </div>
             <div class="udd-slots">
               @for (eq of group.filled; track eq.name) {
-                <div class="udd-slot udd-slot-filled" (click)="openSlotPicker(group)" role="button" tabindex="0" matTooltip="Cliquer pour échanger">
+                <div
+                  class="udd-slot udd-slot-filled"
+                  (click)="openSlotPicker(group)"
+                  role="button"
+                  tabindex="0"
+                  matTooltip="Cliquer pour échanger"
+                >
                   <span class="udd-slot-name">{{ eq.name }}</span>
                   <button
                     mat-icon-button
@@ -58,12 +64,24 @@
         <section class="udd-stats-section">
           <h3><mat-icon>analytics</mat-icon> Statistiques</h3>
           <div class="udd-stats">
-            <div class="udd-stat atk"><span class="udd-label">ATK</span><span class="udd-val">{{ unit()?.attack }}</span></div>
-            <div class="udd-stat pdf"><span class="udd-label">PDF</span><span class="udd-val">{{ unit()?.pdf }}</span></div>
-            <div class="udd-stat pdc"><span class="udd-label">PDC</span><span class="udd-val">{{ unit()?.pdc }}</span></div>
-            <div class="udd-stat def"><span class="udd-label">DEF</span><span class="udd-val">{{ unit()?.defense }}</span></div>
-            <div class="udd-stat arm"><span class="udd-label">ARM</span><span class="udd-val">{{ unit()?.armor }}</span></div>
-            <div class="udd-stat esq"><span class="udd-label">ESQ</span><span class="udd-val">{{ unit()?.evasion }}</span></div>
+            <div class="udd-stat atk">
+              <span class="udd-label">ATK</span><span class="udd-val">{{ unit()?.attack }}</span>
+            </div>
+            <div class="udd-stat pdf">
+              <span class="udd-label">PDF</span><span class="udd-val">{{ unit()?.pdf }}</span>
+            </div>
+            <div class="udd-stat pdc">
+              <span class="udd-label">PDC</span><span class="udd-val">{{ unit()?.pdc }}</span>
+            </div>
+            <div class="udd-stat def">
+              <span class="udd-label">DEF</span><span class="udd-val">{{ unit()?.defense }}</span>
+            </div>
+            <div class="udd-stat arm">
+              <span class="udd-label">ARM</span><span class="udd-val">{{ unit()?.armor }}</span>
+            </div>
+            <div class="udd-stat esq">
+              <span class="udd-label">ESQ</span><span class="udd-val">{{ unit()?.evasion }}</span>
+            </div>
           </div>
 
           @if (unit()?.classes?.length) {
@@ -77,7 +95,11 @@
 
         <div class="udd-portrait">
           @if (portraitUrl() && !imgError()) {
-            <img [src]="portraitUrl()" (error)="onImgError()" alt="Portrait {{ unit()?.type?.name }}" />
+            <img
+              [src]="portraitUrl()"
+              (error)="onImgError()"
+              alt="Portrait {{ unit()?.type?.name }}"
+            />
           } @else {
             <div class="udd-portrait-fallback">
               <mat-icon>image_not_supported</mat-icon>
@@ -104,7 +126,13 @@
             </div>
             <div class="udd-slots">
               @for (eq of group.filled; track eq.name) {
-                <div class="udd-slot udd-slot-filled" (click)="openSlotPicker(group)" role="button" tabindex="0" matTooltip="Cliquer pour échanger">
+                <div
+                  class="udd-slot udd-slot-filled"
+                  (click)="openSlotPicker(group)"
+                  role="button"
+                  tabindex="0"
+                  matTooltip="Cliquer pour échanger"
+                >
                   <span class="udd-slot-name">{{ eq.name }}</span>
                   <button
                     mat-icon-button
@@ -155,9 +183,15 @@
       </div>
       <div class="udd-move-hint">
         @if (maxHops() === 1) {
-          <span>Déplacement 1 secteur — {{ reachableTargets().length }} destination(s) atteignable(s).</span>
+          <span
+            >Déplacement 1 secteur — {{ reachableTargets().length }} destination(s)
+            atteignable(s).</span
+          >
         } @else {
-          <span>Déplacement jusqu'à {{ maxHops() }} secteurs — {{ reachableTargets().length }} destination(s) atteignable(s).</span>
+          <span
+            >Déplacement jusqu'à {{ maxHops() }} secteurs —
+            {{ reachableTargets().length }} destination(s) atteignable(s).</span
+          >
         }
       </div>
 
@@ -166,7 +200,9 @@
           <div class="udd-subhead">Ordres en attente</div>
           @for (o of pendingOrdersForUnit(); track o.id) {
             <div class="udd-pending-row">
-              <span>Secteur {{ o.fromSectorNumber }} → {{ o.toSectorNumber }} ({{ o.status }})</span>
+              <span
+                >Secteur {{ o.fromSectorNumber }} → {{ o.toSectorNumber }} ({{ o.status }})</span
+              >
               <button mat-icon-button color="warn" [disabled]="busy()" (click)="cancelOrder(o.id)">
                 <mat-icon>cancel</mat-icon>
               </button>
