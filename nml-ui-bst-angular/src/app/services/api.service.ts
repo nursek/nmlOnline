@@ -6,6 +6,7 @@ import {
   LoginRequest,
   Player,
   MovementOrder,
+  MovementResolutionResult,
   Unit,
   VehicleTypeInfo,
   BuyEquipmentItem,
@@ -96,6 +97,24 @@ export class ApiService {
 
   adminAdvanceTurn(): Observable<{ currentTurn: number }> {
     return this.http.post<{ currentTurn: number }>(`${this.baseUrl}/admin/turn/next`, {});
+  }
+
+  // Aperçu (dry-run) de la résolution des mouvements du tour courant :
+  // calcule les conflits potentiels sans persister (ordres laissés PENDING).Q
+  adminPreviewMovements(): Observable<MovementResolutionResult> {
+    return this.http.post<MovementResolutionResult>(
+      `${this.baseUrl}/admin/turn/movements/preview`,
+      {},
+    );
+  }
+
+  // Applique la résolution des mouvements du tour courant : déplace les
+  // entités, marque les ordres RESOLVED/BLOCKED, persiste. Renvoie le compte-rendu.
+  adminResolveMovements(): Observable<MovementResolutionResult> {
+    return this.http.post<MovementResolutionResult>(
+      `${this.baseUrl}/admin/turn/movements/resolve`,
+      {},
+    );
   }
 
   // Véhicules

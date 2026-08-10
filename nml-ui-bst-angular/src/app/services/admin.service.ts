@@ -2,7 +2,14 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
-import { PageResult, Player, Board } from '../models';
+import {
+  AdminMovementOrder,
+  MovementResolutionResult,
+  MovementStatusFilter,
+  PageResult,
+  Player,
+  Board,
+} from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 import { environment } from '../../environments/environment';
 
@@ -23,20 +30,43 @@ export class AdminService {
   readonly players = computed(() => this.playersRef.value()?.content ?? []);
   readonly loading = computed(() => this.playersRef.isLoading());
 
+  // === Ordres de déplacement du tour courant (vue admin) ===
+  // Filtre réactif : la resource se recharge à chaque changement de statut.
+  readonly orderStatusFilter = signal<MovementStatusFilter>('ALL');
+  private readonly ordersRef = httpResource<AdminMovementOrder[]>(() => {
+    const filter = this.orderStatusFilter();
+    return {
+      url: `${environment.apiBaseUrl}/admin/turn/orders`,
+      params: (filter !== 'ALL' ? { status: filter } : {}) as Record<string, string>,
+    };
+  });
+  readonly orders = computed(() => this.ordersRef.value() ?? []);
+  readonly ordersLoading = computed(() => this.ordersRef.isLoading());
+
   private readonly _importing = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _successMessage = signal<string | null>(null);
   private readonly _advancingTurn = signal(false);
   private readonly _currentTurn = signal<number | null>(null);
+  private readonly _previewing = signal(false);
+  private readonly _resolving = signal(false);
+  private readonly _resolutionReport = signal<MovementResolutionResult | null>(null);
 
   readonly importing = this._importing.asReadonly();
   readonly error = this._error.asReadonly();
   readonly successMessage = this._successMessage.asReadonly();
   readonly advancingTurn = this._advancingTurn.asReadonly();
   readonly currentTurn = this._currentTurn.asReadonly();
+  readonly previewing = this._previewing.asReadonly();
+  readonly resolving = this._resolving.asReadonly();
+  readonly resolutionReport = this._resolutionReport.asReadonly();
 
   reloadPlayers(): void {
     this.playersRef.reload();
+  }
+
+  reloadOrders(): void {
+    this.ordersRef.reload();
   }
 
   /** Charge le tour courant depuis la source unique de vérité (TurnService). */
@@ -59,11 +89,58 @@ export class AdminService {
       this._currentTurn.set(res.currentTurn);
       this._successMessage.set(`Tour ${res.currentTurn} en cours — mouvements résolus.`);
       this.reloadPlayers();
+      this.reloadOrders();
     } catch (error) {
       this._error.set(httpErrorMessage(error, 'Erreur lors du passage au tour suivant'));
     } finally {
       this._advancingTurn.set(false);
     }
+  }
+
+  /** Aperçu (dry-run) des conflits : ne mute pas l'état, ordres laissés PENDING. */
+  async previewMovements(): Promise<void> {
+    this._previewing.set(true);
+    this._error.set(null);
+    this._successMessage.set(null);
+    this._resolutionReport.set(null);
+    try {
+      const report = await firstValueFrom(this.api.adminPreviewMovements());
+      this._resolutionReport.set(report);
+      this._successMessage.set(
+        report.hasConflicts
+          ? `Aperçu : ${report.conflicts.length} conflit(s) potentiel(s) détecté(s).`
+          : 'Aperçu : aucun conflit potentiel.',
+      );
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, "Erreur lors de l'aperçu des mouvements"));
+    } finally {
+      this._previewing.set(false);
+    }
+  }
+
+  /** Applique la résolution : déplace les entités, marque les ordres, persiste. */
+  async resolveMovements(): Promise<void> {
+    this._resolving.set(true);
+    this._error.set(null);
+    this._successMessage.set(null);
+    this._resolutionReport.set(null);
+    try {
+      const report = await firstValueFrom(this.api.adminResolveMovements());
+      this._resolutionReport.set(report);
+      this._successMessage.set(
+        `Mouvements résolus : ${report.resolved.length} ok, ` +
+          `${report.blocked.length} bloqué(s), ${report.conflicts.length} conflit(s).`,
+      );
+      this.reloadOrders();
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, 'Erreur lors de la résolution des mouvements'));
+    } finally {
+      this._resolving.set(false);
+    }
+  }
+
+  clearResolutionReport(): void {
+    this._resolutionReport.set(null);
   }
 
   /** Import a player JSON file; reloads the catalog on success. */

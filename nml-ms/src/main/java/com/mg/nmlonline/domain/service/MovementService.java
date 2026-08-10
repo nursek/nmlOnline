@@ -259,11 +259,13 @@ public class MovementService {
             // Détecter les croisements à ce step (A→B et B→A : ils se croisent sans se combattre)
             Set<Long> crossingIds = detectStepCrossings(validOrders, stoppedIds, currentPosition, step);
 
-            // Traiter chaque secteur où des entités arrivent
+            // Traiter chaque secteur vers lequel des entités arrivent
             for (Map.Entry<Integer, List<MovementOrder>> entry : arrivalsPerSector.entrySet()) {
                 int targetNum = entry.getKey();
                 Sector targetSector = board.getSector(targetNum);
-                if (targetSector == null) continue;
+                if (targetSector == null) {
+                    continue;
+                }
 
                 List<MovementOrder> arriving = entry.getValue();
 

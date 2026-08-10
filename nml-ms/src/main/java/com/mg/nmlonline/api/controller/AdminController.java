@@ -1,12 +1,16 @@
 package com.mg.nmlonline.api.controller;
 
+import com.mg.nmlonline.api.dto.AdminMovementOrderDto;
+import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
 import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.service.AdminService;
 import com.mg.nmlonline.domain.service.BoardAssetStorageService;
 import com.mg.nmlonline.domain.service.BoardService;
+import com.mg.nmlonline.domain.service.MovementAdminService;
 import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.TurnService;
 import com.mg.nmlonline.mapper.BoardMapper;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,6 +47,7 @@ public class AdminController {
     private final BoardMapper boardMapper;
     private final BoardAssetStorageService boardAssetStorageService;
     private final TurnService turnService;
+    private final MovementAdminService movementAdminService;
 
     public AdminController(AdminService adminService,
                            PlayerService playerService,
@@ -49,7 +55,8 @@ public class AdminController {
                            BoardService boardService,
                            BoardMapper boardMapper,
                            BoardAssetStorageService boardAssetStorageService,
-                           TurnService turnService) {
+                           TurnService turnService,
+                           MovementAdminService movementAdminService) {
         this.adminService = adminService;
         this.playerService = playerService;
         this.playerMapper = playerMapper;
@@ -57,6 +64,7 @@ public class AdminController {
         this.boardMapper = boardMapper;
         this.boardAssetStorageService = boardAssetStorageService;
         this.turnService = turnService;
+        this.movementAdminService = movementAdminService;
     }
 
     /**
@@ -164,5 +172,48 @@ public class AdminController {
         int newTurn = turnService.advanceTurn();
         logger.info("[ADMIN] Tour avancé -> {}", newTurn);
         return Map.of("currentTurn", newTurn);
+    }
+
+    // ==========================================================
+    // === ORDRES DE DÉPLACEMENT (admin) =========================
+    // ==========================================================
+
+    /**
+     * Liste tous les ordres de déplacement du tour courant, optionnellement
+     * filtrés par statut (PENDING/RESOLVED/BLOCKED/CANCELLED). Sans
+     * {@code status}, retourne tous les statuts du tour courant.
+     */
+    @GetMapping("/turn/orders")
+    public List<AdminMovementOrderDto> getOrders(
+            @RequestParam(value = "status", required = false) MovementStatus status) {
+        return movementAdminService.getOrdersForTurn(turnService.getCurrentTurn(), status);
+    }
+
+    /**
+     * Aperçu (dry-run) de la résolution des mouvements du tour courant :
+     * calcule conflits potentiels et combats de transit <strong>sans</strong>
+     * persister les déplacements ni marquer les ordres. Les ordres restent
+     * PENDING après l'appel.
+     */
+    @PostMapping("/turn/movements/preview")
+    public MovementResolutionResultDto previewMovements() {
+        return movementAdminService.previewMovements(turnService.getCurrentTurn());
+    }
+
+    /**
+     * Applique la résolution des mouvements du tour courant : déplace les
+     * entités, marque les ordres RESOLVED/BLOCKED et persiste. Renvoie le
+     * compte-rendu (ordres résolus/bloqués, conflits, combats de transit).
+     *
+     * <p>Indépendant de {@link #advanceTurn()} : ne décale pas le numéro de
+     * tour. L'admin enchaîne ensuite « Finir le tour » pour passer au suivant
+     * (la résolution sera alors un no-op car plus aucun ordre PENDING).
+     */
+    @PostMapping("/turn/movements/resolve")
+    public MovementResolutionResultDto resolveMovements() {
+        MovementResolutionResultDto report = movementAdminService.resolveMovements(turnService.getCurrentTurn());
+        logger.info("[ADMIN] Mouvements résolus : {} résolus, {} bloqués, {} conflits",
+                report.getResolved().size(), report.getBlocked().size(), report.getConflicts().size());
+        return report;
     }
 }

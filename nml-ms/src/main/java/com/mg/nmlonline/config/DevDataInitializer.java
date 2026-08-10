@@ -22,8 +22,9 @@ import java.util.Map;
  * <p>
  * Mots de passe dev (à ne JAMAIS utiliser en production) :
  * <ul>
- *   <li>test / test</li>
- *   <li>a / a</li>
+ *   <li>cegorach / cegorach</li>
+ *   <li>mortarion / mortarion</li>
+ *   <li>angron / angron</li>
  *   <li>lurio / lurio</li>
  *   <li>nursek / nursek</li>
  *   <li>admin / admin</li>
@@ -43,8 +44,9 @@ public class DevDataInitializer {
         this.userRepository = userRepository;
         this.userService = userService;
 
-        devAccounts.put("test", "USER");
-        devAccounts.put("a", "USER");
+        devAccounts.put("cegorach", "USER");
+        devAccounts.put("mortarion", "USER");
+        devAccounts.put("angron", "USER");
         devAccounts.put("lurio", "USER");
         devAccounts.put("nursek", "USER");
         devAccounts.put("admin", "ADMIN");
