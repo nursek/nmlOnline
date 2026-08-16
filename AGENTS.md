@@ -52,6 +52,13 @@ npm start / npm test / npm run lint / npm run format
 - Single source of sector ownership: `Sector.ownerId`.
 - `Board.sectors` is a transient map populated via `@PostLoad` — don't persist it directly.
 - JPA relations: `@JsonIgnore` on the many side to avoid JSON loops.
+- **JPA cascade hygiene**: see [`docs/jpa-pitfalls.md`](docs/jpa-pitfalls.md) before
+  adding any `@OneToMany(mappedBy=…, orphanRemoval=true)` whose child carries a NOT NULL
+  FK, or before `.remove()` / `.clear()` on such a collection. Audit of existing
+  `orphanRemoval=true` mappings (`Player.equipments`, `Player.resources`,
+  `Player.buildings`…) is tracked in that doc — `Player.equipments` and
+  `Player.resources` are the prime suspects for a future 500 if a transfer path is
+  added.
 
 ## Prod data persistence
 
