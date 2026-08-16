@@ -61,8 +61,25 @@ public class Unit extends CombatEntity {
     private boolean isInjured = false;
 
 
-    // ===== ÉQUIPEMENTS =====
-    @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL, orphanRemoval = true)
+// ===== ÉQUIPEMENTS =====
+    // Phase 2 (fix HTTP 500 sur POST /api/admin/turn/resolve/next-hop) :
+    //   On retire orphanRemoval=true sur Unit.unitEquipments. Avec orphanRemoval, Hibernate
+    //   6.6.29 émettait au commit de advanceHop un UPDATE unit_equipments SET equipment_id=?,
+    //   unit_id=NULL WHERE id=? (release-FK en cascade depuis Sector.army.orphanRemoval sur
+    //   un Unit déplacée) qui heurtait unit_id NOT NULL → DataIntegrityViolationException
+    //   → HTTP 500 quand l'unité déplacée portait des rows unit_equipments (scénario démo
+    //   lurio attaquant équipé en secteur 41).
+    //   Le cascade=ALL reste (incluant REMOVE) : quand un Unit est DELETEd (pertes de combat
+    //   via Sector.army.orphanRemoval sur CombatService.simulateSectorBattle, ou suppression
+    //   d'un joueur via SectorService.removePlayerFromSectors.clear()), Hibernate cascade
+    //   REMOVE ce qui émet des DELETE FROM unit_equipments WHERE id=? propres (pas d'UPDATE
+    //   release-FK-NULL). La FK ON DELETE CASCADE (@OnDelete + Flyway V3) est une ceinture
+    //   de sécurité DB-side au cas où un row persisté resterait orphelin à l'ORM.
+    //   En contrepartie du retrait d'orphanRemoval, UnitService.removeEquipment doit appeler
+    //   explicitement em.remove(ue) pour les retraits ciblés (le retrait de la collection
+    //   seule n'émet plus de DELETE automatique).
+    @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL)
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private List<UnitEquipment> unitEquipments = new ArrayList<>();
 
     // Champ transient pour compatibilité avec l'ancien code
