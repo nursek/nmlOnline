@@ -82,8 +82,12 @@ public class Sector {
     @Embedded
     private SectorStats stats = new SectorStats();
 
-    // Unités dans ce secteur
-    @OneToMany(mappedBy = "sector", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Unités du secteur. Phase 3 : retrait d'orphanRemoval (variante Phase 2 non
+    // couverte — équipé LAZY + MOVED + pertes, voir docs/jpa-pitfalls.md §1).
+    // DELETE via em.remove explicite dans CombatService.simulateSectorBattle ;
+    // @OnDelete(CASCADE) + Flyway V4 = ceinture DB si l'ORM laisse un orphelin.
+    @OneToMany(mappedBy = "sector", cascade = CascadeType.ALL)
+    @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private List<Unit> army = new ArrayList<>();
 
     // Bâtiments dans ce secteur (relation lecture seule, le bâtiment est géré via Player)
