@@ -44,6 +44,7 @@ export class TurnResolutionComponent {
   readonly state = this.resolution.state;
   readonly busy = this.resolution.busy;
   readonly loading = this.resolution.loading;
+  readonly error = this.resolution.error;
   readonly lastReport = this.resolution.lastReport;
   readonly finalizeResult = this.resolution.finalizeResult;
   readonly active = this.resolution.active;
@@ -79,7 +80,7 @@ export class TurnResolutionComponent {
       const seed = this.seedReport();
       if (seed) {
         this.snackBar.open(
-          `Scénario prêt — ${seed.attacker.name} → secteur ${seed.route[seed.route.length - 1]} (${seed.defender.name})`,
+          `Scénario prêt — ${seed.attacker.name} → secteur ${seed.route.at(-1)} (${seed.defender.name})`,
           'OK',
           { duration: 6000, panelClass: 'toast-success' },
         );

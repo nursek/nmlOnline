@@ -172,20 +172,20 @@ class TurnResolutionOrchestratorTest {
     @DisplayName("resolveBattle détruit un défenseur équipé : la FK cascade efface ses rows unit_equipments (Phase 2)")
     @Transactional
     void resolveBattle_perteUniteEquipee_effaceRowsUnitEquipmentsViaFkCascade() {
-        // Reproduit le mécanisme Phase 2 (fix HTTP 500 sur advanceHop) :
-        //   - Avant Phase 2, Unit.unitEquipments portait orphanRemoval=true + cascade=ALL,
-        //     ce qui déclenchait au commit de move d'advanceHop un
-        //     UPDATE unit_equipments SET unit_id=NULL (release-FK en cascade depuis
-        //     Sector.army.orphanRemoval sur une Unit déplacée) → violation unit_id NOT NULL
-        //     → DataIntegrityViolationException → HTTP 500.
-        //   - Après Phase 2, Unit.unitEquipments = cascade={PERSIST, MERGE} sans
-        //     orphanRemoval + @OnDelete(CASCADE) + Flyway V3 (FK ON DELETE CASCADE).
-        //     La DB prend en charge la suppression des rows unit_equipments quand un
-        //     Unit est DELETEd (pertes de combat, clear armé sector, etc.).
-        // Ce test valide la cascade DB sur la chaîne pertes de combat :
-        //   secteur.getUnits().remove(casualty) → orphanRemoval Sector.army →
-        //   Hibernate DELETE combat_entities WHERE id=? → DB FK ON DELETE CASCADE →
-        //   DELETE unit_equipments WHERE unit_id=?.
+        // Mécanisme de cascade sur pertes de combat (Phase 2 + Phase 3) :
+        //   - Phase 2 : Unit.unitEquipments perd orphanRemoval (reste cascade=ALL +
+        //     @OnDelete(CASCADE) + Flyway V3 FK ON DELETE CASCADE).
+        //   - Phase 3 : Sector.army perd aussi orphanRemoval (Flyway V4). La DELETE
+        //     des pertes se fait désormais par em.remove(unit) explicite dans
+        //     CombatService.simulateSectorBattle → cascade REMOVE sur
+        //     Unit.unitEquipments (cascade=ALL) → DELETE unit_equipments propre,
+        //     sans UPDATE release-FK-NULL. La FK ON DELETE CASCADE (V3) est la
+        //     ceinture DB-side au cas où l'ORM laisse un row orphelin.
+        // Ce test couvre le variant « défenseur équipé créé en mémoire puis
+        // persisté » (PersistentBag initialisé). Le variant « équipé chargé LAZY
+        // de DB + MOVED 2 hops + pertes » (la variante piégée non couverte par
+        // Phase 2) est caractérisé par
+        // TurnResolutionOrchestratorLurioCegorachTest#lurioVsCegorach_resolveBattle_...
         Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
         List<Player> players = playerRepository.findAll();
         Player attacker = players.get(0);
@@ -241,12 +241,13 @@ class TurnResolutionOrchestratorTest {
         em.flush();
         em.clear();
 
-        // La row unit_equipments doit être effacée par la DB FK ON DELETE CASCADE
-        // (combat_entities DELETE → cascade → unit_equipments DELETE).
+        // La row unit_equipments doit être effacée : em.remove(unit) (Phase 3)
+        // cascade REMOVE → Unit.unitEquipments (cascade=ALL) → DELETE unit_equipments.
+        // La FK ON DELETE CASCADE (V3) est la ceinture DB si l'ORM laisse un orphelin.
         long ueCount = em.createQuery(
                         "select count(ue) from UnitEquipment ue where ue.id = :id", Long.class)
                 .setParameter("id", ueId).getSingleResult();
         assertEquals(0, ueCount,
-                "la row unit_equipments doit être effacée par la FK cascade quand la Unit est DELETEd");
+                "la row unit_equipments doit être effacée par la cascade REMOVE quand la Unit est DELETEd");
     }
 }

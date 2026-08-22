@@ -118,7 +118,7 @@ public class PlayerService {
     @Transactional
     public boolean delete(Long id) {
         if (!playerRepository.existsById(id)) return false;
-        // 1. Nettoyer les secteurs (réinitialiser ownership, supprimer armées via orphanRemoval)
+        // 1. Nettoyer les secteurs (réinitialiser ownership, supprimer armées via em.remove explicite — Phase 3)
         sectorService.removePlayerFromSectors(id);
         // 2. Supprimer les véhicules du joueur : Vehicle étend CombatEntity
         //    (player_id dans combat_entities) mais n'a PAS de relation @ManyToOne

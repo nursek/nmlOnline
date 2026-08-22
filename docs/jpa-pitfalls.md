@@ -134,7 +134,7 @@ explicitement un enfant de l'une de ces collections.
 | `Player.equipments` (Player.java:69) | OUI | `EquipmentStack.player_id` nullable=false (EquipmentStack.java:30) | **PIÈGE POTENTIEL** si un path retire un `EquipmentStack` de `Player.equipments` pour le transférer (ex. entre joueurs via capture de `WeaponCache`). Vérifier `BuildingService` / `AdminService` |
 | `Player.resources` (Player.java:74) | OUI | `PlayerResource.player_id` nullable=false (PlayerResource.java:27) | **PIÈGE POTENTIEL** identique si un path retire un `PlayerResource` de `Player.resources` pour le transférer. Vérifier `ResourceService.transfer` et capture de `Bank` |
 | `Board.sectorsList` (Board.java:70) | OUI | `Sector.board_id` (IdClass, implicite NOT NULL) → `Sector.army` (corrigé) → `Unit.unitEquipments` (corrigé) | Couvert par le fix Phase 2 (cascade DELETE propre). Déjà documenté dans AGENTS.md : `BoardService.saveBoard` non-destructive — ne jamais `clear()` |
-| `Sector.army` (Sector.java:86) | OUI | `Unit` → `Unit.unitEquipments` (corrigé) | Couvert par le fix Phase 2 |
+| `Sector.army` (Sector.java:86) | ~~OUI~~ → **NON** (fix Phase 3) | `Unit` → `Unit.unitEquipments` (corrigé Phase 2) | **Fixé en Phase 3** : retrait d'`orphanRemoval` (mapping + `V4__sector_army_fk_cascade.sql` FK ON DELETE CASCADE). La variante Phase 2 « équipé LAZY + MOVED + pertes » était pinnée puis fixée via `em.remove` explicite dans `CombatService.simulateSectorBattle` + `SectorService.removePlayerFromSectors` (test `TurnResolutionOrchestratorLurioCegorachTest`). |
 | `Bank.storedResources` (Bank.java:50) | OUI (unidirectional `@JoinColumn`) | `PlayerResource.bank_id` nullable=true par défaut (Bank.java:51 — pas de `nullable=false`) | Non — `bank_id` nullable=true, release-FK NULL OK |
 | `WeaponCache.storedEquipments` (WeaponCache.java:44) | OUI (unidirectional `@JoinColumn`) | `EquipmentStack.weapon_cache_id` nullable=true par défaut (WeaponCache.java:45 — pas de `nullable=false`) | Non — `weapon_cache_id` nullable=true, release-FK NULL OK |
 | `Unit.unitEquipments` | ~~OUI~~ → **NON** (fix Phase 2) | — | **Fixé** |
@@ -159,8 +159,29 @@ Pour chaque suspect, un test `@DirtiesContext(BEFORE_EACH_TEST_METHOD)` +
 
 ## 7. Référence au fix appliqué
 
+### Phase 2 — `Unit.unitEquipments` (casse équipé DÉPLACÉ non-détruit)
+
 - Migration : `nml-ms/src/main/resources/db/migration/V3__unit_equipments_fk_cascade.sql`
 - Mapping : `nml-ms/src/main/java/com/mg/nmlonline/domain/model/unit/Unit.java:64-79`
 - Service : `nml-ms/src/main/java/com/mg/nmlonline/domain/service/UnitService.java`
   (injection `EntityManager`, `em.remove(ue)` explicite dans `removeEquipment`)
 - Test de régression : `TurnResolutionOrchestratorTest#resolveBattle_perteUniteEquipee_effaceRowsUnitEquipmentsViaFkCascade`
+
+### Phase 3 — `Sector.army` (variante non couverte : équipé LAZY + MOVED + pertes)
+
+- Migration : `nml-ms/src/main/resources/db/migration/V4__sector_army_fk_cascade.sql`
+  (FK `combat_entities.board_id, sector_number → sectors.board_id, number` ON DELETE CASCADE)
+- Mapping : `nml-ms/src/main/java/com/mg/nmlonline/domain/model/sector/Sector.java:85-94`
+  (retrait d'`orphanRemoval=true` + `@OnDelete(CASCADE)`)
+- Services :
+  - `CombatService.simulateSectorBattle` : `em.remove(unit)` explicite pour chaque
+    pertes (avant `sector.getUnits().remove(unit)`)
+  - `SectorService.removePlayerFromSectors` : boucle `em.remove(unit)` autour de
+    `sector.getArmy().clear()` pour préserver la DELETE des armées d'un joueur supprimé
+  - `MovementService.advanceOrder` : inchangé — la FK du secteur est déjà pilotée
+    côté owning par `entity.setSector(target)` (UPDATE combat_entities), pas par
+    l'orphanRemoval
+- Test de régression :
+  - `TurnResolutionOrchestratorLurioCegorachTest#lurioVsCegorach_resolveBattle_surAttaquantEquipeDeplace_detruitProprementPhase3`
+    (l'attaquant Lurio VOYOU équipé HK-MP7 + Tenue ultra légère chargé LAZY de DB,
+    MOVED 2 hops [41 → 13 → 32], détruit au combat — cascade propre, no more 500)

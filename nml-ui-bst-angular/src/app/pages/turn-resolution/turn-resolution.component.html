@@ -54,6 +54,10 @@
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
   }
 
+  @if (error()) {
+    <div class="error-banner" role="alert">⚠ {{ error() }}</div>
+  }
+
   @if (state()?.active) {
     <div class="session-summary">
       <mat-icon>event_repeat</mat-icon>
