@@ -336,13 +336,13 @@ public class TurnResolutionOrchestrator {
             this.sectorNumber = sectorNumber;
             this.attackerPlayerId = attackerPlayerId;
             this.defenderPlayerId = defenderPlayerId;
-            this.success = r.isSuccess();
-            this.message = r.getMessage();
-            this.winnerId = r.getWinner() != null ? r.getWinner().getId() : null;
-            this.attackerCasualties = r.getAttackerCasualties().size();
-            this.defenderCasualties = r.getDefenderCasualties().size();
-            this.attackerInjured = r.getAttackerInjured().size();
-            this.defenderInjured = r.getDefenderInjured().size();
+            this.success = r.success();
+            this.message = r.message();
+            this.winnerId = r.winner() != null ? r.winner().getId() : null;
+            this.attackerCasualties = r.attackerCasualties().size();
+            this.defenderCasualties = r.defenderCasualties().size();
+            this.attackerInjured = r.attackerInjured().size();
+            this.defenderInjured = r.defenderInjured().size();
         }
     }
 }
