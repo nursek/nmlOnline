@@ -1,0 +1,253 @@
+<section class="resolution-page">
+  @if (devScenarioAvailable()) {
+    <div class="dev-scenario-panel">
+      <div class="dev-scenario-info">
+        <mat-icon>science</mat-icon>
+        <div class="dev-scenario-text">
+          <strong>Scénario de test (dev)</strong>
+          <span>
+            Prépare un ordre PENDING de lurio (secteur 41) → secteur 32 (cegorach), route 2 hops
+            [41, 13, 32]. Re-jouable à la demande.
+          </span>
+        </div>
+      </div>
+      <button
+        mat-flat-button
+        color="accent"
+        (click)="onSeedScenario()"
+        [disabled]="seeding() || busy()"
+        matTooltip="Sème le scénario pour le tour courant (idempotent)"
+      >
+        @if (seeding()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>play_circle</mat-icon>
+        }
+        Seeder le scénario 2 hops
+      </button>
+    </div>
+  }
+
+  @if (seedReport()) {
+    <div class="seed-report">
+      <mat-icon>check_circle</mat-icon>
+      <span>
+        {{ seedReport()?.message }}
+        @if (seedReport()?.route?.length) {
+          · Route {{ seedReport()?.route }} · Tour {{ seedReport()?.turn }}
+        }
+      </span>
+    </div>
+  }
+  <header class="page-header">
+    <div class="title">
+      <mat-icon>skip_next</mat-icon>
+      <h1>Résolution de fin de tour</h1>
+    </div>
+    <p class="subtitle">
+      Pilotage pas-à-pas, hop par hop. Les unités avancent d'un secteur, les batailles sont résolues
+      manuellement, puis le tour s'incrémente.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  }
+
+  @if (error()) {
+    <div class="error-banner" role="alert">⚠ {{ error() }}</div>
+  }
+
+  @if (state()?.active) {
+    <div class="session-summary">
+      <mat-icon>event_repeat</mat-icon>
+      <span class="label">Tour à résoudre</span>
+      <strong>{{ state()?.turnEnding }}</strong>
+      <mat-divider vertical></mat-divider>
+      <span class="label">Hop</span>
+      <strong>{{ state()?.currentStep }} / {{ state()?.maxSteps }}</strong>
+      <mat-divider vertical></mat-divider>
+      <span class="label">Combats de transit</span>
+      <strong>{{ state()?.transitCombatsCount }}</strong>
+      @if (state()?.allDone) {
+        <span class="done-badge">Terminé — prêt à finaliser</span>
+      }
+    </div>
+  }
+
+  <!-- Pas de session active : démarrage -->
+  @if (!active()) {
+    <div class="actions-row">
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="onStart()"
+        [disabled]="busy()"
+        matTooltip="Démarre la session et verrouille la fin de tour"
+      >
+        @if (busy()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>play_arrow</mat-icon>
+        }
+        Démarrer la résolution
+      </button>
+    </div>
+
+    <p class="hint">
+      Aucune session active. Le démarrage prépare la résolution des ordres du tour courant sans
+      avancer d'hop — enchaînez ensuite avec « Hop suivant ».
+    </p>
+  }
+
+  <!-- Session active -->
+  @if (active()) {
+    @if (lastReport()) {
+      <div class="last-report">
+        <mat-icon>gavel</mat-icon>
+        <span>
+          Dernier combat — secteur {{ lastReport()?.sectorNumber }} :
+          {{ lastReport()?.attackerName ?? '?' }} vs {{ lastReport()?.defenderName ?? '?' }} —
+          {{ lastReport()?.attackerCasualties }} pertes att. /
+          {{ lastReport()?.defenderCasualties }} pertes déf.
+        </span>
+      </div>
+    }
+
+    <div class="conflicts-section">
+      <h2>
+        <mat-icon>gavel</mat-icon>
+        Conflits du hop courant
+        @if (state()?.pendingConflicts?.length) {
+          <span class="count-badge">{{ state()?.pendingConflicts?.length }}</span>
+        }
+      </h2>
+
+      @if (!state()?.pendingConflicts?.length) {
+        <p class="hint">Aucun conflit sur ce hop — passez au hop suivant ou finalisez.</p>
+      } @else {
+        <div class="conflict-list">
+          @for (c of state()?.pendingConflicts; track c.conflictId) {
+            <div class="conflict-row">
+              <div class="conflict-where">
+                <mat-icon>place</mat-icon>
+                <span>Secteur {{ c.sectorNumber }}</span>
+              </div>
+              <div class="conflict-vs">
+                <span class="player attacker">
+                  <mat-icon>flight_takeoff</mat-icon>
+                  {{ c.attackerName ?? '#' + c.attackerPlayerId }}
+                </span>
+                <span class="vs">vs</span>
+                <span class="player defender">
+                  <mat-icon>shield</mat-icon>
+                  {{ c.defenderName ?? '#' + c.defenderPlayerId }}
+                </span>
+              </div>
+              <div class="conflict-actions">
+                <!-- ponytail: emplacement réservé pour les bonus/malus manuels (à venir) -->
+                <button
+                  mat-stroked-button
+                  color="accent"
+                  disabled
+                  matTooltip="Bonus/malus manuels — à venir"
+                >
+                  <mat-icon>tune</mat-icon>
+                  Bonus/malus
+                </button>
+                <button
+                  mat-flat-button
+                  color="warn"
+                  (click)="onResolveBattle(c.conflictId)"
+                  [disabled]="busy()"
+                  matTooltip="Lance le combat et applique les pertes"
+                >
+                  @if (busy()) {
+                    <mat-spinner diameter="20"></mat-spinner>
+                  } @else {
+                    <mat-icon>gavel</mat-icon>
+                  }
+                  Résoudre
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    @if (state()?.resolvedConflicts?.length) {
+      <div class="resolved-section">
+        <h2>
+          <mat-icon>history</mat-icon>
+          Batailles résolues ({{ state()?.resolvedConflicts?.length }})
+        </h2>
+        <div class="resolved-list">
+          @for (b of state()?.resolvedConflicts; track b.sectorNumber + '-' + $index) {
+            <div class="resolved-row">
+              <span class="where">Secteur {{ b.sectorNumber }}</span>
+              <span class="who">
+                {{ b.attackerName ?? '#' + b.attackerPlayerId }}
+                vs {{ b.defenderName ?? '#' + b.defenderPlayerId }}
+              </span>
+              @if (b.success) {
+                <span class="counts">
+                  {{ b.attackerCasualties }} pertes att. / {{ b.defenderCasualties }} pertes déf.
+                  @if (b.attackerInjured) {
+                    · {{ b.attackerInjured }} blessé att.
+                  }
+                  @if (b.defenderInjured) {
+                    · {{ b.defenderInjured }} blessé déf.
+                  }
+                </span>
+              } @else {
+                <span class="counts no-op">no-op ({{ b.message }})</span>
+              }
+              @if (b.winnerName) {
+                <span class="winner">Vainqueur : {{ b.winnerName }}</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <div class="actions-row sticky">
+      <button
+        mat-stroked-button
+        color="accent"
+        (click)="onAdvanceHop()"
+        [disabled]="busy() || !state()?.canAdvance"
+        matTooltip="Avance les unités d'un secteur et détecte les nouveaux conflits"
+      >
+        @if (busy()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>arrow_forward</mat-icon>
+        }
+        Hop suivant
+      </button>
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="onFinalize()"
+        [disabled]="busy() || !state()?.canFinalize"
+        matTooltip="Marque les ordres résolus et incrémente le tour"
+      >
+        <mat-icon>check_circle</mat-icon>
+        Finaliser le tour
+      </button>
+      <span class="spacer"></span>
+      <button
+        mat-stroked-button
+        color="warn"
+        (click)="onAbort()"
+        [disabled]="busy()"
+        matTooltip="Abandon soft — libère le verrou sans rollback"
+      >
+        <mat-icon>cancel</mat-icon>
+        Abandonner
+      </button>
+    </div>
+  }
+</section>

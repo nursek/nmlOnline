@@ -77,8 +77,8 @@ class GameSimulationIT {
 
             CombatService.BattleResult result = combatService.simulateBattle(player1, noArmyPlayer, board);
 
-            assertFalse(result.isSuccess());
-            assertNotNull(result.getMessage());
+            assertFalse(result.success());
+            assertNotNull(result.message());
         }
 
         @Test
@@ -89,15 +89,15 @@ class GameSimulationIT {
 
             CombatService.BattleResult result = combatService.simulateBattle(noArmyPlayer, player1, board);
 
-            assertFalse(result.isSuccess());
+            assertFalse(result.success());
         }
 
         @Test
         @DisplayName("Bataille échoue sur paramètres null")
         void shouldFailBattleOnNullParameters() {
-            assertFalse(combatService.simulateBattle(null, player1, board).isSuccess());
-            assertFalse(combatService.simulateBattle(player1, null, board).isSuccess());
-            assertFalse(combatService.simulateBattle(player1, player2, null).isSuccess());
+            assertFalse(combatService.simulateBattle(null, player1, board).success());
+            assertFalse(combatService.simulateBattle(player1, null, board).success());
+            assertFalse(combatService.simulateBattle(player1, player2, null).success());
         }
 
         @Test
@@ -110,11 +110,11 @@ class GameSimulationIT {
             //   - attaquants : 200 pts → MALFRAT détruit (coût 50), BRUTE détruit (coût 100)
             CombatService.BattleResult result = combatService.simulateBattle(player2, player3, board);
 
-            assertTrue(result.isSuccess());
-            assertNotNull(result.getMessage());
+            assertTrue(result.success());
+            assertNotNull(result.message());
 
             // comportement actuel piné : winner jamais assigné par Battle — à revoir
-            assertNull(result.getWinner());
+            assertNull(result.winner());
 
             // Armée attaquante anéantie
             assertEquals(0, board.getSector(3).getArmySize());

@@ -5,8 +5,6 @@ import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 /**
  * Source unique de vérité du tour courant du plateau.
  *
@@ -24,21 +22,17 @@ public class TurnService {
 
     private final BoardRepository boardRepository;
     private final MovementService movementService;
+    private final TurnLock turnLock;
 
     /**
-     * Verrou anti double-clic (bouton admin « Finir le tour ») : un seul
-     * advanceTurn peut tourner à la fois dans cette JVM.
-     *
-     * <p>ponytail: ceiling = JVM unique, guard in-process ; le verrou est relâché
-     * dans {@code finally} avant le commit transactionnel, donc une fenêtre
-     * (infime) reste ouverte entre deux threads en rafale. Upgrade path = lock
-     * pessimiste JPA sur {@link Board} ou DistributedLock si multi-instance.
+     * Verrou anti double-clic partagé avec la résolution pas-à-pas admin
+     * ({@link TurnResolutionOrchestrator}) : un seul processus de fin de tour
+     * à la fois dans cette JVM.
      */
-    private final AtomicBoolean advancing = new AtomicBoolean(false);
-
-    public TurnService(BoardRepository boardRepository, MovementService movementService) {
+    public TurnService(BoardRepository boardRepository, MovementService movementService, TurnLock turnLock) {
         this.boardRepository = boardRepository;
         this.movementService = movementService;
+        this.turnLock = turnLock;
     }
 
     /**
@@ -62,8 +56,8 @@ public class TurnService {
      * {@code Board.currentTurn}).
      */
     public int advanceTurn() {
-        if (!advancing.compareAndSet(false, true)) {
-            throw new IllegalStateException("Un advanceTurn est déjà en cours");
+        if (!turnLock.tryAcquire()) {
+            throw new IllegalStateException("Un advanceTurn ou une résolution pas-à-pas est déjà en cours");
         }
         try {
             Board board = boardRepository.findAll().stream()
@@ -79,7 +73,7 @@ public class TurnService {
             board = boardRepository.save(board);
             return board.getCurrentTurn();
         } finally {
-            advancing.set(false);
+            turnLock.release();
         }
     }
 }

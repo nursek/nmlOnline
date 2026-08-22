@@ -4,6 +4,9 @@ import com.mg.nmlonline.api.dto.AdminMovementOrderDto;
 import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
 import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
+import com.mg.nmlonline.api.dto.ResolvedBattleDto;
+import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
+import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -12,6 +15,7 @@ import com.mg.nmlonline.domain.service.BoardAssetStorageService;
 import com.mg.nmlonline.domain.service.BoardService;
 import com.mg.nmlonline.domain.service.MovementAdminService;
 import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.domain.service.TurnResolutionOrchestrator;
 import com.mg.nmlonline.domain.service.TurnService;
 import com.mg.nmlonline.mapper.BoardMapper;
 import com.mg.nmlonline.mapper.PlayerMapper;
@@ -48,6 +52,7 @@ public class AdminController {
     private final BoardAssetStorageService boardAssetStorageService;
     private final TurnService turnService;
     private final MovementAdminService movementAdminService;
+    private final TurnResolutionOrchestrator turnResolutionOrchestrator;
 
     public AdminController(AdminService adminService,
                            PlayerService playerService,
@@ -56,7 +61,8 @@ public class AdminController {
                            BoardMapper boardMapper,
                            BoardAssetStorageService boardAssetStorageService,
                            TurnService turnService,
-                           MovementAdminService movementAdminService) {
+                           MovementAdminService movementAdminService,
+                           TurnResolutionOrchestrator turnResolutionOrchestrator) {
         this.adminService = adminService;
         this.playerService = playerService;
         this.playerMapper = playerMapper;
@@ -65,6 +71,7 @@ public class AdminController {
         this.boardAssetStorageService = boardAssetStorageService;
         this.turnService = turnService;
         this.movementAdminService = movementAdminService;
+        this.turnResolutionOrchestrator = turnResolutionOrchestrator;
     }
 
     /**
@@ -215,5 +222,95 @@ public class AdminController {
         logger.info("[ADMIN] Mouvements résolus : {} résolus, {} bloqués, {} conflits",
                 report.getResolved().size(), report.getBlocked().size(), report.getConflicts().size());
         return report;
+    }
+
+    // ==========================================================
+    // === RÉSOLUTION PAS-À-PAS PAR HOP =========================
+    // ==========================================================
+
+    /**
+     * Démarre une session de résolution pas-à-pas : prépare la résolution des
+     * ordres PENDING du tour courant sans avancer d'hop. L'admin enchaîne avec
+     * {@code /next-hop}. Verrouille la fin de tour ( bloque {@code /turn/next}
+     * et les autres sessions). 409 si déjà active.
+     */
+    @PostMapping("/turn/resolve/start")
+    public TurnResolutionStateDto startResolution() {
+        TurnResolutionStateDto state = turnResolutionOrchestrator.startSession();
+        logger.info("[ADMIN] Session pas-à-pas démarrée — tour à résoudre: {}", state.getTurnEnding());
+        return state;
+    }
+
+    /**
+     * État courant de la session pas-à-pas (hop en cours, conflits en attente,
+     * batailles résolues). {@code active=false} si aucune session.
+     */
+    @GetMapping("/turn/resolve/state")
+    public TurnResolutionStateDto getResolutionState() {
+        return turnResolutionOrchestrator.getState();
+    }
+
+    /**
+     * Avance d'un hop : déplace les unités d'un secteur, détecte les conflits
+     * et les expose pour résolution manuelle. 409 si des batailles sont encore
+     * en attente ou si tous les hops sont déjà effectués.
+     */
+    @PostMapping("/turn/resolve/next-hop")
+    public TurnResolutionStateDto advanceHop() {
+        return turnResolutionOrchestrator.advanceHop();
+    }
+
+    /**
+     * Résout une bataille du hop courant (identifiée par {@code conflictId} du
+     * DTO d'état) : applique le combat et persiste les pertes/blessés. 404 si
+     * le conflit est introuvable ou déjà résolu.
+     */
+    @PostMapping("/turn/resolve/resolve-battle")
+    public ResolvedBattleDto resolveBattle(@RequestParam int conflictId) {
+        ResolvedBattleDto report = turnResolutionOrchestrator.resolveBattle(conflictId);
+        logger.info("[ADMIN] Bataille résolue au secteur {} — {} pertes attaquant, {} pertes défenseur",
+                report.getSectorNumber(), report.getAttackerCasualties(), report.getDefenderCasualties());
+        return report;
+    }
+
+    /**
+     * Finalise le tour : marque les ordres RESOLVED et incrémente
+     * {@code Board.currentTurn}. Nécessite tous les hops effectués et toutes
+     * les batailles résolues (sinon 409). Libère le verrou et ferme la session.
+     */
+    @PostMapping("/turn/resolve/finalize")
+    public TurnFinalizeResultDto finalizeResolution() {
+        return turnResolutionOrchestrator.finalizeTurn();
+    }
+
+    /**
+     * Abandon soft : libère le verrou et ferme la session <strong>sans</strong>
+     * rollback des positions déjà déplacées ni des combats déjà résolus.
+     */
+    @DeleteMapping("/turn/resolve")
+    public ResponseEntity<Map<String, String>> abortResolution() {
+        turnResolutionOrchestrator.abort();
+        return ResponseEntity.ok(Map.of("message", "Session pas-à-pas abandonnée (positions déjà déplacées conservées)"));
+    }
+
+    // ==========================================================
+    // === GESTION DES ERREURS providées ici ===================
+    // ==========================================================
+
+    /**
+     * Conflit d'état (résolution déjà en cours, batailles en attente, hops
+     * incomplets...) → 409 Conflict.
+     */
+    @org.springframework.web.bind.annotation.ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalState(IllegalStateException e) {
+        return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+    }
+
+    /**
+     * Ressource introuvable (conflit déjà résolu/inexistant) → 404.
+     */
+    @org.springframework.web.bind.annotation.ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException e) {
+        return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
     }
 }

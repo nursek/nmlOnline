@@ -174,7 +174,7 @@
 
           .order-route-detail {
             margin-left: 6px;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgb(0 0 0 / 0.5);
             font-size: 11px;
             cursor: help;
           }
@@ -184,7 +184,7 @@
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          color: rgba(255, 255, 255, 0.6);
+          color: rgb(0 0 0 / 0.6);
           font-size: 12px;
 
           mat-icon {

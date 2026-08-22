@@ -15,6 +15,14 @@ export const routes: Routes = [
     canActivate: [authGuard, adminGuard],
   },
   {
+    path: 'admin/resolution',
+    loadComponent: () =>
+      import('./pages/turn-resolution/turn-resolution.component').then(
+        (m) => m.TurnResolutionComponent,
+      ),
+    canActivate: [authGuard, adminGuard],
+  },
+  {
     path: 'carte',
     loadComponent: () => import('./pages/carte/carte.component').then((m) => m.CarteComponent),
     canActivate: [authGuard],
