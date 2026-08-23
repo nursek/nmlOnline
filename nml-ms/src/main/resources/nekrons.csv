@@ -1,0 +1,52 @@
+name,cost,pdfBonus,pdcBonus,armBonus,evasionBonus,compatibleClasses,category
+Pistolet gauss mineur,400,80,0,0,0,LEGER,FIREARM
+Pistolet gauss rafale,850,150,0,25,0,LEGER,FIREARM
+Émetteur gauss compact,1600,300,0,25,0,LEGER,FIREARM
+Rayon gauss lourd,1500,200,0,50,0,TIREUR,FIREARM
+Fusil gauss standard,2300,350,0,60,0,TIREUR,FIREARM
+Éclateur gauss,2600,400,0,80,0,TIREUR,FIREARM
+Diffuseur gauss,1000,0,200,0,0,MASTODONTE,FIREARM
+Fusil gauss à pompe,1500,0,300,0,0,MASTODONTE,FIREARM
+Canon gauss à dispersion,2000,0,400,0,0,MASTODONTE,FIREARM
+Émetteur thermique,900,100,0,0,0,ELEMENTAIRE,FIREARM
+Émetteur tesla,2250,250,0,0,0,ELEMENTAIRE,FIREARM
+Diffuseur d'entropie,2500,300,0,0,0,ELEMENTAIRE,FIREARM
+Projecteur thermique,3000,400,0,0,0,ELEMENTAIRE,FIREARM
+Charges de dislocation,3400,80,0,0,0,PILOTE_DESTRUCTEUR,FIREARM
+Lanceur de particules,5500,400,0,200,0,PILOTE_DESTRUCTEUR,FIREARM
+Émetteur de charges gauss,5800,500,0,100,0,PILOTE_DESTRUCTEUR,FIREARM
+Fusil gauss de précision,1000,150,0,30,0,SNIPER,FIREARM
+Fusil gauss lourd,1800,300,0,50,0,SNIPER,FIREARM
+Fusil gauss tactique,2300,400,0,60,0,SNIPER,FIREARM
+Griffe phasique mineure,100,0,20,0,0,LEGER,MELEE
+Bâton phasique,200,0,40,0,0,LEGER,MELEE
+Masse gauss,250,0,50,0,0,TIREUR,MELEE
+Lame phasique,375,0,75,0,0,TIREUR,MELEE
+Hache gauss,450,0,90,0,0,MASTODONTE,MELEE
+Faux phasique rotative,500,0,100,0,0,MASTODONTE,MELEE
+Bâton tesla,450,0,50,0,0,ELEMENTAIRE,MELEE
+Gantelet tesla,1000,0,85,0,0,ELEMENTAIRE,MELEE
+Outil de réparation gauss,125,0,25,0,0,PILOTE_DESTRUCTEUR,MELEE
+Canister cryo-phasique,250,0,50,0,0,PILOTE_DESTRUCTEUR,MELEE
+Poing tesla,500,0,100,0,0,PILOTE_DESTRUCTEUR,MELEE
+Lame courte phasique,200,0,40,0,0,SNIPER,MELEE
+Poignard phasique,300,0,60,0,0,SNIPER,MELEE
+Plaques nécrodermiques légères,750,0,0,50,10,LEGER,DEFENSIVE
+Charge de brouillage,2500,0,0,0,25,LEGER,DEFENSIVE
+Plaques nécrodermiques,500,0,0,50,0,TIREUR,DEFENSIVE
+Plaques nécrodermiques renforcées,1000,0,0,100,0,TIREUR,DEFENSIVE
+Armure nécrodermique complète,2000,0,0,200,0,TIREUR,DEFENSIVE
+Plaque dorsale gauss,250,0,0,30,0,MASTODONTE,DEFENSIVE
+Bouclier phasique,1500,0,0,150,0,MASTODONTE,DEFENSIVE
+Bouclier gauss lourd,3000,0,0,300,0,MASTODONTE,DEFENSIVE
+Charge de perturbation sonique,1250,0,0,0,15,LEGER,DEFENSIVE
+Plaques nécrodermiques thermiques,3000,0,0,100,20,LEGER,DEFENSIVE
+Armure tesla,1750,0,0,100,0,ELEMENTAIRE,DEFENSIVE
+Armure thermophasique,2250,0,0,200,0,ELEMENTAIRE,DEFENSIVE
+Armure à isolation gauss,2250,0,0,200,0,ELEMENTAIRE,DEFENSIVE
+Armure thermo-nécrodermique,2750,0,0,200,0,ELEMENTAIRE,DEFENSIVE
+Protecteur mandibulaire,150,0,0,20,0,PILOTE_DESTRUCTEUR,DEFENSIVE
+Casque nécrodermique,750,0,0,75,0,PILOTE_DESTRUCTEUR,DEFENSIVE
+Gilet nécrodermique,1500,0,0,150,0,PILOTE_DESTRUCTEUR,DEFENSIVE
+Camouflage phasique urbain,1500,0,0,100,10,SNIPER,DEFENSIVE
+Camouflage à distorsion phasique,2500,0,0,125,10,SNIPER,DEFENSIVE

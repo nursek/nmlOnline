@@ -217,11 +217,12 @@ describe('ShopService (carts + signals)', () => {
     expect(shop.sellCart()[0].quantity).toBe(5);
   });
 
-  it('computes the total sale value of the sell cart', () => {
+  it('computes the total sale value of the sell cart (with multiplier)', () => {
     const shop = getShop();
     const resource = { id: 7, name: 'Bois', quantity: 5, baseValue: 2 };
     shop.addToSellCart(resource, 4);
-    expect(shop.sellCartTotalValue()).toBe(8);
+    // 2 × saleMultiplier(4) = 2 × 9 = 18 (non-linéaire côté backend).
+    expect(shop.sellCartTotalValue()).toBe(18);
   });
 
   it('removes a resource from the sell cart by id', () => {

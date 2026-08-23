@@ -161,8 +161,8 @@
                 </button>
               </div>
               <p class="item-price sell-price">
-                {{ item.quantity }}× &#64; {{ item.resource.baseValue }} ₡ ≈
-                {{ (item.resource.baseValue ?? 0) * item.quantity | number: '1.0-0' }} ₡
+                {{ item.quantity }} unité(s) (×{{ saleMultiplier(item.quantity) }}) =
+                {{ saleValue(item.resource.baseValue ?? 0, item.quantity) | number: '1.0-0' }} ₡
               </p>
             </div>
           }
@@ -302,13 +302,13 @@
                       >
                         Toutes
                       </button>
-                      @for (category of categories(); track category) {
+                      @for (category of categories(); track category.key) {
                         <button
                           class="custom-chip"
-                          [class.active]="selectedCategory() === category"
-                          (click)="selectCategory(category)"
+                          [class.active]="selectedCategory() === category.key"
+                          (click)="selectCategory(category.key)"
                         >
-                          {{ category }}
+                          {{ category.label }}
                         </button>
                       }
                     </div>
@@ -395,103 +395,144 @@
             }
 
             <!-- Liste des équipements -->
-            <div class="equipment-grid">
-              @for (equipment of filteredEquipments(); track equipment.name) {
-                <mat-card class="equipment-card hover-lift">
-                  <mat-card-content>
-                    <div class="equipment-header">
-                      <h3>{{ equipment.name }}</h3>
-                      <mat-chip color="warn" highlighted>{{ equipment.cost }} ₡</mat-chip>
-                    </div>
-                    <span class="category">{{ equipment.category }}</span>
-
-                    <!-- Bonus -->
-                    <div class="bonus-chips">
-                      @if (equipment.pdfBonus > 0) {
-                        <mat-chip class="bonus pdf">+{{ equipment.pdfBonus }} % PDF</mat-chip>
-                      }
-                      @if (equipment.pdcBonus > 0) {
-                        <mat-chip class="bonus pdc">+{{ equipment.pdcBonus }} % PDC</mat-chip>
-                      }
-                      @if (equipment.armBonus > 0) {
-                        <mat-chip class="bonus arm">+{{ equipment.armBonus }} % ARM</mat-chip>
-                      }
-                      @if (equipment.evasionBonus > 0) {
-                        <mat-chip class="bonus esq">+{{ equipment.evasionBonus }} % ESQ</mat-chip>
-                      }
-                    </div>
-
-                    <!-- Classes compatibles -->
-                    <div class="compatible-classes">
-                      <span class="label">Compatible avec:</span>
-                      <div class="class-chips">
-                        @if (equipment.compatibleClass && equipment.compatibleClass.length > 0) {
-                          @for (unitClass of equipment.compatibleClass; track unitClass.code) {
-                            <mat-chip>{{ unitClass.name }}</mat-chip>
-                          }
-                        } @else {
-                          <span class="none">Aucune</span>
-                        }
-                      </div>
-                    </div>
-
-                    <!-- Quantité possédée (toujours présent pour garder l'alignement) -->
-                    <p class="owned">
-                      @if (getOwnedQuantity(equipment.name) > 0) {
-                        Vous en possédez: <strong>{{ getOwnedQuantity(equipment.name) }}</strong>
-                      }
-                    </p>
-
-                    <!-- Contrôles d'ajout au panier -->
-                    <div class="card-actions">
-                      @if (getCartQuantity(equipment.name) === 0) {
-                        <button
-                          mat-raised-button
-                          color="primary"
-                          class="add-btn"
-                          (click)="addToCart(equipment)"
-                        >
-                          <mat-icon>add_shopping_cart</mat-icon>
-                          Ajouter au panier
-                        </button>
-                      } @else {
-                        <div class="cart-controls">
-                          <button
-                            mat-mini-fab
-                            color="warn"
-                            (click)="removeFromCart(equipment.name)"
-                            [attr.aria-label]="'Retirer ' + equipment.name + ' du panier'"
-                          >
-                            <mat-icon>delete</mat-icon>
-                          </button>
-                          <div class="quantity-stepper">
-                            <button
-                              mat-icon-button
-                              color="primary"
-                              (click)="decrementCartQuantity(equipment.name)"
-                              [attr.aria-label]="'Réduire la quantité de ' + equipment.name"
-                            >
-                              <mat-icon>remove</mat-icon>
-                            </button>
-                            <span class="qty-value">{{ getCartQuantity(equipment.name) }}</span>
-                            <button
-                              mat-icon-button
-                              color="primary"
-                              (click)="addToCart(equipment)"
-                              [attr.aria-label]="'Augmenter la quantité de ' + equipment.name"
-                            >
-                              <mat-icon>add</mat-icon>
-                            </button>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </mat-card-content>
-                </mat-card>
+            @if (!hasActiveFilters()) {
+              <!-- Vue par défaut : groupée par classe -->
+              @for (group of groupedEquipments(); track group.classKey) {
+                <h3 class="class-section-title">Classe {{ group.classLabel }}</h3>
+                <div class="equipment-grid">
+                  @for (equipment of group.items; track equipment.name) {
+                    <ng-container
+                      [ngTemplateOutlet]="equipmentCard"
+                      [ngTemplateOutletContext]="{ $implicit: equipment }"
+                    />
+                  }
+                </div>
               }
-            </div>
+            } @else {
+              <!-- Vue filtrée : grille plate -->
+              <div class="equipment-grid">
+                @for (equipment of filteredEquipments(); track equipment.name) {
+                  <ng-container
+                    [ngTemplateOutlet]="equipmentCard"
+                    [ngTemplateOutletContext]="{ $implicit: equipment }"
+                  />
+                }
+              </div>
+            }
           </mat-tab>
           <!-- Fin onglet Équipements -->
+
+          <!-- Template réutilisable d'une carte équipement -->
+          <ng-template #equipmentCard let-equipment>
+            <mat-card class="equipment-card hover-lift">
+              <mat-card-content>
+                <div class="shop-thumb-wrapper">
+                  @if (equipmentImageUrl(equipment) && hasImage(equipment.name)) {
+                    <img
+                      [src]="equipmentImageUrl(equipment)"
+                      (error)="onImgError(equipment.name)"
+                      alt="{{ equipment.name }}"
+                      class="shop-thumb"
+                    />
+                  } @else {
+                    <div class="shop-thumb-fallback">
+                      <mat-icon>image_not_supported</mat-icon>
+                    </div>
+                  }
+                </div>
+                <div class="equipment-header">
+                  <h3>{{ equipment.name }}</h3>
+                  <mat-chip color="warn" highlighted>{{ equipment.cost }} ₡</mat-chip>
+                </div>
+                <span class="category">{{ equipmentCategoryLabel(equipment.category) }}</span>
+
+                <!-- Résumé compact : « Nom (Catégorie FR) : +20 % Pdc. 100 ₡. » -->
+                <p class="summary">{{ equipmentSummary(equipment) }}</p>
+
+                <!-- Bonus -->
+                <div class="bonus-chips">
+                  @if (equipment.pdfBonus > 0) {
+                    <mat-chip class="bonus pdf">+{{ equipment.pdfBonus }} % PDF</mat-chip>
+                  }
+                  @if (equipment.pdcBonus > 0) {
+                    <mat-chip class="bonus pdc">+{{ equipment.pdcBonus }} % PDC</mat-chip>
+                  }
+                  @if (equipment.armBonus > 0) {
+                    <mat-chip class="bonus arm">+{{ equipment.armBonus }} % ARM</mat-chip>
+                  }
+                  @if (equipment.evasionBonus > 0) {
+                    <mat-chip class="bonus esq">+{{ equipment.evasionBonus }} % ESQ</mat-chip>
+                  }
+                </div>
+
+                <!-- Classes compatibles -->
+                <div class="compatible-classes">
+                  <span class="label">Compatible avec:</span>
+                  <div class="class-chips">
+                    @if (equipment.compatibleClass && equipment.compatibleClass.length > 0) {
+                      @for (unitClass of equipment.compatibleClass; track unitClass.code) {
+                        <mat-chip>{{ unitClassLabel(unitClass.name) }}</mat-chip>
+                      }
+                    } @else {
+                      <span class="none">Aucune</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Quantité possédée (toujours présent pour garder l'alignement) -->
+                <p class="owned">
+                  @if (getOwnedQuantity(equipment.name) > 0) {
+                    Vous en possédez: <strong>{{ getOwnedQuantity(equipment.name) }}</strong>
+                  }
+                </p>
+
+                <!-- Contrôles d'ajout au panier -->
+                <div class="card-actions">
+                  @if (getCartQuantity(equipment.name) === 0) {
+                    <button
+                      mat-raised-button
+                      color="primary"
+                      class="add-btn"
+                      (click)="addToCart(equipment)"
+                    >
+                      <mat-icon>add_shopping_cart</mat-icon>
+                      Ajouter au panier
+                    </button>
+                  } @else {
+                    <div class="cart-controls">
+                      <button
+                        mat-mini-fab
+                        color="warn"
+                        (click)="removeFromCart(equipment.name)"
+                        [attr.aria-label]="'Retirer ' + equipment.name + ' du panier'"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                      <div class="quantity-stepper">
+                        <button
+                          mat-icon-button
+                          color="primary"
+                          (click)="decrementCartQuantity(equipment.name)"
+                          [attr.aria-label]="'Réduire la quantité de ' + equipment.name"
+                        >
+                          <mat-icon>remove</mat-icon>
+                        </button>
+                        <span class="qty-value">{{ getCartQuantity(equipment.name) }}</span>
+                        <button
+                          mat-icon-button
+                          color="primary"
+                          (click)="addToCart(equipment)"
+                          [attr.aria-label]="'Augmenter la quantité de ' + equipment.name"
+                        >
+                          <mat-icon>add</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </ng-template>
 
           <!-- ===== ONGLET VÉHICULES ===== -->
           <mat-tab label="Véhicules">
@@ -504,12 +545,26 @@
               }
 
               <div class="equipment-grid">
-                @for (vt of vehicleTypes(); track vt.name) {
+                @for (vt of sortedVehicleTypes(); track vt.name) {
                   <mat-card
                     class="equipment-card hover-lift"
                     [class.disabled-card]="!canAffordVehicle(vt.cost)"
                   >
                     <mat-card-content>
+                      <div class="shop-thumb-wrapper">
+                        @if (vehicleImageUrl(vt) && hasImage(vt.name)) {
+                          <img
+                            [src]="vehicleImageUrl(vt)"
+                            (error)="onImgError(vt.name)"
+                            alt="{{ vt.displayName }}"
+                            class="shop-thumb"
+                          />
+                        } @else {
+                          <div class="shop-thumb-fallback">
+                            <mat-icon>image_not_supported</mat-icon>
+                          </div>
+                        }
+                      </div>
                       <div class="equipment-header">
                         <h3>{{ vt.displayName }}</h3>
                         <mat-chip
@@ -519,6 +574,9 @@
                           {{ vt.cost | number }} ₡
                         </mat-chip>
                       </div>
+
+                      <!-- Résumé compact : « VTT léger (Véhicule) : 50 Def. 4 000 ₡. » -->
+                      <p class="summary">{{ vehicleSummary(vt) }}</p>
 
                       <!-- Stats de combat -->
                       <div class="bonus-chips">
@@ -624,6 +682,20 @@
                   @for (resource of player()!.resources; track resource.id) {
                     <mat-card class="equipment-card hover-lift">
                       <mat-card-content>
+                        <div class="shop-thumb-wrapper">
+                          @if (resourceImageUrl(resource) && hasImage(resource.name)) {
+                            <img
+                              [src]="resourceImageUrl(resource)"
+                              (error)="onImgError(resource.name)"
+                              alt="{{ resource.name }}"
+                              class="shop-thumb"
+                            />
+                          } @else {
+                            <div class="shop-thumb-fallback">
+                              <mat-icon>image_not_supported</mat-icon>
+                            </div>
+                          }
+                        </div>
                         <div class="equipment-header">
                           <h3>{{ resource.name }}</h3>
                           <mat-chip color="primary" highlighted
@@ -673,8 +745,9 @@
                             (click)="addToSellCart(resource)"
                           >
                             <mat-icon>sell</mat-icon>
-                            Panier vente (~{{
-                              (resource.baseValue ?? 0) * getSellQty(resource) | number: '1.0-0'
+                            Panier vente (+{{
+                              saleValue(resource.baseValue ?? 0, getSellQty(resource))
+                                | number: '1.0-0'
                             }}&nbsp;₡)
                           </button>
                         </div>

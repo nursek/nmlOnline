@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { Equipment, PageResult, PlayerResource, Vehicle, VehicleTypeInfo } from '../models';
 import { CartItem, SellCartItem, VehicleCartItem } from '../models/shop.model';
 import { httpErrorMessage } from '../core/http-error.interceptor';
+import { saleValue } from '../core/sale-multiplier';
 import { environment } from '../../environments/environment';
 
 /**
@@ -82,7 +83,10 @@ export class ShopService {
     this._vehicleCart().reduce((sum, item) => sum + item.vehicleType.cost * item.quantity, 0),
   );
   readonly sellCartTotalValue = computed(() =>
-    this._sellCart().reduce((sum, item) => sum + (item.resource.baseValue ?? 0) * item.quantity, 0),
+    this._sellCart().reduce(
+      (sum, item) => sum + saleValue(item.resource.baseValue ?? 0, item.quantity),
+      0,
+    ),
   );
 
   constructor() {

@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -37,6 +44,7 @@ import { UnitDetailDialogComponent, UnitDetailDialogData } from './unit-detail-d
 export class JoueurComponent {
   private readonly playerService = inject(PlayerService);
   private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly player = this.playerService.player;
   readonly loading = this.playerService.loading;
@@ -130,7 +138,7 @@ export class JoueurComponent {
 
     dialogRef
       .afterClosed()
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((sector: Sector | null) => {
         if (sector && vehicle.id != null && sector.boardId != null && sector.number != null) {
           void this.playerService.placeVehicle(vehicle.id, sector.boardId, sector.number);
@@ -144,13 +152,13 @@ export class JoueurComponent {
         label: 'Argent',
         value: `${player.stats.money.toFixed(0)} ₡`,
         icon: 'attach_money',
-        color: '#f59e0b',
+        color: '#b45309',
       },
       {
         label: 'Revenus',
         value: `${player.stats.totalIncome.toFixed(0)} ₡/tour`,
         icon: 'trending_up',
-        color: '#10b981',
+        color: '#047857',
       },
       {
         label: 'Puissance globale',
