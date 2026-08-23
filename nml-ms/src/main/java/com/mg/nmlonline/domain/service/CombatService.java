@@ -57,6 +57,7 @@ public class CombatService {
      * @param board Le plateau de jeu
      * @return Le résultat de la bataille
      */
+    @Deprecated
     public BattleResult simulateBattle(Player attacker, Player defender, Board board) {
         if (attacker == null || defender == null || board == null) {
             return new BattleResult(false, "Paramètres invalides");
