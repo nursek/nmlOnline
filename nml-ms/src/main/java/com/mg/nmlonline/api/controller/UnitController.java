@@ -5,11 +5,7 @@ import com.mg.nmlonline.api.dto.PlaceFootOrderRequestDto;
 import com.mg.nmlonline.api.dto.RemoveEquipmentRequestDto;
 import com.mg.nmlonline.api.dto.AssignEquipmentRequestDto;
 import com.mg.nmlonline.api.dto.UnitDto;
-import com.mg.nmlonline.domain.model.movement.MovementOrder;
-import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.service.UnitService;
-import com.mg.nmlonline.mapper.MovementMapper;
-import com.mg.nmlonline.mapper.UnitMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -29,13 +25,9 @@ import java.util.List;
 public class UnitController {
 
     private final UnitService unitService;
-    private final UnitMapper unitMapper;
-    private final MovementMapper movementMapper;
 
-    public UnitController(UnitService unitService, UnitMapper unitMapper, MovementMapper movementMapper) {
+    public UnitController(UnitService unitService) {
         this.unitService = unitService;
-        this.unitMapper = unitMapper;
-        this.movementMapper = movementMapper;
     }
 
     // ==========================================================
@@ -50,8 +42,8 @@ public class UnitController {
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        Unit unit = unitService.assignEquipment(unitId, userId, request.getEquipmentName());
-        return ResponseEntity.ok(unitMapper.toDto(unit));
+        UnitDto unit = unitService.assignEquipmentDto(unitId, userId, request.getEquipmentName());
+        return ResponseEntity.ok(unit);
     }
 
     @DeleteMapping("/{unitId}/equipment")
@@ -62,8 +54,8 @@ public class UnitController {
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        Unit unit = unitService.removeEquipment(unitId, userId, request.getEquipmentName());
-        return ResponseEntity.ok(unitMapper.toDto(unit));
+        UnitDto unit = unitService.removeEquipmentDto(unitId, userId, request.getEquipmentName());
+        return ResponseEntity.ok(unit);
     }
 
     // ==========================================================
@@ -77,8 +69,8 @@ public class UnitController {
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        MovementOrder order = unitService.placeFootOrder(userId, request.getEntityIds(), request.getRoute());
-        return ResponseEntity.ok(movementMapper.toDto(order));
+        MovementOrderDto order = unitService.placeFootOrderDto(userId, request.getEntityIds(), request.getRoute());
+        return ResponseEntity.ok(order);
     }
 
     @GetMapping("/movement")
@@ -87,9 +79,7 @@ public class UnitController {
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        List<MovementOrderDto> orders = unitService.getPlayerPendingOrders(userId).stream()
-                .map(movementMapper::toDto)
-                .toList();
+        List<MovementOrderDto> orders = unitService.getPlayerPendingOrdersDto(userId);
         return ResponseEntity.ok(orders);
     }
 

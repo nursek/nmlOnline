@@ -20,7 +20,8 @@ import java.util.Set;
 public class Equipment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "equipment_seq")
+    @SequenceGenerator(name = "equipment_seq", sequenceName = "equipment_id_seq", allocationSize = 50)
     private Long id;
 
     @Column(nullable = false, unique = true)
@@ -41,7 +42,7 @@ public class Equipment {
     @Column(name = "evasion_bonus", nullable = false)
     private double evasionBonus;
 
-    @ElementCollection(targetClass = UnitClass.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = UnitClass.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "EQUIPMENT_COMPATIBLE_CLASSES", joinColumns = @JoinColumn(name = "equipment_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "unit_class")

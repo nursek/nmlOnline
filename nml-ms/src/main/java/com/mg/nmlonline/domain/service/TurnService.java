@@ -36,6 +36,18 @@ public class TurnService {
      */
     private final AtomicBoolean advancing = new AtomicBoolean(false);
 
+    /**
+     * Cache du tour courant : les mappers (BuildingMapper.canMove) appellent
+     * getCurrentTurn() par bâtiment mappé, ce qui faisait un SELECT boards +
+     * une transaction par bâtiment (N+1 sur les listes de joueurs/secteurs).
+     * Le tour n'est muté que par {@link #advanceTurn()} qui invalide le cache.
+     *
+     * <p>ponytail: ceiling = JVM unique ; en multi-instance un advanceTurn sur
+     * un nœud laisse le cache des autres nœuds périmé jusqu'à leur prochain
+     * advanceTurn. Upgrade path = lecture DB systématique ou cache à TTL court.
+     */
+    private volatile Integer cachedTurn;
+
     public TurnService(BoardRepository boardRepository, MovementService movementService) {
         this.boardRepository = boardRepository;
         this.movementService = movementService;
@@ -48,10 +60,19 @@ public class TurnService {
      */
     @Transactional(readOnly = true)
     public int getCurrentTurn() {
-        return boardRepository.findAll().stream()
+        Integer cached = cachedTurn;
+        if (cached != null) {
+            return cached;
+        }
+        Integer turn = boardRepository.findAll().stream()
                 .findFirst()
                 .map(Board::getCurrentTurn)
-                .orElse(1);
+                .orElse(null);
+        if (turn != null) {
+            cachedTurn = turn;
+            return turn;
+        }
+        return 1;
     }
 
     /**
@@ -77,6 +98,9 @@ public class TurnService {
 
             board.setCurrentTurn(turnEnding + 1);
             board = boardRepository.save(board);
+            // Invalidation (plutôt que mise à jour) : si la transaction rollback
+            // après ce point, la prochaine lecture re-questionne la DB.
+            cachedTurn = null;
             return board.getCurrentTurn();
         } finally {
             advancing.set(false);

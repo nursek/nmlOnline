@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.BuyVehicleRequestDto;
+import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -9,6 +10,7 @@ import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.SectorRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
+import com.mg.nmlonline.mapper.VehicleMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,12 +27,14 @@ public class VehicleService {
     private final PlayerRepository playerRepository;
     private final VehicleRepository vehicleRepository;
     private final SectorRepository sectorRepository;
+    private final VehicleMapper vehicleMapper;
 
     public VehicleService(PlayerRepository playerRepository, VehicleRepository vehicleRepository,
-                          SectorRepository sectorRepository) {
+                          SectorRepository sectorRepository, VehicleMapper vehicleMapper) {
         this.playerRepository = playerRepository;
         this.vehicleRepository = vehicleRepository;
         this.sectorRepository = sectorRepository;
+        this.vehicleMapper = vehicleMapper;
     }
 
     /**
@@ -174,5 +178,27 @@ public class VehicleService {
 
         vehicle.setSector(sector);
         return vehicleRepository.save(vehicle);
+    }
+
+    // === Mapping dans la transaction (passengers/pilot/sector sont LAZY) ===
+
+    @Transactional(readOnly = true)
+    public List<VehicleDto> getPlayerVehiclesDto(Long userId) {
+        return getPlayerVehicles(userId).stream().map(vehicleMapper::toDto).toList();
+    }
+
+    @Transactional
+    public List<VehicleDto> buyVehicleDto(Long userId, String vehicleTypeName, int quantity) {
+        return buyVehicle(userId, vehicleTypeName, quantity).stream().map(vehicleMapper::toDto).toList();
+    }
+
+    @Transactional
+    public List<VehicleDto> buyVehiclesBatchDto(Long userId, List<BuyVehicleRequestDto> items) {
+        return buyVehiclesBatch(userId, items).stream().map(vehicleMapper::toDto).toList();
+    }
+
+    @Transactional
+    public VehicleDto placeVehicleDto(Long vehicleId, Long boardId, int sectorNumber, Long userId) {
+        return vehicleMapper.toDto(placeVehicle(vehicleId, boardId, sectorNumber, userId));
     }
 }

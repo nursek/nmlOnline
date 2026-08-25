@@ -7,7 +7,6 @@ import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.service.AuthorizationService;
 import com.mg.nmlonline.domain.service.BuildingService;
-import com.mg.nmlonline.mapper.BuildingMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,14 +26,11 @@ import java.util.List;
 public class BuildingController {
 
     private final BuildingService buildingService;
-    private final BuildingMapper buildingMapper;
     private final AuthorizationService authorizationService;
 
     public BuildingController(BuildingService buildingService,
-                              BuildingMapper buildingMapper,
                               AuthorizationService authorizationService) {
         this.buildingService = buildingService;
-        this.buildingMapper = buildingMapper;
         this.authorizationService = authorizationService;
     }
 
@@ -55,8 +51,7 @@ public class BuildingController {
         if (userId == null) return ResponseEntity.status(401).build();
         if (!authorizationService.isPlayerOwner(userId, playerId)) return ResponseEntity.status(403).build();
 
-        return buildingService.getHeadquarters(playerId)
-                .map(buildingMapper::toDto)
+        return buildingService.getHeadquartersDto(playerId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -72,8 +67,7 @@ public class BuildingController {
         if (userId == null) return ResponseEntity.status(401).build();
         if (!authorizationService.isPlayerOwner(userId, playerId)) return ResponseEntity.status(403).build();
 
-        return buildingService.getBank(playerId)
-                .map(buildingMapper::toDto)
+        return buildingService.getBankDto(playerId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -89,9 +83,7 @@ public class BuildingController {
         if (userId == null) return ResponseEntity.status(401).build();
         if (!authorizationService.isPlayerOwner(userId, playerId)) return ResponseEntity.status(403).build();
 
-        List<BuildingDto> caches = buildingService.getWeaponCaches(playerId).stream()
-                .map(buildingMapper::toDto)
-                .toList();
+        List<BuildingDto> caches = buildingService.getWeaponCachesDto(playerId);
         return ResponseEntity.ok(caches);
     }
 

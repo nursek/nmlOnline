@@ -1,10 +1,8 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.GameCharacterDto;
-import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.service.AuthorizationService;
 import com.mg.nmlonline.domain.service.GameCharacterService;
-import com.mg.nmlonline.mapper.GameCharacterMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,57 +20,35 @@ import java.util.Optional;
 public class GameCharacterController {
 
     private final GameCharacterService characterService;
-    private final GameCharacterMapper characterMapper;
     private final AuthorizationService authorizationService;
 
     public GameCharacterController(GameCharacterService characterService,
-                                     GameCharacterMapper characterMapper,
                                      AuthorizationService authorizationService) {
         this.characterService = characterService;
-        this.characterMapper = characterMapper;
         this.authorizationService = authorizationService;
     }
 
-    /**
-     * Récupère le personnage d'un joueur.
-     * L'utilisateur doit être authentifié et propriétaire du joueur (ou admin).
-     */
     @GetMapping("/player/{playerId}")
     public ResponseEntity<GameCharacterDto> getCharacterByPlayerId(@PathVariable Long playerId,
                                                                    HttpServletRequest request) {
         Long authenticatedUserId = (Long) request.getAttribute("userId");
-        if (authenticatedUserId == null) {
-            return ResponseEntity.status(401).build();
-        }
-        if (!authorizationService.isPlayerOwner(authenticatedUserId, playerId)) {
-            return ResponseEntity.status(403).build();
-        }
-        return characterService.getCharacter(playerId)
-                .map(characterMapper::toDto)
+        if (authenticatedUserId == null) return ResponseEntity.status(401).build();
+        if (!authorizationService.isPlayerOwner(authenticatedUserId, playerId)) return ResponseEntity.status(403).build();
+        return characterService.getCharacterDto(playerId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Récupère un personnage par son nom.
-     * L'utilisateur doit être authentifié et propriétaire du joueur associé (ou admin).
-     */
     @GetMapping("/name/{name}")
     public ResponseEntity<GameCharacterDto> getCharacterByName(@PathVariable String name,
                                                                HttpServletRequest request) {
         Long authenticatedUserId = (Long) request.getAttribute("userId");
-        if (authenticatedUserId == null) {
-            return ResponseEntity.status(401).build();
-        }
-        Optional<GameCharacter> characterOpt = characterService.getCharacterByName(name);
-        if (characterOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        GameCharacter character = characterOpt.get();
-        if (!authorizationService.isPlayerOwner(authenticatedUserId, character.getPlayerId())) {
+        if (authenticatedUserId == null) return ResponseEntity.status(401).build();
+        Optional<GameCharacterDto> dto = characterService.getCharacterByNameDto(name);
+        if (dto.isEmpty()) return ResponseEntity.notFound().build();
+        if (!authorizationService.isPlayerOwner(authenticatedUserId, dto.get().getPlayerId())) {
             return ResponseEntity.status(403).build();
         }
-        return ResponseEntity.ok(characterMapper.toDto(character));
+        return ResponseEntity.ok(dto.get());
     }
 }
-

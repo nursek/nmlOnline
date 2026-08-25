@@ -119,7 +119,9 @@ public class BuildingMapper {
     private PlayerResourceDto toPlayerResourceDto(PlayerResource resource) {
         if (resource == null) return null;
         PlayerResourceDto dto = new PlayerResourceDto();
-        dto.setName(resource.getResource().getName());
+        // resourceName (colonne non null) plutôt que resource.getResource().getName() :
+        // évite un SELECT lazy par ressource et une NPE si la relation est absente.
+        dto.setName(resource.getResourceName());
         dto.setQuantity(resource.getQuantity());
         return dto;
     }
