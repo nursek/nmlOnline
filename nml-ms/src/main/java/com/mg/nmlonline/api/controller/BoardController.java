@@ -1,9 +1,7 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.BoardDto;
-import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.service.BoardService;
-import com.mg.nmlonline.mapper.BoardMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,11 +22,9 @@ import java.util.List;
 public class BoardController {
 
     private final BoardService boardService;
-    private final BoardMapper boardMapper;
 
-    public BoardController(BoardService boardService, BoardMapper boardMapper) {
+    public BoardController(BoardService boardService) {
         this.boardService = boardService;
-        this.boardMapper = boardMapper;
     }
 
     /**
@@ -36,10 +32,7 @@ public class BoardController {
      */
     @GetMapping
     public ResponseEntity<List<BoardDto>> getAllBoards() {
-        List<BoardDto> boards = boardService.getAllBoards().stream()
-                .map(boardMapper::toDto)
-                .toList();
-        return ResponseEntity.ok(boards);
+        return ResponseEntity.ok(boardService.getAllBoardsDto());
     }
 
     /**
@@ -47,8 +40,7 @@ public class BoardController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<BoardDto> getBoardById(@PathVariable("id") Long id) {
-        return boardService.getBoardById(id)
-                .map(boardMapper::toDto)
+        return boardService.getBoardByIdDto(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -58,8 +50,7 @@ public class BoardController {
      */
     @GetMapping("/name/{name}")
     public ResponseEntity<BoardDto> getBoardByName(@PathVariable("name") String name) {
-        return boardService.getBoardByName(name)
-                .map(boardMapper::toDto)
+        return boardService.getBoardByNameDto(name)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -70,9 +61,7 @@ public class BoardController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<BoardDto> createBoard(@RequestBody BoardDto boardDto) {
-        Board board = boardMapper.toDomain(boardDto);
-        Board savedBoard = boardService.saveBoard(board, boardDto.getName());
-        return ResponseEntity.status(HttpStatus.CREATED).body(boardMapper.toDto(savedBoard));
+        return ResponseEntity.status(HttpStatus.CREATED).body(boardService.createBoardDto(boardDto));
     }
 
     /**

@@ -22,7 +22,8 @@ import lombok.ToString;
 public class EquipmentStack {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "equipment_stack_seq")
+    @SequenceGenerator(name = "equipment_stack_seq", sequenceName = "equipment_stacks_id_seq", allocationSize = 50)
     @EqualsAndHashCode.Include
     private Long id;
 
@@ -31,7 +32,9 @@ public class EquipmentStack {
     @JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
     private Player player;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    // ponytail: pas de cascade vers Equipment (référence partagée du catalogue) ;
+    // l'instance vient toujours du repository, déjà managed.
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "equipment_id", nullable = false)
     private Equipment equipment;
 

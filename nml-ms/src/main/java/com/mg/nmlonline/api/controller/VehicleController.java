@@ -5,7 +5,6 @@ import com.mg.nmlonline.api.dto.BuyVehicleRequestDto;
 import com.mg.nmlonline.api.dto.PlaceVehicleRequestDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.api.dto.VehicleTypeDto;
-import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.service.VehicleService;
 import com.mg.nmlonline.mapper.VehicleMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,9 +45,7 @@ public class VehicleController {
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
-        List<VehicleDto> vehicles = vehicleService.getPlayerVehicles(authenticatedUserId).stream()
-                .map(vehicleMapper::toDto)
-                .toList();
+        List<VehicleDto> vehicles = vehicleService.getPlayerVehiclesDto(authenticatedUserId);
         return ResponseEntity.ok(vehicles);
     }
 
@@ -62,8 +59,8 @@ public class VehicleController {
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
-        List<Vehicle> vehicles = vehicleService.buyVehicle(authenticatedUserId, request.getVehicleType(), request.getQuantity());
-        return ResponseEntity.ok(vehicles.stream().map(vehicleMapper::toDto).toList());
+        List<VehicleDto> vehicles = vehicleService.buyVehicleDto(authenticatedUserId, request.getVehicleType(), request.getQuantity());
+        return ResponseEntity.ok(vehicles);
     }
 
     /**
@@ -76,8 +73,8 @@ public class VehicleController {
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
-        List<Vehicle> vehicles = vehicleService.buyVehiclesBatch(authenticatedUserId, request.getItems());
-        return ResponseEntity.ok(vehicles.stream().map(vehicleMapper::toDto).toList());
+        List<VehicleDto> vehicles = vehicleService.buyVehiclesBatchDto(authenticatedUserId, request.getItems());
+        return ResponseEntity.ok(vehicles);
     }
 
     /**
@@ -91,7 +88,7 @@ public class VehicleController {
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
-        Vehicle vehicle = vehicleService.placeVehicle(id, request.getBoardId(), request.getSectorNumber(), authenticatedUserId);
-        return ResponseEntity.ok(vehicleMapper.toDto(vehicle));
+        VehicleDto vehicle = vehicleService.placeVehicleDto(id, request.getBoardId(), request.getSectorNumber(), authenticatedUserId);
+        return ResponseEntity.ok(vehicle);
     }
 }

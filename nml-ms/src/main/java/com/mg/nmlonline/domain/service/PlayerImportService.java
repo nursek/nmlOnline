@@ -20,8 +20,10 @@ import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class PlayerImportService {
 
     private static final Logger logger = LoggerFactory.getLogger(PlayerImportService.class);
@@ -176,6 +179,9 @@ public class PlayerImportService {
     /**
      * Récupère un Equipment depuis le cache ou la BDD.
      * Les Equipment sont pré-chargés via equipments.csv, on ne crée jamais de nouveaux Equipment ici.
+     * compatibleClasses (LAZY) est initialisé avant le cache car l'Equipment sera détaché hors de
+     * la tx englobante (self-invocation → @Transactional de la méthode est ignoré, seule la tx
+     * de la classe/import équipments couvre).
      */
     public Equipment getEquipmentByName(String equipmentName) {
         // 1. Vérifier le cache en premier
@@ -192,6 +198,9 @@ public class PlayerImportService {
         Optional<Equipment> existingEquipment = equipmentRepository.findByName(equipmentName);
         if (existingEquipment.isPresent()) {
             Equipment eq = existingEquipment.get();
+            // compatibleClasses est LAZY : on l'initialise maintenant (session ouverte)
+            // car les Equipment sont mis en cache et réutilisés hors session (imports multi-étapes).
+            Hibernate.initialize(eq.getCompatibleClasses());
             equipmentCache.put(equipmentName, eq);
             return eq;
         }

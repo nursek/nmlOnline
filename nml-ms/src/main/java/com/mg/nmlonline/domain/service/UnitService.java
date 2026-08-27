@@ -1,11 +1,15 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.MovementOrderDto;
+import com.mg.nmlonline.api.dto.UnitDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.player.Player;
-import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
+import com.mg.nmlonline.infrastructure.repository.UnitRepository;
+import com.mg.nmlonline.mapper.MovementMapper;
+import com.mg.nmlonline.mapper.UnitMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,15 +35,24 @@ public class UnitService {
     private final PlayerService playerService;
     private final MovementService movementService;
     private final TurnService turnService;
+    private final UnitRepository unitRepository;
+    private final UnitMapper unitMapper;
+    private final MovementMapper movementMapper;
 
     public UnitService(BoardService boardService,
                         PlayerService playerService,
                         MovementService movementService,
-                        TurnService turnService) {
+                        TurnService turnService,
+                        UnitRepository unitRepository,
+                        UnitMapper unitMapper,
+                        MovementMapper movementMapper) {
         this.boardService = boardService;
         this.playerService = playerService;
         this.movementService = movementService;
         this.turnService = turnService;
+        this.unitRepository = unitRepository;
+        this.unitMapper = unitMapper;
+        this.movementMapper = movementMapper;
     }
 
     // ============================================================
@@ -131,6 +144,24 @@ public class UnitService {
         movementService.cancelOrderOrThrow(player.getId(), orderId);
     }
 
+    // === Mapping dans la transaction (classesSet/unitEquipments et route/entityIds sont LAZY) ===
+
+    public UnitDto assignEquipmentDto(Long unitId, Long userId, String equipmentName) {
+        return unitMapper.toDto(assignEquipment(unitId, userId, equipmentName));
+    }
+
+    public UnitDto removeEquipmentDto(Long unitId, Long userId, String equipmentName) {
+        return unitMapper.toDto(removeEquipment(unitId, userId, equipmentName));
+    }
+
+    public MovementOrderDto placeFootOrderDto(Long userId, List<Long> entityIds, List<Integer> route) {
+        return movementMapper.toDto(placeFootOrder(userId, entityIds, route));
+    }
+
+    public List<MovementOrderDto> getPlayerPendingOrdersDto(Long userId) {
+        return getPlayerPendingOrders(userId).stream().map(movementMapper::toDto).toList();
+    }
+
     // ============================================================
     // === HELPERS =================================================
     // ============================================================
@@ -152,15 +183,15 @@ public class UnitService {
         if (unitId == null) {
             throw new IllegalArgumentException("L'ID de l'unité est requis.");
         }
-        for (Sector sector : board.getAllSectors()) {
-            if (sector.getArmy() == null) continue;
-            for (Unit unit : sector.getArmy()) {
-                if (unitId.equals(unit.getId())) {
-                    return unit;
-                }
-            }
+        // Lookup direct par ID : l'ancienne version initialisait l'armée de chaque
+        // secteur du plateau (1 SELECT lazy par secteur) jusqu'à trouver l'unité.
+        Unit unit = unitRepository.findById(unitId)
+                .orElseThrow(() -> new EntityNotFoundException("Unité introuvable avec l'ID " + unitId));
+        if (unit.getSector() == null || unit.getSector().getBoard() == null
+                || !unit.getSector().getBoard().getId().equals(board.getId())) {
+            throw new EntityNotFoundException("Unité introuvable avec l'ID " + unitId);
         }
-        throw new EntityNotFoundException("Unité introuvable avec l'ID " + unitId);
+        return unit;
     }
 
     private void requireOwnedBy(Unit unit, Player player) {

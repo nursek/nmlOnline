@@ -26,7 +26,8 @@ import lombok.Setter;
 public class BuildingOrder {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "building_order_seq")
+    @SequenceGenerator(name = "building_order_seq", sequenceName = "building_orders_id_seq", allocationSize = 50)
     private Long id;
 
     /** Joueur propriétaire du bâtiment. */

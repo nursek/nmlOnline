@@ -37,7 +37,8 @@ public class Player {
     private static final Logger logger = LoggerFactory.getLogger(Player.class);
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "player_seq")
+    @SequenceGenerator(name = "player_seq", sequenceName = "players_id_seq", allocationSize = 50)
     @EqualsAndHashCode.Include
     private Long id;
 

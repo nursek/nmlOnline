@@ -10,8 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/equipment")
 public class EquipmentController {
@@ -26,23 +24,19 @@ public class EquipmentController {
 
     @GetMapping
     public Page<EquipmentDto> findAll(Pageable pageable) {
-        return equipmentService.findAll(pageable)
-                .map(equipmentMapper::toDto);
+        return equipmentService.findAllDto(pageable);
     }
 
     @GetMapping("/{id}")
     public EquipmentDto findById(@PathVariable("id") Long id) {
-        Equipment equipment = equipmentService.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Equipment with id " + id + " not found."));
-        return equipmentMapper.toDto(equipment);
+        return equipmentService.findByIdDto(id);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public EquipmentDto create(@RequestBody EquipmentDto dto) {
         Equipment equipment = equipmentMapper.toDomain(dto);
-        Equipment created = equipmentService.create(equipment);
-        return equipmentMapper.toDto(created);
+        return equipmentService.createDto(equipment);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

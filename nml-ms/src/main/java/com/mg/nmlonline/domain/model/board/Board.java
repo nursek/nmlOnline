@@ -22,7 +22,8 @@ import java.util.*;
 public class Board {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "board_seq")
+    @SequenceGenerator(name = "board_seq", sequenceName = "boards_id_seq", allocationSize = 50)
     @EqualsAndHashCode.Include
     private Long id;
 

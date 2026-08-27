@@ -25,7 +25,8 @@ public abstract class CombatEntity {
 
     // ===== IDENTIFIANT UNIQUE =====
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "combat_entity_seq")
+    @SequenceGenerator(name = "combat_entity_seq", sequenceName = "combat_entities_id_seq", allocationSize = 50)
     protected Long id;
 
     // ID du joueur propriétaire

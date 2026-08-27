@@ -1,11 +1,14 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.BuyEquipmentItemDto;
+import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
+import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
+import com.mg.nmlonline.mapper.PlayerMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,15 +25,21 @@ public class PlayerService {
     private final SectorService sectorService;
     private final EquipmentService equipmentService;
     private final VehicleRepository vehicleRepository;
+    private final PlayerMapper playerMapper;
+    private final BoardService boardService;
 
     public PlayerService(PlayerRepository playerRepository,
                           SectorService sectorService,
                           EquipmentService equipmentService,
-                          VehicleRepository vehicleRepository) {
+                          VehicleRepository vehicleRepository,
+                          PlayerMapper playerMapper,
+                          BoardService boardService) {
         this.playerRepository = playerRepository;
         this.sectorService = sectorService;
         this.equipmentService = equipmentService;
         this.vehicleRepository = vehicleRepository;
+        this.playerMapper = playerMapper;
+        this.boardService = boardService;
     }
 
     // --- Lecture ---
@@ -131,5 +140,29 @@ public class PlayerService {
         //    Buildings, GameCharacter).
         playerRepository.deleteById(id);
         return true;
+    }
+
+    // === Mapping dans la transaction (collections LAZY : equipments/resources/buildings/character) ===
+
+    @Transactional(readOnly = true)
+    public Page<PlayerDto> findAllDto(Pageable pageable) {
+        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        return playerRepository.findAllByOrderByNameAsc(pageable)
+                .map(p -> playerMapper.toDtoWithSectors(p, board));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PlayerDto> findByNameDto(String name) {
+        Player player = playerRepository.findByName(name).orElse(null);
+        if (player == null) return Optional.empty();
+        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        return Optional.of(playerMapper.toDtoWithSectors(player, board));
+    }
+
+    @Transactional
+    public PlayerDto buyEquipmentsDto(Long playerId, List<BuyEquipmentItemDto> items) {
+        Player saved = buyEquipments(playerId, items);
+        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        return playerMapper.toDtoWithSectors(saved, board);
     }
 }

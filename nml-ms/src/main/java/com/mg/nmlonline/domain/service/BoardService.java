@@ -1,8 +1,10 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
+import com.mg.nmlonline.mapper.BoardMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +22,11 @@ import java.util.Optional;
 public class BoardService {
 
     private final BoardRepository boardRepository;
+    private final BoardMapper boardMapper;
 
-    public BoardService(BoardRepository boardRepository) {
+    public BoardService(BoardRepository boardRepository, BoardMapper boardMapper) {
         this.boardRepository = boardRepository;
+        this.boardMapper = boardMapper;
     }
 
     /**
@@ -170,5 +174,25 @@ public class BoardService {
         return getBoardById(boardId)
                 .map(board -> board.hasConflict(sector1, sector2))
                 .orElse(false);
+    }
+
+    // === Mapping dans la transaction (sectorsList et sous-collections sont LAZY) ===
+
+    public List<BoardDto> getAllBoardsDto() {
+        return getAllBoards().stream().map(boardMapper::toDto).toList();
+    }
+
+    public Optional<BoardDto> getBoardByIdDto(Long id) {
+        return getBoardById(id).map(boardMapper::toDto);
+    }
+
+    public Optional<BoardDto> getBoardByNameDto(String name) {
+        return getBoardByName(name).map(boardMapper::toDto);
+    }
+
+    public BoardDto createBoardDto(BoardDto boardDto) {
+        Board board = boardMapper.toDomain(boardDto);
+        Board saved = saveBoard(board, boardDto.getName());
+        return boardMapper.toDto(saved);
     }
 }

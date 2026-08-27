@@ -22,7 +22,8 @@ import lombok.ToString;
 public class UnitEquipment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "unit_equipment_seq")
+    @SequenceGenerator(name = "unit_equipment_seq", sequenceName = "unit_equipments_id_seq", allocationSize = 50)
     @EqualsAndHashCode.Include
     private Long id;
 
@@ -30,7 +31,7 @@ public class UnitEquipment {
     @JoinColumn(name = "unit_id", nullable = false)
     private Unit unit;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "equipment_id", nullable = false)
     private Equipment equipment;
 

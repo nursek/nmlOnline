@@ -18,7 +18,8 @@ import lombok.Setter;
 public class Resource {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "resource_seq")
+    @SequenceGenerator(name = "resource_seq", sequenceName = "resource_id_seq", allocationSize = 50)
     private Long id;
 
     @Column(nullable = false, unique = true)

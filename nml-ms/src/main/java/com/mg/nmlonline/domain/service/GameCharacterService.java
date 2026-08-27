@@ -1,9 +1,11 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.GameCharacterDto;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.infrastructure.repository.GameCharacterRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.mapper.GameCharacterMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,11 +20,14 @@ public class GameCharacterService {
 
     private final GameCharacterRepository characterRepository;
     private final PlayerRepository playerRepository;
+    private final GameCharacterMapper characterMapper;
 
     public GameCharacterService(GameCharacterRepository characterRepository,
-                                 PlayerRepository playerRepository) {
+                                 PlayerRepository playerRepository,
+                                 GameCharacterMapper characterMapper) {
         this.characterRepository = characterRepository;
         this.playerRepository = playerRepository;
+        this.characterMapper = characterMapper;
     }
 
     /**
@@ -60,6 +65,16 @@ public class GameCharacterService {
 
     public Optional<GameCharacter> getCharacterByName(String name) {
         return characterRepository.findByName(name);
+    }
+
+    // === Mapping dans la transaction (sector est LAZY) ===
+
+    public Optional<GameCharacterDto> getCharacterDto(Long playerId) {
+        return getCharacter(playerId).map(characterMapper::toDto);
+    }
+
+    public Optional<GameCharacterDto> getCharacterByNameDto(String name) {
+        return getCharacterByName(name).map(characterMapper::toDto);
     }
 
 }

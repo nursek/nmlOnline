@@ -19,7 +19,8 @@ import lombok.ToString;
 public class PlayerResource {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "player_resource_seq")
+    @SequenceGenerator(name = "player_resource_seq", sequenceName = "player_resources_id_seq", allocationSize = 50)
     @EqualsAndHashCode.Include
     private Long id;
 

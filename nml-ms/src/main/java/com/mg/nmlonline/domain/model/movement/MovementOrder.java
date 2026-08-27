@@ -33,7 +33,8 @@ import java.util.List;
 public class MovementOrder {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "movement_order_seq")
+    @SequenceGenerator(name = "movement_order_seq", sequenceName = "movement_orders_id_seq", allocationSize = 50)
     private Long id;
 
     /** Joueur qui a donné l'ordre. */

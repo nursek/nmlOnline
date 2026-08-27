@@ -6,12 +6,9 @@ import com.mg.nmlonline.api.dto.ResourceBatchSaleResponseDto;
 import com.mg.nmlonline.api.dto.ResourceSaleResponseDto;
 import com.mg.nmlonline.api.dto.SellResourceBatchRequestDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
-import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.player.Player;
-import com.mg.nmlonline.domain.service.BoardService;
 import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.ResourceService;
-import com.mg.nmlonline.mapper.PlayerMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -27,33 +24,23 @@ import java.util.List;
 public class PlayerController {
 
     private final PlayerService playerService;
-    private final PlayerMapper playerMapper;
-    private final BoardService boardService;
     private final ResourceService resourceService;
 
-    public PlayerController(PlayerService playerService, PlayerMapper playerMapper,
-                          BoardService boardService, ResourceService resourceService) {
+    public PlayerController(PlayerService playerService, ResourceService resourceService) {
         this.playerService = playerService;
-        this.playerMapper = playerMapper;
-        this.boardService = boardService;
         this.resourceService = resourceService;
     }
 
     @GetMapping
     public Page<PlayerDto> findAll(Pageable pageable) {
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
-        return playerService.findAll(pageable)
-                .map(player -> playerMapper.toDtoWithSectors(player, board));
+        return playerService.findAllDto(pageable);
     }
 
     @GetMapping("/{name}")
     public ResponseEntity<PlayerDto> findByName(@PathVariable String name) {
-        Player player = playerService.findByName(name);
-        if (player == null) {
-            return ResponseEntity.notFound().build();
-        }
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
-        return ResponseEntity.ok(playerMapper.toDtoWithSectors(player, board));
+        return playerService.findByNameDto(name)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /**
@@ -135,9 +122,8 @@ public class PlayerController {
             return ResponseEntity.notFound().build();
         }
         try {
-            Player saved = playerService.buyEquipments(player.getId(), items);
-            Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
-            return ResponseEntity.ok(playerMapper.toDtoWithSectors(saved, board));
+            PlayerDto dto = playerService.buyEquipmentsDto(player.getId(), items);
+            return ResponseEntity.ok(dto);
         } catch (InsufficientFundsException e) {
             return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(null);
         } catch (IllegalArgumentException e) {

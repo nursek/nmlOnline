@@ -8,9 +8,11 @@ import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -37,8 +39,11 @@ public class BoardImportService {
     }
 
     /**
-     * Importe un Board depuis un contenu JSON
+     * Importe un Board depuis un contenu JSON.
+     * @Transactional(readOnly) : la session reste ouverte pour Hibernate.initialize
+     * sur les Equipment chargés via getEquipmentByName (privé, appelé en self-invocation).
      */
+    @Transactional(readOnly = true)
     public Board importBoardFromJson(String jsonContent) throws IOException {
         BoardDTO dto = objectMapper.readValue(jsonContent, BoardDTO.class);
         return importBoard(dto);
@@ -170,6 +175,9 @@ public class BoardImportService {
         Optional<Equipment> existingEquipment = equipmentRepository.findByName(equipmentName);
         if (existingEquipment.isPresent()) {
             Equipment eq = existingEquipment.get();
+            // compatibleClasses est LAZY : on l'initialise maintenant (session ouverte)
+            // car les Equipment sont mis en cache et réutilisés hors session (imports multi-étapes).
+            Hibernate.initialize(eq.getCompatibleClasses());
             equipmentCache.put(equipmentName, eq);
             return eq;
         }

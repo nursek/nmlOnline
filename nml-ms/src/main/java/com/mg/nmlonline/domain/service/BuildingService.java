@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.BuildingDto;
 import com.mg.nmlonline.domain.model.building.*;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -7,6 +8,7 @@ import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.mapper.BuildingMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,15 +29,18 @@ public class BuildingService {
     private final PlayerRepository playerRepository;
     private final BoardService boardService;
     private final TurnService turnService;
+    private final BuildingMapper buildingMapper;
 
     public BuildingService(BuildingRepository buildingRepository,
                            PlayerRepository playerRepository,
                            BoardService boardService,
-                           TurnService turnService) {
+                           TurnService turnService,
+                           BuildingMapper buildingMapper) {
         this.buildingRepository = buildingRepository;
         this.playerRepository = playerRepository;
         this.boardService = boardService;
         this.turnService = turnService;
+        this.buildingMapper = buildingMapper;
     }
 
     // === CRÉATION DES BÂTIMENTS INITIAUX ===
@@ -261,6 +266,20 @@ public class BuildingService {
         building.recordMove(currentTurn);
         buildingRepository.save(building);
         return true;
+    }
+
+    // === Mapping dans la transaction (relations LAZY : sector, storedEquipments, storedResources) ===
+
+    public Optional<BuildingDto> getHeadquartersDto(Long playerId) {
+        return getHeadquarters(playerId).map(buildingMapper::toDto);
+    }
+
+    public Optional<BuildingDto> getBankDto(Long playerId) {
+        return getBank(playerId).map(buildingMapper::toDto);
+    }
+
+    public List<BuildingDto> getWeaponCachesDto(Long playerId) {
+        return getWeaponCaches(playerId).stream().map(buildingMapper::toDto).toList();
     }
 
     // === CLASSES UTILITAIRES ===
