@@ -51,10 +51,12 @@ export function sortVehiclesByCost(items: VehicleTypeInfo[]): VehicleTypeInfo[] 
   return [...items].sort((a, b) => a.cost - b.cost);
 }
 
+// ponytail: tous les appelants filtrent déjà `> 0` (chips + résumé), donc pas
+// de branche négative ici — si on veut afficher des malus, retirer les gardes
+// des appelants et reintroduire le signe conditionnel.
 function formatPercent(value: number): string {
-  const abs = Math.abs(value);
-  const n = abs === Math.floor(abs) ? String(abs) : abs.toFixed(1);
-  return `${value > 0 ? '+' : '−'}${n} %`;
+  const n = value === Math.floor(value) ? String(value) : value.toFixed(1);
+  return `+${n} %`;
 }
 
 /** Bonus d'un équipement formatés « ; »-séparés (uniquement bonus > 0). */
@@ -78,7 +80,7 @@ export function equipmentSummary(eq: Equipment): string {
   return `${core}${tail} ${eq.cost} ₡.`;
 }
 
-/** Résumé compact d'un type de véhicule : « VTT léger (Véhicule) : 50 Def. 4 000 ₡. » */
+/** Résumé compact d'un type de véhicule : « VTT léger (Véhicule) : 50 Def. 4000 ₡. » */
 export function vehicleSummary(vt: VehicleTypeInfo): string {
   const parts: string[] = [];
   if (vt.basePdf > 0) parts.push(`${vt.basePdf} Pdf`);

@@ -134,7 +134,9 @@
   height: 120px;
   border-radius: 6px;
   background: #1e293b;
-  color: shared.$text-muted;
+  // ponytail: shared.$text-muted (#64748b) ne passe pas WCAG sur ce fond sombre
+  // (#1e293b ~2.3:1) — même contournement que carte.component.scss.
+  color: #cbd5e1;
 
   mat-icon {
     font-size: 40px;

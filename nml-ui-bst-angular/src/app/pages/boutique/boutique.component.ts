@@ -419,6 +419,9 @@ export class BoutiqueComponent {
     return `assets/shop/equipment/${slugify(equipment.name)}.png`;
   }
 
+  // ponytail: toLowerCase() et non slugify() — vt.name est le nom de l'énum
+  // Java (ex. VTT_LEGER) dont les '_' doivent être conservés dans le nom de
+  // fichier ; slugify remplacerait '_' par '-' et casserait l'URL.
   vehicleImageUrl(vt: VehicleTypeInfo): string {
     return `assets/shop/vehicles/${vt.name.toLowerCase()}.png`;
   }

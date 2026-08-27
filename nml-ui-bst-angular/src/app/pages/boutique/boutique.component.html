@@ -427,10 +427,10 @@
             <mat-card class="equipment-card hover-lift">
               <mat-card-content>
                 <div class="shop-thumb-wrapper">
-                  @if (equipmentImageUrl(equipment) && hasImage(equipment.name)) {
+                  @if (equipmentImageUrl(equipment) && hasImage('eq:' + equipment.name)) {
                     <img
                       [src]="equipmentImageUrl(equipment)"
-                      (error)="onImgError(equipment.name)"
+                      (error)="onImgError('eq:' + equipment.name)"
                       alt="{{ equipment.name }}"
                       class="shop-thumb"
                     />
@@ -552,10 +552,10 @@
                   >
                     <mat-card-content>
                       <div class="shop-thumb-wrapper">
-                        @if (vehicleImageUrl(vt) && hasImage(vt.name)) {
+                        @if (vehicleImageUrl(vt) && hasImage('veh:' + vt.name)) {
                           <img
                             [src]="vehicleImageUrl(vt)"
-                            (error)="onImgError(vt.name)"
+                            (error)="onImgError('veh:' + vt.name)"
                             alt="{{ vt.displayName }}"
                             class="shop-thumb"
                           />
@@ -683,10 +683,10 @@
                     <mat-card class="equipment-card hover-lift">
                       <mat-card-content>
                         <div class="shop-thumb-wrapper">
-                          @if (resourceImageUrl(resource) && hasImage(resource.name)) {
+                          @if (resourceImageUrl(resource) && hasImage('res:' + resource.name)) {
                             <img
                               [src]="resourceImageUrl(resource)"
-                              (error)="onImgError(resource.name)"
+                              (error)="onImgError('res:' + resource.name)"
                               alt="{{ resource.name }}"
                               class="shop-thumb"
                             />
