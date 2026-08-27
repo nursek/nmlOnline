@@ -29,7 +29,7 @@
   }
 
   &.victory {
-    border: 2px solid #f59e0b;
+    border: 2px solid #d97706;
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%);
   }
 }
@@ -39,7 +39,7 @@
   margin-bottom: 16px;
 
   .gold {
-    color: #f59e0b;
+    color: #b45309;
   }
 }
 
@@ -132,17 +132,17 @@
 
   &.gold-bg {
     background: rgba(245, 158, 11, 0.1);
-    border-color: #f59e0b;
+    border-color: #d97706;
   }
 
   &.silver-bg {
     background: rgba(156, 163, 175, 0.1);
-    border-color: #9ca3af;
+    border-color: #6b7280;
   }
 
   &.bronze-bg {
     background: rgba(249, 115, 22, 0.1);
-    border-color: #f97316;
+    border-color: #c2410c;
   }
 
   .emoji {

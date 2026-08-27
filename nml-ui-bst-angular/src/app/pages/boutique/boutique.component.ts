@@ -15,6 +15,17 @@ import { Equipment, EquipmentStack, PlayerResource, VehicleTypeInfo } from '../.
 import { ShopService } from '../../services/shop.service';
 import { PlayerService } from '../../services/player.service';
 import {
+  compareEquipments,
+  equipmentBonusSummary,
+  equipmentClassLabel,
+  equipmentSummary,
+  sortVehiclesByCost,
+  vehicleSummary,
+} from './boutique.helpers';
+import { equipmentCategoryLabel, unitClassLabel } from '../../core/labels';
+import { slugify } from '../../core/slug';
+import { saleMultiplier, saleValue } from '../../core/sale-multiplier';
+import {
   PurchaseSuccessDialogComponent,
   PurchaseSuccessData,
 } from '../../shared/purchase-success-dialog/purchase-success-dialog.component';
@@ -72,12 +83,17 @@ export class BoutiqueComponent {
   readonly vehicleQuantities = signal<Record<string, number>>({});
   readonly resourceSellQuantities = signal<Record<number, number>>({});
 
+  // Images boutique : track des vignettes introuvables (fallback icône).
+  private readonly _brokenImages = signal<ReadonlySet<string>>(new Set());
+
   readonly categories = computed(() => {
     const cats = new Set<string>();
     this.allEquipments().forEach((eq) => {
       if (eq.category) cats.add(eq.category);
     });
-    return Array.from(cats).sort((a, b) => a.localeCompare(b));
+    return Array.from(cats)
+      .sort((a, b) => a.localeCompare(b))
+      .map((key) => ({ key, label: equipmentCategoryLabel(key) }));
   });
 
   readonly filteredEquipments = computed(() => {
@@ -106,7 +122,30 @@ export class BoutiqueComponent {
         }
       });
     }
-    return filtered;
+    return filtered.sort(compareEquipments);
+  });
+
+  /** Véhicules triés par coût croissant. */
+  readonly sortedVehicleTypes = computed(() => sortVehiclesByCost(this.vehicleTypes()));
+
+  /**
+   * Équipements groupés par 1re classe compatible (ordre hérité du tri :
+   * Léger → Mastodonte → Tireur → Sniper → Pilote destructeur → Élémentaire).
+   * Utilisé pour les titres de section en vue par défaut (sans filtre).
+   */
+  readonly groupedEquipments = computed(() => {
+    const items = this.filteredEquipments();
+    const groups: { classKey: string; classLabel: string; items: Equipment[] }[] = [];
+    const idx = new Map<string, number>();
+    for (const eq of items) {
+      const key = eq.compatibleClass?.[0]?.name ?? 'AUCUNE';
+      if (!idx.has(key)) {
+        idx.set(key, groups.length);
+        groups.push({ classKey: key, classLabel: unitClassLabel(key), items: [] });
+      }
+      groups[idx.get(key)!].items.push(eq);
+    }
+    return groups;
   });
 
   readonly totalCartBadge = computed(() => this.totalItems() + this.vehicleCartTotalItems());
@@ -361,5 +400,41 @@ export class BoutiqueComponent {
   clearAdvancedFilters(): void {
     this.selectedCategory.set('all');
     this.selectedBonusFilter.set('all');
+  }
+
+  // --- Libellés FR + résumés compacts (délégués aux helpers purs) ---
+
+  equipmentCategoryLabel = equipmentCategoryLabel;
+  unitClassLabel = unitClassLabel;
+  equipmentSummary = equipmentSummary;
+  equipmentBonusSummary = equipmentBonusSummary;
+  equipmentClassLabel = equipmentClassLabel;
+  vehicleSummary = vehicleSummary;
+  saleMultiplier = saleMultiplier;
+  saleValue = saleValue;
+
+  // --- Vignettes boutique (assets statiques, fallback sur erreur) ---
+
+  equipmentImageUrl(equipment: Equipment): string {
+    return `assets/shop/equipment/${slugify(equipment.name)}.png`;
+  }
+
+  // ponytail: toLowerCase() et non slugify() — vt.name est le nom de l'énum
+  // Java (ex. VTT_LEGER) dont les '_' doivent être conservés dans le nom de
+  // fichier ; slugify remplacerait '_' par '-' et casserait l'URL.
+  vehicleImageUrl(vt: VehicleTypeInfo): string {
+    return `assets/shop/vehicles/${vt.name.toLowerCase()}.png`;
+  }
+
+  resourceImageUrl(resource: PlayerResource): string {
+    return `assets/shop/resources/${slugify(resource.name)}.png`;
+  }
+
+  hasImage(key: string): boolean {
+    return !this._brokenImages().has(key);
+  }
+
+  onImgError(key: string): void {
+    this._brokenImages.update((set) => new Set(set).add(key));
   }
 }

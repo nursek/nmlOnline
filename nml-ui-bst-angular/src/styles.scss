@@ -33,7 +33,7 @@ $background-light: #f1f5f9;
 
 $text-primary: #1e293b;
 $text-secondary: #64748b;
-$text-muted: #94a3b8;
+$text-muted: #64748b; // ponytail: was #94a3b8 (slate-400) — ratio 2.5 sur fond clair, sous le seuil WCAG. slate-500 passe 4.5:1.
 
 // Reset et styles de base
 * {

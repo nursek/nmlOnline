@@ -23,12 +23,12 @@
 
   .admin-avatar {
     @include shared.avatar(56px, 32px);
-    background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+    background: linear-gradient(135deg, #ef4444 0%, #ea580c 100%);
   }
 
   .admin-title {
     @include shared.gradient-title;
-    background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+    background: linear-gradient(135deg, #ef4444 0%, #ea580c 100%);
     -webkit-background-clip: text;
     background-clip: text;
   }
@@ -51,9 +51,9 @@
   gap: 16px;
   padding: 12px 16px;
   margin-bottom: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: #ffffff;
   flex-wrap: wrap;
 
   .turn-info {
@@ -62,11 +62,11 @@
     gap: 8px;
 
     mat-icon {
-      color: rgba(255, 255, 255, 0.7);
+      color: shared.$text-muted;
     }
 
     .turn-label {
-      color: rgba(255, 255, 255, 0.6);
+      color: shared.$text-muted;
       font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -74,7 +74,7 @@
 
     .turn-value {
       font-weight: 600;
-      color: #f59e0b;
+      color: #b45309;
     }
   }
 
@@ -88,9 +88,9 @@
 .orders-panel {
   padding: 16px;
   margin-bottom: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: #ffffff;
 
   .orders-header {
     display: flex;
@@ -145,8 +145,8 @@
       gap: 12px;
       padding: 8px 10px;
       border-radius: 6px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
 
       .order-main {
         display: flex;
@@ -164,17 +164,17 @@
             font-size: 18px;
             width: 18px;
             height: 18px;
-            color: rgba(255, 255, 255, 0.6);
+            color: shared.$text-muted;
           }
         }
 
         .order-route {
           font-weight: 600;
-          color: #f59e0b;
+          color: #b45309;
 
           .order-route-detail {
             margin-left: 6px;
-            color: rgba(255, 255, 255, 0.5);
+            color: shared.$text-muted;
             font-size: 11px;
             cursor: help;
           }
@@ -184,7 +184,7 @@
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          color: rgba(255, 255, 255, 0.6);
+          color: shared.$text-muted;
           font-size: 12px;
 
           mat-icon {
@@ -206,26 +206,26 @@
 
       .status-badge.status-pending {
         background: rgba(59, 130, 246, 0.18);
-        color: #93c5fd;
+        color: #1e40af;
       }
       .status-badge.status-resolved {
         background: rgba(34, 197, 94, 0.18);
-        color: #86efac;
+        color: #065f46;
       }
       .status-badge.status-blocked {
-        background: rgba(239, 68, 68, 0.18);
-        color: #fca5a5;
+        background: #fef2f2;
+        color: #991b1b;
       }
       .status-badge.status-cancelled {
         background: rgba(148, 163, 184, 0.18);
-        color: #cbd5e1;
+        color: #475569;
       }
     }
 
     .order-message {
       padding: 4px 10px 6px;
       margin-top: -2px;
-      color: #fca5a5;
+      color: #991b1b;
       font-size: 11px;
     }
   }
@@ -235,9 +235,9 @@
 .resolution-report {
   padding: 16px;
   margin-bottom: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: #ffffff;
 
   .report-header {
     display: flex;
@@ -252,7 +252,7 @@
       font-weight: 600;
 
       mat-icon {
-        color: #f59e0b;
+        color: #b45309;
       }
     }
   }
@@ -267,15 +267,15 @@
       padding: 4px 10px;
       border-radius: 999px;
       font-size: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
     }
 
     .summary-chip.conflicts.active,
     .summary-chip.transit.active {
-      background: rgba(239, 68, 68, 0.18);
-      border-color: rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #991b1b;
       font-weight: 700;
     }
   }
@@ -289,14 +289,14 @@
       gap: 6px;
       font-size: 13px;
       font-weight: 600;
-      color: rgba(255, 255, 255, 0.85);
+      color: #334155;
       margin-bottom: 6px;
 
       mat-icon {
         font-size: 18px;
         width: 18px;
         height: 18px;
-        color: rgba(255, 255, 255, 0.6);
+        color: shared.$text-muted;
       }
     }
 
@@ -314,11 +314,11 @@
       gap: 12px;
       padding: 6px 10px;
       border-radius: 6px;
-      background: rgba(239, 68, 68, 0.08);
+      background: #fef2f2;
 
       .conflict-sector {
         font-weight: 700;
-        color: #fca5a5;
+        color: #991b1b;
         min-width: 110px;
       }
       .conflict-players {
@@ -330,7 +330,7 @@
           font-size: 16px;
           width: 16px;
           height: 16px;
-          color: rgba(255, 255, 255, 0.5);
+          color: shared.$text-muted;
         }
       }
     }
@@ -341,18 +341,18 @@
       gap: 12px;
       padding: 6px 10px;
       border-radius: 6px;
-      background: rgba(255, 255, 255, 0.03);
+      background: #f8fafc;
 
       .transit-sector {
         font-weight: 700;
         min-width: 110px;
       }
       .transit-fired.fired {
-        color: #fca5a5;
+        color: #991b1b;
         font-weight: 600;
       }
       .transit-fired.no-fire {
-        color: rgba(255, 255, 255, 0.5);
+        color: shared.$text-muted;
       }
     }
 
@@ -362,7 +362,7 @@
       gap: 12px;
       padding: 6px 10px;
       border-radius: 6px;
-      background: rgba(239, 68, 68, 0.06);
+      background: #fef2f2;
       font-size: 12px;
 
       .blocked-player {
@@ -370,10 +370,10 @@
         min-width: 100px;
       }
       .blocked-route {
-        color: #f59e0b;
+        color: #b45309;
       }
       .blocked-msg {
-        color: #fca5a5;
+        color: #991b1b;
         flex: 1;
       }
     }
@@ -459,16 +459,16 @@
     }
 
     &.money {
-      color: #d97706;
+      color: #b45309;
     }
     &.sectors {
-      color: #6366f1;
+      color: #4f46e5;
     }
     &.army {
       color: #dc2626;
     }
     &.equipment {
-      color: #059669;
+      color: #047857;
     }
   }
 }
@@ -526,7 +526,7 @@
       color: #1e293b;
 
       &.money {
-        color: #d97706;
+        color: #b45309;
       }
       @include shared.stat-colors;
     }
@@ -728,9 +728,9 @@
 // === Snackbar overrides ===
 :host ::ng-deep {
   .success-snackbar .mdc-snackbar__surface {
-    background: #059669 !important;
+    background: #047857 !important;
   }
   .error-snackbar .mdc-snackbar__surface {
-    background: #dc2626 !important;
+    background: #b91c1c !important;
   }
 }
