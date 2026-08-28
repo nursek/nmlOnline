@@ -21,8 +21,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Set;
@@ -46,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @DisplayName("TurnResolutionOrchestrator — pas-à-pas hop par hop")
 class TurnResolutionOrchestratorTest {
 
@@ -66,6 +70,9 @@ class TurnResolutionOrchestratorTest {
 
     @Autowired
     private EntityManager em;
+
+    @Autowired
+    private PlatformTransactionManager txManager;
 
     @AfterEach
     void releaseLock() {
@@ -170,7 +177,6 @@ class TurnResolutionOrchestratorTest {
 
     @Test
     @DisplayName("resolveBattle détruit un défenseur équipé : la FK cascade efface ses rows unit_equipments (Phase 2)")
-    @Transactional
     void resolveBattle_perteUniteEquipee_effaceRowsUnitEquipmentsViaFkCascade() {
         // Mécanisme de cascade sur pertes de combat (Phase 2 + Phase 3) :
         //   - Phase 2 : Unit.unitEquipments perd orphanRemoval (reste cascade=ALL +
@@ -186,48 +192,53 @@ class TurnResolutionOrchestratorTest {
         // de DB + MOVED 2 hops + pertes » (la variante piégée non couverte par
         // Phase 2) est caractérisé par
         // TurnResolutionOrchestratorLurioCegorachTest#lurioVsCegorach_resolveBattle_...
-        Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-        List<Player> players = playerRepository.findAll();
-        Player attacker = players.get(0);
-        Player defender = players.stream()
-                .filter(p -> !p.getId().equals(attacker.getId())).findFirst().orElseThrow();
+        // Setup dans une tx commitée (pour que l'orchestrateur voie les données —
+        // pas de @Transactional sur ce test, voir docs/jpa-pitfalls.md §2).
+        Long ueId = new TransactionTemplate(txManager).execute(status -> {
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            List<Player> players = playerRepository.findAll();
+            Player attacker = players.get(0);
+            Player defender = players.stream()
+                    .filter(p -> !p.getId().equals(attacker.getId())).findFirst().orElseThrow();
 
-        Sector s1 = board.getAllSectors().stream()
-                .filter(s -> s.isNeutral() && s.getArmySize() == 0).findFirst().orElseThrow();
-        Sector s2 = board.getAllSectors().stream()
-                .filter(s -> s.isNeutral() && s.getArmySize() == 0 && s.getNumber() != s1.getNumber())
-                .findFirst().orElseThrow();
+            Sector s1 = board.getAllSectors().stream()
+                    .filter(s -> s.isNeutral() && s.getArmySize() == 0).findFirst().orElseThrow();
+            Sector s2 = board.getAllSectors().stream()
+                    .filter(s -> s.isNeutral() && s.getArmySize() == 0 && s.getNumber() != s1.getNumber())
+                    .findFirst().orElseThrow();
 
-        Unit brute = new Unit(8.0, UnitClass.TIREUR);
-        brute.setPlayerId(attacker.getId());
-        s1.addUnit(brute);
+            Unit brute = new Unit(8.0, UnitClass.TIREUR);
+            brute.setPlayerId(attacker.getId());
+            s1.addUnit(brute);
 
-        Unit larbin = new Unit(0.0, UnitClass.TIREUR);
-        larbin.setPlayerId(defender.getId());
-        Equipment gun = new Equipment("Pistolet cascade fk", 100, 10, 0, 0, 0,
-                Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
-        em.persist(gun);
-        em.flush();
-        larbin.addEquipment(gun);
-        s2.addUnit(larbin);
+            Unit larbin = new Unit(0.0, UnitClass.TIREUR);
+            larbin.setPlayerId(defender.getId());
+            Equipment gun = new Equipment("Pistolet cascade fk", 100, 10, 0, 0, 0,
+                    Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
+            em.persist(gun);
+            em.flush();
+            larbin.addEquipment(gun);
+            s2.addUnit(larbin);
 
-        em.flush();
-        Long larbinId = larbin.getId();
-        assertNotNull(larbinId);
-        assertFalse(larbin.getUnitEquipments().isEmpty(),
-                "prérequis : le défenseur a une ligne unit_equipments persistée");
-        Long ueId = larbin.getUnitEquipments().get(0).getId();
-        assertNotNull(ueId);
+            em.flush();
+            Long larbinId = larbin.getId();
+            assertNotNull(larbinId);
+            assertFalse(larbin.getUnitEquipments().isEmpty(),
+                    "prérequis : le défenseur a une ligne unit_equipments persistée");
+            Long innerUeId = larbin.getUnitEquipments().get(0).getId();
+            assertNotNull(innerUeId);
 
-        int turn = turnService.getCurrentTurn();
-        orderRepository.deleteAll(orderRepository.findPendingByTurn(turn));
-        em.flush();
+            int turn = turnService.getCurrentTurn();
+            orderRepository.deleteAll(orderRepository.findPendingByTurn(turn));
+            em.flush();
 
-        MovementOrder order = MovementOrder.createFootOrder(
-                attacker.getId(), turn, List.of(brute.getId()),
-                List.of(s1.getNumber(), s2.getNumber()));
-        orderRepository.save(order);
-        em.flush();
+            MovementOrder order = MovementOrder.createFootOrder(
+                    attacker.getId(), turn, List.of(brute.getId()),
+                    List.of(s1.getNumber(), s2.getNumber()));
+            orderRepository.save(order);
+            em.flush();
+            return innerUeId;
+        });
 
         orchestrator.startSession();
         TurnResolutionStateDto state = orchestrator.advanceHop();
@@ -238,16 +249,14 @@ class TurnResolutionOrchestratorTest {
         assertEquals(1, report.getDefenderCasualties(),
                 "Le défenseur équipé est détruit par le BRUTE 100/100");
 
-        em.flush();
-        em.clear();
-
-        // La row unit_equipments doit être effacée : em.remove(unit) (Phase 3)
-        // cascade REMOVE → Unit.unitEquipments (cascade=ALL) → DELETE unit_equipments.
-        // La FK ON DELETE CASCADE (V3) est la ceinture DB si l'ORM laisse un orphelin.
-        long ueCount = em.createQuery(
-                        "select count(ue) from UnitEquipment ue where ue.id = :id", Long.class)
-                .setParameter("id", ueId).getSingleResult();
-        assertEquals(0, ueCount,
-                "la row unit_equipments doit être effacée par la cascade REMOVE quand la Unit est DELETEd");
+        // Vérification DB dans une tx fraîche (le commit de resolveBattle a eu lieu).
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            long ueCount = em.createQuery(
+                            "select count(ue) from UnitEquipment ue where ue.id = :id", Long.class)
+                    .setParameter("id", ueId)
+                    .getSingleResult();
+            assertEquals(0, ueCount,
+                    "la row unit_equipments doit être effacée par la cascade REMOVE quand la Unit est DELETEd");
+        });
     }
 }

@@ -316,7 +316,13 @@ public class MovementService {
                 .filter(id -> !ctx.stoppedIds.contains(id))
                 .toList();
         if (!activeIds.isEmpty()) {
-            ctx.activeOrders.addAll(orderRepository.findAllById(activeIds));
+            // Filtrer les ordres annulés entre deux hops : un joueur peut annuler
+            // son ordre via cancelOrderOrThrow (qui ne prend pas le TurnLock) pendant
+            // la pause admin. Sans ce filtre, refreshActiveOrder recharge l'ordre
+            // CANCELLED et resolveStep déplace quand même l'unité.
+            ctx.activeOrders.addAll(orderRepository.findAllById(activeIds).stream()
+                    .filter(o -> !o.isNotPending())
+                    .toList());
         }
     }
 

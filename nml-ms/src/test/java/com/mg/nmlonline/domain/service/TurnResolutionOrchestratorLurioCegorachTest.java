@@ -13,8 +13,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -77,6 +80,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest
 @ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @DisplayName("TurnResolutionOrchestrator — scénario Lurio → Cegorach (2 hops)")
 class TurnResolutionOrchestratorLurioCegorachTest {
 
@@ -91,6 +95,9 @@ class TurnResolutionOrchestratorLurioCegorachTest {
 
     @Autowired
     private EntityManager em;
+
+    @Autowired
+    private PlatformTransactionManager txManager;
 
     @AfterEach
     void releaseLock() {
@@ -149,7 +156,6 @@ class TurnResolutionOrchestratorLurioCegorachTest {
 
     @Test
     @DisplayName("resolveBattle sur l'attaquant équipé MOVED détruit proprement (régression du fix Phase 3)")
-    @Transactional
     void lurioVsCegorach_resolveBattle_surAttaquantEquipeDeplace_detruitProprementPhase3() {
         // Setup identique au test vert jusqu'au conflit : seed → start → hop1 → hop2.
         ScenarioSummaryDto seed = seeder.seedScenario();
@@ -196,28 +202,31 @@ class TurnResolutionOrchestratorLurioCegorachTest {
         assertNull(report.getWinnerId(),
                 "Battle ne set jamais winner — à revoir (cf. GameSimulationIT.shouldResolveDeterministicBattleOutcome)");
 
-        // === persistance : l'attaquant est retiré du secteur 32, les BRUTEs y restent ===
-        em.flush();
-        em.clear();
-        Sector secteur32 = boardRepository.findAll().stream()
-                .findFirst().orElseThrow().getSector(32);
-        long lurioRestant = secteur32.getUnits().stream()
-                .filter(u -> lurioId.equals(u.getPlayerId())).count();
-        long cegorachRestant = secteur32.getUnits().stream()
-                .filter(u -> cegorachId.equals(u.getPlayerId())).count();
-        assertEquals(0, lurioRestant,
-                "L'attaquant détruit est retiré du secteur 32 (em.remove explicite en Phase 3)");
-        assertEquals(2, cegorachRestant, "Les 2 BRUTEs défenseurs survivent en secteur 32");
+        // === persistance : vérification DB dans une tx fraîche (le commit de
+        // resolveBattle a eu lieu — pas de @Transactional sur ce test, voir
+        // docs/jpa-pitfalls.md §2 : un @Transactional de test masquerait une
+        // DataIntegrityViolationException au commit) ===
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Sector secteur32 = boardRepository.findAll().stream()
+                    .findFirst().orElseThrow().getSector(32);
+            long lurioRestant = secteur32.getUnits().stream()
+                    .filter(u -> lurioId.equals(u.getPlayerId())).count();
+            long cegorachRestant = secteur32.getUnits().stream()
+                    .filter(u -> cegorachId.equals(u.getPlayerId())).count();
+            assertEquals(0, lurioRestant,
+                    "L'attaquant détruit est retiré du secteur 32 (em.remove explicite en Phase 3)");
+            assertEquals(2, cegorachRestant, "Les 2 BRUTEs défenseurs survivent en secteur 32");
 
-        // === régression clé : les rows unit_equipments de l'attaquant détruit sont
-        // effacées par la cascade Hibernate REMOVE → DELETE (preuve que le fix Phase 3
-        // déroule le nettoyage proprement, sans la release-FK-NULL d'avant). ===
-        long ueCount = em.createQuery(
-                        "select count(ue) from UnitEquipment ue where ue.unit.id = :unitId", Long.class)
-                .setParameter("unitId", attackerUnitId)
-                .getSingleResult();
-        assertEquals(0, ueCount,
-                "Les rows unit_equipments de l'attaquant détruit doivent être effacées par la cascade"
-                        + " (em.remove → Unit.unitEquipments cascade=ALL → DELETE unit_equipments)");
+            // === régression clé : les rows unit_equipments de l'attaquant détruit sont
+            // effacées par la cascade Hibernate REMOVE → DELETE (preuve que le fix Phase 3
+            // déroule le nettoyage proprement, sans la release-FK-NULL d'avant). ===
+            long ueCount = em.createQuery(
+                            "select count(ue) from UnitEquipment ue where ue.unit.id = :unitId", Long.class)
+                    .setParameter("unitId", attackerUnitId)
+                    .getSingleResult();
+            assertEquals(0, ueCount,
+                    "Les rows unit_equipments de l'attaquant détruit doivent être effacées par la cascade"
+                            + " (em.remove → Unit.unitEquipments cascade=ALL → DELETE unit_equipments)");
+        });
     }
 }

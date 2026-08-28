@@ -47,6 +47,7 @@ public class TurnResolutionOrchestrator {
     private final PlayerRepository playerRepository;
     private final MovementService movementService;
     private final CombatService combatService;
+    private final TurnService turnService;
 
     private volatile Session session;
 
@@ -54,12 +55,14 @@ public class TurnResolutionOrchestrator {
                                       BoardRepository boardRepository,
                                       PlayerRepository playerRepository,
                                       MovementService movementService,
-                                      CombatService combatService) {
+                                      CombatService combatService,
+                                      TurnService turnService) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
         this.movementService = movementService;
         this.combatService = combatService;
+        this.turnService = turnService;
     }
 
     // ==================================================
@@ -154,24 +157,26 @@ public class TurnResolutionOrchestrator {
         }
         Board board = loadBoard();
         movementService.refreshActiveOrders(s.ctx);
-        MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
-        board.setCurrentTurn(s.turnEnding + 1);
-        boardRepository.save(board);
+        try {
+            MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
+            board.setCurrentTurn(s.turnEnding + 1);
+            boardRepository.save(board);
+            turnService.invalidateTurnCache();
 
-        int newTurn = board.getCurrentTurn();
-        TurnFinalizeResultDto dto = new TurnFinalizeResultDto();
-        dto.setNewTurn(newTurn);
-        dto.setTurnEnding(s.turnEnding);
-        dto.setResolvedOrders(result.getResolved().size());
-        dto.setBlockedOrders(result.getBlocked().size());
-        dto.setConflictsResolved(s.resolvedConflicts.size());
-        dto.setTransitCombats(result.getTransitCombats().size());
-        dto.setMessage("Tour " + newTurn + " démarré.");
-
-        // Succès : on libère le verrou et on ferme la session.
-        turnLock.release();
-        this.session = null;
-        return dto;
+            int newTurn = board.getCurrentTurn();
+            TurnFinalizeResultDto dto = new TurnFinalizeResultDto();
+            dto.setNewTurn(newTurn);
+            dto.setTurnEnding(s.turnEnding);
+            dto.setResolvedOrders(result.getResolved().size());
+            dto.setBlockedOrders(result.getBlocked().size());
+            dto.setConflictsResolved(s.resolvedConflicts.size());
+            dto.setTransitCombats(result.getTransitCombats().size());
+            dto.setMessage("Tour " + newTurn + " démarré.");
+            return dto;
+        } finally {
+            turnLock.release();
+            this.session = null;
+        }
     }
 
     /**

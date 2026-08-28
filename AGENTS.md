@@ -59,6 +59,11 @@ npm start / npm test / npm run lint / npm run format
   `Player.buildings`…) is tracked in that doc — `Player.equipments` and
   `Player.resources` are the prime suspects for a future 500 if a transfer path is
   added.
+- **Turn resolution**: two admin end-of-turn paths — `TurnService.advanceTurn()`
+  (atomic) and `TurnResolutionOrchestrator` (hop-by-hop). `TurnLock` (shared
+  `AtomicBoolean` bean) serializes them. The orchestrator's `Session` is in-memory,
+  single-JVM, lost on restart. `Board.currentTurn` is mutated in **two** places —
+  both must invalidate `TurnService.cachedTurn` (the `getCurrentTurn` cache).
 
 ## Prod data persistence
 

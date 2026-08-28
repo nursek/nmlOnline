@@ -2,6 +2,7 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
+import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.board.Board;
@@ -18,14 +19,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 
 /**
  * Tests focaux de la résolution pas-à-pas par hop, organisés par étape du
@@ -68,9 +72,20 @@ class TurnResolutionOrchestratorStepsTest {
     @Autowired
     private EntityManager em;
 
+    @SpyBean
+    private MovementService movementService;
+
+    @Autowired
+    private TurnLock turnLock;
+
+    @Autowired
+    private TurnResolutionScenarioSeeder seeder;
+
     @AfterEach
     void releaseLock() {
         orchestrator.abort();
+        turnService.invalidateTurnCache();
+        Mockito.reset(movementService);
     }
 
     // ==================================================
@@ -248,6 +263,39 @@ class TurnResolutionOrchestratorStepsTest {
             assertThrows(IllegalStateException.class, orchestrator::advanceHop,
                     "Avancer au-delà du dernier hop doit échouer (maxSteps atteint)");
         }
+
+        @Test
+        @Transactional
+        @DisplayName("advanceHop : un ordre annulé entre deux hops ne déplace plus l'unité")
+        void advanceHop_ordreAnnuleEntreHops_neDeplacePlusLUnite() {
+            // Scénario 2 hops via le seeder : route [41, 13, 32]
+            ScenarioSummaryDto seed = seeder.seedScenario();
+            Long attackerId = seed.getAttacker().getId();
+            Long attackerUnitId = seed.getAttackerUnit().getId();
+            int turn = turnService.getCurrentTurn();
+
+            orchestrator.startSession();
+            orchestrator.advanceHop(); // hop 1 : 41 → 13
+
+            // Annuler l'ordre entre les hops (cancelOrderOrThrow ne prend pas le TurnLock)
+            List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(turn);
+            assertFalse(pending.isEmpty(), "Prérequis : l'ordre du seeder est PENDING");
+            movementService.cancelOrderOrThrow(attackerId, pending.get(0).getId());
+
+            // hop 2 : l'ordre CANCELLED ne doit plus déplacer l'unité
+            TurnResolutionStateDto state = orchestrator.advanceHop();
+            assertEquals(2, state.getCurrentStep(), "Le hop 2 s'exécute (maxSteps atteint)");
+
+            em.flush();
+            em.clear();
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            boolean at13 = board.getSector(13).getUnits().stream()
+                    .anyMatch(u -> attackerUnitId.equals(u.getId()));
+            boolean at32 = board.getSector(32).getUnits().stream()
+                    .anyMatch(u -> attackerUnitId.equals(u.getId()));
+            assertTrue(at13, "L'unité annulée doit rester au secteur intermédiaire 13");
+            assertFalse(at32, "L'unité annulée ne doit pas atteindre le secteur final 32");
+        }
     }
 
     // ==================================================
@@ -347,6 +395,48 @@ class TurnResolutionOrchestratorStepsTest {
 
             assertThrows(IllegalStateException.class, orchestrator::finalizeTurn,
                     "Finaliser avec une bataille en attente doit échouer");
+        }
+
+        @Test
+        @Transactional
+        @DisplayName("finalizeTurn : invalide le cache du tour courant de TurnService")
+        void finalizeTurn_invalideLeCacheDuTourCourant() {
+            setupBruteVsLarbinOrder();
+            int turnBefore = turnService.getCurrentTurn(); // popule cachedTurn
+            orchestrator.startSession();
+            orchestrator.advanceHop();
+            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(conflictId);
+
+            orchestrator.finalizeTurn();
+
+            assertEquals(turnBefore + 1, turnService.getCurrentTurn(),
+                    "Le cache du tour doit être invalidé après finalizeTurn "
+                            + "→ getCurrentTurn retourne le nouveau tour");
+        }
+
+        @Test
+        @Transactional
+        @DisplayName("finalizeTurn : libère le verrou même sur exception après les gardes")
+        void finalizeTurn_libereLeVerrouSurExceptionApresLesGardes() {
+            setupBruteVsLarbinOrder();
+            orchestrator.startSession();
+            orchestrator.advanceHop();
+            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(conflictId);
+
+            // Forcer finalizeResolution à lever une exception (simule une erreur DB
+            // après les gardes de validation — avant le fix, le verrou restait acquis).
+            Mockito.doThrow(new RuntimeException("Simulated DB error"))
+                    .when(movementService).finalizeResolution(any(), any());
+
+            assertThrows(RuntimeException.class, orchestrator::finalizeTurn,
+                    "finalizeTurn doit propager l'exception");
+
+            assertFalse(turnLock.isLocked(),
+                    "Le verrou doit être libéré même sur exception (try/finally)");
+            assertFalse(orchestrator.getState().isActive(),
+                    "La session doit être fermée même sur exception (try/finally)");
         }
     }
 

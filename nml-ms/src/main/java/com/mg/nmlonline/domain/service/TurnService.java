@@ -70,6 +70,14 @@ public class TurnService {
     }
 
     /**
+     * Invalide le cache du tour courant. À appeler quand le tour est muté
+     * hors de {@link #advanceTurn()} (ex. {@code TurnResolutionOrchestrator.finalizeTurn}).
+     */
+    public void invalidateTurnCache() {
+        cachedTurn = null;
+    }
+
+    /**
      * Termine le tour courant : résout les ordres de déplacement PENDING, puis
      * incrémente le compteur. Retourne le nouveau numéro de tour.
      *
