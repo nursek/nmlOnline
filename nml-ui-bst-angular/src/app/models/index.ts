@@ -9,6 +9,8 @@ export * from './board.model';
 export * from './shop.model';
 export * from './movement.model';
 export * from './movement-resolution.model';
+export * from './turn-resolution.model';
+export * from './dev-seed.model';
 
 /** Minimal Spring Data page wrapper — only `content` is ever read. */
 export interface PageResult<T> {

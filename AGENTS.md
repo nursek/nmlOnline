@@ -52,6 +52,18 @@ npm start / npm test / npm run lint / npm run format
 - Single source of sector ownership: `Sector.ownerId`.
 - `Board.sectors` is a transient map populated via `@PostLoad` — don't persist it directly.
 - JPA relations: `@JsonIgnore` on the many side to avoid JSON loops.
+- **JPA cascade hygiene**: see [`docs/jpa-pitfalls.md`](docs/jpa-pitfalls.md) before
+  adding any `@OneToMany(mappedBy=…, orphanRemoval=true)` whose child carries a NOT NULL
+  FK, or before `.remove()` / `.clear()` on such a collection. Audit of existing
+  `orphanRemoval=true` mappings (`Player.equipments`, `Player.resources`,
+  `Player.buildings`…) is tracked in that doc — `Player.equipments` and
+  `Player.resources` are the prime suspects for a future 500 if a transfer path is
+  added.
+- **Turn resolution**: two admin end-of-turn paths — `TurnService.advanceTurn()`
+  (atomic) and `TurnResolutionOrchestrator` (hop-by-hop). `TurnLock` (shared
+  `AtomicBoolean` bean) serializes them. The orchestrator's `Session` is in-memory,
+  single-JVM, lost on restart. `Board.currentTurn` is mutated in **two** places —
+  both must invalidate `TurnService.cachedTurn` (the `getCurrentTurn` cache).
 
 ## Prod data persistence
 

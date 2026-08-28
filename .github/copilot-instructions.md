@@ -29,6 +29,18 @@ Réponses et commentaires générés en **français**.
 - Source unique de propriété : `Sector.ownerId`
 - `Board.sectors` est une map transient initialisée via `@PostLoad`
 - Relations JPA : éviter boucles JSON (`@JsonIgnore` côté many)
+- **Hygiène cascade JPA** : voir [`docs/jpa-pitfalls.md`](../docs/jpa-pitfalls.md)
+  avant d'ajouter `@OneToMany(mappedBy=…, orphanRemoval=true)` avec sous-enfant à FK
+  NOT NULL, ou avant `.remove()`/`.clear()` sur une telle collection. Audit des
+  `orphanRemoval=true` existants (`Player.equipments`, `Player.resources`,
+  `Player.buildings`) tracé dans ce doc — `Player.equipments` et `Player.resources`
+  sont les suspects prioritaires d'un futur 500 si un path de transfert est ajouté.
+- **Résolution du tour** : deux chemins de fin de tour admin —
+  `TurnService.advanceTurn()` (atomique) et `TurnResolutionOrchestrator` (pas-à-pas
+  par hop). `TurnLock` (bean `AtomicBoolean` partagé) les sérialise. La session de
+  l'orchestrateur est en mémoire, JVM unique, perdue au redémarrage.
+  `Board.currentTurn` est muté à **deux** endroits — les deux doivent invalider
+  `TurnService.cachedTurn` (le cache de `getCurrentTurn`).
 
 ---
 

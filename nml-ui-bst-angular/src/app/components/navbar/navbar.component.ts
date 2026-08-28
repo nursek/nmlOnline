@@ -35,6 +35,7 @@ const BASE_MENU_ITEMS: NavLink[] = [
 const ADMIN_MENU_ITEMS: NavLink[] = [
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' },
+  { path: '/admin/resolution', label: 'Fin de tour', icon: 'skip_next' },
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
 ];
 

@@ -7,6 +7,10 @@ import {
   Player,
   MovementOrder,
   MovementResolutionResult,
+  TurnResolutionState,
+  TurnFinalizeResult,
+  ResolvedBattle,
+  ScenarioSummary,
   Unit,
   VehicleTypeInfo,
   BuyEquipmentItem,
@@ -113,6 +117,53 @@ export class ApiService {
   adminResolveMovements(): Observable<MovementResolutionResult> {
     return this.http.post<MovementResolutionResult>(
       `${this.baseUrl}/admin/turn/movements/resolve`,
+      {},
+    );
+  }
+
+  // Résolution pas-à-pas par hop : l'admin démarre la session, avance hop par
+  // hop, résout manuellement chaque bataille du hop courant, puis finalise
+  // (incrémente le tour). Verrouille /turn/next pendant la session.
+  adminStartResolution(): Observable<TurnResolutionState> {
+    return this.http.post<TurnResolutionState>(`${this.baseUrl}/admin/turn/resolve/start`, {});
+  }
+
+  adminGetResolutionState(): Observable<TurnResolutionState> {
+    return this.http.get<TurnResolutionState>(`${this.baseUrl}/admin/turn/resolve/state`);
+  }
+
+  adminAdvanceHop(): Observable<TurnResolutionState> {
+    return this.http.post<TurnResolutionState>(`${this.baseUrl}/admin/turn/resolve/next-hop`, {});
+  }
+
+  adminResolveBattle(conflictId: number): Observable<ResolvedBattle> {
+    return this.http.post<ResolvedBattle>(
+      `${this.baseUrl}/admin/turn/resolve/resolve-battle`,
+      {},
+      { params: { conflictId } },
+    );
+  }
+
+  adminFinalizeResolution(): Observable<TurnFinalizeResult> {
+    return this.http.post<TurnFinalizeResult>(`${this.baseUrl}/admin/turn/resolve/finalize`, {});
+  }
+
+  adminAbortResolution(): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/turn/resolve`);
+  }
+
+  // Scénario de test pas-à-pas (dev uniquement). En prod, le contrôleur
+  // @Profile("dev") n'est pas enregistré → ces endpoints renvoient 404 (probe
+  // servant à cacher le bouton UI côté frontend).
+  adminGetDevScenarioStatus(): Observable<{ available: boolean }> {
+    return this.http.get<{ available: boolean }>(
+      `${this.baseUrl}/admin/dev/seed-resolution-scenario`,
+    );
+  }
+
+  adminSeedDevScenario(): Observable<ScenarioSummary> {
+    return this.http.post<ScenarioSummary>(
+      `${this.baseUrl}/admin/dev/seed-resolution-scenario`,
       {},
     );
   }

@@ -7,13 +7,16 @@ import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.Unit;
+import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.infrastructure.repository.UnitRepository;
 import com.mg.nmlonline.mapper.MovementMapper;
 import com.mg.nmlonline.mapper.UnitMapper;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -38,6 +41,7 @@ public class UnitService {
     private final UnitRepository unitRepository;
     private final UnitMapper unitMapper;
     private final MovementMapper movementMapper;
+    private final EntityManager em;
 
     public UnitService(BoardService boardService,
                         PlayerService playerService,
@@ -45,7 +49,8 @@ public class UnitService {
                         TurnService turnService,
                         UnitRepository unitRepository,
                         UnitMapper unitMapper,
-                        MovementMapper movementMapper) {
+                        MovementMapper movementMapper,
+                        EntityManager em) {
         this.boardService = boardService;
         this.playerService = playerService;
         this.movementService = movementService;
@@ -53,6 +58,7 @@ public class UnitService {
         this.unitRepository = unitRepository;
         this.unitMapper = unitMapper;
         this.movementMapper = movementMapper;
+        this.em = em;
     }
 
     // ============================================================
@@ -111,11 +117,34 @@ public class UnitService {
                     "Aucun équipement \"" + equipmentName + "\" dans l'inventaire du joueur.");
         }
 
-        boolean removed = unit.removeEquipment(stack.getEquipment());
-        if (!removed) {
+        // Unit.unitEquipments n'a plus orphanRemoval (Phase 2: voir Unit.java) — son
+        // retrait de la collection en mémoire n'émet plus de DELETE SQL automatique.
+        // On détruit donc explicitement les rows persistées via em.remove(ue) avant
+        // le retrait collection (sinon les rows orphelines subsisteraient en base).
+        List<UnitEquipment> persistedUEs = new ArrayList<>();
+        for (UnitEquipment ue : unit.getUnitEquipments()) {
+            if (ue.getEquipment() != null && ue.getEquipment().getName().equals(equipmentName)) {
+                persistedUEs.add(ue);
+            }
+        }
+        if (persistedUEs.isEmpty()) {
             throw new IllegalArgumentException(
                     "L'unité #" + unit.getId() + " ne porte pas l'équipement \"" + equipmentName + "\".");
         }
+        persistedUEs.forEach(em::remove);
+
+        // Mutations in-memory (collection transient `equipments` + bag `unitEquipments`)
+        // et recalcul des stats de l'unité — recalculateBaseStats reposé car les bonus
+        // équipement ne s'appliquent plus.
+        boolean removed = unit.removeEquipment(stack.getEquipment());
+        if (!removed) {
+            // Cohérence : persistedUEs était non-vide, donc unit.removeEquipment devait
+            // trouver l'entry. Sinon, incohérence transient vs persistant — on lève tôt.
+            throw new IllegalStateException(
+                    "Incohérence : UnitEquipment persistés trouvés pour \"" + equipmentName
+                            + "\" mais unit.removeEquipment transient n'a rien retiré.");
+        }
+
         player.incrementEquipmentAvailability(stack.getEquipment());
         playerService.save(player);
         boardService.save(board);
