@@ -7,9 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Structure pour gérer les bonus/malus d'un joueur - Classe Embeddable pour JPA
- */
 @Embeddable
 @Getter
 @Setter
@@ -34,18 +31,12 @@ public class PlayerBonuses {
     @Column(name = "evasion_bonus_percent")
     private double evasionBonusPercent = 0.0;
 
-    /**
-     * Vérifie si au moins un bonus est appliqué
-     */
     public boolean hasAnyBonus() {
         return attackBonusPercent != 0 || defenseBonusPercent != 0 ||
                 pdfBonusPercent != 0 || pdcBonusPercent != 0 ||
                 armorBonusPercent != 0 || evasionBonusPercent != 0;
     }
 
-    /**
-     * Affiche les bonus non nuls
-     */
     public void displayBonuses() {
         if (attackBonusPercent != 0) System.out.printf("  Attaque : %+.1f%%%n", attackBonusPercent * 100);
         if (defenseBonusPercent != 0) System.out.printf("  Défense : %+.1f%%%n", defenseBonusPercent * 100);

@@ -27,17 +27,11 @@ public class BoardController {
         this.boardService = boardService;
     }
 
-    /**
-     * Récupère toutes les boards
-     */
     @GetMapping
     public ResponseEntity<List<BoardDto>> getAllBoards() {
         return ResponseEntity.ok(boardService.getAllBoardsDto());
     }
 
-    /**
-     * Récupère une board par son ID
-     */
     @GetMapping("/{id}")
     public ResponseEntity<BoardDto> getBoardById(@PathVariable("id") Long id) {
         return boardService.getBoardByIdDto(id)
@@ -45,9 +39,6 @@ public class BoardController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Récupère une board par son nom
-     */
     @GetMapping("/name/{name}")
     public ResponseEntity<BoardDto> getBoardByName(@PathVariable("name") String name) {
         return boardService.getBoardByNameDto(name)
@@ -55,18 +46,12 @@ public class BoardController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Crée ou met à jour une board
-     */
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<BoardDto> createBoard(@RequestBody BoardDto boardDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(boardService.createBoardDto(boardDto));
     }
 
-    /**
-     * Supprime une board
-     */
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBoard(@PathVariable("id") Long id) {
@@ -74,9 +59,6 @@ public class BoardController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Assigne un propriétaire à un secteur
-     */
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{boardId}/sectors/{sectorNumber}/owner")
     public ResponseEntity<Void> assignOwnerToSector(
@@ -88,9 +70,6 @@ public class BoardController {
         return success ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
-    /**
-     * Vérifie si deux secteurs sont voisins
-     */
     @GetMapping("/{boardId}/sectors/neighbors")
     public ResponseEntity<Boolean> areNeighbors(
             @PathVariable("boardId") Long boardId,
@@ -100,9 +79,6 @@ public class BoardController {
         return ResponseEntity.ok(areNeighbors);
     }
 
-    /**
-     * Vérifie s'il y a un conflit entre deux secteurs
-     */
     @GetMapping("/{boardId}/sectors/conflict")
     public ResponseEntity<Boolean> hasConflict(
             @PathVariable("boardId") Long boardId,

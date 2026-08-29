@@ -33,10 +33,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Controller d'administration pour la gestion avancée des joueurs.
- * Protégé par le rôle ADMIN via SecurityConfig.
- */
 @RestController
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
@@ -74,9 +70,6 @@ public class AdminController {
         this.turnResolutionOrchestrator = turnResolutionOrchestrator;
     }
 
-    /**
-     * Récupère tous les joueurs avec leurs détails complets (paginé).
-     */
     @GetMapping("/players")
     public Page<PlayerDto> getAllPlayers(Pageable pageable) {
         Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
@@ -84,9 +77,6 @@ public class AdminController {
                 .map(player -> playerMapper.toDtoWithSectors(player, board));
     }
 
-    /**
-     * Exporte un joueur au format JSON (compatible avec l'import).
-     */
     @GetMapping("/players/{id}/export")
     public ResponseEntity<Map<String, Object>> exportPlayer(@PathVariable Long id) {
         Map<String, Object> exportData = adminService.exportPlayer(id);
@@ -94,12 +84,8 @@ public class AdminController {
     }
 
     /**
-     * Importe un joueur depuis un fichier JSON.
-     * Si un joueur avec le même nom existe, il est remplacé.
-     * Si {@code password} est fourni, un compte {@link com.mg.nmlonline.domain.model.user.User}
-     * (rôle USER) est créé/mis à jour avec ce mot de passe haché+pepper, pour permettre
-     * la connexion sous le nom du joueur. Sans password, le joueur est importé sans compte
-     * (utile en dev où les comptes sont seedés par ailleurs).
+     * Import upsert par nom. Avec password : crée/met à jour un compte User (hash+pepper).
+     * Sans password : joueur seul (compte géré par ailleurs en dev).
      */
     @PostMapping(value = "/players/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PlayerDto> importPlayer(
@@ -113,7 +99,7 @@ public class AdminController {
     }
 
     /**
-     * Supprime complètement un joueur et réinitialise ses secteurs.
+     * Supprime le joueur et réinitialise ses secteurs.
      */
     @DeleteMapping("/players/{id}")
     public ResponseEntity<Map<String, String>> deletePlayer(@PathVariable Long id) {
@@ -122,10 +108,8 @@ public class AdminController {
     }
 
     /**
-     * Upload des assets visuels du Board (image de fond + SVG overlay des secteurs).
-     * Étape 1 du flux de création du board en prod : durations les fichiers sur disque,
-     * renvoie les URLs à passer à {@code /import} + le compte de secteurs détectés dans le SVG
-     * pour valider la cohérence avec le board.json que l'admin uploadera ensuite.
+     * Étape 1/2 création board prod : stocke les assets, renvoie URLs + compte de secteurs
+     * du SVG pour valider le board.json à venir.
      */
     @PostMapping(value = "/boards/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, Object>> uploadBoardAssets(
@@ -141,9 +125,7 @@ public class AdminController {
     }
 
     /**
-     * Importe le Board depuis un board.json (liste plate de secteurs).
-     * Étape 2 : prend en plus les URLs renvoyées par {@code /boards/assets} pour
-     * override celles éventuellement présentes dans le JSON.
+     * Étape 2/2 : import board.json (liste plate) ; les URLs de /boards/assets override celles du JSON.
      */
     @PostMapping(value = "/boards/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BoardDto> importBoard(
@@ -155,24 +137,13 @@ public class AdminController {
         return ResponseEntity.ok(boardMapper.toDto(board));
     }
 
-    // ==========================================================
-    // === GESTION DU TOUR (source unique : TurnService) =========
-    // ==========================================================
-
-    /**
-     * Tour courant du plateau.
-     */
     @GetMapping("/turn/current")
     public Map<String, Object> getCurrentTurn() {
         return Map.of("currentTurn", turnService.getCurrentTurn());
     }
 
     /**
-     * Termine le tour courant : résout les ordres de déplacement PENDING puis
-     * incrémente le compteur. Retourne le nouveau numéro de tour.
-     *
-     * <p>ponytail: déclenchement manuel admin — remplacé plus tard par un scheduler
-     * automatique end-of-turn (avec calcul des revenus/effets de bâtiments).
+     * Résout les ordres PENDING puis incrémente le numéro de tour.
      */
     @PostMapping("/turn/next")
     public Map<String, Object> advanceTurn() {
@@ -181,15 +152,6 @@ public class AdminController {
         return Map.of("currentTurn", newTurn);
     }
 
-    // ==========================================================
-    // === ORDRES DE DÉPLACEMENT (admin) =========================
-    // ==========================================================
-
-    /**
-     * Liste tous les ordres de déplacement du tour courant, optionnellement
-     * filtrés par statut (PENDING/RESOLVED/BLOCKED/CANCELLED). Sans
-     * {@code status}, retourne tous les statuts du tour courant.
-     */
     @GetMapping("/turn/orders")
     public List<AdminMovementOrderDto> getOrders(
             @RequestParam(value = "status", required = false) MovementStatus status) {
@@ -197,10 +159,7 @@ public class AdminController {
     }
 
     /**
-     * Aperçu (dry-run) de la résolution des mouvements du tour courant :
-     * calcule conflits potentiels et combats de transit <strong>sans</strong>
-     * persister les déplacements ni marquer les ordres. Les ordres restent
-     * PENDING après l'appel.
+     * Dry-run : calcule la résolution sans persister (ordres restent PENDING).
      */
     @PostMapping("/turn/movements/preview")
     public MovementResolutionResultDto previewMovements() {
@@ -208,13 +167,7 @@ public class AdminController {
     }
 
     /**
-     * Applique la résolution des mouvements du tour courant : déplace les
-     * entités, marque les ordres RESOLVED/BLOCKED et persiste. Renvoie le
-     * compte-rendu (ordres résolus/bloqués, conflits, combats de transit).
-     *
-     * <p>Indépendant de {@link #advanceTurn()} : ne décale pas le numéro de
-     * tour. L'admin enchaîne ensuite « Finir le tour » pour passer au suivant
-     * (la résolution sera alors un no-op car plus aucun ordre PENDING).
+     * Résout et persiste les mouvements du tour courant sans avancer le numéro de tour.
      */
     @PostMapping("/turn/movements/resolve")
     public MovementResolutionResultDto resolveMovements() {
@@ -224,15 +177,8 @@ public class AdminController {
         return report;
     }
 
-    // ==========================================================
-    // === RÉSOLUTION PAS-À-PAS PAR HOP =========================
-    // ==========================================================
-
     /**
-     * Démarre une session de résolution pas-à-pas : prépare la résolution des
-     * ordres PENDING du tour courant sans avancer d'hop. L'admin enchaîne avec
-     * {@code /next-hop}. Verrouille la fin de tour ( bloque {@code /turn/next}
-     * et les autres sessions). 409 si déjà active.
+     * Démarre une session pas-à-pas ; verrouille /turn/next et les autres sessions ; 409 si déjà active.
      */
     @PostMapping("/turn/resolve/start")
     public TurnResolutionStateDto startResolution() {
@@ -241,19 +187,13 @@ public class AdminController {
         return state;
     }
 
-    /**
-     * État courant de la session pas-à-pas (hop en cours, conflits en attente,
-     * batailles résolues). {@code active=false} si aucune session.
-     */
     @GetMapping("/turn/resolve/state")
     public TurnResolutionStateDto getResolutionState() {
         return turnResolutionOrchestrator.getState();
     }
 
     /**
-     * Avance d'un hop : déplace les unités d'un secteur, détecte les conflits
-     * et les expose pour résolution manuelle. 409 si des batailles sont encore
-     * en attente ou si tous les hops sont déjà effectués.
+     * Avance d'un hop ; 409 si batailles en attente ou tous hops déjà faits.
      */
     @PostMapping("/turn/resolve/next-hop")
     public TurnResolutionStateDto advanceHop() {
@@ -261,9 +201,7 @@ public class AdminController {
     }
 
     /**
-     * Résout une bataille du hop courant (identifiée par {@code conflictId} du
-     * DTO d'état) : applique le combat et persiste les pertes/blessés. 404 si
-     * le conflit est introuvable ou déjà résolu.
+     * Résout la bataille conflictId (du DTO d'état) ; 404 si introuvable/déjà résolu.
      */
     @PostMapping("/turn/resolve/resolve-battle")
     public ResolvedBattleDto resolveBattle(@RequestParam int conflictId) {
@@ -274,9 +212,7 @@ public class AdminController {
     }
 
     /**
-     * Finalise le tour : marque les ordres RESOLVED et incrémente
-     * {@code Board.currentTurn}. Nécessite tous les hops effectués et toutes
-     * les batailles résolues (sinon 409). Libère le verrou et ferme la session.
+     * Finalise : incrémente le tour ; 409 si hops/batailles incomplets ; libère le verrou.
      */
     @PostMapping("/turn/resolve/finalize")
     public TurnFinalizeResultDto finalizeResolution() {
@@ -284,8 +220,7 @@ public class AdminController {
     }
 
     /**
-     * Abandon soft : libère le verrou et ferme la session <strong>sans</strong>
-     * rollback des positions déjà déplacées ni des combats déjà résolus.
+     * Abandon soft : libère le verrou sans rollback des positions/combats déjà effectués.
      */
     @DeleteMapping("/turn/resolve")
     public ResponseEntity<Map<String, String>> abortResolution() {
@@ -293,22 +228,11 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("message", "Session pas-à-pas abandonnée (positions déjà déplacées conservées)"));
     }
 
-    // ==========================================================
-    // === GESTION DES ERREURS providées ici ===================
-    // ==========================================================
-
-    /**
-     * Conflit d'état (résolution déjà en cours, batailles en attente, hops
-     * incomplets...) → 409 Conflict.
-     */
     @org.springframework.web.bind.annotation.ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, String>> handleIllegalState(IllegalStateException e) {
         return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
     }
 
-    /**
-     * Ressource introuvable (conflit déjà résolu/inexistant) → 404.
-     */
     @org.springframework.web.bind.annotation.ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException e) {
         return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));

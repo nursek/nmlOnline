@@ -9,9 +9,6 @@ import lombok.Setter;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Classe représentant un équipement - Entité JPA
- */
 @Entity
 @Table(name = "EQUIPMENT")
 @Getter
@@ -52,7 +49,6 @@ public class Equipment {
     @Column(nullable = false)
     private EquipmentCategory category;
 
-    // Constructeur complet pour la création programmatique
     public Equipment(String name, int cost, double pdfBonus, double pdcBonus,
                      double armBonus, double evasionBonus, Set<UnitClass> compatibleClasses,
                      EquipmentCategory category) {

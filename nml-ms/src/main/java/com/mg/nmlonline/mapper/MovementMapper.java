@@ -15,15 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-/**
- * Mapper pour {@link MovementOrder} ⇔ {@link MovementOrderDto}.
- * Symétrique avec les autres mappers du package (EquipmentMapper, UnitMapper…)
- * afin que la conversion DTO ne vive pas dans le contrôleur.
- */
 @Component
 public class MovementMapper {
 
-    /** Convertit un {@link MovementOrder} du domaine en DTO de sortie API. */
     public MovementOrderDto toDto(MovementOrder order) {
         if (order == null) return null;
 
@@ -41,10 +35,7 @@ public class MovementMapper {
         return dto;
     }
 
-    /**
-     * Convertit un {@link MovementOrder} en DTO admin enrichi du nom du joueur.
-     * {@code playerName} est résolu en lot par l'appelant (anti N+1).
-     */
+    /** playerName résolu en lot par l'appelant (anti N+1). */
     public AdminMovementOrderDto toAdminDto(MovementOrder order, String playerName) {
         if (order == null) return null;
 
@@ -63,11 +54,7 @@ public class MovementMapper {
         return dto;
     }
 
-    /**
-     * Convertit un {@link MovementResolutionResult} en DTO de compte-rendu admin.
-     * {@code namesById} résout playerId → nom pour les ordres et les conflits
-     * (lookup en lot par l'appelant).
-     */
+    /** namesById résout playerId → nom (lookup en lot par l'appelant, anti N+1). */
     public MovementResolutionResultDto toResolutionDto(MovementResolutionResult result,
                                                        int turn,
                                                        Function<Long, String> namesById) {

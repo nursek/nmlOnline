@@ -3,9 +3,7 @@ package com.mg.nmlonline.api.dto;
 import lombok.Data;
 
 /**
- * Conflit à la destination du hop courant, en attente de résolution manuelle
- * par l'admin. {@code conflictId} identifie le conflit pour cibler l'appel
- * {@code resolve-battle}.
+ * Conflit du hop courant en attente de résolution admin ; conflictId cible l'appel resolve-battle.
  */
 @Data
 public class PendingConflictDto {

@@ -8,21 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Quartier Général - Le centre névralgique de l'empire du joueur.
- *
- * Caractéristiques :
- * - Stats : 100 Atk / 200 Def
- * - Stocke 25% de la fortune personnelle
- * - Déplaçable tous les 5 tours
- * - Perte = défaite immédiate
- * - Si capturé, l'adversaire récupère tous les Quartiers
- * - Si détruit sans être pris, l'armée est immobilisée
- *
- * Reconstruction :
- * - Sur place : 75 000 $
- * - Dans un autre Quartier : 150 000 $
- */
 @Entity
 @DiscriminatorValue("HEADQUARTERS")
 @Getter
@@ -34,10 +19,6 @@ public class Headquarters extends Building {
     public static final double DEFAULT_WEALTH_STORAGE_PERCENTAGE = 0.25;
     public static final int DEFAULT_MOVE_COOLDOWN = 5;
 
-    /**
-     * Indique si le QG est actuellement opérationnel.
-     * Un QG détruit mais non capturé immobilise l'armée.
-     */
     @Column(name = "is_operational")
     private boolean isOperational = true;
 
@@ -68,29 +49,16 @@ public class Headquarters extends Building {
         return DEFAULT_MOVE_COOLDOWN;
     }
 
-    /**
-     * Calcule la part de la fortune stockée dans le QG.
-     *
-     * @param totalWealth Fortune totale du joueur
-     * @return Montant stocké dans le QG
-     */
     public double getStoredWealth(double totalWealth) {
         return totalWealth * DEFAULT_WEALTH_STORAGE_PERCENTAGE;
     }
 
-    /**
-     * Détruit le QG sans le capturer (l'armée est immobilisée).
-     */
     public void destroy() {
         setDestroyed(true);
         this.isOperational = false;
         recalculateBaseStats();
     }
 
-    /**
-     * Reconstruit le QG sur place.
-     * La vérification du coût est faite par le service.
-     */
     public void reconstructSameLocation() {
         setDestroyed(false);
         this.isOperational = true;
@@ -98,9 +66,6 @@ public class Headquarters extends Building {
         this.defense = BuildingType.HEADQUARTERS.getBaseDefense();
     }
 
-    /**
-     * Vérifie si l'armée du joueur est immobilisée (QG détruit non reconstruit).
-     */
     public boolean isArmyImmobilized() {
         return isDestroyed() && !isCaptured();
     }

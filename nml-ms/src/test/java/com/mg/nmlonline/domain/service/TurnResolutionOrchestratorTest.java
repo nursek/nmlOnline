@@ -32,21 +32,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Test d'intégration de la résolution pas-à-pas par hop
- * ({@link TurnResolutionOrchestrator}) : couvre le cycle complet
- * start → advanceHop → resolveBattle → finalizeTurn, y compris la persistance
- * réelle des pertes (orphanRemoval sur {@code Sector.army}).
- *
- * <p>Scénario déterministe (sans évasion, donc sans RNG) : un BRUTE (100/100,
- * expérience 8) attaquant vs un LARBIN (10/10, expérience 0) défenseur. Le
- * LARBIN est détruit en phase ATK, le BRUTE survit blessé (stats ÷ 2).</p>
- *
- * <p>Données seedées par {@code PlayerStartupImporter} au profil {@code test}
- * (H2). Deux secteurs neutres vides accueillent les unités du scénario pour ne
- * pas perturber le seed. La transaction de test annule les effets en fin de
- * méthode ; {@code @AfterEach} libère le verrou de fin de tour au cas où.</p>
- */
+// Scénario déterministe : BRUTE 100/100 vs LARBIN 10/10, pas d'évasion (pas de RNG).
 @SpringBootTest
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
@@ -76,7 +62,7 @@ class TurnResolutionOrchestratorTest {
 
     @AfterEach
     void releaseLock() {
-        // Sécurité : libère le verrou si une assertion a échoué avant finalizeTurn.
+        // Libère le verrou si une assertion a échoué avant finalizeTurn (sinon 409 sur les tests suivants).
         orchestrator.abort();
     }
 
@@ -94,7 +80,6 @@ class TurnResolutionOrchestratorTest {
         Long attackerId = attacker.getId();
         Long defenderId = defender.getId();
 
-        // Deux secteurs neutres vides pour un scénario isolé (sans perturber le seed).
         Sector s1 = board.getAllSectors().stream()
                 .filter(s -> s.isNeutral() && s.getArmySize() == 0)
                 .findFirst().orElseThrow(() -> new AssertionError("Aucun secteur neutre vide pour s1"));
@@ -102,7 +87,6 @@ class TurnResolutionOrchestratorTest {
                 .filter(s -> s.isNeutral() && s.getArmySize() == 0 && s.getNumber() != s1.getNumber())
                 .findFirst().orElseThrow(() -> new AssertionError("Aucun secteur neutre vide pour s2"));
 
-        // BRUTE attaquant (100/100, pas d'évasion → déterministe) + LARBIN défenseur (10/10).
         Unit brute = new Unit(8.0, UnitClass.TIREUR);
         brute.setPlayerId(attackerId);
         s1.addUnit(brute);
@@ -114,7 +98,6 @@ class TurnResolutionOrchestratorTest {
         assertNotNull(bruteId);
 
         int turn = turnService.getCurrentTurn();
-        // On s'assure qu'aucun ordre PENDING parasite de ce tour n'interfère.
         orderRepository.deleteAll(orderRepository.findPendingByTurn(turn));
         em.flush();
 
@@ -123,7 +106,6 @@ class TurnResolutionOrchestratorTest {
         orderRepository.save(order);
         em.flush();
 
-        // === start ===
         TurnResolutionStateDto state = orchestrator.startSession();
         assertTrue(state.isActive());
         assertEquals(turn, state.getTurnEnding());
@@ -132,7 +114,6 @@ class TurnResolutionOrchestratorTest {
         assertTrue(state.isCanAdvance());
         assertFalse(state.isCanFinalize());
 
-        // === hop 1 : le BRUTE arrive sur s2 défendu par le LARBIN ===
         state = orchestrator.advanceHop();
         assertEquals(1, state.getCurrentStep());
         assertEquals(1, state.getPendingConflicts().size(),
@@ -143,7 +124,6 @@ class TurnResolutionOrchestratorTest {
         assertEquals(defenderId, pc.getDefenderPlayerId());
         assertFalse(state.isCanAdvance(), "Hop suivant bloqué tant qu'une bataille est en attente");
 
-        // === resolve battle : BRUTE écrase le LARBIN, survit blessé ===
         ResolvedBattleDto report = orchestrator.resolveBattle(pc.getConflictId());
         assertTrue(report.isSuccess());
         assertEquals(s2.getNumber(), report.getSectorNumber());
@@ -156,7 +136,6 @@ class TurnResolutionOrchestratorTest {
         assertTrue(state.getPendingConflicts().isEmpty());
         assertTrue(state.isCanFinalize());
 
-        // === persistance des pertes : le LARBIN est retiré du secteur, le BRUTE (blessé) y reste ===
         em.flush();
         em.clear();
         Sector s2Refreshed = boardRepository.findAll().stream()
@@ -166,34 +145,17 @@ class TurnResolutionOrchestratorTest {
         assertTrue(survivor.isInjured(), "Le BRUTE doit être blessé après le combat");
         assertEquals(attackerId, survivor.getPlayerId());
 
-        // === finalize : le tour s'incrémente ===
         TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
         assertEquals(turn + 1, fin.getNewTurn());
         assertTrue(fin.getResolvedOrders() >= 1, "L'ordre de l'attaquant doit être résolu");
 
-        // La session est fermée.
         assertFalse(orchestrator.getState().isActive());
     }
 
     @Test
     @DisplayName("resolveBattle détruit un défenseur équipé : la FK cascade efface ses rows unit_equipments (Phase 2)")
     void resolveBattle_perteUniteEquipee_effaceRowsUnitEquipmentsViaFkCascade() {
-        // Mécanisme de cascade sur pertes de combat (Phase 2 + Phase 3) :
-        //   - Phase 2 : Unit.unitEquipments perd orphanRemoval (reste cascade=ALL +
-        //     @OnDelete(CASCADE) + Flyway V3 FK ON DELETE CASCADE).
-        //   - Phase 3 : Sector.army perd aussi orphanRemoval (Flyway V4). La DELETE
-        //     des pertes se fait désormais par em.remove(unit) explicite dans
-        //     CombatService.simulateSectorBattle → cascade REMOVE sur
-        //     Unit.unitEquipments (cascade=ALL) → DELETE unit_equipments propre,
-        //     sans UPDATE release-FK-NULL. La FK ON DELETE CASCADE (V3) est la
-        //     ceinture DB-side au cas où l'ORM laisse un row orphelin.
-        // Ce test couvre le variant « défenseur équipé créé en mémoire puis
-        // persisté » (PersistentBag initialisé). Le variant « équipé chargé LAZY
-        // de DB + MOVED 2 hops + pertes » (la variante piégée non couverte par
-        // Phase 2) est caractérisé par
-        // TurnResolutionOrchestratorLurioCegorachTest#lurioVsCegorach_resolveBattle_...
-        // Setup dans une tx commitée (pour que l'orchestrateur voie les données —
-        // pas de @Transactional sur ce test, voir docs/jpa-pitfalls.md §2).
+        // Pas de @Transactional sur ce test : setup commité pour que l'orchestrateur voie les données (docs/jpa-pitfalls.md §2).
         Long ueId = new TransactionTemplate(txManager).execute(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             List<Player> players = playerRepository.findAll();
@@ -249,7 +211,6 @@ class TurnResolutionOrchestratorTest {
         assertEquals(1, report.getDefenderCasualties(),
                 "Le défenseur équipé est détruit par le BRUTE 100/100");
 
-        // Vérification DB dans une tx fraîche (le commit de resolveBattle a eu lieu).
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             long ueCount = em.createQuery(
                             "select count(ue) from UnitEquipment ue where ue.id = :id", Long.class)

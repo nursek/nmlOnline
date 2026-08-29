@@ -12,9 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Optional;
 
-/**
- * Contrôleur REST pour la gestion des personnages principaux.
- */
 @RestController
 @RequestMapping("/api/characters")
 public class GameCharacterController {

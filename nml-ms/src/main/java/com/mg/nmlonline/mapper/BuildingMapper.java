@@ -12,9 +12,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Mapper pour Building et ses sous-classes - conversion entre Domain et DTO.
- */
 @Component
 public class BuildingMapper {
 
@@ -26,9 +23,6 @@ public class BuildingMapper {
         this.turnService = turnService;
     }
 
-    /**
-     * Convertit un Building du domaine en DTO.
-     */
     public BuildingDto toDto(Building building) {
         if (building == null) return null;
 
@@ -38,26 +32,21 @@ public class BuildingMapper {
         dto.setBuildingType(building.getBuildingType().name());
         dto.setDisplayName(building.getDisplayName());
 
-        // Stats de combat
         dto.setAttack(building.getAttack());
         dto.setDefense(building.getDefense());
 
-        // État général
         dto.setIsDestroyed(building.isDestroyed());
         dto.setIsCaptured(building.isCaptured());
         dto.setCapturedByPlayerId(building.getCapturedByPlayerId());
         dto.setCapturedTurn(building.getCapturedTurn());
 
-        // Déplacement
         dto.setLastMovedTurn(building.getLastMovedTurn());
         dto.setMoveCooldown(building.getMoveCooldown());
 
-        // Localisation
         if (building.getSector() != null) {
             dto.setSectorNumber(building.getSector().getNumber());
         }
 
-        // Conversion spécifique selon le type
         if (building instanceof Headquarters hq) {
             mapHeadquartersToDto(hq, dto);
         } else if (building instanceof WeaponCache cache) {
@@ -81,7 +70,6 @@ public class BuildingMapper {
         dto.setFillPercentage(cache.getFillPercentage());
         dto.setCanMove(cache.canMove(getCurrentTurn()));
 
-        // Convertir les équipements stockés
         if (cache.getStoredEquipments() != null) {
             List<EquipmentStackDto> equipmentDtos = cache.getStoredEquipments().stream()
                     .map(this::toEquipmentStackDto)
@@ -96,7 +84,6 @@ public class BuildingMapper {
         dto.setCanMove(bank.canMove(getCurrentTurn()));
         dto.setCurrentVampirizeRate(bank.getVampirizeRate(getCurrentTurn()));
 
-        // Convertir les ressources stockées
         if (bank.getStoredResources() != null) {
             List<PlayerResourceDto> resourceDtos = bank.getStoredResources().stream()
                     .map(this::toPlayerResourceDto)
@@ -104,8 +91,6 @@ public class BuildingMapper {
             dto.setStoredResources(resourceDtos);
         }
     }
-
-    // === Helpers ===
 
     private EquipmentStackDto toEquipmentStackDto(EquipmentStack stack) {
         if (stack == null) return null;
@@ -119,16 +104,12 @@ public class BuildingMapper {
     private PlayerResourceDto toPlayerResourceDto(PlayerResource resource) {
         if (resource == null) return null;
         PlayerResourceDto dto = new PlayerResourceDto();
-        // resourceName (colonne non null) plutôt que resource.getResource().getName() :
-        // évite un SELECT lazy par ressource et une NPE si la relation est absente.
+        // resourceName (colonne non null) plutôt que getResource().getName() : évite un SELECT lazy et une NPE si la relation est absente.
         dto.setName(resource.getResourceName());
         dto.setQuantity(resource.getQuantity());
         return dto;
     }
 
-    /**
-     * Tour courant — source unique de vérité via {@link TurnService}.
-     */
     private int getCurrentTurn() {
         return turnService.getCurrentTurn();
     }

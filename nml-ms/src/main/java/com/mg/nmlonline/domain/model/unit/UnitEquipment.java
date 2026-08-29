@@ -8,10 +8,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-/**
- * Table de liaison entre Unit et Equipment
- * Permet de gérer les équipements portés par une unité
- */
 @Entity
 @Table(name = "UNIT_EQUIPMENTS")
 @Getter

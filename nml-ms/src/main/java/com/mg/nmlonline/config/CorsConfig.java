@@ -19,7 +19,6 @@ public class CorsConfig {
             @Value("${app.cors.allowed-origins:}") String extraOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Origines locales de dev + origines de production HTTPS uniquement.
         List<String> origins = new ArrayList<>(Arrays.asList(
             "http://localhost:5174",
             "http://localhost:5173",
@@ -32,25 +31,20 @@ public class CorsConfig {
         }
         configuration.setAllowedOrigins(origins);
 
-        // Autoriser toutes les méthodes HTTP
         configuration.setAllowedMethods(Arrays.asList(
             "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
 
-        // Autoriser tous les headers
         configuration.setAllowedHeaders(Arrays.asList("*"));
 
-        // Autoriser l'envoi de credentials (cookies, authorization headers)
         configuration.setAllowCredentials(true);
 
-        // Exposer les headers de réponse
         configuration.setExposedHeaders(Arrays.asList(
             "Authorization",
             "Content-Type",
             "X-Requested-With"
         ));
 
-        // Durée de cache de la configuration CORS (en secondes)
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -6,9 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * Repository pour gérer les types de ressources disponibles dans le jeu
- */
 @Repository
 public interface ResourceRepository extends JpaRepository<Resource, Long> {
     Optional<Resource> findByName(String name);

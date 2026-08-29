@@ -7,8 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * Corps de requête pour créer un ordre de déplacement à pied (un ou plusieurs
- * CombatEntity partageant la même route).
+ * Ordre à pied : un ou plusieurs CombatEntity partageant la même route.
  */
 @Data
 public class PlaceFootOrderRequestDto {

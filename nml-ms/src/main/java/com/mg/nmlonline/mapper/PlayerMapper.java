@@ -13,10 +13,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Mapper simplifié pour Player - conversion uniquement entre Domain et DTO
- * Les entités Entity ont été fusionnées avec les classes du domaine
- */
 @Component
 public class PlayerMapper {
 
@@ -36,9 +32,6 @@ public class PlayerMapper {
         this.sectorMapper = sectorMapper;
     }
 
-    /**
-     * Convertit un objet Player du domaine en DTO PlayerDto
-     */
     public PlayerDto toDto(Player player) {
         if (player == null) return null;
 
@@ -46,13 +39,11 @@ public class PlayerMapper {
         dto.setId(player.getId());
         dto.setName(player.getName());
 
-        // Conversion des stats
         if (player.getStats() != null) {
             PlayerStatsDto statsDto = getPlayerStatsDto(player);
             dto.setStats(statsDto);
         }
 
-        // Conversion des équipements
         if (player.getEquipments() != null) {
             List<EquipmentStackDto> equipmentDtos = player.getEquipments().stream()
                     .map(this::equipmentStackToDto)
@@ -60,7 +51,6 @@ public class PlayerMapper {
             dto.setEquipments(equipmentDtos);
         }
 
-        // Conversion des ressources
         if (player.getResources() != null) {
             List<PlayerResourceDto> resourceDtos = player.getResources().stream()
                     .map(this::playerResourceToDto)
@@ -68,12 +58,10 @@ public class PlayerMapper {
             dto.setResources(resourceDtos);
         }
 
-        // Conversion du personnage principal
         if (player.getCharacter() != null) {
             dto.setCharacter(gameCharacterMapper.toDto(player.getCharacter()));
         }
 
-        // Conversion des bâtiments
         if (player.getBuildings() != null) {
             List<BuildingDto> buildingDtos = player.getBuildings().stream()
                     .map(buildingMapper::toDto)
@@ -84,10 +72,7 @@ public class PlayerMapper {
         return dto;
     }
 
-    /**
-     * Convertit un Player en DTO enrichi avec les secteurs complets depuis la board fournie.
-     * Note : utilise la première board disponible (le jeu ne supporte qu'une board active).
-     */
+    /** Enrichit avec les secteurs possédés ; une seule board active en jeu. */
     public PlayerDto toDtoWithSectors(Player player, Board board) {
         if (player == null) {
             return null;
@@ -95,7 +80,6 @@ public class PlayerMapper {
 
         PlayerDto dto = toDto(player);
 
-        // Enrichir avec les secteurs du joueur
         List<SectorDto> playerSectors = new ArrayList<>();
         if (board != null && player.getId() != null) {
             for (Sector sector : board.getAllSectors()) {
@@ -128,8 +112,6 @@ public class PlayerMapper {
         return statsDto;
     }
 
-    // === Méthodes utilitaires pour EquipmentStack ===
-
     private EquipmentStackDto equipmentStackToDto(EquipmentStack stack) {
         if (stack == null || stack.getEquipment() == null) return null;
 
@@ -140,8 +122,6 @@ public class PlayerMapper {
         return dto;
     }
 
-    // === Méthodes utilitaires pour PlayerResource ===
-
     private PlayerResourceDto playerResourceToDto(PlayerResource resource) {
         if (resource == null) return null;
 
@@ -150,12 +130,10 @@ public class PlayerMapper {
         dto.setName(resource.getResourceName());
         dto.setQuantity(resource.getQuantity());
 
-        // Enrichir avec le prix de base depuis Resource
         try {
             double baseValue = resourceService.getBaseValue(resource.getResourceName());
             dto.setBaseValue(baseValue);
         } catch (IllegalArgumentException e) {
-            // Ressource inconnue, laisser baseValue à null
             dto.setBaseValue(null);
         }
 

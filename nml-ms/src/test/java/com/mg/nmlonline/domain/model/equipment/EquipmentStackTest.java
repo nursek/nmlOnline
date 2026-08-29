@@ -12,11 +12,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests de régression sur les stacks d'équipement :
- * compteurs quantity/available, fusion par nom, remplacement d'équipement
- * (swap, rollback, éviction FIFO par catégorie).
- */
+import static org.junit.jupiter.api.Assertions.*;
+
 @DisplayName("EquipmentStack et gestion d'inventaire")
 class EquipmentStackTest {
 
@@ -48,8 +45,8 @@ class EquipmentStackTest {
         @DisplayName("decrement descend les deux, plancher à 0")
         void shouldDecrementWithZeroFloor() {
             EquipmentStack stack = new EquipmentStack(firearm("Pistolet"));
-            stack.decrement();
-            stack.decrement(); // déjà à 0
+        stack.decrement();
+        stack.decrement();
 
             assertEquals(0, stack.getQuantity());
             assertEquals(0, stack.getAvailable());
@@ -71,9 +68,9 @@ class EquipmentStackTest {
         @DisplayName("incrementAvailable est plafonné à quantity")
         void shouldCapAvailableAtQuantity() {
             EquipmentStack stack = new EquipmentStack(firearm("Pistolet"));
-            stack.decrementAvailable(); // available 0
-            stack.incrementAvailable();
-            stack.incrementAvailable(); // déjà à quantity
+        stack.decrementAvailable();
+        stack.incrementAvailable();
+        stack.incrementAvailable();
 
             assertEquals(1, stack.getAvailable());
             assertTrue(stack.isAvailable());
@@ -128,11 +125,10 @@ class EquipmentStackTest {
         @Test
         @DisplayName("removeEquipmentFromStack ignore la disponibilité")
         void shouldPinRemovalIgnoringAvailability() {
-            // comportement actuel piné : on peut supprimer un stack dont
-            // des exemplaires sont équipés (available < quantity)
+            // available < quantity : la suppression ignore la dispo (exemplaires équipés perdus).
             player.addEquipmentToStack(firearm("Pistolet"), 1);
             Equipment gun = player.getEquipmentByString("Pistolet");
-            player.decrementEquipmentAvailability("Pistolet"); // available 0, quantity 1
+            player.decrementEquipmentAvailability("Pistolet");
 
             player.removeEquipmentFromStack(gun);
 
@@ -163,7 +159,7 @@ class EquipmentStackTest {
             player = new Player("TestPlayer");
             player.setId(1L);
             player.getStats().setMoney(100000.0);
-            unit = new Unit(5, UnitClass.TIREUR); // MALFRAT : 1 firearm, 2 melee
+            unit = new Unit(5, UnitClass.TIREUR);
         }
 
         @Test
@@ -216,8 +212,8 @@ class EquipmentStackTest {
 
             assertFalse(result);
             assertTrue(unit.getEquipments().contains(oldGun));
-            assertFalse(player.isEquipmentAvailable("VieuxPistolet")); // rééquipé
-            assertTrue(player.isEquipmentAvailable("FusilSniper"));    // toujours en stock
+            assertFalse(player.isEquipmentAvailable("VieuxPistolet"));
+            assertTrue(player.isEquipmentAvailable("FusilSniper"));
         }
 
         @Test
@@ -229,18 +225,17 @@ class EquipmentStackTest {
             player.addEquipmentToStack(blade1, 1);
             player.addEquipmentToStack(blade2, 1);
             player.addEquipmentToStack(blade3, 1);
-            unit.addEquipment(blade1); // melee 1/2
-            unit.addEquipment(blade2); // melee 2/2 (limite MALFRAT)
+            unit.addEquipment(blade1);
+            unit.addEquipment(blade2);
 
-            // comportement actuel piné : à la limite, le premier équipé de la
-            // catégorie est retiré silencieusement pour laisser place au nouveau
+            // à la limite, le premier équipé de la catégorie est évincé silencieusement (FIFO)
             boolean result = player.replaceEquipmentByCategory(unit, blade3);
 
             assertTrue(result);
-            assertFalse(unit.getEquipments().contains(blade1)); // évincé (FIFO)
+            assertFalse(unit.getEquipments().contains(blade1));
             assertTrue(unit.getEquipments().contains(blade2));
             assertTrue(unit.getEquipments().contains(blade3));
-            assertTrue(player.isEquipmentAvailable("Couteau")); // rendu à l'inventaire
+            assertTrue(player.isEquipmentAvailable("Couteau"));
         }
 
         @Test
@@ -248,7 +243,7 @@ class EquipmentStackTest {
         void shouldFilterCompatibleEquipments() {
             player.addEquipmentToStack(firearm("Pistolet"), 1);
             player.addEquipmentToStack(melee("Couteau"), 1);
-            player.decrementEquipmentAvailability("Couteau"); // plus disponible
+            player.decrementEquipmentAvailability("Couteau");
 
             assertEquals(1, player.getCompatibleEquipments(unit).size());
             assertEquals(0, player.getCompatibleEquipmentsByCategory(unit, EquipmentCategory.MELEE).size());

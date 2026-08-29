@@ -10,7 +10,6 @@ class NmlOnlineApplicationTests {
 
     @Test
     void contextLoads() {
-        // Placeholder for future integration tests.
     }
 
 }

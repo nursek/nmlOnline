@@ -13,11 +13,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests de régression sur les règles métier des bâtiments :
- * stats par type, cooldowns de déplacement, stockage de fortune,
- * capture, destruction et vampirisation de la Banque.
- */
+import static org.junit.jupiter.api.Assertions.*;
+
 @DisplayName("Bâtiments — Règles métier")
 class BuildingRulesTest {
 

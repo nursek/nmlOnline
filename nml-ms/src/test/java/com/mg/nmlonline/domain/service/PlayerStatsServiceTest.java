@@ -14,10 +14,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests de régression sur les calculs de statistiques du joueur :
- * agrégation des stats de combat, puissance globale, revenus et puissance économique.
- */
 @DisplayName("PlayerStatsService")
 class PlayerStatsServiceTest {
 
@@ -49,8 +45,8 @@ class PlayerStatsServiceTest {
         void shouldAggregateUnitStatsAcrossOwnedSectors() {
             own(1);
             own(2);
-            board.getSector(1).addUnit(new Unit(8, UnitClass.TIREUR)); // BRUTE 100/100
-            board.getSector(2).addUnit(new Unit(5, UnitClass.TIREUR)); // MALFRAT 50/50
+            board.getSector(1).addUnit(new Unit(8, UnitClass.TIREUR));
+            board.getSector(2).addUnit(new Unit(5, UnitClass.TIREUR));
 
             statsService.updateCombatStats(player, board);
 
@@ -62,8 +58,8 @@ class PlayerStatsServiceTest {
         @DisplayName("Les véhicules et bâtiments comptent dans les stats de combat")
         void shouldIncludeVehiclesInCombatStats() {
             own(1);
-            board.getSector(1).addUnit(new Unit(8, UnitClass.TIREUR)); // 100 atk, 100 def
-            board.getSector(1).getVehicles().add(new Vehicle(VehicleType.TOURELLE, 1L)); // 25 pdf, 40 def
+            board.getSector(1).addUnit(new Unit(8, UnitClass.TIREUR));
+            board.getSector(1).getVehicles().add(new Vehicle(VehicleType.TOURELLE, 1L));
 
             statsService.updateCombatStats(player, board);
 
@@ -101,7 +97,7 @@ class PlayerStatsServiceTest {
         @DisplayName("globalPower = (offensive + defensive) / 2")
         void shouldPinGlobalPowerFormula() {
             own(1);
-            board.getSector(1).addUnit(new Unit(8, UnitClass.TIREUR)); // off 100, def 100
+            board.getSector(1).addUnit(new Unit(8, UnitClass.TIREUR));
 
             statsService.updateGlobalStats(player, board);
 
@@ -114,14 +110,14 @@ class PlayerStatsServiceTest {
         @DisplayName("Offensive = atk + pdf + pdc, defensive = def + armor")
         void shouldPinOffensiveDefensiveSplit() {
             own(1);
-            board.getSector(1).addUnit(new Unit(8, UnitClass.TIREUR)); // 100 atk, 100 def
-            board.getSector(1).getVehicles().add(new Vehicle(VehicleType.TOURELLE, 1L)); // 25 pdf, 40 def
+            board.getSector(1).addUnit(new Unit(8, UnitClass.TIREUR));
+            board.getSector(1).getVehicles().add(new Vehicle(VehicleType.TOURELLE, 1L));
             board.getSector(1).recalculateMilitaryPower();
 
             statsService.updateGlobalStats(player, board);
 
-            assertEquals(125.0, player.getStats().getTotalOffensivePower()); // 100 + 25
-            assertEquals(140.0, player.getStats().getTotalDefensivePower()); // 100 + 40
+            assertEquals(125.0, player.getStats().getTotalOffensivePower());
+            assertEquals(140.0, player.getStats().getTotalDefensivePower());
             assertEquals(132.5, player.getStats().getGlobalPower());
         }
     }
@@ -181,7 +177,6 @@ class PlayerStatsServiceTest {
 
             assertEquals(100.0, player.getStats().getTotalAtk());
             assertEquals(4000.0, player.getStats().getTotalIncome());
-            // economyPower = income(4000) + equipment(0) + money(3000) + vehicles(0)
             assertEquals(7000.0, player.getStats().getTotalEconomyPower());
         }
     }
@@ -196,7 +191,7 @@ class PlayerStatsServiceTest {
             own(1);
             own(2);
             board.getSector(1).addUnit(new Unit(8, UnitClass.TIREUR));
-            board.getSector(3).addUnit(new Unit(8, UnitClass.TIREUR)); // neutre
+            board.getSector(3).addUnit(new Unit(8, UnitClass.TIREUR));
 
             assertEquals(1, statsService.getSectorsWithCombatEntities(player, board).size());
             assertEquals(1, statsService.getSectorsWithCombatEntities(player, board).getFirst().getNumber());

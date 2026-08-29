@@ -19,10 +19,6 @@ import java.util.stream.Collectors;
 
 import static com.mg.nmlonline.domain.model.unit.UnitType.*;
 
-/**
- * Represents a unit with various attributes for combat - Entité JPA
- * Hérite de CombatEntity pour partager les propriétés communes avec les bâtiments et personnages.
- */
 @Entity
 @DiscriminatorValue("UNIT")
 @Getter
@@ -34,14 +30,11 @@ public class Unit extends CombatEntity {
 
     private static final Logger logger = LoggerFactory.getLogger(Unit.class);
 
-    // ===== CONSTANTES =====
     private static final int MIN_EXPERIENCE_FOR_SECOND_CLASS = 5;
 
-
-    // ===== INFORMATIONS DE BASE =====
-    // Note : nullable = true requis par l'héritage SINGLE_TABLE (colonnes partagées avec GameCharacter)
+    // nullable=true requis par l'héritage SINGLE_TABLE (colonnes partagées avec GameCharacter).
     @Column(nullable = true)
-    private int number = 0; // Numéro de l'unité dans l'armée
+    private int number = 0;
 
     @Column(nullable = true)
     private double experience = 0.0;
@@ -56,33 +49,17 @@ public class Unit extends CombatEntity {
     @Enumerated(EnumType.STRING)
     private Set<UnitClass> classesSet = new HashSet<>();
 
-    // ===== ÉTAT DE L'UNITÉ =====
     @Column(name = "is_injured", nullable = true)
     private boolean isInjured = false;
 
-
-// ===== ÉQUIPEMENTS =====
-    // Phase 2 (fix HTTP 500 sur POST /api/admin/turn/resolve/next-hop) :
-    //   On retire orphanRemoval=true sur Unit.unitEquipments. Avec orphanRemoval, Hibernate
-    //   6.6.29 émettait au commit de advanceHop un UPDATE unit_equipments SET equipment_id=?,
-    //   unit_id=NULL WHERE id=? (release-FK en cascade depuis Sector.army.orphanRemoval sur
-    //   un Unit déplacée) qui heurtait unit_id NOT NULL → DataIntegrityViolationException
-    //   → HTTP 500 quand l'unité déplacée portait des rows unit_equipments (scénario démo
-    //   lurio attaquant équipé en secteur 41).
-    //   Le cascade=ALL reste (incluant REMOVE) : quand un Unit est DELETEd (pertes de combat
-    //   via Sector.army.orphanRemoval sur CombatService.simulateSectorBattle, ou suppression
-    //   d'un joueur via SectorService.removePlayerFromSectors.clear()), Hibernate cascade
-    //   REMOVE ce qui émet des DELETE FROM unit_equipments WHERE id=? propres (pas d'UPDATE
-    //   release-FK-NULL). La FK ON DELETE CASCADE (@OnDelete + Flyway V3) est une ceinture
-    //   de sécurité DB-side au cas où un row persisté resterait orphelin à l'ORM.
-    //   En contrepartie du retrait d'orphanRemoval, UnitService.removeEquipment doit appeler
-    //   explicitement em.remove(ue) pour les retraits ciblés (le retrait de la collection
-    //   seule n'émet plus de DELETE automatique).
+    // orphanRemoval volontairement absent : avec unit_id NOT NULL, Hibernate émettait un UPDATE
+    // release-FK-NULL → 500 au déplacement d'une unité équipée. cascade=ALL reste (DELETE propre
+    // sur remove) ; @OnDelete(CASCADE)+Flyway V5 = ceinture DB ; retrait ciblé ⇒ em.remove explicite.
     @OneToMany(mappedBy = "unit", cascade = CascadeType.ALL)
     @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private List<UnitEquipment> unitEquipments = new ArrayList<>();
 
-    // Champ transient pour compatibilité avec l'ancien code
+    // Champ transient pour compatibilité avec l'ancien code (doublon de unitEquipments).
     @Transient
     private List<Equipment> equipments = new ArrayList<>();
 
@@ -101,7 +78,7 @@ public class Unit extends CombatEntity {
         recalculateBaseStats();
     }
 
-    // Méthode de compatibilité pour l'ancien code
+    // Compatibilité ancien code : pont entre la Set persistée et l'API par Liste.
     public List<UnitClass> getClasses() {
         return new ArrayList<>(classesSet);
     }
@@ -109,8 +86,6 @@ public class Unit extends CombatEntity {
     public void setClasses(List<UnitClass> classes) {
         this.classesSet = new HashSet<>(classes);
     }
-
-    // ===== IMPLÉMENTATION DES MÉTHODES ABSTRAITES =====
 
     @Override
     public EntityCategory getEntityCategory() {
@@ -125,7 +100,7 @@ public class Unit extends CombatEntity {
         return type.name() + " n°" + number;
     }
 
-    // Recalcule les statistiques de base (sans bonus joueur)
+    // Stats de base uniquement (les bonus joueur s'appliquent via applyPlayerBonuses).
     @Override
     public void recalculateBaseStats() {
         if (type == null) return;
@@ -140,9 +115,6 @@ public class Unit extends CombatEntity {
         this.evasion = calculateEquipmentEvasion();
     }
 
-    /**
-     * Applique les bonus du joueur sur les statistiques de l'unité.
-     */
     public void applyPlayerBonuses(double attackBonus, double defenseBonus, double pdfBonus,
                                    double pdcBonus, double armorBonus, double evasionBonus) {
         this.attack *= (1.0 + attackBonus);
@@ -153,10 +125,7 @@ public class Unit extends CombatEntity {
         this.evasion -= (evasionBonus * 10);
     }
 
-    /**
-     * Retourne les équipements pour les calculs de stats.
-     * Priorité : unitEquipments (persistant) > equipments (transient)
-     */
+    /** Priorité : unitEquipments (persistant) > equipments (champ transient, ancien code). */
     private List<Equipment> getEquipmentsForCalculation() {
         if (unitEquipments != null && !unitEquipments.isEmpty()) {
             return unitEquipments.stream()
@@ -211,8 +180,6 @@ public class Unit extends CombatEntity {
                 .anyMatch(unitClass -> equipment.getCompatibleClasses().contains(unitClass));
     }
 
-    // ===== GESTION DE L'EXPÉRIENCE ET DE L'ÉVOLUTION =====
-
     public void gainExperience(double exp) {
         this.experience += exp;
         UnitType newType = UnitType.getTypeByExperience((int) experience);
@@ -226,17 +193,11 @@ public class Unit extends CombatEntity {
         recalculateBaseStats();
     }
 
-    // ===== GESTION DES CLASSES =====
-
     public boolean isUsable() {
         return classesSet != null && !classesSet.isEmpty();
     }
 
-    /**
-     * Nombre maximum de secteurs que cette unité peut parcourir par tour.
-     * Vaut le maximum parmi toutes ses classes (ex : LEGER = 2, autres = 1).
-     * Une unité sans classe retourne 1 par défaut.
-     */
+    /** Max de secteurs parcourus par tour = max parmi les classes (LEGER=2, autres=1) ; sans classe ⇒ 1. */
     public int getMaxMovementHops() {
         if (classesSet == null || classesSet.isEmpty()) return 1;
         return classesSet.stream()
@@ -262,8 +223,6 @@ public class Unit extends CombatEntity {
         }
     }
 
-    // ===== GESTION DES ÉQUIPEMENTS =====
-
     public boolean canEquip(Equipment equipment) {
         if (!isEquipmentCompatible(equipment)) {
             return false;
@@ -288,7 +247,7 @@ public class Unit extends CombatEntity {
                 unitEquipments = new ArrayList<>();
             }
             equipments.add(equipment);
-            // Ajouter aussi dans unitEquipments pour la persistance
+            // Persistance : alimenter aussi unitEquipments (le transient `equipments` seul n'est pas persisté).
             unitEquipments.add(new UnitEquipment(this, equipment));
             recalculateBaseStats();
             return true;
@@ -298,9 +257,8 @@ public class Unit extends CombatEntity {
 
     public boolean removeEquipment(Equipment equipment) {
         if (equipment == null) return false;
-        // Retrait par nom (et non par référence) : les unités chargées depuis la BDD
-        // peuplent unitEquipments mais laissent la liste transient `equipments` vide,
-        // donc equipments.remove(eq) échouerait. On couvre les deux sources.
+        // Retrait par nom (et non par référence) : une unité chargée depuis la BDD peuplait
+        // unitEquipments mais laissait `equipments` vide — on couvre les deux sources.
         boolean removed = false;
         if (equipments != null) {
             removed = equipments.removeIf(e -> e.getName().equals(equipment.getName()));
@@ -325,8 +283,6 @@ public class Unit extends CombatEntity {
                 .filter(e -> e.getCategory() == category)
                 .count();
     }
-
-    // ===== MÉTHODES UTILITAIRES POUR LE COMBAT =====
 
 
     private String formatEvasion(double value) {

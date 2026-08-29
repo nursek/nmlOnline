@@ -19,12 +19,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
 
     Page<Player> findAllByOrderByNameAsc(Pageable pageable);
 
-    /**
-     * Variante pessimistic-write pour les flux d'achat : pose SELECT ... FOR UPDATE sur le row
-     * Player avant le check + débit money, empêchant le lost-update double-spend.
-     * ponytail: ceiling = un seul row lock par achat ; si throughput devient un pb, passer à
-     * @Version sur Player avec retry sur OptimisticLockException.
-     */
+    /** Pessimistic-write : empêche le double-spend lors des achats (check + débit money). */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Player p WHERE p.id = :id")
     Optional<Player> findByIdForUpdate(@Param("id") Long id);

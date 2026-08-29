@@ -2,7 +2,7 @@
 -- + pertes de combat déclenchait update unit_equipments SET unit_id=NULL, voir
 -- docs/jpa-pitfalls.md §1 et le commentaire ponytail dans Sector.java).
 --
--- Comme pour Unit.unitEquipments en Phase 2 (V3), on retire orphanRemoval=true
+-- Comme pour Unit.unitEquipments en Phase 2 (V5), on retire orphanRemoval=true
 -- de Sector.army (voir Sector.java). La DELETE des pertes de combat se fait
 -- désormais via em.remove explicite dans CombatService.simulateSectorBattle ; la
 -- DELETE des armées d'un joueur supprimé se fait via em.remove dans

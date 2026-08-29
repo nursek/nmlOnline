@@ -15,15 +15,9 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests de non-régression sur l'export JSONAdminService : la réexportation
- * doit inclure les sections {@code character} et {@code buildings} (manquantes
- * historiquement), et la forme produite doit rester relisible par l'import
- * ({@link PlayerImportService#parse}).
- *
- * <p>Données fournies par {@code PlayerStartupImporter} (nursek/lurio) au
- * démarrage du profil {@code test}.
- */
+import static org.junit.jupiter.api.Assertions.*;
+
+/** Non-régression : les sections character et buildings (historiquement absentes) doivent être relisibles par l'import. */
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("AdminService — Export character & buildings")
@@ -45,7 +39,6 @@ class AdminExportImportTest {
 
         Map<String, Object> exported = adminService.exportPlayer(nursek.getId());
 
-        // --- Section character ---
         Object characterObj = exported.get("character");
         assertNotNull(characterObj, "La section character doit être exportée");
         assertInstanceOf(Map.class, characterObj);
@@ -62,7 +55,6 @@ class AdminExportImportTest {
         assertEquals(0.0, ((Number) character.get("baseArmor")).doubleValue());
         assertEquals(0.0, ((Number) character.get("baseEvasion")).doubleValue());
 
-        // --- Section buildings ---
         Object buildingsObj = exported.get("buildings");
         assertNotNull(buildingsObj, "La section buildings doit être exportée");
         assertInstanceOf(List.class, buildingsObj);
@@ -79,7 +71,6 @@ class AdminExportImportTest {
                     "Chaque bâtiment doit être affecté au secteur 2");
         }
 
-        // --- Symétrie : le JSON exporté doit être relisable par l'import ---
         String json = objectMapper.writeValueAsString(exported);
         PlayerDTO dto = new ObjectMapper().readValue(json, PlayerDTO.class);
         assertEquals("nursek", dto.name);

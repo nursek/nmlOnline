@@ -43,12 +43,6 @@ public class PlayerController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Vend une ressource de l'inventaire d'un joueur
-     * @param resourceId L'ID de la ressource à vendre (PlayerResource)
-     * @param quantity La quantité à vendre
-     * @return 200 OK avec les détails de la vente (nom, quantité, montant) si la vente est réussie
-     */
     @PostMapping("/resources/{playerResourceId}/sell")
     public ResponseEntity<ResourceSaleResponseDto> sellResource(@PathVariable Long playerResourceId, @RequestParam("quantity") int quantity, HttpServletRequest request) {
         if (quantity <= 0) {
@@ -76,9 +70,6 @@ public class PlayerController {
         }
     }
 
-    /**
-     * Vend un lot de ressources de l'inventaire du joueur authentifié de manière atomique.
-     */
     @PostMapping("/resources/sell-batch")
     public ResponseEntity<ResourceBatchSaleResponseDto> sellResourcesBatch(@Valid @RequestBody SellResourceBatchRequestDto requestDto,
                                                                            HttpServletRequest request) {
@@ -106,10 +97,6 @@ public class PlayerController {
         }
     }
 
-    /**
-     * Achète une liste d'équipements pour le joueur authentifié.
-     * Le coût total est déduit de son solde de manière atomique.
-     */
     @PostMapping("/equipment/buy")
     public ResponseEntity<PlayerDto> buyEquipments(@RequestBody List<BuyEquipmentItemDto> items,
                                                    HttpServletRequest request) {

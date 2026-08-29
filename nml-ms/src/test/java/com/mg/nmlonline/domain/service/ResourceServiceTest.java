@@ -22,10 +22,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Tests de régression sur ResourceService : table des multiplicateurs de vente,
- * règles de propriété et de quantité, suppression des stacks vides, transferts.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ResourceService")
 class ResourceServiceTest {
@@ -166,8 +162,8 @@ class ResourceServiceTest {
 
             assertEquals("Or", result.resourceName());
             assertEquals(2, result.quantitySold());
-            assertEquals(5100.0, result.saleValue()); // 1700 × 3.0
-            assertEquals(6100.0, player.getStats().getMoney()); // 1000 + 5100
+            assertEquals(5100.0, result.saleValue());
+            assertEquals(6100.0, player.getStats().getMoney());
             assertEquals(3, pr.getQuantity());
             verify(playerResourceRepository).save(pr);
             verify(playerResourceRepository, never()).delete(any(PlayerResource.class));
@@ -184,7 +180,7 @@ class ResourceServiceTest {
 
             ResourceService.SaleResult result = resourceService.sellResource(7L, 5, 10L);
 
-            assertEquals(22100.0, result.saleValue()); // 1700 × 13.0
+            assertEquals(22100.0, result.saleValue());
             assertEquals(0, pr.getQuantity());
             verify(playerResourceRepository).delete(pr);
         }
@@ -192,8 +188,6 @@ class ResourceServiceTest {
         @Test
         @DisplayName("Vendre une quantité nulle est un no-op silencieux")
         void shouldPinZeroQuantitySaleAsNoOp() {
-            // comportement actuel piné : quantity <= 0 n'est pas validé,
-            // la vente à 0 crédite 0 et ne retire rien
             PlayerResource pr = ownedResource("Or", 5);
             when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
@@ -233,16 +227,16 @@ class ResourceServiceTest {
 
             SellResourceBatchItemDto first = new SellResourceBatchItemDto();
             first.setPlayerResourceId(7L);
-            first.setQuantity(2); // 1700 × 3.0 = 5100
+            first.setQuantity(2);
             SellResourceBatchItemDto second = new SellResourceBatchItemDto();
             second.setPlayerResourceId(8L);
-            second.setQuantity(1); // 1100 × 1.0 = 1100
+            second.setQuantity(1);
 
             List<ResourceService.SaleResult> results =
                     resourceService.sellResourcesBatch(10L, List.of(first, second));
 
             assertEquals(2, results.size());
-            assertEquals(7200.0, player.getStats().getMoney()); // 1000 + 5100 + 1100
+            assertEquals(7200.0, player.getStats().getMoney());
         }
     }
 
@@ -292,8 +286,7 @@ class ResourceServiceTest {
         @Test
         @DisplayName("Collecte ignorée si paramètres invalides")
         void shouldIgnoreInvalidCollection() {
-            // comportement actuel piné : le secteur n'est pas marqué collecté (TODO),
-            // la ressource reste re-collectable tant que l'appelant ne gère pas le flag
+            // Le secteur n'est pas marqué collecté : la ressource reste re-collectable.
             resourceService.collectSectorResource(null, "Or", 500);
             resourceService.collectSectorResource(player, null, 500);
             resourceService.collectSectorResource(player, "Or", 0);

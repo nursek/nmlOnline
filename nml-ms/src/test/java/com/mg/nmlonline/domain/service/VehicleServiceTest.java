@@ -25,10 +25,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Tests de régression sur VehicleService : validation des achats,
- * atomicité du batch, règles de placement sur secteur.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("VehicleService")
 class VehicleServiceTest {
@@ -96,7 +92,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Fonds insuffisants lèvent InsufficientFundsException")
         void shouldThrowWhenInsufficientFunds() {
-            player.getStats().setMoney(5000.0); // TANK = 7 500
+            player.getStats().setMoney(5000.0);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
 
             assertThrows(InsufficientFundsException.class,
@@ -109,7 +105,7 @@ class VehicleServiceTest {
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            List<Vehicle> created = vehicleService.buyVehicle(10L, "VTT_LEGER", 2); // 2 × 4 000
+            List<Vehicle> created = vehicleService.buyVehicle(10L, "VTT_LEGER", 2);
 
             assertEquals(2, created.size());
             assertEquals(2000.0, player.getStats().getMoney());
@@ -121,10 +117,8 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Achat partiel : le débit est séquentiel (pas de pré-validation du total)")
         void shouldPinSequentialDebitBehavior() {
-            // comportement actuel piné : buyVehicle débite véhicule par véhicule.
-            // En test unitaire (pas de transaction), l'argent reste débité après l'exception ;
-            // en production c'est le rollback @Transactional qui annule tout.
-            player.getStats().setMoney(9000.0); // 2 VTT_LEGER (8000) OK, le 3e échoue
+            // En test unitaire (pas de tx), l'argent reste débité après l'exception ; en prod le rollback @Transactional annule tout.
+            player.getStats().setMoney(9000.0);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -151,7 +145,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Coût total validé AVANT tout débit")
         void shouldValidateTotalCostBeforeAnyDebit() {
-            player.getStats().setMoney(9000.0); // TANK(7500) + VTT_LEGER(4000) = 11500 > 9000
+            player.getStats().setMoney(9000.0);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
 
             assertThrows(InsufficientFundsException.class,
@@ -183,7 +177,7 @@ class VehicleServiceTest {
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
             List<Vehicle> created = vehicleService.buyVehiclesBatch(10L,
-                    List.of(item("TOURELLE", 2), item("VTT_LEGER", 1))); // 2600 + 4000 = 6600
+                    List.of(item("TOURELLE", 2), item("VTT_LEGER", 1)));
 
             assertEquals(3, created.size());
             assertEquals(3400.0, player.getStats().getMoney());

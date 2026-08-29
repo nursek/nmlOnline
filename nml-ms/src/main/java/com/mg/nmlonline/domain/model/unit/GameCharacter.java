@@ -17,9 +17,6 @@ public class GameCharacter extends CombatEntity {
     @Column(name = "character_name", length = 100, unique = true)
     private String name;
 
-    /**
-     * Stats de base du personnage (fixes, définies à la création)
-     */
     @Column(name = "base_attack")
     private double baseAttack;
 
@@ -39,9 +36,6 @@ public class GameCharacter extends CombatEntity {
     private double baseEvasion;
 
 
-    /**
-     * Constructeur complet avec toutes les stats offensives et défensives.
-     */
     public GameCharacter(String name, double baseAttack, double basePdf, double basePdc,
                          double baseDefense, double baseArmor, double baseEvasion) {
         this.name = name;
@@ -52,7 +46,6 @@ public class GameCharacter extends CombatEntity {
         this.baseArmor = baseArmor;
         this.baseEvasion = baseEvasion;
 
-        // Initialize inherited combat stats
         this.attack = baseAttack;
         this.pdf = basePdf;
         this.pdc = basePdc;
@@ -68,7 +61,7 @@ public class GameCharacter extends CombatEntity {
 
     @Override
     public void recalculateBaseStats() {
-        // No-op for GameCharacter: base stats are fixed and defined at creation.
+        // No-op : stats fixes définies à la création.
     }
 
     @Override

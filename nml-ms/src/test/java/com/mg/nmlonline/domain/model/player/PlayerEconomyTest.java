@@ -14,11 +14,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests de régression sur la logique économique du joueur :
- * achats d'équipement, achats de véhicules, gestion de l'argent
- * et formules de puissance économique.
- */
+import static org.junit.jupiter.api.Assertions.*;
+
 @DisplayName("Player — Économie")
 class PlayerEconomyTest {
 
@@ -58,7 +55,6 @@ class PlayerEconomyTest {
             player.buyEquipment(equipment("Pistolet", 200), 2);
 
             assertEquals(400.0, player.getStats().getTotalEquipmentValue());
-            // economyPower = income(0) + equipmentValue(400) + money(600) + vehiclesValue(0)
             assertEquals(1000.0, player.getStats().getTotalEconomyPower());
         }
 
@@ -113,21 +109,20 @@ class PlayerEconomyTest {
         void shouldDebitCostAndIncrementVehiclesValue() {
             player.getStats().setMoney(10000.0);
 
-            Vehicle vehicle = player.buyVehicle(VehicleType.VTT_LEGER); // 4 000
+            Vehicle vehicle = player.buyVehicle(VehicleType.VTT_LEGER);
 
             assertNotNull(vehicle);
             assertEquals(VehicleType.VTT_LEGER, vehicle.getVehicleType());
             assertEquals(1L, vehicle.getPlayerId());
             assertEquals(6000.0, player.getStats().getMoney());
             assertEquals(4000.0, player.getStats().getTotalVehiclesValue());
-            // economyPower = 0 + 0 + 6000 + 4000
             assertEquals(10000.0, player.getStats().getTotalEconomyPower());
         }
 
         @Test
         @DisplayName("Achat refusé si fonds insuffisants")
         void shouldReturnNullWhenInsufficientFunds() {
-            Vehicle vehicle = player.buyVehicle(VehicleType.TANK); // 7 500 > 1 000
+            Vehicle vehicle = player.buyVehicle(VehicleType.TANK);
 
             assertNull(vehicle);
             assertEquals(1000.0, player.getStats().getMoney());
@@ -176,7 +171,6 @@ class PlayerEconomyTest {
         @Test
         @DisplayName("decrementMoney refuse silencieusement si solde insuffisant")
         void shouldSilentlyRefuseDecrementAboveBalance() {
-            // comportement actuel piné : pas d'exception, pas de mutation
             player.decrementMoney(10000.0);
 
             assertEquals(1000.0, player.getStats().getMoney());
@@ -200,13 +194,12 @@ class PlayerEconomyTest {
         @DisplayName("economyPower = income + equipmentValue + money + vehiclesValue")
         void shouldPinEconomyPowerFormula() {
             player.getStats().setTotalIncome(2000.0);
-            player.buyEquipment(equipment("Pistolet", 200), 2); // equipmentValue 400, money 600
+            player.buyEquipment(equipment("Pistolet", 200), 2);
             player.getStats().setMoney(6600.0);
-            player.buyVehicle(VehicleType.VTT_LEGER); // vehiclesValue 4000, money 2600
+            player.buyVehicle(VehicleType.VTT_LEGER);
             player.getStats().setTotalIncome(2000.0);
             player.calculateTotalEconomyPower();
 
-            // 2000 + 400 + 2600 + 4000
             assertEquals(9000.0, player.getStats().getTotalEconomyPower());
         }
 
@@ -219,8 +212,7 @@ class PlayerEconomyTest {
 
             assertEquals(1900.0, player.getStats().getTotalEquipmentValue());
 
-            // comportement actuel piné : la valeur compte la quantité totale,
-            // pas la quantité disponible — équiper un item ne change pas la valeur
+            // la valeur compte la quantité totale, pas la dispo : équiper ne change pas la valeur
             player.decrementEquipmentAvailability("A");
 
             assertEquals(1900.0, player.getStats().getTotalEquipmentValue());

@@ -11,15 +11,12 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 
 /**
- * S'assure qu'en production l'application démarre avec un unique compte admin
- * (username {@code admin}, mot de passe fourni par la var d'env {@code ADMIN_PASSWORD}).
+ * S'assure qu'en prod l'application démarre avec un compte admin
+ * (username {@code admin}, password via {@code ADMIN_PASSWORD}).
  * <p>
- * Ne crée jamais de joueurs. Au premier démarrage sur une DB vierge, seul ce
- * compte admin existe. Au démarrages suivants, le mot de passe est ré-appliqué
- * depuis l'env, pour suivre une rotation de {@code ADMIN_PASSWORD} sans intervention DB.
- * <p>
- * Le hashage bcrypt+pepper étant une opération Java, ce seeding ne peut pas se
- * faire dans une migration Flyway SQL ; il s'exécute après le démarrage du contexte.
+ * Le mot de passe est ré-appliqué à chaque boot pour suivre une rotation de
+ * {@code ADMIN_PASSWORD} sans intervention DB. Hash bcrypt+pepper Java → impossible
+ * en migration Flyway, donc exécuté après le démarrage du contexte.
  */
 @Slf4j
 @Component

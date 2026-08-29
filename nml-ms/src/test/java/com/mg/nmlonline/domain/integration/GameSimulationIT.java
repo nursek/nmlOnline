@@ -17,13 +17,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests d'intégration du scénario de simulation de jeu (sans Spring) :
- * bataille complète via CombatService et calculs de statistiques.
- *
- * Les unités n'ont ni équipement ni évasion : les combats sont
- * entièrement déterministes malgré le RNG non seedé de Battle.
- */
 @DisplayName("Game Simulation Integration Tests")
 class GameSimulationIT {
 
@@ -38,7 +31,6 @@ class GameSimulationIT {
     void setUp() {
         playerStatsService = new PlayerStatsService();
         combatService = new CombatService();
-        // CombatService utilise l'injection par champ @Autowired : on la simule ici
         ReflectionTestUtils.setField(combatService, "playerStatsService", playerStatsService);
 
         player1 = new Player("Général Suprême");
@@ -55,8 +47,6 @@ class GameSimulationIT {
 
         board = new Board();
     }
-
-    // ponytail: board/sector/neighbor coverage lives in BoardTest; this IT keeps battle + stats
 
     @Nested
     @DisplayName("Simulation de bataille complète")
@@ -103,23 +93,16 @@ class GameSimulationIT {
         @Test
         @DisplayName("Bataille player2 vs player3 : issue exacte déterministe")
         void shouldResolveDeterministicBattleOutcome() {
-            // Attaquant (s3) : BRUTE 100/100 + MALFRAT 50/50 → 150 atk
-            // Défenseur (s9) : 2 BRUTEs 100/100 → 200 atk
-            // Sans évasion, le déroulé est exact :
-            //   - défenseurs : 150 pts → 1 BRUTE détruit (coût 100), 1 BRUTE à 50 def
-            //   - attaquants : 200 pts → MALFRAT détruit (coût 50), BRUTE détruit (coût 100)
             CombatService.BattleResult result = combatService.simulateBattle(player2, player3, board);
 
             assertTrue(result.success());
             assertNotNull(result.message());
 
-            // comportement actuel piné : winner jamais assigné par Battle — à revoir
+            // Battle ne set jamais winner.
             assertNull(result.winner());
 
-            // Armée attaquante anéantie
             assertEquals(0, board.getSector(3).getArmySize());
 
-            // Un défenseur survit, blessé (def 50 < base 100) → stats ÷ 2
             Sector defenderSector = board.getSector(9);
             assertEquals(1, defenderSector.getArmySize());
             Unit survivor = defenderSector.getUnits().getFirst();
@@ -152,7 +135,6 @@ class GameSimulationIT {
         void shouldRecalculateCombatPowerExactly() {
             playerStatsService.recalculateStats(player1, board);
 
-            // 3 BRUTEs (100 atk / 100 def chacun) dans les secteurs 1 et 2
             assertEquals(300.0, player1.getStats().getTotalAtk());
             assertEquals(300.0, player1.getStats().getTotalDef());
         }
@@ -177,8 +159,6 @@ class GameSimulationIT {
         }
     }
 
-    // === Méthodes utilitaires pour setup ===
-
     private void setupCompleteBoard() {
         for (int i = 1; i <= 16; i++) {
             board.addSector(new Sector(i, "Secteur " + i));
@@ -192,7 +172,6 @@ class GameSimulationIT {
         for (int s : new int[]{9, 10, 11, 12}) {
             board.assignOwner(s, 3L, "#00FF00");
         }
-        // Secteurs 13 à 16 neutres
     }
 
     private void setupGridNeighbors(int gridSize) {

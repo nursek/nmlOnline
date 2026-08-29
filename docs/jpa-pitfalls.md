@@ -1,7 +1,7 @@
 # JPA / Hibernate pitfalls
 
 Leçons retenues des pièges Hibernate rencontrés en production. Source : HTTP 500 sur
-`POST /api/admin/turn/resolve/next-hop` (fix : `V3__unit_equipments_fk_cascade.sql`,
+`POST /api/admin/turn/resolve/next-hop` (fix : `V5__unit_equipments_fk_cascade.sql`,
 changement de mapping sur `Unit.unitEquipments`).
 
 ## 1. Le piège `orphanRemoval=true` + `cascade=ALL` + `@JoinColumn(nullable=false)` sur un sous-enfant
@@ -134,7 +134,7 @@ explicitement un enfant de l'une de ces collections.
 | `Player.equipments` (Player.java:69) | OUI | `EquipmentStack.player_id` nullable=false (EquipmentStack.java:30) | **PIÈGE POTENTIEL** si un path retire un `EquipmentStack` de `Player.equipments` pour le transférer (ex. entre joueurs via capture de `WeaponCache`). Vérifier `BuildingService` / `AdminService` |
 | `Player.resources` (Player.java:74) | OUI | `PlayerResource.player_id` nullable=false (PlayerResource.java:27) | **PIÈGE POTENTIEL** identique si un path retire un `PlayerResource` de `Player.resources` pour le transférer. Vérifier `ResourceService.transfer` et capture de `Bank` |
 | `Board.sectorsList` (Board.java:70) | OUI | `Sector.board_id` (IdClass, implicite NOT NULL) → `Sector.army` (corrigé) → `Unit.unitEquipments` (corrigé) | Couvert par le fix Phase 2 (cascade DELETE propre). Déjà documenté dans AGENTS.md : `BoardService.saveBoard` non-destructive — ne jamais `clear()` |
-| `Sector.army` (Sector.java:86) | ~~OUI~~ → **NON** (fix Phase 3) | `Unit` → `Unit.unitEquipments` (corrigé Phase 2) | **Fixé en Phase 3** : retrait d'`orphanRemoval` (mapping + `V4__sector_army_fk_cascade.sql` FK ON DELETE CASCADE). La variante Phase 2 « équipé LAZY + MOVED + pertes » était pinnée puis fixée via `em.remove` explicite dans `CombatService.simulateSectorBattle` + `SectorService.removePlayerFromSectors` (test `TurnResolutionOrchestratorLurioCegorachTest`). |
+| `Sector.army` (Sector.java:86) | ~~OUI~~ → **NON** (fix Phase 3) | `Unit` → `Unit.unitEquipments` (corrigé Phase 2) | **Fixé en Phase 3** : retrait d'`orphanRemoval` (mapping + `V6__sector_army_fk_cascade.sql` FK ON DELETE CASCADE). La variante Phase 2 « équipé LAZY + MOVED + pertes » était pinnée puis fixée via `em.remove` explicite dans `CombatService.simulateSectorBattle` + `SectorService.removePlayerFromSectors` (test `TurnResolutionOrchestratorLurioCegorachTest`). |
 | `Bank.storedResources` (Bank.java:50) | OUI (unidirectional `@JoinColumn`) | `PlayerResource.bank_id` nullable=true par défaut (Bank.java:51 — pas de `nullable=false`) | Non — `bank_id` nullable=true, release-FK NULL OK |
 | `WeaponCache.storedEquipments` (WeaponCache.java:44) | OUI (unidirectional `@JoinColumn`) | `EquipmentStack.weapon_cache_id` nullable=true par défaut (WeaponCache.java:45 — pas de `nullable=false`) | Non — `weapon_cache_id` nullable=true, release-FK NULL OK |
 | `Unit.unitEquipments` | ~~OUI~~ → **NON** (fix Phase 2) | — | **Fixé** |
@@ -161,7 +161,7 @@ Pour chaque suspect, un test `@DirtiesContext(BEFORE_EACH_TEST_METHOD)` +
 
 ### Phase 2 — `Unit.unitEquipments` (casse équipé DÉPLACÉ non-détruit)
 
-- Migration : `nml-ms/src/main/resources/db/migration/V3__unit_equipments_fk_cascade.sql`
+- Migration : `nml-ms/src/main/resources/db/migration/V5__unit_equipments_fk_cascade.sql`
 - Mapping : `nml-ms/src/main/java/com/mg/nmlonline/domain/model/unit/Unit.java:64-79`
 - Service : `nml-ms/src/main/java/com/mg/nmlonline/domain/service/UnitService.java`
   (injection `EntityManager`, `em.remove(ue)` explicite dans `removeEquipment`)
@@ -169,7 +169,7 @@ Pour chaque suspect, un test `@DirtiesContext(BEFORE_EACH_TEST_METHOD)` +
 
 ### Phase 3 — `Sector.army` (variante non couverte : équipé LAZY + MOVED + pertes)
 
-- Migration : `nml-ms/src/main/resources/db/migration/V4__sector_army_fk_cascade.sql`
+- Migration : `nml-ms/src/main/resources/db/migration/V6__sector_army_fk_cascade.sql`
   (FK `combat_entities.board_id, sector_number → sectors.board_id, number` ON DELETE CASCADE)
 - Mapping : `nml-ms/src/main/java/com/mg/nmlonline/domain/model/sector/Sector.java:85-94`
   (retrait d'`orphanRemoval=true` + `@OnDelete(CASCADE)`)

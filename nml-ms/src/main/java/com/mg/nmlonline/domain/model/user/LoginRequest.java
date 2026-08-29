@@ -5,12 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * Requête de connexion.
- * La validation est volontairement légère pour accepter les anciens comptes
- * et les comptes de développement (ex: {@code a/a}, {@code test/test}).
- * L'inscription utilise {@link RegisterRequest} qui impose des contraintes plus strictes.
- */
+/** Requête de connexion — validation volontairement légère pour accepter les anciens comptes et les comptes de dev (ex: a/a) ; l'inscription stricte passe par RegisterRequest. */
 @Getter
 @Setter
 public class LoginRequest {

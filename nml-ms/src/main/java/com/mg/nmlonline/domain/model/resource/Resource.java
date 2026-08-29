@@ -5,11 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Entité JPA représentant un type de ressource disponible dans le jeu
- * Correspond à la table RESOURCE_TYPE en base de données
- * Exemples : Or (1700$), Ivoire (1100$), Joyaux (2000$), etc.
- */
 @Entity
 @Table(name = "RESOURCE")
 @Getter

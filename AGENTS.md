@@ -27,19 +27,19 @@ npm start / npm test / npm run lint / npm run format
   `prod` profile only; H2 dev/test stay on `ddl-auto`. Never edit an applied migration.
 - Never commit `JWT_SECRET` / `JWT_PEPPER` / DB credentials — env vars only.
 - No H2 console, no `@CrossOrigin` on controllers (CORS is in `CorsConfig`).
-- Buggy-but-observed game behavior: pin it with a characterization test and a
-  `comportement actuel piné — à revoir` comment instead of silently fixing.
+- **Comments: minimalist.** Only on complex, non-intuitive logic. If the code
+  reads by itself, no comment. No `ponytail:` markers, no `comportement actuel piné`.
+  Javadoc: one line when needed, none for obvious methods. No boilerplate
+  `@param`/`@return` that restates the obvious.
 - Code comments and generated replies in **French**; README/docs in English.
 
-## Working style (ponytail)
+## Working style
 
 - Minimal diff wins. No speculative abstractions, no scaffolding "for later" (YAGNI).
 - Deletion over addition; boring over clever.
 - Use what's already there (Spring/JPA/Angular features, installed deps) — no new dependency
   when a few lines of code do the job.
 - Non-trivial logic leaves ONE runnable check behind (a small test), not a test suite.
-- Deliberate shortcuts get a `ponytail:` comment naming the ceiling and the upgrade path
-  (example in `application-prod.properties`).
 
 ## Backend conventions
 

@@ -14,11 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Endpoints par joueur pour interagir avec ses unités : équipement (depuis
- * l'inventaire du joueur) et ordre de déplacement à pied.
- *
- * <p>Ownership (AGENTS.md) : {@code playerId} n'est jamais lu depuis le corps —
- * il est re-dérivé depuis {@code userId} (JWT) côté service.
+ * Ownership : playerId jamais lu depuis le corps — re-dérivé depuis userId (JWT) côté service.
  */
 @RestController
 @RequestMapping("/api/units")
@@ -29,10 +25,6 @@ public class UnitController {
     public UnitController(UnitService unitService) {
         this.unitService = unitService;
     }
-
-    // ==========================================================
-    // === ÉQUIPEMENT D'UNITÉ ====================================
-    // ==========================================================
 
     @PostMapping("/{unitId}/equipment")
     public ResponseEntity<UnitDto> assignEquipment(@PathVariable Long unitId,
@@ -57,10 +49,6 @@ public class UnitController {
         UnitDto unit = unitService.removeEquipmentDto(unitId, userId, request.getEquipmentName());
         return ResponseEntity.ok(unit);
     }
-
-    // ==========================================================
-    // === ORDRES DE DÉPLACEMENT À PIED ==========================
-    // ==========================================================
 
     @PostMapping("/movement/foot")
     public ResponseEntity<MovementOrderDto> placeFootOrder(@Valid @RequestBody PlaceFootOrderRequestDto request,

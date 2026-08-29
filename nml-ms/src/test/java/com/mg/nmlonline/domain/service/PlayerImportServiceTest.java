@@ -15,11 +15,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
-/**
- * Tests unitaires de {@link PlayerImportService#importCharacter} : création du
- * GameCharacter, liaison au Player, rattachement au secteur du Board.
- * Isolation maximale (Mockito) — aucun contexte Spring requis.
- */
 @DisplayName("PlayerImportService — importCharacter")
 class PlayerImportServiceTest {
 
@@ -27,8 +22,7 @@ class PlayerImportServiceTest {
 
     @BeforeEach
     void setUp() {
-        // importCharacter n'utilise ni les équipements ni les ressources ni les
-        // stats : mocks inertes suffisent.
+        // importCharacter n'utilise ni équipements ni ressources ni stats : mocks inertes suffisent.
         service = new PlayerImportService(
                 mock(PlayerStatsService.class),
                 mock(EquipmentRepository.class),
@@ -104,7 +98,6 @@ class PlayerImportServiceTest {
     void shouldLeaveSectorNullWhenMissing() {
         Player player = newPlayerWithId(7L);
         Board board = new Board();
-        // Aucun secteur 999 dans le board.
         PlayerDTO dto = characterDto("Boss", 999, 0, 0, 0, 0, 0, 0);
 
         GameCharacter result = service.importCharacter(dto, player, board);
@@ -112,8 +105,6 @@ class PlayerImportServiceTest {
         assertNotNull(result);
         assertNull(result.getSector());
     }
-
-    // === Helpers ===
 
     private Player newPlayerWithId(Long id) {
         Player player = new Player("Joueur");

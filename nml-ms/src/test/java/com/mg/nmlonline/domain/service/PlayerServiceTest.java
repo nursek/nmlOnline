@@ -24,10 +24,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Tests de régression sur PlayerService.buyEquipments :
- * validation du panier, coût total préalable, atomicité de l'achat.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PlayerService — Achat d'équipements")
 class PlayerServiceTest {
@@ -131,7 +127,6 @@ class PlayerServiceTest {
         when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(gun));
         when(equipmentService.findByName("Fusil")).thenReturn(Optional.of(rifle));
 
-        // 3×500 + 2×300 = 2100 > 2000
         assertThrows(InsufficientFundsException.class,
                 () -> playerService.buyEquipments(1L, List.of(item("Pistolet", 3), item("Fusil", 2))));
 
@@ -149,7 +144,7 @@ class PlayerServiceTest {
         when(playerRepository.save(player)).thenReturn(player);
 
         Player result = playerService.buyEquipments(1L,
-                List.of(item("Pistolet", 2), item("Fusil", 1))); // 1300
+                List.of(item("Pistolet", 2), item("Fusil", 1)));
 
         assertSame(player, result);
         assertEquals(700.0, player.getStats().getMoney());

@@ -26,9 +26,6 @@ public class VehicleController {
         this.vehicleMapper = vehicleMapper;
     }
 
-    /**
-     * Liste tous les types de véhicules disponibles à l'achat (publique).
-     */
     @GetMapping("/types")
     public List<VehicleTypeDto> getVehicleTypes() {
         return vehicleService.getAllVehicleTypes().stream()
@@ -36,9 +33,6 @@ public class VehicleController {
                 .toList();
     }
 
-    /**
-     * Retourne tous les véhicules du joueur authentifié (déployés et non-déployés).
-     */
     @GetMapping("/my")
     public ResponseEntity<List<VehicleDto>> getMyVehicles(HttpServletRequest httpRequest) {
         Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
@@ -49,9 +43,6 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
-    /**
-     * Achète un ou plusieurs véhicules pour le joueur authentifié.
-     */
     @PostMapping("/buy")
     public ResponseEntity<List<VehicleDto>> buyVehicle(@Valid @RequestBody BuyVehicleRequestDto request,
                                                        HttpServletRequest httpRequest) {
@@ -63,9 +54,6 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
-    /**
-     * Achète un lot de véhicules de manière atomique pour le joueur authentifié.
-     */
     @PostMapping("/buy-batch")
     public ResponseEntity<List<VehicleDto>> buyVehiclesBatch(@Valid @RequestBody BuyVehicleBatchRequestDto request,
                                                              HttpServletRequest httpRequest) {
@@ -77,9 +65,6 @@ public class VehicleController {
         return ResponseEntity.ok(vehicles);
     }
 
-    /**
-     * Déploie un véhicule sur un secteur possédé par le joueur authentifié.
-     */
     @PostMapping("/{id}/place")
     public ResponseEntity<VehicleDto> placeVehicle(@PathVariable Long id,
                                                    @Valid @RequestBody PlaceVehicleRequestDto request,

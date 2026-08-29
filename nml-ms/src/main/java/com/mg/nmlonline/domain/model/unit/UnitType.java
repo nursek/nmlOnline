@@ -3,18 +3,15 @@ package com.mg.nmlonline.domain.model.unit;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-// Énumération pour les types d'unités
 @Getter
 @AllArgsConstructor
 public enum UnitType {
-    // Living units
     LARBIN(1, 0, 1, 10, 10, 1, 1, 1),
     VOYOU(2, 2, 4, 20, 20, 1, 1, 2),
     MALFRAT(3, 5, 7, 50, 50, 1, 2, 3),
     BRUTE(4, 8, Integer.MAX_VALUE, 100, 100, 1, 3, 4),
 
-    // Characters units
-    PERSONNAGE(0, -1, -1, 0, 0, 0, 0, 0); // Expérience fixe -1
+    PERSONNAGE(0, -1, -1, 0, 0, 0, 0, 0); // Expérience fixe -1 (sentinelle)
 
 
     private final int level;

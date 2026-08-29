@@ -21,10 +21,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-/**
- * Classe représentant un joueur avec son armée d'unités
- * Entité JPA fusionnée avec le modèle du domaine
- */
 @Entity
 @Table(name = "PLAYERS")
 @Getter
@@ -48,44 +44,33 @@ public class Player {
     @Column(name = "user_id", unique = true)
     private Long userId;
 
-    // Stats du joueur (embedded)
     @Embedded
     private PlayerStats stats = new PlayerStats();
 
-    // Bonuses du joueur (embedded)
     @Embedded
     private PlayerBonuses bonuses = new PlayerBonuses();
 
-    // Personnage principal du joueur (leader unique)
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "character_id")
     private GameCharacter character;
 
-    // Bâtiments du joueur (relation bidirectionnelle, côté inverse via mappedBy = "player" en cohérence avec @ManyToOne dans Building)
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 20)
     private List<Building> buildings = new ArrayList<>();
 
-    // Inventaire d'équipements du joueur
+    // orphanRemoval=true + FK player_id NOT NULL : risque 500 si chemin de transfert ajouté (voir docs/jpa-pitfalls.md).
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 20)
-    private List<EquipmentStack> equipments = new ArrayList<>(); // Équipements possédés par le joueur
+    private List<EquipmentStack> equipments = new ArrayList<>();
 
-    // Inventaire de ressources du joueur
+    // orphanRemoval=true + FK player_id NOT NULL : risque 500 si chemin de transfert ajouté (voir docs/jpa-pitfalls.md).
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 20)
-    private List<PlayerResource> resources = new ArrayList<>(); // Ressources possédées par le joueur (Or, Ivoire, etc.)
+    private List<PlayerResource> resources = new ArrayList<>();
 
     public Player(String name) {
         this.name = name;
     }
-
-    // === MÉTHODES NÉCESSITANT BOARD ===
-    // Note: Les méthodes qui manipulent les unités dans les secteurs nécessitent désormais
-    // une référence au Board pour accéder aux secteurs (single source of truth)
-    // Ces méthodes devraient être déplacées vers un service ou recevoir Board en paramètre
-
-    // === GESTION DES EQUIPMENT DU JOUEUR ===
 
     public Equipment getEquipmentByString(String name) {
         EquipmentStack stack = findStackByName(name);
@@ -107,12 +92,6 @@ public class Player {
         return false;
     }
 
-    /**
-     * Achète un véhicule pour le joueur et retourne l'entité créée.
-     *
-     * @param vehicleType type de véhicule à acheter
-     * @return le véhicule créé, ou null si l'achat a échoué
-     */
     public Vehicle buyVehicle(VehicleType vehicleType) {
         if (vehicleType == null) return null;
         int cost = vehicleType.getCost();
@@ -128,7 +107,6 @@ public class Player {
     public void addEquipmentToStack(Equipment equipment, int number) {
         if (equipment == null) return;
 
-        // Chercher un stack existant avec le même équipement (par nom)
         EquipmentStack existingStack = findStackByName(equipment.getName());
         if (existingStack != null) {
             for (int i = 0; i < number; i++) {
@@ -137,9 +115,8 @@ public class Player {
             return;
         }
 
-        // Créer un nouveau stack
         EquipmentStack newStack = new EquipmentStack(equipment);
-        newStack.setPlayer(this); // Important: définir la relation bidirectionnelle
+        newStack.setPlayer(this); // côté inverse de la relation bidirectionnelle
         for (int i = 1; i < number; i++) {
             newStack.increment();
         }
@@ -170,10 +147,6 @@ public class Player {
         }
     }
 
-    /**
-     * Trouve un EquipmentStack par nom d'équipement.
-     * Méthode helper privée pour éviter la duplication de code.
-     */
     private EquipmentStack findStackByName(String equipmentName) {
         if (equipmentName == null) return null;
         for (EquipmentStack stack : equipments) {
@@ -205,36 +178,18 @@ public class Player {
         stats.setTotalEquipmentValue(inventoryValue);
     }
 
-    /**
-     * Retourne la liste des équipements compatibles avec une unité donnée.
-     * Un équipement est compatible si :
-     * - Il correspond à une classe de l'unité
-     * - Il est disponible dans l'inventaire du joueur
-     * - L'unité n'a pas atteint la limite pour cette catégorie d'équipement
-     *
-     * @param unit L'unité pour laquelle vérifier la compatibilité
-     * @return Liste des équipements compatibles disponibles
-     */
     public List<Equipment> getCompatibleEquipments(Unit unit) {
         if (unit == null) {
             return new ArrayList<>();
         }
 
         return equipments.stream()
-                .filter(stack -> stack.getAvailable() > 0) // Équipement disponible
+                .filter(stack -> stack.getAvailable() > 0)
                 .map(EquipmentStack::getEquipment)
-                .filter(unit::canEquip) // Compatible et limite non atteinte
+                .filter(unit::canEquip)
                 .toList();
     }
 
-    /**
-     * Retourne les équipements compatibles filtrés par catégorie.
-     * Utile pour afficher uniquement les armes, ou uniquement les équipements défensifs.
-     *
-     * @param unit L'unité pour laquelle vérifier
-     * @param category La catégorie d'équipement recherchée (FIREARM, MELEE, DEFENSIVE)
-     * @return Liste des équipements compatibles de cette catégorie
-     */
     public List<Equipment> getCompatibleEquipmentsByCategory(Unit unit, EquipmentCategory category) {
         if (unit == null || category == null) {
             return new ArrayList<>();
@@ -248,32 +203,19 @@ public class Player {
                 .toList();
     }
 
-    /**
-     * Remplace un équipement d'une unité par un nouveau.
-     * Si l'unité possède déjà un équipement de la même catégorie et atteint la limite,
-     * l'ancien équipement est retiré et rendu à l'inventaire du joueur.
-     *
-     * @param unit L'unité dont on veut changer l'équipement
-     * @param oldEquipment L'équipement à retirer (peut être null si on veut juste équiper)
-     * @param newEquipment Le nouvel équipement à ajouter
-     * @return true si le remplacement a réussi
-     */
     public boolean replaceEquipment(Unit unit, Equipment oldEquipment, Equipment newEquipment) {
         if (unit == null || newEquipment == null) {
             return false;
         }
 
-        // Vérifier que le nouvel équipement est disponible
         if (isEquipmentUnavailable(newEquipment)) {
             logger.warn("Équipement non disponible : {}", newEquipment.getName());
             return false;
         }
 
-        // Si un ancien équipement est spécifié, le retirer d'abord
         if (oldEquipment != null) {
             boolean removed = unit.removeEquipment(oldEquipment);
             if (removed) {
-                // Rendre l'équipement à l'inventaire
                 incrementEquipmentAvailability(oldEquipment);
                 logger.info("Équipement retiré : {}", oldEquipment.getName());
             } else {
@@ -282,7 +224,6 @@ public class Player {
             }
         }
 
-        // Équiper le nouvel équipement
         boolean equipped = unit.addEquipment(newEquipment);
         if (equipped) {
             decrementEquipmentAvailability(newEquipment);
@@ -290,7 +231,7 @@ public class Player {
             logger.info("Nouvel équipement ajouté : {}", newEquipment.getName());
             return true;
         } else {
-            // Si l'équipement échoue, remettre l'ancien si on l'avait retiré
+            // Retour arrière : remettre l'ancien si on l'avait retiré
             if (oldEquipment != null) {
                 unit.addEquipment(oldEquipment);
                 decrementEquipmentAvailability(oldEquipment);
@@ -300,14 +241,6 @@ public class Player {
         }
     }
 
-    /**
-     * Remplace automatiquement un équipement de même catégorie.
-     * Trouve automatiquement l'équipement de la même catégorie à remplacer.
-     *
-     * @param unit L'unité dont on veut changer l'équipement
-     * @param newEquipment Le nouvel équipement à ajouter
-     * @return true si le remplacement a réussi
-     */
     public boolean replaceEquipmentByCategory(Unit unit, Equipment newEquipment) {
         if (unit == null || newEquipment == null) {
             return false;
@@ -315,7 +248,6 @@ public class Player {
 
         EquipmentCategory category = newEquipment.getCategory();
 
-        // Vérifier si l'unité a atteint la limite pour cette catégorie
         long currentCount = unit.countEquipmentsByCategory(category);
         int maxAllowed = switch (category) {
             case FIREARM -> unit.getType().getMaxFirearms();
@@ -323,7 +255,6 @@ public class Player {
             case DEFENSIVE -> unit.getType().getMaxDefensiveEquipment();
         };
 
-        // Si la limite est atteinte, retirer le premier équipement de cette catégorie
         Equipment oldEquipment = null;
         if (currentCount >= maxAllowed) {
             List<Equipment> equipmentsOfCategory = unit.getEquipmentsByCategory(category);
@@ -335,12 +266,6 @@ public class Player {
         return replaceEquipment(unit, oldEquipment, newEquipment);
     }
 
-    /**
-     * Incrémente la disponibilité d'un équipement dans l'inventaire.
-     * Utilisé quand un équipement est retiré d'une unité.
-     *
-     * @param equipment L'équipement à rendre disponible
-     */
     public void incrementEquipmentAvailability(Equipment equipment) {
         if (equipment == null) return;
         EquipmentStack stack = findStackByName(equipment.getName());
@@ -350,8 +275,6 @@ public class Player {
             calculateTotalEconomyPower();
         }
     }
-
-    // === GESTION DES RESSOURCES DU JOUEUR ===
 
     public void incrementMoney(double amount) {
         if (amount > 0) {
@@ -368,9 +291,6 @@ public class Player {
     }
 
 
-    /**
-     * Ajoute une ressource au joueur (sans baseValue - récupéré depuis Resource)
-     */
     public void addResource(String resourceName, int quantity) {
         if (resourceName == null || quantity <= 0) return;
 
@@ -384,9 +304,6 @@ public class Player {
         }
     }
 
-    /**
-     * Retire une ressource du joueur
-     */
     public boolean removeResource(String resourceName, int quantity) {
         if (resourceName == null || quantity <= 0) return false;
 
@@ -405,25 +322,16 @@ public class Player {
         resources.remove(resource);
     }
 
-    /**
-     * Vérifie si le joueur possède une quantité donnée d'une ressource
-     */
     public boolean hasResource(String resourceName, int quantity) {
         PlayerResource resource = findResourceByName(resourceName);
         return resource != null && resource.hasQuantity(quantity);
     }
 
-    /**
-     * Retourne la quantité possédée d'une ressource
-     */
     public int getResourceQuantity(String resourceName) {
         PlayerResource resource = findResourceByName(resourceName);
         return resource != null ? resource.getQuantity() : 0;
     }
 
-    /**
-     * Trouve une ressource par son nom
-     */
     private PlayerResource findResourceByName(String resourceName) {
         if (resourceName == null) return null;
         return resources.stream()
@@ -431,8 +339,6 @@ public class Player {
                 .findFirst()
                 .orElse(null);
     }
-
-    // === CALCULS ET STATISTIQUES ===
 
     public void calculateTotalEconomyPower() {
         double economyPower = stats.getTotalIncome()

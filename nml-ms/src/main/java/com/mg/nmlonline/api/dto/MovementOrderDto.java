@@ -4,9 +4,6 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * DTO d'un ordre de déplacement (sortie GET et retour POST).
- */
 @Data
 public class MovementOrderDto {
     private Long id;

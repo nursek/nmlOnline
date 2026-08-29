@@ -11,9 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-/**
- * Service pour la gestion des personnages principaux (leaders).
- */
 @Service
 @Transactional
 public class GameCharacterService {
@@ -30,9 +27,6 @@ public class GameCharacterService {
         this.characterMapper = characterMapper;
     }
 
-    /**
-     * Crée un personnage avec toutes les stats.
-     */
     public GameCharacter createCharacter(Long playerId, String name,
                                          double baseAttack, double basePdf, double basePdc,
                                          double baseDefense, double baseArmor, double baseEvasion) {
@@ -67,7 +61,7 @@ public class GameCharacterService {
         return characterRepository.findByName(name);
     }
 
-    // === Mapping dans la transaction (sector est LAZY) ===
+    // Mapping dans la transaction (sector est LAZY).
 
     public Optional<GameCharacterDto> getCharacterDto(Long playerId) {
         return getCharacter(playerId).map(characterMapper::toDto);

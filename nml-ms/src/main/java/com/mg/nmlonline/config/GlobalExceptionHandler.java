@@ -14,11 +14,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.stream.Collectors;
 
-/**
- * Gestionnaire global des exceptions de l'API.
- * Retourne des réponses au format RFC 7807 (ProblemDetail) sans fuiter
- * de détails internes en production.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

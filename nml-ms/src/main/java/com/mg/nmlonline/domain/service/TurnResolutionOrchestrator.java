@@ -19,24 +19,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Orchestration pas-à-pas de la fin de tour, pilotée par l'admin hop par hop.
+ * Orchestration pas-à-pas de la fin de tour, pilotée par l'admin hop par hop :
+ * {@code startSession} → {@code advanceHop} × N → {@code resolveBattle} par conflit
+ * → {@code finalizeTurn}.
  *
- * <p>Déroulé : {@code startSession} (prépare la résolution) → {@code advanceHop}
- * (déplace les entités d'un secteur + détecte les conflits) → {@code resolveBattle}
- * (par conflit, l'admin lance le combat) → répéter jusqu'au dernier hop →
- * {@code finalizeTurn} (marque les ordres RESOLVED et incrémente le tour).</p>
- *
- * <p>La session est <strong>en mémoire, single-JVM</strong> : elle ne survit pas
- * à un redémarrage du serveur. Le verrou {@link TurnLock} est acquis au
- * {@code startSession} et tenu pendant toute l'orchestration (bloque
- * {@link TurnService#advanceTurn()} en parallèle). {@code abort} libère le
- * verrou sans rollback des entités déjà déplacées.
- *
- * <p>ponytail: ceiling = JVM unique + admin unique (pas de sérialisation des
- * mutations de session au-delà du verrou de fin de tour). Perte de la session
- * au redémarrage en milieu de tour → relancer la session (les positions déjà
- * déplacées restent en base ; à revoir : pas de reprise propre). Upgrade path
- * = persister l'état d'orchestration dans une table Flyway dédiée.</p>
+ * <p>Session en mémoire, single-JVM (perdue au redémarrage). {@link TurnLock} est
+ * acquis au {@code startSession} et tenu jusqu'à {@code finalizeTurn}/{@code abort},
+ * bloquant {@link TurnService#advanceTurn()} en parallèle.
  */
 @Service
 @Transactional
@@ -65,16 +54,7 @@ public class TurnResolutionOrchestrator {
         this.turnService = turnService;
     }
 
-    // ==================================================
-    // === Cycle de vie de la session ===================
-    // ==================================================
-
-    /**
-     * Démarre une session : acquiert le verrou de fin de tour, prépare la
-     * résolution (validation des ordres PENDING, calcul des positions
-     * initiales). Aucun hop n'est effectué — l'admin enchaîne avec
-     * {@link #advanceHop()}.
-     */
+    /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
     public TurnResolutionStateDto startSession() {
         if (!turnLock.tryAcquire()) {
             throw new IllegalStateException("Une résolution de fin de tour est déjà en cours");
@@ -91,12 +71,7 @@ public class TurnResolutionOrchestrator {
         }
     }
 
-    /**
-     * Avance d'un hop : déplace physiquement les entités d'un secteur,
-     * détecte les conflits pour ce hop et les expose à l'admin pour résolution
-     * manuelle. Refusé tant qu'il reste des batailles en attente sur le hop
-     * courant, ou si tous les hops sont déjà effectués.
-     */
+    /** Avance d'un hop et expose les conflits à l'admin. Refusé si des batailles du hop courant sont en attente. */
     public TurnResolutionStateDto advanceHop() {
         Session s = requireSession();
         if (!s.pendingConflicts.isEmpty()) {
@@ -116,11 +91,7 @@ public class TurnResolutionOrchestrator {
         return toStateDto(s);
     }
 
-    /**
-     * Résout une bataille identifiée par son {@code conflictId} (conflit du hop
-     * courant) : appelle {@link CombatService#simulateSectorBattle} sur le
-     * secteur, persiste les pertes/blessés et archive le compte-rendu.
-     */
+    /** Résout une bataille du hop courant via {@link CombatService#simulateSectorBattle}. */
     public ResolvedBattleDto resolveBattle(int conflictId) {
         Session s = requireSession();
         PendingConflict pc = s.pendingConflicts.stream()
@@ -142,11 +113,7 @@ public class TurnResolutionOrchestrator {
         return toBattleDto(rb, resolveNames(rb));
     }
 
-    /**
-     * Finalise le tour : marque les ordres RESOLVED et incrémente
-     * {@code Board.currentTurn}. Nécessite tous les hops effectués et toutes
-     * les batailles résolues. Libère le verrou et ferme la session.
-     */
+    /** Finalise le tour (ordres RESOLVED + incrémentation), libère le verrou. Nécessite tous hops + batailles résolus. */
     public TurnFinalizeResultDto finalizeTurn() {
         Session s = requireSession();
         if (!s.pendingConflicts.isEmpty()) {
@@ -179,12 +146,7 @@ public class TurnResolutionOrchestrator {
         }
     }
 
-    /**
-     * Abandon soft : libère le verrou et ferme la session <strong>sans</strong>
-     * rollback des entités déjà déplacées ni des combats déjà résolus. Les ordres
-     * restés PENDING pourront être re-pris lors d'une nouvelle session (mais
-     * les positions intermédiaires ne sont pas réinitialisées — voir ponytail).
-     */
+    /** Abandon soft : libère le verrou sans rollback des entités déplacées ni des combats résolus. */
     public void abort() {
         Session s = this.session;
         if (s == null) {
@@ -204,10 +166,6 @@ public class TurnResolutionOrchestrator {
         }
         return toStateDto(s);
     }
-
-    // ==================================================
-    // === Helpers internes =============================
-    // ==================================================
 
     private Session requireSession() {
         Session s = this.session;
@@ -292,10 +250,6 @@ public class TurnResolutionOrchestrator {
         dto.setDefenderInjured(rb.defenderInjured);
         return dto;
     }
-
-    // ==================================================
-    // === État de session (en mémoire) =================
-    // ==================================================
 
     private static final class Session {
         final MovementService.ResolutionContext ctx;

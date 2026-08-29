@@ -22,14 +22,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests d'intégration de {@link UnitService} : équipement d'une unité depuis
- * l'inventaire du joueur et ordre de déplacement à pied.
- *
- * <p>Utilise le profil {@code test} (board + catalogue d'équipement importés au
- * démarrage). {@code @Transactional} rollback les mutations de setup à la fin de
- * chaque test pour ne pas polluer les autres jeux de données seedés.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -57,9 +49,7 @@ class UnitServiceTest {
     @Test
     @DisplayName("assignEquipment équipe l'unité depuis l'inventaire et décompte la dispo")
     void shouldAssignEquipmentFromInventory() {
-        // --- Setup : un joueur avec userId, une unité à lui dans un secteur neutre,
-        //     et un équipement compatible dans son inventaire. ---
-        Player player = playerService.findByUserId(1L); // testuser1 (TestDataInitializer)
+        Player player = playerService.findByUserId(1L);
         assertNotNull(player, "Le joueur TestPlayer1 doit exister avec un userId");
         Long playerId = player.getId();
 
@@ -71,7 +61,6 @@ class UnitServiceTest {
         entityManager.flush();
         assertNotNull(unit.getId(), "L'unité doit être persistée");
 
-        // Équipement FIREARM compatible avec TIREUR (le premier de catégorie FIREARM du catalogue).
         Equipment eq = equipmentService.findAll(org.springframework.data.domain.Pageable.ofSize(50)).stream()
                 .filter(e -> e.getCategory() == EquipmentCategory.FIREARM)
                 .filter(e -> e.getCompatibleClasses().contains(UnitClass.TIREUR))
@@ -86,10 +75,8 @@ class UnitServiceTest {
                 .mapToInt(s -> s.getAvailable()).findFirst().orElse(-1);
         assertEquals(2, dispoBefore);
 
-        // --- Act ---
         Unit updated = unitService.assignEquipment(unit.getId(), 1L, eq.getName());
 
-        // --- Assert ---
         assertTrue(updated.getEquipments().stream().anyMatch(e -> e.getName().equals(eq.getName())),
                 "L'unité doit porter l'équipement après assignation");
 
@@ -99,7 +86,6 @@ class UnitServiceTest {
                 .mapToInt(s -> s.getAvailable()).findFirst().orElse(-1);
         assertEquals(1, dispoAfter, "La dispo de l'inventaire doit décrémenter de 1");
 
-        // --- removeEquipment rend l'exemplaire à l'inventaire ---
         unitService.removeEquipment(unit.getId(), 1L, eq.getName());
         player = playerService.findByUserId(1L);
         long dispoFinal = player.getEquipments().stream()
@@ -116,7 +102,6 @@ class UnitServiceTest {
                 .filter(p -> !owner.getId().equals(p.getId()) && p.getUserId() != null && !owner.getUserId().equals(p.getUserId()))
                 .findFirst()
                 .orElseThrow();
-        // Une unité appartenant à `other`, mais appelée avec userId de `owner`.
         Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
         Sector sector = findNeutralSector(board, 4);
         Unit unit = newUnit(other.getId(), UnitType.LARBIN, Set.of(UnitClass.ELEMENTAIRE));
@@ -124,7 +109,6 @@ class UnitServiceTest {
         entityManager.persist(unit);
         entityManager.flush();
 
-        // owner n'a pas d'inventaire de cet équipement : on en ajoute un au catalogue compatible.
         assertThrows(SecurityException.class,
                 () -> unitService.assignEquipment(unit.getId(), owner.getUserId(), anyCompatibleEquipment().getName()),
                 "Équiper l'unité d'un autre joueur doit lever SecurityException");
@@ -136,14 +120,12 @@ class UnitServiceTest {
         Player player = playerService.findByUserId(1L);
         Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
         Sector sector = findNeutralSector(board, 5);
-        // Unité de classes non listées dans l'équipement de test → incompatible.
         Unit unit = newUnit(player.getId(), UnitType.LARBIN, Set.of(UnitClass.SNIPER));
         sector.addUnit(unit);
         entityManager.persist(unit);
         entityManager.flush();
 
-        Equipment eq = anyCompatibleEquipment(); // compatible avec certaines classes mais pas SNIPER seul
-        // On ne peut pas garantir que eq est incompatible avec SNIPER — on filtre pour en trouver un incompatible.
+        Equipment eq = anyCompatibleEquipment();
         Equipment incompatible = equipmentService.findAll(org.springframework.data.domain.Pageable.ofSize(50)).stream()
                 .filter(e -> !e.getCompatibleClasses().contains(UnitClass.SNIPER))
                 .findFirst()
@@ -155,8 +137,6 @@ class UnitServiceTest {
                 () -> unitService.assignEquipment(unit.getId(), 1L, incompatible.getName()),
                 "Un équipement incompatible doit être refusé");
     }
-
-    // === Helpers de setup ===
 
     private static Sector findNeutralSector(Board board, int preferred) {
         Sector s = board.getSector(preferred);

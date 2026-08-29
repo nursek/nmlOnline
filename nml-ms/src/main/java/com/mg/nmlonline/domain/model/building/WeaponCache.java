@@ -11,17 +11,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Cache d'armes - Bâtiment de stockage des équipements.
- *
- * Caractéristiques :
- * - Stats : 100 Atk / 100 Def
- * - Capacité max : 300 équipements
- * - Déplaçable tous les tours.
- * - Si capturé, l'adversaire récupère tous les équipements stockés
- * - Possibilité de fonder d'autres caches (un par quartier max)
- * - Les équipements peuvent être jetés (action irréversible)
- */
 @Entity
 @DiscriminatorValue("WEAPON_CACHE")
 @Getter
@@ -30,17 +19,12 @@ import java.util.List;
 @NoArgsConstructor
 public class WeaponCache extends Building {
 
-    // Constantes
     public static final int MAX_CAPACITY = 300;
-    public static final int MOVE_COOLDOWN = 0; // Permet de déplacer tous les tours
+    public static final int MOVE_COOLDOWN = 0;
 
     @Column(name = "max_capacity")
     private int maxCapacity = MAX_CAPACITY;
 
-    /**
-     * Équipements stockés dans cette cache.
-     * Note : Les équipements sont liés via EquipmentStack pour gérer les quantités.
-     */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "weapon_cache_id")
     private List<EquipmentStack> storedEquipments = new ArrayList<>();
@@ -68,58 +52,31 @@ public class WeaponCache extends Building {
         return MOVE_COOLDOWN;
     }
 
-    /**
-     * Retourne le nombre total d'équipements stockés.
-     */
     public int getTotalStoredCount() {
         return storedEquipments.stream()
                 .mapToInt(EquipmentStack::getQuantity)
                 .sum();
     }
 
-    /**
-     * Vérifie si la cache peut accepter de nouveaux équipements.
-     *
-     * @param quantity Nombre d'équipements à ajouter
-     * @return true si l'espace est suffisant
-     */
     //TODO lier une vérification lors de l'achat d'équipement pour un joueur. Si toutes ses caches sont pleines, il ne peut pas acheter d'équipement.
     public boolean hasCapacity(int quantity) {
         return getTotalStoredCount() + quantity <= maxCapacity;
     }
 
-    /**
-     * Retourne l'espace disponible dans la cache.
-     */
     public int getAvailableCapacity() {
         return maxCapacity - getTotalStoredCount();
     }
 
-    /**
-     * Retourne le pourcentage de remplissage de la cache.
-     */
     public double getFillPercentage() {
         return (double) getTotalStoredCount() / maxCapacity * 100;
     }
 
-    /**
-     * Transfère tous les équipements à un autre joueur (lors d'une capture).
-     *
-     * @return La liste des équipements transférés
-     */
     public List<EquipmentStack> transferAllEquipments() {
         List<EquipmentStack> transferred = new ArrayList<>(storedEquipments);
         storedEquipments.clear();
         return transferred;
     }
 
-    /**
-     * Jette un équipement de la cache (action irréversible).
-     *
-     * @param equipmentName Nom de l'équipement à jeter
-     * @param quantity Quantité à jeter
-     * @return true si l'équipement a été jeté
-     */
     public boolean discardEquipment(String equipmentName, int quantity) {
         Iterator<EquipmentStack> iterator = storedEquipments.iterator();
         while (iterator.hasNext()) {
@@ -140,8 +97,6 @@ public class WeaponCache extends Building {
     @Override
     public void onCapture(Long capturingPlayerId, int currentTurn) {
         super.onCapture(capturingPlayerId, currentTurn);
-        // Les équipements sont transférés au nouveau propriétaire
-        // Cette logique sera gérée par le service.
     }
 
     @Override

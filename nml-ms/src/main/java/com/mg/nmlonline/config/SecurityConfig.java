@@ -34,19 +34,15 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // Activer CORS avec la configuration personnalisée
         http.cors(cors -> cors.configurationSource(corsConfigurationSource));
 
-        // Configuration des autorisations
         http.authorizeHttpRequests(auth -> auth
-                // Endpoints publics (authentification)
                 .requestMatchers(
                         "/api/login",
                         "/api/register",
                         "/api/auth/refresh",
                         "/api/auth/logout"
                 ).permitAll()
-                // Fichiers statiques Angular
                 .requestMatchers(
                         "/",
                         "/index.html",
@@ -59,31 +55,24 @@ public class SecurityConfig {
                         "/*.woff2",
                         "/assets/**"
                 ).permitAll()
-                // Endpoints admin (nécessitent le rôle ADMIN)
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                // Tous les autres endpoints API nécessitent une authentification
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
         );
 
-        // Retourner 401 (au lieu de 403) quand l'utilisateur n'est pas authentifié
-        // Permet à l'intercepteur Angular de déclencher le refresh du token
+        // 401 (et non 403) sur absence de token : déclenche le refresh côté Angular.
         http.exceptionHandling(ex -> ex
                 .authenticationEntryPoint((request, response, authException) ->
                         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expiré ou absent")
                 )
         );
 
-        // Ajouter le filtre JWT avant UsernamePasswordAuthenticationFilter
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // Désactiver CSRF pour une API REST stateless (JWT)
         http.csrf(AbstractHttpConfigurer::disable);
 
-        // Bloquer l'affichage dans un iframe (clickjacking protection)
         http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::deny));
 
-        // Mode sans état : pour JWT (pas de session côté serveur)
         http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();

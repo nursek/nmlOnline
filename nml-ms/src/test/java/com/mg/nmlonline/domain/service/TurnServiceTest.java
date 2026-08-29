@@ -19,14 +19,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests d'intégration de {@link TurnService} : la source unique de vérité du
- * tour courant. {@code advanceTurn} doit (1) résoudre les ordres de déplacement
- * PENDING du tour qui se termine, puis (2) incrémenter le compteur persisted.
- *
- * <p>Données fournies par {@code PlayerStartupImporter} (nursek/lurio) au
- * démarrage du profil {@code test}.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("TurnService — résolution + incrément du tour")
@@ -44,8 +36,6 @@ class TurnServiceTest {
         int initialTurn = turnService.getCurrentTurn();
         assertTrue(initialTurn >= 1, "Le tour courant initial doit être >= 1");
 
-        // Un ordre PENDING factice pour le tour courant : entité inexistante,
-        // donc resolveAllMovements le marquera BLOCKED (et non plus PENDING).
         MovementOrder order = MovementOrder.createFootOrder(
                 99L, initialTurn, List.of(999L), List.of(2, 10));
         order = movementOrderRepository.save(order);
@@ -56,7 +46,6 @@ class TurnServiceTest {
         assertEquals(initialTurn + 1, newTurn, "advanceTurn doit incrémenter le tour");
         assertEquals(newTurn, turnService.getCurrentTurn(), "Le tour courant doit être persisted après advanceTurn");
 
-        // L'ordre PENDING du tour précédent n'est plus PENDING après résolution.
         MovementOrder reloaded = movementOrderRepository.findById(order.getId()).orElseThrow();
         assertNotEquals(MovementStatus.PENDING, reloaded.getStatus(),
                 "advanceTurn doit résoudre les ordres PENDING du tour qui se termine");
@@ -68,8 +57,6 @@ class TurnServiceTest {
     @DisplayName("advanceTurn rejette un 2e appel concurrent (garde anti double-clic)")
     void advanceTurnRejectsConcurrentCall() throws Exception {
         int initialTurn = turnService.getCurrentTurn();
-        // Ordre PENDING factice pour occuper resolveAllMovements le temps que
-        // d'autres threads tentent d'entrer.
         MovementOrder order = MovementOrder.createFootOrder(
                 99L, initialTurn, List.of(999L), List.of(2, 10));
         order = movementOrderRepository.save(order);

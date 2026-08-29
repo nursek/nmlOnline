@@ -20,9 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-/**
- * Représente un secteur de la carte - Entité JPA avec clé composite
- */
 @Entity
 @Table(name = "SECTORS")
 @NoArgsConstructor
@@ -38,7 +35,7 @@ public class Sector {
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id", nullable = false)
-    @JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
+    @JsonIgnore
     private Board board;
 
     @Id
@@ -52,17 +49,15 @@ public class Sector {
     @Column(nullable = false)
     private double income = 2000.0;
 
-    // === DONNÉES POUR LA CARTE ===
     @Column(name = "owner_id")
-    private Long ownerId; // null si secteur neutre
+    private Long ownerId; // Source unique d'appartenance du secteur ; null = neutre
 
     @Column(nullable = false)
     private String color = "#ffffff";
 
     @Column(name = "resource_name", nullable = true)
-    private String resourceName; // Nom de la ressource du secteur (ex: "Or", "Ivoire", "Joyaux")
+    private String resourceName;
 
-    // Coordonnées pour le positionnement sur la carte
     @Column(nullable = true)
     private Integer x;
 
@@ -78,31 +73,24 @@ public class Sector {
     @Column(name = "neighbor_number")
     private List<Integer> neighbors = new ArrayList<>();
 
-    // Stats du secteur (embedded)
     @Embedded
     private SectorStats stats = new SectorStats();
 
-    // Unités du secteur. Phase 3 : retrait d'orphanRemoval (variante Phase 2 non
-    // couverte — équipé LAZY + MOVED + pertes, voir docs/jpa-pitfalls.md §1).
-    // DELETE via em.remove explicite dans CombatService.simulateSectorBattle ;
-    // @OnDelete(CASCADE) + Flyway V4 = ceinture DB si l'ORM laisse un orphelin.
+    // orphanRemoval volontairement absent : la suppression passe par em.remove explicite
+    // (CombatService.simulateSectorBattle). @OnDelete(CASCADE) + Flyway V6 = ceinture DB.
     @OneToMany(mappedBy = "sector", cascade = CascadeType.ALL)
     @org.hibernate.annotations.OnDelete(action = org.hibernate.annotations.OnDeleteAction.CASCADE)
     private List<Unit> army = new ArrayList<>();
 
-    // Bâtiments dans ce secteur (relation lecture seule, le bâtiment est géré via Player)
+    // Relations lecture seule : le propriétaire gère ces entités (Player/Building/Character/Vehicle).
     @OneToMany(mappedBy = "sector")
     private List<Building> buildings = new ArrayList<>();
 
-    // Personnage dans ce secteur (relation lecture seule, le personnage est géré via Player)
     @OneToMany(mappedBy = "sector")
     private List<GameCharacter> characters = new ArrayList<>();
 
-    // Véhicules dans ce secteur
     @OneToMany(mappedBy = "sector")
     private List<Vehicle> vehicles = new ArrayList<>();
-
-    // === CONSTRUCTEURS ===
 
     public Sector(int number) {
         this.number = number;
@@ -117,8 +105,6 @@ public class Sector {
         this.color = "#ffffff";
         this.resourceName = null;
     }
-
-    // === GESTION DES VOISINS ===
 
     public void addNeighbor(int neighborNumber) {
         if (!neighbors.contains(neighborNumber) && neighborNumber != this.number) {
@@ -138,8 +124,6 @@ public class Sector {
         return Collections.unmodifiableList(neighbors);
     }
 
-    // === GESTION OWNER ET COULEUR ===
-
     public void setOwnerAndColor(Long playerId, String colorHex) {
         this.ownerId = playerId;
         this.color = colorHex != null ? colorHex : "#ffffff";
@@ -152,8 +136,6 @@ public class Sector {
     public boolean isNeutral() {
         return ownerId == null;
     }
-
-    // === GESTION DES STATISTIQUES DU SECTEUR ===
 
     public void recalculateMilitaryPower(){
         List<CombatEntity> allEntities = getCombatEntities();
@@ -179,11 +161,9 @@ public class Sector {
         stats.setGlobalStats((stats.getTotalOffensive() + stats.getTotalDefensive()) / 2);
     }
 
-    // === GESTION DE L'ARMÉE DU SECTEUR ===
-
     public void addUnit(Unit unit) {
         if (unit != null) {
-            unit.setSector(this); // Important: définir la relation bidirectionnelle
+            unit.setSector(this); // côté inverse de la relation bidirectionnelle
             army.add(unit);
             sortArmy();
             reassignUnitIds();
@@ -194,7 +174,7 @@ public class Sector {
     public void addUnits(List<Unit> units) {
         if (units != null && !units.isEmpty()) {
             for (Unit unit : units) {
-                unit.setSector(this); // Important: définir la relation bidirectionnelle
+                unit.setSector(this); // côté inverse de la relation bidirectionnelle
             }
             army.addAll(units);
             sortArmy();
@@ -244,10 +224,6 @@ public class Sector {
         return army;
     }
 
-    /**
-     * Retourne toutes les entités combattantes du secteur (unités + bâtiments + personnages).
-     * Vue unifiée pour le combat et le calcul de stats.
-     */
     public List<CombatEntity> getCombatEntities() {
         List<CombatEntity> all = new ArrayList<>(army);
         if (buildings != null) {
@@ -262,8 +238,6 @@ public class Sector {
         return all;
     }
 
-    // === TRI ET RÉASSIGNATION DES IDS ===
-
     public void sortArmy() {
         army.sort(Comparator
                 .comparingDouble(Unit::getExperience).reversed()
@@ -275,7 +249,6 @@ public class Sector {
     }
 
     public void reassignUnitIds() {
-        // Déplacer cette méthode plutôt côté Player pr garder une uniformité : larbin n°1 dans un quartier, si larbin n°1 dans un autre quartier, ce sont 2 unités différentes, donc larbin n°2.
         Map<String, Integer> typeCounters = new HashMap<>();
         for (Unit unit : army) {
             String unitType = unit.getType().name();
@@ -290,15 +263,13 @@ public class Sector {
         return String.format("%s - %d unités, Revenus: %.0f$", name, getArmySize(), income);
     }
 
-    /**
-     * Classe pour la clé primaire composite (board_id, number)
-     */
+    /** Clé primaire composite (board_id, number) pour @IdClass. */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SectorId implements java.io.Serializable {
-        private Long board;  // Correspond au board_id (ID de Board)
-        private int number;  // Numéro du secteur
+        private Long board;  // = board_id (les noms doivent matcher les @Id de Sector)
+        private int number;
 
         @Override
         public boolean equals(Object o) {

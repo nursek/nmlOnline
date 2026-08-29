@@ -6,9 +6,6 @@ import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import org.springframework.stereotype.Component;
 
-/**
- * Mapper pour les véhicules.
- */
 @Component
 public class VehicleMapper {
 

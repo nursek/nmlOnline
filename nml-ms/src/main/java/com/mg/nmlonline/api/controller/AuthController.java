@@ -44,9 +44,9 @@ public class AuthController {
 
     private static final int MAX_ATTEMPTS = 5;
     private static final long BLOCK_TIME_MS = TimeUnit.MINUTES.toMillis(1);
-    private static final long REFRESH_MIN_INTERVAL_MS = 1000; // 1 seconde minimum entre chaque refresh
-    private static final long GRACE_PERIOD_MS = 3000; // 3 secondes de grâce pour les requêtes en doublon (spam F5)
-    private static final long ACCESS_TOKEN_EXPIRATION = 10 * 60 * 1000L; // 10 min
+    private static final long REFRESH_MIN_INTERVAL_MS = 1000;
+    private static final long GRACE_PERIOD_MS = 3000;
+    private static final long ACCESS_TOKEN_EXPIRATION = 10 * 60 * 1000L;
     private static final long CLEANUP_INTERVAL_MS = TimeUnit.MINUTES.toMillis(5);
     private static final int MAX_ATTEMPT_ENTRIES = 10_000;
     private static final int MAX_THROTTLE_ENTRIES = 10_000;
@@ -86,19 +86,17 @@ public class AuthController {
     }
 
     /**
-     * Stocke l'état du throttling pour le refresh token.
-     * Inclut une "grace period" pour gérer le spam F5 :
-     * - Si on reçoit le même token (ou l'ancien) dans les 3 secondes, on renvoie le même résultat
-     * - Cela évite d'invalider le token si plusieurs requêtes arrivent en parallèle
+     * Throttling refresh : grace period qui renvoie le même résultat pour le même token
+     * (ou le précédent), évite d'invalider le token sur spam F5 parallèle.
      */
     private static class RefreshThrottle {
         long lastRefresh;
         int refreshCount;
-        String lastToken;      // Le nouveau token généré
-        String previousToken;  // L'ancien token (celui reçu)
-        String newToken;       // Le nouveau token à renvoyer
-        Map<String, Object> lastResponse;  // La réponse à renvoyer pendant la grace period
-        int lastCookieMaxAge;  // MaxAge du cookie
+        String lastToken;
+        String previousToken;
+        String newToken;
+        Map<String, Object> lastResponse;
+        int lastCookieMaxAge;
     }
 
     @PostMapping("/login")
@@ -121,7 +119,6 @@ public class AuthController {
             att.count.set(0);
             String accessToken = jwtService.generateToken(user, ACCESS_TOKEN_EXPIRATION);
 
-            // Durée selon rememberMe
             long refreshTokenDurationMs = req.isRememberMe() ? (30L * 24 * 60 * 60 * 1000) : (24L * 60 * 60 * 1000);
             JwtService.RefreshToken refresh = jwtService.generateRefreshToken(user, refreshTokenDurationMs);
             String refreshTokenHash = hash(refresh.token());
@@ -147,10 +144,8 @@ public class AuthController {
         long now = System.currentTimeMillis();
         cleanupStaleEntries(now);
 
-        // Protection anti-spam : vérifier le throttling par IP AVANT toute opération
         RefreshThrottle throttle = refreshThrottles.computeIfAbsent(clientIp, k -> new RefreshThrottle());
 
-        // Vérifier le cookie AVANT toute autre opération
         Cookie cookie = WebUtils.getCookie(request, "refresh_token");
         if (cookie == null) {
             return ResponseEntity.ok(Map.of("valid", false));
@@ -158,25 +153,18 @@ public class AuthController {
 
         String refreshToken = cookie.getValue();
 
-        // GRACE PERIOD : Si on vient de faire un refresh récemment avec le MÊME token,
-        // retourner le même résultat sans re-générer (évite les problèmes de spam F5)
         if (throttle.lastRefresh > 0 && throttle.lastToken != null) {
             long timeSinceLastRefresh = now - throttle.lastRefresh;
 
-            // Fenêtre de grâce de 3 secondes
             if (timeSinceLastRefresh < GRACE_PERIOD_MS) {
-                // Vérifier si c'est le même token ou l'ancien token
                 if (refreshToken.equals(throttle.lastToken) || refreshToken.equals(throttle.previousToken)) {
-                    // Retourner le résultat précédent (le nouveau token déjà généré)
                     if (throttle.lastResponse != null) {
-                        // Renvoyer le même cookie avec le nouveau token
                         addRefreshCookie(response, throttle.newToken, throttle.lastCookieMaxAge);
                         return ResponseEntity.ok(throttle.lastResponse);
                     }
                 }
             }
 
-            // Hors grace period, vérifier le rate limiting
             if (timeSinceLastRefresh < REFRESH_MIN_INTERVAL_MS) {
                 throttle.refreshCount++;
                 if (throttle.refreshCount > 5) {
@@ -184,14 +172,11 @@ public class AuthController {
                     return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                             .body(Map.of("valid", false, "error", "Trop de requêtes, veuillez patienter"));
                 }
-                // Dans l'intervalle mais pas trop de spam, on continue
             } else {
-                // Intervalle respecté, reset le compteur
                 throttle.refreshCount = 0;
             }
         }
 
-        // Chercher l'utilisateur par le refresh token
         User user = userService.findByRefreshToken(refreshToken);
 
         if (user == null || user.getRefreshTokenExpiry() == null || user.getRefreshTokenExpiry() < now) {
@@ -203,18 +188,14 @@ public class AuthController {
             return ResponseEntity.ok(Map.of("valid", false));
         }
 
-        // Générer le nouveau refresh token
         JwtService.RefreshToken newRefresh = jwtService.generateRefreshToken(user, user.getRefreshTokenExpiry() - now);
         String newRefreshTokenHash = hash(newRefresh.token());
         userService.saveRefreshToken(user, newRefreshTokenHash, newRefresh.jti(), newRefresh.expiry());
 
-        // Créer le cookie avec le nouveau token
         addRefreshCookie(response, newRefresh.token(), (int) maxAge);
 
-        // Générer le nouveau access token
         String accessToken = jwtService.generateToken(user, ACCESS_TOKEN_EXPIRATION);
 
-        // Stocker le résultat pour la grace period
         Map<String, Object> responseData = Map.of(
                 "valid", true,
                 "token", accessToken,
@@ -223,10 +204,9 @@ public class AuthController {
                 "role", user.getRole() != null ? user.getRole() : "USER"
         );
 
-        // Mettre à jour le throttle avec les infos pour la grace period
         throttle.lastRefresh = now;
-        throttle.previousToken = refreshToken;           // L'ancien token (celui qu'on vient de recevoir)
-        throttle.newToken = newRefresh.token();          // Le nouveau token (celui qu'on envoie)
+        throttle.previousToken = refreshToken;
+        throttle.newToken = newRefresh.token();
         throttle.lastToken = newRefresh.token();
         throttle.lastResponse = responseData;
         throttle.lastCookieMaxAge = (int) maxAge;
@@ -263,11 +243,6 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    // Helpers
-
-    /**
-     * Crée et ajoute le cookie refresh_token (HttpOnly, SameSite=Lax) à la réponse.
-     */
     private void addRefreshCookie(HttpServletResponse response, String value, int maxAge) {
         Cookie cookie = new Cookie("refresh_token", value);
         cookie.setHttpOnly(true);
@@ -288,10 +263,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * Nettoie les entrées obsolètes des maps attempts et refreshThrottles
-     * pour éviter les fuites mémoire. Exécuté au maximum toutes les 5 minutes.
-     */
     private void cleanupStaleEntries(long now) {
         if (now - lastCleanup.get() < CLEANUP_INTERVAL_MS) return;
         lastCleanup.set(now);

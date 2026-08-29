@@ -70,7 +70,10 @@ Toujours respecter cette séparation.
 - Ne pas dupliquer de logique.
 - Ne pas sur-complexifier (YAGNI : pas d'abstraction spéculative, diff minimal, suppression > ajout).
 - Pas de nouvelle dépendance quand quelques lignes de code suffisent.
-- Raccourci délibéré → commentaire `ponytail:` indiquant la limite connue et le chemin d'amélioration.
+- **Commentaires : minimalistes.** Uniquement sur la logique complexe et non intuitive.
+  Si le code se comprend de lui-même, pas de commentaire. Pas de marqueurs `ponytail:`
+  ni `comportement actuel piné`. Javadoc : une ligne quand nécessaire, aucune pour les
+  méthodes évidentes. Pas de `@param`/`@return` qui répète l'évident.
 - Respecter les conventions existantes.
 - Générer du code cohérent avec l’existant.
 - Tout changement de schéma (entité, colonne, index) s'accompagne d'un script Flyway

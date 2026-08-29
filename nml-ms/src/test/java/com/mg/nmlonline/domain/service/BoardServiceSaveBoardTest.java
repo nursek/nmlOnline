@@ -16,13 +16,9 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Caractérisation du safeguard {@link BoardService#saveBoard} : un re-import d'un
- * board.json neutre NE doit JAMAIS réinitialiser l'appartenance (owner_id) ni
- * l'armée des secteurs déjà présents en base. C'était le bug prod : le boot import
- * faisait getSectorsList().clear() → cascade DELETE des secteurs + armées →
- * joueurs plus assignés à leur quartier après chaque redémarrage.
- */
+import static org.mockito.Mockito.*;
+
+/** Caractérise saveBoard : un re-import neutre ne doit JAMAIS réinitialiser owner_id (bug prod : getSectorsList().clear() → cascade DELETE). */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("BoardService.saveBoard — re-import non destructif (préserve owner_id)")
 class BoardServiceSaveBoardTest {
@@ -36,14 +32,12 @@ class BoardServiceSaveBoardTest {
     @Test
     @DisplayName("re-import d'un board neutre sur un board existant possédé → owner_id et armée préservés")
     void reImportNeutralBoardPreservesOwnership() {
-        // Board existant en base : secteur 13 appartenant au joueur 42, avec une unité.
         Board existing = new Board();
         existing.setName("Carte Principale");
         Sector ownedSector = new Sector(13, "Quartier Lurio");
         ownedSector.setOwnerAndColor(42L, "#ff0000");
         existing.addSector(ownedSector);
 
-        // Board.json re-importé : secteur 13 NEUTRE (ownerId null), sans armée.
         Board incoming = new Board();
         Sector neutralSector = new Sector(13, "Quartier Lurio");
         incoming.addSector(neutralSector);
@@ -72,8 +66,8 @@ class BoardServiceSaveBoardTest {
         existing.addSector(owned);
 
         Board incoming = new Board();
-        incoming.addSector(new Sector(13, "Quartier Lurio"));   // déjà présent
-        incoming.addSector(new Sector(99, "Nouveau Secteur"));   // nouveau dans le JSON
+        incoming.addSector(new Sector(13, "Quartier Lurio"));
+        incoming.addSector(new Sector(99, "Nouveau Secteur"));
 
         when(boardRepository.findByName("Carte Principale")).thenReturn(Optional.of(existing));
         when(boardRepository.save(existing)).thenReturn(existing);

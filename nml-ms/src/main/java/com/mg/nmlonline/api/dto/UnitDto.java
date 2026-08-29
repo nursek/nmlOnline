@@ -14,7 +14,6 @@ public class UnitDto {
     private Boolean isInjured;
     private List<EquipmentDto> equipments;
 
-    // Stats de base / calculées
     private Double attack;
     private Double defense;
     private Double pdf;

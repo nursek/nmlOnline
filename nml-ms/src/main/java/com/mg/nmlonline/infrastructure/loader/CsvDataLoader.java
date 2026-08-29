@@ -19,9 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 
-/**
- * Charge les données de base depuis les fichiers CSV au démarrage de l'application
- */
 @Component
 @Order(1)
 @RequiredArgsConstructor
@@ -39,16 +36,13 @@ public class CsvDataLoader implements CommandLineRunner {
         loadCompatibilities();
     }
 
-    /**
-     * Lit un CSV du classpath (header ignoré) et mappe chaque ligne non vide.
-     * Les lignes pour lesquelles le mapper retourne null sont ignorées.
-     */
+    /** Lit un CSV classpath (header ignoré), ignore les lignes vides et celles mappées à null. */
     private <T> List<T> load(String path, Function<String[], T> mapper) {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(Objects.requireNonNull(
                         getClass().getResourceAsStream(path)), StandardCharsets.UTF_8))) {
 
-            String header = reader.readLine(); // Skip header
+            String header = reader.readLine();
             log.debug("CSV header ({}): {}", path, header);
 
             List<T> result = new ArrayList<>();
@@ -69,9 +63,6 @@ public class CsvDataLoader implements CommandLineRunner {
         }
     }
 
-    /**
-     * Charge les ressources depuis resources.csv
-     */
     private void loadResources() {
         if (resourceRepository.count() > 0) {
             log.info("Resources already loaded (count: {}), skipping", resourceRepository.count());
@@ -85,9 +76,6 @@ public class CsvDataLoader implements CommandLineRunner {
         log.info("Successfully loaded {} resources from CSV", resources.size());
     }
 
-    /**
-     * Charge les équipements depuis equipments.csv
-     */
     private void loadEquipments() {
         if (equipmentRepository.count() > 0) {
             log.info("Equipments already loaded (count: {}), skipping", equipmentRepository.count());
@@ -109,16 +97,12 @@ public class CsvDataLoader implements CommandLineRunner {
 
         log.info("Successfully loaded {} equipments from CSV", equipments.size());
 
-        // Log des équipements chargés pour vérification
         if (log.isDebugEnabled()) {
             equipmentRepository.findAll().forEach(eq ->
                 log.debug("Equipment in DB: {}", eq.getName()));
         }
     }
 
-    /**
-     * Charge les compatibilités depuis compatibility.csv
-     */
     private void loadCompatibilities() {
         List<Map.Entry<Long, UnitClass>> entries = load("/compatibility.csv", parts ->
                 parts.length >= 2
@@ -130,7 +114,6 @@ public class CsvDataLoader implements CommandLineRunner {
             compatibilities.computeIfAbsent(entry.getKey(), k -> new HashSet<>()).add(entry.getValue());
         }
 
-        // Appliquer les compatibilités aux équipements
         int count = 0;
         for (Map.Entry<Long, Set<UnitClass>> entry : compatibilities.entrySet()) {
             equipmentRepository.findById(entry.getKey()).ifPresent(equipment -> {

@@ -39,23 +39,16 @@ public class UserService {
     }
 
     public boolean checkPassword(String raw, String hashed) {
-        // Schéma actuel : mot de passe + pepper
         if (encoder.matches(applyPepper(raw), hashed)) {
             return true;
         }
-        // Rétro-compatibilité : anciens hashes encodés sans pepper.
-        // Nécessaire après le refactoring qui a introduit le pepper, pour ne pas
-        // invalider les comptes existants tant qu'ils ne sont pas re-hashés.
+        // Rétro-compat : anciens hashes sans pepper (pré-refactor), tant que non re-hashés.
         return encoder.matches(raw, hashed);
     }
 
     /**
-     * Vérifie le mot de passe et, si le hash stocké est un hash legacy sans pepper qui matche,
-     * re-hashe immédiatement avec le pepper et persiste le hash upgradé.
-     * Évite qu'un dump DB laisse les comptes pré-refactor craquables offline sans le pepper.
+     * Re-hashe et persiste avec pepper si le hash stocké est un legacy sans pepper qui matche.
      * À supprimer une fois tous les comptes legacy re-hashés.
-     * ponytail: ceiling = transparent re-hash on login ; une fois la migration one-shot faite,
-     * retirer la branche legacy + ce upgrade.
      */
     public boolean checkAndUpgradePassword(User user, String raw) {
         String hashed = user.getPassword();
@@ -97,10 +90,7 @@ public class UserService {
         userRepo.save(user);
     }
 
-    /**
-     * Trouve un utilisateur par son refresh token via une recherche indexée sur le JTI,
-     * puis vérifie le hash stocké.
-     */
+    /** Recherche indexée sur le JTI puis vérification du hash stocké. */
     public User findByRefreshToken(String refreshToken) {
         String jti = jwtService.extractJti(refreshToken);
         if (jti == null) {

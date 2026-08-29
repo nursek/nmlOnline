@@ -18,28 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Seeder d'un scénario de test pour la résolution pas-à-pas par hop (admin).
+ * Seeder dev-only d'un scénario de test pour la résolution pas-à-pas.
  *
- * <p><strong>Dev uniquement</strong> : ce service est packaging-dev (le
- * {@code DevSeederController} qui l'appelle est {@code @Profile("dev")}). Il
- * prépare un scénario réaliste pour tester manuellement le flux pas-à-pas sans
- * bricoler les données à la main. Re-jouable à la demande via le bouton UI.</p>
- *
- * <h3>Scénario 2 hops pédagogique</h3>
- * <ul>
- *   <li>Attaquant : <strong>lurio</strong>, unité {@code LEGER} du secteur 41
- *       (les classes LEGER font 2 hops).</li>
- *   <li>Défenseur : <strong>cegorach</strong>, secteur 32 (voisin de 13, lui-même
- *       voisin de 41 → route valide [41, 13, 32]).</li>
- *   <li>2 unités {@code TIREUR} (BRUTE 100/100) ajoutées chez cegorach en 32 si
- *       le secteur n'en contient pas déjà — combat déterministe, sans RNG.</li>
- *   <li>Step 1 : arrivée en secteur 13 (allié lurio) → pas de conflit.</li>
- *   <li>Step 2 : arrivée en secteur 32 (enemy cegorach) → conflit à résoudre.</li>
- * </ul>
- *
- * <p>Idempotent : nettoie les ordres PENDING antérieurs de lurio pour le tour
- * courant (anti-doublon au re-seed) et n'ajoute les défenseurs que s'ils
- * manquent.</p>
+ * <p>Scénario 2 hops : lurio (LEGER) part du secteur 41 via la route [41, 13, 32]
+ * vers cegorach en 32 (2 TIREUR BRUTE 100/100 ajoutés si manquants, combat déterministe).
+ * Step 1 = secteur 13 allié (pas de conflit), step 2 = secteur 32 ennemi (conflit).
+ * Idempotent : nettoie les PENDING antérieurs de lurio et n'ajoute les défenseurs que s'ils manquent.</p>
  */
 @Service
 public class TurnResolutionScenarioSeeder {
@@ -73,18 +57,10 @@ public class TurnResolutionScenarioSeeder {
         this.entityManager = entityManager;
     }
 
-    /**
-     * Indique si le scénario est jouable dans l'environnement courant (dev).
-     * Probe simple : le bean existe (controller dev actif) → {@code true}.
-     */
     public boolean isAvailable() {
         return true;
     }
 
-    /**
-     * Prépare le scénario de test pas-à-pas pour le tour courant et renvoie le
-     * résumé à afficher à l'admin.
-     */
     @Transactional
     public ScenarioSummaryDto seedScenario() {
         if (turnLock.isLocked()) {
@@ -118,9 +94,8 @@ public class TurnResolutionScenarioSeeder {
         }
         entityManager.flush(); // obtenir les IDs persistés
 
-        // Attaquant : unité LEGER (≥2 hops) de lurio. On cherche d'abord en 41
-        // (topologie native du scénario), puis en 13 (après finalize précédent
-        // qui aurait déplacé l'unité), à défaut on en ajoute une en 41.
+        // Attaquant LEGER (≥2 hops) de lurio : cherché en 41 puis en 13 (après finalize précédent),
+        // à défaut ajouté en 41.
         Sector sAttackerFrom = board.getSector(SECTOR_ATTACKER_FROM);
         if (sAttackerFrom == null) {
             throw new IllegalStateException("Secteur attaquant " + SECTOR_ATTACKER_FROM + " introuvable");
@@ -144,7 +119,6 @@ public class TurnResolutionScenarioSeeder {
         Long attackerUnitId = attackerUnit.getId();
         int fromSector = sAttackerFrom.getNumber();
 
-        // Nettoyer les PENDING antérieurs de lurio pour ce tour (anti-doublon).
         List<MovementOrder> pendingLurio = movementOrderRepository
                 .findByPlayerIdAndTurnAndStatus(lurio.getId(), turn, MovementStatus.PENDING);
         if (!pendingLurio.isEmpty()) {
@@ -152,7 +126,6 @@ public class TurnResolutionScenarioSeeder {
             entityManager.flush();
         }
 
-        // Créer l'ordre via le service (validation métier : adjacence + présence + hops).
         MovementOrder order = movementService.placeFootOrder(
                 lurio.getId(), turn, List.of(attackerUnitId),
                 List.of(SECTOR_ATTACKER_FROM, SECTOR_INTERMEDIATE, SECTOR_DEFENDER), board);

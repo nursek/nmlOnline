@@ -26,16 +26,15 @@ public class PlayerResource {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
-    @JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
+    @JsonIgnore
     private Player player;
 
     @Column(name = "resource_name", nullable = false)
-    private String resourceName; // "Or", "Ivoire", "Joyaux", etc.
+    private String resourceName;
 
     @Column(nullable = false)
-    private int quantity = 0; // quantité possédée
+    private int quantity = 0;
 
-    // Relation optionnelle avec Resource pour validation et récupération du prix
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resource_id", referencedColumnName = "id")
     private Resource resource;
@@ -50,9 +49,6 @@ public class PlayerResource {
         this.quantity = quantity;
     }
 
-    /**
-     * Ajoute une quantité de ressources
-     */
     public void addQuantity(int amount) {
         if (amount > 0) {
             if (this.quantity > Integer.MAX_VALUE - amount) {
@@ -62,9 +58,6 @@ public class PlayerResource {
         }
     }
 
-    /**
-     * Retire une quantité de ressources
-     */
     public boolean removeQuantity(int amount) {
         if (amount > 0 && this.quantity >= amount) {
             this.quantity -= amount;
@@ -73,9 +66,6 @@ public class PlayerResource {
         return false;
     }
 
-    /**
-     * Vérifie si le joueur possède au moins une certaine quantité
-     */
     public boolean hasQuantity(int amount) {
         return this.quantity >= amount;
     }

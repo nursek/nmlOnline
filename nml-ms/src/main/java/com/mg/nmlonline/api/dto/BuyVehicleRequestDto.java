@@ -5,9 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Corps de la requête d'achat d'un véhicule.
- */
 @Data
 @NoArgsConstructor
 public class BuyVehicleRequestDto {

@@ -10,9 +10,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Mapper simplifié pour Board - conversion uniquement entre Domain et DTO
- */
 @Component
 public class BoardMapper {
 
@@ -22,9 +19,6 @@ public class BoardMapper {
         this.sectorMapper = sectorMapper;
     }
 
-    /**
-     * Convertit un DTO BoardDto en objet Board du domaine
-     */
     public Board toDomain(BoardDto dto) {
         if (dto == null) return null;
 
@@ -34,7 +28,6 @@ public class BoardMapper {
         board.setMapImageUrl(dto.getMapImageUrl());
         board.setSvgOverlayUrl(dto.getSvgOverlayUrl());
 
-        // Conversion de tous les secteurs
         if (dto.getSectors() != null) {
             for (Map.Entry<Integer, SectorDto> entry : dto.getSectors().entrySet()) {
                 Sector sector = sectorMapper.toDomain(entry.getValue());
@@ -47,9 +40,6 @@ public class BoardMapper {
         return board;
     }
 
-    /**
-     * Convertit un objet Board du domaine en DTO BoardDto
-     */
     public BoardDto toDto(Board board) {
         if (board == null) return null;
 
@@ -59,7 +49,6 @@ public class BoardMapper {
         dto.setMapImageUrl(board.getMapImageUrl());
         dto.setSvgOverlayUrl(board.getSvgOverlayUrl());
 
-        // Conversion des secteurs en Map
         if (board.getAllSectors() != null) {
             Map<Integer, SectorDto> sectorsMap = board.getAllSectors().stream()
                     .collect(Collectors.toMap(

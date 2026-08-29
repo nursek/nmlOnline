@@ -20,9 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Service pour importer un Board depuis un fichier JSON
- */
 @Service
 public class BoardImportService {
 
@@ -31,18 +28,13 @@ public class BoardImportService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final EquipmentRepository equipmentRepository;
 
-    // Cache d'Equipment pour éviter les requêtes multiples
     private final Map<String, Equipment> equipmentCache = new HashMap<>();
 
     public BoardImportService(EquipmentRepository equipmentRepository) {
         this.equipmentRepository = equipmentRepository;
     }
 
-    /**
-     * Importe un Board depuis un contenu JSON.
-     * @Transactional(readOnly) : la session reste ouverte pour Hibernate.initialize
-     * sur les Equipment chargés via getEquipmentByName (privé, appelé en self-invocation).
-     */
+    /** Session readOnly ouverte pour Hibernate.initialize sur les Equipment (self-invocation de getEquipmentByName). */
     @Transactional(readOnly = true)
     public Board importBoardFromJson(String jsonContent) throws IOException {
         BoardDTO dto = objectMapper.readValue(jsonContent, BoardDTO.class);
@@ -52,7 +44,6 @@ public class BoardImportService {
     private Board importBoard(BoardDTO dto) {
         Board board = new Board();
 
-        // Importer les métadonnées de la carte
         if (dto.name != null) {
             board.setName(dto.name);
         }
@@ -65,21 +56,17 @@ public class BoardImportService {
 
         if (dto.sectors != null && !dto.sectors.isEmpty()) {
             for (SectorDTO sectorDto : dto.sectors) {
-                // Vérifier si le secteur existe déjà
                 Sector sector = board.getSector(sectorDto.number);
 
                 if (sector == null) {
-                    // Créer un nouveau secteur
                     sector = new Sector(sectorDto.number, sectorDto.name);
                     board.addSector(sector);
                 } else {
-                    // Mettre à jour le secteur existant
                     sector.setName(sectorDto.name);
                 }
 
                 sector.setIncome(sectorDto.income);
 
-                // Ajouter les coordonnées si présentes
                 if (sectorDto.x != null) {
                     sector.setX(sectorDto.x);
                 }
@@ -87,26 +74,21 @@ public class BoardImportService {
                     sector.setY(sectorDto.y);
                 }
 
-                // Ajouter la ressource si présente
                 if (sectorDto.resource != null && !sectorDto.resource.isEmpty()) {
                     sector.setResourceName(sectorDto.resource);
                 }
 
-                // Importer les unités
-                // Note: On ne peut pas clear() car getArmy() peut retourner une liste non modifiable
-                // On ajoute simplement les unités (le secteur peut déjà avoir des unités)
+                // Pas de clear() : getArmy() peut retourner une liste non modifiable ; on ajoute seulement.
                 if (sectorDto.army != null) {
                     for (UnitDTO unitDto : sectorDto.army) {
                         Unit unit = createUnitFromDTO(unitDto);
-                        if (unit != null) { // Only add unit if it was created successfully
+                        if (unit != null) {
                             sector.addUnit(unit);
                         }
                     }
                 }
 
-                // Ajouter les voisins
-                // Note: On ne peut pas clear() car getNeighbors() retourne une liste non modifiable
-                // On ajoute simplement les voisins
+                // Pas de clear() : getNeighbors() retourne une liste non modifiable ; on ajoute seulement.
                 if (sectorDto.neighbors != null) {
                     for (Integer neighbor : sectorDto.neighbors) {
                         sector.addNeighbor(neighbor);
@@ -118,11 +100,7 @@ public class BoardImportService {
         return board;
     }
 
-    /**
-     * Crée une Unit à partir des champs communs des DTOs d'import (classes, type, expérience).
-     * Retourne null si aucune classe n'est fournie (une unité sans classe est inutilisable).
-     * Si type est null, le type déduit de l'expérience par le constructeur est conservé.
-     */
+    /** Retourne null si aucune classe fournie ; si type est null, conserve celui déduit de l'expérience par le constructeur. */
     public static Unit createUnit(List<String> classes, UnitType type, double experience) {
         if (classes == null || classes.isEmpty()) {
             return null;
@@ -133,7 +111,6 @@ public class BoardImportService {
             unit.setType(type);
         }
 
-        // Ajouter la deuxième classe si présente
         if (classes.size() > 1) {
             unit.addSecondClass(UnitClass.valueOf(classes.get(1)));
         }
@@ -148,7 +125,7 @@ public class BoardImportService {
             return null;
         }
 
-        // Ajouter les équipements (depuis la BDD, pas de création)
+        // Équipements : lookup BDD uniquement, pas de création.
         if (unitDto.equipments != null) {
             for (String equipmentName : unitDto.equipments) {
                 Equipment equipment = getEquipmentByName(equipmentName);
@@ -161,33 +138,24 @@ public class BoardImportService {
         return unit;
     }
 
-    /**
-     * Récupère un Equipment depuis le cache ou la BDD.
-     * Les Equipment sont pré-chargés via CSV, on ne crée jamais de nouveaux Equipment ici.
-     */
+    /** Lookup cache/BDD (Equipment pré-chargés via CSV, jamais créés ici). */
     private Equipment getEquipmentByName(String equipmentName) {
-        // 1. Vérifier le cache
         if (equipmentCache.containsKey(equipmentName)) {
             return equipmentCache.get(equipmentName);
         }
 
-        // 2. Chercher en BDD
         Optional<Equipment> existingEquipment = equipmentRepository.findByName(equipmentName);
         if (existingEquipment.isPresent()) {
             Equipment eq = existingEquipment.get();
-            // compatibleClasses est LAZY : on l'initialise maintenant (session ouverte)
-            // car les Equipment sont mis en cache et réutilisés hors session (imports multi-étapes).
+            // compatibleClasses est LAZY : initialiser maintenant car l'Equipment est mis en cache et réutilisé hors session.
             Hibernate.initialize(eq.getCompatibleClasses());
             equipmentCache.put(equipmentName, eq);
             return eq;
         }
 
-        // L'equipment n'existe pas - c'est une erreur
         logger.warn("Équipement '{}' non trouvé en BDD (vérifier data.sql)", equipmentName);
         return null;
     }
-
-    // ===== DTOs pour Jackson =====
 
     public static class BoardDTO {
         public String name;

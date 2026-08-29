@@ -26,10 +26,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Tests de régression sur BuildingService : reconstruction du QG (75 000),
- * captures (QG, cache, banque), vampirisation et déplacements.
- */
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("BuildingService")
 class BuildingServiceTest {
@@ -245,7 +243,7 @@ class BuildingServiceTest {
         @DisplayName("Cooldown non respecté → IllegalStateException")
         void shouldThrowWhenOnCooldown() {
             Headquarters hq = new Headquarters(1L);
-            hq.setLastMovedTurn(8); // tour 10 : 10-8 = 2 < 5
+            hq.setLastMovedTurn(8);
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(hq));
 
             assertThrows(IllegalStateException.class,

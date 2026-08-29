@@ -4,9 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO pour la réponse d'une vente de ressource
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

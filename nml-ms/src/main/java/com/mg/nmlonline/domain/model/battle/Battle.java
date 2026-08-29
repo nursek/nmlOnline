@@ -16,12 +16,12 @@ public class Battle {
 
     private static final Logger logger = LoggerFactory.getLogger(Battle.class);
 
-    private int sectorId; // ID of the sector where the battle takes place
+    private int sectorId; // ID du secteur où se déroule le combat
 
     private List<Player> defenders = new ArrayList<>();
     private List<Player> attackers = new ArrayList<>();
 
-    // A battle can have a winner, but not mandatory. A winner claims or keeps the sector.
+    // Un combat peut avoir un vainqueur (qui prend ou garde le secteur) — optionnel.
     private Player winner;
 
     private Random random;
@@ -30,9 +30,6 @@ public class Battle {
         this.random = new Random();
     }
 
-    /**
-     * Génère un nombre aléatoire entre 1 et 100 (inclus)
-     */
     private int rand() {
         return random.nextInt(100) + 1;
     }
@@ -48,14 +45,12 @@ public class Battle {
             double defense = targetUnit.getDefense();
             double resistance = targetUnit.getDamageReduction(damageType);
 
-            // Gestion de l'évasion
             if (evasion > 0 && rand() <= evasion) {
                 logger.info("      > {} esquive l'attaque !", targetUnit.getType().name());
                 availableAttackerPoints -= (defense + armor);
                 continue;
             }
 
-            // Calcul des dégâts avec résistance
             double effectivePoints = availableAttackerPoints * (1 - resistance);
             if (availableAttackerPoints != effectivePoints) {
                 logger.info("      > Résistance de {}% appliquée. Dégâts effectifs : {}", String.format("%.0f", resistance * 100), String.format("%.2f", effectivePoints));
@@ -142,7 +137,6 @@ public class Battle {
 
         logger.info("\n=== Début du combat entre {} et {} ===", attacker.getName(), defender.getName());
 
-        // Phase PDF
         printPhaseHeader("PDF");
         double attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
         double defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF");
@@ -164,7 +158,6 @@ public class Battle {
             return;
         }
 
-        // Check if there is leftover Pdf points to make a second PDF phase It will be used when buildings are implemented
         if (checkPointsTypeInUnits(attackerUnits, "PDF") > 0 || checkPointsTypeInUnits(defenderUnits, "PDF") > 0) {
             printPhaseHeader("PDF - Round 2");
             attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
@@ -188,7 +181,6 @@ public class Battle {
             }
         }
 
-        // Phase PDC
         printPhaseHeader("PDC");
         double attackerTotalPdc = getAvailablePoints(attackerUnits, "PDC");
         double defenderTotalPdc = getAvailablePoints(defenderUnits, "PDC");
@@ -233,19 +225,16 @@ public class Battle {
             }
         }
 
-        // Phase ATK
+        // Phase ATK non-létale : les unités détruites deviennent blessées (voir replaceWithInjured).
         printPhaseHeader("ATK");
         double attackerTotalAtk = getAvailablePoints(attackerUnits, "ATK");
         double defenderTotalAtk = getAvailablePoints(defenderUnits, "ATK");
 
-        // Make it non-lethal.
         attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalAtk, "ATK");
         defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalAtk, "ATK");
 
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
-
-        // Fin du combat, on remplace les unités détruites par des blessées etc, on recalcule les stats.
 
         defenderUnits = replaceWithInjured(defenderUnits, attackerPhaseResult.casualties());
         attackerUnits = replaceWithInjured(attackerUnits, defenderPhaseResult.casualties());

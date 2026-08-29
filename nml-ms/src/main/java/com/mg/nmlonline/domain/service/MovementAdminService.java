@@ -27,32 +27,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Point d'entrée admin pour la consultation et la résolution des ordres de
- * déplacement d'un tour.
+ * Point d'entrée admin pour les ordres de déplacement d'un tour : consultation,
+ * aperçu non mutant et application mutante.
  *
- * <p>Trois opérations :</p>
- * <ul>
- *   <li>{@link #getOrdersForTurn} : vue de tous les ordres du tour courant
- *       (filtrable par statut), enrichie du nom du joueur.</li>
- *   <li>{@link #previewMovements} : <strong>aperçu non mutant</strong> — calcule
- *       le compte-rendu des conflits sans persister les déplacements ni marquer
- *       les ordres résolus.</li>
- *   <li>{@link #resolveMovements} : <strong>application mutante</strong> —
- *       déplace les entités, marque les ordres RESOLVED/BLOCKED, persiste.</li>
- * </ul>
- *
- * <p>{@code resolveAllMovements} mute l'état (déplace des entités, change les
- * statuts d'ordres). Pour l'aperçu, on réutilise tel quel cet algorithme dans
- * une transaction {@link TransactionDefinition#PROPAGATION_REQUIRES_NEW
- * REQUIRES_NEW} roulée en arrière explicitement après calcul du DTO : aucun
- * rollback-only silencieux ni UnexpectedRollbackException, et le diff reste
- * minimal (pas de duplication de l'algo de simulation).
- *
- * <p>ponytail: ceiling = l'aperçu ré-exécute toute la résolution (coût CPU double
- * si admin enchaîne aperçu puis apply). Upgrade path = variante pure-simulation
- * qui ne touche pas aux entités gérées (snapshot des armées en mémoire), mais
- * cela duplexerait la moitié de {@link MovementService#resolveAllMovements}.
- * Garder la version rollback tant que le volume d'ordres par tour reste raisonnable.</p>
+ * <p>L'aperçu ré-exécute {@link MovementService#resolveAllMovements} dans une
+ * transaction {@link TransactionDefinition#PROPAGATION_REQUIRES_NEW
+ * REQUIRES_NEW} roulée en arrière explicitement après construction du DTO —
+ * évite rollback-only silencieux et duplication de l'algo de simulation.</p>
  */
 @Service
 public class MovementAdminService {
@@ -78,10 +59,6 @@ public class MovementAdminService {
         this.txManager = txManager;
     }
 
-    /**
-     * Tous les ordres d'un tour, optionnellement filtrés par statut, avec le nom
-     * du joueur résolu (lookup en lot).
-     */
     @Transactional(readOnly = true)
     public List<AdminMovementOrderDto> getOrdersForTurn(int turn, MovementStatus status) {
         List<MovementOrder> orders = status != null
@@ -93,17 +70,7 @@ public class MovementAdminService {
                 .toList();
     }
 
-    /**
-     * Aperçu (dry-run) de la résolution : calcule le compte-rendu des conflits
-     * <strong>sans</strong> persister les effets (ordres laissés PENDING,
-     * entités non déplacées).
-     *
-     * <p>Implémente le rollback via transaction programmatique REQUIRES_NEW :
-     * on ouvre une transaction fraîche, on exécute {@link MovementService#resolveAllMovements}
-     * (qui joint cette transaction via REQUIRED), on construit le DTO depuis les
-     * entités encore vivantes, puis on rollback explicitement. Aucune trace
-     * ne persiste.</p>
-     */
+    /** Aperçu (dry-run) : calcule les conflits sans persister, via rollback de transaction REQUIRES_NEW. */
     public MovementResolutionResultDto previewMovements(int turn) {
         DefaultTransactionDefinition def = new DefaultTransactionDefinition(
                 TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -112,20 +79,13 @@ public class MovementAdminService {
             Board board = loadBoard();
             MovementResolutionResult result = movementService.resolveAllMovements(turn, board);
             Function<Long, String> names = resolveNames(collectPlayerIds(result));
-            // Builder le DTO AVANT le rollback : les entités gérées sont encore
-            // vivantes et leurs champs sont lisibles ; après rollback elles
-            // seraient détachées/videées.
+            // Construire le DTO AVANT le rollback : après, les entités seraient détachées.
             return movementMapper.toResolutionDto(result, turn, names);
         } finally {
             txManager.rollback(status);
         }
     }
 
-    /**
-     * Applique la résolution : déplace les entités, marque les ordres
-     * RESOLVED/BLOCKED et persiste. Le compte-rendu renvoyé reflète l'état
-     * désormais persisté.
-     */
     @Transactional
     public MovementResolutionResultDto resolveMovements(int turn) {
         Board board = loadBoard();
@@ -134,10 +94,6 @@ public class MovementAdminService {
         return movementMapper.toResolutionDto(result, turn, names);
     }
 
-    // ============================
-    // === Helpers internes ===
-    // ============================
-
     private Board loadBoard() {
         return boardRepository.findAll().stream()
                 .findFirst()
@@ -145,10 +101,6 @@ public class MovementAdminService {
                         "Aucun plateau trouvé pour résoudre les mouvements"));
     }
 
-    /**
-     * Collecte tous les playerIds présents dans le résultat (ordres + conflits)
-     * pour résoudre les noms en un seul batch.
-     */
     private Set<Long> collectPlayerIds(MovementResolutionResult result) {
         Set<Long> ids = new HashSet<>();
         result.getResolved().forEach(o -> ids.add(o.getPlayerId()));
@@ -166,10 +118,7 @@ public class MovementAdminService {
         return ids;
     }
 
-    /**
-     * Résout playerId → nom en un seul {@link PlayerRepository#findAllById}.
-     * Les IDs inconnus ressortent null (ne fait pas échouer le rapport).
-     */
+    /** IDs inconnus ressortent null (ne fait pas échouer le rapport). */
     private Function<Long, String> resolveNames(Set<Long> playerIds) {
         if (playerIds.isEmpty()) {
             return id -> null;

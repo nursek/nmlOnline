@@ -9,9 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-/**
- * Représente un stack d'équipements dans l'inventaire d'un joueur - Entité JPA
- */
 @Entity
 @Table(name = "EQUIPMENT_STACKS")
 @Getter
@@ -29,11 +26,10 @@ public class EquipmentStack {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
-    @JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
+    @JsonIgnore
     private Player player;
 
-    // ponytail: pas de cascade vers Equipment (référence partagée du catalogue) ;
-    // l'instance vient toujours du repository, déjà managed.
+    // Pas de cascade : Equipment est une référence partagée du catalogue (instance managed du repository).
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "equipment_id", nullable = false)
     private Equipment equipment;

@@ -9,14 +9,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Classe abstraite représentant un bâtiment du jeu.
- *
- * Les bâtiments sont des entités combattantes avec des règles spéciales :
- * - Stats fixes selon le type
- * - Règles de déplacement spécifiques
- * - Effets spéciaux lors de la capture
- */
 @Entity
 @DiscriminatorValue("BUILDING")
 @Getter
@@ -25,43 +17,25 @@ import lombok.Setter;
 @NoArgsConstructor
 public abstract class Building extends CombatEntity {
 
-    /**
-     * Type de bâtiment
-     */
     @Enumerated(EnumType.STRING)
     @Column(name = "building_type")
     private BuildingType buildingType;
 
-    /**
-     * Tour du dernier déplacement du bâtiment
-     */
     @Column(name = "last_moved_turn")
     private Integer lastMovedTurn;
 
-    /**
-     * ID du joueur qui a capturé ce bâtiment (null si propriétaire original)
-     */
     @Column(name = "captured_by_player_id")
     private Long capturedByPlayerId;
 
-    /**
-     * Tour de la capture (pour les effets progressifs comme la Banque)
-     */
     @Column(name = "captured_turn")
     private Integer capturedTurn;
 
-    /**
-     * Référence bidirectionnelle au joueur propriétaire du bâtiment.
-     * Important : JPA gère cette relation via la colonne player_id dans la table BUILDINGS.
-     */
+    // Côté inverse de Player.buildings : insertable=false/updatable=false, la FK player_id est gérée par le propriétaire.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false, insertable = false, updatable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore  // Éviter les boucles infinies lors de la sérialisation JSON
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Player player;
 
-    /**
-     * Constructeur de base pour les bâtiments.
-     */
     protected Building(BuildingType buildingType, double baseAttack, double baseDefense) {
         this.buildingType = buildingType;
         this.attack = baseAttack;
@@ -79,8 +53,7 @@ public abstract class Building extends CombatEntity {
 
     @Override
     public void recalculateBaseStats() {
-        // Les bâtiments ont des stats fixes.
-        // Sauf en cas de destruction où tout passe à 0.
+        // Stats fixes sauf à la destruction (tout passe à 0).
         if (isDestroyed()) {
             this.attack = 0;
             this.defense = 0;
@@ -105,9 +78,6 @@ public abstract class Building extends CombatEntity {
         this.capturedTurn = null;
     }
 
-    /**
-     * Enregistre un déplacement du bâtiment.
-     */
     public void recordMove(int currentTurn) {
         this.lastMovedTurn = currentTurn;
     }

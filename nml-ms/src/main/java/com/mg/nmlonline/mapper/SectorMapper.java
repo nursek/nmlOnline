@@ -10,9 +10,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Mapper simplifié pour Sector - conversion uniquement entre Domain et DTO
- */
 @Component
 public class SectorMapper {
 
@@ -29,34 +26,27 @@ public class SectorMapper {
         this.vehicleMapper = vehicleMapper;
     }
 
-    /**
-     * Convertit un DTO SectorDto en objet Sector du domaine
-     */
     public Sector toDomain(SectorDto dto) {
         if (dto == null) return null;
 
         Sector sector = new Sector(dto.getNumber(), dto.getName());
         sector.setIncome(dto.getIncome() != null ? dto.getIncome() : 2000.0);
 
-        // Propriétés pour la carte
         sector.setOwnerId(dto.getOwnerId());
         sector.setColor(dto.getColor() != null ? dto.getColor() : "#ffffff");
         if (dto.getResource() != null) {
             sector.setResourceName(dto.getResource());
         }
 
-        // Coordonnées
         sector.setX(dto.getX());
         sector.setY(dto.getY());
 
-        // Conversion des voisins
         if (dto.getNeighbors() != null) {
             for (Integer neighborNumber : dto.getNeighbors()) {
                 sector.addNeighbor(neighborNumber);
             }
         }
 
-        // Conversion des stats
         if (dto.getStats() != null) {
             SectorStats stats = new SectorStats();
             SectorStatsDto statsDto = dto.getStats();
@@ -71,7 +61,6 @@ public class SectorMapper {
             sector.setStats(stats);
         }
 
-        // Conversion des unités
         if (dto.getArmy() != null) {
             List<Unit> units = dto.getArmy().stream()
                     .map(unitMapper::toDomain)
@@ -82,9 +71,6 @@ public class SectorMapper {
         return sector;
     }
 
-    /**
-     * Convertit un objet Sector du domaine en DTO SectorDto
-     */
     public SectorDto toDto(Sector sector) {
         if (sector == null) return null;
 
@@ -93,7 +79,6 @@ public class SectorMapper {
         dto.setName(sector.getName());
         dto.setIncome(sector.getIncome());
 
-        // Propriétés pour la carte
         dto.setOwnerId(sector.getOwnerId());
         dto.setBoardId(sector.getBoard() != null ? sector.getBoard().getId() : null);
         dto.setColor(sector.getColor());
@@ -102,11 +87,9 @@ public class SectorMapper {
         }
         dto.setNeighbors(new ArrayList<>(sector.getNeighbors()));
 
-        // Coordonnées
         dto.setX(sector.getX());
         dto.setY(sector.getY());
 
-        // Conversion des stats
         if (sector.getStats() != null) {
             SectorStatsDto statsDto = new SectorStatsDto();
             SectorStats stats = sector.getStats();
@@ -121,26 +104,23 @@ public class SectorMapper {
             dto.setStats(statsDto);
         }
 
-        // Conversion des unités
         if (sector.getArmy() != null) {
             dto.setArmy(sector.getArmy().stream()
                     .map(unitMapper::toDto)
                     .toList());
         }
 
-        // Conversion des bâtiments
         if (sector.getBuildings() != null && !sector.getBuildings().isEmpty()) {
             dto.setBuildings(sector.getBuildings().stream()
                     .map(buildingMapper::toDto)
                     .toList());
         }
 
-        // Conversion du personnage (un seul par secteur au max)
+        // Un seul personnage par secteur au max
         if (sector.getCharacters() != null && !sector.getCharacters().isEmpty()) {
             dto.setCharacter(gameCharacterMapper.toDto(sector.getCharacters().getFirst()));
         }
 
-        // Conversion des véhicules
         if (sector.getVehicles() != null && !sector.getVehicles().isEmpty()) {
             dto.setVehicles(sector.getVehicles().stream()
                     .map(vehicleMapper::toDto)

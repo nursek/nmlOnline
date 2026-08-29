@@ -12,9 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-/**
- * Service simplifié pour Equipment - utilise directement les classes du domaine
- */
 @Service
 public class EquipmentService {
 
@@ -49,7 +46,7 @@ public class EquipmentService {
         return true;
     }
 
-    // === Mapping dans la transaction (compatibleClasses est LAZY) ===
+    // Mapping dans la transaction (compatibleClasses est LAZY).
 
     @Transactional(readOnly = true)
     public Page<EquipmentDto> findAllDto(Pageable pageable) {

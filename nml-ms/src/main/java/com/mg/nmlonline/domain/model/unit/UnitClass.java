@@ -2,7 +2,6 @@ package com.mg.nmlonline.domain.model.unit;
 
 import lombok.Getter;
 
-// Énumération pour les classes de spécialisation
 @Getter
 public enum UnitClass {
 
@@ -48,7 +47,6 @@ public enum UnitClass {
         this.code = code;
     }
 
-    // Méthodes par défaut
     public double getDamageReduction(String damageType) {
         return 0;
     }

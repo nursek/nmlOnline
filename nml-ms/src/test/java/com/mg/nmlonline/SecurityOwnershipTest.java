@@ -18,12 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Tests d'intégration vérifiant l'authentification et la propriété sur les endpoints critiques.
- *
- * <p>Les données de test sont créées par {@link TestDataInitializer} (profil {@code test}).
- * Les tokens JWT sont générés avec le secret de test configuré dans {@code application-test.properties}.
- */
+/** Authentification et propriété sur les endpoints critiques (profil test). */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -63,10 +58,6 @@ class SecurityOwnershipTest {
         return player.getId();
     }
 
-    // ============================================================
-    // Authentification
-    // ============================================================
-
     @Test
     void unauthenticated_getPlayers_returns401() throws Exception {
         mockMvc.perform(get("/api/players"))
@@ -93,10 +84,6 @@ class SecurityOwnershipTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // ============================================================
-    // Rôle ADMIN
-    // ============================================================
-
     @Test
     void authenticatedUser_cannotAccessAdminPlayers_returns403() throws Exception {
         String token = tokenFor(TestDataInitializer.USER_1);
@@ -106,15 +93,6 @@ class SecurityOwnershipTest {
                 .andExpect(status().isForbidden());
     }
 
-    // ============================================================
-    // Propriété (ownership)
-    // ============================================================
-
-    /**
-     * Un utilisateur USER ne peut pas accéder au personnage d'un autre joueur.
-     * Le contrôleur vérifie la propriété avant de chercher le personnage,
-     * donc la réponse attendue est 403 (Forbidden).
-     */
     @Test
     void authenticatedUser_cannotAccessOtherPlayerCharacter_returns403() throws Exception {
         String token = tokenFor(TestDataInitializer.USER_1);
@@ -125,11 +103,6 @@ class SecurityOwnershipTest {
                 .andExpect(status().isForbidden());
     }
 
-    /**
-     * Un utilisateur USER ne peut pas accéder aux bâtiments d'un autre joueur.
-     * Le contrôleur vérifie la propriété avant de chercher le QG,
-     * donc la réponse attendue est 403 (Forbidden).
-     */
     @Test
     void authenticatedUser_cannotAccessOtherPlayerHeadquarters_returns403() throws Exception {
         String token = tokenFor(TestDataInitializer.USER_1);

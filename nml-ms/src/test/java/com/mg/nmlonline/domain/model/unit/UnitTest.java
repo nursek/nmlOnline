@@ -10,11 +10,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests de régression sur les règles des unités :
- * seuils d'expérience, stats de base, blessure, formules d'équipement,
- * limites par catégorie, seconde classe, réductions de dégâts.
- */
+import static org.junit.jupiter.api.Assertions.*;
+
 @DisplayName("Unit")
 class UnitTest {
 
@@ -64,13 +61,13 @@ class UnitTest {
         @DisplayName("gainExperience fait évoluer le type au franchissement de seuil")
         void shouldEvolveTypeWhenCrossingThreshold() {
             Unit unit = new Unit(1, UnitClass.TIREUR);
-            unit.gainExperience(1); // total 2 → VOYOU
+            unit.gainExperience(1);
 
             assertEquals(UnitType.VOYOU, unit.getType());
             assertEquals(20.0, unit.getAttack());
             assertEquals(20.0, unit.getDefense());
 
-            unit.gainExperience(3); // total 5 → MALFRAT
+            unit.gainExperience(3);
             assertEquals(UnitType.MALFRAT, unit.getType());
             assertEquals(50.0, unit.getAttack());
         }
@@ -79,7 +76,7 @@ class UnitTest {
         @DisplayName("gainExperience sans franchissement ne change pas le type")
         void shouldNotEvolveBelowThreshold() {
             Unit unit = new Unit(0, UnitClass.TIREUR);
-            unit.gainExperience(1.5); // total 1.5 → toujours LARBIN
+            unit.gainExperience(1.5);
 
             assertEquals(UnitType.LARBIN, unit.getType());
             assertEquals(10.0, unit.getAttack());
@@ -88,11 +85,11 @@ class UnitTest {
         @Test
         @DisplayName("L'évolution recalcule les stats d'équipement sur la nouvelle base")
         void shouldRecalculateEquipmentStatsOnEvolution() {
-            Unit unit = new Unit(7, UnitClass.TIREUR); // MALFRAT atk 50
-            unit.addEquipment(firearm(50)); // pdf = 50 × 50% = 25
+            Unit unit = new Unit(7, UnitClass.TIREUR);
+            unit.addEquipment(firearm(50));
             assertEquals(25.0, unit.getPdf());
 
-            unit.gainExperience(1); // → BRUTE atk 100, pdf = 100 × 50% = 50
+            unit.gainExperience(1);
 
             assertEquals(UnitType.BRUTE, unit.getType());
             assertEquals(50.0, unit.getPdf());
@@ -106,7 +103,7 @@ class UnitTest {
         @Test
         @DisplayName("Blessure : attaque et défense divisées par 2")
         void shouldHalveAttackAndDefenseWhenInjured() {
-            Unit unit = new Unit(5, UnitClass.TIREUR); // 50/50
+            Unit unit = new Unit(5, UnitClass.TIREUR);
             unit.setInjured(true);
             unit.recalculateBaseStats();
 
@@ -118,14 +115,13 @@ class UnitTest {
         @DisplayName("Blessure : évasion brute inchangée, pdf recalculé sur l'attaque réduite")
         void shouldPinInjuryEffectOnCalculatedStats() {
             Unit unit = new Unit(5, UnitClass.TIREUR);
-            unit.addEquipment(firearm(50));       // pdf = 25
-            unit.addEquipment(defensive(40, 30)); // armor = 20, evasion = 30
+            unit.addEquipment(firearm(50));
+            unit.addEquipment(defensive(40, 30));
 
             unit.setInjured(true);
             unit.recalculateBaseStats();
 
-            // comportement actuel piné : pdf/armor dérivent des stats réduites,
-            // l'évasion (somme brute) n'est pas affectée par la blessure
+            // pdf/armor dérivent des stats réduites ; l'évasion (somme brute) non affectée.
             assertEquals(25.0, unit.getAttack());
             assertEquals(25.0, unit.getDefense());
             assertEquals(12.5, unit.getPdf());
@@ -141,9 +137,9 @@ class UnitTest {
         @Test
         @DisplayName("pdf = somme(attaque × pdfBonus/100) des équipements compatibles")
         void shouldComputePdfFromCompatibleEquipment() {
-            Unit unit = new Unit(5, UnitClass.TIREUR); // atk 50
-            unit.addEquipment(firearm(50)); // +25
-            unit.addEquipment(firearm(20)); // +10 — MALFRAT max 1 firearm, refusé
+            Unit unit = new Unit(5, UnitClass.TIREUR);
+            unit.addEquipment(firearm(50));
+            unit.addEquipment(firearm(20)); // 2e firearm refusé : limite MALFRAT
 
             assertEquals(25.0, unit.getPdf());
         }
@@ -151,7 +147,7 @@ class UnitTest {
         @Test
         @DisplayName("Équipement incompatible ne contribue pas aux stats")
         void shouldIgnoreIncompatibleEquipmentInStats() {
-            Unit unit = new Unit(5, UnitClass.SNIPER); // pas TIREUR
+            Unit unit = new Unit(5, UnitClass.SNIPER);
             boolean added = unit.addEquipment(firearm(50));
 
             assertFalse(added);
@@ -161,8 +157,8 @@ class UnitTest {
         @Test
         @DisplayName("armor = défense × armBonus/100, evasion = somme brute des bonus")
         void shouldComputeArmorAndEvasion() {
-            Unit unit = new Unit(5, UnitClass.TIREUR); // def 50
-            unit.addEquipment(defensive(40, 15)); // armor 20, evasion 15
+            Unit unit = new Unit(5, UnitClass.TIREUR);
+            unit.addEquipment(defensive(40, 15));
 
             assertEquals(20.0, unit.getArmor());
             assertEquals(15.0, unit.getEvasion());
@@ -243,11 +239,10 @@ class UnitTest {
         void shouldRemoveFromUnitEquipmentsOnly() {
             Unit unit = new Unit(5, UnitClass.TIREUR);
             Equipment gun = firearm(50);
-            // Simule une unité chargée depuis la BDD : unitEquipments peuplée,
-            // liste transient `equipments` vide. Setter Lombok public.
+            // unité chargée BDD : unitEquipments peuplée, liste transient `equipments` vide.
             unit.setEquipments(new java.util.ArrayList<>());
             unit.getUnitEquipments().add(new UnitEquipment(unit, gun));
-            unit.recalculateBaseStats(); // recalcule pdf sur la nouvelle source
+            unit.recalculateBaseStats();
             assertEquals(25.0, unit.getPdf());
 
             assertTrue(unit.removeEquipment(gun));
@@ -261,9 +256,7 @@ class UnitTest {
         void shouldRemoveFromBothLists() {
             Unit unit = new Unit(5, UnitClass.TIREUR);
             Equipment gun = firearm(50);
-            unit.addEquipment(gun); // peuple les deux listes via addEquipment
-            // Force une entrée supplémentaire dans unitEquipments pour simuler
-            // un état mixte (ne devrait pas arriver en prod, test de robustesse).
+            unit.addEquipment(gun);
             assertEquals(25.0, unit.getPdf());
 
             assertTrue(unit.removeEquipment(gun));
@@ -281,8 +274,7 @@ class UnitTest {
         @Test
         @DisplayName("LARBIN et VOYOU ne peuvent jamais prendre de seconde classe")
         void shouldNeverAllowSecondClassForLowTypes() {
-            // comportement actuel piné : la classe primaire compte déjà,
-            // donc la condition "< 1 classe" est impossible pour LARBIN/VOYOU
+            // la classe primaire exclut déjà LARBIN/VOYOU de canAddSecondClass.
             assertFalse(new Unit(0, UnitClass.TIREUR).canAddSecondClass());
             assertFalse(new Unit(3, UnitClass.TIREUR).canAddSecondClass());
         }
@@ -355,8 +347,8 @@ class UnitTest {
         @Test
         @DisplayName("Réduction = max parmi les classes de l'unité")
         void shouldTakeMaxReductionAcrossClasses() {
-            Unit unit = new Unit(5, UnitClass.TIREUR); // 0 partout
-            unit.addSecondClass(UnitClass.MASTODONTE); // 0.25 vs PDF
+            Unit unit = new Unit(5, UnitClass.TIREUR);
+            unit.addSecondClass(UnitClass.MASTODONTE);
 
             assertEquals(0.25, unit.getDamageReduction("PDF"));
             assertEquals(0.0, unit.getDamageReduction("ATK"));
@@ -365,7 +357,7 @@ class UnitTest {
         @Test
         @DisplayName("Critique TIREUR défini mais jamais utilisé en combat")
         void shouldPinUnusedTireurCrit() {
-            // comportement actuel piné : règle morte, aucun appel dans Battle
+            // règle morte : aucun appel dans Battle.
             assertEquals(0.10, UnitClass.TIREUR.getCriticalChance());
             assertEquals(1.5, UnitClass.TIREUR.getCriticalMultiplier());
         }

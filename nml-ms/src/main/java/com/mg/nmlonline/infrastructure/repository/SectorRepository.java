@@ -9,13 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface SectorRepository extends JpaRepository<Sector, Sector.SectorId> {
-    /**
-     * Trouve tous les secteurs appartenant à un joueur
-     */
     List<Sector> findByOwnerId(Long ownerId);
 
-    /**
-     * Trouve un secteur par son board et son numéro
-     */
     Optional<Sector> findByBoard_IdAndNumber(Long boardId, int number);
 }

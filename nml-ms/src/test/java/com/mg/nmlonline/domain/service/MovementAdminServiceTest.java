@@ -15,13 +15,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests d'intégration de {@link MovementAdminService} : caractérisation du
- * double comportement aperçu/apply de la résolution des mouvements.
- *
- * <p>Données fournies par {@code PlayerStartupImporter} au démarrage du profil
- * {@code test} (H2, ddl-auto). Aucune configuration supplémentaire requise.</p>
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("MovementAdminService — aperçu (dry-run) vs application")
@@ -36,14 +29,7 @@ class MovementAdminServiceTest {
     @Autowired
     private TurnService turnService;
 
-    /**
-     * L'aperçu doit calculer le compte-rendu SANS persister : l'ordre reste
-     * PENDING en base. L'application, elle, mute le statut.
-     *
-     * <p>L'ordre utilise une destination inexistante (secteur 99999) pour que
-     * {@link MovementService#resolveAllMovements} le bloque de façon
-     * déterministe, indépendamment de la topologie du plateau seedé.</p>
-     */
+    // destination inexistante (99999) pour bloquer l'ordre de façon déterministe.
     @Test
     @DisplayName("preview ne persiste pas, resolve mute le statut de l'ordre")
     void previewDoesNotPersistButResolveDoes() {
@@ -56,20 +42,17 @@ class MovementAdminServiceTest {
         assertEquals(MovementStatus.PENDING, saved.getStatus());
 
         try {
-            // === Aperçu (dry-run) ===
             MovementResolutionResultDto preview = movementAdminService.previewMovements(turn);
 
-            // L'ordre reste PENDING en base : la transaction REQUIRES_NEW a été roulée en arrière.
+            // REQUIRES_NEW roulé en arrière : l'ordre reste PENDING.
             MovementOrder afterPreview = movementOrderRepository.findById(orderId).orElseThrow();
             assertEquals(MovementStatus.PENDING, afterPreview.getStatus(),
                     "L'aperçu ne doit pas modifier le statut de l'ordre en base");
 
-            // Le rapport d'aperçu signale bien l'ordre comme bloqué (validation secteur inexistant).
             assertTrue(
                     preview.getBlocked().stream().anyMatch(o -> orderId.equals(o.getId())),
                     "L'aperçu doit lister l'ordre bloqué dans le compte-rendu");
 
-            // === Application (mutante) ===
             MovementResolutionResultDto resolved = movementAdminService.resolveMovements(turn);
 
             MovementOrder afterResolve = movementOrderRepository.findById(orderId).orElseThrow();
@@ -78,7 +61,6 @@ class MovementAdminServiceTest {
             assertEquals(MovementStatus.BLOCKED, afterResolve.getStatus(),
                     "L'ordre à destination inexistante doit être BLOCKED après application");
 
-            // Le rapport d'application liste aussi l'ordre bloqué.
             assertTrue(
                     resolved.getBlocked().stream().anyMatch(o -> orderId.equals(o.getId())),
                     "L'application doit lister l'ordre bloqué dans le compte-rendu");
@@ -87,10 +69,6 @@ class MovementAdminServiceTest {
         }
     }
 
-    /**
-     * Les ordres de la consultation admin doivent porter le nom du joueur
-     * (résolu côté service via lookup batch), pas seulement l'ID.
-     */
     @Test
     @DisplayName("getOrdersForTurn enrichit chaque ordre du nom du joueur")
     void getOrdersForTurnResolvesPlayerName() {
@@ -108,8 +86,7 @@ class MovementAdminServiceTest {
                     .findFirst()
                     .orElseThrow(() -> new AssertionError("Ordre créé absent de la liste admin"));
 
-            // playerId 99L n'existe pas dans le seed : le nom ressort null,
-            // mais le champ est bien présent (ne lève pas et ne renvoie pas l'ID brut).
+            // playerId 99L absent du seed : nom null, champ présent (pas l'ID brut).
             assertNotNull(mine.getPlayerId());
             assertEquals(99L, mine.getPlayerId());
         } finally {

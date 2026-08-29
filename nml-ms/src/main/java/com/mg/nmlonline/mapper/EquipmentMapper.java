@@ -12,15 +12,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Mapper simplifié pour Equipment - conversion uniquement entre Domain et DTO
- */
 @Component
 public class EquipmentMapper {
 
-    /**
-     * Convertit un objet Equipment du domaine en DTO
-     */
     public EquipmentDto toDto(Equipment domain) {
         if (domain == null) return null;
 
@@ -41,9 +35,6 @@ public class EquipmentMapper {
         );
     }
 
-    /**
-     * Convertit un DTO en objet Equipment du domaine
-     */
     public Equipment toDomain(EquipmentDto dto) {
         if (dto == null) return null;
 
@@ -54,7 +45,7 @@ public class EquipmentMapper {
             try {
                 category = EquipmentCategory.valueOf(dto.getCategory());
             } catch (IllegalArgumentException e) {
-                category = EquipmentCategory.FIREARM; // Par défaut
+                category = EquipmentCategory.FIREARM;
             }
         }
 
@@ -69,8 +60,6 @@ public class EquipmentMapper {
                 category
         );
     }
-
-    // === Méthodes utilitaires pour les conversions de classes ===
 
     private Set<UnitClassDto> toUnitClassDto(Set<UnitClass> classes) {
         if (classes == null || classes.isEmpty()) {

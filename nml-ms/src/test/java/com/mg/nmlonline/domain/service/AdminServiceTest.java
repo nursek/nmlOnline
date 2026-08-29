@@ -16,16 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Tests ciblés sur la gestion du compte {@link User} par {@link AdminService} :
- * création/mise à jour du compte lors de l'import avec mot de passe, et
- * suppression du compte (non-admin) lors de la suppression du joueur.
- * Isolation Mockito — aucun contexte Spring.
- *
- * <p>Le chemin board/secteurs/équipements de l'import est court-circuité en
- * renvoyant une board absente ({@code boardService.getAllBoards} vide) :
- * on ne teste ici que la branche credentials.
- */
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminService — gestion du compte User (création/maj/suppression)")
 class AdminServiceTest {
@@ -53,11 +45,8 @@ class AdminServiceTest {
     private static final String PASSWORD = "s3cr3t";
 
     private Player newPlayer() {
-        // Pas d'ID : simule le player tel que renvoyé par playerImportService.importPlayer(dto).
         return new Player(PLAYER_NAME);
     }
-
-    // === importPlayer(json, password) ===
 
     @Test
     @DisplayName("password fourni + user inexistant → crée un nouveau User (role USER), encode, save et lie")
@@ -65,7 +54,6 @@ class AdminServiceTest {
         PlayerImportService.PlayerDTO dto = new PlayerImportService.PlayerDTO();
         dto.name = PLAYER_NAME;
         Player player = newPlayer();
-        // Simule la persistance : save renvoie le player avec un ID.
         Player persisted = newPlayer();
         persisted.setId(42L);
 
@@ -82,7 +70,6 @@ class AdminServiceTest {
 
         Player result = adminService.importPlayer(JSON, PASSWORD);
 
-        // Le User est créé avec role USER, mot de passe encodé, et lié au player.
         org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         User created = captor.getValue();
@@ -118,7 +105,6 @@ class AdminServiceTest {
 
         adminService.importPlayer(JSON, PASSWORD);
 
-        // Même instance réutilisée (pas de new User), role inchangé, password upgradé.
         verify(userRepository).save(existing);
         assertEquals("USER", existing.getRole());
         assertEquals("new-hash", existing.getPassword());
@@ -146,8 +132,6 @@ class AdminServiceTest {
         verify(userRepository, never()).save(any(User.class));
         verify(userService, never()).encodePassword(any());
     }
-
-    // === deletePlayer(playerId) — suppression du compte User ===
 
     @Test
     @DisplayName("deletePlayer + user non-admin → supprime aussi le compte User")

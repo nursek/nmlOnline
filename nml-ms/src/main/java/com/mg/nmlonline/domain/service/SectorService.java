@@ -11,9 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Service simplifié pour Sector - utilise directement les classes du domaine
- */
 @Service
 public class SectorService {
 
@@ -26,21 +23,14 @@ public class SectorService {
         this.sectorRepository = sectorRepository;
     }
 
-    /**
-     * Récupère tous les secteurs appartenant à un joueur
-     */
     public List<Sector> findByOwnerId(Long ownerId) {
         return sectorRepository.findByOwnerId(ownerId);
     }
 
     /**
-     * Retire le propriétaire de tous les secteurs d'un joueur (lors de suppression du joueur).
-     *
-     * <p>Phase 3 : {@code Sector.army} ne porte plus {@code orphanRemoval} (voir
-     * {@code docs/jpa-pitfalls.md} §1), donc {@code .clear()} seul ne DELETE plus
-     * les rows {@code combat_entities}. On lève {@code em.remove(unit)} pour chaque
-     * unité (cascade REMOVE vers {@code unit_equipments} via {@code Unit.unitEquipments}
-     * cascade=ALL), puis on vide la collection en mémoire.</p>
+     * Retire le propriétaire des secteurs d'un joueur (lors de sa suppression).
+     * {@code Sector.army} n'a plus orphanRemoval : {@code .clear()} seul ne DELETE plus
+     * les rows, d'où {@code em.remove(unit)} explicite (cascade vers unit_equipments).
      */
     @Transactional
     public void removePlayerFromSectors(Long playerId) {

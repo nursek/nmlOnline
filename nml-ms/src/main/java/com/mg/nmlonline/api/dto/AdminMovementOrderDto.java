@@ -5,8 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * DTO d'un ordre de déplacement exposé à l'admin : {@link MovementOrderDto}
- * enrichi du nom du joueur (lookup batch côté service pour éviter le N+1).
+ * MovementOrderDto enrichi du nom du joueur (lookup batch côté service pour éviter le N+1).
  */
 @Data
 public class AdminMovementOrderDto {

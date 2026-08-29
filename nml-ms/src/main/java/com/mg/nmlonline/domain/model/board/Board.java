@@ -9,10 +9,6 @@ import lombok.Setter;
 
 import java.util.*;
 
-/**
- * Représente la carte complète du jeu - Entité JPA
- * Contient TOUS les secteurs (vides ou possédés par des joueurs).
- */
 @Entity
 @Table(name = "BOARDS")
 @Getter
@@ -30,30 +26,17 @@ public class Board {
     @Column(nullable = false, unique = true)
     private String name;
 
-    // URLs des assets de la carte (image JPG + overlay SVG)
     @Column(name = "map_image_url")
     private String mapImageUrl;
 
     @Column(name = "svg_overlay_url")
     private String svgOverlayUrl;
 
-    /**
-     * Tour de jeu courant — source unique de vérité pour tout le plateau.
-     * Initialisé à 1 ; incrémenté par {@code TurnService.advanceTurn} via
-     * le bouton admin « Finir le tour » (résolution des mouvements puis +1).
-     * ponytail: ceiling = déclenchement manuel par l'admin ; upgrade path = scheduler
-     * automatique end-of-turn + calcul des revenus à l'advanceTurn.
-     */
+    /** Tour courant — source unique de vérité du plateau (incrémenté par TurnService.advanceTurn). */
     @Column(name = "current_turn", nullable = false)
     private int currentTurn = 1;
 
-    /**
-     * Valide que l'URL de l'overlay SVG est same-origin (chemin relatif commençant par "/" mais
-     * pas par "//" qui serait protocol-relative). Refuse tout host/schéma externe pour éviter
-     * qu'un admin compromis ne fasse charger du JS arbitraire dans le navigateur des joueurs.
-     * ponytail: ceiling = same-origin only ; pour héberger un overlay hors-origin, le mettre
-     * derrière le même domaine via un reverse-proxy.
-     */
+    /** Refuse tout host/schéma externe : un admin compromis ne doit pas pouvoir faire charger du JS arbitraire via l'overlay SVG. */
     public void setSvgOverlayUrl(String svgOverlayUrl) {
         if (svgOverlayUrl != null && !isSameOriginPath(svgOverlayUrl)) {
             throw new IllegalArgumentException(
@@ -67,16 +50,10 @@ public class Board {
         return url.startsWith("/") && !url.startsWith("//");
     }
 
-    // Tous les secteurs de la carte (source unique de vérité)
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Sector> sectorsList = new ArrayList<>();
 
-    // === GESTION DES SECTEURS ===
-
-    /**
-     * Construit une map numéro -> secteur à partir de la liste persistante.
-     * Utilisé en interne pour les accès rapides sans maintenir de double source.
-     */
+    /** Map numéro→secteur reconstruite à la volée depuis sectorsList (pas de seconde source persistée). */
     private Map<Integer, Sector> sectorMap() {
         Map<Integer, Sector> map = new LinkedHashMap<>();
         if (sectorsList != null) {
@@ -87,9 +64,6 @@ public class Board {
         return map;
     }
 
-    /**
-     * Ajoute un secteur à la carte. Le numéro du secteur doit être unique.
-     */
     public void addSector(Sector sector) {
         if (sector == null) {
             throw new IllegalArgumentException("Sector cannot be null");
@@ -104,9 +78,6 @@ public class Board {
         sectorsList.add(sector);
     }
 
-    /**
-     * Récupère un secteur par son numéro.
-     */
     public Sector getSector(int number) {
         if (sectorsList == null) return null;
         for (Sector sector : sectorsList) {
@@ -117,47 +88,29 @@ public class Board {
         return null;
     }
 
-    /**
-     * Retourne tous les secteurs de la carte.
-     */
     public Collection<Sector> getAllSectors() {
         if (sectorsList == null) return Collections.emptyList();
         return Collections.unmodifiableList(sectorsList);
     }
 
-    /**
-     * Retourne le nombre total de secteurs.
-     */
     public int getSectorCount() {
         return sectorsList == null ? 0 : sectorsList.size();
     }
 
-    /**
-     * Vérifie si un secteur existe.
-     */
     public boolean hasSector(int number) {
         return getSector(number) != null;
     }
 
-    /**
-     * Supprime un secteur de la carte.
-     */
     public void removeSector(int number) {
         Sector removed = getSector(number);
         if (removed != null) {
             sectorsList.remove(removed);
-            // Nettoyer les références dans les voisins
             for (Sector s : sectorsList) {
                 s.removeNeighbor(number);
             }
         }
     }
 
-    // === GESTION DES PROPRIÉTAIRES ===
-
-    /**
-     * Assigne un propriétaire à un secteur et met à jour sa couleur.
-     */
     public void assignOwner(int sectorNumber, Long playerId, String colorHex) {
         Sector sector = getSector(sectorNumber);
         if (sector == null) {
@@ -166,9 +119,6 @@ public class Board {
         sector.setOwnerAndColor(playerId, colorHex);
     }
 
-    /**
-     * Retourne tous les secteurs possédés par un joueur.
-     */
     public List<Sector> getSectorsByOwner(Long playerId) {
         if (sectorsList == null) return Collections.emptyList();
         return sectorsList.stream()
@@ -176,9 +126,6 @@ public class Board {
                 .toList();
     }
 
-    /**
-     * Retourne tous les secteurs neutres (sans propriétaire).
-     */
     public List<Sector> getNeutralSectors() {
         if (sectorsList == null) return Collections.emptyList();
         return sectorsList.stream()
@@ -186,17 +133,11 @@ public class Board {
                 .toList();
     }
 
-    /**
-     * Vérifie si deux secteurs sont voisins (utile pour valider les déplacements).
-     */
     public boolean areNeighbors(int sector1, int sector2) {
         Sector s1 = getSector(sector1);
         return s1 != null && s1.isNeighbor(sector2);
     }
 
-    /**
-     * Vérifie s'il y a conflit entre deux secteurs (propriétaires différents et voisins).
-     */
     public boolean hasConflict(int sector1, int sector2) {
         if (!areNeighbors(sector1, sector2)) {
             return false;
@@ -211,15 +152,6 @@ public class Board {
                 && !s1.getOwnerId().equals(s2.getOwnerId());
     }
 
-    // === PATHFINDING ===
-
-    /**
-     * Valide qu'une route est un enchaînement contigu de secteurs voisins.
-     * Ne vérifie PAS la propriété des secteurs.
-     *
-     * @param route Liste ordonnée de numéros de secteurs (départ inclus)
-     * @return true si la route est invalide (null, trop courte ou secteurs non adjacents)
-     */
     public boolean isInvalidRoute(List<Integer> route) {
         if (route == null || route.size() < 2) return true;
         for (int i = 0; i < route.size() - 1; i++) {
@@ -230,14 +162,6 @@ public class Board {
         return false;
     }
 
-    /**
-     * Valide qu'une route ne traverse que des secteurs alliés.
-     * Le secteur de destination doit aussi être allié.
-     *
-     * @param route Liste ordonnée de numéros de secteurs
-     * @param ownerId ID du joueur propriétaire
-     * @return true si la route est valide et tous les secteurs sont alliés
-     */
     public boolean isAlliedRoute(List<Integer> route, Long ownerId) {
         if (isInvalidRoute(route)) return false;
         for (int sectorNumber : route) {
@@ -249,20 +173,10 @@ public class Board {
         return true;
     }
 
-    /**
-     * Recherche un chemin le plus court entre deux secteurs via BFS.
-     * Retourne une liste vide si aucun chemin n'existe dans la limite de hops.
-     *
-     * @param from Numéro du secteur de départ
-     * @param to Numéro du secteur d'arrivée
-     * @param maxHops Nombre maximum de sauts autorisés
-     * @return La route (liste de secteurs de départ à arrivée) ou liste vide si aucun chemin trouvé
-     */
     public List<Integer> findRoute(int from, int to, int maxHops) {
         if (from == to) return List.of(from);
         if (!hasSector(from) || !hasSector(to)) return Collections.emptyList();
 
-        // BFS
         Queue<List<Integer>> queue = new LinkedList<>();
         Set<Integer> visited = new HashSet<>();
         queue.add(List.of(from));
@@ -270,7 +184,7 @@ public class Board {
 
         while (!queue.isEmpty()) {
             List<Integer> path = queue.poll();
-            if (path.size() > maxHops + 1) break; // +1, car le départ compte
+            if (path.size() > maxHops + 1) break; // +1 : le départ compte
 
             int current = path.getLast();
             Sector currentSector = getSector(current);
@@ -290,7 +204,7 @@ public class Board {
                 }
             }
         }
-        return Collections.emptyList(); // Aucun chemin trouvé dans la limite de hops
+        return Collections.emptyList();
     }
 
     @Override

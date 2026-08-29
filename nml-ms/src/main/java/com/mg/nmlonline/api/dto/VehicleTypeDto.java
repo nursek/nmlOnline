@@ -4,9 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO représentant un type de véhicule disponible à l'achat en boutique.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -14,10 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.UUID;
 
-/**
- * Service de gestion des tokens JWT.
- * Génère, valide et extrait les informations des tokens.
- */
 @Service
 public class JwtService {
 
@@ -26,9 +22,7 @@ public class JwtService {
     private final SecretKey key;
 
     public JwtService(@Value("${jwt.secret}") String secret) {
-        // La clé doit faire au moins 32 caractères (256 bits) pour HS256.
-        // On refuse de démarrer avec un secret trop faible plutôt que de le compléter
-        // avec des caractères prévisibles.
+        // HS256 exige au moins 256 bits ; on refuse un secret faible plutôt que de le compléter prévisiblement.
         if (secret == null || secret.length() < 32) {
             throw new IllegalArgumentException(
                 "jwt.secret must be at least 32 characters long (256 bits) for HS256");
@@ -36,23 +30,10 @@ public class JwtService {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * Record contenant les informations extraites du token JWT.
-     */
     public record JwtClaims(Long userId, String username, String role) {}
 
-    /**
-     * Record contenant les informations d'un refresh token.
-     */
     public record RefreshToken(String token, String jti, long expiry) {}
 
-    /**
-     * Génère un token JWT pour un utilisateur.
-     *
-     * @param user L'utilisateur pour lequel générer le token
-     * @param expirationMillis Durée de validité en millisecondes
-     * @return Le token JWT signé
-     */
     public String generateToken(User user, long expirationMillis) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationMillis);
@@ -68,13 +49,6 @@ public class JwtService {
                 .compact();
     }
 
-    /**
-     * Génère un refresh token avec un JTI unique et sa date d'expiration.
-     *
-     * @param user L'utilisateur pour lequel générer le refresh token
-     * @param expirationMillis Durée de validité en millisecondes
-     * @return Le refresh token et ses métadonnées
-     */
     public RefreshToken generateRefreshToken(User user, long expirationMillis) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + expirationMillis);
@@ -93,13 +67,7 @@ public class JwtService {
         return new RefreshToken(token, jti, expiration.getTime());
     }
 
-    /**
-     * Extrait le JTI d'un refresh token après vérification de la signature.
-     * Utilisé pour la recherche indexée avant vérification du hash.
-     *
-     * @param token Le refresh token
-     * @return Le JTI, ou null s'il est absent ou invalide
-     */
+    /** Extrait le JTI (signature vérifiée) pour recherche indexée avant vérification du hash. */
     public String extractJti(String token) {
         try {
             Claims claims = Jwts.parser()
@@ -114,13 +82,6 @@ public class JwtService {
         }
     }
 
-    /**
-     * Valide un token JWT et extrait les claims.
-     *
-     * @param token Le token JWT à valider
-     * @return Les claims extraits, ou null si le token est invalide
-     * @throws JwtException Si le token est invalide ou expiré
-     */
     public JwtClaims validateAndExtractClaims(String token) {
         try {
             Claims claims = Jwts.parser()

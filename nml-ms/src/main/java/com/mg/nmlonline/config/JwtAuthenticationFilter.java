@@ -19,10 +19,6 @@ import java.util.List;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-/**
- * Filtre JWT qui valide le token sur chaque requête protégée.
- * Extrait le username du token et peuple le SecurityContext.
- */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -41,7 +37,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // Si pas de header Authorization ou pas de Bearer token, continuer sans authentifier
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -50,11 +45,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt = authHeader.substring(7);
 
         try {
-            // Valider le token et extraire les claims
             JwtService.JwtClaims claims = jwtService.validateAndExtractClaims(jwt);
 
             if (claims != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // Créer l'authentification avec le username, l'ID et le rôle
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 if ("ADMIN".equals(claims.role())) {
                     authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
@@ -68,14 +61,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // Stocker l'ID utilisateur dans les détails pour usage ultérieur
+                // userId exposé aux contrôleurs/service pour la vérification d'ownership (cf. AGENTS.md).
                 request.setAttribute("userId", claims.userId());
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         } catch (Exception e) {
-            // Token invalide ou expiré - ne pas authentifier, laisser passer
-            // La sécurité refusera l'accès aux endpoints protégés
             logger.debug("JWT validation failed: " + e.getMessage());
         }
 
@@ -85,7 +76,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
-        // Ne pas filtrer les endpoints publics
         return path.equals("/api/login") ||
                path.equals("/api/register") ||
                path.equals("/api/auth/refresh") ||

@@ -20,15 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Service de gestion des unités par un joueur authentifié :
- * <ul>
- *   <li>Équipement / retrait d'équipement (depuis l'inventaire du joueur) ;</li>
- *   <li>Ordres de déplacement à pied (délégation à {@link MovementService}).</li>
- * </ul>
+ * Gestion des unités par un joueur authentifié : équipement et ordres à pied.
  *
- * <p>Règle d'ownership (AGENTS.md) : le {@code playerId} n'est jamais lu depuis
- * le corps de la requête — il est re-dérivé depuis le {@code userId} porté par
- * le JWT. Tout écart lève une {@link SecurityException} → 403.
+ * <p>Ownership : {@code playerId} jamais lu depuis le corps — re-dérivé du {@code userId}
+ * du JWT ; tout écart lève {@link SecurityException} → 403.
  */
 @Service
 @Transactional
@@ -61,11 +56,6 @@ public class UnitService {
         this.em = em;
     }
 
-    // ============================================================
-    // === ÉQUIPEMENT D'UNITÉ =====================================
-    // ============================================================
-
-    /** ÉQUIPE une unité depuis l'inventaire du joueur authentifié. */
     public Unit assignEquipment(Long unitId, Long userId, String equipmentName) {
         Player player = requirePlayerByUserId(userId);
         Board board = requireBoard();
@@ -96,31 +86,25 @@ public class UnitService {
         return unit;
     }
 
-    /** RETIRE un équipement de l'unité et le rend à l'inventaire du joueur. */
     public Unit removeEquipment(Long unitId, Long userId, String equipmentName) {
         Player player = requirePlayerByUserId(userId);
         Board board = requireBoard();
         Unit unit = requireUnit(board, unitId);
         requireOwnedBy(unit, player);
 
-        // On doit retrouver l'Equipment du catalogue portant ce nom : s'il n'est
-        // plus en stock (quantité 0 ou stack absent), on ne peut pas l'identifier.
+        // Retrouver l'Equipment du catalogue par nom : s'il n'est plus en stock, on ne peut l'identifier.
         EquipmentStack stack = player.getEquipments().stream()
                 .filter(s -> s.getEquipment() != null && s.getEquipment().getName().equals(equipmentName))
                 .findFirst()
                 .orElse(null);
 
-        // Si le stack manque totalement, on ne peut pas récupérer l'instance Equipment
-        // (le catalogue n'est pas chargé ici). On refuse explicitement.
         if (stack == null) {
             throw new IllegalArgumentException(
                     "Aucun équipement \"" + equipmentName + "\" dans l'inventaire du joueur.");
         }
 
-        // Unit.unitEquipments n'a plus orphanRemoval (Phase 2: voir Unit.java) — son
-        // retrait de la collection en mémoire n'émet plus de DELETE SQL automatique.
-        // On détruit donc explicitement les rows persistées via em.remove(ue) avant
-        // le retrait collection (sinon les rows orphelines subsisteraient en base).
+        // Unit.unitEquipments n'a plus orphanRemoval : retrait de la collection n'émet pas de DELETE.
+        // em.remove(ue) explicite avant le retrait, sinon rows orphelines en base.
         List<UnitEquipment> persistedUEs = new ArrayList<>();
         for (UnitEquipment ue : unit.getUnitEquipments()) {
             if (ue.getEquipment() != null && ue.getEquipment().getName().equals(equipmentName)) {
@@ -133,13 +117,9 @@ public class UnitService {
         }
         persistedUEs.forEach(em::remove);
 
-        // Mutations in-memory (collection transient `equipments` + bag `unitEquipments`)
-        // et recalcul des stats de l'unité — recalculateBaseStats reposé car les bonus
-        // équipement ne s'appliquent plus.
         boolean removed = unit.removeEquipment(stack.getEquipment());
         if (!removed) {
-            // Cohérence : persistedUEs était non-vide, donc unit.removeEquipment devait
-            // trouver l'entry. Sinon, incohérence transient vs persistant — on lève tôt.
+            // Cohérence transient vs persistant : persistedUEs non-vide ⇒ removeEquipment devait réussir.
             throw new IllegalStateException(
                     "Incohérence : UnitEquipment persistés trouvés pour \"" + equipmentName
                             + "\" mais unit.removeEquipment transient n'a rien retiré.");
@@ -150,10 +130,6 @@ public class UnitService {
         boardService.save(board);
         return unit;
     }
-
-    // ============================================================
-    // === ORDRES DE DÉPLACEMENT À PIED ===========================
-    // ============================================================
 
     public MovementOrder placeFootOrder(Long userId, List<Long> entityIds, List<Integer> route) {
         Player player = requirePlayerByUserId(userId);
@@ -191,10 +167,6 @@ public class UnitService {
         return getPlayerPendingOrders(userId).stream().map(movementMapper::toDto).toList();
     }
 
-    // ============================================================
-    // === HELPERS =================================================
-    // ============================================================
-
     private Player requirePlayerByUserId(Long userId) {
         Player player = playerService.findByUserId(userId);
         if (player == null) {
@@ -212,8 +184,7 @@ public class UnitService {
         if (unitId == null) {
             throw new IllegalArgumentException("L'ID de l'unité est requis.");
         }
-        // Lookup direct par ID : l'ancienne version initialisait l'armée de chaque
-        // secteur du plateau (1 SELECT lazy par secteur) jusqu'à trouver l'unité.
+        // Lookup direct par ID : évite l'ancien scan (1 SELECT lazy par secteur) jusqu'à trouver l'unité.
         Unit unit = unitRepository.findById(unitId)
                 .orElseThrow(() -> new EntityNotFoundException("Unité introuvable avec l'ID " + unitId));
         if (unit.getSector() == null || unit.getSector().getBoard() == null

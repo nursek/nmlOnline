@@ -19,10 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * Service d'administration pour la gestion avancée des joueurs.
- * Permet l'import/export JSON et la suppression complète.
- */
 @Service
 public class AdminService {
 
@@ -53,12 +49,7 @@ public class AdminService {
         this.entityManager = entityManager;
     }
 
-    /**
-     * Importe un joueur depuis un contenu JSON.
-     * Si un joueur avec le même nom existe, il est supprimé au préalable.
-     * Si {@code password} est non nul, crée/met à jour le compte User portant
-     * le même nom pour permettre la connexion.
-     */
+    /** Import JSON : supprime un joueur homonyme au préalable ; si password est fourni, crée/met à jour le compte User associé. */
     @Transactional
     public Player importPlayer(String jsonContent, String password) throws IOException {
         PlayerImportService.PlayerDTO dto = playerImportService.parse(jsonContent);
@@ -100,7 +91,6 @@ public class AdminService {
         return player;
     }
 
-    /** Pour compatibilité : import sans création de compte. */
     public Player importPlayer(String jsonContent) throws IOException {
         return importPlayer(jsonContent, null);
     }
@@ -116,11 +106,7 @@ public class AdminService {
         return userRepository.save(user);
     }
 
-    /**
-     * Exporte un joueur au format JSON compatible avec l'import.
-     * Lecture seule : on parcourt les relations LAZY (character, buildings, sectors)
-     * donc une transaction ouverte est nécessaire (open-in-view est désactivé).
-     */
+    /** Parcourt les relations LAZY (character, buildings, sectors) : transaction readOnly requise (open-in-view désactivé). */
     @Transactional(readOnly = true)
     public Map<String, Object> exportPlayer(Long playerId) {
         Player player = playerService.findById(playerId)
@@ -167,7 +153,6 @@ public class AdminService {
                                 .map(Enum::name).toList());
                         uMap.put("experience", unit.getExperience());
 
-                        // Récupérer les noms d'équipements (persistés ou transients)
                         List<String> eqNames = new ArrayList<>();
                         List<UnitEquipment> unitEquipments = unit.getUnitEquipments();
                         if (unitEquipments != null && !unitEquipments.isEmpty()) {
@@ -221,11 +206,7 @@ public class AdminService {
         return result;
     }
 
-    /**
-     * Supprime un joueur, réinitialise ses secteurs, et supprime le compte User
-     * portant le même nom (s'il existe et n'est pas admin) pour éviter un
-     * compte orphelin permettant une connexion sur un joueur absent.
-     */
+    /** Supprime joueur + secteurs, et le compte User homonyme (non admin) pour éviter un compte orphelin. */
     @Transactional
     public void deletePlayer(Long playerId) {
         Player player = playerService.findById(playerId)
@@ -240,12 +221,7 @@ public class AdminService {
         }
     }
 
-    /**
-     * Importe un Board depuis un contenu JSON au format board.json (liste plate de secteurs).
-     * Si {@code mapImageUrl} / {@code svgOverlayUrl} sont fournis, ils override les URLs du JSON
-     * (typiquement les URLs renvoyées par {@code POST /api/admin/boards/assets}).
-     * L'upsert se fait par nom via {@link BoardService#saveBoard(Board, String)}.
-     */
+    /** Import board.json. Les URLs fournies override celles du JSON ; upsert par nom via saveBoard. */
     @Transactional
     public Board importBoard(String jsonContent, String mapImageUrl, String svgOverlayUrl) throws IOException {
         Board board = boardImportService.importBoardFromJson(jsonContent);

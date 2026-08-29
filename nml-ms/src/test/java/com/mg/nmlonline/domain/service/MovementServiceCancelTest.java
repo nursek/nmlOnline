@@ -20,11 +20,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * Tests ciblés de {@link MovementService#cancelOrderOrThrow} : distinction des
- * cas d'échec via exceptions dédiées (404 / 403 / 409 côté API).
- * Isolation Mockito — aucun contexte Spring.
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MovementService — cancelOrderOrThrow (404/403/409)")
 class MovementServiceCancelTest {
@@ -48,7 +43,6 @@ class MovementServiceCancelTest {
 
     @BeforeEach
     void seedId() {
-        // createFootOrder ne fixe pas l'id ; on le force pour le stubbing.
     }
 
     @Test

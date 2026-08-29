@@ -4,11 +4,6 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * Résumé d'un scénario de test pas-à-pas seedé par l'admin (dev uniquement).
- * Décrit les acteurs, la route de l'attaquant, l'ordre créé et un message
- * d'accompagnement à afficher dans l'UI admin.
- */
 @Data
 public class ScenarioSummaryDto {
     private int turn;

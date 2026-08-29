@@ -42,7 +42,6 @@ public class PlayerService {
         this.boardService = boardService;
     }
 
-    // --- Lecture ---
     public Page<Player> findAll(Pageable pageable) {
         return playerRepository.findAllByOrderByNameAsc(pageable);
     }
@@ -51,11 +50,6 @@ public class PlayerService {
         return playerRepository.findById(id);
     }
 
-    /**
-     * Find a player by name.
-     * @param name the player name to search for
-     * @return the Player if found, null otherwise
-     */
     public Player findByName(String name) {
         return playerRepository.findByName(name).orElse(null);
     }
@@ -69,16 +63,7 @@ public class PlayerService {
         return playerRepository.save(player);
     }
 
-    /**
-     * Achète une liste d'équipements de manière atomique pour le joueur.
-     * Valide d'abord tous les items (existence, quantité positive, fonds suffisants),
-     * puis applique les modifications. En cas d'erreur, la transaction est rollbacke.
-     *
-     * @param playerId  l'identifiant du joueur
-     * @param items     la liste des équipements à acheter
-     * @return le joueur mis à jour
-     * @throws IllegalArgumentException si un item est invalide ou les fonds sont insuffisants
-     */
+    /** Achat atomique : valide tous les items (existence, quantité, fonds) avant d'appliquer. */
     @Transactional
     public Player buyEquipments(Long playerId, List<BuyEquipmentItemDto> items) {
         if (playerId == null) {
@@ -91,7 +76,6 @@ public class PlayerService {
             throw new IllegalArgumentException("No items to buy");
         }
 
-        // --- Phase 1 : validation et calcul du coût total ---
         record ResolvedItem(Equipment equipment, int quantity) {}
         List<ResolvedItem> resolvedItems = new ArrayList<>();
         double totalCost = 0;
@@ -113,7 +97,6 @@ public class PlayerService {
             throw new InsufficientFundsException("Insufficient funds");
         }
 
-        // --- Phase 2 : application atomique ---
         for (ResolvedItem resolved : resolvedItems) {
             boolean success = player.buyEquipment(resolved.equipment(), resolved.quantity());
             if (!success) {
@@ -127,17 +110,10 @@ public class PlayerService {
     @Transactional
     public boolean delete(Long id) {
         if (!playerRepository.existsById(id)) return false;
-        // 1. Nettoyer les secteurs (réinitialiser ownership, supprimer armées via em.remove explicite — Phase 3)
         sectorService.removePlayerFromSectors(id);
-        // 2. Supprimer les véhicules du joueur : Vehicle étend CombatEntity
-        //    (player_id dans combat_entities) mais n'a PAS de relation @ManyToOne
-        //    vers Player, donc le cascade de Player ne les atteint pas.
-        //    Sans ça : FK violation combat_entities.player_id -> players.id.
-        //    ponytail: ceiling = nettoyage par findByPlayerId puis deleteAll ; pour
-        //    de gros parcs, passer à une méthode void deleteByPlayerId(Long) dérivée.
+        // Vehicle étend CombatEntity mais n'a pas de relation @ManyToOne vers Player :
+        // le cascade de Player ne l'atteint pas — suppression explicite sinon FK violation.
         vehicleRepository.deleteAll(vehicleRepository.findByPlayerId(id));
-        // 3. Supprimer le joueur (cascade vers EquipmentStack, PlayerResource,
-        //    Buildings, GameCharacter).
         playerRepository.deleteById(id);
         return true;
     }

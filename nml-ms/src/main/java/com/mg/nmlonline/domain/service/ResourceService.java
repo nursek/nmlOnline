@@ -36,10 +36,7 @@ public class ResourceService {
                 .orElseThrow(() -> new IllegalArgumentException("Ressource inconnue: " + resourceName));
     }
 
-    /**
-     * Calcule le multiplicateur de vente basé sur la quantité.
-     * Au-delà de la dernière entrée configurée, le multiplicateur max est utilisé.
-     */
+    /** Au-delà de la dernière entrée configurée, le multiplicateur max est utilisé. */
     private double getMultiplier(int quantity) {
         if (quantity <= 0) return 0.0;
         if (quantity >= SALE_MULTIPLIERS.length) {
@@ -58,12 +55,10 @@ public class ResourceService {
             return false;
         }
 
-        // Vérifier que le joueur source a suffisamment de ressources
         if (!fromPlayer.hasResource(resourceName, quantity)) {
             return false;
         }
 
-        // Effectuer le transfert
         boolean removed = fromPlayer.removeResource(resourceName, quantity);
         if (removed) {
             toPlayer.addResource(resourceName, quantity);
@@ -80,67 +75,42 @@ public class ResourceService {
         // TODO: Ajouter un nouvel attribut au secteur, indiquant que la ressource a été collectée.
     }
 
-    /**
-     * Vend une ressource d'un joueur et ajoute l'argent correspondant
-     * @param resourceId L'ID de la ressource à vendre (PlayerResource)
-     * @param quantity La quantité à vendre
-     * @return Les informations de la vente (nom, quantité, montant)
-     * @throws IllegalArgumentException si la quantité est insuffisante
-     * @throws RuntimeException si la ressource n'est pas trouvée
-     */
     @Transactional
     public SaleResult sellResource(Long resourceId, int quantity, Long userId) {
         Player player = playerRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable : " + userId));
 
-        // Récupérer la ressource du joueur
         PlayerResource playerResource = playerResourceRepository.findById(resourceId)
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
 
-        // Vérifier que la ressource appartient au joueur authentifié
         Player owner = playerResource.getPlayer();
         if (owner == null || !player.getId().equals(owner.getId())) {
             throw new SecurityException("Access denied: resource does not belong to authenticated user");
         }
 
-        // Vérifier que le joueur a suffisamment de ressources
         if (playerResource.getQuantity() < quantity) {
             throw new IllegalArgumentException("Insufficient quantity");
         }
 
         String resourceName = playerResource.getResourceName();
 
-        // Calculer le prix de vente avec multiplicateur
         double sellPrice = calculateSaleValue(resourceName, quantity);
 
-        // Ajouter l'argent au joueur (owner already validated above)
         owner.incrementMoney(sellPrice);
 
-
-        // Retirer la quantité de ressources
         playerResource.removeQuantity(quantity);
 
-        // Si la quantité atteint 0, supprimer l'entrée
         if (playerResource.getQuantity() == 0) {
             playerResourceRepository.delete(playerResource);
         } else {
             playerResourceRepository.save(playerResource);
         }
 
-        // Sauvegarder le joueur
         playerRepository.save(owner);
 
-        // Retourner les informations de la vente
         return new SaleResult(resourceName, quantity, sellPrice);
     }
 
-    /**
-     * Vend un lot de ressources de manière atomique pour le joueur authentifié.
-     *
-     * @param userId l'id de l'utilisateur authentifié
-     * @param items  liste des lignes de vente (PlayerResource.id + quantité)
-     * @return la liste des résultats de chaque ligne de vente
-     */
     @Transactional
     public List<SaleResult> sellResourcesBatch(Long userId, List<SellResourceBatchItemDto> items) {
         if (items == null || items.isEmpty()) {
@@ -155,9 +125,6 @@ public class ResourceService {
         return results;
     }
 
-    /**
-     * Classe interne représentant le résultat d'une vente
-     */
     public record SaleResult(
             String resourceName,
             int quantitySold,

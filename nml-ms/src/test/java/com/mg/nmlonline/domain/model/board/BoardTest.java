@@ -11,10 +11,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests unitaires pour la classe Board.
- * Couvre la gestion des secteurs, propriétaires, voisins et conflits.
- */
 @DisplayName("Board Unit Tests")
 class BoardTest {
 
@@ -128,13 +124,10 @@ class BoardTest {
                 board.addSector(new Sector(i, "Secteur " + i));
             }
 
-            // Joueur 1 possède secteurs 1, 2
             board.assignOwner(1, 1L, "#FF0000");
             board.assignOwner(2, 1L, "#FF0000");
-            // Joueur 2 possède secteurs 3, 4
             board.assignOwner(3, 2L, "#0000FF");
             board.assignOwner(4, 2L, "#0000FF");
-            // Secteurs 5, 6 sont neutres
 
             List<Sector> player1Sectors = board.getSectorsByOwner(1L);
             List<Sector> player2Sectors = board.getSectorsByOwner(2L);
@@ -171,7 +164,6 @@ class BoardTest {
 
         @BeforeEach
         void setUpNeighbors() {
-            // Créer une grille 4x4
             for (int i = 1; i <= 16; i++) {
                 board.addSector(new Sector(i, "Secteur " + i));
             }
@@ -221,7 +213,6 @@ class BoardTest {
         @DisplayName("Pas de conflit si secteur neutre")
         void shouldNotDetectConflictWithNeutralSector() {
             board.assignOwner(1, 1L, "#FF0000");
-            // Secteur 2 reste neutre
 
             assertFalse(board.hasConflict(1, 2));
         }

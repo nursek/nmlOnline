@@ -14,18 +14,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Stocke sur disque les assets visuels d'un Board uploadés par l'admin (PNG/JPG + SVG overlay).
- * <p>
- * Les fichiers sont écrits sous {@code app.boards.storage-dir} qui doit correspondre à un
- * chemin servi par Spring via {@code spring.web.resources.static-locations} (en prod :
- * {@code /app/static/boards}, volume Docker). L'URL renvoyée est relative (ex. {@code /boards/xyz.png})
- * et directement consommable par le frontend via {@link com.mg.nmlonline.domain.model.board.Board#getMapImageUrl()}
- * et {@link com.mg.nmlonline.domain.model.board.Board#getSvgOverlayUrl()}.
- * <p>
- * ponytail: noms UUID pour éviter toute collision et tout parcours de répertoire ; pas de cleanup
- * des anciens fichiers sur remplacement (l'admin peut le faire à la main si le volume grossit).
- */
+/** Assets visuels d'un Board sur disque (app.boards.storage-dir, servi via spring.web.resources.static-locations). Renvoie des URLs relatives (/boards/...) consommées par Board.mapImageUrl/svgOverlayUrl. */
 @Service
 public class BoardAssetStorageService {
 
@@ -44,7 +33,6 @@ public class BoardAssetStorageService {
         logger.info("BoardAssetStorageService initialisé sur {}", this.storageDir.toAbsolutePath());
     }
 
-    /** Stocke l'image de fond et renvoie son URL relative. */
     public String storeImage(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Image de la carte absente ou vide.");
@@ -60,11 +48,7 @@ public class BoardAssetStorageService {
         return urlPrefix + filename;
     }
 
-    /**
-     * Stocke le SVG overlay, renvoie son URL relative et le nombre de secteurs
-     * détectés (id="pathN"). Ce compte aide l'admin à vérifier la cohérence
-     * avec le board.json qu'il uploadera ensuite.
-     */
+    /** Stocke le SVG overlay ; renvoie URL relative + nombre de secteurs détectés (id="pathN") pour vérif de cohérence avec le board.json. */
     public StoredSvg storeSvg(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("SVG overlay absent ou vide.");
@@ -102,6 +86,5 @@ public class BoardAssetStorageService {
         return count;
     }
 
-    /** Résultat du stockage du SVG : URL relative + nombre de secteurs détectés. */
     public record StoredSvg(String url, int sectorCount) {}
 }

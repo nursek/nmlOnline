@@ -13,12 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * Endpoints de seeding d'un scénario de test pour la résolution pas-à-pas.
- *
- * <p><strong>Dev uniquement</strong> : @{@link Profile "dev"} désactive
- * entièrement le bean en prod → les endpoints ne sont pas enregistrés (404
- * natif). Le frontend utilise le {@code GET} comme probe pour afficher ou non
- * le bouton « Seeder le scénario ».</p>
+ * Dev uniquement (@Profile "dev" → 404 en prod) ; le GET sert de probe de disponibilité pour l'UI admin.
  */
 @RestController
 @RequestMapping("/api/admin/dev")
@@ -32,17 +27,13 @@ public class DevSeederController {
         this.scenarioSeeder = scenarioSeeder;
     }
 
-    /**
-     * Probe de disponibilité (cache UI en prod via 404).
-     */
     @GetMapping("/seed-resolution-scenario")
     public Map<String, Object> getScenarioStatus() {
         return Map.of("available", scenarioSeeder.isAvailable());
     }
 
     /**
-     * Prépare le scénario de test pas-à-pas (lurio → cegorach, 2 hops) pour le
-     * tour courant. Re-jouable.
+     * Scénario hardcoded lurio→cegorach (2 hops), re-jouable.
      */
     @PostMapping("/seed-resolution-scenario")
     public ResponseEntity<ScenarioSummaryDto> seedScenario() {

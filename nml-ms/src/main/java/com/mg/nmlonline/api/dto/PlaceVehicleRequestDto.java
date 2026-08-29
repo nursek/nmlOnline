@@ -4,9 +4,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Corps de la requête de déploiement d'un véhicule sur un secteur.
- */
 @Data
 @NoArgsConstructor
 public class PlaceVehicleRequestDto {

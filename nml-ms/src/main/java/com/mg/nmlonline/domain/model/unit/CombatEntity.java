@@ -7,10 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Classe abstraite représentant une entité combattante (unité, personnage ou bâtiment).
- * Utilise l'héritage JPA SINGLE_TABLE avec discriminateur.
- */
+/** Entité combattante (unité/personnage/bâtiment) — héritage JPA SINGLE_TABLE avec discriminateur. */
 @Entity
 @Table(name = "COMBAT_ENTITIES")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -20,16 +17,13 @@ import lombok.Setter;
 @NoArgsConstructor
 public abstract class CombatEntity {
 
-    // ===== CONSTANTES =====
     protected static final double INJURED_STAT_MULTIPLIER = 0.5;
 
-    // ===== IDENTIFIANT UNIQUE =====
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "combat_entity_seq")
     @SequenceGenerator(name = "combat_entity_seq", sequenceName = "combat_entities_id_seq", allocationSize = 50)
     protected Long id;
 
-    // ID du joueur propriétaire
     @Column(name = "player_id")
     protected Long playerId;
 
@@ -41,14 +35,12 @@ public abstract class CombatEntity {
     @JsonIgnore
     protected Sector sector;
 
-    // ===== STATISTIQUES DE BASE =====
     @Column(nullable = false)
     protected double attack;
 
     @Column(nullable = false)
     protected double defense;
 
-    // ===== STATISTIQUES CALCULÉES =====
     @Column(nullable = false)
     protected double pdf = 0;
 
@@ -61,28 +53,14 @@ public abstract class CombatEntity {
     @Column(nullable = false)
     protected double evasion = 0;
 
-    // ===== ÉTAT =====
     @Column(name = "is_destroyed", nullable = false)
     protected boolean isDestroyed = false;
 
-    // ===== MÉTHODES ABSTRAITES =====
-
-    /**
-     * Retourne le type d'entité pour l'affichage et la logique métier.
-     */
     public abstract EntityCategory getEntityCategory();
 
-    /**
-     * Recalcule les statistiques de base de l'entité.
-     */
     public abstract void recalculateBaseStats();
 
-    /**
-     * Retourne le nom d'affichage de l'entité.
-     */
     public abstract String getDisplayName();
-
-    // ===== MÉTHODES COMMUNES =====
 
     public double getTotalAttack() {
         return attack + pdf + pdc;
@@ -93,16 +71,10 @@ public abstract class CombatEntity {
     }
 
 
-    /**
-     * Vérifie si cette entité peut participer au combat.
-     */
     public boolean canFight() {
         return !isDestroyed;
     }
 
-    /**
-     * Formate une statistique pour l'affichage.
-     */
     protected String formatStat(double value) {
         if (value == Math.floor(value)) {
             return String.valueOf((int) value);
@@ -111,9 +83,6 @@ public abstract class CombatEntity {
         }
     }
 
-    /**
-     * Construit la chaîne de statistiques pour l'affichage.
-     */
     protected void buildStatsString(StringBuilder sb) {
         sb.append(formatStat(attack)).append(" Atk");
         if (pdf > 0) sb.append(" + ").append(formatStat(pdf)).append(" Pdf");

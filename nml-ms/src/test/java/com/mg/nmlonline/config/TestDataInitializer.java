@@ -13,10 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-/**
- * Crée des comptes et des données joueur minimalistes pour les tests d'intégration.
- * Actif uniquement avec le profil {@code test}.
- */
 @Slf4j
 @Component
 @Profile("test")
@@ -94,9 +90,8 @@ public class TestDataInitializer {
     }
 
     private void createInitialBuildings(Player player) {
-        // createInitialBuildings requiert un ID joueur déjà persisté.
+        // recharge pour cohérence de la relation bidirectionnelle.
         buildingService.createInitialBuildings(player);
-        // Recharger le joueur pour s'assurer que la relation bidirectionnelle est cohérente.
         playerRepository.save(player);
     }
 }

@@ -9,11 +9,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests de régression sur les véhicules :
- * table d'équilibrage des 6 types, stats recalculées, règles de pilote,
- * embarquement et mobilité.
- */
+import static org.junit.jupiter.api.Assertions.*;
+
 @DisplayName("Vehicle")
 class VehicleTest {
 
@@ -207,7 +204,7 @@ class VehicleTest {
             vehicle.embark(first);
             vehicle.embark(second);
 
-            assertEquals(3, vehicle.disembarkAll().size()); // pilote + 2 passagers
+            assertEquals(3, vehicle.disembarkAll().size());
             assertEquals(0, vehicle.getPassengerCount());
             assertFalse(vehicle.hasPilot());
         }
@@ -221,7 +218,7 @@ class VehicleTest {
         @DisplayName("cantMove : sans pilote vivant ou détruit")
         void shouldPinCantMoveRule() {
             Vehicle vehicle = new Vehicle(VehicleType.TANK, 1L);
-            assertTrue(vehicle.cantMove()); // pas de pilote
+            assertTrue(vehicle.cantMove());
 
             vehicle.assignPilot(pilotUnit());
             assertFalse(vehicle.cantMove());
@@ -240,7 +237,7 @@ class VehicleTest {
         @Test
         @DisplayName("Seul l'avion de transport ne participe pas au combat au sol")
         void shouldPinGroundCombatParticipation() {
-            // comportement actuel piné : règle définie mais non enforcée dans Battle
+            // règle définie mais non enforcée dans Battle.
             assertFalse(new Vehicle(VehicleType.AVION_TRANSPORT, 1L).participatesInGroundCombat());
             assertTrue(new Vehicle(VehicleType.TANK, 1L).participatesInGroundCombat());
             assertTrue(new Vehicle(VehicleType.TOURELLE, 1L).participatesInGroundCombat());

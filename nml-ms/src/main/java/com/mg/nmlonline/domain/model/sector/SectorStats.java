@@ -6,9 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Statistiques d'un secteur - Classe Embeddable pour JPA
- */
 @Embeddable
 @Getter
 @Setter

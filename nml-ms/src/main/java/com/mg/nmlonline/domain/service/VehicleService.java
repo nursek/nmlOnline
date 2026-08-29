@@ -18,9 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Service pour l'achat et la gestion des véhicules.
- */
 @Service
 public class VehicleService {
 
@@ -37,22 +34,10 @@ public class VehicleService {
         this.vehicleMapper = vehicleMapper;
     }
 
-    /**
-     * Retourne tous les types de véhicules disponibles à l'achat.
-     */
     public List<VehicleType> getAllVehicleTypes() {
         return Arrays.asList(VehicleType.values());
     }
 
-    /**
-     * Achète un ou plusieurs véhicules pour le joueur authentifié.
-     * Déduit le coût total de son solde et crée les entités Vehicle.
-     *
-     * @param userId          l'id de l'utilisateur authentifié (extrait du JWT)
-     * @param vehicleTypeName le nom de l'enum VehicleType
-     * @param quantity        le nombre de véhicules à acheter (≥ 1)
-     * @return la liste des vehicles créés
-     */
     @Transactional
     public List<Vehicle> buyVehicle(Long userId, String vehicleTypeName, int quantity) {
         if (vehicleTypeName == null || vehicleTypeName.isBlank()) {
@@ -83,14 +68,6 @@ public class VehicleService {
         return created;
     }
 
-    /**
-     * Achète un lot de véhicules de manière atomique.
-     * Valide le coût total avant de débiter le joueur et de créer les entités.
-     *
-     * @param userId l'id de l'utilisateur authentifié
-     * @param items  liste des lignes d'achat (type + quantité)
-     * @return la liste de tous les véhicules créés
-     */
     @Transactional
     public List<Vehicle> buyVehiclesBatch(Long userId, List<BuyVehicleRequestDto> items) {
         if (items == null || items.isEmpty()) {
@@ -136,27 +113,12 @@ public class VehicleService {
         return created;
     }
 
-    /**
-     * Retourne tous les véhicules appartenant au joueur (déployés et non-déployés).
-     *
-     * @param userId l'id de l'utilisateur authentifié (extrait du JWT)
-     * @return la liste de ses véhicules
-     */
     public List<Vehicle> getPlayerVehicles(Long userId) {
         Player player = playerRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
         return vehicleRepository.findByPlayerId(player.getId());
     }
 
-    /**
-     * Déploie un véhicule sur un secteur possédé par le joueur.
-     *
-     * @param vehicleId    l'ID du véhicule
-     * @param boardId      l'ID du board contenant le secteur cible
-     * @param sectorNumber le numéro du secteur cible
-     * @param userId       l'id de l'utilisateur authentifié (extrait du JWT)
-     * @return le véhicule mis à jour
-     */
     @Transactional
     public Vehicle placeVehicle(Long vehicleId, Long boardId, int sectorNumber, Long userId) {
         Player player = playerRepository.findByUserId(userId)

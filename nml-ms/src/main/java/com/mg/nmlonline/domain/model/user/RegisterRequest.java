@@ -5,11 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * Requête d'inscription avec validation stricte.
- * Contrairement à {@link LoginRequest}, l'inscription impose des contraintes de taille
- * pour garantir des identifiants raisonnablement robustes.
- */
+/** Requête d'inscription — validation stricte (contraire de LoginRequest, léger pour les comptes existants). */
 @Getter
 @Setter
 public class RegisterRequest {

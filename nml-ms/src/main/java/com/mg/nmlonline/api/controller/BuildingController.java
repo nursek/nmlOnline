@@ -18,9 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Contrôleur REST pour la gestion des bâtiments.
- */
 @RestController
 @RequestMapping("/api/buildings")
 public class BuildingController {
@@ -38,12 +35,6 @@ public class BuildingController {
         return (Long) request.getAttribute("userId");
     }
 
-    // === ENDPOINTS GÉNÉRAUX ===
-
-    /**
-     * Récupère le QG d'un joueur.
-     * L'utilisateur doit être authentifié et propriétaire du joueur.
-     */
     @GetMapping("/headquarters/{playerId}")
     public ResponseEntity<BuildingDto> getHeadquarters(@PathVariable Long playerId,
                                                        HttpServletRequest request) {
@@ -56,10 +47,6 @@ public class BuildingController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Récupère la banque d'un joueur.
-     * L'utilisateur doit être authentifié et propriétaire du joueur.
-     */
     @GetMapping("/bank/{playerId}")
     public ResponseEntity<BuildingDto> getBank(@PathVariable Long playerId,
                                                HttpServletRequest request) {
@@ -72,10 +59,6 @@ public class BuildingController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Récupère les caches d'armes d'un joueur.
-     * L'utilisateur doit être authentifié et propriétaire du joueur.
-     */
     @GetMapping("/weapon-caches/{playerId}")
     public ResponseEntity<List<BuildingDto>> getWeaponCaches(@PathVariable Long playerId,
                                                              HttpServletRequest request) {
@@ -87,12 +70,6 @@ public class BuildingController {
         return ResponseEntity.ok(caches);
     }
 
-    // === ENDPOINTS QG ===
-
-    /**
-     * Vérifie si un joueur a un QG opérationnel.
-     * L'utilisateur doit être authentifié et propriétaire du joueur.
-     */
     @GetMapping("/headquarters/{playerId}/operational")
     public ResponseEntity<Boolean> isHeadquartersOperational(@PathVariable Long playerId,
                                                              HttpServletRequest request) {
@@ -103,10 +80,6 @@ public class BuildingController {
         return ResponseEntity.ok(buildingService.hasOperationalHeadquarters(playerId));
     }
 
-    /**
-     * Reconstruit le QG sur place.
-     * L'utilisateur doit être authentifié et propriétaire du joueur.
-     */
     @PostMapping("/headquarters/{playerId}/reconstruct-same")
     public ResponseEntity<Void> reconstructHeadquartersSame(@PathVariable Long playerId,
                                                             HttpServletRequest request) {
@@ -120,12 +93,6 @@ public class BuildingController {
         return ResponseEntity.badRequest().build();
     }
 
-    // === ENDPOINTS DÉPLACEMENT ===
-
-    /**
-     * Déplace un bâtiment vers un nouveau secteur.
-     * L'utilisateur doit être authentifié et propriétaire du bâtiment.
-     */
     @PostMapping("/{buildingId}/move")
     public ResponseEntity<Void> moveBuilding(
             @PathVariable Long buildingId,
@@ -138,8 +105,6 @@ public class BuildingController {
         buildingService.moveBuilding(buildingId, request.boardId(), request.newSectorNumber(), request.currentTurn());
         return ResponseEntity.ok().build();
     }
-
-    // === RECORDS POUR LES REQUÊTES/RÉPONSES ===
 
     public record MoveBuildingRequest(Long boardId, int newSectorNumber, int currentTurn) {}
 }

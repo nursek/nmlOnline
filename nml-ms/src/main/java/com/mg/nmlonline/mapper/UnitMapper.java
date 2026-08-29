@@ -12,9 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * Mapper simplifié pour Unit - conversion uniquement entre Domain et DTO
- */
 @Component
 public class UnitMapper {
 
@@ -24,9 +21,6 @@ public class UnitMapper {
         this.equipmentMapper = equipmentMapper;
     }
 
-    /**
-     * Convertit un DTO UnitDto en objet Unit du domaine
-     */
     public Unit toDomain(UnitDto dto) {
         if (dto == null) return null;
 
@@ -35,7 +29,6 @@ public class UnitMapper {
         unit.setNumber(dto.getNumber() != null ? dto.getNumber() : 0);
         unit.setExperience(dto.getExperience() != null ? dto.getExperience() : 0.0);
 
-        // Conversion du type
         if (dto.getType() != null && dto.getType().getName() != null) {
             try {
                 unit.setType(UnitType.valueOf(dto.getType().getName()));
@@ -44,7 +37,6 @@ public class UnitMapper {
             }
         }
 
-        // Conversion des classes
         if (dto.getClasses() != null) {
             List<UnitClass> classes = dto.getClasses().stream()
                     .map(this::fromUnitClassDto)
@@ -55,7 +47,6 @@ public class UnitMapper {
 
         unit.setInjured(dto.getIsInjured() != null && dto.getIsInjured());
 
-        // Stats
         unit.setAttack(dto.getAttack() != null ? dto.getAttack() : 0.0);
         unit.setDefense(dto.getDefense() != null ? dto.getDefense() : 0.0);
         unit.setPdf(dto.getPdf() != null ? dto.getPdf() : 0.0);
@@ -63,7 +54,6 @@ public class UnitMapper {
         unit.setArmor(dto.getArmor() != null ? dto.getArmor() : 0.0);
         unit.setEvasion(dto.getEvasion() != null ? dto.getEvasion() : 0.0);
 
-        // Équipements
         if (dto.getEquipments() != null) {
             List<Equipment> equipments = dto.getEquipments().stream()
                     .map(equipmentMapper::toDomain)
@@ -74,9 +64,6 @@ public class UnitMapper {
         return unit;
     }
 
-    /**
-     * Convertit un objet Unit du domaine en DTO UnitDto
-     */
     public UnitDto toDto(Unit unit) {
         if (unit == null) return null;
 
@@ -91,7 +78,6 @@ public class UnitMapper {
         dto.setNumber(unit.getNumber());
         dto.setExperience(unit.getExperience());
 
-        // Conversion du type
         if (unit.getType() != null) {
             UnitTypeDto typeDto = new UnitTypeDto();
             typeDto.setName(unit.getType().name());
@@ -106,7 +92,6 @@ public class UnitMapper {
             dto.setType(typeDto);
         }
 
-        // Conversion des classes
         if (unit.getClasses() != null) {
             List<UnitClassDto> classDtos = unit.getClasses().stream()
                     .map(this::toUnitClassDto)
@@ -116,7 +101,6 @@ public class UnitMapper {
 
         dto.setIsInjured(unit.isInjured());
 
-        // Stats
         dto.setAttack(unit.getAttack());
         dto.setDefense(unit.getDefense());
         dto.setPdf(unit.getPdf());
@@ -124,7 +108,6 @@ public class UnitMapper {
         dto.setArmor(unit.getArmor());
         dto.setEvasion(unit.getEvasion());
 
-        // Équipements
         if (unit.getEquipments() != null) {
             List<EquipmentDto> equipmentDtos = unit.getEquipments().stream()
                     .map(equipmentMapper::toDto)
@@ -134,8 +117,6 @@ public class UnitMapper {
 
         return dto;
     }
-
-    // === Méthodes utilitaires ===
 
     private UnitClass fromUnitClassDto(UnitClassDto dto) {
         if (dto == null || dto.getName() == null) return null;

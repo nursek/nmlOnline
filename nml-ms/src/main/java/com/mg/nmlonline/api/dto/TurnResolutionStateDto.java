@@ -4,11 +4,6 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * Instantané de l'état d'une session de résolution pas-à-pas :
- * hop courant, conflits en attente de résolution manuelle, et historique
- * des batailles déjà résolues. {@code active} indique si une session tourne.
- */
 @Data
 public class TurnResolutionStateDto {
     private boolean active;

@@ -18,10 +18,6 @@ import org.springframework.stereotype.Component;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Service d'import automatique des joueurs au démarrage de l'application.
- * Charge les fichiers JSON des joueurs et les importe dans le Board.
- */
 @Slf4j
 @Component
 public class PlayerStartupImporter implements ApplicationRunner {
@@ -69,16 +65,13 @@ public class PlayerStartupImporter implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         log.info("=== Démarrage de l'import des données ===");
 
-        // En prod (app.import-demo-data=false), rien n'est importé au boot :
-        // ni le board, ni les joueurs de démo. L'admin crée le board et les
-        // joueurs via l'API (POST /api/admin/boards/*  et  /api/admin/players/import).
+        // prod (app.import-demo-data=false) : rien n'est importé ; l'admin crée le board et les joueurs via l'API.
         if (!importDemoData) {
             log.info("Import des données de démo désactivé (app.import-demo-data=false). " +
                      "L'admin doit importer le board et les joueurs via l'API.");
             return;
         }
 
-        // Importer le Board depuis board.json (secteurs neutres en mémoire)
         Board board = importBoard();
         if (board == null) {
             log.error("Impossible d'importer le Board ! Arrêt de l'import.");
@@ -86,26 +79,17 @@ public class PlayerStartupImporter implements ApplicationRunner {
         }
         log.info("Board importé en mémoire avec {} secteurs neutres", board.getAllSectors().size());
 
-        // Persister le Board neutre MAINTENANT pour que les secteurs aient un board_id
-        // avant l'import des joueurs. Sinon, lors du playerService.save(player) ci-dessous,
-        // le cascade persiste le character et les bâtiments avec une référence @ManyToOne sector
-        // (FK composite board_id+sector_number, sans cascade) pointant vers des secteurs encore
-        // transients → Hibernate écrit board_id/sector_number à NULL, et sectorNumber devient
-        // null/0 dans l'API (cf. GameCharacterMapper/BuildingMapper).
-        // ponytail: ceiling = ordonnancement manuel de l'import startup ; upgrade path = importer
-        // character/bâtiments via un service @Transactional après persistance du board (cf. AdminService.importPlayer).
+        // Persister le board avant les joueurs : sinon les @ManyToOne sector (FK composite
+        // board_id+sector_number, sans cascade) pointent vers des secteurs transients → Hibernate écrit la FK à NULL.
         board = boardService.saveBoard(board, "Carte Principale");
         log.info("Board neutre persisté avec {} secteurs (board_id={})", board.getAllSectors().size(), board.getId());
 
-        // Importer les joueurs qui ajouteront leurs secteurs au Board en mémoire.
         importIfPresent(player1, board);
         importIfPresent(player2, board);
         importIfPresent(player3, board);
         importIfPresent(player4, board);
         importIfPresent(player5, board);
 
-        // Flush final : merge simple du Board pour persister les assignations ownerId et les
-        // unités importées dans les secteurs.
         log.info("Sauvegarde finale du Board (merge) avec {} secteurs...", board.getAllSectors().size());
         boardService.save(board);
         long ownedCount = board.getAllSectors().stream().filter(s -> !s.isNeutral()).count();
@@ -125,7 +109,6 @@ public class PlayerStartupImporter implements ApplicationRunner {
             try (InputStream is = boardResource.getInputStream()) {
                 log.info("Import du Board depuis : {}", boardResource.getFilename());
 
-                // Importer le Board (en mémoire uniquement, pas encore sauvegardé)
                 Board board = boardImportService.importBoardFromJson(new String(is.readAllBytes(), StandardCharsets.UTF_8));
                 log.info("Board importé en mémoire avec {} secteurs", board.getAllSectors().size());
 
@@ -147,20 +130,16 @@ public class PlayerStartupImporter implements ApplicationRunner {
             try (InputStream is = resource.getInputStream()) {
                 log.info("Import du joueur depuis : {}", resource.getFilename());
 
-                // Parser le JSON une seule fois, puis passer le DTO aux imports
                 PlayerImportService.PlayerDTO dto = playerImportService.parse(
                         new String(is.readAllBytes(), StandardCharsets.UTF_8));
 
-                // 1. Importer le joueur (stats uniquement, SANS équipements)
                 Player player = playerImportService.importPlayer(dto);
 
                 if (player != null) {
-                    // 2. Vérifier si le joueur existe déjà ou le créer
                     Player existingPlayer = playerService.findByName(player.getName());
                     if (existingPlayer != null) {
                         log.info("Joueur {} déjà existant, mise à jour...", player.getName());
                         player.setId(existingPlayer.getId());
-                        // Conserver le userId ou le résoudre si absent
                         if (existingPlayer.getUserId() != null) {
                             player.setUserId(existingPlayer.getUserId());
                         } else {
@@ -174,7 +153,6 @@ public class PlayerStartupImporter implements ApplicationRunner {
                         }
                         player = playerService.save(player);
                     } else {
-                        // Lier le userId avant la création
                         User user = userRepository.findByUsername(player.getName());
                         if (user != null) {
                             player.setUserId(user.getId());
@@ -182,20 +160,17 @@ public class PlayerStartupImporter implements ApplicationRunner {
                         } else {
                             log.warn("Aucun compte CREDENTIALS trouvé pour le joueur '{}'", player.getName());
                         }
-                        // Créer le joueur en base pour obtenir un ID (SANS équipements)
                         player = playerService.save(player);
                         log.info("Joueur {} créé avec l'ID {}", player.getName(), player.getId());
                     }
 
-                    // 3. Maintenant que le Player est persisté, ajouter les équipements
+                    // Équipements/ressources/character ajoutés après persistance du Player (besoin de son ID).
                     playerImportService.importEquipments(dto, player);
                     log.info("Équipements importés pour {}", player.getName());
 
-                    // 3b. Importer les ressources
                     playerImportService.importResources(dto, player);
                     log.info("Ressources importées pour {}", player.getName());
 
-                    // 3c. Importer le personnage principal (GameCharacter) si défini
                     var character = playerImportService.importCharacter(dto, player, board);
                     if (character != null) {
                         log.info("Personnage '{}' importé pour {} (ATK={}, DEF={}, PDF={})",
@@ -203,20 +178,16 @@ public class PlayerStartupImporter implements ApplicationRunner {
                                 character.getBaseAttack(), character.getBaseDefense(), character.getBasePdf());
                     }
 
-                    // Sauvegarder le joueur avec ses équipements et ressources AVANT d'importer les secteurs
                     player = playerService.save(player);
 
-                    // 4. Importer les secteurs et unités dans le Board (en mémoire)
                     playerImportService.importSectors(dto, player, board);
                     log.info("Secteurs et unités importés pour {} (en mémoire)", player.getName());
 
-                    // 4b. Importer les bâtiments dans le Board
                     var buildings = playerImportService.importBuildings(dto, player, board);
                     if (!buildings.isEmpty()) {
                         log.info("{} bâtiment(s) importé(s) pour {}", buildings.size(), player.getName());
                     }
 
-                    // Afficher les stats calculées
                     log.info("✓ Stats {} : ATK={}, DEF={}, ARMOR={}, Income={}, EconomyPower={}",
                              player.getName(),
                              player.getStats().getTotalAtk(),
@@ -225,7 +196,6 @@ public class PlayerStartupImporter implements ApplicationRunner {
                              player.getStats().getTotalIncome(),
                              player.getStats().getTotalEconomyPower());
 
-                    // 5. Sauvegarder le joueur avec les stats à jour (pas les équipements qui sont déjà sauvés)
                     log.info("✓ Joueur {} sauvegardé en base", player.getName());
                     log.info("Joueur {} prêt avec {} secteurs", player.getName(), board.getSectorsByOwner(player.getId()).size());
                     playerService.save(player);

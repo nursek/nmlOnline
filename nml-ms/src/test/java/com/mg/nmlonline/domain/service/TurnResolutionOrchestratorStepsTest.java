@@ -31,24 +31,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 
-/**
- * Tests focaux de la résolution pas-à-pas par hop, organisés par étape du
- * cycle ({@link Nested @Nested} classes) pour servir de <strong>documentation
- * vivante</strong> de la feature en français.
- *
- * <p>Chaque scénario est déterministe (pas d'évasion → pas de RNG) : un BRUTE
- * (100/100, expérience 8) attaquant vs un LARBIN (10/10, expérience 0)
- * défenseur, sur deux secteurs neutres voisins du seed. Le BRUTE écrase le
- * LARBIN et survit blessé (stats ÷ 2).</p>
- *
- * <p>{@code @AfterEach} appelle {@code abort()} pour libérer le verrou
- * {@link TurnLock} si une assertion a échoué avant finalize/abort (sinon les
- * tests suivants bloqueraient sur le 409).</p>
- *
- * <p>Le gros E2E monolithique vit dans {@link TurnResolutionOrchestratorTest};
- * cette classe détaille chaque étape et les cas aux limites (409, 404,
- * idempotence).</p>
- */
+// Scénario déterministe : BRUTE 100/100 vs LARBIN 10/10, pas d'évasion (pas de RNG).
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("TurnResolutionOrchestrator — étapes du cycle pas-à-pas")
@@ -88,11 +71,6 @@ class TurnResolutionOrchestratorStepsTest {
         Mockito.reset(movementService);
     }
 
-    // ==================================================
-    // === Helper : scénario brute vs larbin, 1 hop =====
-    // ==================================================
-
-    /** État initial du scénario : 2 secteurs voisins, ordre PENDING 1 hop prêt. */
     private static final class Scenario {
         final Board board;
         final Long attackerId;
@@ -112,12 +90,7 @@ class TurnResolutionOrchestratorStepsTest {
         }
     }
 
-    /**
-     * Prépare un scénario brute-vs-larbin 1 hop pour le tour courant. Recherche
-     * 2 secteurs neutres vides voisins dans le seed, y place les unités, crée
-     * l'ordre PENDING, flushe. Doit être appelée dans une méthode
-     * {@code @Transactional} (les tests le sont par défaut via la classe).
-     */
+    // Doit être appelée dans une méthode @Transactional (les tests le sont par défaut via la classe).
     private Scenario setupBruteVsLarbinOrder() {
         Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
         List<Player> players = playerRepository.findAll();
@@ -134,7 +107,6 @@ class TurnResolutionOrchestratorStepsTest {
         Sector s2 = board.getAllSectors().stream()
                 .filter(s -> s.isNeutral() && s.getArmySize() == 0 && s.getNumber() != s1.getNumber())
                 .findFirst().orElseThrow(() -> new AssertionError("Aucun secteur neutre vide pour s2"));
-        // Rendre les deux secteurs voisins pour que la route [s1, s2] soit valide.
         s1.addNeighbor(s2.getNumber());
         s2.addNeighbor(s1.getNumber());
 
@@ -165,10 +137,6 @@ class TurnResolutionOrchestratorStepsTest {
             em.flush();
         }
     }
-
-    // ==================================================
-    // === 1. Démarrage de session ======================
-    // ==================================================
 
     @Nested
     @DisplayName("Démarrage de session")
@@ -209,10 +177,6 @@ class TurnResolutionOrchestratorStepsTest {
             assertFalse(state.isActive());
         }
     }
-
-    // ==================================================
-    // === 2. Hop par hop ===============================
-    // ==================================================
 
     @Nested
     @DisplayName("Hop par hop")
@@ -256,7 +220,6 @@ class TurnResolutionOrchestratorStepsTest {
             setupBruteVsLarbinOrder();
             orchestrator.startSession();
             orchestrator.advanceHop();
-            // Résoudre la bataille pour débloquer le suivant.
             int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
             orchestrator.resolveBattle(conflictId);
 
@@ -268,21 +231,19 @@ class TurnResolutionOrchestratorStepsTest {
         @Transactional
         @DisplayName("advanceHop : un ordre annulé entre deux hops ne déplace plus l'unité")
         void advanceHop_ordreAnnuleEntreHops_neDeplacePlusLUnite() {
-            // Scénario 2 hops via le seeder : route [41, 13, 32]
             ScenarioSummaryDto seed = seeder.seedScenario();
             Long attackerId = seed.getAttacker().getId();
             Long attackerUnitId = seed.getAttackerUnit().getId();
             int turn = turnService.getCurrentTurn();
 
             orchestrator.startSession();
-            orchestrator.advanceHop(); // hop 1 : 41 → 13
+            orchestrator.advanceHop();
 
-            // Annuler l'ordre entre les hops (cancelOrderOrThrow ne prend pas le TurnLock)
+            // cancelOrderOrThrow ne prend pas le TurnLock : permet d'annuler entre deux hops.
             List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(turn);
             assertFalse(pending.isEmpty(), "Prérequis : l'ordre du seeder est PENDING");
             movementService.cancelOrderOrThrow(attackerId, pending.get(0).getId());
 
-            // hop 2 : l'ordre CANCELLED ne doit plus déplacer l'unité
             TurnResolutionStateDto state = orchestrator.advanceHop();
             assertEquals(2, state.getCurrentStep(), "Le hop 2 s'exécute (maxSteps atteint)");
 
@@ -297,10 +258,6 @@ class TurnResolutionOrchestratorStepsTest {
             assertFalse(at32, "L'unité annulée ne doit pas atteindre le secteur final 32");
         }
     }
-
-    // ==================================================
-    // === 3. Résolution d'une bataille =================
-    // ==================================================
 
     @Nested
     @DisplayName("Résolution d'une bataille")
@@ -323,7 +280,6 @@ class TurnResolutionOrchestratorStepsTest {
             assertEquals(1, report.getDefenderCasualties(), "Le LARBIN est détruit");
             assertEquals(1, report.getAttackerInjured(), "Le BRUTE est blessé");
 
-            // Persistance : seul le BRUTE (blessé) reste au secteur de destination.
             em.flush();
             em.clear();
             Sector toReload = boardRepository.findAll().stream()
@@ -345,10 +301,6 @@ class TurnResolutionOrchestratorStepsTest {
                     "Un conflictId inexistant doit lever IllegalArgumentException (→ 404)");
         }
     }
-
-    // ==================================================
-    // === 4. Finalisation ==============================
-    // ==================================================
 
     @Nested
     @DisplayName("Finalisation du tour")
@@ -378,7 +330,6 @@ class TurnResolutionOrchestratorStepsTest {
         void finalizeTurn_tantQueDesHopsRestent_echoue() {
             setupBruteVsLarbinOrder();
             orchestrator.startSession();
-            // Aucun hop effectué.
 
             assertThrows(IllegalStateException.class, orchestrator::finalizeTurn,
                     "Finaliser sans avoir avancé tous les hops doit échouer");
@@ -391,7 +342,6 @@ class TurnResolutionOrchestratorStepsTest {
             setupBruteVsLarbinOrder();
             orchestrator.startSession();
             orchestrator.advanceHop();
-            // Bataille non résolue.
 
             assertThrows(IllegalStateException.class, orchestrator::finalizeTurn,
                     "Finaliser avec une bataille en attente doit échouer");
@@ -402,7 +352,7 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("finalizeTurn : invalide le cache du tour courant de TurnService")
         void finalizeTurn_invalideLeCacheDuTourCourant() {
             setupBruteVsLarbinOrder();
-            int turnBefore = turnService.getCurrentTurn(); // popule cachedTurn
+            int turnBefore = turnService.getCurrentTurn();
             orchestrator.startSession();
             orchestrator.advanceHop();
             int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
@@ -425,8 +375,7 @@ class TurnResolutionOrchestratorStepsTest {
             int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
             orchestrator.resolveBattle(conflictId);
 
-            // Forcer finalizeResolution à lever une exception (simule une erreur DB
-            // après les gardes de validation — avant le fix, le verrou restait acquis).
+            // Simule une erreur DB après les gardes : avant le fix, le verrou restait acquis.
             Mockito.doThrow(new RuntimeException("Simulated DB error"))
                     .when(movementService).finalizeResolution(any(), any());
 
@@ -439,10 +388,6 @@ class TurnResolutionOrchestratorStepsTest {
                     "La session doit être fermée même sur exception (try/finally)");
         }
     }
-
-    // ==================================================
-    // === 5. Abandon ===================================
-    // ==================================================
 
     @Nested
     @DisplayName("Abandon de session")
@@ -459,9 +404,7 @@ class TurnResolutionOrchestratorStepsTest {
             orchestrator.abort();
 
             assertFalse(orchestrator.getState().isActive(), "Session fermée");
-            // L'unité attaquante, déjà déplacée au hop 1, reste au secteur de destination
-            // (abort soft — pas de rollback des positions). On recharge depuis la base
-            // pour s'assurer qu'il s'agit bien d'un état persistant, pas seulement mémoire.
+            // abort soft : pas de rollback des positions déjà déplacées (vérifié après reload DB).
             em.flush();
             em.clear();
             Sector toReload = boardRepository.findAll().stream()

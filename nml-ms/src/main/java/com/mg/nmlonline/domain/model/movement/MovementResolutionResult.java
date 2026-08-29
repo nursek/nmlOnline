@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Résultat global de la résolution des mouvements d'un tour.
- */
 public class MovementResolutionResult {
 
     private final List<MovementOrder> resolved = new ArrayList<>();
