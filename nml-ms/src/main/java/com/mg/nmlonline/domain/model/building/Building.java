@@ -53,11 +53,20 @@ public abstract class Building extends CombatEntity {
 
     @Override
     public void recalculateBaseStats() {
-        // Stats fixes sauf à la destruction (tout passe à 0).
-        if (isDestroyed()) {
+        // PV régénérés depuis le type (annule le reassign-zéro post-bataille) ; 0 si détruit —
+        // pas de reconstruction pour les bâtiments secondaires.
+        if (isDestroyed() || buildingType == null) {
             this.attack = 0;
             this.defense = 0;
+        } else {
+            this.attack = buildingType.getBaseAttack();
+            this.defense = buildingType.getBaseDefense();
         }
+    }
+
+    @Override
+    public double getBaseDefense() {
+        return buildingType != null ? buildingType.getBaseDefense() : 0;
     }
 
     public abstract boolean canMove(int currentTurn);

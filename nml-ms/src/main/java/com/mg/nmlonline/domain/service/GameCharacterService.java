@@ -9,6 +9,7 @@ import com.mg.nmlonline.mapper.GameCharacterMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,9 +28,9 @@ public class GameCharacterService {
         this.characterMapper = characterMapper;
     }
 
-    public GameCharacter createCharacter(Long playerId, String name,
-                                         double baseAttack, double basePdf, double basePdc,
-                                         double baseDefense, double baseArmor, double baseEvasion) {
+    public void createCharacter(Long playerId, String name,
+                                double baseAttack, double basePdf, double basePdc,
+                                double baseDefense, double baseArmor, double baseEvasion) {
         if (characterRepository.existsByPlayerId(playerId)) {
             throw new IllegalStateException("Le joueur a déjà un personnage principal");
         }
@@ -50,7 +51,6 @@ public class GameCharacterService {
         player.setCharacter(character);
         playerRepository.save(player);
 
-        return character;
     }
 
     public Optional<GameCharacter> getCharacter(Long playerId) {
@@ -59,6 +59,16 @@ public class GameCharacterService {
 
     public Optional<GameCharacter> getCharacterByName(String name) {
         return characterRepository.findByName(name);
+    }
+
+    /**
+     * Régénération de fin de tour : +50 def (plafonné baseDefense) pour tout personnage blessé.
+     */
+    public void regenerateAllCharacters() {
+        List<GameCharacter> damaged = characterRepository.findAll().stream()
+                .filter(c -> c.getDefense() < c.getBaseDefense())
+                .toList();
+        damaged.forEach(c -> c.regenerateDefense(GameCharacter.DEFENSE_REGEN_PER_TURN));
     }
 
     // Mapping dans la transaction (sector est LAZY).

@@ -7,7 +7,12 @@
       "quantity": 9
     }
   ],
-  "equipments": [],
+  "equipments": [
+    {
+      "name": "HK-MP7",
+      "quantity": 1
+    }
+  ],
   "sectors": [
     {
       "sectorNumber": 1,

@@ -49,9 +49,6 @@ public class Unit extends CombatEntity {
     @Enumerated(EnumType.STRING)
     private Set<UnitClass> classesSet = new HashSet<>();
 
-    @Column(name = "is_injured", nullable = true)
-    private boolean isInjured = false;
-
     // orphanRemoval volontairement absent : avec unit_id NOT NULL, Hibernate émettait un UPDATE
     // release-FK-NULL → 500 au déplacement d'une unité équipée. cascade=ALL reste (DELETE propre
     // sur remove) ; @OnDelete(CASCADE)+Flyway V5 = ceinture DB ; retrait ciblé ⇒ em.remove explicite.
@@ -332,6 +329,7 @@ public class Unit extends CombatEntity {
         if (evasion > 0) sb.append(". Esquive : ").append(formatEvasion(evasion)).append(" %");
     }
 
+    @Override
     public double getDamageReduction(String damageType) {
         return classesSet.stream()
                 .mapToDouble(c -> c.getDamageReduction(damageType))
@@ -339,6 +337,7 @@ public class Unit extends CombatEntity {
                 .orElse(0.0);
     }
 
+    @Override
     public double getBaseDefense() {
         return type.getBaseDefense();
     }
@@ -347,7 +346,4 @@ public class Unit extends CombatEntity {
         return getEquipmentsForCalculation();
     }
 
-    public void setEquipments(List<Equipment> equipments) {
-        this.equipments = equipments;
-    }
 }

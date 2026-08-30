@@ -93,12 +93,7 @@ public class WeaponCache extends Building {
         }
         return false;
     }
-
-    @Override
-    public void onCapture(Long capturingPlayerId, int currentTurn) {
-        super.onCapture(capturingPlayerId, currentTurn);
-    }
-
+    
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -109,12 +104,7 @@ public class WeaponCache extends Building {
 
         sb.append("Cache d'armes (");
         buildStatsString(sb);
-        sb.append(") - ");
-        sb.append(getTotalStoredCount()).append("/").append(maxCapacity).append(" équipements");
-
-        if (getFillPercentage() > 80) {
-            sb.append(" [PRESQUE PLEIN]");
-        }
+        sb.append(")");
 
         if (isCaptured()) {
             sb.append(" [Capturé]");
