@@ -107,7 +107,7 @@
             </div>
           }
           <div class="udd-meta">
-            <span>{{ unit()?.experience | number: '1.1-1' }} Exp</span>
+            <span>{{ unit()?.experience | exp }} Exp</span>
             @if (unit()?.isInjured) {
               <span class="udd-injured"><mat-icon>local_hospital</mat-icon> Blessé</span>
             }

@@ -1,18 +1,5 @@
 import type { Equipment, VehicleTypeInfo } from '../../models';
-import { equipmentCategoryLabel, unitClassLabel } from '../../core/labels';
-
-/**
- * Ordre de tri par défaut des classes d'unités (léger en tête, élémentaire à la fin).
- * Un équipement sans classe compatible est placé après les classes connues.
- */
-export const UNIT_CLASS_ORDER: Readonly<Record<string, number>> = {
-  LEGER: 0,
-  MASTODONTE: 1,
-  TIREUR: 2,
-  SNIPER: 3,
-  PILOTE_DESTRUCTEUR: 4,
-  ELEMENTAIRE: 5,
-};
+import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER } from '../../core/labels';
 
 /** Ordre des catégories d'équipement : mêlée → arme à feu → défensif. */
 const CATEGORY_ORDER: Readonly<Record<string, number>> = {

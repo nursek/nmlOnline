@@ -29,12 +29,14 @@ import {
   BoardImportResult,
 } from '../../shared/board-import-dialog/board-import-dialog.component';
 import { APP_CONSTANTS } from '../../core/constants';
+import { ExpPipe } from '../../shared/exp.pipe';
 
 @Component({
   selector: 'app-admin',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DecimalPipe,
+    ExpPipe,
     MatExpansionModule,
     MatButtonModule,
     MatIconModule,

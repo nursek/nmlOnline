@@ -13,6 +13,7 @@ export interface UnitType {
 
 export interface Unit {
   id: number;
+  playerId?: number | null;
   number: number;
   experience: number;
   type: UnitType;

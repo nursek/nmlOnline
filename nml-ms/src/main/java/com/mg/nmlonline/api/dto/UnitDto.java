@@ -6,6 +6,7 @@ import java.util.List;
 @Data
 public class UnitDto {
     private Integer id;
+    private Long playerId;
     private Integer number;
     private String name; // Nom optionnel pour les personnages
     private Double experience;

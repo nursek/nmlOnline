@@ -9,19 +9,19 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import {SlicePipe} from '@angular/common';
-import {httpResource} from '@angular/common/http';
-import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
-import {MatCardModule} from '@angular/material/card';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatIconModule} from '@angular/material/icon';
-import {MatChipsModule} from '@angular/material/chips';
-import {MatDividerModule} from '@angular/material/divider';
-import {MatButtonModule} from '@angular/material/button';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {Board, PageResult, Player, Sector} from '../../models';
-import {environment} from '../../../environments/environment';
-import {MAP_THEME} from './carte.config';
+import { SlicePipe } from '@angular/common';
+import { httpResource } from '@angular/common/http';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { MatCardModule } from '@angular/material/card';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { Board, PageResult, Player, Sector } from '../../models';
+import { environment } from '../../../environments/environment';
+import { MAP_THEME } from './carte.config';
 
 interface SectorWithPlayer extends Sector {
   playerName?: string | null;
@@ -554,7 +554,7 @@ export class CarteComponent {
 
   /** Readable text color (white or dark) for a given hex background. */
   getContrastColor(): string {
-    return '#1e293b' ;
+    return '#1e293b';
   }
 
   selectSector(sector: SectorWithPlayer): void {

@@ -19,12 +19,14 @@ export class PlayerService {
   private readonly _loading = signal(false);
   private readonly _vehiclesLoading = signal(false);
   private readonly _error = signal<string | null>(null);
+  private readonly _currentTurn = signal<number | null>(null);
 
   readonly player = this._player.asReadonly();
   readonly vehicles = this._vehicles.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly vehiclesLoading = this._vehiclesLoading.asReadonly();
   readonly error = this._error.asReadonly();
+  readonly currentTurn = this._currentTurn.asReadonly();
 
   readonly undeployedVehicles = computed(() =>
     this._vehicles().filter((v) => v.sectorNumber === null),
@@ -43,6 +45,16 @@ export class PlayerService {
       this._error.set(this.messageFor(error, 'Erreur lors de la récupération du joueur'));
     } finally {
       this._loading.set(false);
+    }
+  }
+
+  /** Load the current board turn (global info, no player data). */
+  async loadCurrentTurn(): Promise<void> {
+    try {
+      const turn = await firstValueFrom(this.api.getCurrentTurn());
+      this._currentTurn.set(turn);
+    } catch {
+      // Information secondaire : on garde null plutôt que d'afficher une erreur.
     }
   }
 

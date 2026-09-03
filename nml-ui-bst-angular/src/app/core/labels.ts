@@ -19,6 +19,16 @@ export const UNIT_CLASS_LABELS: Readonly<Record<string, string>> = {
   ELEMENTAIRE: 'Élémentaire',
 };
 
+/** Ordre de tri des classes d'unités (léger en tête, élémentaire en fin). */
+export const UNIT_CLASS_ORDER: Readonly<Record<string, number>> = {
+  LEGER: 0,
+  MASTODONTE: 1,
+  TIREUR: 2,
+  SNIPER: 3,
+  PILOTE_DESTRUCTEUR: 4,
+  ELEMENTAIRE: 5,
+};
+
 export function equipmentCategoryLabel(category: string | null | undefined): string {
   if (!category) return '';
   return EQUIPMENT_CATEGORY_LABELS[category] ?? category;

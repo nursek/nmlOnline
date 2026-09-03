@@ -6,7 +6,6 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -25,6 +24,7 @@ import { environment } from '../../../environments/environment';
 import { PlayerService } from '../../services/player.service';
 import { MovementStateService } from '../../services/movement-state.service';
 import { UnitSlotPickerComponent, UnitSlotPickerData } from './unit-slot-picker.component';
+import { ExpPipe } from '../../shared/exp.pipe';
 
 export interface UnitDetailDialogData {
   /** Snapshot initial — l'unité live est re-résolue depuis PlayerService.player(). */
@@ -55,7 +55,7 @@ export interface SlotGroup {
   selector: 'app-unit-detail-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule,
+    ExpPipe,
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
