@@ -1,11 +1,9 @@
 package com.mg.nmlonline;
 
+import com.mg.nmlonline.EmbeddedPostgresTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
-@ActiveProfiles("test")
+@EmbeddedPostgresTest
 class NmlOnlineApplicationTests {
 
     @Test

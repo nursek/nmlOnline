@@ -75,8 +75,7 @@ donc le rollback la masque : le test passe quand le code casse en prod.
 Pour reproduire :
 
 ```java
-@SpringBootTest
-@ActiveProfiles("test")
+@EmbeddedPostgresTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class RegressionTest {
     @Autowired private PlatformTransactionManager txManager;
@@ -93,15 +92,18 @@ class RegressionTest {
 }
 ```
 
-`@DirtiesContext(BEFORE_EACH_TEST_METHOD)` : recrée le contexte Spring (et la H2
-`create-drop`) avant chaque test, pour que les commits ne polluent pas les autres tests.
+`@DirtiesContext(BEFORE_EACH_TEST_METHOD)` : recrée le contexte Spring avant chaque test,
+pour que les commits ne polluent pas les autres tests. La base PostgreSQL embarquée étant
+partagée par toute la suite, `PlayerStartupImporter` doit rester idempotent entre ces
+recréations : un joueur déjà présent est **remplacé**, sinon l'armée est dupliquée (et les
+doublons n'ont plus d'équipement, le stock du joueur ayant déjà été consommé).
 
-## 3. OSIV=false (test H2) ≠ OSIV=true (prod)
+## 3. OSIV=false partout
 
-`application-test.properties` a `spring.jpa.open-in-view=false`,
-`application-prod.properties` a `open-in-view=true`. La pile de gestion des entités
-détachées n'est pas la même. Un bug 500 qui échoue à se reproduire en test mais apparaît
-en prod → suspecter systématiquement l'écart OSIV.
+`application-test.properties` et `application-prod.properties` ont toutes deux
+`spring.jpa.open-in-view=false`. Un 500 qui ne se reproduit pas en test mais apparaît en
+prod ne peut donc plus venir d'un écart OSIV : suspecter les **données** de prod (états
+que les fixtures de démo ne produisent pas) plutôt que le mode de session.
 
 ## 4. Checklist avant d'ajouter un `@OneToMany(mappedBy=…)`
 

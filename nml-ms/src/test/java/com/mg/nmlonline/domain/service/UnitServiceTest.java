@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
@@ -7,14 +8,15 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
+import com.mg.nmlonline.config.TestDataInitializer;
 import com.mg.nmlonline.domain.model.unit.UnitType;
+import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -22,8 +24,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
+@EmbeddedPostgresTest
 @Transactional
 @DisplayName("UnitService — équipement & déplacement")
 class UnitServiceTest {
@@ -41,6 +42,9 @@ class UnitServiceTest {
     private PlayerRepository playerRepository;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private EquipmentService equipmentService;
 
     @Autowired
@@ -49,7 +53,7 @@ class UnitServiceTest {
     @Test
     @DisplayName("assignEquipment équipe l'unité depuis l'inventaire et décompte la dispo")
     void shouldAssignEquipmentFromInventory() {
-        Player player = playerService.findByUserId(1L);
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
         assertNotNull(player, "Le joueur TestPlayer1 doit exister avec un userId");
         Long playerId = player.getId();
 
@@ -68,26 +72,26 @@ class UnitServiceTest {
                 .orElseThrow(() -> new IllegalStateException("Catalogue : aucun FIREARM compatible TIREUR"));
         player.addEquipmentToStack(eq, 2);
         playerService.save(player);
-        player = playerService.findByUserId(1L);
+        player = playerOfTestUser(TestDataInitializer.USER_1);
 
         long dispoBefore = player.getEquipments().stream()
                 .filter(s -> s.getEquipment().getName().equals(eq.getName()))
                 .mapToInt(s -> s.getAvailable()).findFirst().orElse(-1);
         assertEquals(2, dispoBefore);
 
-        Unit updated = unitService.assignEquipment(unit.getId(), 1L, eq.getName());
+        Unit updated = unitService.assignEquipment(unit.getId(), player.getUserId(), eq.getName());
 
         assertTrue(updated.getEquipments().stream().anyMatch(e -> e.getName().equals(eq.getName())),
                 "L'unité doit porter l'équipement après assignation");
 
-        player = playerService.findByUserId(1L);
+        player = playerOfTestUser(TestDataInitializer.USER_1);
         long dispoAfter = player.getEquipments().stream()
                 .filter(s -> s.getEquipment().getName().equals(eq.getName()))
                 .mapToInt(s -> s.getAvailable()).findFirst().orElse(-1);
         assertEquals(1, dispoAfter, "La dispo de l'inventaire doit décrémenter de 1");
 
-        unitService.removeEquipment(unit.getId(), 1L, eq.getName());
-        player = playerService.findByUserId(1L);
+        unitService.removeEquipment(unit.getId(), player.getUserId(), eq.getName());
+        player = playerOfTestUser(TestDataInitializer.USER_1);
         long dispoFinal = player.getEquipments().stream()
                 .filter(s -> s.getEquipment().getName().equals(eq.getName()))
                 .mapToInt(s -> s.getAvailable()).findFirst().orElse(-1);
@@ -97,11 +101,8 @@ class UnitServiceTest {
     @Test
     @DisplayName("assignEquipment sur une unité d'un autre joueur → SecurityException")
     void shouldRefuseForeignUnit() {
-        Player owner = playerService.findByUserId(1L);
-        Player other = playerRepository.findAll().stream()
-                .filter(p -> !owner.getId().equals(p.getId()) && p.getUserId() != null && !owner.getUserId().equals(p.getUserId()))
-                .findFirst()
-                .orElseThrow();
+        Player owner = playerOfTestUser(TestDataInitializer.USER_1);
+        Player other = playerOfTestUser(TestDataInitializer.USER_2);
         Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
         Sector sector = findNeutralSector(board, 4);
         Unit unit = newUnit(other.getId(), UnitType.LARBIN, Set.of(UnitClass.ELEMENTAIRE));
@@ -117,7 +118,7 @@ class UnitServiceTest {
     @Test
     @DisplayName("assignEquipment d'un équipement incompatible → IllegalArgumentException")
     void shouldRefuseIncompatibleEquipment() {
-        Player player = playerService.findByUserId(1L);
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
         Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
         Sector sector = findNeutralSector(board, 5);
         Unit unit = newUnit(player.getId(), UnitType.LARBIN, Set.of(UnitClass.SNIPER));
@@ -134,8 +135,17 @@ class UnitServiceTest {
         playerService.save(player);
 
         assertThrows(IllegalArgumentException.class,
-                () -> unitService.assignEquipment(unit.getId(), 1L, incompatible.getName()),
+                () -> unitService.assignEquipment(unit.getId(), player.getUserId(), incompatible.getName()),
                 "Un équipement incompatible doit être refusé");
+    }
+
+    /** Résout le joueur par nom d'utilisateur : les ids générés dépendent de la séquence, pas d'une constante. */
+    private Player playerOfTestUser(String username) {
+        User user = userRepository.findByUsername(username);
+        assertNotNull(user, "L'utilisateur de test " + username + " doit exister");
+        Player player = playerService.findByUserId(user.getId());
+        assertNotNull(player, "Le joueur lié à " + username + " doit exister");
+        return player;
     }
 
     private static Sector findNeutralSector(Board board, int preferred) {

@@ -1,5 +1,6 @@
 package com.mg.nmlonline.api.controller;
 
+import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.config.TestDataInitializer;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.JwtService;
@@ -7,10 +8,8 @@ import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -22,9 +21,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * open-in-view (dǸsactivǸ en test comme en prod) : le mapping doit se faire dans la
  * transaction du service, pas dans le controller apr��s commit.
  */
-@SpringBootTest
+@EmbeddedPostgresTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
 class AdminControllerTransactionBoundaryTest {
 
     private static final long TOKEN_TTL_MS = 3_600_000;

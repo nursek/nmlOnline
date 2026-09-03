@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
@@ -14,9 +15,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -26,8 +25,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 // Régression Phase 3 : unité équipée (unitEquipments LAZY) MOVED 2 hops puis détruite doit cascade-DELETE unit_equipments (avant : release-FK-NULL → unit_id NOT NULL → 500).
-@SpringBootTest
-@ActiveProfiles("test")
+@EmbeddedPostgresTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @DisplayName("TurnResolutionOrchestrator — scénario Lurio → Cegorach (2 hops)")
 class TurnResolutionOrchestratorLurioCegorachTest {

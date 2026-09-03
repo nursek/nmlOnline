@@ -110,10 +110,8 @@ public class PlayerService {
     }
 
     /**
-     * Supprime d'abord toutes les entités combattantes du joueur : {@code removePlayerFromSectors}
-     * ne couvre que les secteurs qu'il possède, donc le personnage et toute entité hors de ces
-     * secteurs survivaient au DELETE du joueur (violation de {@code combat_entities.player_id}).
-     * Véhicules en premier : ils portent la FK {@code pilot_id} vers une entité du même joueur.
+     * Toutes les entités du joueur d'abord : {@code removePlayerFromSectors} ne couvre que les
+     * secteurs qu'il possède. Véhicules en premier (FK {@code pilot_id} vers une entité du joueur).
      */
     @Transactional
     public boolean delete(Long id) {

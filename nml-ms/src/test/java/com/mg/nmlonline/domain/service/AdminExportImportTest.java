@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
@@ -7,8 +8,6 @@ import com.mg.nmlonline.domain.service.PlayerImportService.PlayerDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Map;
@@ -18,8 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Non-régression : les sections character et buildings (historiquement absentes) doivent être relisibles par l'import. */
-@SpringBootTest
-@ActiveProfiles("test")
+@EmbeddedPostgresTest
 @DisplayName("AdminService — Export character & buildings")
 class AdminExportImportTest {
 
