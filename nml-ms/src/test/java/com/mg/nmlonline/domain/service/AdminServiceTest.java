@@ -4,6 +4,8 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
+import com.mg.nmlonline.mapper.BoardMapper;
+import com.mg.nmlonline.mapper.PlayerMapper;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,10 @@ class AdminServiceTest {
     ResourceRepository resourceRepository;
     @Mock
     EntityManager entityManager;
+    @Mock
+    PlayerMapper playerMapper;
+    @Mock
+    BoardMapper boardMapper;
 
     @InjectMocks
     AdminService adminService;

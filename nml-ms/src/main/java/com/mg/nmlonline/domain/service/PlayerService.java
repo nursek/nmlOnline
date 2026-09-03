@@ -6,9 +6,11 @@ import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.unit.CombatEntity;
+import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
-import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import com.mg.nmlonline.mapper.PlayerMapper;
+import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,22 +26,22 @@ public class PlayerService {
     private final PlayerRepository playerRepository;
     private final SectorService sectorService;
     private final EquipmentService equipmentService;
-    private final VehicleRepository vehicleRepository;
     private final PlayerMapper playerMapper;
     private final BoardService boardService;
+    private final EntityManager entityManager;
 
     public PlayerService(PlayerRepository playerRepository,
                           SectorService sectorService,
                           EquipmentService equipmentService,
-                          VehicleRepository vehicleRepository,
                           PlayerMapper playerMapper,
-                          BoardService boardService) {
+                          BoardService boardService,
+                          EntityManager entityManager) {
         this.playerRepository = playerRepository;
         this.sectorService = sectorService;
         this.equipmentService = equipmentService;
-        this.vehicleRepository = vehicleRepository;
         this.playerMapper = playerMapper;
         this.boardService = boardService;
+        this.entityManager = entityManager;
     }
 
     public Page<Player> findAll(Pageable pageable) {
@@ -107,13 +109,28 @@ public class PlayerService {
         return playerRepository.save(player);
     }
 
+    /**
+     * Supprime d'abord toutes les entités combattantes du joueur : {@code removePlayerFromSectors}
+     * ne couvre que les secteurs qu'il possède, donc le personnage et toute entité hors de ces
+     * secteurs survivaient au DELETE du joueur (violation de {@code combat_entities.player_id}).
+     * Véhicules en premier : ils portent la FK {@code pilot_id} vers une entité du même joueur.
+     */
     @Transactional
     public boolean delete(Long id) {
-        if (!playerRepository.existsById(id)) return false;
+        Player player = playerRepository.findById(id).orElse(null);
+        if (player == null) return false;
+        // Détacher le personnage avant de le remove : la cascade PERSIST_ON_FLUSH de
+        // Player.character (cascade=ALL) ressuscite une entité déjà passée à em.remove().
+        player.setCharacter(null);
+        entityManager.createQuery("select v from Vehicle v where v.playerId = :id", CombatEntity.class)
+                .setParameter("id", id)
+                .getResultList()
+                .forEach(entityManager::remove);
+        entityManager.createQuery("select e from CombatEntity e where e.playerId = :id", CombatEntity.class)
+                .setParameter("id", id)
+                .getResultList()
+                .forEach(entityManager::remove);
         sectorService.removePlayerFromSectors(id);
-        // Vehicle étend CombatEntity mais n'a pas de relation @ManyToOne vers Player :
-        // le cascade de Player ne l'atteint pas — suppression explicite sinon FK violation.
-        vehicleRepository.deleteAll(vehicleRepository.findByPlayerId(id));
         playerRepository.deleteById(id);
         return true;
     }

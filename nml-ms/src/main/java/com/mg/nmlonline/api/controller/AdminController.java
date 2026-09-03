@@ -7,18 +7,13 @@ import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
-import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
-import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.service.AdminService;
 import com.mg.nmlonline.domain.service.BoardAssetStorageService;
-import com.mg.nmlonline.domain.service.BoardService;
 import com.mg.nmlonline.domain.service.MovementAdminService;
 import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.TurnResolutionOrchestrator;
 import com.mg.nmlonline.domain.service.TurnService;
-import com.mg.nmlonline.mapper.BoardMapper;
-import com.mg.nmlonline.mapper.PlayerMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -42,9 +37,6 @@ public class AdminController {
 
     private final AdminService adminService;
     private final PlayerService playerService;
-    private final PlayerMapper playerMapper;
-    private final BoardService boardService;
-    private final BoardMapper boardMapper;
     private final BoardAssetStorageService boardAssetStorageService;
     private final TurnService turnService;
     private final MovementAdminService movementAdminService;
@@ -52,18 +44,12 @@ public class AdminController {
 
     public AdminController(AdminService adminService,
                            PlayerService playerService,
-                           PlayerMapper playerMapper,
-                           BoardService boardService,
-                           BoardMapper boardMapper,
                            BoardAssetStorageService boardAssetStorageService,
                            TurnService turnService,
                            MovementAdminService movementAdminService,
                            TurnResolutionOrchestrator turnResolutionOrchestrator) {
         this.adminService = adminService;
         this.playerService = playerService;
-        this.playerMapper = playerMapper;
-        this.boardService = boardService;
-        this.boardMapper = boardMapper;
         this.boardAssetStorageService = boardAssetStorageService;
         this.turnService = turnService;
         this.movementAdminService = movementAdminService;
@@ -72,9 +58,7 @@ public class AdminController {
 
     @GetMapping("/players")
     public Page<PlayerDto> getAllPlayers(Pageable pageable) {
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
-        return playerService.findAll(pageable)
-                .map(player -> playerMapper.toDtoWithSectors(player, board));
+        return playerService.findAllDto(pageable);
     }
 
     @GetMapping("/players/{id}/export")
@@ -93,9 +77,7 @@ public class AdminController {
             @RequestParam(value = "password", required = false) String password
     ) throws java.io.IOException {
         String jsonContent = new String(file.getBytes(), StandardCharsets.UTF_8);
-        Player player = adminService.importPlayer(jsonContent, password);
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
-        return ResponseEntity.ok(playerMapper.toDtoWithSectors(player, board));
+        return ResponseEntity.ok(adminService.importPlayerDto(jsonContent, password));
     }
 
     /**
@@ -133,8 +115,7 @@ public class AdminController {
             @RequestParam(value = "mapImageUrl", required = false) String mapImageUrl,
             @RequestParam(value = "svgOverlayUrl", required = false) String svgOverlayUrl) throws java.io.IOException {
         String jsonContent = new String(file.getBytes(), StandardCharsets.UTF_8);
-        Board board = adminService.importBoard(jsonContent, mapImageUrl, svgOverlayUrl);
-        return ResponseEntity.ok(boardMapper.toDto(board));
+        return ResponseEntity.ok(adminService.importBoardDto(jsonContent, mapImageUrl, svgOverlayUrl));
     }
 
     @GetMapping("/turn/current")

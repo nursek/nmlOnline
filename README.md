@@ -210,6 +210,9 @@ export DATABASE_PASSWORD="your-secure-password"
 ```
 
 - `ddl-auto=validate` — schema is managed by Flyway (see below)
+- `spring.jpa.open-in-view=false` — **do not override it with `SPRING_JPA_OPEN_IN_VIEW=true`**: it hides
+  lazy-loading bugs instead of fixing them. DTOs are built inside the service transaction
+  (`AdminService`, `PlayerService.findAllDto`, `BoardService`…), never in a controller.
 - `app.cookie.secure=true` — refresh cookies are `Secure`
 - Actuator: `/actuator/health`, `/actuator/info`, `/actuator/metrics`
 - No seed data
@@ -236,6 +239,11 @@ Any schema change (new entity, new column, new index…) MUST ship as a migratio
 3. Commit both together. Migrations run automatically at application startup.
 
 Never edit an already-applied migration file — always add a new one.
+
+`FlywaySchemaValidationTest` applies every migration to a throwaway PostgreSQL container and then boots
+the context with the `prod` profile, so `ddl-auto=validate` runs against them. It catches entity/schema
+drift in CI instead of at the next production boot. The test needs Docker: it is skipped locally where
+Docker is unavailable (it runs on GitHub Actions runners).
 
 ---
 
