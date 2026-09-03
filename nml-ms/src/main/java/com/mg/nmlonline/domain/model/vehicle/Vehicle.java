@@ -71,6 +71,11 @@ public class Vehicle extends CombatEntity {
         this.evasion = 0;
     }
 
+    @Override
+    public double getBaseDefense() {
+        return vehicleType != null ? vehicleType.getBaseDefense() : 0;
+    }
+
     public boolean hasPilot() {
         return pilot != null && !pilot.isDestroyed();
     }

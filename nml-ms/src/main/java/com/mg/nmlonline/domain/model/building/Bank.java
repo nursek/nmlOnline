@@ -94,11 +94,6 @@ public class Bank extends Building {
         return transferred;
     }
 
-    @Override
-    public void onCapture(Long capturingPlayerId, int currentTurn) {
-        super.onCapture(capturingPlayerId, currentTurn);
-    }
-
     public String getVampirizeStatus(int currentTurn) {
         if (!isCaptured()) {
             return "Aucune vampirisation";
@@ -118,10 +113,6 @@ public class Bank extends Building {
         sb.append("Banque (");
         buildStatsString(sb);
         sb.append(")");
-
-        if (!hasMoved) {
-            sb.append(" [Déplacement disponible]");
-        }
 
         if (isCaptured() && getCapturedTurn() != null) {
             sb.append(" [Capturée - Vampirisation active]");

@@ -5,6 +5,8 @@ import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.building.Building;
+import com.mg.nmlonline.domain.model.building.BuildingType;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import jakarta.persistence.EntityManager;
@@ -18,6 +20,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -115,11 +119,15 @@ class TurnResolutionOrchestratorLurioCegorachTest {
         assertEquals(0, report.getDefenderCasualties(),
                 "Les 2 BRUTE 100/100 ne subissent aucune perte face à un LEGER attaquant");
         assertEquals(0, report.getAttackerInjured(), "L'attaquant meurt, pas de blessé");
-        // Battle cible defender.getLast() : le BRUTE n°2 est blessé (def < baseDefense), déterministe (evasion=0).
+        // Le VOYOU équipé (HK-MP7 : pdf 60) entame le BRUTE n°2 en phase PDF (def 100 → 40),
+        // puis meurt en phase bâtiments secondaires (Cache 100 + Banque 50 vs 20 def + 10 armure).
         assertEquals(1, report.getDefenderInjured(),
-                "Le BRUTE n°2 ciblé par l'attaquant est blessé (defense tombée sous baseDefense 100)");
-        assertNull(report.getWinnerId(),
-                "Battle ne set jamais winner — à revoir (cf. GameSimulationIT.shouldResolveDeterministicBattleOutcome)");
+                "Le BRUTE n°2 (def 40 < 100 après le pdf de l'attaquant) termine blessé");
+        assertEquals(cegorachId, report.getWinnerId(),
+                "Attaquant anéanti ⇒ le défenseur garde le secteur (règle §2 du plan combat)");
+        assertEquals(0, report.getCapturedBuildings(), "Pas de capture : le défenseur a gagné");
+        assertFalse(report.isDefenderCharacterLost(),
+                "Le personnage de cegorach combat au secteur 32 mais survit : l'attaquant est anéanti avant lui");
 
         // Pas de @Transactional sur ce test : un @Transactional de test masquerait la DataIntegrityViolationException au commit (docs/jpa-pitfalls.md §2).
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
@@ -132,6 +140,16 @@ class TurnResolutionOrchestratorLurioCegorachTest {
             assertEquals(0, lurioRestant,
                     "L'attaquant détruit est retiré du secteur 32 (em.remove explicite en Phase 3)");
             assertEquals(2, cegorachRestant, "Les 2 BRUTEs défenseurs survivent en secteur 32");
+
+            // Les 3 bâtiments de cegorach ont participé (cible = unités d'abord) : intacts et régénérés.
+            List<Building> batiments = secteur32.getBuildings().stream()
+                    .filter(b -> cegorachId.equals(b.getPlayerId())).toList();
+            assertEquals(3, batiments.size(), "QG + Cache + Banque restent en secteur 32");
+            assertTrue(batiments.stream().noneMatch(Building::isDestroyed));
+            Building qg = batiments.stream()
+                    .filter(b -> b.getBuildingType() == BuildingType.HEADQUARTERS).findFirst().orElseThrow();
+            assertEquals(200.0, qg.getDefense(), "PV régénérés : le QG revient à 200 après le reassign-zéro");
+            assertEquals(100.0, qg.getAttack());
 
             long ueCount = em.createQuery(
                             "select count(ue) from UnitEquipment ue where ue.unit.id = :unitId", Long.class)

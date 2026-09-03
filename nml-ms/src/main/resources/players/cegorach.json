@@ -7,7 +7,12 @@
       "quantity": 9
     }
   ],
-  "equipments": [],
+  "equipments": [
+    {
+      "name": "HK-MP7",
+      "quantity": 1
+    }
+  ],
   "sectors": [
     {
       "sectorNumber": 32,
@@ -20,26 +25,26 @@
   ],
   "character": {
     "name": "Cegorach",
-    "sectorNumber": 1,
-    "baseAttack": 500,
-    "baseDefense": 550,
-    "basePdf": 0,
+    "sectorNumber": 32,
+    "baseAttack": 100,
+    "baseDefense": 200,
+    "basePdf": 50,
     "basePdc": 50,
-    "baseArmor": 0,
-    "baseEvasion": 10
+    "baseArmor": 50,
+    "baseEvasion": 25
   },
   "buildings": [
     {
       "type": "HEADQUARTERS",
-      "sectorNumber": 1
+      "sectorNumber": 32
     },
     {
       "type": "WEAPON_CACHE",
-      "sectorNumber": 1
+      "sectorNumber": 32
     },
     {
       "type": "BANK",
-      "sectorNumber": 1
+      "sectorNumber": 32
     }
   ]
 }

@@ -56,11 +56,20 @@ public abstract class CombatEntity {
     @Column(name = "is_destroyed", nullable = false)
     protected boolean isDestroyed = false;
 
+    @Column(name = "is_injured", nullable = true)
+    protected boolean isInjured = false;
+
     public abstract EntityCategory getEntityCategory();
 
     public abstract void recalculateBaseStats();
 
     public abstract String getDisplayName();
+
+    public abstract double getBaseDefense();
+
+    public double getDamageReduction(String damageType) {
+        return 0.0;
+    }
 
     public double getTotalAttack() {
         return attack + pdf + pdc;

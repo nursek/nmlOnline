@@ -35,6 +35,8 @@ public class GameCharacter extends CombatEntity {
     @Column(name = "base_evasion")
     private double baseEvasion;
 
+    public static final double DEFENSE_REGEN_PER_TURN = 50;
+
 
     public GameCharacter(String name, double baseAttack, double basePdf, double basePdc,
                          double baseDefense, double baseArmor, double baseEvasion) {
@@ -61,7 +63,31 @@ public class GameCharacter extends CombatEntity {
 
     @Override
     public void recalculateBaseStats() {
-        // No-op : stats fixes définies à la création.
+        // Pas d'état blessé chez un personnage : restauration complète.
+        this.attack = baseAttack;
+        this.pdf = basePdf;
+        this.pdc = basePdc;
+        this.defense = baseDefense;
+        this.armor = baseArmor;
+        this.evasion = baseEvasion;
+    }
+
+    /** Après bataille : restore l'offense/soak, la défense endommagée n'est PAS soignée (régén fin de tour). */
+    public void regenerateAfterBattle() {
+        this.attack = baseAttack;
+        this.pdf = basePdf;
+        this.pdc = basePdc;
+        this.armor = baseArmor;
+        this.evasion = baseEvasion;
+    }
+
+    public void regenerateDefense(double points) {
+        this.defense = Math.min(defense + points, baseDefense);
+    }
+
+    @Override
+    public double getBaseDefense() {
+        return baseDefense;
     }
 
     @Override

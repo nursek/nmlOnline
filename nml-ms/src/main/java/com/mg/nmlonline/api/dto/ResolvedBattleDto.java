@@ -17,4 +17,8 @@ public class ResolvedBattleDto {
     private int defenderCasualties;
     private int attackerInjured;
     private int defenderInjured;
+    private int capturedBuildings;
+    private boolean attackerCharacterLost;
+    private boolean defenderCharacterLost;
+    private boolean defenderHeadquartersCaptured;
 }

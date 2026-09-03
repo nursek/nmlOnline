@@ -16,15 +16,18 @@ public class TurnService {
     private final BoardRepository boardRepository;
     private final MovementService movementService;
     private final TurnLock turnLock;
+    private final GameCharacterService characterService;
 
     // Cache du tour courant : évite un N+1 (SELECT boards + tx par bâtiment mappé).
     // Invalidé par advanceTurn / invalidateTurnCache.
     private volatile Integer cachedTurn;
 
-    public TurnService(BoardRepository boardRepository, MovementService movementService, TurnLock turnLock) {
+    public TurnService(BoardRepository boardRepository, MovementService movementService,
+                       TurnLock turnLock, GameCharacterService characterService) {
         this.boardRepository = boardRepository;
         this.movementService = movementService;
         this.turnLock = turnLock;
+        this.characterService = characterService;
     }
 
     /** Retourne 1 si aucun plateau n'existe encore. */
@@ -64,6 +67,8 @@ public class TurnService {
 
             // Résolution des mouvements du tour qui se termine, AVANT l'incrément.
             movementService.resolveAllMovements(turnEnding, board);
+
+            characterService.regenerateAllCharacters();
 
             board.setCurrentTurn(turnEnding + 1);
             board = boardRepository.save(board);

@@ -7,7 +7,12 @@
       "quantity": 9
     }
   ],
-  "equipments": [],
+  "equipments": [
+    {
+      "name": "HK-MP7",
+      "quantity": 1
+    }
+  ],
   "sectors": [
     {
       "sectorNumber": 8,
@@ -20,7 +25,7 @@
   ],
   "character": {
     "name": "Angron",
-    "sectorNumber": 1,
+    "sectorNumber": 6,
     "baseAttack": 500,
     "baseDefense": 550,
     "basePdf": 0,
@@ -31,15 +36,15 @@
   "buildings": [
     {
       "type": "HEADQUARTERS",
-      "sectorNumber": 1
+      "sectorNumber": 6
     },
     {
       "type": "WEAPON_CACHE",
-      "sectorNumber": 1
+      "sectorNumber": 6
     },
     {
       "type": "BANK",
-      "sectorNumber": 1
+      "sectorNumber": 6
     }
   ]
 }

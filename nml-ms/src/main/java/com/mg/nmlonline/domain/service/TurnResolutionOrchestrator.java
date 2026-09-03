@@ -37,6 +37,7 @@ public class TurnResolutionOrchestrator {
     private final MovementService movementService;
     private final CombatService combatService;
     private final TurnService turnService;
+    private final GameCharacterService characterService;
 
     private volatile Session session;
 
@@ -45,13 +46,15 @@ public class TurnResolutionOrchestrator {
                                       PlayerRepository playerRepository,
                                       MovementService movementService,
                                       CombatService combatService,
-                                      TurnService turnService) {
+                                      TurnService turnService,
+                                      GameCharacterService characterService) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
         this.movementService = movementService;
         this.combatService = combatService;
         this.turnService = turnService;
+        this.characterService = characterService;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -126,6 +129,7 @@ public class TurnResolutionOrchestrator {
         movementService.refreshActiveOrders(s.ctx);
         try {
             MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
+            characterService.regenerateAllCharacters();
             board.setCurrentTurn(s.turnEnding + 1);
             boardRepository.save(board);
             turnService.invalidateTurnCache();
@@ -248,6 +252,10 @@ public class TurnResolutionOrchestrator {
         dto.setDefenderCasualties(rb.defenderCasualties);
         dto.setAttackerInjured(rb.attackerInjured);
         dto.setDefenderInjured(rb.defenderInjured);
+        dto.setCapturedBuildings(rb.capturedBuildings);
+        dto.setAttackerCharacterLost(rb.attackerCharacterLost);
+        dto.setDefenderCharacterLost(rb.defenderCharacterLost);
+        dto.setDefenderHeadquartersCaptured(rb.defenderHeadquartersCaptured);
         return dto;
     }
 
@@ -289,6 +297,10 @@ public class TurnResolutionOrchestrator {
         final int defenderCasualties;
         final int attackerInjured;
         final int defenderInjured;
+        final int capturedBuildings;
+        final boolean attackerCharacterLost;
+        final boolean defenderCharacterLost;
+        final boolean defenderHeadquartersCaptured;
 
         ResolvedBattle(int sectorNumber, Long attackerPlayerId, Long defenderPlayerId,
                        CombatService.SectorBattleResult r) {
@@ -302,6 +314,10 @@ public class TurnResolutionOrchestrator {
             this.defenderCasualties = r.defenderCasualties().size();
             this.attackerInjured = r.attackerInjured().size();
             this.defenderInjured = r.defenderInjured().size();
+            this.capturedBuildings = r.capturedBuildings();
+            this.attackerCharacterLost = r.attackerCharacterLost();
+            this.defenderCharacterLost = r.defenderCharacterLost();
+            this.defenderHeadquartersCaptured = r.defenderHeadquartersCaptured();
         }
     }
 }
