@@ -63,7 +63,7 @@ public class GameCharacter extends CombatEntity {
 
     @Override
     public void recalculateBaseStats() {
-        // Jamais blessé : restauration complète des stats de base.
+        // Pas d'état blessé chez un personnage : restauration complète.
         this.attack = baseAttack;
         this.pdf = basePdf;
         this.pdc = basePdc;
@@ -81,7 +81,6 @@ public class GameCharacter extends CombatEntity {
         this.evasion = baseEvasion;
     }
 
-    /** +points de défense, plafonné à baseDefense. */
     public void regenerateDefense(double points) {
         this.defense = Math.min(defense + points, baseDefense);
     }

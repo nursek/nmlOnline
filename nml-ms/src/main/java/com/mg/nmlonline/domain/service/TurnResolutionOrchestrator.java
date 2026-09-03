@@ -129,7 +129,6 @@ public class TurnResolutionOrchestrator {
         movementService.refreshActiveOrders(s.ctx);
         try {
             MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
-            // Régénération des personnages (+50 def, plafonné baseDefense) : fin de tour, après toutes les batailles.
             characterService.regenerateAllCharacters();
             board.setCurrentTurn(s.turnEnding + 1);
             boardRepository.save(board);

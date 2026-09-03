@@ -48,12 +48,7 @@ public class CombatService {
         return sectorsWithArmy.stream().findFirst();
     }
 
-    /**
-     * Combat sur un secteur donné : unités + personnages + bâtiments des deux camps co-localisés
-     * (véhicules exclus, bâtiments détruits/capturés neutralisés). Pertes unités supprimées via
-     * em.remove (Sector.army sans orphanRemoval — docs/jpa-pitfalls.md §1 + V6__sector_army_fk_cascade.sql) ;
-     * personnages supprimés via Player.character orphanRemoval ; bâtiments marqués détruits, jamais DELETE.
-     */
+    /** Combat sur un secteur : unités + personnages + bâtiments co-localisés (véhicules exclus). */
     public SectorBattleResult simulateSectorBattle(Player attacker, Player defender, Board board, int sectorNumber) {
         if (attacker == null || defender == null || board == null) {
             return failedResult("Paramètres invalides");
@@ -66,8 +61,7 @@ public class CombatService {
         playerStatsService.updateCombatStats(attacker, board);
         playerStatsService.updateCombatStats(defender, board);
 
-        // Ordre [personnages, QG, Cache, Banque, unités] : getLast() fait mourir les unités d'abord,
-        // puis Banque → Cache → QG ; le personnage ne tombe qu'en dernier (sa chute = fin de partie).
+        // Ordre inverse de la mort (getLast()) : unités → Banque → Cache → QG → personnage en dernier.
         List<CombatEntity> attackerFighters = collectBattleParticipants(sector, attacker.getId());
         List<CombatEntity> defenderFighters = collectBattleParticipants(sector, defender.getId());
 
@@ -106,7 +100,7 @@ public class CombatService {
             if (isCasualty(character, beforeIds, survivorIds)) {
                 detachCharacterFromVehicles(character);
                 Player owner = attacker.getId().equals(character.getPlayerId()) ? attacker : defender;
-                // player_id/character_id : détacher le personnage (FK players.character_id nulle d'abord, sinon FK bloque le DELETE).
+                // players.character_id doit passer à NULL avant le DELETE, sinon la FK bloque.
                 if (owner.getCharacter() != null && character.getId().equals(owner.getCharacter().getId())) {
                     owner.setCharacter(null); // @OneToOne orphanRemoval → DELETE au flush
                 } else {
@@ -124,10 +118,8 @@ public class CombatService {
 
         for (Building building : new ArrayList<>(sector.getBuildings())) {
             if (isCasualty(building, beforeIds, survivorIds)) {
-                // Jamais DELETE : reste en BDD et dans sector.getBuildings(), stacks/ressources préservés,
-                // Player.buildings intact (orphanRemoval — docs/jpa-pitfalls.md).
+                // Jamais DELETE (orphanRemoval Player.buildings — docs/jpa-pitfalls.md) : marqué détruit.
                 if (building instanceof Headquarters headquarters) {
-                    // QG détruit : hors service (armée immobilisée) ; reconstruction 75k si non capturé.
                     headquarters.destroy();
                 } else {
                     building.setDestroyed(true);
@@ -137,9 +129,7 @@ public class CombatService {
             }
         }
 
-        // Régénération post-bataille : bâtiments survivants reprennent leurs stats de base (annule le
-        // reassign-zéro ; QG → 200). Personnages : offense/soak restaurés SANS soigner la défense
-        // (régén +50 uniquement en fin de tour). Les unités gardent le comportement historique.
+        // Bâtiments : stats de base (annule le reassign-zéro). Personnages : offense/soak, pas la défense.
         for (CombatEntity entity : attackerFighters) {
             regenerateAfterBattle(entity);
         }
@@ -149,7 +139,6 @@ public class CombatService {
 
         sector.recalculateMilitaryPower();
 
-        // Capture réservée à la victoire de l'attaquant, secteur par secteur.
         int capturedBuildings = 0;
         boolean defenderHeadquartersCaptured = false;
         if (battle.getWinner() != null && battle.getWinner().getId().equals(attacker.getId())) {
@@ -159,13 +148,12 @@ public class CombatService {
                     continue;
                 }
                 switch (building.getBuildingType()) {
-                    // Marqué capturé même détruit (arbitrage MJ) ; jamais captureHeadquarters.
+                    // Capturé même détruit (arbitrage MJ) ; jamais captureHeadquarters.
                     case HEADQUARTERS -> {
                         building.onCapture(attacker.getId(), turn);
                         defenderHeadquartersCaptured = true;
                         capturedBuildings++;
                     }
-                    // Un bâtiment détruit n'est pas capturable : seuls les intacts transfèrent.
                     case BANK -> {
                         if (!building.isDestroyed()) {
                             buildingService.captureBank(building.getId(), attacker.getId(), turn);
@@ -209,7 +197,6 @@ public class CombatService {
     private List<CombatEntity> collectBattleParticipants(Sector sector, Long playerId) {
         List<CombatEntity> fighters = new ArrayList<>();
 
-        // Le personnage d'abord dans la liste = dernière cible de getLast().
         sector.getCharacters().stream()
                 .filter(c -> playerId.equals(c.getPlayerId()))
                 .filter(c -> !c.isDestroyed())

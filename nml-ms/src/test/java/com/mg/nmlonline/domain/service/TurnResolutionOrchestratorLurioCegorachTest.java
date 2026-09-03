@@ -127,7 +127,7 @@ class TurnResolutionOrchestratorLurioCegorachTest {
                 "Attaquant anéanti ⇒ le défenseur garde le secteur (règle §2 du plan combat)");
         assertEquals(0, report.getCapturedBuildings(), "Pas de capture : le défenseur a gagné");
         assertFalse(report.isDefenderCharacterLost(),
-                "Le personnage de cegorach est au secteur 1, il ne participe pas");
+                "Le personnage de cegorach combat au secteur 32 mais survit : l'attaquant est anéanti avant lui");
 
         // Pas de @Transactional sur ce test : un @Transactional de test masquerait la DataIntegrityViolationException au commit (docs/jpa-pitfalls.md §2).
         new TransactionTemplate(txManager).executeWithoutResult(status -> {

@@ -310,4 +310,48 @@ class CombatServiceBuildingsCharactersBattleTest {
             assertEquals(2, sector.getUnits().size(), "B1 + B2 survivants");
         });
     }
+
+    @Test
+    @DisplayName("Cache capturé intact : l'équipement stocké est transféré au vainqueur, pas supprimé")
+    void capturingIntactWeaponCacheTransfersItsStoredEquipment() {
+        World w = seedDefenderHolding();
+        // Ni unité ni personnage, QG hors service : seule la paire Cache/Banque tient le secteur.
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
+            Sector sector = loadSector(w.sectorNumber());
+            for (Unit unit : List.copyOf(sector.getUnits())) {
+                if (defender.getId().equals(unit.getPlayerId())) {
+                    sector.getUnits().remove(unit);
+                    em.remove(unit);
+                }
+            }
+            GameCharacter character = em.find(GameCharacter.class, w.characterId());
+            sector.getCharacters().remove(character);
+            defender.setCharacter(null);
+            em.find(Headquarters.class, w.hqId()).destroy();
+            em.flush();
+            assertEquals(1, em.find(WeaponCache.class, w.cacheId()).getStoredEquipments().size(),
+                    "Le Cache est approvisionné avant la bataille");
+        });
+        seedAttackerUnits(w.attackerId(), w.sectorNumber(), 8.0, 2); // 2 BRUTEs
+
+        CombatService.SectorBattleResult r = runBattle(w);
+
+        assertTrue(r.success());
+        assertEquals(w.attackerId(), r.winner().getId(), "Aucun combattant défenseur ⇒ victoire attaquant");
+        assertEquals(2, r.capturedBuildings(), "QG détruit (capturé) + Cache intact");
+
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            WeaponCache cache = em.find(WeaponCache.class, w.cacheId());
+            assertFalse(cache.isDestroyed(), "Le Cache encaisse le reliquat ATK sans tomber");
+            assertTrue(cache.isCaptured());
+            assertTrue(cache.getStoredEquipments().isEmpty(), "Le Cache capturé est vidé");
+
+            Player attacker = playerRepository.findById(w.attackerId()).orElseThrow();
+            assertEquals(1, attacker.getEquipments().size(),
+                    "L'équipement du Cache rejoint l'inventaire du capturant (pas supprimé)");
+            assertEquals("FusilBtC", attacker.getEquipments().getFirst().getEquipment().getName());
+            assertEquals(1, attacker.getEquipments().getFirst().getQuantity());
+        });
+    }
 }

@@ -119,17 +119,25 @@ public class BuildingService {
                 .toList();
     }
 
-    public List<EquipmentStack> captureWeaponCache(Long cacheId, Long capturingPlayerId, int currentTurn) {
+    /** Capture d'un cache d'armes : les équipements stockés rejoignent l'inventaire du capturant. */
+    public void captureWeaponCache(Long cacheId, Long capturingPlayerId, int currentTurn) {
         Building building = buildingRepository.findById(cacheId).orElse(null);
         if (!(building instanceof WeaponCache cache)) {
-            return List.of();
+            return;
         }
 
-        cache.onCapture(capturingPlayerId, currentTurn);
-        List<EquipmentStack> transferred = cache.transferAllEquipments();
-        buildingRepository.save(cache);
+        // Valider le joueur capturant AVANT de muter le cache.
+        Player capturingPlayer = playerRepository.findById(capturingPlayerId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Le joueur capturant avec l'ID " + capturingPlayerId + " n'existe pas"));
 
-        return transferred;
+        cache.onCapture(capturingPlayerId, currentTurn);
+        // orphanRemoval : un stack sorti du Cache est DELETE au flush, d'où la recréation chez le capturant.
+        for (EquipmentStack stack : cache.transferAllEquipments()) {
+            capturingPlayer.addEquipmentToStack(stack.getEquipment(), stack.getQuantity());
+        }
+        buildingRepository.save(cache);
+        playerRepository.save(capturingPlayer);
     }
 
     public Optional<Bank> getBank(Long playerId) {

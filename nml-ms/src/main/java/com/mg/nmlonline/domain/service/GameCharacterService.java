@@ -61,9 +61,7 @@ public class GameCharacterService {
         return characterRepository.findByName(name);
     }
 
-    /**
-     * Régénération de fin de tour : +50 def (plafonné baseDefense) pour tout personnage blessé.
-     */
+    /** Fin de tour : +50 def (plafonné baseDefense) sur chaque personnage entamé. */
     public void regenerateAllCharacters() {
         List<GameCharacter> damaged = characterRepository.findAll().stream()
                 .filter(c -> c.getDefense() < c.getBaseDefense())

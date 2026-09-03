@@ -53,8 +53,7 @@ public abstract class Building extends CombatEntity {
 
     @Override
     public void recalculateBaseStats() {
-        // PV régénérés depuis le type (annule le reassign-zéro post-bataille) ; 0 si détruit —
-        // pas de reconstruction pour les bâtiments secondaires.
+        // PV repris du type (annule le reassign-zéro) ; 0 si détruit, sans reconstruction possible.
         if (isDestroyed() || buildingType == null) {
             this.attack = 0;
             this.defense = 0;

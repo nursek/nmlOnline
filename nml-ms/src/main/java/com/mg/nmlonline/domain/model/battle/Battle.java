@@ -112,11 +112,7 @@ public class Battle {
         unit.recalculateBaseStats();
     }
 
-    /**
-     * Séquence : PDF (+r2) → bâtiments secondaires (riposte, hors pool partagé) → PDC (+r2)
-     * → ATK (pool unités seules) → QG → personnages (dernier intervenant, attack seul).
-     * DO NOT REMOVE CODE COMMENT IN THIS METHOD.
-     */
+    /** Séquence : PDF (+r2) → secondaires → PDC (+r2) → ATK (unités seules) → QG → personnages. */
     public void classicCombatConfiguration(Player attacker, Player defender, List<CombatEntity> attackerUnits, List<CombatEntity> defenderUnits) {
         if (attackerUnits == null) attackerUnits = new ArrayList<>();
         if (defenderUnits == null) defenderUnits = new ArrayList<>();
@@ -126,9 +122,6 @@ public class Battle {
 
         logger.info("\n=== Début du combat entre {} et {} ===", attacker.getName(), defender.getName());
 
-        // =================
-        // === PHASE PDF ===
-        // =================
         printPhaseHeader("PDF");
         double attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
         double defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF");
@@ -151,7 +144,6 @@ public class Battle {
             return;
         }
 
-        // Vérifier si cette méthode peut-être fusionnée avec la phase suivante, de prise de batiments.
         if (checkPointsTypeInUnits(attackerUnits, "PDF") > 0 || checkPointsTypeInUnits(defenderUnits, "PDF") > 0) {
             printPhaseHeader("PDF - Round 2");
             attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
@@ -176,10 +168,7 @@ public class Battle {
             }
         }
 
-        // ===================================
-        // === PHASE BATIMENTS SECONDAIRES ===
-        // ===================================
-        // Riposte des bâtiments secondaires (Cache/Banque, hors QG) : leur attack n'entre jamais dans les pools partagés.
+        // Riposte des secondaires : leur attack n'entre jamais dans les pools partagés.
         printPhaseHeader("Bâtiments secondaires");
         double attackerSecondariesAtk = sumAttack(attackerUnits, Battle::isSecondaryBuilding);
         double defenderSecondariesAtk = sumAttack(defenderUnits, Battle::isSecondaryBuilding);
@@ -199,9 +188,6 @@ public class Battle {
             return;
         }
 
-        // =================
-        // === PHASE PDC ===
-        // =================
         printPhaseHeader("PDC");
         double attackerTotalPdc = getAvailablePoints(attackerUnits, "PDC");
         double defenderTotalPdc = getAvailablePoints(defenderUnits, "PDC");
@@ -248,10 +234,7 @@ public class Battle {
             }
         }
 
-        // =================
-        // === PHASE ATK ===
-        // =================
-        // Pool unités seules : l'attaque des bâtiments/QG/personnage est réservée à leurs phases dédiées.
+        // Pool unités seules : l'attack des bâtiments/QG/personnage est réservée à leur phase.
         printPhaseHeader("ATK");
         double attackerTotalAtk = sumAttack(attackerUnits, Battle::isInfantry);
         double defenderTotalAtk = sumAttack(defenderUnits, Battle::isInfantry);
@@ -262,7 +245,7 @@ public class Battle {
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
 
-        // Reassign unités seules : ne pas zéro l'attaque des QG/personnages avant leurs phases.
+        // Idem au reassign : ne pas zéro l'attack du QG et du personnage avant leur phase.
         reassignPointsForNextPhase(infantryOnly(attackerUnits), attackerPhaseResult.remainingPoints(), "ATK");
         reassignPointsForNextPhase(infantryOnly(defenderUnits), defenderPhaseResult.remainingPoints(), "ATK");
 
@@ -275,10 +258,6 @@ public class Battle {
             return;
         }
 
-        // ================
-        // === PHASE QG ===
-        // ================
-        // Riposte du QG après la phase ATK.
         printPhaseHeader("Quartier Général");
         double attackerHqAtk = sumAttack(attackerUnits, Battle::isHeadquarters);
         double defenderHqAtk = sumAttack(defenderUnits, Battle::isHeadquarters);
@@ -298,10 +277,7 @@ public class Battle {
             return;
         }
 
-        // =========================
-        // === PHASE PERSONNAGES ===
-        // =========================
-        // Dernier intervenant : le personnage (attack seul — ses pdf/pdc ont servi dans les phases partagées).
+        // attack seul : ses pdf/pdc ont déjà servi dans les phases partagées.
         printPhaseHeader("Personnages");
         double attackerCharacterAtk = sumAttack(attackerUnits, Battle::isCharacter);
         double defenderCharacterAtk = sumAttack(defenderUnits, Battle::isCharacter);
@@ -323,20 +299,13 @@ public class Battle {
         endBattle(attacker, defender, attackerUnits, defenderUnits);
     }
 
-    /**
-     * Conversion blessure (infanterie seule) + vainqueur, à chaque sortie de combat.
-     */
     private void endBattle(Player attacker, Player defender, List<CombatEntity> attackerUnits, List<CombatEntity> defenderUnits) {
         injureDamagedInfantry(attackerUnits);
         injureDamagedInfantry(defenderUnits);
         finishBattle(attacker, defender, attackerUnits, defenderUnits);
     }
 
-    /**
-     * Vainqueur : l'attaquant l'emporte si le défenseur n'a plus de combattant (unités/personnages,
-     * les bâtiments ne comptent pas) et qu'il lui en reste au moins un. Attaquant anéanti ⇒ défenseur
-     * (le secteur tient, même si les défenseurs sont morts aussi). Deux camps survivants ⇒ aucun vainqueur.
-     */
+    /** Les bâtiments ne comptent pas : attaquant anéanti ⇒ le défenseur garde le secteur. */
     private void finishBattle(Player attacker, Player defender, List<CombatEntity> attackerUnits, List<CombatEntity> defenderUnits) {
         if (hasNoSurvivingFighters(attackerUnits)) {
             this.winner = defender;
@@ -354,9 +323,6 @@ public class Battle {
         return entities.stream().noneMatch(e -> e.getEntityCategory() != EntityCategory.BUILDING);
     }
 
-    /**
-     * Seules les unités d'infanterie terminent blessées (defense < baseDefense) ; personnages/bâtiments jamais.
-     */
     private void injureDamagedInfantry(List<CombatEntity> survivors) {
         for (CombatEntity entity : survivors) {
             if (entity.getEntityCategory() == EntityCategory.INFANTRY

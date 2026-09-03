@@ -68,7 +68,6 @@ public class TurnService {
             // Résolution des mouvements du tour qui se termine, AVANT l'incrément.
             movementService.resolveAllMovements(turnEnding, board);
 
-            // Régénération des personnages (+50 def, plafonné baseDefense) à chaque fin de tour.
             characterService.regenerateAllCharacters();
 
             board.setCurrentTurn(turnEnding + 1);
