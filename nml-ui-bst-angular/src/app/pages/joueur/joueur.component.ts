@@ -95,7 +95,7 @@ export class JoueurComponent {
     return p ? economyBreakdown(p, this.income()) : null;
   });
   readonly deployedVehicleCount = computed(() =>
-    this.conqueredSectors().reduce((n, s) => n + (s.vehicles?.length ?? 0), 0),
+    this.forces().sectors.reduce((n, sf) => n + sf.vehicles.length, 0),
   );
 
   readonly mainStats = computed(() => {
@@ -124,7 +124,6 @@ export class JoueurComponent {
     ];
   });
 
-  // Libellés d'affichage des unités (délégués aux helpers purs).
   classCodes(u: Unit): string {
     return unitClassCodes(u);
   }
@@ -133,15 +132,12 @@ export class JoueurComponent {
     return unitEquipmentLabel(u);
   }
 
-  // Stats affichables, zéros masqués (helpers purs).
   unitStats = unitStats;
   characterStats = characterStats;
   buildingStats = buildingStats;
   vehicleStats = vehicleStats;
   totalsStats = totalsStats;
   stackCost = equipmentStackCost;
-
-  // --- Vignettes d'équipement (mêmes assets que la boutique, fallback sur erreur) ---
 
   private readonly brokenImages = signal(new Set<string>());
 
@@ -157,7 +153,6 @@ export class JoueurComponent {
     this.brokenImages.update((set) => new Set(set).add(key));
   }
 
-  /** Ouvre la modale de déploiement d'un véhicule de réserve. */
   openPlacementModal(vehicle: Vehicle): void {
     const ownedSectors: Sector[] = this.player()?.sectors ?? [];
     const dialogData: VehiclePlacementDialogData = { vehicle, ownedSectors };
@@ -176,7 +171,6 @@ export class JoueurComponent {
       });
   }
 
-  /** Ouvre le popup détaillé d'une unité (équipement + ordre de déplacement). */
   openUnitDialog(unit: Unit, sector: Sector): void {
     const dialogData: UnitDetailDialogData = {
       unit,

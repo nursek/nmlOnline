@@ -32,7 +32,6 @@ export class PlayerService {
     this._vehicles().filter((v) => v.sectorNumber === null),
   );
 
-  /** Load the profile of the currently logged-in user (by username). */
   async loadCurrent(): Promise<void> {
     const username = this.auth.user()?.username;
     if (!username) return;
@@ -48,7 +47,6 @@ export class PlayerService {
     }
   }
 
-  /** Load the current board turn (global info, no player data). */
   async loadCurrentTurn(): Promise<void> {
     try {
       const turn = await firstValueFrom(this.api.getCurrentTurn());
@@ -58,7 +56,6 @@ export class PlayerService {
     }
   }
 
-  /** Load vehicles owned by the current player. */
   async loadVehicles(): Promise<void> {
     this._vehiclesLoading.set(true);
     this._error.set(null);
@@ -72,7 +69,6 @@ export class PlayerService {
     }
   }
 
-  /** Place a vehicle on a board sector; reloads vehicles + player on success. */
   async placeVehicle(
     vehicleId: number,
     boardId: number,

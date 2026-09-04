@@ -295,6 +295,20 @@ describe('joueur.helpers', () => {
       expect(pf.militaryTotal).toBe(45);
       expect(pf.globalPower).toBe(22.5);
     });
+
+    it("ignore les véhicules ennemis stationnés sur nos secteurs", () => {
+      const sectors = [
+        sector(1, me, { vehicles: [vehicle(20, me), vehicle(21, enemy)] }),
+        sector(2, me, { vehicles: [vehicle(22, enemy)] }),
+      ];
+
+      const deployed = playerForces(sectors, me).sectors.reduce(
+        (n, sf) => n + sf.vehicles.length,
+        0,
+      );
+
+      expect(deployed).toBe(1);
+    });
   });
 
   describe('equipmentByClass', () => {

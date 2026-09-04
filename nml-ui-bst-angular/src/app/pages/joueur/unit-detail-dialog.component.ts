@@ -41,16 +41,7 @@ export interface SlotGroup {
   filled: Equipment[];
 }
 
-/**
- * Popup détaillée d'une unité (layout horizontal) :
- *  - gauche : slots offensifs (FIREARM + MELEE)
- *  - centre : stats (haut) + portrait (sous les stats)
- *  - droite : slots défensifs (DEFENSIVE)
- *  - bas    : ordre de déplacement
- * Clic sur un slot ouvre un nested MatDialog (UnitSlotPickerComponent) listant
- * les équipements éligibles de la catégorie. Aucun état global : les mutations
- * passent par PlayerService / MovementStateService (signaux réactifs).
- */
+/** slots offensifs | stats + portrait | slots défensifs, ordre de déplacement en bas. */
 @Component({
   selector: 'app-unit-detail-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,

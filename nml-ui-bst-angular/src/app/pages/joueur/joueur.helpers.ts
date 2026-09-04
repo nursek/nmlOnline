@@ -9,11 +9,8 @@ import type {
 } from '../../models';
 import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER } from '../../core/labels';
 
-/**
- * Calculs de la fiche joueur côté client : les PlayerStats/SectorStats en base
- * ne sont recalculées qu'à l'import ou au combat, pas après un achat ou un
- * changement d'équipement — les totaux ici somment les entités fraîches.
- */
+// Totaux recalculés côté client : les PlayerStats/SectorStats en base ne sont
+// rafraîchies qu'à l'import ou au combat, pas après un achat ou un rééquipement.
 
 export interface ForcesTotals {
   atk: number;
@@ -48,7 +45,6 @@ export interface TroopSummary {
   count: number;
 }
 
-/** Équipements d'une même catégorie, à l'intérieur d'une classe compatible. */
 export interface EquipmentCategorySubGroup {
   key: string;
   label: string;
@@ -62,7 +58,6 @@ export interface EquipmentClassGroup {
   categories: EquipmentCategorySubGroup[];
 }
 
-/** Classe d'un équipement : la première compatible, ou « Sans classe ». */
 const classKeyOf = (stack: EquipmentStack): string =>
   stack.equipment.compatibleClass?.[0]?.name ?? 'AUCUNE';
 
@@ -77,7 +72,6 @@ export function equipmentStackCost(stack: EquipmentStack): string {
 
 const classRank = (key: string): number => UNIT_CLASS_ORDER[key] ?? Number.MAX_SAFE_INTEGER;
 
-/** Ordre d'affichage des catégories (même que la boutique : mêlée → arme à feu → défensif). */
 const EQUIPMENT_CATEGORY_ORDER: readonly string[] = ['MELEE', 'FIREARM', 'DEFENSIVE'];
 
 export interface EconomyBreakdown {
@@ -117,12 +111,10 @@ const sumUnits = (units: Unit[]): ForcesTotals =>
     emptyTotals(),
   );
 
-/** Revenu par tour : somme des incomes des secteurs (recalculé, frais). */
 export function incomeTotal(sectors: Sector[]): number {
   return sectors.reduce((sum, s) => sum + num(s.income), 0);
 }
 
-/** Stat affichable : valeur + libellé + séparateur à afficher devant. */
 export interface StatToken {
   value: number;
   label: string;
@@ -131,11 +123,7 @@ export interface StatToken {
 
 type StatEntry = readonly [value: number, label: string];
 
-/**
- * Stats non nulles d'une entité, dans l'ordre offensif → défensif :
- * « 120 Atk + 390 Pdf / 120 Def + 392.5 Arm ». Les stats à 0 sont masquées,
- * le séparateur « / » marque le passage offensif → défensif.
- */
+/** « 120 Atk + 390 Pdf / 120 Def + 392.5 Arm » : stats à 0 masquées, « / » marque offensif → défensif. */
 export function statLine(
   offensive: readonly StatEntry[],
   defensive: readonly StatEntry[],
@@ -200,7 +188,7 @@ export function totalsStats(totals: ForcesTotals): StatToken[] {
   );
 }
 
-/** Codes de classes d'une unité, ex. « L » ou « LM ». */
+/** Ex. « L » ou « LM ». */
 export function unitClassCodes(u: Unit): string {
   return [...(u.classes ?? [])]
     .map((c) => c.code)
@@ -208,13 +196,12 @@ export function unitClassCodes(u: Unit): string {
     .join('');
 }
 
-/** Équipements portés par une unité, ex. « Pistolet, Gilet » ou « Aucun équipement ». */
+/** Ex. « Pistolet, Gilet » ou « Aucun équipement ». */
 export function unitEquipmentLabel(u: Unit): string {
   const names = [...(u.equipments ?? [])].map((e) => e.name).sort();
   return names.length > 0 ? names.join(', ') : 'Aucun équipement';
 }
 
-/** Forces du joueur présentes dans un secteur : entités filtrées par propriétaire. */
 export function sectorForces(sector: Sector, playerId: number | null): SectorForces {
   const units = (sector.army ?? [])
     .filter((u) => isOwned(u.playerId, playerId))
@@ -259,7 +246,7 @@ export function sectorForces(sector: Sector, playerId: number | null): SectorFor
   };
 }
 
-/** Forces du joueur sur tous ses secteurs + puissance globale = (off + def) / 2. */
+/** Puissance globale = (offensif + défensif) / 2. */
 export function playerForces(sectors: Sector[], playerId: number | null): PlayerForces {
   const sectorForceList = sectors
     .map((s) => sectorForces(s, playerId))
@@ -283,7 +270,7 @@ export function playerForces(sectors: Sector[], playerId: number | null): Player
   };
 }
 
-/** Résumé des troupes par type ET expérience, triées par exp décroissante : « 100 LARBIN (8 Exp) ». */
+/** « 100 LARBIN (8 Exp) », triées par expérience décroissante. */
 export function troopSummaries(sectors: Sector[], playerId: number | null): TroopSummary[] {
   const byKey = new Map<string, TroopSummary>();
   for (const s of sectors) {
@@ -304,11 +291,7 @@ export function troopSummaries(sectors: Sector[], playerId: number | null): Troo
   });
 }
 
-/**
- * Équipements du joueur groupés par classe compatible (ordre Léger → Élémentaire,
- * « Sans classe » en fin), chaque classe étant découpée par catégorie dans l'ordre
- * boutique (mêlée → arme à feu → défensif) ; coût croissant puis nom dans chaque catégorie.
- */
+/** Classes dans l'ordre Léger → Élémentaire (« Sans classe » en fin), catégories comme la boutique. */
 export function equipmentByClass(stacks: EquipmentStack[]): EquipmentClassGroup[] {
   const byClass = new Map<string, EquipmentStack[]>();
   for (const stack of stacks) {
@@ -331,7 +314,6 @@ export function equipmentByClass(stacks: EquipmentStack[]): EquipmentClassGroup[
     });
 }
 
-/** Sous-groupes par catégorie d'une liste d'équipements d'une même classe compatible. */
 function groupByCategory(stacks: EquipmentStack[]): EquipmentCategorySubGroup[] {
   const byCategory = new Map<string, EquipmentStack[]>();
   for (const stack of stacks) {
@@ -358,10 +340,6 @@ function groupByCategory(stacks: EquipmentStack[]): EquipmentCategorySubGroup[] 
   }));
 }
 
-/**
- * Décomposition de la puissance économique (même formule que le backend :
- * money + revenu + valeur des équipements + valeur des véhicules).
- */
 export function economyBreakdown(player: Player, income: number): EconomyBreakdown {
   const money = num(player.stats?.money);
   const equipmentValue = num(player.stats?.totalEquipmentValue);

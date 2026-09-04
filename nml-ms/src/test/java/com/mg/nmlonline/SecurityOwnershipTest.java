@@ -77,6 +77,12 @@ class SecurityOwnershipTest {
     }
 
     @Test
+    void unauthenticated_getCurrentTurn_returns401() throws Exception {
+        mockMvc.perform(get("/api/turn/current"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void unauthenticated_buyEquipment_returns401() throws Exception {
         mockMvc.perform(post("/api/players/equipment/buy")
                         .contentType(MediaType.APPLICATION_JSON)

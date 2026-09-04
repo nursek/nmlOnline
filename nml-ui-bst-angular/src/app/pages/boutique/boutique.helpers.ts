@@ -1,7 +1,6 @@
 import type { Equipment, VehicleTypeInfo } from '../../models';
 import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER } from '../../core/labels';
 
-/** Ordre des catégories d'équipement : mêlée → arme à feu → défensif. */
 const CATEGORY_ORDER: Readonly<Record<string, number>> = {
   MELEE: 0,
   FIREARM: 1,
@@ -16,10 +15,6 @@ const classRank = (eq: Equipment): number => {
 const categoryRank = (category: string): number =>
   CATEGORY_ORDER[category] ?? Number.MAX_SAFE_INTEGER;
 
-/**
- * Comparateur de tri par défaut : classe (léger→élémentaire), puis catégorie
- * (mêlée→arme à feu→défensif), puis coût croissant.
- */
 export function compareEquipments(a: Equipment, b: Equipment): number {
   const byClass = classRank(a) - classRank(b);
   if (byClass !== 0) return byClass;
@@ -28,12 +23,10 @@ export function compareEquipments(a: Equipment, b: Equipment): number {
   return a.cost - b.cost;
 }
 
-/** Tri par défaut : voir `compareEquipments`. */
 export function sortEquipments(items: Equipment[]): Equipment[] {
   return [...items].sort(compareEquipments);
 }
 
-/** Tri des véhicules par coût croissant. */
 export function sortVehiclesByCost(items: VehicleTypeInfo[]): VehicleTypeInfo[] {
   return [...items].sort((a, b) => a.cost - b.cost);
 }
@@ -46,7 +39,6 @@ function formatPercent(value: number): string {
   return `+${n} %`;
 }
 
-/** Bonus d'un équipement formatés « ; »-séparés (uniquement bonus > 0). */
 export function equipmentBonusSummary(eq: Equipment): string {
   const parts: string[] = [];
   if (eq.pdfBonus > 0) parts.push(`${formatPercent(eq.pdfBonus)} Pdf`);
@@ -56,10 +48,7 @@ export function equipmentBonusSummary(eq: Equipment): string {
   return parts.join(' ; ');
 }
 
-/**
- * Résumé compact d'un équipement :
- * « Poing américain (Arme de corps-à-corps) : +20 % Pdc. 100 ₡. »
- */
+/** « Poing américain (Arme de corps-à-corps) : +20 % Pdc. 100 ₡. » */
 export function equipmentSummary(eq: Equipment): string {
   const bonuses = equipmentBonusSummary(eq);
   const core = `${eq.name} (${equipmentCategoryLabel(eq.category)})`;
@@ -67,7 +56,7 @@ export function equipmentSummary(eq: Equipment): string {
   return `${core}${tail} ${eq.cost} ₡.`;
 }
 
-/** Résumé compact d'un type de véhicule : « VTT léger (Véhicule) : 50 Def. 4000 ₡. » */
+/** « VTT léger (Véhicule) : 50 Def. 4000 ₡. » */
 export function vehicleSummary(vt: VehicleTypeInfo): string {
   const parts: string[] = [];
   if (vt.basePdf > 0) parts.push(`${vt.basePdf} Pdf`);
@@ -75,7 +64,6 @@ export function vehicleSummary(vt: VehicleTypeInfo): string {
   return `${vt.displayName} (Véhicule) : ${parts.join(' ; ')}. ${vt.cost} ₡.`;
 }
 
-/** Libellé FR de la première classe compatible d'un équipement. */
 export function equipmentClassLabel(eq: Equipment): string {
   return unitClassLabel(eq.compatibleClass?.[0]?.name);
 }

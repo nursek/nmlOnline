@@ -7,10 +7,10 @@ import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 import { Vehicle, Sector } from '../../models';
 
-function vehicle(id: number): Vehicle {
+function vehicle(id: number, playerId = 1): Vehicle {
   return {
     id,
-    playerId: 1,
+    playerId,
     vehicleType: 'TANK',
     displayName: 'Tank de combat',
     pdf: 125,
@@ -42,6 +42,7 @@ function sector(): Sector {
     neighbors: [],
     x: 0,
     y: 0,
+    vehicles: [vehicle(1), vehicle(2, 99)],
   };
 }
 
@@ -64,6 +65,7 @@ describe('JoueurComponent — déploiement véhicule', () => {
           provide: PlayerService,
           useValue: {
             player: () => ({
+              id: 1,
               sectors: [sector()],
               equipments: [],
               resources: [],
@@ -119,5 +121,12 @@ describe('JoueurComponent — déploiement véhicule', () => {
     expect(vehicleId).toBe(42);
     expect(boardId).toBe(10);
     expect(sectorNumber).toBe(5);
+  });
+
+  it('ne compte comme déployés que les véhicules du joueur', () => {
+    const fixture = TestBed.createComponent(JoueurComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.deployedVehicleCount()).toBe(1);
   });
 });

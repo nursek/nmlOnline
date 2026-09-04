@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Tour courant du plateau actif — information globale, aucune donnée joueur. */
 @RestController
 @RequestMapping("/api/turn")
 public class TurnController {

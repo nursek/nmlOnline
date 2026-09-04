@@ -11,7 +11,6 @@
   </div>
 } @else if (player(); as player) {
   <div class="container fade-in">
-    <!-- Header -->
     <div class="page-header">
       <div class="avatar">
         <mat-icon>person</mat-icon>
@@ -23,9 +22,7 @@
     </div>
 
     <mat-tab-group animationDuration="200ms" class="joueur-tabs">
-      <!-- ============ Onglet Aperçu ============ -->
       <mat-tab label="Aperçu">
-        <!-- Stats Cards -->
         <div class="stats-row">
           @for (stat of mainStats(); track stat.label) {
             <mat-card class="stat-card hover-lift">
@@ -44,7 +41,6 @@
           }
         </div>
 
-        <!-- Troupes disponibles -->
         <mat-card class="card">
           <mat-card-content>
             <div class="section-header">
@@ -71,7 +67,6 @@
           </mat-card-content>
         </mat-card>
 
-        <!-- Véhicules disponibles -->
         <mat-card class="card">
           <mat-card-content>
             <div class="section-header">
@@ -126,7 +121,6 @@
           </mat-card-content>
         </mat-card>
 
-        <!-- Personnage -->
         @if (playerCharacter(); as c) {
           <mat-card class="card">
             <mat-card-content>
@@ -157,7 +151,6 @@
           </mat-card>
         }
 
-        <!-- Équipements -->
         <mat-card class="card">
           <mat-card-content>
             <div class="section-header">
@@ -245,7 +238,6 @@
           </mat-card-content>
         </mat-card>
 
-        <!-- Ressources -->
         <mat-card class="card">
           <mat-card-content>
             <div class="section-header">
@@ -284,7 +276,6 @@
           </mat-card-content>
         </mat-card>
 
-        <!-- Forces en présence -->
         <mat-card class="card">
           <mat-card-content>
             <div class="section-header">
@@ -438,7 +429,6 @@
           </mat-card-content>
         </mat-card>
 
-        <!-- Puissances -->
         <mat-card class="card">
           <mat-card-content>
             <div class="section-header">
@@ -488,7 +478,6 @@
         </mat-card>
       </mat-tab>
 
-      <!-- ============ Onglet Actions ============ -->
       <mat-tab label="Actions">
         <div class="actions-tab">
           <div class="section-header">

@@ -19,7 +19,6 @@ export const UNIT_CLASS_LABELS: Readonly<Record<string, string>> = {
   ELEMENTAIRE: 'Élémentaire',
 };
 
-/** Ordre de tri des classes d'unités (léger en tête, élémentaire en fin). */
 export const UNIT_CLASS_ORDER: Readonly<Record<string, number>> = {
   LEGER: 0,
   MASTODONTE: 1,
