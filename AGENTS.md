@@ -1,94 +1,78 @@
 # AGENTS.md
 
-Details live in [README.md](README.md) — read it first. This file is only the fast lane.
-`.github/copilot-instructions.md` covers the same conventions for Copilot — keep both in sync.
+Fast lane. Détails dans [README.md](README.md).
+`.github/copilot-instructions.md` contient les mêmes règles pour Copilot — garder les deux synchrones.
 
-## Layout
-
-- `nml-ms/` — Spring Boot 3.5.6 / Java 21 backend (Maven)
-- `nml-ui-bst-angular/` — Angular 22 frontend (npm, Jest)
-
-## Commands
+## Commandes
 
 ```bash
-# Backend (from nml-ms/)
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"   # run (needs JWT_SECRET + JWT_PEPPER env)
-.\mvnw.cmd test                                                # ~240 tests, H2, no config needed
-.\mvnw.cmd package "-DskipTests"
-
-# Frontend (from nml-ui-bst-angular/)
+# nml-ms/ (Spring Boot 3.5.6 / Java 21)
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"   # JWT_SECRET + JWT_PEPPER requis
+.\mvnw.cmd test                                                # H2, sans config
+# nml-ui-bst-angular/ (Angular 22)
 npm start / npm test / npm run lint / npm run format
 ```
 
-## Hard rules
+## Commentaires
 
-- **Schema change = Flyway script.** Add `V<n>__description.sql` in
-  `nml-ms/src/main/resources/db/migration/` alongside the entity change. Flyway runs in
-  `prod` profile only; H2 dev/test stay on `ddl-auto`. Never edit an applied migration.
-- Never commit `JWT_SECRET` / `JWT_PEPPER` / DB credentials — env vars only.
-- No H2 console, no `@CrossOrigin` on controllers (CORS is in `CorsConfig`).
-- **Comments: minimalist.** Only on complex, non-intuitive logic. If the code
-  reads by itself, no comment. No `ponytail:` markers, no `comportement actuel piné`.
-  Javadoc: one line when needed, none for obvious methods. No boilerplate
-  `@param`/`@return` that restates the obvious.
-- Code comments and generated replies in **French**; README/docs in English.
+Un commentaire ne survit que s'il porte une information **absente du code**. En français,
+1 ligne max. Test : en le supprimant, un lecteur perd-il quelque chose ?
 
-## Working style
+Garder seulement si le commentaire :
 
-- Minimal diff wins. No speculative abstractions, no scaffolding "for later" (YAGNI).
-- Deletion over addition; boring over clever.
-- Use what's already there (Spring/JPA/Angular features, installed deps) — no new dependency
-  when a few lines of code do the job.
-- Non-trivial logic leaves ONE runnable check behind (a small test), not a test suite.
+- dit **pourquoi** (arbitrage, couplage inter-fichier, piège, limite connue) ;
+- justifie un `catch` vide ou un comportement contre-intuitif ;
+- donne une sortie non déductible (`« 3 x 850 = 2550 ₡ »`).
 
-## Backend conventions
+Supprimer sinon, en particulier s'il :
 
-- Layers: `domain/model` (entities) → `domain/service` (business logic) → `api/controller` (REST)
-  → `infrastructure/repository` (JPA) → `mapper` (DTO ↔ entity). Respect the separation.
-- **Ownership**: never trust a `playerId` from body/params — take `userId` from
-  `request.getAttribute("userId")` and verify ownership in the service (`SecurityException` → 403).
-- **Admin**: global CRUD ops go under `/api/admin/**` with `@PreAuthorize("hasRole('ADMIN')")`,
-  never in player controllers.
-- Single source of sector ownership: `Sector.ownerId`.
-- `Board.sectors` is a transient map populated via `@PostLoad` — don't persist it directly.
-- JPA relations: `@JsonIgnore` on the many side to avoid JSON loops.
-- **JPA cascade hygiene**: see [`docs/jpa-pitfalls.md`](docs/jpa-pitfalls.md) before
-  adding any `@OneToMany(mappedBy=…, orphanRemoval=true)` whose child carries a NOT NULL
-  FK, or before `.remove()` / `.clear()` on such a collection. Audit of existing
-  `orphanRemoval=true` mappings (`Player.equipments`, `Player.resources`,
-  `Player.buildings`…) is tracked in that doc — `Player.equipments` and
-  `Player.resources` are the prime suspects for a future 500 if a transfer path is
-  added.
-- **Turn resolution**: two admin end-of-turn paths — `TurnService.advanceTurn()`
-  (atomic) and `TurnResolutionOrchestrator` (hop-by-hop). `TurnLock` (shared
-  `AtomicBoolean` bean) serializes them. The orchestrator's `Session` is in-memory,
-  single-JVM, lost on restart. `Board.currentTurn` is mutated in **two** places —
-  both must invalidate `TurnService.cachedTurn` (the `getCurrentTurn` cache).
+- reformule le nom ou le code juste en dessous ;
+- est une en-tête de section (`// --- Helpers ---`, `// HTTP`) ou double un titre visible
+  (`<!-- Équipements -->` au-dessus d'un `<h2>Équipements</h2>`) ;
+- est une Javadoc multi-lignes, ou un `@param`/`@return` qui répète l'évident.
 
-## Prod data persistence
+Seul marqueur autorisé : `// ponytail:` + plafond + voie d'upgrade
+(`// ponytail: lock global, passer par-compte si le débit devient un souci`).
+Avant de commit : relire chaque commentaire ajouté et en supprimer la moitié.
+Réponses et commentaires en **français** ; README/docs en anglais.
 
-- **Sources of truth are the DB, not JSON files.** `boards/board.json` and
-  `players/*.json` are *classpath demo fixtures*. They are only read at boot when
-  `app.import-demo-data=true` (dev/test default). In prod `app.import-demo-data=false`
-  → `PlayerStartupImporter` returns early, nothing is imported, the admin creates the
-  board and players via the API. Don't treat those JSON as prod state.
-- **`BoardService.saveBoard` is non-destructive.** It merges sectors by number: it
-  refreshes `income/name/resourceName/x/y/neighbors` on existing sectors and adds
-  new ones, but NEVER clears `sectorsList` — that used to cascade-delete sectors +
-  armies and wipe `owner_id` on every boot (the prod bug). Removing a sector is no
-  longer possible through this path on purpose; it must stay an explicit op.
-- **Schema change = Flyway `V<n>__*.sql`** under `db/migration/` (prod only; H2
-  stays on `ddl-auto`). Never edit an applied migration. A destructive op that
-  is impossible to express in Flyway (data repair, backfill) stays a one-shot
-  manual script, NOT under `db/migration/` (Flyway would auto-run it).
-- **Recovery after an owner_id wipe:** if units/buildings survived in DB, a
-  best-effort SQL can re-derive `owner_id` from surviving
-  `combat_entities.player_id`. If they were cascade-deleted, no SQL can
-  rebuild — restore a dump or re-import players from exported `players/*.json`
-  via `POST /api/admin/players/import`.
+## Règles dures
 
-## Frontend conventions
+- **Schéma = script Flyway** `V<n>__description.sql` dans
+  `nml-ms/src/main/resources/db/migration/` (actif en `prod` seulement ; jamais modifier
+  une migration appliquée). Livré avec l'entité.
+- Jamais de `JWT_SECRET` / `JWT_PEPPER` / identifiants DB dans le dépôt — variables
+  d'environnement uniquement. Pas de console H2, pas de `@CrossOrigin` (CORS dans `CorsConfig`).
+- Minimal wins : pas d'abstraction spéculative, pas d'échafaudage « pour plus tard »,
+  pas de nouvelle dépendance quand quelques lignes suffisent. Supprimer > ajouter.
+- Logique non triviale = **un** test qui casse si la logique casse. Pas de suite par fonction.
 
-- Standalone components only; lazy routes via `loadComponent`.
-- No NgRx — state lives in signal-based services (`signal`/`computed`, `httpResource` for
-  server data); components consume them, they don't own global state.
+## Backend
+
+`domain/model` → `domain/service` → `api/controller` → `infrastructure/repository`,
+`mapper` pour DTO ↔ entité.
+
+- **Ownership** : jamais de `playerId` du body/params — `request.getAttribute("userId")`,
+  vérifié dans le service (`SecurityException` → 403).
+- **Admin** : CRUD global sous `/api/admin/**` + `@PreAuthorize("hasRole('ADMIN')")`.
+- `Sector.ownerId` = source unique de propriété. `Board.sectors` est une map transient
+  (`@PostLoad`) — ne pas la persister. `@JsonIgnore` côté many.
+- Cascade JPA : lire [`docs/jpa-pitfalls.md`](docs/jpa-pitfalls.md) avant tout
+  `@OneToMany(mappedBy=…, orphanRemoval=true)` dont l'enfant porte une FK NOT NULL.
+- **Tour** : `TurnService.advanceTurn()` et `TurnResolutionOrchestrator` mutent tous deux
+  `Board.currentTurn` — les deux doivent invalider `TurnService.cachedTurn`.
+  Session de l'orchestrateur en mémoire, JVM unique, perdue au redémarrage.
+- **`BoardService.saveBoard` fusionne par numéro, ne vide jamais `sectorsList`** : supprimer
+  un secteur reste une opération explicite (vider la liste cascade-delete secteurs + armées).
+
+## Données prod
+
+Source de vérité = la DB. `boards/board.json` et `players/*.json` sont des fixtures de démo
+classpath, lues si `app.import-demo-data=true` (défaut dev/test). En prod, l'admin crée
+plateau et joueurs par l'API.
+
+## Frontend
+
+Composants standalone, routes lazy via `loadComponent`. Pas de NgRx : état dans des
+services à signaux (`signal`/`computed`, `httpResource` pour le serveur). Les composants
+consomment, ils ne possèdent pas l'état global.

@@ -29,6 +29,36 @@
   @include shared.empty-state;
 }
 
+// Secteurs conquis (ligne sous l'en-tête)
+.conquered-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.conquered-label {
+  font-size: 0.875rem;
+  color: shared.$text-muted;
+}
+
+.conquered-chip {
+  @include shared.tag;
+  font-size: 0.75rem;
+  padding: 2px 10px;
+}
+
+.conquered-none {
+  font-size: 0.875rem;
+  color: shared.$text-muted;
+  font-style: italic;
+}
+
+.joueur-tabs {
+  margin-top: 8px;
+}
+
 // Stats row
 .stats-row {
   display: grid;
@@ -77,19 +107,6 @@
 .section-header {
   @include shared.section-header;
   flex-wrap: wrap;
-
-  .units-count {
-    font-size: 0.875rem;
-    color: shared.$text-muted;
-    font-weight: 400;
-  }
-
-  .units-toolbar {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
 }
 
 .section-subtitle {
@@ -98,25 +115,40 @@
   font-size: 0.875rem;
 }
 
-// Stats territories row
-.stats-territories-row {
+// Troupes disponibles — flux inline : chaque ligne « N TYPE (x Exp) » en puce.
+.troops-inline {
   display: flex;
-  gap: 24px;
-  margin-bottom: 24px;
-  > .card {
-    flex: 1;
-    min-width: 0;
-    margin-bottom: 0;
-  }
-  @media (max-width: 768px) {
-    flex-direction: column;
-    > .card {
-      margin-bottom: 24px;
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
-  }
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+}
+
+.troop-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.troop-count {
+  font-weight: 600;
+}
+
+.unit-exp {
+  font-size: 0.75rem;
+  color: shared.$text-muted;
+  white-space: nowrap;
+}
+
+// Véhicules déployés (ligne de synthèse)
+.deployed-line {
+  font-size: 0.875rem;
+  color: shared.$text-muted;
+  margin: 0 0 16px;
 }
 
 // Details grid
@@ -126,12 +158,6 @@
   gap: 16px;
 }
 
-.detail-item {
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
 .detail-label {
   display: block;
   font-size: 0.875rem;
@@ -139,73 +165,109 @@
   margin-bottom: 4px;
 }
 
-.detail-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  &.error {
-    color: #b91c1c;
-  }
-  &.success {
-    color: #047857;
-  }
-  &.warning {
-    color: #b45309;
+// Équipements
+// La classe est le titre du panneau dépliable ; la catégorie devient le sous-titre interne.
+.category-section-title {
+  margin: 16px 0 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: shared.$text-muted;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding-bottom: 4px;
+
+  &:first-child {
+    margin-top: 0;
   }
 }
 
-// Equipment & territories grids
-.equipment-container {
-  max-height: 500px;
-  overflow-y: auto;
-  padding-right: 4px;
-  @include shared.custom-scrollbar;
-}
-
-.equipment-grid,
-.territories-grid {
+.equipment-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
 }
 
 .equipment-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
   border-radius: 8px;
+  padding: 8px;
   transition: all 0.3s;
   &:hover {
     border-color: shared.$primary-color;
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0;
+  }
+}
+
+.equipment-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eq-thumb-wrapper {
+  flex: 0 0 48px;
+}
+
+.eq-thumb {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #1e293b;
+}
+
+.eq-thumb-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: shared.$text-muted;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
   }
 }
 
 .equipment-info {
-  h4 {
-    margin: 0 0 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  h5 {
+    margin: 0;
+    font-size: 0.8rem;
     font-weight: 600;
+    line-height: 1.2;
   }
-  .category {
-    font-size: 0.75rem;
-    color: shared.$text-muted;
-  }
+}
+
+.stack-cost {
+  font-size: 0.68rem;
+  color: shared.$text-muted;
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 8px;
 }
 
 .bonus-chip {
-  font-size: 0.7rem !important;
-  min-height: 24px !important;
-  padding: 0 8px !important;
+  font-size: 0.65rem !important;
+  min-height: 20px !important;
+  padding: 0 6px !important;
   &.pdf {
     background: #b91c1c !important;
     color: white !important;
@@ -225,211 +287,193 @@
 }
 
 .quantity {
-  font-size: 1.5rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: shared.$primary-color;
 }
 
-// Territory card
-.territory-card {
-  padding: 16px;
-  background: #f8fafc;
-  border: 2px solid shared.$primary-color;
-  border-radius: 8px;
-  transition: all 0.3s;
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+// Badges (bâtiments / véhicules / groupes)
+.badge {
+  @include shared.tag;
+  &.badge-danger {
+    background: #fee2e2;
+    color: #b91c1c;
   }
-  h4 {
-    margin: 0 0 4px;
-    font-weight: 600;
-  }
-  .sector-number {
-    font-size: 0.75rem;
-    color: shared.$text-muted;
-    display: block;
-    margin-bottom: 12px;
-  }
-}
-
-.territory-stats {
-  margin-top: 12px;
-}
-
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.875rem;
-  margin-bottom: 4px;
-  span:first-child {
-    color: shared.$text-muted;
-  }
-  span:last-child {
-    font-weight: 600;
-  }
-  .warning {
+  &.badge-warning {
+    background: #fef3c7;
     color: #b45309;
   }
 }
 
-.filter-btn {
-  @include shared.icon-button;
-  position: relative;
-  .filter-badge {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    background: #b91c1c;
-    color: white;
-    font-size: 0.65rem;
-    font-weight: 600;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
-// Filters panel
-.filters-panel {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+// Sections dépliables (mat-expansion-panel) — Équipements par classe, Forces par secteur.
+.equipment-panel,
+.sector-panel {
+  margin-bottom: 12px;
   border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-  .filters-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .filter-group {
-    .filter-label {
-      display: block;
-      font-size: 0.75rem;
-      color: shared.$text-muted;
-      margin-bottom: 6px;
-      font-weight: 500;
-    }
-    .filter-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-  }
-  .filter-chip {
-    @include shared.filter-chip;
-  }
-  .reset-filters-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 12px;
-    padding: 4px 12px;
-    font-size: 0.75rem;
-    background: transparent;
-    border: 1px solid #b91c1c;
-    border-radius: 16px;
-    color: #b91c1c;
-    cursor: pointer;
-    transition: all 0.2s;
-    mat-icon {
-      font-size: 14px;
-      width: 14px;
-      height: 14px;
-    }
-    &:hover {
-      background: #b91c1c;
-      color: white;
-    }
+
+  &:last-of-type {
+    margin-bottom: 0;
   }
 }
 
-// Units container
-.units-container {
-  max-height: 500px;
-  overflow-y: auto;
-  padding-right: 4px;
-  @include shared.custom-scrollbar;
+.panel-title {
+  font-weight: 600;
 }
 
-// Units list mode
-.units-list {
+.panel-desc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  font-size: 0.8rem;
+  color: shared.$text-muted;
+}
+
+.desc-total {
+  font-variant-numeric: tabular-nums;
+}
+
+// Sous 768px, le total passe à la trappe : l'en-tête reste sur une ligne lisible
+// (le total est de toute façon répété en pied de panneau ouvert).
+@media (max-width: 768px) {
+  .desc-total {
+    display: none;
+  }
+}
+
+.panel-body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
-.unit-list-item {
-  background: #f8fafc;
+.sector-meta {
+  font-size: 0.75rem;
+  color: shared.$text-muted;
+}
+
+.no-forces {
+  margin: 0;
+  font-size: 0.875rem;
+  color: shared.$text-muted;
+  font-style: italic;
+}
+
+.force-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.force-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: white;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
-  transition: all 0.2s;
+}
+
+// Le personnage principal passe en tête du secteur (au-dessus des bâtiments).
+.force-line.character {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+
+  .force-icon {
+    color: shared.$primary-color;
+  }
+}
+
+.force-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: shared.$text-muted;
+}
+
+.force-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.force-stats {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.class-codes {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: shared.$primary-color;
+}
+
+.unit-equip {
+  font-size: 0.75rem;
+  color: shared.$text-muted;
+}
+
+.force-line.clickable {
+  cursor: pointer;
   &:hover {
     border-color: shared.$primary-color;
   }
-  &.injured {
-    border-left: 3px solid #ef4444;
-    background: linear-gradient(90deg, #fef2f2 0%, #f8fafc 20%);
-  }
-  &.expanded {
-    border-color: shared.$primary-color;
+}
+
+.sector-total {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+// Puissances — auto-fit : les pistes vides s'effondrent, les 3 puissances s'étendent sur toute la ligne.
+.powers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.power-item {
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.power-value {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+// Décomposition du total : discrète, sous la valeur.
+.power-calc {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: shared.$text-muted;
+  line-height: 1.5;
+}
+
+// Onglet Actions
+.actions-tab {
+  padding-top: 24px;
+
+  .empty-hint {
+    margin-top: 8px;
+    font-size: 0.8rem;
   }
 }
 
-.unit-list-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  flex-wrap: wrap;
-  .expand-icon {
-    color: shared.$text-muted;
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-  }
-  .unit-type-badge {
-    background: shared.$primary-gradient;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-  .unit-exp {
-    font-size: 0.7rem;
-    color: shared.$text-muted;
-    white-space: nowrap;
-    margin-left: auto;
-  }
-  .unit-location-inline {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    font-size: 0.7rem;
-    color: shared.$text-muted;
-    white-space: nowrap;
-    mat-icon {
-      font-size: 12px;
-      width: 12px;
-      height: 12px;
-    }
-  }
-  .injured-icon {
-    color: #b91c1c;
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-  }
-}
-
+// Cartes ressources / réserve véhicules
 .resource-card {
   display: flex;
   flex-direction: column;

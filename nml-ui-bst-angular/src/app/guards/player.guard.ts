@@ -3,10 +3,7 @@ import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { waitForInitialization } from './auth.guard';
 
-/**
- * Guard: player-only routes. Admins are redirected to /admin so they never
- * land on pages that assume a Player profile (and would 404 on loadCurrent).
- */
+/** Les admins sont renvoyés vers /admin : les pages joueur supposent un profil Player. */
 export const playerGuard: CanActivateFn = async (_route, state): Promise<boolean | UrlTree> => {
   const auth = inject(AuthService);
   const router = inject(Router);

@@ -9,19 +9,19 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import {SlicePipe} from '@angular/common';
-import {httpResource} from '@angular/common/http';
-import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
-import {MatCardModule} from '@angular/material/card';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatIconModule} from '@angular/material/icon';
-import {MatChipsModule} from '@angular/material/chips';
-import {MatDividerModule} from '@angular/material/divider';
-import {MatButtonModule} from '@angular/material/button';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {Board, PageResult, Player, Sector} from '../../models';
-import {environment} from '../../../environments/environment';
-import {MAP_THEME} from './carte.config';
+import { SlicePipe } from '@angular/common';
+import { httpResource } from '@angular/common/http';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { MatCardModule } from '@angular/material/card';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { Board, PageResult, Player, Sector } from '../../models';
+import { environment } from '../../../environments/environment';
+import { MAP_THEME } from './carte.config';
 
 interface SectorWithPlayer extends Sector {
   playerName?: string | null;
@@ -52,7 +52,6 @@ function isSameOriginAssetUrl(url: string): boolean {
 export class CarteComponent {
   private readonly sanitizer = inject(DomSanitizer);
 
-  // Couleur neutre exposée au template (légende) et au SCSS.
   readonly neutralColor = MAP_THEME.neutralColor;
   readonly labelFontPx = MAP_THEME.label.fontPx;
   readonly labelWeight = MAP_THEME.label.weight;
@@ -64,7 +63,6 @@ export class CarteComponent {
   readonly overlayOffsetY = MAP_THEME.overlay.offsetY;
   readonly overlayOffsetX = MAP_THEME.overlay.offsetX;
 
-  // Re-read-only catalogs via httpResource.
   private readonly boardsRef = httpResource<Board[]>(() => ({
     url: `${environment.apiBaseUrl}/boards`,
   }));
@@ -116,10 +114,7 @@ export class CarteComponent {
 
   readonly mapImageUrl = computed(() => this.board()?.mapImageUrl || null);
 
-  // Interactive state.
   readonly selectedSector = signal<SectorWithPlayer | null>(null);
-  // Default to all players selected; linked to the players signal so a refresh
-  // of the players list reinitializes the selection set.
   readonly selectedPlayerIds = linkedSignal<Player[], Set<number>>({
     source: this.players,
     computation: (players) =>
@@ -554,7 +549,7 @@ export class CarteComponent {
 
   /** Readable text color (white or dark) for a given hex background. */
   getContrastColor(): string {
-    return '#1e293b' ;
+    return '#1e293b';
   }
 
   selectSector(sector: SectorWithPlayer): void {

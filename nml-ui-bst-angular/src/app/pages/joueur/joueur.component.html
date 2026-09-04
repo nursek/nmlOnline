@@ -11,7 +11,6 @@
   </div>
 } @else if (player(); as player) {
   <div class="container fade-in">
-    <!-- Header -->
     <div class="page-header">
       <div class="avatar">
         <mat-icon>person</mat-icon>
@@ -22,536 +21,489 @@
       </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="stats-row">
-      @for (stat of getMainStats(player); track stat.label) {
-        <mat-card class="stat-card hover-lift">
+    <mat-tab-group animationDuration="200ms" class="joueur-tabs">
+      <mat-tab label="Aperçu">
+        <div class="stats-row">
+          @for (stat of mainStats(); track stat.label) {
+            <mat-card class="stat-card hover-lift">
+              <mat-card-content>
+                <div class="stat-content">
+                  <div>
+                    <p class="stat-label">{{ stat.label }}</p>
+                    <h3 class="stat-value">{{ stat.value }}</h3>
+                  </div>
+                  <div class="stat-icon" [style.background-color]="stat.color + '20'">
+                    <mat-icon [style.color]="stat.color">{{ stat.icon }}</mat-icon>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+
+        <mat-card class="card">
           <mat-card-content>
-            <div class="stat-content">
-              <div>
-                <p class="stat-label">{{ stat.label }}</p>
-                <h3 class="stat-value">{{ stat.value }}</h3>
+            <div class="section-header">
+              <mat-icon color="primary">groups</mat-icon>
+              <h2>Troupes disponibles</h2>
+            </div>
+            <p class="section-subtitle">Vos unités, tous secteurs confondus</p>
+
+            @if (troopSummaries().length === 0) {
+              <div class="empty-state">
+                <mat-icon>groups</mat-icon>
+                <p>Aucune troupe pour le moment. Recrutez des troupes !</p>
               </div>
-              <div class="stat-icon" [style.background-color]="stat.color + '20'">
-                <mat-icon [style.color]="stat.color">{{ stat.icon }}</mat-icon>
+            } @else {
+              <div class="troops-inline">
+                @for (t of troopSummaries(); track t.type + '#' + t.experience) {
+                  <span class="troop-chip">
+                    <span class="troop-count">{{ t.count }} {{ t.type }}</span>
+                    <span class="unit-exp">({{ t.experience | exp }} Exp)</span>
+                  </span>
+                }
               </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="card">
+          <mat-card-content>
+            <div class="section-header">
+              <mat-icon color="primary">local_shipping</mat-icon>
+              <h2>Véhicules disponibles</h2>
+            </div>
+            <p class="section-subtitle">Véhicules en réserve à déployer sur vos secteurs</p>
+
+            @if (deployedVehicleCount() === 0 && undeployedVehicles().length === 0) {
+              <p class="no-forces">Aucun véhicule.</p>
+            } @else {
+              @if (deployedVehicleCount() > 0) {
+                <p class="deployed-line">
+                  {{ deployedVehicleCount() }} véhicule(s) déployé(s) — détail dans « Forces en
+                  présence ».
+                </p>
+              }
+              @if (undeployedVehicles().length > 0) {
+                <div class="details-grid">
+                  @for (vehicle of undeployedVehicles(); track vehicle.id) {
+                    <div class="resource-card">
+                      <div class="resource-info">
+                        <mat-icon class="resource-icon">directions_car</mat-icon>
+                        <div>
+                          <h4>{{ vehicle.displayName }}</h4>
+                          @if (vehicle.vehicleType) {
+                            <span class="badge">{{ vehicle.vehicleType }}</span>
+                          }
+                          <span class="value-label">
+                            @for (s of vehicleStats(vehicle); track s.label) {
+                              {{ s.separator }}{{ s.value | number: '1.0-0' }} {{ s.label }}
+                            }
+                          </span>
+                          <span class="value-label">Capacité : {{ vehicle.capacity }}</span>
+                        </div>
+                      </div>
+                      <button
+                        mat-stroked-button
+                        color="primary"
+                        [disabled]="vehiclesLoading()"
+                        (click)="openPlacementModal(vehicle)"
+                        class="deploy-btn"
+                      >
+                        <mat-icon>place</mat-icon>
+                        Déployer
+                      </button>
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </mat-card-content>
+        </mat-card>
+
+        @if (playerCharacter(); as c) {
+          <mat-card class="card">
+            <mat-card-content>
+              <div class="section-header">
+                <mat-icon color="primary">face</mat-icon>
+                <h2>Personnage</h2>
+              </div>
+              <p class="section-subtitle">Votre leader sur le terrain</p>
+              <div class="details-grid">
+                <div class="resource-card">
+                  <div class="resource-info">
+                    <mat-icon class="resource-icon">person</mat-icon>
+                    <div>
+                      <h4>{{ c.name }}</h4>
+                      @if (c.sectorNumber !== null && c.sectorNumber !== undefined) {
+                        <span class="quantity-label">Secteur : {{ c.sectorNumber }}</span>
+                      }
+                      <span class="value-label">
+                        @for (s of characterStats(c); track s.label) {
+                          {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+
+        <mat-card class="card">
+          <mat-card-content>
+            <div class="section-header">
+              <mat-icon color="primary">inventory_2</mat-icon>
+              <h2>Équipements</h2>
+            </div>
+            <p class="section-subtitle">Votre arsenal actuel</p>
+
+            @if (player.equipments.length === 0) {
+              <div class="empty-state">
+                <mat-icon>inventory_2</mat-icon>
+                <p>Aucun équipement. Visitez la boutique !</p>
+              </div>
+            } @else {
+              <mat-accordion multi>
+                @for (group of groupedEquipments(); track group.key) {
+                  <mat-expansion-panel class="equipment-panel">
+                    <mat-expansion-panel-header>
+                      <mat-panel-title class="panel-title">{{ group.label }}</mat-panel-title>
+                      <mat-panel-description class="panel-desc">
+                        {{ group.count }} équipement(s)
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+
+                    @for (category of group.categories; track category.key) {
+                      <h4 class="category-section-title">{{ category.label }}</h4>
+                      <div class="equipment-grid">
+                        @for (stack of category.stacks; track stack.equipment.name) {
+                          <mat-card class="equipment-card">
+                            <mat-card-content>
+                              <div class="equipment-top">
+                                <div class="eq-thumb-wrapper">
+                                  @if (hasImage('eq:' + stack.equipment.name)) {
+                                    <img
+                                      [src]="equipmentImageUrl(stack.equipment)"
+                                      (error)="onImgError('eq:' + stack.equipment.name)"
+                                      alt="{{ stack.equipment.name }}"
+                                      class="eq-thumb"
+                                    />
+                                  } @else {
+                                    <div class="eq-thumb-fallback">
+                                      <mat-icon>image_not_supported</mat-icon>
+                                    </div>
+                                  }
+                                </div>
+                                <div class="equipment-info">
+                                  <h5>{{ stack.equipment.name }}</h5>
+                                  <span class="quantity" matTooltip="Disponible / total possédé">
+                                    {{ stack.available }}/{{ stack.quantity }}
+                                  </span>
+                                </div>
+                              </div>
+                              <div class="chips">
+                                @if (stack.equipment.pdfBonus > 0) {
+                                  <mat-chip class="bonus-chip pdf"
+                                    >+{{ stack.equipment.pdfBonus }} % PDF</mat-chip
+                                  >
+                                }
+                                @if (stack.equipment.pdcBonus > 0) {
+                                  <mat-chip class="bonus-chip pdc"
+                                    >+{{ stack.equipment.pdcBonus }} % PDC</mat-chip
+                                  >
+                                }
+                                @if (stack.equipment.armBonus > 0) {
+                                  <mat-chip class="bonus-chip arm"
+                                    >+{{ stack.equipment.armBonus }} % ARM</mat-chip
+                                  >
+                                }
+                                @if (stack.equipment.evasionBonus > 0) {
+                                  <mat-chip class="bonus-chip esq"
+                                    >+{{ stack.equipment.evasionBonus }} % ESQ</mat-chip
+                                  >
+                                }
+                              </div>
+                              <span class="stack-cost">{{ stackCost(stack) }}</span>
+                            </mat-card-content>
+                          </mat-card>
+                        }
+                      </div>
+                    }
+                  </mat-expansion-panel>
+                }
+              </mat-accordion>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="card">
+          <mat-card-content>
+            <div class="section-header">
+              <mat-icon color="primary">diamond</mat-icon>
+              <h2>Ressources possédées</h2>
+            </div>
+            <p class="section-subtitle">Votre inventaire de ressources précieuses</p>
+
+            @if (!player.resources || player.resources.length === 0) {
+              <div class="empty-state">
+                <mat-icon>diamond</mat-icon>
+                <p>
+                  Aucune ressource pour le moment. Collectez des ressources dans vos territoires !
+                </p>
+              </div>
+            } @else {
+              <div class="details-grid">
+                @for (resource of player.resources; track resource.id) {
+                  <div class="resource-card">
+                    <div class="resource-info">
+                      <mat-icon class="resource-icon">diamond</mat-icon>
+                      <div>
+                        <h4>{{ resource.name }}</h4>
+                        <span class="quantity-label">Quantité: {{ resource.quantity }}</span>
+                        @if (resource.baseValue) {
+                          <span class="value-label"
+                            >Valeur unitaire: {{ resource.baseValue }} ₡</span
+                          >
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="card">
+          <mat-card-content>
+            <div class="section-header">
+              <mat-icon color="primary">security</mat-icon>
+              <h2>Forces en présence</h2>
+            </div>
+            <p class="section-subtitle">Vos forces stationnées dans chaque secteur conquis</p>
+
+            <mat-accordion multi>
+              @for (sf of forces().sectors; track sf.sector.number) {
+                <mat-expansion-panel class="sector-panel">
+                  <mat-expansion-panel-header>
+                    <mat-panel-title class="panel-title">
+                      Secteur {{ sf.sector.number }} — {{ sf.sector.name }}
+                    </mat-panel-title>
+                    <mat-panel-description class="panel-desc">
+                      @if (sf.empty) {
+                        Aucune force en présence
+                      } @else {
+                        <span class="desc-counts">
+                          {{ sf.units.length }} unité(s) · {{ sf.buildings.length }} bâtiment(s) ·
+                          {{ sf.vehicles.length }} véhicule(s)
+                          @if (sf.character) {
+                            · {{ sf.character.name }}
+                          }
+                        </span>
+                        <span class="desc-total">
+                          @for (s of totalsStats(sf.totals); track s.label) {
+                            {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                          }
+                        </span>
+                      }
+                    </mat-panel-description>
+                  </mat-expansion-panel-header>
+
+                  <div class="panel-body">
+                    <span class="sector-meta">
+                      {{ sf.sector.income ?? 0 | number: '1.0-0' }} ₡/tour
+                      @if (sf.sector.stats) {
+                        · +{{ sf.sector.stats.defenseBonus }} déf ·
+                        {{ sf.sector.stats.resourceProduction }} production
+                      }
+                    </span>
+
+                    @if (sf.empty) {
+                      <p class="no-forces">Aucune force en présence.</p>
+                    } @else {
+                      <div class="force-lines">
+                        @if (sf.character; as character) {
+                          <div class="force-line character">
+                            <mat-icon class="force-icon">face</mat-icon>
+                            <span class="force-name">{{ character.name }}</span>
+                            <span class="force-stats">
+                              @for (s of characterStats(character); track s.label) {
+                                {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                              }
+                            </span>
+                          </div>
+                        }
+
+                        @for (b of sf.buildings; track b.id) {
+                          <div class="force-line">
+                            <mat-icon class="force-icon">{{
+                              b.isDestroyed ? 'delete_forever' : 'apartment'
+                            }}</mat-icon>
+                            <span class="force-name">{{ b.displayName }}</span>
+                            @if (b.isDestroyed) {
+                              <span class="badge badge-danger">Détruit</span>
+                            }
+                            @if (b.isCaptured) {
+                              <span class="badge badge-warning">Capturé</span>
+                            }
+                            <span class="force-stats">
+                              @for (s of buildingStats(b); track s.label) {
+                                {{ s.separator }}{{ s.value | number: '1.0-0' }} {{ s.label }}
+                              }
+                            </span>
+                          </div>
+                        }
+
+                        @for (v of sf.vehicles; track v.id) {
+                          <div class="force-line">
+                            <mat-icon class="force-icon">{{
+                              v.isDestroyed ? 'car_crash' : 'local_shipping'
+                            }}</mat-icon>
+                            <span class="force-name">{{ v.displayName }}</span>
+                            @if (!v.hasPilot) {
+                              <span class="badge">Sans pilote</span>
+                            }
+                            @if (v.capacity > 0) {
+                              <span class="badge"
+                                >{{ v.passengerCount }}/{{ v.capacity }} passagers</span
+                              >
+                            }
+                            @if (v.isDestroyed) {
+                              <span class="badge badge-danger">Détruit</span>
+                            }
+                            <span class="force-stats">
+                              @for (s of vehicleStats(v); track s.label) {
+                                {{ s.separator }}{{ s.value | number: '1.0-0' }} {{ s.label }}
+                              }
+                            </span>
+                          </div>
+                        }
+
+                        @for (u of sf.units; track u.id) {
+                          <div
+                            class="force-line clickable"
+                            (click)="openUnitDialog(u, sf.sector)"
+                            role="button"
+                            tabindex="0"
+                            (keydown.enter)="openUnitDialog(u, sf.sector)"
+                            matTooltip="Cliquer pour les détails et les ordres"
+                          >
+                            @if (classCodes(u); as codes) {
+                              <span class="class-codes">({{ codes }})</span>
+                            }
+                            <span class="force-name">{{ u.type.name }} n°{{ u.number }}</span>
+                            <span class="unit-exp">{{ u.experience | exp }} Exp</span>
+                            @if (u.isInjured) {
+                              <span class="badge badge-danger">Blessé</span>
+                            }
+                            <span class="unit-equip">{{ equipmentLabel(u) }}</span>
+                            <span class="force-stats">
+                              @for (s of unitStats(u); track s.label) {
+                                {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                              }
+                            </span>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="sector-total">
+                        Total :
+                        @for (s of totalsStats(sf.totals); track s.label) {
+                          {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                        }
+                      </div>
+                    }
+                  </div>
+                </mat-expansion-panel>
+              }
+            </mat-accordion>
+
+            @if (forces().sectors.length === 0) {
+              <div class="empty-state">
+                <mat-icon>security</mat-icon>
+                <p>Aucun secteur conquis — aucune force en présence.</p>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="card">
+          <mat-card-content>
+            <div class="section-header">
+              <mat-icon color="primary">military_tech</mat-icon>
+              <h2>Puissances</h2>
+            </div>
+            <p class="section-subtitle">Synthèse militaire et économique de vos forces</p>
+
+            <div class="powers-grid">
+              @if (forces(); as f) {
+                <div class="power-item">
+                  <span class="detail-label">Puissance militaire totale</span>
+                  <span class="power-value">{{ f.militaryTotal | number: '1.0-0' }}</span>
+                  <span class="power-calc">
+                    @for (s of totalsStats(f.totals); track s.label) {
+                      {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                    }
+                  </span>
+                </div>
+                <div class="power-item">
+                  <span class="detail-label">Puissance militaire globale</span>
+                  <span class="power-value">{{ f.globalPower | number: '1.0-1' }}</span>
+                  <span class="power-calc">
+                    ({{ f.offensive | number: '1.0-1' }} offensif +
+                    {{ f.defensive | number: '1.0-1' }} défensif) / 2
+                  </span>
+                </div>
+              }
+              @if (economy(); as eco) {
+                <div class="power-item">
+                  <span class="detail-label">Puissance économique</span>
+                  <span class="power-value">{{ eco.total | number: '1.0-0' }} ₡</span>
+                  <span class="power-calc">
+                    {{ eco.money | number: '1.0-0' }} ₡ (compte en banque) +
+                    {{ eco.income | number: '1.0-0' }} ₡ (revenu par tour)
+                    @if (eco.equipmentValue > 0) {
+                      + {{ eco.equipmentValue | number: '1.0-0' }} ₡ (équipements)
+                    }
+                    @if (eco.vehicleValue > 0) {
+                      + {{ eco.vehicleValue | number: '1.0-0' }} ₡ (véhicules)
+                    }
+                  </span>
+                </div>
+              }
             </div>
           </mat-card-content>
         </mat-card>
-      }
-    </div>
+      </mat-tab>
 
-    <!-- Statistiques détaillées + Territoires - Layout côte à côte -->
-    <div class="stats-territories-row">
-      <!-- Statistiques détaillées -->
-      <mat-card class="card">
-        <mat-card-content>
+      <mat-tab label="Actions">
+        <div class="actions-tab">
           <div class="section-header">
-            <mat-icon color="primary">analytics</mat-icon>
-            <h2>Statistiques détaillées</h2>
-          </div>
-          <p class="section-subtitle">Analyse complète de votre puissance</p>
-
-          <div class="details-grid">
-            <div class="detail-item">
-              <span class="detail-label">Puissance offensive</span>
-              <span class="detail-value error">{{
-                player.stats.totalOffensivePower | number: '1.0-0'
-              }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Puissance défensive</span>
-              <span class="detail-value success">{{
-                player.stats.totalDefensivePower | number: '1.0-0'
-              }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Puissance économique</span>
-              <span class="detail-value warning">{{
-                player.stats.totalEconomyPower | number: '1.0-0'
-              }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Valeur des véhicules</span>
-              <span class="detail-value"
-                >{{ player.stats.totalVehiclesValue | number: '1.0-0' }} ₡</span
-              >
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Valeur des équipements</span>
-              <span class="detail-value"
-                >{{ player.stats.totalEquipmentValue | number: '1.0-0' }} ₡</span
-              >
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Armure totale</span>
-              <span class="detail-value">{{ player.stats.totalArmor | number: '1.0-0' }}</span>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Territoires -->
-      <mat-card class="card">
-        <mat-card-content>
-          <div class="section-header">
-            <mat-icon color="primary">place</mat-icon>
-            <h2>Territoires contrôlés</h2>
-          </div>
-          <p class="section-subtitle">Les secteurs sous votre commandement</p>
-
-          @if (player.sectors.length === 0) {
-            <div class="empty-state">
-              <mat-icon>place</mat-icon>
-              <p>Aucun territoire contrôlé. Partez à la conquête !</p>
-            </div>
-          } @else {
-            <div class="territories-grid">
-              @for (sector of player.sectors; track sector.number) {
-                <div class="territory-card">
-                  <h4>{{ sector.name }}</h4>
-                  <span class="sector-number">Secteur n°{{ sector.number ?? 'N/A' }}</span>
-                  <mat-divider></mat-divider>
-                  <div class="territory-stats">
-                    <div class="stat-row">
-                      <span>Revenus:</span>
-                      <span class="warning">{{ sector.income ?? 0 }} ₡/tour</span>
-                    </div>
-                    @if (sector.army && sector.army.length > 0) {
-                      <div class="stat-row">
-                        <span>Unités:</span>
-                        <span>{{ sector.army.length }}</span>
-                      </div>
-                    }
-                    @if (sector.stats) {
-                      <div class="stat-row">
-                        <span>Défense:</span>
-                        <span>+{{ sector.stats.defenseBonus }}</span>
-                      </div>
-                      <div class="stat-row">
-                        <span>Production:</span>
-                        <span>{{ sector.stats.resourceProduction }}</span>
-                      </div>
-                    }
-                  </div>
-                </div>
+            <mat-icon color="primary">history_edu</mat-icon>
+            <h2>
+              @if (currentTurn(); as turn) {
+                Actions du Tour {{ turn }}
+              } @else {
+                Actions du tour courant
               }
-            </div>
-          }
-        </mat-card-content>
-      </mat-card>
-    </div>
-    <!-- Unités -->
-    <mat-card class="card">
-      <mat-card-content>
-        <div class="section-header">
-          <mat-icon color="primary">groups</mat-icon>
-          <h2>Unités</h2>
-          <span class="units-count">({{ filteredUnits().length }})</span>
-
-          <div class="units-toolbar">
-            <!-- Toggle filtres -->
-            <button
-              class="filter-btn"
-              [class.active]="showFilters()"
-              (click)="toggleFilters()"
-              matTooltip="Filtres"
-              aria-label="Afficher les filtres"
-              [attr.aria-expanded]="showFilters()"
-            >
-              <mat-icon>tune</mat-icon>
-              @if (activeFiltersCount() > 0) {
-                <span class="filter-badge">{{ activeFiltersCount() }}</span>
-              }
-            </button>
-          </div>
-        </div>
-
-        <!-- Panneau de filtres -->
-        @if (showFilters()) {
-          <div class="filters-panel">
-            <div class="filters-row">
-              <!-- Filtre par type -->
-              <div class="filter-group">
-                <span class="filter-label">Type</span>
-                <div class="filter-chips">
-                  <button
-                    class="filter-chip"
-                    [class.active]="selectedTypeFilter() === 'all'"
-                    (click)="selectedTypeFilter.set('all')"
-                  >
-                    Tous
-                  </button>
-                  @for (type of unitTypes(); track type) {
-                    <button
-                      class="filter-chip"
-                      [class.active]="selectedTypeFilter() === type"
-                      (click)="selectedTypeFilter.set(type)"
-                    >
-                      {{ type }}
-                    </button>
-                  }
-                </div>
-              </div>
-
-              <!-- Filtre par localisation -->
-              <div class="filter-group">
-                <span class="filter-label">Secteur</span>
-                <div class="filter-chips">
-                  <button
-                    class="filter-chip"
-                    [class.active]="selectedLocationFilter() === 'all'"
-                    (click)="selectedLocationFilter.set('all')"
-                  >
-                    Tous
-                  </button>
-                  @for (sector of playerSectors(); track sector.number) {
-                    <button
-                      class="filter-chip"
-                      [class.active]="selectedLocationFilter() === '' + sector.number"
-                      (click)="selectedLocationFilter.set('' + sector.number)"
-                    >
-                      {{ sector.name }}
-                    </button>
-                  }
-                </div>
-              </div>
-
-              <!-- Filtre par statut -->
-              <div class="filter-group">
-                <span class="filter-label">Statut</span>
-                <div class="filter-chips">
-                  <button
-                    class="filter-chip"
-                    [class.active]="selectedStatusFilter() === 'all'"
-                    (click)="selectedStatusFilter.set('all')"
-                  >
-                    Tous
-                  </button>
-                  <button
-                    class="filter-chip"
-                    [class.active]="selectedStatusFilter() === 'healthy'"
-                    (click)="selectedStatusFilter.set('healthy')"
-                  >
-                    En forme
-                  </button>
-                  <button
-                    class="filter-chip"
-                    [class.active]="selectedStatusFilter() === 'injured'"
-                    (click)="selectedStatusFilter.set('injured')"
-                  >
-                    Blessés
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            @if (activeFiltersCount() > 0) {
-              <button class="reset-filters-btn" (click)="resetFilters()">
-                <mat-icon>clear</mat-icon>
-                Réinitialiser les filtres
-              </button>
-            }
-          </div>
-        }
-
-        @if (filteredUnits().length === 0) {
-          <div class="empty-state">
-            <mat-icon>groups</mat-icon>
-            @if (activeFiltersCount() > 0) {
-              <p>Aucune unité ne correspond aux filtres sélectionnés.</p>
-            } @else {
-              <p>Aucune unité pour le moment. Recrutez des troupes !</p>
-            }
-          </div>
-        } @else {
-          <div class="units-container">
-            <!-- Liste unique (détails via popup horizontal) -->
-            <div class="units-list">
-              @for (item of filteredUnits(); track item.unit.id) {
-                <div class="unit-list-item" [class.injured]="item.unit.isInjured">
-                  <div
-                    class="unit-list-row"
-                    (click)="openUnitDialog(item)"
-                    role="button"
-                    tabindex="0"
-                    (keydown.enter)="openUnitDialog(item)"
-                    matTooltip="Cliquer pour les détails"
-                  >
-                    <mat-icon class="expand-icon">chevron_right</mat-icon>
-                    <span class="unit-type-badge">{{ item.unit.type.name }}</span>
-                    <span class="unit-exp">{{ item.unit.experience | number: '1.1-1' }} Exp</span>
-                    <span class="unit-location-inline">
-                      <mat-icon>place</mat-icon>{{ item.sectorName }}
-                    </span>
-                    @if (item.unit.isInjured) {
-                      <mat-icon class="injured-icon" matTooltip="Blessé">local_hospital</mat-icon>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        }
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Équipements -->
-    <mat-card class="card">
-      <mat-card-content>
-        <div class="section-header">
-          <mat-icon color="primary">inventory_2</mat-icon>
-          <h2>Équipements possédés</h2>
-        </div>
-        <p class="section-subtitle">Votre arsenal actuel</p>
-
-        @if (player.equipments.length === 0) {
-          <div class="empty-state">
-            <mat-icon>inventory_2</mat-icon>
-            <p>Aucun équipement pour le moment. Visitez la boutique !</p>
-          </div>
-        } @else {
-          <div class="equipment-container">
-            <div class="equipment-grid">
-              @for (stack of player.equipments; track stack.equipment.name) {
-                <div class="equipment-card">
-                  <div class="equipment-info">
-                    <h4>{{ stack.equipment.name }}</h4>
-                    <span class="category">{{ stack.equipment.category }}</span>
-                    <div class="chips">
-                      @if (stack.equipment.pdfBonus > 0) {
-                        <mat-chip class="bonus-chip pdf"
-                          >+{{ stack.equipment.pdfBonus }} % PDF</mat-chip
-                        >
-                      }
-                      @if (stack.equipment.pdcBonus > 0) {
-                        <mat-chip class="bonus-chip pdc"
-                          >+{{ stack.equipment.pdcBonus }} % PDC</mat-chip
-                        >
-                      }
-                      @if (stack.equipment.armBonus > 0) {
-                        <mat-chip class="bonus-chip arm"
-                          >+{{ stack.equipment.armBonus }} % ARM</mat-chip
-                        >
-                      }
-                      @if (stack.equipment.evasionBonus > 0) {
-                        <mat-chip class="bonus-chip esq"
-                          >+{{ stack.equipment.evasionBonus }} % ESQ</mat-chip
-                        >
-                      }
-                    </div>
-                  </div>
-                  <div class="quantity" matTooltip="Disponible / total possédé">
-                    {{ stack.available }}/{{ stack.quantity }}
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        }
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Ressources -->
-    <mat-card class="card">
-      <mat-card-content>
-        <div class="section-header">
-          <mat-icon color="primary">diamond</mat-icon>
-          <h2>Ressources possédées</h2>
-        </div>
-        <p class="section-subtitle">Votre inventaire de ressources précieuses</p>
-
-        @if (!player.resources || player.resources.length === 0) {
-          <div class="empty-state">
-            <mat-icon>diamond</mat-icon>
-            <p>Aucune ressource pour le moment. Collectez des ressources dans vos territoires !</p>
-          </div>
-        } @else {
-          <div class="details-grid">
-            @for (resource of player.resources; track resource.id) {
-              <div class="resource-card">
-                <div class="resource-info">
-                  <mat-icon class="resource-icon">diamond</mat-icon>
-                  <div>
-                    <h4>{{ resource.name }}</h4>
-                    <span class="quantity-label">Quantité: {{ resource.quantity }}</span>
-                    @if (resource.baseValue) {
-                      <span class="value-label">Valeur unitaire: {{ resource.baseValue }} ₡</span>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        }
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Personnage -->
-    @if (playerCharacter()) {
-      <mat-card class="card">
-        <mat-card-content>
-          <div class="section-header">
-            <mat-icon color="primary">face</mat-icon>
-            <h2>Personnage</h2>
-          </div>
-          <p class="section-subtitle">Votre leader sur le terrain</p>
-          <div class="details-grid">
-            <div class="resource-card">
-              <div class="resource-info">
-                <mat-icon class="resource-icon">person</mat-icon>
-                <div>
-                  <h4>{{ playerCharacter()!.name }}</h4>
-                  @if (
-                    playerCharacter()!.sectorNumber !== null &&
-                    playerCharacter()!.sectorNumber !== undefined
-                  ) {
-                    <span class="quantity-label"
-                      >Secteur : {{ playerCharacter()!.sectorNumber }}</span
-                    >
-                  }
-                  <span class="value-label"
-                    >Attaque : {{ playerCharacter()!.baseAttack }} | Défense :
-                    {{ playerCharacter()!.baseDefense }}</span
-                  >
-                </div>
-              </div>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-    }
-
-    <!-- Bâtiments -->
-    @if (allBuildings().length > 0) {
-      <mat-card class="card">
-        <mat-card-content>
-          <div class="section-header">
-            <mat-icon color="primary">business</mat-icon>
-            <h2>Bâtiments</h2>
-          </div>
-          <p class="section-subtitle">Vos infrastructures militaires et économiques</p>
-          <div class="details-grid">
-            @for (building of allBuildings(); track building.id) {
-              <div class="resource-card">
-                <div class="resource-info">
-                  <mat-icon class="resource-icon">{{
-                    building.isDestroyed ? 'delete_forever' : 'apartment'
-                  }}</mat-icon>
-                  <div>
-                    <h4>{{ building.displayName }}</h4>
-                    @if (building.buildingType) {
-                      <span class="badge">{{ building.buildingType }}</span>
-                    }
-                    @if (building.sectorNumber !== null && building.sectorNumber !== undefined) {
-                      <span class="quantity-label">Secteur : {{ building.sectorNumber }}</span>
-                    }
-                    <span class="value-label"
-                      >Attaque : {{ building.attack }} | Défense : {{ building.defense }}</span
-                    >
-                    @if (building.isDestroyed) {
-                      <span class="badge badge-danger">Détruit</span>
-                    }
-                    @if (building.isCaptured) {
-                      <span class="badge badge-warning">Capturé</span>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
-    }
-
-    <!-- Véhicules déployés -->
-    @if (allVehicles().length > 0) {
-      <mat-card class="card">
-        <mat-card-content>
-          <div class="section-header">
-            <mat-icon color="primary">local_shipping</mat-icon>
-            <h2>Véhicules déployés</h2>
+            </h2>
           </div>
           <p class="section-subtitle">
-            Votre parc de véhicules militaires déployés sur vos secteurs
+            Historique de vos actions du tour : achats et changements d'équipement
           </p>
-          <div class="details-grid">
-            @for (entry of allVehicles(); track entry.vehicle.id) {
-              <div class="resource-card">
-                <div class="resource-info">
-                  <mat-icon class="resource-icon">{{
-                    entry.vehicle.isDestroyed ? 'car_crash' : 'local_shipping'
-                  }}</mat-icon>
-                  <div>
-                    <h4>{{ entry.vehicle.displayName }}</h4>
-                    @if (entry.vehicle.vehicleType) {
-                      <span class="badge">{{ entry.vehicle.vehicleType }}</span>
-                    }
-                    <span class="quantity-label">Secteur : {{ entry.sectorName }}</span>
-                    <span class="value-label"
-                      >PDF : {{ entry.vehicle.pdf }} | Défense : {{ entry.vehicle.defense }}</span
-                    >
-                    <span class="value-label">
-                      Passagers : {{ entry.vehicle.passengerCount }}/{{ entry.vehicle.capacity }}
-                      @if (!entry.vehicle.hasPilot) {
-                        | <em>Sans pilote</em>
-                      }
-                    </span>
-                    @if (entry.vehicle.isDestroyed) {
-                      <span class="badge badge-danger">Détruit</span>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
-    }
 
-    <!-- Véhicules non-déployés (inventaire) -->
-    @if (undeployedVehicles().length > 0) {
-      <mat-card class="card">
-        <mat-card-content>
-          <div class="section-header">
-            <mat-icon color="accent">inventory_2</mat-icon>
-            <h2>Véhicules en réserve</h2>
+          <div class="empty-state">
+            <mat-icon>history</mat-icon>
+            <p>Aucune action enregistrée ce tour.</p>
+            <p class="empty-hint">
+              L'historique des achats et des équipements modifiés sera journalisé ici. Les ordres de
+              déplacement se consultent sur la page « Mes ordres ».
+            </p>
           </div>
-          <p class="section-subtitle">
-            Ces véhicules sont achetés mais pas encore déployés. Choisissez un secteur pour les
-            placer.
-          </p>
-          <div class="details-grid">
-            @for (vehicle of undeployedVehicles(); track vehicle.id) {
-              <div class="resource-card">
-                <div class="resource-info">
-                  <mat-icon class="resource-icon">directions_car</mat-icon>
-                  <div>
-                    <h4>{{ vehicle.displayName }}</h4>
-                    @if (vehicle.vehicleType) {
-                      <span class="badge">{{ vehicle.vehicleType }}</span>
-                    }
-                    <span class="value-label"
-                      >PDF : {{ vehicle.pdf }} | Défense : {{ vehicle.defense }}</span
-                    >
-                    <span class="value-label">Capacité : {{ vehicle.capacity }}</span>
-                  </div>
-                </div>
-                <button
-                  mat-stroked-button
-                  color="primary"
-                  [disabled]="vehiclesLoading()"
-                  (click)="openPlacementModal(vehicle)"
-                  class="deploy-btn"
-                >
-                  <mat-icon>place</mat-icon>
-                  Déployer
-                </button>
-              </div>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
-    }
+        </div>
+      </mat-tab>
+    </mat-tab-group>
   </div>
 }

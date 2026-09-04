@@ -95,6 +95,10 @@ export class ApiService {
   }
 
   // Tour courant (admin) — source unique de vérité gérée par TurnService côté backend.
+  getCurrentTurn(): Observable<number> {
+    return this.http.get<number>(`${this.baseUrl}/turn/current`);
+  }
+
   adminGetCurrentTurn(): Observable<{ currentTurn: number }> {
     return this.http.get<{ currentTurn: number }>(`${this.baseUrl}/admin/turn/current`);
   }

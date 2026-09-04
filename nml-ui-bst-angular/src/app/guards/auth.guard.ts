@@ -5,11 +5,6 @@ import { filter, take } from 'rxjs/operators';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { AuthService } from '../services/auth.service';
 
-/**
- * Wait until `AuthService.initSession()` has finished. Returns synchronously
- * if the session is already initialized, otherwise resolves the first time
- * the `initialized` signal flips to `true`.
- */
 export async function waitForInitialization(auth: AuthService): Promise<void> {
   if (auth.initialized()) return;
   await firstValueFrom(
@@ -20,10 +15,6 @@ export async function waitForInitialization(auth: AuthService): Promise<void> {
   );
 }
 
-/**
- * Guard: routes requiring authentication.
- * Waits for session initialization, then checks `isAuthenticated`.
- */
 export const authGuard: CanActivateFn = async (_route, state): Promise<boolean | UrlTree> => {
   const auth = inject(AuthService);
   const router = inject(Router);
@@ -34,9 +25,6 @@ export const authGuard: CanActivateFn = async (_route, state): Promise<boolean |
   return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
 };
 
-/**
- * Guard: routes only accessible when NOT authenticated (e.g. /login).
- */
 export const noAuthGuard: CanActivateFn = async (): Promise<boolean | UrlTree> => {
   const auth = inject(AuthService);
   const router = inject(Router);

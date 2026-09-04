@@ -75,6 +75,7 @@ public class UnitMapper {
             }
             dto.setId(unitId.intValue());
         }
+        dto.setPlayerId(unit.getPlayerId());
         dto.setNumber(unit.getNumber());
         dto.setExperience(unit.getExperience());
 

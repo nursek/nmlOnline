@@ -426,7 +426,7 @@
                             <span class="unit-type" [matTooltip]="getClassNames(unit.classes)">
                               {{ getUnitTypeLabel(unit.type) }} n°{{ unit.number }}
                             </span>
-                            <span class="unit-exp">Exp: {{ unit.experience }}</span>
+                            <span class="unit-exp">Exp: {{ unit.experience | exp }}</span>
                             <span class="unit-stats">
                               <span class="atk">{{ unit.attack | number: '1.0-0' }}A</span>
                               <span class="def">{{ unit.defense | number: '1.0-0' }}D</span>
