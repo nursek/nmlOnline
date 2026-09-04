@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
@@ -20,9 +21,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -33,8 +32,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 // Scénario déterministe : BRUTE 100/100 vs LARBIN 10/10, pas d'évasion (pas de RNG).
-@SpringBootTest
-@ActiveProfiles("test")
+@EmbeddedPostgresTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @DisplayName("TurnResolutionOrchestrator — pas-à-pas hop par hop")
 class TurnResolutionOrchestratorTest {

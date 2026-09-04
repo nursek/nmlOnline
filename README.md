@@ -51,8 +51,8 @@ nmlOnline/
 ### Backend stack
 
 - Java 21, Spring Boot 3.5.6, Spring Data JPA, Spring Security
-- H2 (dev/test) or PostgreSQL (production)
-- Flyway for schema migrations (production PostgreSQL only)
+- H2 in-memory (default/dev) or PostgreSQL 14 (test, embedded; production, server)
+- Flyway for schema migrations (test and production PostgreSQL; not default/dev)
 - JWT authentication with HttpOnly refresh-token cookie
 - Lombok, MapStruct, SpringDoc OpenAPI (Swagger)
 
@@ -166,15 +166,37 @@ Open **http://localhost:4200** in your browser.
 
 ## Spring Profiles
 
-### Default (no profile) — H2 in-memory, no seed data
+Four profiles. They differ on **three axes**: the database engine, who creates the schema (Hibernate
+from the entities, or Flyway from the `.sql` files), and what gets seeded.
+
+| | *default* (none) | `dev` | `test` | `prod` |
+|---|---|---|---|---|
+| **Engine** | H2 in-memory | H2 in-memory | **PostgreSQL 14** (embedded) | **PostgreSQL 14** |
+| **Schema built by** | Hibernate `ddl-auto=update` | Hibernate `ddl-auto=update` | **Flyway V1→V7** | **Flyway V1→V7** |
+| **Hibernate role** | writes | writes | **validates** | **validates** |
+| **Flyway** | disabled | disabled | enabled | enabled |
+| **Demo board + 5 players** | yes | yes | yes | no |
+| **Accounts created** | none | 6 (5 players + `admin`) | 3 (`testuser1/2`, `testadmin`) | `admin` only |
+| **Refresh cookie `Secure`** | `true` | `false` | `false` | `true` |
+| **Actuator** | defaults | defaults | defaults | `health,info,metrics` |
+
+Since the `test` profile runs on a real PostgreSQL built by Flyway, **every integration test already
+is a prod-parity test**: same engine, same schema, same migrations. A field added to an entity
+without a migration fails `mvn test` in seconds.
+
+The only remaining divergence is `default`/`dev`, which still build their schema from the Java
+entities. [`ProdBootParityTest`](#detecting-prodtest-divergence-before-deploying) additionally boots
+the whole `prod` profile to cover prod-only configuration.
+
+### Default (no profile)
 
 ```bash
 JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run
 ```
 
-- Database: H2 in-memory, `ddl-auto=update`
-- `app.cookie.secure=true` (override to `false` for local HTTP testing)
-- No dev accounts created
+- Database: H2 in-memory, `ddl-auto=update`, wiped on every restart
+- Imports the demo board and the 5 demo players, but creates **no user account** — you cannot log in
+- `app.cookie.secure=true` (use `dev` for plain HTTP)
 - Swagger UI available
 
 ### `dev` — H2 in-memory + seed data
@@ -183,20 +205,29 @@ JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run
 JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-- Same H2 in-memory DB
+- Same H2 in-memory DB and same demo import as the default profile
 - `app.cookie.secure=false` (works over HTTP)
-- **Auto-creates the 5 dev accounts** listed above
+- **Auto-creates the 6 dev accounts** listed above (`DevDataInitializer`, `dev` only)
 - H2 console **disabled** (even in dev)
 
-### `test` — Used by Maven Surefire
+### `test` — used by Maven Surefire
 
 ```bash
-./mvnw test   # activates automatically
+./mvnw clean test
 ```
 
-- H2 in-memory, `ddl-auto=create-drop`
-- Hardcoded test secrets (in-memory only)
+- **Real PostgreSQL 14**, started inside the JVM by the `@EmbeddedPostgresTest` annotation (native
+  binaries pulled from Maven — no Docker, nothing to install)
+- Schema built by Flyway V1→V7 and verified by `ddl-auto=validate`, exactly like prod
+- Hardcoded test secrets
 - No external configuration needed
+
+The profile is **not** activated by Maven: every integration test carries `@EmbeddedPostgresTest`
+(which bundles `@ActiveProfiles("test")`). A new test class without it silently runs on the
+*default* profile — H2, with the demo import enabled — and would no longer be a prod-parity test.
+
+Use `mvn clean test` rather than `mvn test`: a stale `target/classes/db/migration` keeps renamed
+migration files and Flyway then reports duplicate versions. The Docker image is unaffected.
 
 ### `prod` — PostgreSQL, production-ready
 
@@ -204,12 +235,21 @@ JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run -Dspring-boot.run.profiles=
 export JWT_SECRET="your-32+-char-production-secret"
 export JWT_PEPPER="your-16+-char-production-pepper"
 export DATABASE_URL="jdbc:postgresql://your-db-host:5432/nmlonline"
-export DATABASE_USERNAME="nmlonline"
+export DATABASE_USERNAME=nmlonline
 export DATABASE_PASSWORD="your-secure-password"
+export ADMIN_PASSWORD="choose-a-strong-password"
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
 ```
 
+`DATABASE_URL` defaults to `jdbc:postgresql://localhost:5432/nmlonline`, but `DATABASE_USERNAME`,
+`DATABASE_PASSWORD`, `ADMIN_PASSWORD`, `JWT_SECRET` and `JWT_PEPPER` have **no default**: if any is
+missing the context fails to start on an unresolvable placeholder. That is deliberate — better a
+loud boot failure than a silent misconfiguration.
+
 - `ddl-auto=validate` — schema is managed by Flyway (see below)
+- `spring.jpa.open-in-view=false` — **do not override it with `SPRING_JPA_OPEN_IN_VIEW=true`**: it hides
+  lazy-loading bugs instead of fixing them. DTOs are built inside the service transaction
+  (`AdminService`, `PlayerService.findAllDto`, `BoardService`…), never in a controller.
 - `app.cookie.secure=true` — refresh cookies are `Secure`
 - Actuator: `/actuator/health`, `/actuator/info`, `/actuator/metrics`
 - No seed data
@@ -218,8 +258,9 @@ export DATABASE_PASSWORD="your-secure-password"
 
 ## Database Migrations (Flyway)
 
-Schema migrations are handled by **Flyway**, enabled in the `prod` profile only
-(`spring.flyway.enabled=false` by default, so H2 dev/test keep using `ddl-auto` and are completely unaffected).
+Schema migrations are handled by **Flyway**. Flyway is enabled in the `prod` profile and in
+`ProdBootParityTest`; it stays disabled for H2 dev/test, which keep building their schema from the
+entities via `ddl-auto`.
 
 - Migration scripts live in `nml-ms/src/main/resources/db/migration/`, named `V<n>__description.sql`.
 - `V1__baseline.sql` is a `pg_dump --schema-only` of the production database as of 2026-07-23.
@@ -236,6 +277,28 @@ Any schema change (new entity, new column, new index…) MUST ship as a migratio
 3. Commit both together. Migrations run automatically at application startup.
 
 Never edit an already-applied migration file — always add a new one.
+
+### Detecting prod/test divergence before deploying
+
+`ProdBootParityTest` starts a real PostgreSQL 14 **inside the JVM** (native binaries pulled from Maven,
+no Docker and nothing to install), applies every migration to it, then boots the whole application with
+the `prod` profile — so `ddl-auto=validate`, Flyway, the `prod`-only beans and the admin API all run
+exactly as they will in production. It then imports the demo players and calls the admin API.
+
+It catches the three axes where runtimes used to differ from prod:
+
+| Axis | Caught failure |
+|---|---|
+| Schema — JPA entities vs migrations | `missing column …` / `missing sequence …`, app refuses to start |
+| Engine — H2 vs PostgreSQL | SQL or DDL accepted by H2 but rejected by PostgreSQL |
+| Prod configuration | missing `ADMIN_PASSWORD`, `prod`-only bean failing, entity mapped outside a transaction |
+
+Run it with `./mvnw test` (~10 s). A field added to an entity without a migration fails the build
+locally, before the push.
+
+> Run `mvn clean test` rather than `mvn test`: a stale `target/classes/db/migration` keeps renamed
+> migration files and Flyway then reports duplicate versions. The Docker image is unaffected
+> (`mvn clean package` + `target/` in `.dockerignore`).
 
 ---
 
@@ -400,8 +463,12 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 ```bash
 cd nml-ms
 
-# Unit + integration tests (uses test profile automatically)
-./mvnw test
+# All 288 backend tests on embedded PostgreSQL + Flyway (no install, no Docker) — ~60 s
+./mvnw clean test
+
+# Fast iteration while developing
+./mvnw test -Dtest=BattleTest        # pure unit class, ~4 s
+./mvnw test -Dtest=UnitServiceTest   # one integration class, ~18 s
 
 # Package without tests
 ./mvnw package -DskipTests
@@ -410,7 +477,12 @@ cd nml-ms
 ./mvnw verify
 ```
 
-214 tests across unit tests (domain models, game-logic services with mocked repositories) and integration tests (Spring context, security ownership). Game rules are pinned as characterization tests: economy (purchases, sale multipliers), units (experience thresholds, injury, equipment formulas), buildings (cooldowns, capture, vampirisation), vehicles (pilot rules, balance table), combat (deterministic phases, no-evasion scenarios) and player stats formulas. Behavior suspected to be buggy is pinned with a characterization test rather than fixed.
+The full suite runs on the embedded PostgreSQL in about a minute, locally and in CI alike. That cost
+buys detection before the push: a migration forgotten behind a new entity field fails `mvn test`
+here rather than in CI after the push, or worse, at the next production boot. The ~14 s PostgreSQL
+startup is paid once per JVM, so extra tests on an existing Spring context are nearly free.
+
+ 288 backend tests across unit tests (domain models, game-logic services with mocked repositories) and integration tests (Spring context, security ownership). Game rules are pinned as characterization tests: economy (purchases, sale multipliers), units (experience thresholds, injury, equipment formulas), buildings (cooldowns, capture, vampirisation), vehicles (pilot rules, balance table), combat (deterministic phases, no-evasion scenarios) and player stats formulas. Behavior suspected to be buggy is pinned with a characterization test rather than fixed.
 
 ### Frontend
 

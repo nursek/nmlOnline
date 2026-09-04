@@ -18,7 +18,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Game Simulation Integration Tests")
-class GameSimulationIT {
+class GameSimulationTest {
 
     private Player player1;
     private Board board;

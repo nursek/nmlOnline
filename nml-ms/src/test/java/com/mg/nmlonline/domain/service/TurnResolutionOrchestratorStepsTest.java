@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
@@ -21,9 +22,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -32,8 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 
 // Scénario déterministe : BRUTE 100/100 vs LARBIN 10/10, pas d'évasion (pas de RNG).
-@SpringBootTest
-@ActiveProfiles("test")
+@EmbeddedPostgresTest
 @DisplayName("TurnResolutionOrchestrator — étapes du cycle pas-à-pas")
 class TurnResolutionOrchestratorStepsTest {
 

@@ -1,5 +1,6 @@
 package com.mg.nmlonline;
 
+import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.config.TestDataInitializer;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.user.User;
@@ -9,9 +10,7 @@ import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -19,9 +18,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Authentification et propriété sur les endpoints critiques (profil test). */
-@SpringBootTest
+@EmbeddedPostgresTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
 class SecurityOwnershipTest {
 
     @Autowired

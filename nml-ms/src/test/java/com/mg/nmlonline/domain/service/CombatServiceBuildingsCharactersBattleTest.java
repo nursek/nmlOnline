@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
@@ -19,9 +20,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -36,8 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * personnage non soigné au combat mais régénéré +50 def en fin de tour, capture à la victoire
  * (QG marqué capturé même détruit). Déterministe : aucune évasion, budgets choisis pour épuiser exactement.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@EmbeddedPostgresTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @DisplayName("CombatService — bataille avec bâtiments et personnages (v2)")
 class CombatServiceBuildingsCharactersBattleTest {

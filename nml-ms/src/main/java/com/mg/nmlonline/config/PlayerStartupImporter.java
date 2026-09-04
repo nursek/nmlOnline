@@ -136,33 +136,23 @@ public class PlayerStartupImporter implements ApplicationRunner {
                 Player player = playerImportService.importPlayer(dto);
 
                 if (player != null) {
+                    // Réimporter = remplacer, pas fusionner : une fusion duplique l'armée, et les
+                    // doublons n'ont plus d'équipement (stock du joueur déjà consommé).
                     Player existingPlayer = playerService.findByName(player.getName());
                     if (existingPlayer != null) {
-                        log.info("Joueur {} déjà existant, mise à jour...", player.getName());
-                        player.setId(existingPlayer.getId());
-                        if (existingPlayer.getUserId() != null) {
-                            player.setUserId(existingPlayer.getUserId());
-                        } else {
-                            User user = userRepository.findByUsername(player.getName());
-                            if (user != null) {
-                                player.setUserId(user.getId());
-                                log.info("userId {} lié au joueur {}", user.getId(), player.getName());
-                            } else {
-                                log.warn("Aucun compte CREDENTIALS trouvé pour le joueur '{}'", player.getName());
-                            }
-                        }
-                        player = playerService.save(player);
-                    } else {
-                        User user = userRepository.findByUsername(player.getName());
-                        if (user != null) {
-                            player.setUserId(user.getId());
-                            log.info("userId {} lié au joueur {}", user.getId(), player.getName());
-                        } else {
-                            log.warn("Aucun compte CREDENTIALS trouvé pour le joueur '{}'", player.getName());
-                        }
-                        player = playerService.save(player);
-                        log.info("Joueur {} créé avec l'ID {}", player.getName(), player.getId());
+                        log.info("Joueur {} déjà existant, remplacement...", player.getName());
+                        playerService.delete(existingPlayer.getId());
                     }
+
+                    User user = userRepository.findByUsername(player.getName());
+                    if (user != null) {
+                        player.setUserId(user.getId());
+                        log.info("userId {} lié au joueur {}", user.getId(), player.getName());
+                    } else {
+                        log.warn("Aucun compte CREDENTIALS trouvé pour le joueur '{}'", player.getName());
+                    }
+                    player = playerService.save(player);
+                    log.info("Joueur {} créé avec l'ID {}", player.getName(), player.getId());
 
                     // Équipements/ressources/character ajoutés après persistance du Player (besoin de son ID).
                     playerImportService.importEquipments(dto, player);

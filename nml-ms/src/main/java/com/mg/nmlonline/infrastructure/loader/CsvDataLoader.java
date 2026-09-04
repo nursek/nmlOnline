@@ -103,27 +103,34 @@ public class CsvDataLoader implements CommandLineRunner {
         }
     }
 
+    /**
+     * Indexé par **nom**, pas par id : les ids dépendent de l'état des séquences, et un id décalé
+     * affecte silencieusement les classes de l'équipement voisin.
+     */
     private void loadCompatibilities() {
-        List<Map.Entry<Long, UnitClass>> entries = load("/compatibility.csv", parts ->
+        List<Map.Entry<String, UnitClass>> entries = load("/compatibility.csv", parts ->
                 parts.length >= 2
-                        ? Map.entry(Long.parseLong(parts[0]), UnitClass.valueOf(parts[1]))
+                        ? Map.entry(parts[0], UnitClass.valueOf(parts[1]))
                         : null);
 
-        Map<Long, Set<UnitClass>> compatibilities = new HashMap<>();
-        for (Map.Entry<Long, UnitClass> entry : entries) {
+        Map<String, Set<UnitClass>> compatibilities = new HashMap<>();
+        for (Map.Entry<String, UnitClass> entry : entries) {
             compatibilities.computeIfAbsent(entry.getKey(), k -> new HashSet<>()).add(entry.getValue());
         }
 
-        int count = 0;
-        for (Map.Entry<Long, Set<UnitClass>> entry : compatibilities.entrySet()) {
-            equipmentRepository.findById(entry.getKey()).ifPresent(equipment -> {
-                equipment.setCompatibleClasses(entry.getValue());
-                equipmentRepository.save(equipment);
-                log.debug("Set compatibilities for equipment {}: {}", equipment.getName(), entry.getValue());
-            });
-            count++;
+        int applied = 0;
+        for (Map.Entry<String, Set<UnitClass>> entry : compatibilities.entrySet()) {
+            Equipment equipment = equipmentRepository.findByName(entry.getKey()).orElse(null);
+            if (equipment == null) {
+                log.warn("Compatibilités ignorées : équipement '{}' absent du catalogue", entry.getKey());
+                continue;
+            }
+            equipment.setCompatibleClasses(entry.getValue());
+            equipmentRepository.save(equipment);
+            log.debug("Set compatibilities for equipment {}: {}", equipment.getName(), entry.getValue());
+            applied++;
         }
 
-        log.info("Successfully loaded compatibilities for {} equipments from CSV", count);
+        log.info("Successfully loaded compatibilities for {} equipments from CSV", applied);
     }
 }

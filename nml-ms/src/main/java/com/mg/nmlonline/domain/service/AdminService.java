@@ -1,5 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.BoardDto;
+import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
@@ -12,6 +14,8 @@ import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
+import com.mg.nmlonline.mapper.BoardMapper;
+import com.mg.nmlonline.mapper.PlayerMapper;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +34,8 @@ public class AdminService {
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
     private final EntityManager entityManager;
+    private final PlayerMapper playerMapper;
+    private final BoardMapper boardMapper;
 
     public AdminService(PlayerImportService playerImportService,
                         PlayerService playerService,
@@ -38,7 +44,9 @@ public class AdminService {
                         UserService userService,
                         UserRepository userRepository,
                         ResourceRepository resourceRepository,
-                        EntityManager entityManager) {
+                        EntityManager entityManager,
+                        PlayerMapper playerMapper,
+                        BoardMapper boardMapper) {
         this.playerImportService = playerImportService;
         this.playerService = playerService;
         this.boardImportService = boardImportService;
@@ -47,6 +55,8 @@ public class AdminService {
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
         this.entityManager = entityManager;
+        this.playerMapper = playerMapper;
+        this.boardMapper = boardMapper;
     }
 
     /** Import JSON : supprime un joueur homonyme au préalable ; si password est fourni, crée/met à jour le compte User associé. */
@@ -93,6 +103,14 @@ public class AdminService {
 
     public Player importPlayer(String jsonContent) throws IOException {
         return importPlayer(jsonContent, null);
+    }
+
+    /** Import + mapping dans une seule transaction : le DTO parcourt equipments/resources/buildings (LAZY). */
+    @Transactional
+    public PlayerDto importPlayerDto(String jsonContent, String password) throws IOException {
+        Player player = importPlayer(jsonContent, password);
+        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        return playerMapper.toDtoWithSectors(player, board);
     }
 
     private User ensureCredential(String username, String password) {
@@ -233,5 +251,12 @@ public class AdminService {
         }
         String boardName = board.getName() != null ? board.getName() : "Carte Principale";
         return boardService.saveBoard(board, boardName);
+    }
+
+    /** Idem : boardMapper parcourt sectorsList et ses sous-collections (LAZY). */
+    @Transactional
+    public BoardDto importBoardDto(String jsonContent, String mapImageUrl, String svgOverlayUrl) throws IOException {
+        Board board = importBoard(jsonContent, mapImageUrl, svgOverlayUrl);
+        return boardMapper.toDto(board);
     }
 }
