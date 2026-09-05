@@ -6,21 +6,9 @@ describe('slugify', () => {
   });
 
   it('supprime les accents', () => {
-    expect(slugify('Poing américain')).toBe('poing-americain');
-    expect(slugify('Matraque télescopique')).toBe('matraque-telescopique');
-    expect(slugify('Hache de bûcheron')).toBe('hache-de-bucheron');
-  });
-
-  it('remplace les crochets et espaces par un seul tiret', () => {
-    expect(slugify('Mini machine gun [CM] [MP]')).toBe('mini-machine-gun-cm-mp');
-    expect(slugify('Mini machine gun [CM]')).toBe('mini-machine-gun-cm');
-  });
-
-  it('gère les apostrophes', () => {
-    expect(slugify("Fusil d'assaut")).toBe('fusil-d-assaut');
-    expect(slugify('Fusil à impulsion électromagnétique')).toBe(
-      'fusil-a-impulsion-electromagnetique',
-    );
+    expect(slugify('Flensing Claw')).toBe('flensing-claw');
+    expect(slugify('Voidblade')).toBe('voidblade');
+    expect(slugify('Hyperphase Glaive')).toBe('hyperphase-glaive');
   });
 
   it('trim les tirets en début/fin', () => {

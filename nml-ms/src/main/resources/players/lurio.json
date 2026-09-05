@@ -17,19 +17,19 @@
   ],
   "equipments": [
     {
-      "name": "Mini machine gun",
+      "name": "Gauss Destructor",
       "quantity": 4
     },
     {
-      "name": "Gilet pare-balles moyen",
+      "name": "Sempiternal Weave",
       "quantity": 6
     },
     {
-      "name": "Équipement militaire complet",
+      "name": "Quantum Shielding",
       "quantity": 2
     },
     {
-      "name": "Bouclier anti-émeutes",
+      "name": "Dispersion Shield",
       "quantity": 4
     },
     {
@@ -37,15 +37,15 @@
       "quantity": 6
     },
     {
-      "name": "Tromblon",
+      "name": "Transdimensional Beamer",
       "quantity": 2
     },
     {
-      "name": "Tenue ultra légère",
+      "name": "Phylactery",
       "quantity": 5
     },
     {
-      "name": "Mitrailleuse",
+      "name": "Gauss Flayer",
       "quantity": 1
     },
     {
@@ -53,11 +53,11 @@
       "quantity": 2
     },
     {
-      "name": "Gilet pare-balles léger",
+      "name": "Phase Shifter",
       "quantity": 10
     },
     {
-      "name": "Hache de bûcheron",
+      "name": "Hyperphase Glaive",
       "quantity": 1
     },
     {
@@ -78,9 +78,9 @@
           ],
           "experience": 9,
           "equipments": [
-            "Mini machine gun",
-            "Gilet pare-balles moyen",
-            "Équipement militaire complet"
+            "Gauss Destructor",
+            "Sempiternal Weave",
+            "Quantum Shielding"
           ]
         },
         {
@@ -92,10 +92,10 @@
           ],
           "experience": 9,
           "equipments": [
-            "Mini machine gun",
-            "Hache de bûcheron",
-            "Bouclier anti-émeutes",
-            "Équipement militaire complet",
+            "Gauss Destructor",
+            "Hyperphase Glaive",
+            "Dispersion Shield",
+            "Quantum Shielding",
             "Bouclier balistique",
             "Bouclier balistique",
             "Bouclier balistique"
@@ -110,10 +110,9 @@
           ],
           "experience": 8.5,
           "equipments": [
-            "Tromblon",
-            "Tromblon",
-            "Tenue ultra légère",
-            "Bouclier anti-émeutes",
+            "Transdimensional Beamer",
+            "Phylactery",
+            "Dispersion Shield",
             "Bouclier balistique"
           ]
         },
@@ -126,9 +125,9 @@
           ],
           "experience": 7,
           "equipments": [
-            "Tromblon",
-            "Gilet pare-balles moyen",
-            "Bouclier anti-émeutes",
+            "Transdimensional Beamer",
+            "Sempiternal Weave",
+            "Dispersion Shield",
             "Bouclier balistique"
           ]
         }
@@ -146,9 +145,9 @@
           ],
           "experience": 6,
           "equipments": [
-            "Mini machine gun",
-            "Gilet pare-balles moyen",
-            "Bouclier anti-émeutes",
+            "Gauss Destructor",
+            "Sempiternal Weave",
+            "Dispersion Shield",
             "Bouclier balistique"
           ]
         },
@@ -160,9 +159,9 @@
           ],
           "experience": 2,
           "equipments": [
-            "Mitrailleuse",
-            "Gilet pare-balles léger",
-            "Gilet pare-balles moyen"
+            "Gauss Flayer",
+            "Phase Shifter",
+            "Sempiternal Weave"
           ]
         },
         {
@@ -174,7 +173,7 @@
           "experience": 2,
           "equipments": [
             "HK-MP7",
-            "Tenue ultra légère"
+            "Phylactery"
           ]
         },
         {
@@ -186,7 +185,7 @@
           "experience": 1,
           "equipments": [
             "HK-MP7",
-            "Tenue ultra légère"
+            "Phylactery"
           ]
         },
         {
@@ -198,7 +197,7 @@
           "experience": 1,
           "equipments": [
             "HK-MP7",
-            "Tenue ultra légère"
+            "Phylactery"
           ]
         },
         {
@@ -210,7 +209,7 @@
           "experience": 0,
           "equipments": [
             "HK-MP7",
-            "Tenue ultra légère"
+            "Phylactery"
           ]
         }
       ]

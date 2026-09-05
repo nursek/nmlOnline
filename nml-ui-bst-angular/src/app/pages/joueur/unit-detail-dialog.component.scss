@@ -4,6 +4,7 @@
 $border: #e2e8f0;
 $bg-soft: #f8fafc;
 $bg-card: #ffffff;
+$portrait-size: 240px;
 $text-primary: #1e293b;
 $text-secondary: #64748b;
 $text-muted: #64748b;
@@ -241,8 +242,9 @@ $stat-colors: (
     margin-top: 14px;
 
     img {
-      width: 160px;
-      height: 160px;
+      width: $portrait-size;
+      max-width: 100%;
+      height: $portrait-size;
       object-fit: cover;
       border-radius: 10px;
       border: 1px solid $border;
@@ -250,8 +252,9 @@ $stat-colors: (
     }
 
     .udd-portrait-fallback {
-      width: 160px;
-      height: 160px;
+      width: $portrait-size;
+      max-width: 100%;
+      height: $portrait-size;
       display: flex;
       flex-direction: column;
       align-items: center;
