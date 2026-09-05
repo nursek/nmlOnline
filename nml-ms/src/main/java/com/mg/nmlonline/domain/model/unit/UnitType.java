@@ -23,7 +23,7 @@ public enum UnitType {
     private final int maxMeleeWeapons;
     private final int maxDefensiveEquipment;
 
-    public static UnitType getTypeByExperience(int experience) {
+    public static UnitType getTypeByExperience(double experience) {
         if (experience >= 8) return BRUTE;
         if (experience >= 5) return MALFRAT;
         if (experience >= 2) return VOYOU;

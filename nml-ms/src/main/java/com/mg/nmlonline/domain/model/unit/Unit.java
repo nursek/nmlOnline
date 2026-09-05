@@ -62,7 +62,7 @@ public class Unit extends CombatEntity {
 
     public Unit(double experience, UnitClass primaryClass) {
         this.experience = experience;
-        this.type = UnitType.getTypeByExperience((int) experience);
+        this.type = UnitType.getTypeByExperience(experience);
         this.classesSet = new HashSet<>();
         this.classesSet.add(primaryClass);
 
@@ -179,7 +179,7 @@ public class Unit extends CombatEntity {
 
     public void gainExperience(double exp) {
         this.experience += exp;
-        UnitType newType = UnitType.getTypeByExperience((int) experience);
+        UnitType newType = UnitType.getTypeByExperience(experience);
         if (newType != this.type) {
             evolve(newType);
         }
