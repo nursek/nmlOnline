@@ -61,7 +61,7 @@
       "quantity": 1
     },
     {
-      "name": "HK-MP7",
+      "name": "Tesla Carbine",
       "quantity": 4
     }
   ],
@@ -172,7 +172,7 @@
           ],
           "experience": 2,
           "equipments": [
-            "HK-MP7",
+            "Tesla Carbine",
             "Phylactery"
           ]
         },
@@ -184,7 +184,7 @@
           ],
           "experience": 1,
           "equipments": [
-            "HK-MP7",
+            "Tesla Carbine",
             "Phylactery"
           ]
         },
@@ -196,7 +196,7 @@
           ],
           "experience": 1,
           "equipments": [
-            "HK-MP7",
+            "Tesla Carbine",
             "Phylactery"
           ]
         },
@@ -208,7 +208,7 @@
           ],
           "experience": 0,
           "equipments": [
-            "HK-MP7",
+            "Tesla Carbine",
             "Phylactery"
           ]
         }
