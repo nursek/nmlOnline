@@ -229,6 +229,18 @@ class VehicleServiceTest {
         }
 
         @Test
+        @DisplayName("Véhicule déjà déployé est rejeté")
+        void shouldRejectAlreadyDeployedVehicle() {
+            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            Vehicle vehicle = ownedVehicle();
+            vehicle.setSector(new Sector(1, "Secteur 1"));
+            when(vehicleRepository.findById(5L)).thenReturn(Optional.of(vehicle));
+
+            assertThrows(IllegalStateException.class,
+                    () -> vehicleService.placeVehicle(5L, 100L, 3, 10L));
+        }
+
+        @Test
         @DisplayName("Placement réussi sur secteur possédé")
         void shouldPlaceVehicleOnOwnedSector() {
             when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));

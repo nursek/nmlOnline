@@ -432,6 +432,7 @@ public class MovementService {
             List<Long> entityIds = order.getEntityIds();
             List<CombatEntity> toMove = fromSector.getCombatEntities().stream()
                     .filter(e -> entityIds.contains(e.getId()))
+                    .filter(e -> e instanceof Unit || e instanceof GameCharacter)
                     .toList();
             for (CombatEntity entity : toMove) {
                 entity.setSector(targetSector);
@@ -459,15 +460,17 @@ public class MovementService {
     private void validateEntitiesInSector(Sector sector, List<Long> entityIds, Long playerId) {
         if (sector == null) throw new IllegalArgumentException("Secteur source introuvable.");
 
-        Set<Long> sectorEntityIds = sector.getCombatEntities().stream()
+        Set<Long> movableIds = sector.getCombatEntities().stream()
+                .filter(e -> e instanceof Unit || e instanceof GameCharacter)
                 .filter(e -> playerId.equals(e.getPlayerId()))
                 .map(CombatEntity::getId)
                 .collect(Collectors.toSet());
 
         for (Long entityId : entityIds) {
-            if (!sectorEntityIds.contains(entityId)) {
+            if (!movableIds.contains(entityId)) {
                 throw new IllegalArgumentException(
-                        "L'entité " + entityId + " n'est pas dans le secteur " + sector.getNumber() + ".");
+                        "L'unité " + entityId + " n'est pas déplaçable à pied depuis le secteur "
+                                + sector.getNumber() + " (bâtiments et véhicules exclus).");
             }
         }
     }

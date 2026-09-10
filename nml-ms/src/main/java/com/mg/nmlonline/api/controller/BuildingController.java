@@ -102,9 +102,9 @@ public class BuildingController {
         if (userId == null) return ResponseEntity.status(401).build();
         if (!authorizationService.isBuildingOwner(userId, buildingId)) return ResponseEntity.status(403).build();
 
-        buildingService.moveBuilding(buildingId, request.boardId(), request.newSectorNumber(), request.currentTurn());
+        buildingService.moveBuilding(buildingId, request.boardId(), request.newSectorNumber());
         return ResponseEntity.ok().build();
     }
 
-    public record MoveBuildingRequest(Long boardId, int newSectorNumber, int currentTurn) {}
+    public record MoveBuildingRequest(Long boardId, int newSectorNumber) {}
 }

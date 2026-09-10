@@ -62,4 +62,28 @@ public class BoardMapper {
 
         return dto;
     }
+
+    /** Vue publique : pas de contenu privé d'autrui (argent/ressources des banques, équipements des caches et unités). */
+    public BoardDto toPublicDto(Board board) {
+        if (board == null) return null;
+
+        BoardDto dto = new BoardDto();
+        dto.setId(board.getId());
+        dto.setName(board.getName());
+        dto.setMapImageUrl(board.getMapImageUrl());
+        dto.setSvgOverlayUrl(board.getSvgOverlayUrl());
+
+        if (board.getAllSectors() != null) {
+            Map<Integer, SectorDto> sectorsMap = board.getAllSectors().stream()
+                    .collect(Collectors.toMap(
+                            Sector::getNumber,
+                            sectorMapper::toPublicDto,
+                            (existing, replacement) -> existing,
+                            LinkedHashMap::new
+                    ));
+            dto.setSectors(sectorsMap);
+        }
+
+        return dto;
+    }
 }

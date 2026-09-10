@@ -89,6 +89,30 @@ public class PlayerMapper {
             }
         }
         dto.setSectors(playerSectors);
+        dto.setSectorCount(playerSectors.size());
+
+        return dto;
+    }
+
+    /** Vue publique d'un autre joueur : identité + nombre de secteurs, sans état privé (argent, inventaire, armées). */
+    public PlayerDto toSummaryDto(Player player, Board board) {
+        if (player == null) {
+            return null;
+        }
+
+        PlayerDto dto = new PlayerDto();
+        dto.setId(player.getId());
+        dto.setName(player.getName());
+
+        int sectorCount = 0;
+        if (board != null && player.getId() != null) {
+            for (Sector sector : board.getAllSectors()) {
+                if (player.getId().equals(sector.getOwnerId())) {
+                    sectorCount++;
+                }
+            }
+        }
+        dto.setSectorCount(sectorCount);
 
         return dto;
     }

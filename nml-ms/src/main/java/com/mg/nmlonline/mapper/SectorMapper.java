@@ -71,6 +71,25 @@ public class SectorMapper {
         return sector;
     }
 
+    /** Vue publique de la carte : retire l'équipement des unités et le contenu privé des bâtiments (banque, cache). */
+    public SectorDto toPublicDto(Sector sector) {
+        SectorDto dto = toDto(sector);
+        if (dto == null) {
+            return null;
+        }
+        if (dto.getArmy() != null) {
+            dto.getArmy().forEach(unit -> unit.setEquipments(null));
+        }
+        if (dto.getBuildings() != null) {
+            dto.getBuildings().forEach(building -> {
+                building.setStoredMoney(null);
+                building.setStoredResources(null);
+                building.setStoredEquipments(null);
+            });
+        }
+        return dto;
+    }
+
     public SectorDto toDto(Sector sector) {
         if (sector == null) return null;
 

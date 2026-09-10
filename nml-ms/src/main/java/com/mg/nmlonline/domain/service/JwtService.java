@@ -43,6 +43,7 @@ public class JwtService {
                 .claim("id", user.getId())
                 .claim("name", user.getUsername())
                 .claim("role", user.getRole() != null ? user.getRole() : "USER")
+                .claim("type", "access")
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(key)
@@ -75,6 +76,9 @@ public class JwtService {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
+            if (!"refresh".equals(claims.get("type", String.class))) {
+                return null;
+            }
             return claims.get("jti", String.class);
         } catch (JwtException e) {
             logger.debug("Cannot extract JTI from token: {}", e.getMessage());
@@ -89,6 +93,12 @@ public class JwtService {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
+
+            // Interdit l'usage d'un refresh token comme access token (type confusion).
+            if (!"access".equals(claims.get("type", String.class))) {
+                logger.warn("Token rejected: not an access token");
+                return null;
+            }
 
             Long userId = claims.get("id", Long.class);
             String username = claims.getSubject();

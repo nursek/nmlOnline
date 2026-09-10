@@ -102,9 +102,10 @@ public class TurnResolutionOrchestrator {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Conflit " + conflictId + " introuvable ou déjà résolu"));
-        Player attacker = playerRepository.findById(pc.attackerPlayerId)
+        // Verrou pessimiste : les stats de combat des deux joueurs sont recalculées/flushées pendant la bataille.
+        Player attacker = playerRepository.findByIdForUpdate(pc.attackerPlayerId)
                 .orElseThrow(() -> new IllegalStateException("Joueur attaquant " + pc.attackerPlayerId + " introuvable"));
-        Player defender = playerRepository.findById(pc.defenderPlayerId)
+        Player defender = playerRepository.findByIdForUpdate(pc.defenderPlayerId)
                 .orElseThrow(() -> new IllegalStateException("Joueur défenseur " + pc.defenderPlayerId + " introuvable"));
         Board board = loadBoard();
         CombatService.SectorBattleResult r =

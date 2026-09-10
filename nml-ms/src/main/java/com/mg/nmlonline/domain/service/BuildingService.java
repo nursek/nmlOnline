@@ -78,7 +78,7 @@ public class BuildingService {
         if (hqOpt.isEmpty()) return false;
 
         Headquarters hq = hqOpt.get();
-        Player player = playerRepository.findById(playerId).orElse(null);
+        Player player = playerRepository.findByIdForUpdate(playerId).orElse(null);
         if (player == null) return false;
 
         double cost = HQ_RECONSTRUCTION_SAME_LOCATION_COST;
@@ -127,7 +127,7 @@ public class BuildingService {
         }
 
         // Valider le joueur capturant AVANT de muter le cache.
-        Player capturingPlayer = playerRepository.findById(capturingPlayerId)
+        Player capturingPlayer = playerRepository.findByIdForUpdate(capturingPlayerId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Le joueur capturant avec l'ID " + capturingPlayerId + " n'existe pas"));
 
@@ -154,7 +154,7 @@ public class BuildingService {
         }
 
         // Valider le joueur capturant AVANT de muter la banque.
-        Player capturingPlayer = playerRepository.findById(capturingPlayerId)
+        Player capturingPlayer = playerRepository.findByIdForUpdate(capturingPlayerId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Le joueur capturant avec l'ID " + capturingPlayerId + " n'existe pas"));
 
@@ -191,11 +191,12 @@ public class BuildingService {
         return bankOpt.get().calculateVampirizedAmount(income, currentTurn);
     }
 
-    public boolean moveBuilding(Long buildingId, Long boardId, int newSectorNumber, int currentTurn) {
+    public boolean moveBuilding(Long buildingId, Long boardId, int newSectorNumber) {
         Building building = buildingRepository.findById(buildingId).orElse(null);
         if (building == null) {
             throw new IllegalArgumentException("Bâtiment introuvable : " + buildingId);
         }
+        int currentTurn = turnService.getCurrentTurn();
         if (!building.canMove(currentTurn)) {
             throw new IllegalStateException("Le bâtiment ne peut pas se déplacer ce tour-ci");
         }

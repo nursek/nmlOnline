@@ -71,7 +71,7 @@ class BuildingServiceTest {
             Headquarters hq = new Headquarters(1L);
             hq.destroy();
             stubHeadquarters(hq);
-            when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
 
             boolean result = buildingService.reconstructHeadquartersSameLocation(1L);
 
@@ -91,7 +91,7 @@ class BuildingServiceTest {
             hq.destroy();
             stubHeadquarters(hq);
             player.getStats().setMoney(74999.0);
-            when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
 
             boolean result = buildingService.reconstructHeadquartersSameLocation(1L);
 
@@ -160,7 +160,7 @@ class BuildingServiceTest {
             Player capturer = new Player("Capturer");
             capturer.setId(2L);
             capturer.getStats().setMoney(1000.0);
-            when(playerRepository.findById(2L)).thenReturn(Optional.of(capturer));
+            when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(capturer));
 
             BuildingService.CaptureResult result = buildingService.captureBank(50L, 2L, 3);
 
@@ -178,7 +178,7 @@ class BuildingServiceTest {
         void shouldThrowWhenCapturerMissing() {
             Bank bank = new Bank(1L);
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(bank));
-            when(playerRepository.findById(99L)).thenReturn(Optional.empty());
+            when(playerRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
             assertThrows(IllegalArgumentException.class,
                     () -> buildingService.captureBank(50L, 99L, 3));
@@ -236,7 +236,7 @@ class BuildingServiceTest {
             when(buildingRepository.findById(50L)).thenReturn(Optional.empty());
 
             assertThrows(IllegalArgumentException.class,
-                    () -> buildingService.moveBuilding(50L, 100L, 3, 10));
+                    () -> buildingService.moveBuilding(50L, 100L, 3));
         }
 
         @Test
@@ -245,9 +245,10 @@ class BuildingServiceTest {
             Headquarters hq = new Headquarters(1L);
             hq.setLastMovedTurn(8);
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(hq));
+            when(turnService.getCurrentTurn()).thenReturn(10);
 
             assertThrows(IllegalStateException.class,
-                    () -> buildingService.moveBuilding(50L, 100L, 3, 10));
+                    () -> buildingService.moveBuilding(50L, 100L, 3));
         }
 
         @Test
@@ -258,7 +259,7 @@ class BuildingServiceTest {
             when(boardService.getSectorFromBoard(100L, 3)).thenReturn(Optional.empty());
 
             assertThrows(IllegalArgumentException.class,
-                    () -> buildingService.moveBuilding(50L, 100L, 3, 10));
+                    () -> buildingService.moveBuilding(50L, 100L, 3));
         }
 
         @Test
@@ -271,7 +272,7 @@ class BuildingServiceTest {
             when(boardService.getSectorFromBoard(100L, 3)).thenReturn(Optional.of(sector));
 
             assertThrows(IllegalStateException.class,
-                    () -> buildingService.moveBuilding(50L, 100L, 3, 10));
+                    () -> buildingService.moveBuilding(50L, 100L, 3));
         }
 
         @Test
@@ -282,8 +283,9 @@ class BuildingServiceTest {
             Sector sector = new Sector(3, "Secteur 3");
             sector.setOwnerId(1L);
             when(boardService.getSectorFromBoard(100L, 3)).thenReturn(Optional.of(sector));
+            when(turnService.getCurrentTurn()).thenReturn(10);
 
-            boolean result = buildingService.moveBuilding(50L, 100L, 3, 10);
+            boolean result = buildingService.moveBuilding(50L, 100L, 3);
 
             assertTrue(result);
             assertSame(sector, cache.getSector());
@@ -299,8 +301,9 @@ class BuildingServiceTest {
             Sector sector = new Sector(3, "Secteur 3");
             sector.setOwnerId(1L);
             when(boardService.getSectorFromBoard(100L, 3)).thenReturn(Optional.of(sector));
+            when(turnService.getCurrentTurn()).thenReturn(5);
 
-            buildingService.moveBuilding(50L, 100L, 3, 5);
+            buildingService.moveBuilding(50L, 100L, 3);
 
             assertTrue(bank.isHasMoved());
             assertFalse(bank.canMove(6));
