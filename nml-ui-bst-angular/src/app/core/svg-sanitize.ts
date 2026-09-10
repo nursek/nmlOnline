@@ -23,6 +23,8 @@ const FORBIDDEN_ELEMENTS = new Set([
   'template',
 ]);
 
+const DANGEROUS_SCHEME = /^(javascript|vbscript|data):/;
+
 /**
  * Neutralise les éléments et attributs actifs d'un SVG avant injection en innerHTML.
  * Parsing via <template> : on inspecte le markup que produira innerHTML (un parseur XML
@@ -59,11 +61,7 @@ function sanitizeOnce(text: string): string {
     for (const attr of Array.from(el.attributes)) {
       const name = attr.name.toLowerCase();
       const value = attr.value.replace(/\s/g, '').toLowerCase();
-      if (
-        name.startsWith('on') ||
-        value.startsWith('javascript:') ||
-        value.startsWith('data:text/html')
-      ) {
+      if (name.startsWith('on') || DANGEROUS_SCHEME.test(value)) {
         el.removeAttribute(attr.name);
       }
     }

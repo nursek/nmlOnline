@@ -38,6 +38,18 @@ describe('sanitizeSvg', () => {
     expect(out).toContain('path3');
   });
 
+  it('retire les schémas vbscript: et data:', () => {
+    const out = sanitizeSvg(
+      `<svg xmlns="${SVG_NS}"><image href="vbscript:msgbox(1)"/>` +
+        `<image href="DATA:image/svg+xml;base64,PHN2Zz4="/>` +
+        `<path id="path7" d="M0 0"/></svg>`,
+    );
+
+    expect(out.toLowerCase()).not.toContain('vbscript:');
+    expect(out.toLowerCase()).not.toContain('data:');
+    expect(out).toContain('path7');
+  });
+
   it('retire les attributs javascript: encodés en entités', () => {
     const out = sanitizeSvg(
       `<svg xmlns="${SVG_NS}"><a href="&#106;avascript:alert(1)">x</a>` +
