@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -17,24 +18,33 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTabsModule } from '@angular/material/tabs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Equipment, Sector, Unit, Vehicle } from '../../models';
+import { Equipment, PlayerResource, Sector, Unit, Vehicle } from '../../models';
 import { PlayerService } from '../../services/player.service';
+import { MovementStateService } from '../../services/movement-state.service';
 import { slugify } from '../../core/slug';
 import {
   VehiclePlacementModalComponent,
   VehiclePlacementDialogData,
 } from './vehicle-placement-modal.component';
 import { UnitDetailDialogComponent, UnitDetailDialogData } from './unit-detail-dialog.component';
+import { GroupMoveDialogComponent, GroupMoveDialogData } from './group-move-dialog.component';
+import {
+  SellResourceDialogComponent,
+  SellResourceDialogData,
+} from './sell-resource-dialog.component';
+import { movableEntities } from './movement.helpers';
+import { CharacterPanelComponent } from './character-panel.component';
 import { ExpPipe } from '../../shared/exp.pipe';
+import { ResourceCardComponent } from '../../shared/resource-card/resource-card.component';
 import {
   buildingStats,
-  characterStats,
   EconomyBreakdown,
   economyBreakdown,
   equipmentByClass,
   equipmentStackCost,
   incomeTotal,
   playerForces,
+  SectorForces,
   totalsStats,
   troopSummaries,
   unitClassCodes,
@@ -42,6 +52,7 @@ import {
   unitStats,
   vehicleStats,
 } from './joueur.helpers';
+import { characterStats } from '../../core/stats';
 
 @Component({
   selector: 'app-joueur',
@@ -58,13 +69,17 @@ import {
     MatDialogModule,
     MatExpansionModule,
     MatTabsModule,
+    CharacterPanelComponent,
+    ResourceCardComponent,
   ],
   templateUrl: './joueur.component.html',
   styleUrls: ['./joueur.component.scss'],
 })
 export class JoueurComponent {
   private readonly playerService = inject(PlayerService);
+  private readonly movementState = inject(MovementStateService);
   private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly player = this.playerService.player;
@@ -78,10 +93,15 @@ export class JoueurComponent {
     void this.playerService.loadCurrent();
     void this.playerService.loadVehicles();
     void this.playerService.loadCurrentTurn();
+    void this.movementState.loadOrders();
   }
 
   readonly playerCharacter = computed(() => this.player()?.character ?? null);
   readonly conqueredSectors = computed(() => this.player()?.sectors ?? []);
+  readonly characterSector = computed(() => {
+    const number = this.playerCharacter()?.sectorNumber;
+    return this.conqueredSectors().find((s) => s.number === number) ?? null;
+  });
   readonly income = computed(() => incomeTotal(this.conqueredSectors()));
   readonly troopSummaries = computed(() =>
     troopSummaries(this.conqueredSectors(), this.player()?.id ?? null),
@@ -89,6 +109,19 @@ export class JoueurComponent {
   readonly forces = computed(() =>
     playerForces(this.conqueredSectors(), this.player()?.id ?? null),
   );
+  readonly movableSectorNumbers = computed<ReadonlySet<number>>(() => {
+    const playerId = this.player()?.id;
+    if (playerId == null) return new Set();
+    const pending = this.movementState.pendingEntityIds();
+    const numbers = new Set<number>();
+    for (const sf of this.forces().sectors) {
+      const number = sf.sector.number;
+      if (number == null) continue;
+      const { units, character } = movableEntities(sf.sector, playerId, pending);
+      if (units.length > 0 || character !== null) numbers.add(number);
+    }
+    return numbers;
+  });
   readonly groupedEquipments = computed(() => equipmentByClass(this.player()?.equipments ?? []));
   readonly economy = computed<EconomyBreakdown | null>(() => {
     const p = this.player();
@@ -183,5 +216,30 @@ export class JoueurComponent {
       minWidth: '320px',
       data: dialogData,
     });
+  }
+
+  openGroupMove(sf: SectorForces): void {
+    const playerId = this.player()?.id;
+    const number = sf.sector.number;
+    if (playerId == null || number == null) return;
+    const data: GroupMoveDialogData = { sector: sf.sector, sectorNumber: number, playerId };
+    this.dialog.open(GroupMoveDialogComponent, {
+      width: '720px',
+      maxWidth: '95vw',
+      data,
+    });
+  }
+
+  openSellDialog(resource: PlayerResource): void {
+    const data: SellResourceDialogData = { resource };
+    this.dialog.open(SellResourceDialogComponent, {
+      width: '420px',
+      maxWidth: '95vw',
+      data,
+    });
+  }
+
+  goToShop(): void {
+    void this.router.navigate(['/boutique'], { queryParams: { tab: 'revente' } });
   }
 }

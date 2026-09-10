@@ -1,0 +1,445 @@
+{
+  "name": "imotekh",
+  "money": 25000,
+  "resources": [
+    {
+      "resourceId": 1,
+      "quantity": 12
+    },
+    {
+      "resourceId": 2,
+      "quantity": 8
+    },
+    {
+      "resourceId": 5,
+      "quantity": 6
+    },
+    {
+      "resourceId": 6,
+      "quantity": 10
+    },
+    {
+      "resourceId": 7,
+      "quantity": 4
+    }
+  ],
+  "equipments": [
+    {
+      "name": "Enmitic Disintegrator Pistol",
+      "quantity": 2
+    },
+    {
+      "name": "Gauss Blaster",
+      "quantity": 2
+    },
+    {
+      "name": "Tesla Carbine",
+      "quantity": 3
+    },
+    {
+      "name": "Gauss Flayer",
+      "quantity": 2
+    },
+    {
+      "name": "Gauss Reaper",
+      "quantity": 3
+    },
+    {
+      "name": "Gauss Destructor",
+      "quantity": 2
+    },
+    {
+      "name": "Particle Caster",
+      "quantity": 2
+    },
+    {
+      "name": "Transdimensional Beamer",
+      "quantity": 1
+    },
+    {
+      "name": "Particle Beamer",
+      "quantity": 1
+    },
+    {
+      "name": "Voltaic Staff",
+      "quantity": 2
+    },
+    {
+      "name": "Thermal Cutting Beam",
+      "quantity": 1
+    },
+    {
+      "name": "Entropic Lance",
+      "quantity": 1
+    },
+    {
+      "name": "Eldritch Lance",
+      "quantity": 1
+    },
+    {
+      "name": "Gauss Cannon",
+      "quantity": 1
+    },
+    {
+      "name": "Heavy Gauss Cannon",
+      "quantity": 1
+    },
+    {
+      "name": "Enmitic Annihilator",
+      "quantity": 1
+    },
+    {
+      "name": "Synaptic Disintegrator",
+      "quantity": 2
+    },
+    {
+      "name": "Particle Shredder",
+      "quantity": 1
+    },
+    {
+      "name": "Enmitic Exterminator",
+      "quantity": 1
+    },
+    {
+      "name": "Flensing Claw",
+      "quantity": 2
+    },
+    {
+      "name": "Voidblade",
+      "quantity": 3
+    },
+    {
+      "name": "Hyperphase Reap-Blade",
+      "quantity": 3
+    },
+    {
+      "name": "Hyperphase Sword",
+      "quantity": 3
+    },
+    {
+      "name": "Hyperphase Glaive",
+      "quantity": 3
+    },
+    {
+      "name": "Hyperphase Harvester",
+      "quantity": 3
+    },
+    {
+      "name": "Gauntlet of Fire",
+      "quantity": 2
+    },
+    {
+      "name": "Warscythe",
+      "quantity": 1
+    },
+    {
+      "name": "Monomolecular Proboscis",
+      "quantity": 1
+    },
+    {
+      "name": "Rod of Covenant",
+      "quantity": 1
+    },
+    {
+      "name": "Staff of Light",
+      "quantity": 1
+    },
+    {
+      "name": "Tachyon Arrow",
+      "quantity": 2
+    },
+    {
+      "name": "Hyperphase Thresher",
+      "quantity": 1
+    },
+    {
+      "name": "Phylactery",
+      "quantity": 3
+    },
+    {
+      "name": "Solar Pulse",
+      "quantity": 1
+    },
+    {
+      "name": "Phase Shifter",
+      "quantity": 3
+    },
+    {
+      "name": "Sempiternal Weave",
+      "quantity": 5
+    },
+    {
+      "name": "Quantum Shielding",
+      "quantity": 4
+    },
+    {
+      "name": "Lightning Field",
+      "quantity": 2
+    },
+    {
+      "name": "Dispersion Shield",
+      "quantity": 3
+    },
+    {
+      "name": "Bouclier balistique",
+      "quantity": 3
+    },
+    {
+      "name": "Veil of Darkness",
+      "quantity": 3
+    },
+    {
+      "name": "Nightmare Shroud",
+      "quantity": 2
+    },
+    {
+      "name": "Gloom Prism",
+      "quantity": 2
+    },
+    {
+      "name": "Chronometron",
+      "quantity": 2
+    },
+    {
+      "name": "Mindshackle Scarabs",
+      "quantity": 1
+    },
+    {
+      "name": "Armure thermique",
+      "quantity": 1
+    },
+    {
+      "name": "Protège-dents",
+      "quantity": 1
+    },
+    {
+      "name": "Casque militaire",
+      "quantity": 1
+    },
+    {
+      "name": "Gilet Kevlar",
+      "quantity": 1
+    },
+    {
+      "name": "Treillis de camouflage urbain",
+      "quantity": 2
+    },
+    {
+      "name": "Gilet de camouflage optique",
+      "quantity": 2
+    }
+  ],
+  "vehicles": [
+    {
+      "type": "TOURELLE",
+      "quantity": 1,
+      "sectorNumber": 26
+    },
+    {
+      "type": "VTT_LEGER",
+      "quantity": 1,
+      "sectorNumber": 25
+    },
+    {
+      "type": "VTT_BLINDE",
+      "quantity": 1,
+      "sectorNumber": 39
+    },
+    {
+      "type": "TANK",
+      "quantity": 1
+    },
+    {
+      "type": "HELICOPTERE",
+      "quantity": 1
+    }
+  ],
+  "sectors": [
+    {
+      "sectorNumber": 26,
+      "army": [
+        {
+          "id": 1,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Enmitic Disintegrator Pistol",
+            "Flensing Claw",
+            "Phylactery"
+          ]
+        },
+        {
+          "id": 2,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Gauss Blaster",
+            "Voidblade",
+            "Veil of Darkness"
+          ]
+        },
+        {
+          "id": 3,
+          "type": "VOYOU",
+          "classes": [
+            "TIREUR"
+          ],
+          "experience": 3,
+          "equipments": [
+            "Gauss Flayer",
+            "Hyperphase Reap-Blade",
+            "Phase Shifter",
+            "Sempiternal Weave"
+          ]
+        },
+        {
+          "id": 4,
+          "type": "VOYOU",
+          "classes": [
+            "SNIPER"
+          ],
+          "experience": 4,
+          "equipments": [
+            "Synaptic Disintegrator",
+            "Tachyon Arrow",
+            "Treillis de camouflage urbain",
+            "Gilet de camouflage optique"
+          ]
+        }
+      ]
+    },
+    {
+      "sectorNumber": 25,
+      "army": [
+        {
+          "id": 5,
+          "type": "MALFRAT",
+          "classes": [
+            "TIREUR"
+          ],
+          "experience": 6,
+          "equipments": [
+            "Gauss Reaper",
+            "Hyperphase Sword",
+            "Hyperphase Reap-Blade",
+            "Sempiternal Weave",
+            "Quantum Shielding"
+          ]
+        },
+        {
+          "id": 6,
+          "type": "MALFRAT",
+          "classes": [
+            "MASTODONTE"
+          ],
+          "experience": 5,
+          "equipments": [
+            "Particle Caster",
+            "Hyperphase Glaive",
+            "Hyperphase Harvester",
+            "Dispersion Shield",
+            "Lightning Field",
+            "Bouclier balistique"
+          ]
+        },
+        {
+          "id": 7,
+          "type": "VOYOU",
+          "classes": [
+            "ELEMENTAIRE"
+          ],
+          "experience": 3,
+          "equipments": [
+            "Voltaic Staff",
+            "Gauntlet of Fire",
+            "Gloom Prism",
+            "Chronometron"
+          ]
+        }
+      ]
+    },
+    {
+      "sectorNumber": 39,
+      "army": [
+        {
+          "id": 8,
+          "type": "BRUTE",
+          "classes": [
+            "TIREUR",
+            "MASTODONTE"
+          ],
+          "experience": 9,
+          "equipments": [
+            "Gauss Destructor",
+            "Hyperphase Glaive",
+            "Hyperphase Harvester",
+            "Quantum Shielding",
+            "Sempiternal Weave",
+            "Dispersion Shield",
+            "Bouclier balistique"
+          ]
+        },
+        {
+          "id": 9,
+          "type": "MALFRAT",
+          "classes": [
+            "TIREUR"
+          ],
+          "experience": 7,
+          "equipments": [
+            "Gauss Reaper",
+            "Hyperphase Sword",
+            "Phase Shifter",
+            "Quantum Shielding",
+            "Sempiternal Weave"
+          ]
+        },
+        {
+          "id": 10,
+          "type": "MALFRAT",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 5,
+          "equipments": [
+            "Tesla Carbine",
+            "Voidblade",
+            "Phylactery",
+            "Nightmare Shroud",
+            "Veil of Darkness"
+          ]
+        }
+      ]
+    }
+  ],
+  "character": {
+    "name": "Imotekh",
+    "sectorNumber": 26,
+    "baseAttack": 350,
+    "baseDefense": 300,
+    "basePdf": 150,
+    "basePdc": 100,
+    "baseArmor": 50,
+    "baseEvasion": 10
+  },
+  "buildings": [
+    {
+      "type": "HEADQUARTERS",
+      "sectorNumber": 26
+    },
+    {
+      "type": "WEAPON_CACHE",
+      "sectorNumber": 26
+    },
+    {
+      "type": "BANK",
+      "sectorNumber": 26
+    }
+  ]
+}

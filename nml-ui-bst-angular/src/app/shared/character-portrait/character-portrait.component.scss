@@ -1,0 +1,142 @@
+@use '../../../styles/shared' as shared;
+
+.cp-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 200px;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+  background: #f5f3ff;
+  border: 2px solid #c4b5fd;
+  border-radius: 12px;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
+}
+
+.cp-link {
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(124, 58, 237, 0.25);
+  }
+
+  &:focus-visible {
+    outline: 3px solid #7c3aed;
+    outline-offset: 2px;
+  }
+}
+
+.cp-portrait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 140px;
+  overflow: hidden;
+  background: #ede9fe;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.cp-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #6d28d9;
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+  }
+
+  span {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+}
+
+.cp-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4c1d95;
+}
+
+.cp-sector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #6d28d9;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.cp-stats {
+  font-size: 0.7rem;
+  color: #6d28d9;
+}
+
+.cp-hint {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #7c3aed;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.cp-lg {
+  width: 380px;
+  max-width: 100%;
+  padding: 24px;
+  gap: 10px;
+
+  .cp-portrait {
+    width: min(300px, 50vw);
+    height: min(300px, 50vw);
+  }
+
+  .cp-name {
+    font-size: 1.5rem;
+  }
+
+  .cp-stats {
+    font-size: 0.85rem;
+  }
+
+  .cp-fallback mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cp-frame {
+    width: 100%;
+  }
+}

@@ -1,0 +1,68 @@
+<div class="srd">
+  <h2 mat-dialog-title>
+    <mat-icon>sell</mat-icon>
+    Vendre — {{ data.resource.name }}
+  </h2>
+
+  <mat-dialog-content>
+    <div class="srd-stock">
+      Stock disponible : <strong>{{ data.resource.quantity }}</strong>
+    </div>
+
+    <div class="srd-qty">
+      <button
+        mat-icon-button
+        type="button"
+        (click)="decrease()"
+        [disabled]="quantity() <= 1"
+        aria-label="Diminuer la quantité"
+      >
+        <mat-icon>remove</mat-icon>
+      </button>
+      <mat-form-field appearance="outline" class="srd-input">
+        <mat-label>Quantité</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1"
+          [max]="maxQuantity()"
+          [value]="quantity()"
+          (input)="onInput($event)"
+        />
+      </mat-form-field>
+      <button
+        mat-icon-button
+        type="button"
+        (click)="increase()"
+        [disabled]="quantity() >= maxQuantity()"
+        aria-label="Augmenter la quantité"
+      >
+        <mat-icon>add</mat-icon>
+      </button>
+      <button mat-button type="button" (click)="setMax()">Max</button>
+    </div>
+
+    <div class="srd-price">
+      <div class="srd-row">
+        <span>Prix unitaire</span>
+        <span>{{ data.resource.baseValue ?? '?' }} ₡</span>
+      </div>
+      <div class="srd-row">
+        <span>Multiplicateur ({{ quantity() }} unité(s))</span>
+        <span>×{{ multiplier() }}</span>
+      </div>
+      <div class="srd-row srd-total">
+        <span>Total estimé</span>
+        <strong>{{ totalValue() | number: '1.0-0' }} ₡</strong>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="close()">Annuler</button>
+    <button mat-raised-button color="primary" [disabled]="busy()" (click)="confirm()">
+      <mat-icon>sell</mat-icon>
+      Vendre pour {{ totalValue() | number: '1.0-0' }} ₡
+    </button>
+  </mat-dialog-actions>
+</div>

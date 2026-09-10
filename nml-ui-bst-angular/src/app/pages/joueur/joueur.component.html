@@ -25,7 +25,7 @@
       <mat-tab label="Aperçu">
         <div class="stats-row">
           @for (stat of mainStats(); track stat.label) {
-            <mat-card class="stat-card hover-lift">
+            <mat-card class="stat-card hover-lift" [style.border-top]="'4px solid ' + stat.color">
               <mat-card-content>
                 <div class="stat-content">
                   <div>
@@ -41,10 +41,10 @@
           }
         </div>
 
-        <mat-card class="card">
+        <mat-card class="card card--troops">
           <mat-card-content>
             <div class="section-header">
-              <mat-icon color="primary">groups</mat-icon>
+              <mat-icon>groups</mat-icon>
               <h2>Troupes disponibles</h2>
             </div>
             <p class="section-subtitle">Vos unités, tous secteurs confondus</p>
@@ -67,10 +67,10 @@
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="card">
+        <mat-card class="card card--vehicles">
           <mat-card-content>
             <div class="section-header">
-              <mat-icon color="primary">local_shipping</mat-icon>
+              <mat-icon>local_shipping</mat-icon>
               <h2>Véhicules disponibles</h2>
             </div>
             <p class="section-subtitle">Véhicules en réserve à déployer sur vos secteurs</p>
@@ -87,9 +87,9 @@
               @if (undeployedVehicles().length > 0) {
                 <div class="details-grid">
                   @for (vehicle of undeployedVehicles(); track vehicle.id) {
-                    <div class="resource-card">
-                      <div class="resource-info">
-                        <mat-icon class="resource-icon">directions_car</mat-icon>
+                    <div class="reserve-card">
+                      <div class="reserve-info">
+                        <mat-icon class="reserve-icon">directions_car</mat-icon>
                         <div>
                           <h4>{{ vehicle.displayName }}</h4>
                           @if (vehicle.vehicleType) {
@@ -121,40 +121,28 @@
           </mat-card-content>
         </mat-card>
 
-        @if (playerCharacter(); as c) {
-          <mat-card class="card">
+        @if (playerCharacter()) {
+          <mat-card class="card card--character">
             <mat-card-content>
               <div class="section-header">
-                <mat-icon color="primary">face</mat-icon>
+                <mat-icon>face</mat-icon>
                 <h2>Personnage</h2>
               </div>
               <p class="section-subtitle">Votre leader sur le terrain</p>
-              <div class="details-grid">
-                <div class="resource-card">
-                  <div class="resource-info">
-                    <mat-icon class="resource-icon">person</mat-icon>
-                    <div>
-                      <h4>{{ c.name }}</h4>
-                      @if (c.sectorNumber !== null && c.sectorNumber !== undefined) {
-                        <span class="quantity-label">Secteur : {{ c.sectorNumber }}</span>
-                      }
-                      <span class="value-label">
-                        @for (s of characterStats(c); track s.label) {
-                          {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
-                        }
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <app-character-panel
+                [playerName]="player.name"
+                [character]="playerCharacter()"
+                [sector]="characterSector()"
+                [playerId]="player.id"
+              />
             </mat-card-content>
           </mat-card>
         }
 
-        <mat-card class="card">
+        <mat-card class="card card--equipment">
           <mat-card-content>
             <div class="section-header">
-              <mat-icon color="primary">inventory_2</mat-icon>
+              <mat-icon>inventory_2</mat-icon>
               <h2>Équipements</h2>
             </div>
             <p class="section-subtitle">Votre arsenal actuel</p>
@@ -238,11 +226,15 @@
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="card">
+        <mat-card class="card card--resources">
           <mat-card-content>
             <div class="section-header">
-              <mat-icon color="primary">diamond</mat-icon>
+              <mat-icon>diamond</mat-icon>
               <h2>Ressources possédées</h2>
+              <button mat-stroked-button color="primary" class="shop-btn" (click)="goToShop()">
+                <mat-icon>storefront</mat-icon>
+                Boutique
+              </button>
             </div>
             <p class="section-subtitle">Votre inventaire de ressources précieuses</p>
 
@@ -256,30 +248,17 @@
             } @else {
               <div class="details-grid">
                 @for (resource of player.resources; track resource.id) {
-                  <div class="resource-card">
-                    <div class="resource-info">
-                      <mat-icon class="resource-icon">diamond</mat-icon>
-                      <div>
-                        <h4>{{ resource.name }}</h4>
-                        <span class="quantity-label">Quantité: {{ resource.quantity }}</span>
-                        @if (resource.baseValue) {
-                          <span class="value-label"
-                            >Valeur unitaire: {{ resource.baseValue }} ₡</span
-                          >
-                        }
-                      </div>
-                    </div>
-                  </div>
+                  <app-resource-card [resource]="resource" (sell)="openSellDialog(resource)" />
                 }
               </div>
             }
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="card">
+        <mat-card class="card card--forces">
           <mat-card-content>
             <div class="section-header">
-              <mat-icon color="primary">security</mat-icon>
+              <mat-icon>security</mat-icon>
               <h2>Forces en présence</h2>
             </div>
             <p class="section-subtitle">Vos forces stationnées dans chaque secteur conquis</p>
@@ -319,6 +298,22 @@
                         {{ sf.sector.stats.resourceProduction }} production
                       }
                     </span>
+
+                    @if (
+                      sf.sector.number !== null && movableSectorNumbers().has(sf.sector.number)
+                    ) {
+                      <div class="sector-actions">
+                        <button
+                          mat-stroked-button
+                          color="primary"
+                          (click)="openGroupMove(sf)"
+                          matTooltip="Sélectionner les entités du secteur et donner un ordre groupé"
+                        >
+                          <mat-icon>directions_walk</mat-icon>
+                          Déplacer le secteur
+                        </button>
+                      </div>
+                    }
 
                     @if (sf.empty) {
                       <p class="no-forces">Aucune force en présence.</p>
@@ -429,10 +424,10 @@
           </mat-card-content>
         </mat-card>
 
-        <mat-card class="card">
+        <mat-card class="card card--powers">
           <mat-card-content>
             <div class="section-header">
-              <mat-icon color="primary">military_tech</mat-icon>
+              <mat-icon>military_tech</mat-icon>
               <h2>Puissances</h2>
             </div>
             <p class="section-subtitle">Synthèse militaire et économique de vos forces</p>

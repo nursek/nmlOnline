@@ -12,8 +12,10 @@ import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.user.User;
+import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
+import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import com.mg.nmlonline.mapper.BoardMapper;
 import com.mg.nmlonline.mapper.PlayerMapper;
 import jakarta.persistence.EntityManager;
@@ -33,6 +35,7 @@ public class AdminService {
     private final UserService userService;
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
+    private final VehicleRepository vehicleRepository;
     private final EntityManager entityManager;
     private final PlayerMapper playerMapper;
     private final BoardMapper boardMapper;
@@ -44,6 +47,7 @@ public class AdminService {
                         UserService userService,
                         UserRepository userRepository,
                         ResourceRepository resourceRepository,
+                        VehicleRepository vehicleRepository,
                         EntityManager entityManager,
                         PlayerMapper playerMapper,
                         BoardMapper boardMapper) {
@@ -54,6 +58,7 @@ public class AdminService {
         this.userService = userService;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
+        this.vehicleRepository = vehicleRepository;
         this.entityManager = entityManager;
         this.playerMapper = playerMapper;
         this.boardMapper = boardMapper;
@@ -89,6 +94,7 @@ public class AdminService {
 
         Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
         if (board != null) {
+            playerImportService.importVehicles(dto, player, board);
             playerImportService.importSectors(dto, player, board);
             playerImportService.importCharacter(dto, player, board);
             playerImportService.importBuildings(dto, player, board);
@@ -220,6 +226,15 @@ public class AdminService {
             buildingsList.add(bMap);
         }
         result.put("buildings", buildingsList);
+
+        List<Map<String, Object>> vehiclesList = new ArrayList<>();
+        for (Vehicle vehicle : vehicleRepository.findByPlayerId(player.getId())) {
+            Map<String, Object> vMap = new LinkedHashMap<>();
+            vMap.put("type", vehicle.getVehicleType() != null ? vehicle.getVehicleType().name() : null);
+            vMap.put("sectorNumber", vehicle.getSector() != null ? vehicle.getSector().getNumber() : null);
+            vehiclesList.add(vMap);
+        }
+        result.put("vehicles", vehiclesList);
 
         return result;
     }

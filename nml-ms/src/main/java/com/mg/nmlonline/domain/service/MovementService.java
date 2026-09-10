@@ -56,8 +56,11 @@ public class MovementService {
             throw new IllegalArgumentException("La route n'est pas valide (secteurs non adjacents).");
         }
 
+        validateEntityIds(entityIds);
+
         Sector fromSector = board.getSector(from);
         validateEntitiesInSector(fromSector, entityIds, playerId);
+        validateNotAlreadyOrdered(turn, entityIds);
 
         int hops = route.size() - 1;
         validateFootHops(fromSector, entityIds, playerId, hops);
@@ -456,18 +459,39 @@ public class MovementService {
         if (!board.hasSector(to)) throw new IllegalArgumentException("Secteur de destination inexistant : " + to);
     }
 
+    private void validateEntityIds(List<Long> entityIds) {
+        if (entityIds == null || entityIds.isEmpty()) {
+            throw new IllegalArgumentException("L'ordre doit cibler au moins une entité.");
+        }
+        if (new HashSet<>(entityIds).size() != entityIds.size()) {
+            throw new IllegalArgumentException("Un ordre ne peut pas contenir deux fois la même entité.");
+        }
+    }
+
+    private void validateNotAlreadyOrdered(int turn, List<Long> entityIds) {
+        List<Long> alreadyOrdered = orderRepository.findPendingEntityIds(turn, entityIds);
+        if (!alreadyOrdered.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Entité(s) déjà engagée(s) dans un ordre en attente : " + alreadyOrdered + ".");
+        }
+    }
+
     private void validateEntitiesInSector(Sector sector, List<Long> entityIds, Long playerId) {
         if (sector == null) throw new IllegalArgumentException("Secteur source introuvable.");
 
-        Set<Long> sectorEntityIds = sector.getCombatEntities().stream()
+        Map<Long, CombatEntity> sectorEntities = sector.getCombatEntities().stream()
                 .filter(e -> playerId.equals(e.getPlayerId()))
-                .map(CombatEntity::getId)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toMap(CombatEntity::getId, e -> e));
 
         for (Long entityId : entityIds) {
-            if (!sectorEntityIds.contains(entityId)) {
+            CombatEntity entity = sectorEntities.get(entityId);
+            if (entity == null) {
                 throw new IllegalArgumentException(
                         "L'entité " + entityId + " n'est pas dans le secteur " + sector.getNumber() + ".");
+            }
+            if (!(entity instanceof Unit) && !(entity instanceof GameCharacter)) {
+                throw new IllegalArgumentException(
+                        "L'entité " + entityId + " n'est pas une unité ou un personnage déplaçable.");
             }
         }
     }

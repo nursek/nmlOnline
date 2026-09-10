@@ -1,4 +1,12 @@
-﻿import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+﻿import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -73,6 +81,21 @@ export class BoutiqueComponent {
 
   // Player profile is owned by PlayerService.
   readonly player = this.playerService.player;
+
+  /** Onglet ciblé par le query param `tab` (ex: /boutique?tab=revente). */
+  readonly tab = input<string>('equipements');
+  readonly selectedTabIndex = linkedSignal(() => this.tabIndex(this.tab()));
+
+  private tabIndex(tab: string): number {
+    switch (tab) {
+      case 'vehicules':
+        return 1;
+      case 'revente':
+        return 2;
+      default:
+        return 0;
+    }
+  }
 
   // UI state (local).
   readonly showCart = signal(false);

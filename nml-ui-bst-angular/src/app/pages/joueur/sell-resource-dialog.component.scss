@@ -1,0 +1,58 @@
+$border: #e2e8f0;
+$text-secondary: #64748b;
+
+.srd {
+  min-width: 320px;
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.srd-stock {
+  margin-bottom: 12px;
+  color: $text-secondary;
+  font-size: 0.85rem;
+}
+
+.srd-qty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .srd-input {
+    width: 120px;
+  }
+}
+
+.srd-price {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid $border;
+  border-radius: 8px;
+  background: #f8fafc;
+
+  .srd-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 4px 0;
+    font-size: 0.85rem;
+    color: $text-secondary;
+  }
+
+  .srd-total {
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid $border;
+    font-size: 1rem;
+
+    strong {
+      color: #047857;
+    }
+  }
+}

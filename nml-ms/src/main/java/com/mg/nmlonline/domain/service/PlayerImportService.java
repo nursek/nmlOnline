@@ -16,8 +16,11 @@ import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitType;
+import com.mg.nmlonline.domain.model.vehicle.Vehicle;
+import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
+import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.hibernate.Hibernate;
@@ -42,6 +45,7 @@ public class PlayerImportService {
     private final PlayerStatsService playerStatsService;
     private final EquipmentRepository equipmentRepository;
     private final ResourceRepository resourceRepository;
+    private final VehicleRepository vehicleRepository;
 
     // Cache d'Equipment pour éviter le détachement hors de la transaction d'import.
     private final Map<String, Equipment> equipmentCache = new HashMap<>();
@@ -49,10 +53,12 @@ public class PlayerImportService {
     @Autowired
     public PlayerImportService(PlayerStatsService playerStatsService,
                                EquipmentRepository equipmentRepository,
-                               ResourceRepository resourceRepository) {
+                               ResourceRepository resourceRepository,
+                               VehicleRepository vehicleRepository) {
         this.playerStatsService = playerStatsService;
         this.equipmentRepository = equipmentRepository;
         this.resourceRepository = resourceRepository;
+        this.vehicleRepository = vehicleRepository;
     }
 
 
@@ -132,6 +138,43 @@ public class PlayerImportService {
         }
 
         return buildings;
+    }
+
+    /** Le Player doit être persisté (avoir un ID) avant l'appel. À appeler avant importSectors pour inclure les véhicules déployés dans les stats. */
+    public void importVehicles(PlayerDTO dto, Player player, Board board) {
+        if (dto.vehicles == null || dto.vehicles.isEmpty()) {
+            return;
+        }
+
+        for (VehicleDTO vehicleDto : dto.vehicles) {
+            if (vehicleDto.type == null || vehicleDto.quantity < 1) {
+                continue;
+            }
+
+            VehicleType vehicleType;
+            try {
+                vehicleType = VehicleType.valueOf(vehicleDto.type);
+            } catch (IllegalArgumentException e) {
+                logger.warn("Type de véhicule inconnu '{}' - ignoré", vehicleDto.type);
+                continue;
+            }
+
+            Sector sector = vehicleDto.sectorNumber != null ? board.getSector(vehicleDto.sectorNumber) : null;
+            if (vehicleDto.sectorNumber != null && sector == null) {
+                logger.warn("Secteur {} non trouvé pour le véhicule {} - placé en stock", vehicleDto.sectorNumber, vehicleDto.type);
+            }
+
+            for (int i = 0; i < vehicleDto.quantity; i++) {
+                Vehicle vehicle = new Vehicle(vehicleType, player.getId());
+                if (sector != null) {
+                    vehicle.setSector(sector);
+                    sector.getVehicles().add(vehicle);
+                }
+                vehicleRepository.save(vehicle);
+                player.getStats().setTotalVehiclesValue(
+                        player.getStats().getTotalVehiclesValue() + vehicleType.getCost());
+            }
+        }
     }
 
     /** Recalcule les stats du joueur après l'import des secteurs et unités. */
@@ -258,6 +301,7 @@ public class PlayerImportService {
         public String name;
         public List<EquipmentDTO> equipments;
         public List<ResourceDTO> resources;
+        public List<VehicleDTO> vehicles;
         public List<SectorDTO> sectors;
         public double money;
         public CharacterDTO character;
@@ -303,6 +347,13 @@ public class PlayerImportService {
     private static class EquipmentDTO {
         public String name;
         public int quantity;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class VehicleDTO {
+        public String type;
+        public int quantity = 1;
+        public Integer sectorNumber;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

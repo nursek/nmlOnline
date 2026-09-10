@@ -244,7 +244,11 @@
         }
 
         <!-- Onglets Équipements / Véhicules -->
-        <mat-tab-group animationDuration="200ms">
+        <mat-tab-group
+          animationDuration="200ms"
+          [selectedIndex]="selectedTabIndex()"
+          (selectedIndexChange)="selectedTabIndex.set($event)"
+        >
           <!-- ===== ONGLET ÉQUIPEMENTS ===== -->
           <mat-tab label="Équipements">
             <!-- Barre de recherche avec filtres déroulants -->

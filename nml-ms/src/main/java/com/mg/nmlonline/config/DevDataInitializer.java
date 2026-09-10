@@ -31,6 +31,8 @@ public class DevDataInitializer {
         devAccounts.put("angron", "USER");
         devAccounts.put("lurio", "USER");
         devAccounts.put("nursek", "USER");
+        devAccounts.put("imotekh", "USER");
+        devAccounts.put("trazyn", "USER");
         devAccounts.put("admin", "ADMIN");
     }
 

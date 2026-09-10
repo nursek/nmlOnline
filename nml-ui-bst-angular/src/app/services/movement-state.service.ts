@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { MovementOrder } from '../models';
@@ -19,6 +19,11 @@ export class MovementStateService {
   readonly orders = this._orders.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
+
+  /** IDs des entités déjà engagées dans un ordre PENDING du tour. */
+  readonly pendingEntityIds = computed<ReadonlySet<number>>(
+    () => new Set(this._orders().flatMap((o) => o.entityIds ?? [])),
+  );
 
   /** Ordres PENDING concernés par une unité donnée. */
   pendingForUnit(unitId: number): MovementOrder[] {
@@ -41,11 +46,11 @@ export class MovementStateService {
     }
   }
 
-  /** Crée un ordre de déplacement à pied pour une unité ; recharge les ordres après succès. */
-  async placeFootOrder(unitId: number, route: number[]): Promise<MovementOrder | null> {
+  /** Crée un ordre de déplacement à pied pour un groupe d'entités ; recharge les ordres. */
+  async placeFootOrder(entityIds: number[], route: number[]): Promise<MovementOrder | null> {
     this._error.set(null);
     try {
-      const order = await firstValueFrom(this.api.placeFootOrder([unitId], route));
+      const order = await firstValueFrom(this.api.placeFootOrder(entityIds, route));
       await this.loadOrders();
       return order;
     } catch (error) {

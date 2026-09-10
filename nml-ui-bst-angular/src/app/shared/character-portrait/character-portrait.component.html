@@ -1,0 +1,45 @@
+<div
+  class="cp-frame"
+  [class.cp-link]="interactive()"
+  [class.cp-lg]="size() === 'lg'"
+  [attr.role]="interactive() ? 'button' : null"
+  [attr.tabindex]="interactive() ? 0 : null"
+  [matTooltip]="interactive() ? 'Voir les capacités' : ''"
+  (click)="onActivate()"
+  (keydown.enter)="onActivate()"
+  (keydown.space)="onActivate(); $event.preventDefault()"
+>
+  <div class="cp-portrait">
+    @if (portraitUrl() && !imgError()) {
+      <img [src]="portraitUrl()" (error)="onImgError()" alt="Portrait {{ character().name }}" />
+    } @else {
+      <div class="cp-fallback">
+        <mat-icon>image_not_supported</mat-icon>
+        <span>{{ character().name }}</span>
+      </div>
+    }
+  </div>
+
+  <span class="cp-name">{{ character().name }}</span>
+
+  @if (sectorNumber() !== null) {
+    <span class="cp-sector">
+      <mat-icon>place</mat-icon>
+      Secteur {{ sectorNumber() }}
+    </span>
+  }
+
+  <span class="cp-stats">
+    @for (s of stats(); track s.label) {
+      {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+    }
+  </span>
+
+  @if (interactive()) {
+    <span class="cp-hint">
+      <mat-icon>auto_awesome</mat-icon>
+      Capacités
+      <mat-icon>chevron_right</mat-icon>
+    </span>
+  }
+</div>
