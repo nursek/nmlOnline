@@ -31,6 +31,7 @@ public class UnitService {
 
     private final BoardService boardService;
     private final PlayerService playerService;
+    private final PlayerActionService playerActionService;
     private final MovementService movementService;
     private final TurnService turnService;
     private final UnitRepository unitRepository;
@@ -40,6 +41,7 @@ public class UnitService {
 
     public UnitService(BoardService boardService,
                         PlayerService playerService,
+                        PlayerActionService playerActionService,
                         MovementService movementService,
                         TurnService turnService,
                         UnitRepository unitRepository,
@@ -48,6 +50,7 @@ public class UnitService {
                         EntityManager em) {
         this.boardService = boardService;
         this.playerService = playerService;
+        this.playerActionService = playerActionService;
         this.movementService = movementService;
         this.turnService = turnService;
         this.unitRepository = unitRepository;
@@ -83,6 +86,7 @@ public class UnitService {
         player.decrementEquipmentAvailability(stack.getEquipment());
         playerService.save(player);
         boardService.save(board);
+        playerActionService.recordEquipUnit(player.getId(), unit.getId(), equipmentName);
         return unit;
     }
 
@@ -128,6 +132,7 @@ public class UnitService {
         player.incrementEquipmentAvailability(stack.getEquipment());
         playerService.save(player);
         boardService.save(board);
+        playerActionService.recordUnequipUnit(player.getId(), unit.getId(), equipmentName);
         return unit;
     }
 

@@ -16,15 +16,22 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Equipment, Sector, Unit, Vehicle } from '../../models';
+import { Building, Equipment, PlayerAction, Sector, Unit, Vehicle } from '../../models';
 import { PlayerService } from '../../services/player.service';
+import { PlayerActionsService } from '../../services/player-actions.service';
 import { slugify } from '../../core/slug';
 import {
   VehiclePlacementModalComponent,
   VehiclePlacementDialogData,
 } from './vehicle-placement-modal.component';
+import {
+  BuildingMoveModalComponent,
+  BuildingMoveDialogData,
+} from './building-move-modal.component';
 import { UnitDetailDialogComponent, UnitDetailDialogData } from './unit-detail-dialog.component';
+import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { ExpPipe } from '../../shared/exp.pipe';
 import {
   buildingStats,
@@ -58,12 +65,15 @@ import {
     MatDialogModule,
     MatExpansionModule,
     MatTabsModule,
+    MatSnackBarModule,
   ],
   templateUrl: './joueur.component.html',
   styleUrls: ['./joueur.component.scss'],
 })
 export class JoueurComponent {
   private readonly playerService = inject(PlayerService);
+  private readonly playerActionsService = inject(PlayerActionsService);
+  private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -73,11 +83,15 @@ export class JoueurComponent {
   readonly undeployedVehicles = this.playerService.undeployedVehicles;
   readonly vehiclesLoading = this.playerService.vehiclesLoading;
   readonly currentTurn = this.playerService.currentTurn;
+  readonly actions = this.playerActionsService.actions;
+  readonly actionsLoading = this.playerActionsService.loading;
+  readonly actionsError = this.playerActionsService.error;
 
   constructor() {
     void this.playerService.loadCurrent();
     void this.playerService.loadVehicles();
     void this.playerService.loadCurrentTurn();
+    void this.playerActionsService.loadActions();
   }
 
   readonly playerCharacter = computed(() => this.player()?.character ?? null);
@@ -132,6 +146,25 @@ export class JoueurComponent {
     return unitEquipmentLabel(u);
   }
 
+  actionIcon(type: PlayerAction['type']): string {
+    switch (type) {
+      case 'BUY_EQUIPMENT':
+        return 'shopping_cart';
+      case 'SELL_RESOURCE':
+        return 'sell';
+      case 'EQUIP_UNIT':
+        return 'build';
+      case 'UNEQUIP_UNIT':
+        return 'build_circle';
+      case 'BUY_VEHICLE':
+        return 'directions_car';
+      case 'PLACE_VEHICLE':
+        return 'place';
+      case 'MOVE_BUILDING':
+        return 'move_up';
+    }
+  }
+
   unitStats = unitStats;
   characterStats = characterStats;
   buildingStats = buildingStats;
@@ -183,5 +216,56 @@ export class JoueurComponent {
       minWidth: '320px',
       data: dialogData,
     });
+  }
+
+  openBuildingMove(building: Building): void {
+    const buildingId = building.id;
+    if (buildingId == null) return;
+    const ownedSectors: Sector[] = this.player()?.sectors ?? [];
+    const data: BuildingMoveDialogData = { building, ownedSectors };
+    this.dialog
+      .open(BuildingMoveModalComponent, { width: '420px', data })
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((sector: Sector | null) => {
+        if (sector?.boardId != null && sector.number != null) {
+          void this.playerService.moveBuilding(buildingId, sector.boardId, sector.number).then((ok) => {
+            if (ok) {
+              void this.playerActionsService.loadActions();
+              this.snackBar.open('Bâtiment déplacé', 'Fermer', { duration: 3000 });
+            }
+          });
+        }
+      });
+  }
+
+  /** L'annulation est en cascade : annuler cette action annule aussi toutes les suivantes du tour. */
+  undoFrom(action: PlayerAction): void {
+    this.confirmAndUndo(
+      'Annuler les actions',
+      `Annuler « ${action.label} » et toutes les actions suivantes de ce tour ?`,
+      () => this.playerActionsService.undoFrom(action.id),
+    );
+  }
+
+  undoAll(): void {
+    this.confirmAndUndo(
+      'Annuler toutes les actions',
+      'Annuler toutes les actions de ce tour ?',
+      () => this.playerActionsService.undoAll(),
+    );
+  }
+
+  private confirmAndUndo(title: string, message: string, undo: () => Promise<boolean>): void {
+    this.dialog
+      .open(ConfirmDialogComponent, { data: { title, message, confirmLabel: 'Annuler' } })
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((confirmed) => {
+        if (!confirmed) return;
+        void undo().then((ok) => {
+          if (ok) this.snackBar.open('Actions annulées', 'Fermer', { duration: 3000 });
+        });
+      });
   }
 }

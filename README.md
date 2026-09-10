@@ -442,6 +442,9 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 | POST | `/api/players/equipment/buy` | Bearer | Buy equipment (atomic) |
 | POST | `/api/players/resources/{id}/sell` | Bearer | Sell a resource |
 | POST | `/api/players/resources/sell-batch` | Bearer | Sell multiple resources (atomic) |
+| GET | `/api/players/actions` | Bearer | List the player's actions for the current turn |
+| POST | `/api/players/actions/{id}/undo` | Bearer | Undo this action and all later ones (current turn, LIFO) |
+| POST | `/api/players/actions/undo-all` | Bearer | Undo all current-turn actions |
 | GET | `/api/boards` | Public | List boards |
 | GET | `/api/equipment?page=0&size=100` | Public | List equipment (paginated) |
 | POST | `/api/vehicles/buy-batch` | Bearer | Buy vehicles (atomic batch) |

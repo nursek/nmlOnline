@@ -35,6 +35,9 @@ class ResourceServiceTest {
     @Mock
     PlayerRepository playerRepository;
 
+    @Mock
+    PlayerActionService playerActionService;
+
     @InjectMocks
     ResourceService resourceService;
 

@@ -19,6 +19,7 @@ import {
   SellResourceBatchItem,
   ResourceBatchSaleResponse,
   Board,
+  PlayerAction,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -222,5 +223,25 @@ export class ApiService {
 
   cancelMovementOrder(orderId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/units/movement/${orderId}`);
+  }
+
+  // Journal d'actions du tour courant + annulation en cascade (LIFO).
+  getPlayerActions(): Observable<PlayerAction[]> {
+    return this.http.get<PlayerAction[]>(`${this.baseUrl}/players/actions`);
+  }
+
+  undoPlayerActions(actionId: number): Observable<PlayerAction[]> {
+    return this.http.post<PlayerAction[]>(`${this.baseUrl}/players/actions/${actionId}/undo`, {});
+  }
+
+  undoAllPlayerActions(): Observable<PlayerAction[]> {
+    return this.http.post<PlayerAction[]>(`${this.baseUrl}/players/actions/undo-all`, {});
+  }
+
+  moveBuilding(buildingId: number, boardId: number, newSectorNumber: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/buildings/${buildingId}/move`, {
+      boardId,
+      newSectorNumber,
+    });
   }
 }

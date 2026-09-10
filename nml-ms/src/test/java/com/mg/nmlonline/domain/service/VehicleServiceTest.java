@@ -38,6 +38,9 @@ class VehicleServiceTest {
     @Mock
     SectorRepository sectorRepository;
 
+    @Mock
+    PlayerActionService playerActionService;
+
     @InjectMocks
     VehicleService vehicleService;
 

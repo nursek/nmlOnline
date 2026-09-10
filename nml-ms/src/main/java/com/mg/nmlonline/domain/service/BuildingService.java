@@ -27,17 +27,20 @@ public class BuildingService {
     private final BoardService boardService;
     private final TurnService turnService;
     private final BuildingMapper buildingMapper;
+    private final PlayerActionService playerActionService;
 
     public BuildingService(BuildingRepository buildingRepository,
                            PlayerRepository playerRepository,
                            BoardService boardService,
                            TurnService turnService,
-                           BuildingMapper buildingMapper) {
+                           BuildingMapper buildingMapper,
+                           PlayerActionService playerActionService) {
         this.buildingRepository = buildingRepository;
         this.playerRepository = playerRepository;
         this.boardService = boardService;
         this.turnService = turnService;
         this.buildingMapper = buildingMapper;
+        this.playerActionService = playerActionService;
     }
 
     public Optional<Building> findById(Long buildingId) {
@@ -209,9 +212,18 @@ public class BuildingService {
             throw new IllegalStateException("Le secteur cible n'appartient pas au propriétaire du bâtiment");
         }
 
+        Integer fromSector = building.getSector() != null ? building.getSector().getNumber() : null;
+        Integer prevLastMoved = building.getLastMovedTurn();
+        Boolean prevHasMoved = building instanceof Bank bank ? bank.isHasMoved() : null;
+
         building.setSector(targetSector);
         building.recordMove(currentTurn);
         buildingRepository.save(building);
+
+        if (fromSector != null) {
+            playerActionService.recordMoveBuilding(building.getPlayerId(), buildingId, boardId,
+                    fromSector, newSectorNumber, prevLastMoved, prevHasMoved);
+        }
         return true;
     }
 

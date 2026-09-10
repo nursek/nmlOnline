@@ -37,6 +37,9 @@ class PlayerServiceTest {
     @Mock
     EquipmentService equipmentService;
 
+    @Mock
+    PlayerActionService playerActionService;
+
     @InjectMocks
     PlayerService playerService;
 
