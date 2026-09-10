@@ -28,13 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Journal des actions du joueur et annulation en cascade.
- *
- * <p>Annulation LIFO : annuler l'action {@code id} annule aussi toutes les actions postérieures du
- * tour, en ordre inverse. On retire donc un suffixe, jamais un sous-ensemble arbitraire — ce qui
- * garantit que les pré-requis (ex. déséquiper avant de rembourser) sont toujours satisfaits.
- */
+// LIFO par suffixe : pré-requis d'annulation (ex. déséquiper) toujours satisfaits.
 @Service
 @Transactional
 public class PlayerActionService {
@@ -189,7 +183,7 @@ public class PlayerActionService {
         if (stack == null) {
             throw new PlayerActionUndoException("Équipement « " + action.getEquipmentName() + " » introuvable.");
         }
-        // unitEquipments sans orphanRemoval : em.remove ciblé d'une seule occurrence, comme UnitService.removeEquipment.
+        // Sans orphanRemoval : em.remove d'une occurrence (cf. UnitService.removeEquipment).
         UnitEquipment row = unit.removeOneEquipment(action.getEquipmentName());
         if (row == null) {
             throw new PlayerActionUndoException("L'unité ne porte pas « " + action.getEquipmentName() + " ».");

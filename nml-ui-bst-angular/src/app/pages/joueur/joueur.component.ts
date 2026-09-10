@@ -239,7 +239,6 @@ export class JoueurComponent {
       });
   }
 
-  /** L'annulation est en cascade : annuler cette action annule aussi toutes les suivantes du tour. */
   undoFrom(action: PlayerAction): void {
     this.confirmAndUndo(
       'Annuler les actions',
@@ -256,7 +255,7 @@ export class JoueurComponent {
     );
   }
 
-  // Index 1 = onglet « Actions » (cf. template) : recharge les actions faites depuis la page.
+  // Index 1 = onglet « Actions » (cf. template).
   onTabChange(event: MatTabChangeEvent): void {
     if (event.index === 1) void this.playerActionsService.loadActions();
   }

@@ -106,8 +106,7 @@ public class UnitService {
                     "Aucun équipement \"" + equipmentName + "\" dans l'inventaire du joueur.");
         }
 
-        // Unit.unitEquipments n'a plus orphanRemoval : retrait d'UNE occurrence via em.remove,
-        // sinon le clic « retirer » d'un slot dupliqué supprimerait toutes les copies.
+        // Sans orphanRemoval : em.remove d'une occurrence (les doublons doivent survivre au clic).
         UnitEquipment row = unit.removeOneEquipment(equipmentName);
         if (row == null) {
             throw new IllegalArgumentException(

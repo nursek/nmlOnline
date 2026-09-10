@@ -225,7 +225,6 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/units/movement/${orderId}`);
   }
 
-  // Journal d'actions du tour courant + annulation en cascade (LIFO).
   getPlayerActions(): Observable<PlayerAction[]> {
     return this.http.get<PlayerAction[]>(`${this.baseUrl}/players/actions`);
   }

@@ -1,6 +1,6 @@
 package com.mg.nmlonline.domain.exception;
 
-/** Annulation refusée : pré-requis non satisfaits (action liée déjà consommée, tour terminé…). Mappée en HTTP 409. */
+/** Mappée en HTTP 409 par GlobalExceptionHandler. */
 public class PlayerActionUndoException extends RuntimeException {
 
     public PlayerActionUndoException(String message) {

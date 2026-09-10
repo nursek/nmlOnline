@@ -20,7 +20,7 @@ public class TurnService {
     private final TurnLock turnLock;
     private final GameCharacterService characterService;
 
-    // Cache du tour (évite un N+1) : publié avant commit, purgé sur rollback/invalidateTurnCache.
+    // Cache du tour (évite un N+1), publié avant commit et purgé sur rollback.
     private volatile Integer cachedTurn;
 
     public TurnService(BoardRepository boardRepository, MovementService movementService,

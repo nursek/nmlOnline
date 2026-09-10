@@ -5,7 +5,6 @@ import { PlayerService } from './player.service';
 import { PlayerAction } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 
-/** Actions du tour courant + annulation en cascade (le backend renvoie la liste restante). */
 @Injectable({ providedIn: 'root' })
 export class PlayerActionsService {
   private readonly api = inject(ApiService);

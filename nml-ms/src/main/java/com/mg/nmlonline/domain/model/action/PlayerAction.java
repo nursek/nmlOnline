@@ -6,13 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Journal d'une action non-GET d'un joueur, rattachée à un tour.
- *
- * <p>Le payload est volontairement plat (colonnes nullables) : chaque type n'en remplit que ce dont
- * son annulation a besoin. Le champ {@code status} passe à {@code UNDONE} quand l'action est annulée ;
- * les lignes d'un tour terminé ne sont plus annulables (contrôle sur {@code turn}).
- */
+// Payload plat : chaque type ne remplit que ce dont son annulation a besoin.
 @Entity
 @Table(name = "PLAYER_ACTIONS")
 @Getter

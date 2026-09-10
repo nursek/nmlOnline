@@ -269,7 +269,7 @@ public class Unit extends CombatEntity {
         return removed;
     }
 
-    /** Retire UNE occurrence (ligne persistée + liste transient) ; renvoie la ligne à em.remove, ou null. */
+    /** Retire une occurrence et renvoie la ligne persistée à em.remove (null si absente). */
     public UnitEquipment removeOneEquipment(String equipmentName) {
         if (unitEquipments == null) return null;
         UnitEquipment row = unitEquipments.stream()

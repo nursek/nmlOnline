@@ -1,5 +1,4 @@
--- Journal des actions joueur (achats, équipements, ventes, déplacements) avec annulation en cascade.
--- Même schéma de séquence standalone que V7 (INCREMENT 50 = allocationSize de l'entité).
+-- Séquence standalone INCREMENT 50 = allocationSize de l'entité (cf. V7).
 CREATE SEQUENCE IF NOT EXISTS public.player_actions_id_seq START WITH 1;
 ALTER SEQUENCE public.player_actions_id_seq INCREMENT BY 50;
 
