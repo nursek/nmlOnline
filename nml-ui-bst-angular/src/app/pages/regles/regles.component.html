@@ -1,176 +1,415 @@
 <div class="container fade-in">
-  <!-- Header -->
   <div class="page-header">
     <div class="avatar">
       <mat-icon>menu_book</mat-icon>
     </div>
     <div>
       <h1 class="title">Règles du Jeu</h1>
-      <p class="subtitle">Guide complet de NML Online</p>
+      <p class="subtitle">Guide de NML Online</p>
     </div>
   </div>
 
-  <!-- But du jeu -->
-  <mat-card class="card highlight">
-    <mat-card-content>
-      <div class="section-header">
-        <mat-icon color="primary">my_location</mat-icon>
-        <h2>But du jeu</h2>
+  <div class="rules-layout">
+    <aside class="toc">
+      <div class="toc-head">
+        <mat-icon>toc</mat-icon>
+        <h2>Sommaire</h2>
       </div>
-      <p class="text">
-        Contrôler des territoires et gérer les ressources pour devenir le joueur le plus puissant.
-        Votre objectif est de conquérir et de maintenir le contrôle du plus grand nombre de
-        territoires possible avant la fin du temps imparti.
-      </p>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Déroulement -->
-  <mat-card class="card">
-    <mat-card-content>
-      <div class="section-header">
-        <mat-icon color="primary">people</mat-icon>
-        <h2>Déroulement</h2>
+      <nav class="toc-nav">
+        @for (item of sommaire; track item.id; let i = $index) {
+          <button type="button" class="toc-link" (click)="allerA(i)">
+            <mat-icon>{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </button>
+        }
+      </nav>
+      <div class="toc-actions">
+        <button mat-stroked-button type="button" (click)="toutDeplier()">Tout déplier</button>
+        <button mat-stroked-button type="button" (click)="toutReplier()">Tout replier</button>
       </div>
-      <p class="section-subtitle">Comment se déroule une partie</p>
+    </aside>
 
-      <mat-list>
-        <mat-list-item class="step-item">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h3>Recrutement de troupes</h3>
+    <div class="rules-content">
+      <mat-accordion multi>
+        <mat-expansion-panel id="but" class="rule-panel" expanded>
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>my_location</mat-icon>But du jeu</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Chaque joueur contrôle des secteurs et y stationne ses unités, son personnage et ses
+            bâtiments. L'objectif est de prendre les secteurs adverses et de durer plus longtemps
+            que les autres. La partie avance au tour par tour : les joueurs transmettent leurs
+            ordres, puis les affrontements sont résolus.
+          </p>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="stats" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>insights</mat-icon>Statistiques des unités</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Toute entité combattante — unité, personnage ou bâtiment — partage les six statistiques
+            suivantes.
+          </p>
+          <div class="table-wrap">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Statistique</th>
+                  <th>Sigle</th>
+                  <th>Rôle</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (stat of stats; track stat.sigle) {
+                  <tr>
+                    <td class="stat-name" [class]="stat.css">{{ stat.nom }}</td>
+                    <td>
+                      <span class="stat-badge" [class]="stat.css">{{ stat.sigle }}</span>
+                    </td>
+                    <td>{{ stat.role }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <mat-icon>visibility</mat-icon>
             <p>
-              Les joueurs recrutent des troupes pour renforcer leur armée. Chaque unité possède des
-              caractéristiques spécifiques comme des points de vie et des points de mouvement.
+              Affichage d'une unité :
+              <code>12 Atk + 30 Pdf + 20 Pdc / 10 Def + 25 Arm. Esquive : 15 %</code>.
             </p>
           </div>
-        </mat-list-item>
+          <p class="text">
+            Une unité d'infanterie qui survit à un combat avec une défense entamée devient
+            <strong>blessée</strong> : ses statistiques de base (Attaque et Défense) sont divisées
+            par 2. Aucun soin d'infanterie n'existe à ce jour. Le personnage, lui, n'est jamais
+            blessé.
+          </p>
+        </mat-expansion-panel>
 
-        <mat-list-item class="step-item">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h3>Achat d'équipements</h3>
+        <mat-expansion-panel id="niveaux" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title
+              ><mat-icon>military_tech</mat-icon>Niveaux et évolution</mat-panel-title
+            >
+          </mat-expansion-panel-header>
+          <p class="text">
+            Le type d'une unité dépend de son expérience. Aux seuils franchis, elle évolue vers le
+            type supérieur et recalcule ses statistiques de base.
+          </p>
+          <div class="table-wrap">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Niveau</th>
+                  <th>Expérience</th>
+                  <th>Atk base</th>
+                  <th>Def base</th>
+                  <th>Armes à feu</th>
+                  <th>Corps-à-corps</th>
+                  <th>Défensifs</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (niveau of niveaux; track niveau.type) {
+                  <tr>
+                    <td>
+                      <strong>{{ niveau.type }}</strong>
+                    </td>
+                    <td>{{ niveau.niveau }}</td>
+                    <td>{{ niveau.exp }}</td>
+                    <td>{{ niveau.atk }}</td>
+                    <td>{{ niveau.def }}</td>
+                    <td>{{ niveau.armesFeu }}</td>
+                    <td>{{ niveau.corpsACorps }}</td>
+                    <td>{{ niveau.defensif }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="text">
+            Seuils appliqués : <strong>≥ 2 Exp</strong> → VOYOU, <strong>≥ 5 Exp</strong> → MALFRAT,
+            <strong>≥ 8 Exp</strong> → BRUTE. À partir de 5 Exp (MALFRAT et BRUTE), une unité peut
+            ajouter une <strong>seconde classe</strong> ; LARBIN et VOYOU en restent à une seule.
+          </p>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="classes" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>badge</mat-icon>Classes</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            La ou les classes d'une unité déterminent son aptitude au mouvement et les équipements
+            qu'elle peut utiliser. Seules certaines classes ont un effet mécanique aujourd'hui.
+          </p>
+          <div class="table-wrap">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Classe</th>
+                  <th>Effet</th>
+                  <th>État</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (classe of classes; track classe.nom) {
+                  <tr>
+                    <td>
+                      <strong>{{ classe.nom }}</strong>
+                    </td>
+                    <td>{{ classe.effet }}</td>
+                    <td>
+                      @if (classe.actif) {
+                        <span class="tag-actif">Actif</span>
+                      } @else {
+                        <span class="tag-inactif">Sans effet</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="boutique" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title
+              ><mat-icon>shopping_bag</mat-icon>Boutique et équipements</mat-panel-title
+            >
+          </mat-expansion-panel-header>
+          <p class="text">
+            Les équipements s'achètent, se stockent, puis s'assignent à une unité dans la limite de
+            ses emplacements par catégorie et de la compatibilité de sa classe. Trois catégories
+            existent : <strong>arme à feu</strong>, <strong>arme de corps-à-corps</strong> et
+            <strong>équipement défensif</strong>.
+          </p>
+          <p class="text">
+            Les bonus d'équipement se calculent à partir des statistiques de base de l'unité,
+            uniquement pour les équipements compatibles avec sa classe :
+          </p>
+          <ul class="rule-list">
+            <li><strong>Puissance de feu</strong> = Attaque × bonus PdF / 100</li>
+            <li><strong>Puissance de corps-à-corps</strong> = Attaque × bonus PdC / 100</li>
+            <li><strong>Armure</strong> = Défense × bonus Arm / 100</li>
+            <li><strong>Esquive</strong> = somme brute des bonus d'esquive</li>
+          </ul>
+          <p class="text">
+            À l'achat, le coût est débité selon la quantité (<code>coût × quantité</code>).
+          </p>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="combat" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>sports_esports</mat-icon>Affrontements</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Un affrontement oppose, sur un secteur, les entités combattantes (unités, personnages et
+            bâtiments) de l'attaquant et du défenseur. Les véhicules ne participent pas au combat.
+            Les phases s'enchaînent dans cet ordre, les deux camps frappant en même temps :
+          </p>
+          <ol class="phase-list">
+            <li><strong>PdF</strong> — total de puissance de feu des deux camps.</li>
+            <li><strong>PdF, round 2</strong> — si des points de PdF subsistent.</li>
+            <li>
+              <strong>Bâtiments secondaires</strong> — riposte à l'Attaque (Banque et Cache d'armes,
+              le QG est exclu).
+            </li>
+            <li><strong>PdC</strong> — total de puissance de corps-à-corps des deux camps.</li>
+            <li><strong>PdC, round 2</strong> — si des points de PdC subsistent.</li>
+            <li><strong>ATK</strong> — Attaque des unités d'infanterie.</li>
+            <li><strong>QG</strong> — Attaque du quartier général.</li>
+            <li><strong>Personnages</strong> — Attaque des personnages.</li>
+          </ol>
+          <p class="text">
+            À chaque phase, la cible est la dernière entité de la liste de défense. Cette liste est
+            triée par expérience, puis par défense et attaque : les unités les plus faibles et les
+            moins expérimentées encaissent en premier. L'ordre d'exposition, du premier touché au
+            dernier, est : <strong>unités → Banque → Cache d'armes → QG → personnage</strong>.
+          </p>
+          <p class="text">
+            L'armure encaisse les dégâts avant la défense. Une esquive réussie annule l'attaque mais
+            consomme quand même des points à l'attaquant. Le combat s'arrête dès qu'un camp n'a plus
+            de combattant (hors bâtiments).
+          </p>
+          <div class="callout">
+            <mat-icon>flag</mat-icon>
             <p>
-              Visitez la boutique pour acheter des équipements qui amélioreront les capacités de vos
-              unités. Les équipements offrent des bonus comme la force de frappe (PDF), la défense
-              (PDC), l'armure (ARM) et l'évasion (ESQ).
+              Si un camp est anéanti, l'autre l'emporte et peut capturer des bâtiments. Si les deux
+              camps conservent des survivants, personne ne l'emporte : le secteur ne change pas de
+              main. Après le combat, l'infanterie survivante endommagée devient blessée.
             </p>
           </div>
-        </mat-list-item>
+        </mat-expansion-panel>
 
-        <mat-list-item class="step-item">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h3>Capture de territoires</h3>
+        <mat-expansion-panel id="impasse" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>groups</mat-icon>Impasse mexicaine
+              <span class="soon">À venir</span>
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Quand trois armées ou plus attaquent le même secteur, le combat se résout en
+            <strong>impasse mexicaine</strong> : les attaquants s'affrontent en cercle, chacun
+            attaquant le suivant, et ces affrontements se déroulent en simultané. L'ordre du cercle
+            est déterminé par le jour et l'heure d'envoi des ordres : le premier joueur à avoir
+            envoyé ses actions attaque le deuxième, qui attaque le troisième, qui attaque le
+            premier.
+          </p>
+          <div class="draft">
+            <mat-icon>construction</mat-icon>
             <p>
-              Utilisez vos troupes pour capturer des territoires ennemis ou neutres. Chaque
-              territoire contrôlé augmente votre influence et peut fournir des ressources
-              précieuses.
+              Non implémenté : les conflits sont aujourd'hui détectés puis résolus un par un par
+              l'admin, sans ordre d'arrivée ni résolution simultanée.
             </p>
           </div>
-        </mat-list-item>
-      </mat-list>
+        </mat-expansion-panel>
 
-      <div class="combat-box">
-        <div class="combat-header">
-          <mat-icon color="primary">sports_esports</mat-icon>
-          <h3>Système de combat</h3>
-        </div>
-        <p>
-          Chaque unité possède des points de vie et de mouvement. Les combats se font en comparant
-          la force des troupes opposées, en tenant compte des équipements et des bonus de
-          territoire. La stratégie et le positionnement sont essentiels pour remporter la victoire !
-        </p>
-      </div>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Conditions de victoire -->
-  <mat-card class="card victory">
-    <mat-card-content>
-      <div class="section-header">
-        <mat-icon class="gold">emoji_events</mat-icon>
-        <h2>Conditions de victoire</h2>
-      </div>
-      <p class="text">
-        Le joueur ayant le <strong class="primary">plus de territoires</strong> à la fin du temps
-        imparti remporte la partie.
-      </p>
-
-      <div class="podium">
-        <div class="podium-item gold-bg">
-          <span class="emoji">🥇</span>
-          <h4>1ère Place</h4>
-          <p>Le commandant avec le plus de territoires</p>
-        </div>
-        <div class="podium-item silver-bg">
-          <span class="emoji">🥈</span>
-          <h4>2ème Place</h4>
-          <p>Le deuxième plus grand conquérant</p>
-        </div>
-        <div class="podium-item bronze-bg">
-          <span class="emoji">🥉</span>
-          <h4>3ème Place</h4>
-          <p>Le troisième commandant</p>
-        </div>
-      </div>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Conseils stratégiques -->
-  <mat-card class="card">
-    <mat-card-content>
-      <div class="section-header">
-        <mat-icon color="primary">tips_and_updates</mat-icon>
-        <h2>Conseils stratégiques</h2>
-      </div>
-      <p class="section-subtitle">Pour devenir un grand conquérant</p>
-
-      <div class="tips-grid">
-        <div class="tip-item">
-          <div class="tip-header">
-            <mat-icon color="primary">shopping_bag</mat-icon>
-            <h4>Équipez intelligemment</h4>
-          </div>
-          <p>
-            Investissez dans des équipements adaptés à vos unités. Un bon équipement peut faire la
-            différence dans les batailles critiques.
+        <mat-expansion-panel id="frontieres" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>border_outer</mat-icon>Bonus de frontières
+              <span class="soon">À venir</span>
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Attaquer un secteur depuis plusieurs frontières accorde un bonus de statistiques aux
+            unités attaquantes : <strong>2 frontières = +15 %</strong>, puis
+            <strong>+5 % par frontière supplémentaire</strong> (3 frontières et plus).
           </p>
-        </div>
-
-        <div class="tip-item">
-          <div class="tip-header">
-            <mat-icon color="primary">place</mat-icon>
-            <h4>Contrôlez les ressources</h4>
+          <div class="draft">
+            <mat-icon>construction</mat-icon>
+            <p>
+              Non implémenté : les bonus de joueur existent en base mais ne sont appliqués à aucune
+              unité lors des combats.
+            </p>
           </div>
-          <p>
-            Les territoires génèrent des revenus. Plus vous en contrôlez, plus vous pourrez investir
-            dans votre armée.
-          </p>
-        </div>
+        </mat-expansion-panel>
 
-        <div class="tip-item">
-          <div class="tip-header">
-            <mat-icon color="primary">security</mat-icon>
-            <h4>Défendez vos positions</h4>
-          </div>
-          <p>
-            Ne vous concentrez pas uniquement sur l'attaque. Assurez-vous que vos territoires sont
-            bien défendus contre les invasions.
+        <mat-expansion-panel id="experience" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>workspace_premium</mat-icon>Expérience de combat
+              <span class="soon">À venir</span>
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Les unités gagnent de l'expérience lorsqu'elles ressortent vivantes d'un affrontement
+            auquel elles ont activement participé : <strong>+1 Exp</strong> pour une participation
+            active, et <strong>+1 Exp supplémentaire</strong> par personnage éliminé.
           </p>
-        </div>
+          <div class="draft">
+            <mat-icon>construction</mat-icon>
+            <p>
+              Non implémenté : la méthode de gain d'expérience existe, mais aucun service de combat
+              ne l'appelle. L'expérience ne provient aujourd'hui que des données importées ou de
+              l'admin.
+            </p>
+          </div>
+        </mat-expansion-panel>
 
-        <div class="tip-item">
-          <div class="tip-header">
-            <mat-icon color="primary">people</mat-icon>
-            <h4>Gérez vos ressources</h4>
-          </div>
-          <p>
-            Ne dépensez pas tout votre argent d'un coup. Gardez une réserve pour réagir aux
-            opportunités et menaces.
+        <mat-expansion-panel id="victoire" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>emoji_events</mat-icon>Fin de partie et podium
+              <span class="soon">À venir</span>
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            La partie se joue jusqu'au dernier survivant. Le podium récompense les
+            <strong>trois finalistes</strong>, c'est-à-dire les trois derniers joueurs encore en
+            vie.
           </p>
-        </div>
-      </div>
-    </mat-card-content>
-  </mat-card>
+          <div class="podium">
+            <div class="podium-item gold">
+              <span class="emoji">🥇</span>
+              <h4>1<sup>re</sup> place</h4>
+              <p>Le dernier joueur survivant.</p>
+            </div>
+            <div class="podium-item silver">
+              <span class="emoji">🥈</span>
+              <h4>2<sup>e</sup> place</h4>
+              <p>L'avant-dernier joueur éliminé.</p>
+            </div>
+            <div class="podium-item bronze">
+              <span class="emoji">🥉</span>
+              <h4>3<sup>e</sup> place</h4>
+              <p>Le joueur éliminé juste avant.</p>
+            </div>
+          </div>
+          <p class="text">Issues possibles à détailler :</p>
+          <ul class="rule-list">
+            <li>
+              <strong>Un seul survivant</strong> — il remporte la partie ; les deux joueurs éliminés
+              en dernier complètent le podium.
+            </li>
+            <li>
+              <strong>Plusieurs survivants au dernier tour</strong> — à départager (critère à
+              définir : territoires contrôlés, puissance militaire…).
+            </li>
+            <li>
+              <strong>Aucun survivant</strong> — pas de vainqueur, la partie se conclut sans
+              première place.
+            </li>
+            <li>
+              <strong>Élimination d'un joueur</strong> — perte de toutes ses unités et/ou de son QG
+              (conditions exactes à préciser).
+            </li>
+          </ul>
+          <div class="draft">
+            <mat-icon>construction</mat-icon>
+            <p>
+              Non implémenté : aucune condition de fin de partie ni élimination n'existe
+              aujourd'hui. Le vainqueur d'une bataille ne vaut que pour le secteur concerné, et la
+              perte du QG est récupérable.
+            </p>
+          </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="empereur" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>key</mat-icon>Objectif secret
+              <span class="soon">À venir</span>
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            En plus de l'objectif principal, un <strong>objectif secret</strong> est révélé en cours
+            de partie. Sa révélation peut toutefois se produire plus tôt que prévu : c'est le
+            <strong>réveil de l'empereur</strong>.
+          </p>
+          <p class="text">Possibilités envisagées :</p>
+          <ul class="rule-list">
+            <li>
+              <strong>Révélation normale</strong> — l'objectif est dévoilé à un stade avancé de la
+              partie (seuil de tours ou de territoires à définir).
+            </li>
+            <li>
+              <strong>Réveil anticipé</strong> — un événement déclenche l'objectif avant l'heure
+              (contrôle d'un lieu clé, élimination d'un personnage, accumulation de ressources…).
+            </li>
+            <li>
+              <strong>L'empereur entre en jeu</strong> — il peut devenir une menace commune ou un
+              troisième camp, forçant les joueurs à coopérer ou à trahir.
+            </li>
+            <li>
+              <strong>Impact sur le classement</strong> — la réussite de l'objectif secret peut
+              bouleverser le podium final.
+            </li>
+          </ul>
+          <div class="draft">
+            <mat-icon>construction</mat-icon>
+            <p>
+              Brouillon : cette mécanique n'existe pas dans le code. Les déclencheurs, conséquences
+              et interactions restent à préciser.
+            </p>
+          </div>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </div>
+  </div>
 </div>
