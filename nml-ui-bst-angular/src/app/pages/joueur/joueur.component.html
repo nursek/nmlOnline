@@ -1,4 +1,4 @@
-@if (loading()) {
+@if (loading() && !player()) {
   <div class="loading-container" role="status" aria-label="Chargement">
     <mat-spinner diameter="60"></mat-spinner>
   </div>
@@ -21,7 +21,11 @@
       </div>
     </div>
 
-    <mat-tab-group animationDuration="200ms" class="joueur-tabs">
+    <mat-tab-group
+      animationDuration="200ms"
+      class="joueur-tabs"
+      (selectedTabChange)="onTabChange($event)"
+    >
       <mat-tab label="Aperçu">
         <div class="stats-row">
           @for (stat of mainStats(); track stat.label) {
@@ -534,7 +538,10 @@
                   <div class="action-main">
                     <span class="action-label">{{ action.label }}</span>
                     @if (action.money) {
-                      <span class="action-money">-{{ action.money | number: '1.0-0' }} ₡</span>
+                      <span class="action-money"
+                        >{{ action.type === 'SELL_RESOURCE' ? '+' : '-'
+                        }}{{ action.money | number: '1.0-0' }} ₡</span
+                      >
                     }
                   </div>
                   <button

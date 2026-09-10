@@ -110,21 +110,19 @@ public class PlayerActionService {
     }
 
     public List<PlayerActionDto> undoFrom(Long userId, Long actionId) {
-        Player player = requirePlayerByUserId(userId);
+        // Verrou d'abord : un FOR UPDATE ne rafraîchit pas une entité déjà managée.
+        Player locked = lockPlayerByUserId(userId);
         int turn = turnService.getCurrentTurn();
 
-        PlayerAction target = actionRepository.findByIdAndPlayerId(actionId, player.getId())
+        PlayerAction target = actionRepository.findByIdAndPlayerId(actionId, locked.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Action introuvable : " + actionId));
         if (target.getTurn() != turn) {
             throw new PlayerActionUndoException("Cette action appartient à un tour terminé.");
         }
 
-        Player locked = playerRepository.findByIdForUpdate(player.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable"));
-
         List<PlayerAction> toUndo = new ArrayList<>(actionRepository
                 .findByPlayerIdAndTurnAndStatusAndIdGreaterThanEqualOrderByIdAsc(
-                        player.getId(), turn, PlayerActionStatus.ACTIVE, actionId));
+                        locked.getId(), turn, PlayerActionStatus.ACTIVE, actionId));
         toUndo.sort((a, b) -> b.getId().compareTo(a.getId()));
 
         for (PlayerAction action : toUndo) {
@@ -134,14 +132,14 @@ public class PlayerActionService {
         }
 
         playerRepository.save(locked);
-        return mapActive(player.getId(), turn);
+        return mapActive(locked.getId(), turn);
     }
 
     public List<PlayerActionDto> undoAll(Long userId) {
-        Player player = requirePlayerByUserId(userId);
+        Player locked = lockPlayerByUserId(userId);
         int turn = turnService.getCurrentTurn();
         List<PlayerAction> active = actionRepository
-                .findByPlayerIdAndTurnAndStatusOrderByIdAsc(player.getId(), turn, PlayerActionStatus.ACTIVE);
+                .findByPlayerIdAndTurnAndStatusOrderByIdAsc(locked.getId(), turn, PlayerActionStatus.ACTIVE);
         if (active.isEmpty()) {
             return List.of();
         }
@@ -191,18 +189,12 @@ public class PlayerActionService {
         if (stack == null) {
             throw new PlayerActionUndoException("Équipement « " + action.getEquipmentName() + " » introuvable.");
         }
-        // unitEquipments sans orphanRemoval : retrait ciblé via em.remove, comme UnitService.removeEquipment.
-        List<UnitEquipment> rows = new ArrayList<>();
-        for (UnitEquipment ue : unit.getUnitEquipments()) {
-            if (ue.getEquipment() != null && ue.getEquipment().getName().equals(action.getEquipmentName())) {
-                rows.add(ue);
-            }
-        }
-        if (rows.isEmpty()) {
+        // unitEquipments sans orphanRemoval : em.remove ciblé d'une seule occurrence, comme UnitService.removeEquipment.
+        UnitEquipment row = unit.removeOneEquipment(action.getEquipmentName());
+        if (row == null) {
             throw new PlayerActionUndoException("L'unité ne porte pas « " + action.getEquipmentName() + " ».");
         }
-        rows.forEach(em::remove);
-        unit.removeEquipment(stack.getEquipment());
+        em.remove(row);
         player.incrementEquipmentAvailability(stack.getEquipment());
         unitRepository.save(unit);
     }
@@ -283,6 +275,11 @@ public class PlayerActionService {
             throw new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId);
         }
         return player;
+    }
+
+    private Player lockPlayerByUserId(Long userId) {
+        return playerRepository.findByUserIdForUpdate(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId));
     }
 
     private void save(PlayerAction action) {

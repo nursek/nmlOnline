@@ -22,7 +22,7 @@
               <span class="udd-slot-cap">{{ group.filled.length }}/{{ group.cap }}</span>
             </div>
             <div class="udd-slots">
-              @for (eq of group.filled; track eq.name) {
+              @for (eq of group.filled; track $index) {
                 <div
                   class="udd-slot udd-slot-filled"
                   (click)="openSlotPicker(group)"
@@ -125,7 +125,7 @@
               <span class="udd-slot-cap">{{ group.filled.length }}/{{ group.cap }}</span>
             </div>
             <div class="udd-slots">
-              @for (eq of group.filled; track eq.name) {
+              @for (eq of group.filled; track $index) {
                 <div
                   class="udd-slot udd-slot-filled"
                   (click)="openSlotPicker(group)"

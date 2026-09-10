@@ -62,7 +62,8 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 - Cascade JPA : lire [`docs/jpa-pitfalls.md`](docs/jpa-pitfalls.md) avant tout
   `@OneToMany(mappedBy=…, orphanRemoval=true)` dont l'enfant porte une FK NOT NULL.
 - **Tour** : `TurnService.advanceTurn()` et `TurnResolutionOrchestrator` mutent tous deux
-  `Board.currentTurn` — les deux doivent invalider `TurnService.cachedTurn`.
+  `Board.currentTurn` — les deux doivent publier/invalider `TurnService.cachedTurn`
+  (`publishTurn` avant commit, purge sur rollback).
   Session de l'orchestrateur en mémoire, JVM unique, perdue au redémarrage.
 - **`BoardService.saveBoard` fusionne par numéro, ne vide jamais `sectorsList`** : supprimer
   un secteur reste une opération explicite (vider la liste cascade-delete secteurs + armées).

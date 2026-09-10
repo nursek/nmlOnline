@@ -15,7 +15,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { MatTabsModule } from '@angular/material/tabs';
+import { MatTabChangeEvent, MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Building, Equipment, PlayerAction, Sector, Unit, Vehicle } from '../../models';
@@ -256,9 +256,14 @@ export class JoueurComponent {
     );
   }
 
+  // Index 1 = onglet « Actions » (cf. template) : recharge les actions faites depuis la page.
+  onTabChange(event: MatTabChangeEvent): void {
+    if (event.index === 1) void this.playerActionsService.loadActions();
+  }
+
   private confirmAndUndo(title: string, message: string, undo: () => Promise<boolean>): void {
     this.dialog
-      .open(ConfirmDialogComponent, { data: { title, message, confirmLabel: 'Annuler' } })
+      .open(ConfirmDialogComponent, { data: { title, message, confirmLabel: 'Confirmer' } })
       .afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((confirmed) => {

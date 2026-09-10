@@ -133,7 +133,7 @@ public class TurnResolutionOrchestrator {
             characterService.regenerateAllCharacters();
             board.setCurrentTurn(s.turnEnding + 1);
             boardRepository.save(board);
-            turnService.invalidateTurnCache();
+            turnService.publishTurn(s.turnEnding + 1);
 
             int newTurn = board.getCurrentTurn();
             TurnFinalizeResultDto dto = new TurnFinalizeResultDto();
