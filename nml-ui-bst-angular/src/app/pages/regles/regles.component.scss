@@ -2,7 +2,7 @@
 
 .container {
   @include shared.page-container;
-  max-width: 1000px;
+  max-width: 1100px;
 }
 
 .page-header {
@@ -21,126 +21,265 @@
   @include shared.subtitle;
 }
 
-.card {
-  @include shared.card;
-
-  &.highlight {
-    border: 2px solid shared.$primary-color;
-  }
-
-  &.victory {
-    border: 2px solid #d97706;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%);
-  }
+.rules-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
 }
 
-.section-header {
-  @include shared.section-header;
-  margin-bottom: 16px;
-
-  .gold {
-    color: #b45309;
-  }
-}
-
-.section-subtitle {
-  color: shared.$text-muted;
-  margin: 0 0 24px;
-  font-size: 0.875rem;
-}
-
-.text {
-  line-height: 1.8;
-  margin: 0;
-
-  .primary {
-    color: shared.$primary-color;
-  }
-}
-
-.step-item {
-  height: auto !important;
-  padding: 16px 0 !important;
-  align-items: flex-start !important;
-}
-
-.step-number {
-  width: 40px;
-  height: 40px;
-  background: shared.$primary-gradient;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-  flex-shrink: 0;
-  margin-right: 16px;
-}
-
-.step-content {
-  h3 {
-    margin: 0 0 8px;
-    font-weight: 600;
-  }
-
-  p {
-    margin: 0;
-    color: shared.$text-muted;
-    font-size: 0.875rem;
-  }
-}
-
-.combat-box {
-  padding: 24px;
-  background: #f8fafc;
+.toc {
+  position: sticky;
+  top: 72px;
+  align-self: start;
+  padding: 16px;
+  background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  margin-top: 24px;
+  border-radius: 12px;
 
-  .combat-header {
+  .toc-head {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 12px;
 
-    h3 {
+    h2 {
       margin: 0;
+      font-size: 1rem;
       font-weight: 600;
     }
   }
 
+  .toc-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .toc-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: shared.$text-muted;
+    font: inherit;
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: #f1f5f9;
+      color: shared.$primary-color;
+    }
+  }
+
+  .toc-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+}
+
+.rule-panel {
+  scroll-margin-top: 72px;
+  margin-bottom: 12px;
+
+  mat-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+
+    mat-icon {
+      color: shared.$primary-color;
+    }
+  }
+}
+
+.soon {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.text {
+  line-height: 1.7;
+  margin: 0 0 16px;
+
+  code {
+    padding: 2px 6px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+}
+
+.rule-list {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  line-height: 1.7;
+
+  li {
+    margin-bottom: 4px;
+  }
+}
+
+.phase-list {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  line-height: 1.7;
+
+  li {
+    margin-bottom: 4px;
+  }
+}
+
+.callout,
+.draft {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+
+  mat-icon {
+    flex-shrink: 0;
+  }
+
   p {
     margin: 0;
-    color: shared.$text-muted;
-    font-size: 0.875rem;
+    line-height: 1.6;
+    font-size: 0.9rem;
   }
+}
+
+.callout {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+
+  mat-icon {
+    color: shared.$primary-color;
+  }
+}
+
+.draft {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+
+  mat-icon {
+    color: #b45309;
+  }
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.rules-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  th,
+  td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+  }
+
+  th {
+    background: #f8fafc;
+    color: shared.$text-muted;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.stat-name {
+  font-weight: 600;
+  white-space: nowrap;
+  @include shared.stat-colors;
+}
+
+.stat-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  font-weight: 600;
+  font-size: 0.8rem;
+  @include shared.stat-colors;
+}
+
+.tag-actif,
+.tag-inactif {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tag-actif {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.tag-inactif {
+  background: #f1f5f9;
+  color: shared.$text-muted;
 }
 
 .podium {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
-  margin-top: 24px;
+  margin-bottom: 16px;
 }
 
 .podium-item {
-  padding: 24px;
-  border-radius: 8px;
+  padding: 20px;
+  border-radius: 10px;
   text-align: center;
   border: 1px solid;
 
-  &.gold-bg {
+  &.gold {
     background: rgba(245, 158, 11, 0.1);
     border-color: #d97706;
   }
 
-  &.silver-bg {
+  &.silver {
     background: rgba(156, 163, 175, 0.1);
     border-color: #6b7280;
   }
 
-  &.bronze-bg {
+  &.bronze {
     background: rgba(249, 115, 22, 0.1);
     border-color: #c2410c;
   }
@@ -158,37 +297,17 @@
 
   p {
     margin: 0;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     color: shared.$text-muted;
   }
 }
 
-.tips-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-}
-
-.tip-item {
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
-
-  .tip-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-
-    h4 {
-      margin: 0;
-      font-weight: 600;
-    }
+@media (max-width: 900px) {
+  .rules-layout {
+    grid-template-columns: 1fr;
   }
 
-  p {
-    margin: 0;
-    font-size: 0.875rem;
-    color: shared.$text-muted;
+  .toc {
+    position: static;
   }
 }
