@@ -7,6 +7,7 @@ import java.util.List;
 public class PlayerDto {
     private Long id;
     private String name;
+    private Integer sectorCount;
     private PlayerStatsDto stats;
     private List<EquipmentStackDto> equipments;
     private List<PlayerResourceDto> resources;

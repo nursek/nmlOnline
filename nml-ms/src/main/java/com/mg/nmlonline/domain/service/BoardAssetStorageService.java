@@ -23,6 +23,11 @@ public class BoardAssetStorageService {
     /** Convention du frontend (carte.component.ts) : id="pathN" où N est le numéro de secteur. */
     private static final Pattern SECTOR_PATH_ID = Pattern.compile("id=\"path(\\d+)\"");
 
+    /** Refuse le contenu actif : le SVG est réinjecté en innerHTML côté client (bypassSecurityTrustHtml). */
+    private static final Pattern ACTIVE_SVG_CONTENT = Pattern.compile(
+            "(?i)(<\\s*script|<!\\s*entity|<\\s*foreignObject|<\\s*iframe|<\\s*object|<\\s*embed"
+                    + "|javascript\\s*:|(\\s|\"|'|<|/)on[a-z]+\\s*=)");
+
     private final Path storageDir;
     private final String urlPrefix;
 
@@ -60,6 +65,9 @@ public class BoardAssetStorageService {
         }
 
         String content = new String(file.getBytes());
+        if (ACTIVE_SVG_CONTENT.matcher(content).find()) {
+            throw new IllegalArgumentException("SVG refusé : contenu actif détecté.");
+        }
         int sectorCount = countSectorIds(content);
 
         String filename = UUID.randomUUID() + "-overlay.svg";

@@ -41,7 +41,7 @@
               <div class="legend-color" [style.background-color]="getPlayerColor(player.id)"></div>
               <div class="legend-info">
                 <span class="legend-name">{{ player.name }}</span>
-                <span class="legend-count">{{ player.sectors.length }} secteur(s)</span>
+                <span class="legend-count">{{ player.sectorCount ?? 0 }} secteur(s)</span>
               </div>
             </button>
           }

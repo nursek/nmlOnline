@@ -13,8 +13,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Authentification et propriété sur les endpoints critiques (profil test). */
@@ -95,6 +98,39 @@ class SecurityOwnershipTest {
         mockMvc.perform(get("/api/admin/players")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void authenticatedUser_getOwnPlayer_returnsFullState() throws Exception {
+        String token = tokenFor(TestDataInitializer.USER_1);
+
+        mockMvc.perform(get("/api/players/TestPlayer1")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stats.money").exists());
+    }
+
+    @Test
+    void authenticatedUser_getOtherPlayer_hidesPrivateState() throws Exception {
+        String token = tokenFor(TestDataInitializer.USER_1);
+
+        mockMvc.perform(get("/api/players/TestPlayer2")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sectorCount").exists())
+                .andExpect(jsonPath("$.stats.money").doesNotExist());
+    }
+
+    @Test
+    void boardAssets_areSandboxedByCsp() throws Exception {
+        mockMvc.perform(get("/boards/overlay.svg"))
+                .andExpect(header().string("Content-Security-Policy", containsString("sandbox")));
+    }
+
+    @Test
+    void boardAssets_encodedPath_isRejectedByHttpFirewall() throws Exception {
+        mockMvc.perform(get("/%62oards/overlay.svg"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

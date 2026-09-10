@@ -77,7 +77,7 @@ public class ResourceService {
 
     @Transactional
     public SaleResult sellResource(Long resourceId, int quantity, Long userId) {
-        Player player = playerRepository.findByUserId(userId)
+        Player player = playerRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable : " + userId));
 
         PlayerResource playerResource = playerResourceRepository.findById(resourceId)

@@ -131,6 +131,13 @@ public class VehicleService {
             throw new SecurityException("Ce véhicule ne vous appartient pas");
         }
 
+        if (vehicle.getSector() != null) {
+            throw new IllegalStateException("Le véhicule est déjà déployé.");
+        }
+        if (vehicle.isDestroyed()) {
+            throw new IllegalStateException("Le véhicule est détruit.");
+        }
+
         Sector sector = sectorRepository.findByBoard_IdAndNumber(boardId, sectorNumber)
                 .orElseThrow(() -> new RuntimeException("Secteur introuvable"));
 

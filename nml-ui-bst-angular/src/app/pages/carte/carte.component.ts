@@ -21,6 +21,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Board, PageResult, Player, Sector } from '../../models';
 import { environment } from '../../../environments/environment';
+import { sanitizeSvg } from '../../core/svg-sanitize';
 import { MAP_THEME } from './carte.config';
 
 interface SectorWithPlayer extends Sector {
@@ -100,15 +101,16 @@ export class CarteComponent {
   readonly svgContent = computed<SafeHtml | string | null>(() => {
     const text = this.svgTextRef.value();
     if (!text) return null;
-    // ponytail: bypass direct — le sanitizer HTML d'Angular jette les balises SVG.
-    // OK car c'est un asset statique embarqué (assets/maps), pas de l'input utilisateur.
     // Defense-in-depth: on ne bypass que si l'URL est same-origin (chemin relatif en "/").
     // Sinon on renvoie la string brute — Angular sanitize lui-même au binding [innerHTML].
     const url = this.svgOverlayUrl();
     if (!url || !isSameOriginAssetUrl(url)) {
       return text;
     }
-    return this.sanitizer.bypassSecurityTrustHtml(text);
+    // ponytail: bypass direct — le sanitizer HTML d'Angular jette les balises SVG ;
+    // on neutralise donc les éléments/attributs actifs (upload admin) avant injection.
+    const sanitized = sanitizeSvg(text);
+    return sanitized ? this.sanitizer.bypassSecurityTrustHtml(sanitized) : null;
   });
   readonly svgLoaded = computed(() => this.svgContent() !== null);
 

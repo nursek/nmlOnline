@@ -2,6 +2,7 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -46,6 +47,9 @@ class UnitServiceTest {
 
     @Autowired
     private EquipmentService equipmentService;
+
+    @Autowired
+    private BuildingService buildingService;
 
     @Autowired
     private EntityManager entityManager;
@@ -137,6 +141,28 @@ class UnitServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> unitService.assignEquipment(unit.getId(), player.getUserId(), incompatible.getName()),
                 "Un équipement incompatible doit être refusé");
+    }
+
+    @Test
+    @DisplayName("Un ordre à pied ne peut pas déplacer un bâtiment")
+    void shouldRefuseBuildingInFootOrder() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+
+        Sector from = board.getAllSectors().stream()
+                .filter(s -> !s.getNeighbors().isEmpty())
+                .findFirst().orElseThrow();
+        Sector to = board.getSector(from.getNeighbors().getFirst());
+        assertNotNull(to, "Le secteur voisin doit exister");
+
+        Headquarters hq = buildingService.getHeadquarters(player.getId()).orElseThrow();
+        hq.setSector(from);
+        entityManager.flush();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> unitService.placeFootOrder(player.getUserId(), List.of(hq.getId()),
+                        List.of(from.getNumber(), to.getNumber())),
+                "Un bâtiment ne peut pas être déplacé par un ordre à pied");
     }
 
     /** Résout le joueur par nom d'utilisateur : les ids générés dépendent de la séquence, pas d'une constante. */

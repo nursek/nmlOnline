@@ -38,6 +38,8 @@ export interface ResourceSaleResponse {
 export interface Player {
   id: number | null;
   name: string;
+  // Présent sur la vue publique (autres joueurs) : état privé absent.
+  sectorCount?: number;
   stats: PlayerStats;
   equipments: EquipmentStack[];
   resources: PlayerResource[];

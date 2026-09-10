@@ -57,7 +57,7 @@ public class UnitService {
     }
 
     public Unit assignEquipment(Long unitId, Long userId, String equipmentName) {
-        Player player = requirePlayerByUserId(userId);
+        Player player = requirePlayerByUserIdForUpdate(userId);
         Board board = requireBoard();
         Unit unit = requireUnit(board, unitId);
         requireOwnedBy(unit, player);
@@ -87,7 +87,7 @@ public class UnitService {
     }
 
     public Unit removeEquipment(Long unitId, Long userId, String equipmentName) {
-        Player player = requirePlayerByUserId(userId);
+        Player player = requirePlayerByUserIdForUpdate(userId);
         Board board = requireBoard();
         Unit unit = requireUnit(board, unitId);
         requireOwnedBy(unit, player);
@@ -169,6 +169,14 @@ public class UnitService {
 
     private Player requirePlayerByUserId(Long userId) {
         Player player = playerService.findByUserId(userId);
+        if (player == null) {
+            throw new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId);
+        }
+        return player;
+    }
+
+    private Player requirePlayerByUserIdForUpdate(Long userId) {
+        Player player = playerService.findByUserIdForUpdate(userId);
         if (player == null) {
             throw new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId);
         }

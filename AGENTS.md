@@ -1,14 +1,13 @@
 # AGENTS.md
 
 Fast lane. Détails dans [README.md](README.md).
-`.github/copilot-instructions.md` contient les mêmes règles pour Copilot — garder les deux synchrones.
 
 ## Commandes
 
 ```bash
 # nml-ms/ (Spring Boot 3.5.6 / Java 21)
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"   # JWT_SECRET + JWT_PEPPER requis
-.\mvnw.cmd test                                                # H2, sans config
+.\mvnw.cmd clean test                                          # PostgreSQL 14 embarqué (Zonky), sans config
 # nml-ui-bst-angular/ (Angular 22)
 npm start / npm test / npm run lint / npm run format
 ```
@@ -43,6 +42,9 @@ Réponses et commentaires en **français** ; README/docs en anglais.
   une migration appliquée). Livré avec l'entité.
 - Jamais de `JWT_SECRET` / `JWT_PEPPER` / identifiants DB dans le dépôt — variables
   d'environnement uniquement. Pas de console H2, pas de `@CrossOrigin` (CORS dans `CorsConfig`).
+- **JWT** : access token = claim `type=access`, refresh = `type=refresh` ; ne jamais accepter l'un pour l'autre.
+- **Lecture** : jamais l'état privé d'autrui — `PlayerDto` complet = propriétaire/admin,
+  carte via `BoardMapper.toPublicDto` ; SVG admin = `sanitizeSvg` client + CSP `sandbox` (`/boards/**`).
 - Minimal wins : pas d'abstraction spéculative, pas d'échafaudage « pour plus tard »,
   pas de nouvelle dépendance quand quelques lignes suffisent. Supprimer > ajouter.
 - Logique non triviale = **un** test qui casse si la logique casse. Pas de suite par fonction.
@@ -55,8 +57,8 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 - **Ownership** : jamais de `playerId` du body/params — `request.getAttribute("userId")`,
   vérifié dans le service (`SecurityException` → 403).
 - **Admin** : CRUD global sous `/api/admin/**` + `@PreAuthorize("hasRole('ADMIN')")`.
-- `Sector.ownerId` = source unique de propriété. `Board.sectors` est une map transient
-  (`@PostLoad`) — ne pas la persister. `@JsonIgnore` côté many.
+- `Sector.ownerId` = source unique de propriété. `Board.sectorsList` = seule source persistée ;
+  `BoardDto.sectors` (map) est reconstruite dans `BoardMapper`. `@JsonIgnore` côté many.
 - Cascade JPA : lire [`docs/jpa-pitfalls.md`](docs/jpa-pitfalls.md) avant tout
   `@OneToMany(mappedBy=…, orphanRemoval=true)` dont l'enfant porte une FK NOT NULL.
 - **Tour** : `TurnService.advanceTurn()` et `TurnResolutionOrchestrator` mutent tous deux
