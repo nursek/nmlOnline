@@ -40,7 +40,6 @@ public class AuthController {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final String pepper;
-    private final boolean appCookieSecure;
 
     private static final int MAX_ATTEMPTS = 5;
     private static final long BLOCK_TIME_MS = TimeUnit.MINUTES.toMillis(1);
@@ -69,14 +68,12 @@ public class AuthController {
             UserService userService,
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
-            @Value("${jwt.pepper}") String pepper,
-            @Value("${app.cookie.secure:true}") boolean appCookieSecure
+            @Value("${jwt.pepper}") String pepper
     ) {
         this.userService = userService;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
         this.pepper = pepper;
-        this.appCookieSecure = appCookieSecure;
     }
 
     private static class Attempt {
@@ -248,7 +245,7 @@ public class AuthController {
         cookie.setHttpOnly(true);
         cookie.setPath("/api/auth");
         cookie.setMaxAge(maxAge);
-        cookie.setSecure(appCookieSecure);
+        cookie.setSecure(true);
         cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
     }
