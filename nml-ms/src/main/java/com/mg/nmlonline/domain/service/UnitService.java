@@ -16,7 +16,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,6 +30,7 @@ public class UnitService {
 
     private final BoardService boardService;
     private final PlayerService playerService;
+    private final PlayerActionService playerActionService;
     private final MovementService movementService;
     private final TurnService turnService;
     private final UnitRepository unitRepository;
@@ -40,6 +40,7 @@ public class UnitService {
 
     public UnitService(BoardService boardService,
                         PlayerService playerService,
+                        PlayerActionService playerActionService,
                         MovementService movementService,
                         TurnService turnService,
                         UnitRepository unitRepository,
@@ -48,6 +49,7 @@ public class UnitService {
                         EntityManager em) {
         this.boardService = boardService;
         this.playerService = playerService;
+        this.playerActionService = playerActionService;
         this.movementService = movementService;
         this.turnService = turnService;
         this.unitRepository = unitRepository;
@@ -83,6 +85,7 @@ public class UnitService {
         player.decrementEquipmentAvailability(stack.getEquipment());
         playerService.save(player);
         boardService.save(board);
+        playerActionService.recordEquipUnit(player.getId(), unit.getId(), equipmentName);
         return unit;
     }
 
@@ -103,31 +106,18 @@ public class UnitService {
                     "Aucun équipement \"" + equipmentName + "\" dans l'inventaire du joueur.");
         }
 
-        // Unit.unitEquipments n'a plus orphanRemoval : retrait de la collection n'émet pas de DELETE.
-        // em.remove(ue) explicite avant le retrait, sinon rows orphelines en base.
-        List<UnitEquipment> persistedUEs = new ArrayList<>();
-        for (UnitEquipment ue : unit.getUnitEquipments()) {
-            if (ue.getEquipment() != null && ue.getEquipment().getName().equals(equipmentName)) {
-                persistedUEs.add(ue);
-            }
-        }
-        if (persistedUEs.isEmpty()) {
+        // Sans orphanRemoval : em.remove d'une occurrence (les doublons doivent survivre au clic).
+        UnitEquipment row = unit.removeOneEquipment(equipmentName);
+        if (row == null) {
             throw new IllegalArgumentException(
                     "L'unité #" + unit.getId() + " ne porte pas l'équipement \"" + equipmentName + "\".");
         }
-        persistedUEs.forEach(em::remove);
-
-        boolean removed = unit.removeEquipment(stack.getEquipment());
-        if (!removed) {
-            // Cohérence transient vs persistant : persistedUEs non-vide ⇒ removeEquipment devait réussir.
-            throw new IllegalStateException(
-                    "Incohérence : UnitEquipment persistés trouvés pour \"" + equipmentName
-                            + "\" mais unit.removeEquipment transient n'a rien retiré.");
-        }
+        em.remove(row);
 
         player.incrementEquipmentAvailability(stack.getEquipment());
         playerService.save(player);
         boardService.save(board);
+        playerActionService.recordUnequipUnit(player.getId(), unit.getId(), equipmentName);
         return unit;
     }
 

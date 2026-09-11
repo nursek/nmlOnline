@@ -21,7 +21,6 @@ export class TokenService {
   private isRefreshing = false;
   private readonly refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
-  // Timeout pour le refresh (10 secondes max)
   private readonly REFRESH_TIMEOUT_MS = 10_000;
 
   /**
@@ -33,23 +32,14 @@ export class TokenService {
     return sessionStorage.getItem('accessToken');
   }
 
-  /**
-   * Stocke le token d'accès dans le sessionStorage.
-   */
   setAccessToken(token: string): void {
     sessionStorage.setItem('accessToken', token);
   }
 
-  /**
-   * Supprime le token d'accès du sessionStorage.
-   */
   removeAccessToken(): void {
     sessionStorage.removeItem('accessToken');
   }
 
-  /**
-   * Récupère l'utilisateur depuis le sessionStorage.
-   */
   getUser(): { id: number; username: string; role?: string } | null {
     const stored = sessionStorage.getItem('user');
     if (!stored) return null;
@@ -67,50 +57,30 @@ export class TokenService {
     return null;
   }
 
-  /**
-   * Stocke l'utilisateur dans le sessionStorage.
-   */
   setUser(user: { id: number; username: string; role?: string }): void {
     sessionStorage.setItem('user', JSON.stringify(user));
   }
 
-  /**
-   * Supprime l'utilisateur du sessionStorage.
-   */
   removeUser(): void {
     sessionStorage.removeItem('user');
   }
 
-  /**
-   * Nettoie toutes les données d'authentification.
-   */
   clearAuth(): void {
     this.removeAccessToken();
     this.removeUser();
     this.resetRefreshState();
   }
 
-  /**
-   * Réinitialise l'état du refresh.
-   */
   private resetRefreshState(): void {
     this.isRefreshing = false;
     this.refreshTokenSubject.next(null);
   }
 
-  /**
-   * Effectue un refresh du token.
-   * Si un refresh est déjà en cours, attend son résultat ; sinon en lance un nouveau.
-   *
-   * @returns Observable<string> Le nouveau token d'accès
-   */
   refreshToken(): Observable<string> {
-    // Si un refresh est déjà en cours, attendre son résultat
     if (this.isRefreshing) {
       return this.waitForRefresh();
     }
 
-    // Démarrer un nouveau refresh
     this.isRefreshing = true;
     this.refreshTokenSubject.next(null);
 
@@ -120,10 +90,8 @@ export class TokenService {
         timeout(this.REFRESH_TIMEOUT_MS),
         switchMap((response) => {
           if (response.valid && response.token) {
-            // Stocker le nouveau token
             this.setAccessToken(response.token);
 
-            // Stocker l'utilisateur si présent
             if (response.id && response.name) {
               this.setUser({ id: response.id, username: response.name, role: response.role });
             }
@@ -133,13 +101,11 @@ export class TokenService {
 
             return of(response.token);
           } else {
-            // Token invalide
             this.clearAuth();
             return throwError(() => new Error('Invalid refresh token'));
           }
         }),
         catchError((error) => {
-          // Nettoyer en cas d'erreur
           this.clearAuth();
           return throwError(() => error);
         }),
@@ -150,14 +116,10 @@ export class TokenService {
       );
   }
 
-  /**
-   * Attend qu'un refresh en cours se termine.
-   */
   private waitForRefresh(): Observable<string> {
     return this.refreshTokenSubject.pipe(
       filter((token): token is string => token !== null),
       take(1),
-      // Timeout si le refresh prend trop longtemps
       timeout(this.REFRESH_TIMEOUT_MS),
       catchError(() => {
         // Timeout atteint, essayer avec le token existant

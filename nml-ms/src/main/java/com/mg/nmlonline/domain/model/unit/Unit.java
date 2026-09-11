@@ -269,6 +269,29 @@ public class Unit extends CombatEntity {
         return removed;
     }
 
+    /** Retire une occurrence et renvoie la ligne persistée à em.remove (null si absente). */
+    public UnitEquipment removeOneEquipment(String equipmentName) {
+        if (unitEquipments == null) return null;
+        UnitEquipment row = unitEquipments.stream()
+                .filter(ue -> ue.getEquipment() != null && equipmentName.equals(ue.getEquipment().getName()))
+                .findFirst()
+                .orElse(null);
+        if (row == null) return null;
+
+        unitEquipments.remove(row);
+        if (equipments != null) {
+            for (int i = 0; i < equipments.size(); i++) {
+                Equipment e = equipments.get(i);
+                if (e != null && equipmentName.equals(e.getName())) {
+                    equipments.remove(i);
+                    break;
+                }
+            }
+        }
+        recalculateBaseStats();
+        return row;
+    }
+
     public List<Equipment> getEquipmentsByCategory(EquipmentCategory category) {
         return getEquipmentsForCalculation().stream()
                 .filter(e -> e.getCategory() == category)

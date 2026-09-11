@@ -19,6 +19,7 @@ import {
   SellResourceBatchItem,
   ResourceBatchSaleResponse,
   Board,
+  PlayerAction,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -29,7 +30,6 @@ export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  // Auth endpoints
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login`, credentials, {
       withCredentials: true,
@@ -40,12 +40,10 @@ export class ApiService {
     return this.http.post<void>(`${this.baseUrl}/auth/logout`, {}, { withCredentials: true });
   }
 
-  // Player endpoints
   getPlayer(username: string): Observable<Player> {
     return this.http.get<Player>(`${this.baseUrl}/players/${username}`);
   }
 
-  // Resource endpoints
   sellResourcesBatch(items: SellResourceBatchItem[]): Observable<ResourceBatchSaleResponse> {
     return this.http.post<ResourceBatchSaleResponse>(
       `${this.baseUrl}/players/resources/sell-batch`,
@@ -53,7 +51,6 @@ export class ApiService {
     );
   }
 
-  // Admin endpoints
   adminExportPlayer(id: number): Observable<Record<string, unknown>> {
     return this.http.get<Record<string, unknown>>(`${this.baseUrl}/admin/players/${id}/export`);
   }
@@ -172,7 +169,6 @@ export class ApiService {
     );
   }
 
-  // Véhicules
   getVehicleTypes(): Observable<VehicleTypeInfo[]> {
     return this.http.get<VehicleTypeInfo[]>(`${this.baseUrl}/vehicles/types`);
   }
@@ -196,7 +192,6 @@ export class ApiService {
     return this.http.post<Player>(`${this.baseUrl}/players/equipment/buy`, items);
   }
 
-  // Unités (joueur authentifié) — équipement et ordres de déplacement.
   assignUnitEquipment(unitId: number, equipmentName: string): Observable<Unit> {
     return this.http.post<Unit>(`${this.baseUrl}/units/${unitId}/equipment`, {
       equipmentName,
@@ -222,5 +217,24 @@ export class ApiService {
 
   cancelMovementOrder(orderId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/units/movement/${orderId}`);
+  }
+
+  getPlayerActions(): Observable<PlayerAction[]> {
+    return this.http.get<PlayerAction[]>(`${this.baseUrl}/players/actions`);
+  }
+
+  undoPlayerActions(actionId: number): Observable<PlayerAction[]> {
+    return this.http.post<PlayerAction[]>(`${this.baseUrl}/players/actions/${actionId}/undo`, {});
+  }
+
+  undoAllPlayerActions(): Observable<PlayerAction[]> {
+    return this.http.post<PlayerAction[]>(`${this.baseUrl}/players/actions/undo-all`, {});
+  }
+
+  moveBuilding(buildingId: number, boardId: number, newSectorNumber: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/buildings/${buildingId}/move`, {
+      boardId,
+      newSectorNumber,
+    });
   }
 }

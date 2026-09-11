@@ -20,7 +20,6 @@ export class MovementStateService {
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
 
-  /** Ordres PENDING concernés par une unité donnée. */
   pendingForUnit(unitId: number): MovementOrder[] {
     return this._orders().filter((o) => o.entityIds?.includes(unitId));
   }
@@ -41,7 +40,6 @@ export class MovementStateService {
     }
   }
 
-  /** Crée un ordre de déplacement à pied pour une unité ; recharge les ordres après succès. */
   async placeFootOrder(unitId: number, route: number[]): Promise<MovementOrder | null> {
     this._error.set(null);
     try {
@@ -56,7 +54,6 @@ export class MovementStateService {
     }
   }
 
-  /** Annule un ordre ; recharge les ordres après succès. */
   async cancelOrder(orderId: number): Promise<boolean> {
     this._error.set(null);
     try {

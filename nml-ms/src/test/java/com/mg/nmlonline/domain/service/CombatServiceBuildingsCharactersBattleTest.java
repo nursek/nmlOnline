@@ -76,9 +76,6 @@ class CombatServiceBuildingsCharactersBattleTest {
                 .orElseThrow(() -> new AssertionError("Aucun secteur neutre vide dans le board de démo"));
     }
 
-    /**
-     * Défenseur : 3 LARBINs + personnage 30/30 + QG + Cache + Banque sur un secteur neutre vide.
-     */
     private World seedDefenderHolding() {
         return new TransactionTemplate(txManager).execute(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();

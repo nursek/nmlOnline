@@ -12,7 +12,6 @@
 
   <mat-dialog-content>
     <div class="udd-body">
-      <!-- Colonne gauche : slots offensifs -->
       <div class="udd-col udd-col-left">
         <h3><mat-icon>inventory_2</mat-icon> Offensif</h3>
         @for (group of offensiveSlots(); track group.category) {
@@ -22,7 +21,7 @@
               <span class="udd-slot-cap">{{ group.filled.length }}/{{ group.cap }}</span>
             </div>
             <div class="udd-slots">
-              @for (eq of group.filled; track eq.name) {
+              @for (eq of group.filled; track $index) {
                 <div
                   class="udd-slot udd-slot-filled"
                   (click)="openSlotPicker(group)"
@@ -59,7 +58,6 @@
         }
       </div>
 
-      <!-- Colonne centre : stats (haut) + portrait (sous) -->
       <div class="udd-col udd-col-center">
         <section class="udd-stats-section">
           <h3><mat-icon>analytics</mat-icon> Statistiques</h3>
@@ -115,7 +113,6 @@
         </div>
       </div>
 
-      <!-- Colonne droite : slots défensifs -->
       <div class="udd-col udd-col-right">
         <h3><mat-icon>shield</mat-icon> Défensif</h3>
         @for (group of defensiveSlots(); track group.category) {
@@ -125,7 +122,7 @@
               <span class="udd-slot-cap">{{ group.filled.length }}/{{ group.cap }}</span>
             </div>
             <div class="udd-slots">
-              @for (eq of group.filled; track eq.name) {
+              @for (eq of group.filled; track $index) {
                 <div
                   class="udd-slot udd-slot-filled"
                   (click)="openSlotPicker(group)"
@@ -163,7 +160,6 @@
       </div>
     </div>
 
-    <!-- Bas pleine largeur : ordre de déplacement -->
     <section class="udd-move-section">
       <h3><mat-icon>directions_walk</mat-icon> Ordre de déplacement</h3>
       <div class="udd-move">

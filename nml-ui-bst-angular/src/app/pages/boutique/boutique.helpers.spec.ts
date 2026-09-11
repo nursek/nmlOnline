@@ -57,14 +57,14 @@ function vt(name: string, cost: number, basePdf: number, baseDefense: number): V
 describe('boutique.helpers — tri par défaut', () => {
   it('trie par classe (léger→élémentaire) puis catégorie (mêlée→arme à feu→défensif) puis prix', () => {
     const items = [
-      eq('Pistolet 9mm', 400, 'FIREARM', 'LEGER'), // Léger, FIREARM, 400
-      eq('Poing américain', 100, 'MELEE', 'LEGER'), // Léger, MELEE, 100  ← 1er
-      eq('Matraque télescopique', 200, 'MELEE', 'LEGER'), // Léger, MELEE, 200  ← 2e
-      eq('Tenue ultra légère', 750, 'DEFENSIVE', 'LEGER'), // Léger, DEFENSIVE
-      eq('Hache de bûcheron', 450, 'MELEE', 'MASTODONTE'), // Mastodonte, MELEE
-      eq('Couteau de combat', 300, 'MELEE', 'SNIPER'), // Sniper, MELEE
+      eq('Pistolet 9mm', 400, 'FIREARM', 'LEGER'),
+      eq('Poing américain', 100, 'MELEE', 'LEGER'),
+      eq('Matraque télescopique', 200, 'MELEE', 'LEGER'),
+      eq('Tenue ultra légère', 750, 'DEFENSIVE', 'LEGER'),
+      eq('Hache de bûcheron', 450, 'MELEE', 'MASTODONTE'),
+      eq('Couteau de combat', 300, 'MELEE', 'SNIPER'),
       eq('Bombes collantes', 3400, 'FIREARM', 'PILOTE_DESTRUCTEUR'),
-      eq('Gantelet électrique', 1000, 'MELEE', 'ELEMENTAIRE'), // Élémentaire → dernier
+      eq('Gantelet électrique', 1000, 'MELEE', 'ELEMENTAIRE'),
     ];
     const sorted = sortEquipments(items);
     expect(sorted.map((i) => i.name)).toEqual([

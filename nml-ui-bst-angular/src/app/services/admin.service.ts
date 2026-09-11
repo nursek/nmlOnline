@@ -30,7 +30,6 @@ export class AdminService {
   readonly players = computed(() => this.playersRef.value()?.content ?? []);
   readonly loading = computed(() => this.playersRef.isLoading());
 
-  // === Ordres de déplacement du tour courant (vue admin) ===
   // Filtre réactif : la resource se recharge à chaque changement de statut.
   readonly orderStatusFilter = signal<MovementStatusFilter>('ALL');
   private readonly ordersRef = httpResource<AdminMovementOrder[]>(() => {
@@ -143,7 +142,6 @@ export class AdminService {
     this._resolutionReport.set(null);
   }
 
-  /** Import a player JSON file; reloads the catalog on success. */
   async importPlayer(file: File, password?: string): Promise<Player> {
     this._importing.set(true);
     this._error.set(null);
@@ -162,7 +160,6 @@ export class AdminService {
     }
   }
 
-  /** Delete a player by id; updates the local cache optimistically. */
   async deletePlayer(playerId: number): Promise<void> {
     this._error.set(null);
     this._successMessage.set(null);

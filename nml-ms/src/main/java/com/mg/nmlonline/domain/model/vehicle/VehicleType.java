@@ -26,6 +26,6 @@ public enum VehicleType {
     private final int speed;           // Nombre max de secteurs par tour
     private final int capacity;        // Nombre de passagers (hors pilote)
     private final int resistance;      // % de résistance aux dégâts (ex: Tank = 50)
-    private final boolean firesInTransit; // Tire sur les ennemis lors du transit
-    private final boolean isAerial;    // Véhicule aérien (hélicoptère, avion)
+    private final boolean firesInTransit;
+    private final boolean isAerial;
 }

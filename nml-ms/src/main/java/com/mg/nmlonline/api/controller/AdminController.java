@@ -80,9 +80,6 @@ public class AdminController {
         return ResponseEntity.ok(adminService.importPlayerDto(jsonContent, password));
     }
 
-    /**
-     * Supprime le joueur et réinitialise ses secteurs.
-     */
     @DeleteMapping("/players/{id}")
     public ResponseEntity<Map<String, String>> deletePlayer(@PathVariable Long id) {
         adminService.deletePlayer(id);
@@ -123,9 +120,6 @@ public class AdminController {
         return Map.of("currentTurn", turnService.getCurrentTurn());
     }
 
-    /**
-     * Résout les ordres PENDING puis incrémente le numéro de tour.
-     */
     @PostMapping("/turn/next")
     public Map<String, Object> advanceTurn() {
         int newTurn = turnService.advanceTurn();

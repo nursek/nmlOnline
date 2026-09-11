@@ -4,6 +4,8 @@ import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * Source unique de vérité du tour courant du plateau ({@link Board#getCurrentTurn()}).
@@ -18,8 +20,7 @@ public class TurnService {
     private final TurnLock turnLock;
     private final GameCharacterService characterService;
 
-    // Cache du tour courant : évite un N+1 (SELECT boards + tx par bâtiment mappé).
-    // Invalidé par advanceTurn / invalidateTurnCache.
+    // Cache du tour (évite un N+1), publié avant commit et purgé sur rollback.
     private volatile Integer cachedTurn;
 
     public TurnService(BoardRepository boardRepository, MovementService movementService,
@@ -41,16 +42,40 @@ public class TurnService {
                 .findFirst()
                 .map(Board::getCurrentTurn)
                 .orElse(null);
-        if (turn != null) {
-            cachedTurn = turn;
-            return turn;
+        if (turn == null) {
+            return 1;
         }
-        return 1;
+        // Verrou : un lecteur parti avant publishTurn écraserait la nouvelle valeur.
+        synchronized (this) {
+            if (cachedTurn == null) {
+                cachedTurn = turn;
+            }
+            return cachedTurn;
+        }
     }
 
     /** À appeler quand le tour est muté hors de {@link #advanceTurn()} (ex. finalizeTurn). */
     public void invalidateTurnCache() {
-        cachedTurn = null;
+        synchronized (this) {
+            cachedTurn = null;
+        }
+    }
+
+    /** Publie le tour cible avant commit ; le cache est purgé si la transaction échoue. */
+    public void publishTurn(int turn) {
+        synchronized (this) {
+            cachedTurn = turn;
+        }
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCompletion(int status) {
+                    if (status != TransactionSynchronization.STATUS_COMMITTED) {
+                        invalidateTurnCache();
+                    }
+                }
+            });
+        }
     }
 
     /** Termine le tour : résout les mouvements PENDING puis incrémente le compteur. */
@@ -70,10 +95,10 @@ public class TurnService {
 
             characterService.regenerateAllCharacters();
 
-            board.setCurrentTurn(turnEnding + 1);
+            int newTurn = turnEnding + 1;
+            board.setCurrentTurn(newTurn);
             board = boardRepository.save(board);
-            // Invalidation (pas mise à jour) : si rollback après ce point, la prochaine lecture relit la DB.
-            cachedTurn = null;
+            publishTurn(newTurn);
             return board.getCurrentTurn();
         } finally {
             turnLock.release();

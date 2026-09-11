@@ -165,6 +165,39 @@ class UnitServiceTest {
                 "Un bâtiment ne peut pas être déplacé par un ordre à pied");
     }
 
+    @Test
+    @DisplayName("removeEquipment ne retire qu'une copie d'un même équipement")
+    void shouldRemoveOnlyOneDuplicateCopy() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        Sector sector = findNeutralSector(board, 6);
+        Unit unit = newUnit(player.getId(), UnitType.MALFRAT, Set.of(UnitClass.TIREUR));
+        sector.addUnit(unit);
+        entityManager.persist(unit);
+        entityManager.flush();
+
+        Equipment melee = equipmentService.findAll(org.springframework.data.domain.Pageable.ofSize(100)).stream()
+                .filter(e -> e.getCategory() == EquipmentCategory.MELEE)
+                .filter(e -> e.getCompatibleClasses().contains(UnitClass.TIREUR))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Catalogue : aucun MELEE compatible TIREUR"));
+        player.addEquipmentToStack(melee, 2);
+        playerService.save(player);
+
+        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName());
+        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName());
+
+        unitService.removeEquipment(unit.getId(), player.getUserId(), melee.getName());
+
+        assertEquals(1, unit.getEquipments().size(), "Une seule copie doit rester équipée");
+        assertEquals(1, availableOf(melee.getName()), "Une seule copie doit revenir au stock");
+
+        unitService.removeEquipment(unit.getId(), player.getUserId(), melee.getName());
+
+        assertEquals(0, unit.getEquipments().size());
+        assertEquals(2, availableOf(melee.getName()));
+    }
+
     /** Résout le joueur par nom d'utilisateur : les ids générés dépendent de la séquence, pas d'une constante. */
     private Player playerOfTestUser(String username) {
         User user = userRepository.findByUsername(username);
@@ -197,5 +230,13 @@ class UnitServiceTest {
         return equipmentService.findAll(org.springframework.data.domain.Pageable.ofSize(50)).stream()
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Catalogue d'équipement vide"));
+    }
+
+    private int availableOf(String equipmentName) {
+        return playerOfTestUser(TestDataInitializer.USER_1).getEquipments().stream()
+                .filter(s -> s.getEquipment().getName().equals(equipmentName))
+                .mapToInt(s -> s.getAvailable())
+                .findFirst()
+                .orElse(-1);
     }
 }

@@ -28,6 +28,7 @@ public class PlayerService {
     private final EquipmentService equipmentService;
     private final PlayerMapper playerMapper;
     private final BoardService boardService;
+    private final PlayerActionService playerActionService;
     private final EntityManager entityManager;
 
     public PlayerService(PlayerRepository playerRepository,
@@ -35,12 +36,14 @@ public class PlayerService {
                           EquipmentService equipmentService,
                           PlayerMapper playerMapper,
                           BoardService boardService,
+                          PlayerActionService playerActionService,
                           EntityManager entityManager) {
         this.playerRepository = playerRepository;
         this.sectorService = sectorService;
         this.equipmentService = equipmentService;
         this.playerMapper = playerMapper;
         this.boardService = boardService;
+        this.playerActionService = playerActionService;
         this.entityManager = entityManager;
     }
 
@@ -109,6 +112,8 @@ public class PlayerService {
             if (!success) {
                 throw new IllegalStateException("Failed to apply purchase for: " + resolved.equipment().getName());
             }
+            playerActionService.recordBuyEquipment(playerId, resolved.equipment().getName(),
+                    resolved.quantity(), (double) resolved.equipment().getCost() * resolved.quantity());
         }
 
         return playerRepository.save(player);
@@ -134,6 +139,7 @@ public class PlayerService {
                 .getResultList()
                 .forEach(entityManager::remove);
         sectorService.removePlayerFromSectors(id);
+        playerActionService.deleteForPlayer(id);
         playerRepository.deleteById(id);
         return true;
     }

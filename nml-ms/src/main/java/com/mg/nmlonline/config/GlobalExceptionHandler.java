@@ -1,6 +1,7 @@
 package com.mg.nmlonline.config;
 
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
+import com.mg.nmlonline.domain.exception.PlayerActionUndoException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,14 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
         problem.setTitle("Bad Request");
         return ResponseEntity.badRequest().body(problem);
+    }
+
+    @ExceptionHandler(PlayerActionUndoException.class)
+    public ResponseEntity<ProblemDetail> handleActionUndo(PlayerActionUndoException e) {
+        logger.debug("Undo conflict: {}", e.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+        problem.setTitle("Conflict");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
 
     @ExceptionHandler(EntityNotFoundException.class)

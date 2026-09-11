@@ -39,7 +39,6 @@ export class TurnResolutionService {
 
   readonly active = computed(() => this._state()?.active ?? false);
 
-  // --- Scénario de test (dev uniquement) ------------------------------
   // Probe : GET /admin/dev/seed-resolution-scenario. En prod le contrôleur
   // @Profile("dev") n'existe pas → 404 → httpResource renvoie undefined.
   private readonly devScenarioRef = httpResource<{ available: boolean }>(() => ({
@@ -132,7 +131,6 @@ export class TurnResolutionService {
     this._error.set(null);
   }
 
-  // --- Scénario de test (dev) ----------------------------------------
   async seedDevScenario(): Promise<void> {
     this._seeding.set(true);
     this._error.set(null);

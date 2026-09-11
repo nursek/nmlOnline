@@ -103,7 +103,6 @@ export class AuthService {
     this._error.set(null);
   }
 
-  /** Surface a 403 'forbidden' message to the UI. */
   reportForbidden(message: string): void {
     this._error.set(message);
   }

@@ -44,6 +44,9 @@ class BuildingServiceTest {
     @Mock
     TurnService turnService;
 
+    @Mock
+    PlayerActionService playerActionService;
+
     @InjectMocks
     BuildingService buildingService;
 

@@ -65,7 +65,6 @@ public class PlayerStartupImporter implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         log.info("=== Démarrage de l'import des données ===");
 
-        // prod (app.import-demo-data=false) : rien n'est importé ; l'admin crée le board et les joueurs via l'API.
         if (!importDemoData) {
             log.info("Import des données de démo désactivé (app.import-demo-data=false). " +
                      "L'admin doit importer le board et les joueurs via l'API.");

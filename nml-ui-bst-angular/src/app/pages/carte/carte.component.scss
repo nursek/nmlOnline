@@ -112,7 +112,6 @@
   margin-top: 8px;
 }
 
-/* Grille de secteurs */
 .map-container {
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   border-radius: 16px;
@@ -121,7 +120,6 @@
   min-height: 500px;
 }
 
-/* Détails secteur */
 .details-card {
   position: sticky;
   top: 100px;
@@ -244,7 +242,6 @@
   margin-top: 16px;
 }
 
-/* Stats globales */
 .global-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -279,10 +276,6 @@
 .error-alert {
   @include shared.error-alert;
 }
-
-/* ========================================
-   MODE SVG : Image JPG + Overlay SVG
-   ======================================== */
 
 .svg-map-wrapper {
   position: relative;
@@ -381,7 +374,3 @@
     transform: translateX(-50%) translateY(0);
   }
 }
-
-/* ========================================
-   FIN MODE SVG
-   ======================================== */

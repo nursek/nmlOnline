@@ -19,7 +19,6 @@ export interface Sector {
   color: string | null;
   resource: string | null;
   neighbors: number[];
-  // Coordonnées pour le positionnement
   x: number | null;
   y: number | null;
 }
