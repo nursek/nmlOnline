@@ -4,6 +4,7 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
+import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import com.mg.nmlonline.mapper.BoardMapper;
 import com.mg.nmlonline.mapper.PlayerMapper;
 import jakarta.persistence.EntityManager;
@@ -16,8 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,6 +35,8 @@ class AdminServiceTest {
     UserRepository userRepository;
     @Mock
     ResourceRepository resourceRepository;
+    @Mock
+    VehicleRepository vehicleRepository;
     @Mock
     EntityManager entityManager;
     @Mock

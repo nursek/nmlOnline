@@ -19,9 +19,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Board, PageResult, Player, Sector } from '../../models';
+import { PageResult, Player, Sector } from '../../models';
 import { environment } from '../../../environments/environment';
 import { sanitizeSvg } from '../../core/svg-sanitize';
+import { ActiveBoardService } from '../../services/active-board.service';
 import { MAP_THEME } from './carte.config';
 
 interface SectorWithPlayer extends Sector {
@@ -64,21 +65,19 @@ export class CarteComponent {
   readonly overlayOffsetY = MAP_THEME.overlay.offsetY;
   readonly overlayOffsetX = MAP_THEME.overlay.offsetX;
 
-  private readonly boardsRef = httpResource<Board[]>(() => ({
-    url: `${environment.apiBaseUrl}/boards`,
-  }));
+  private readonly activeBoard = inject(ActiveBoardService);
   private readonly playersRef = httpResource<PageResult<Player>>(() => ({
     url: `${environment.apiBaseUrl}/players`,
     params: { page: '0', size: '50' },
   }));
 
-  readonly loading = computed(() => this.boardsRef.isLoading() || this.playersRef.isLoading());
+  readonly loading = computed(() => this.activeBoard.loading() || this.playersRef.isLoading());
   readonly error = computed(() => {
-    const e = this.boardsRef.error() || this.playersRef.error();
+    const e = this.activeBoard.error() || this.playersRef.error();
     return e ? 'Impossible de charger la carte. Vérifiez que le serveur est démarré.' : null;
   });
 
-  readonly board = computed(() => this.boardsRef.value()?.[0] ?? null);
+  readonly board = this.activeBoard.board;
   readonly players = computed(() => this.playersRef.value()?.content ?? []);
 
   private readonly playerColorMap = computed(() => {

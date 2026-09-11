@@ -12,8 +12,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @DisplayName("EquipmentStack et gestion d'inventaire")
 class EquipmentStackTest {
 
@@ -220,7 +218,7 @@ class EquipmentStackTest {
         @DisplayName("replaceEquipmentByCategory évince le PREMIER de la catégorie à la limite")
         void shouldPinFifoEvictionByCategory() {
             Equipment blade1 = melee("Couteau");
-            Equipment blade2 = melee("Machette");
+            Equipment blade2 = melee("Hyperphase Sword");
             Equipment blade3 = melee("Katana");
             player.addEquipmentToStack(blade1, 1);
             player.addEquipmentToStack(blade2, 1);

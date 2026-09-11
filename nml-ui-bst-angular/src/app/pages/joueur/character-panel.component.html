@@ -1,0 +1,77 @@
+@if (character(); as c) {
+  <div class="chp-layout">
+    <app-character-portrait
+      [playerName]="playerName()"
+      [character]="c"
+      [sectorNumber]="c.sectorNumber ?? null"
+      [interactive]="true"
+      (activate)="openAbilities()"
+    />
+
+    <div class="chp-sector">
+      @if (sector(); as s) {
+        <div class="chp-head">
+          <h4>Secteur {{ s.number }} — {{ s.name }}</h4>
+          <span class="chp-meta">
+            {{ s.income | number: '1.0-0' }} ₡/tour
+            @if (s.resource) {
+              · {{ s.resource }}
+            }
+          </span>
+        </div>
+
+        @if (isEmpty()) {
+          <p class="chp-none">Aucune troupe, bâtiment ni véhicule dans ce secteur.</p>
+        } @else {
+          <div class="chp-groups">
+            @if (troops().length > 0) {
+              <div class="chp-group">
+                <span class="chp-label">Unités</span>
+                <div class="chp-chips">
+                  @for (t of troops(); track t.type + t.experience) {
+                    <span class="chp-chip"
+                      >{{ t.count }} {{ t.type }} ({{ t.experience | exp }} Exp)</span
+                    >
+                  }
+                </div>
+              </div>
+            }
+
+            @if (forces()!.buildings.length > 0) {
+              <div class="chp-group">
+                <span class="chp-label">Bâtiments</span>
+                <div class="chp-chips">
+                  @for (b of forces()!.buildings; track b.id ?? b.displayName) {
+                    <span class="chp-chip">{{ b.displayName }}</span>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (forces()!.vehicles.length > 0) {
+              <div class="chp-group">
+                <span class="chp-label">Véhicules</span>
+                <div class="chp-chips">
+                  @for (v of forces()!.vehicles; track v.id ?? v.displayName) {
+                    <span class="chp-chip">{{ v.displayName }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <span class="chp-totals">
+            @for (t of totals(); track t.label) {
+              {{ t.separator }}{{ t.value | number: '1.0-0' }} {{ t.label }}
+            }
+          </span>
+        }
+      } @else {
+        <div class="chp-none">
+          <mat-icon>location_off</mat-icon>
+          <p>Personnage non déployé sur un secteur.</p>
+        </div>
+      }
+    </div>
+  </div>
+}

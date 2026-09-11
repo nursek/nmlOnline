@@ -1,0 +1,86 @@
+@use '../../../styles/shared' as shared;
+
+.chp-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.chp-sector {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.chp-head {
+  margin-bottom: 12px;
+
+  h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4c1d95;
+  }
+}
+
+.chp-meta {
+  font-size: 0.75rem;
+  color: #6d28d9;
+}
+
+.chp-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chp-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: shared.$text-muted;
+}
+
+.chp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chp-chip {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #fff;
+  border: 1px solid #c4b5fd;
+  border-radius: 16px;
+  color: #5b21b6;
+}
+
+.chp-totals {
+  display: block;
+  margin-top: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4c1d95;
+}
+
+.chp-none {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: shared.$text-muted;
+
+  mat-icon {
+    color: shared.$text-muted;
+  }
+
+  p {
+    margin: 0;
+  }
+}

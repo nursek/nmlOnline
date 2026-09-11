@@ -1,0 +1,101 @@
+<div class="gmd">
+  <div class="gmd-header">
+    <h2 mat-dialog-title>
+      <mat-icon>groups</mat-icon>
+      Ordre groupé — Secteur {{ data.sectorNumber }} · {{ data.sector.name }}
+    </h2>
+    <button mat-icon-button (click)="close()" aria-label="Fermer">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <p class="gmd-sub">
+      Toutes les entités déplaçables sont pré-sélectionnées. Décochez celles qui restent sur place.
+    </p>
+
+    <div class="gmd-toolbar">
+      <button mat-button type="button" (click)="selectAll()">Tout sélectionner</button>
+      <button mat-button type="button" (click)="clearSelection()">Tout désélectionner</button>
+      <span class="gmd-count"
+        >{{ selectedCount() }} / {{ totalMovableCount() }} sélectionnée(s)</span
+      >
+    </div>
+
+    <div class="gmd-list">
+      @for (u of movable().units; track u.id) {
+        <div class="gmd-entity">
+          <mat-checkbox
+            [checked]="isSelected(u.id)"
+            (change)="toggle(u.id, $event.checked)"
+            [attr.aria-label]="'Sélectionner ' + u.type.name + ' n°' + u.number"
+          >
+            <span class="gmd-name">{{ u.type.name }} n°{{ u.number }}</span>
+          </mat-checkbox>
+          <span class="gmd-exp">{{ u.experience | exp }} Exp</span>
+          <span class="gmd-hops">{{ unitHops(u) }} secteur(s)</span>
+          @if (u.isInjured) {
+            <span class="gmd-badge">Blessé</span>
+          }
+        </div>
+      }
+
+      @if (movable().character; as character) {
+        <div class="gmd-entity">
+          <mat-checkbox
+            [checked]="isSelected(character.id!)"
+            (change)="toggle(character.id!, $event.checked)"
+            [attr.aria-label]="'Sélectionner ' + character.name"
+          >
+            <span class="gmd-name">{{ character.name }}</span>
+          </mat-checkbox>
+          <span class="gmd-hops">1 secteur</span>
+        </div>
+      }
+
+      @if (totalMovableCount() === 0) {
+        <div class="gmd-empty">
+          <mat-icon>block</mat-icon>
+          <span>Aucune entité déplaçable (déjà sous ordre ou aucune force).</span>
+        </div>
+      }
+    </div>
+
+    <div class="gmd-move">
+      <div class="gmd-move-from">
+        <span class="gmd-label">Depuis</span>
+        <span class="gmd-pill">Secteur {{ data.sectorNumber }}</span>
+      </div>
+      <mat-icon class="gmd-arrow">arrow_forward</mat-icon>
+      <mat-form-field appearance="outline" class="gmd-move-to">
+        <mat-label>Vers</mat-label>
+        <mat-select [value]="targetSector()" (valueChange)="targetSector.set($event)">
+          @for (target of targets(); track target.number) {
+            <mat-option [value]="target.number">
+              #{{ target.number }} · {{ target.name }}
+              <span [class]="'gmd-kind gmd-kind-' + target.kind">{{ kindLabel(target.kind) }}</span>
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="gmd-hint">
+      Portée du groupe : {{ maxHops() }} secteur(s) — {{ reachableTargets().length }} destination(s)
+      atteignable(s).
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="close()">Annuler</button>
+    <button
+      mat-raised-button
+      color="primary"
+      [disabled]="busy() || selectedCount() === 0 || targetSector() === null"
+      (click)="submit()"
+    >
+      <mat-icon>directions_walk</mat-icon>
+      Donner l'ordre groupé
+    </button>
+  </mat-dialog-actions>
+</div>

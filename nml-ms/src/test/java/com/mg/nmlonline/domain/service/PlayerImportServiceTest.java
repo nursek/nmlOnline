@@ -4,29 +4,40 @@ import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.vehicle.Vehicle;
+import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
+import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import com.mg.nmlonline.domain.service.PlayerImportService.CharacterDTO;
 import com.mg.nmlonline.domain.service.PlayerImportService.PlayerDTO;
+import com.mg.nmlonline.domain.service.PlayerImportService.VehicleDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DisplayName("PlayerImportService — importCharacter")
 class PlayerImportServiceTest {
 
     private PlayerImportService service;
+    private VehicleRepository vehicleRepository;
 
     @BeforeEach
     void setUp() {
         // importCharacter n'utilise ni équipements ni ressources ni stats : mocks inertes suffisent.
+        vehicleRepository = mock(VehicleRepository.class);
         service = new PlayerImportService(
                 mock(PlayerStatsService.class),
                 mock(EquipmentRepository.class),
-                mock(ResourceRepository.class)
+                mock(ResourceRepository.class),
+                vehicleRepository
         );
     }
 
@@ -104,6 +115,56 @@ class PlayerImportServiceTest {
 
         assertNotNull(result);
         assertNull(result.getSector());
+    }
+
+    @Test
+    @DisplayName("importVehicles : déploie sur le secteur, garde le reste en stock, cumule la valeur")
+    void shouldImportDeployedAndStockVehicles() {
+        Player player = newPlayerWithId(7L);
+        Board board = new Board();
+        Sector sector = new Sector(25);
+        board.addSector(sector);
+
+        when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PlayerDTO dto = new PlayerDTO();
+        dto.vehicles = new java.util.ArrayList<>();
+        dto.vehicles.add(vehicleDto(VehicleType.VTT_LEGER, 2, 25));
+        dto.vehicles.add(vehicleDto(VehicleType.TANK, 1, null));
+
+        service.importVehicles(dto, player, board);
+
+        verify(vehicleRepository, times(3)).save(any(Vehicle.class));
+        assertEquals(2, sector.getVehicles().size(), "Les 2 VTT légers sont déployés sur le secteur 25");
+        assertEquals(2 * VehicleType.VTT_LEGER.getCost() + VehicleType.TANK.getCost(),
+                player.getStats().getTotalVehiclesValue());
+    }
+
+    @Test
+    @DisplayName("importVehicles : type inconnu ignoré sans exception")
+    void shouldIgnoreUnknownVehicleType() {
+        Player player = newPlayerWithId(7L);
+        Board board = new Board();
+
+        PlayerDTO dto = new PlayerDTO();
+        dto.vehicles = java.util.List.of(vehicleDto("SOUS_MARIN", 1, null));
+
+        service.importVehicles(dto, player, board);
+
+        verify(vehicleRepository, times(0)).save(any(Vehicle.class));
+        assertEquals(0.0, player.getStats().getTotalVehiclesValue());
+    }
+
+    private VehicleDTO vehicleDto(VehicleType type, int quantity, Integer sectorNumber) {
+        return vehicleDto(type.name(), quantity, sectorNumber);
+    }
+
+    private VehicleDTO vehicleDto(String type, int quantity, Integer sectorNumber) {
+        VehicleDTO dto = new VehicleDTO();
+        dto.type = type;
+        dto.quantity = quantity;
+        dto.sectorNumber = sectorNumber;
+        return dto;
     }
 
     private Player newPlayerWithId(Long id) {

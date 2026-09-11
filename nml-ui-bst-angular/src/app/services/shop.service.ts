@@ -6,7 +6,12 @@ import { CartStorageService } from './cart-storage.service';
 import { PlayerService } from './player.service';
 import { AuthService } from './auth.service';
 import { Equipment, PageResult, PlayerResource, Vehicle, VehicleTypeInfo } from '../models';
-import { CartItem, SellCartItem, VehicleCartItem } from '../models/shop.model';
+import {
+  CartItem,
+  SellCartItem,
+  SellResourceBatchItem,
+  VehicleCartItem,
+} from '../models/shop.model';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 import { saleValue } from '../core/sale-multiplier';
 import { environment } from '../../environments/environment';
@@ -243,19 +248,33 @@ export class ShopService {
   }
 
   async checkoutSellCart(): Promise<number> {
+    const items = this._sellCart().map((item) => ({
+      playerResourceId: item.resource.id!,
+      quantity: item.quantity,
+    }));
+    const totalValue = await this.sellBatch(items, 'Erreur lors de la vente des ressources');
+    this.clearSellCart();
+    return totalValue;
+  }
+
+  /** Vend immédiatement une ressource, sans passer par le panier de vente. */
+  sellResource(playerResourceId: number, quantity: number): Promise<number> {
+    return this.sellBatch(
+      [{ playerResourceId, quantity }],
+      'Erreur lors de la vente de la ressource',
+    );
+  }
+
+  /** Vente groupée : loading/erreur + reload du joueur, sans toucher au panier. */
+  private async sellBatch(items: SellResourceBatchItem[], errorMessage: string): Promise<number> {
     this._purchaseLoading.set(true);
     this._error.set(null);
     try {
-      const items = this._sellCart().map((item) => ({
-        playerResourceId: item.resource.id!,
-        quantity: item.quantity,
-      }));
       const response = await firstValueFrom(this.api.sellResourcesBatch(items));
-      this.clearSellCart();
       void this.player.loadCurrent();
       return response.totalValue;
     } catch (error) {
-      const message = this.purchaseError(error, 0, '', 'Erreur lors de la vente des ressources');
+      const message = this.purchaseError(error, 0, '', errorMessage);
       this._error.set(message);
       throw new Error(message);
     } finally {

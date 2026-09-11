@@ -117,7 +117,7 @@ class TurnResolutionOrchestratorLurioCegorachTest {
         assertEquals(0, report.getDefenderCasualties(),
                 "Les 2 BRUTE 100/100 ne subissent aucune perte face à un LEGER attaquant");
         assertEquals(0, report.getAttackerInjured(), "L'attaquant meurt, pas de blessé");
-        // Le VOYOU équipé (HK-MP7 : pdf 60) entame le BRUTE n°2 en phase PDF (def 100 → 40),
+        // Le VOYOU équipé (Tesla Carbine : pdf 60) entame le BRUTE n°2 en phase PDF (def 100 → 40),
         // puis meurt en phase bâtiments secondaires (Cache 100 + Banque 50 vs 20 def + 10 armure).
         assertEquals(1, report.getDefenderInjured(),
                 "Le BRUTE n°2 (def 40 < 100 après le pdf de l'attaquant) termine blessé");

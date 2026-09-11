@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ShopService } from './shop.service';
 import { CartStorageService } from './cart-storage.service';
 import { PlayerService } from './player.service';
@@ -231,5 +231,21 @@ describe('ShopService (carts + signals)', () => {
     shop.addToSellCart(resource, 4);
     shop.removeFromSellCart(7);
     expect(shop.sellCart()).toHaveLength(0);
+  });
+
+  it('sells a single resource immediately and reloads the player', async () => {
+    const shop = getShop();
+    const http = TestBed.inject(HttpTestingController);
+    const player = TestBed.inject(PlayerService) as unknown as { loadCurrent: jest.Mock };
+
+    const promise = shop.sellResource(7, 3);
+    const req = http.expectOne('/api/players/resources/sell-batch');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ items: [{ playerResourceId: 7, quantity: 3 }] });
+    req.flush({ message: 'ok', totalValue: 900, sales: [] });
+
+    await expect(promise).resolves.toBe(900);
+    expect(player.loadCurrent).toHaveBeenCalled();
+    expect(shop.sellCart()).toEqual([]);
   });
 });

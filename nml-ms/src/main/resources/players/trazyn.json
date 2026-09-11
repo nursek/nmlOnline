@@ -1,0 +1,440 @@
+{
+  "name": "trazyn",
+  "money": 28000,
+  "resources": [
+    {
+      "resourceId": 1,
+      "quantity": 10
+    },
+    {
+      "resourceId": 3,
+      "quantity": 7
+    },
+    {
+      "resourceId": 4,
+      "quantity": 5
+    },
+    {
+      "resourceId": 6,
+      "quantity": 8
+    },
+    {
+      "resourceId": 7,
+      "quantity": 6
+    }
+  ],
+  "equipments": [
+    {
+      "name": "Enmitic Disintegrator Pistol",
+      "quantity": 1
+    },
+    {
+      "name": "Gauss Blaster",
+      "quantity": 2
+    },
+    {
+      "name": "Tesla Carbine",
+      "quantity": 3
+    },
+    {
+      "name": "Gauss Flayer",
+      "quantity": 2
+    },
+    {
+      "name": "Gauss Reaper",
+      "quantity": 2
+    },
+    {
+      "name": "Gauss Destructor",
+      "quantity": 1
+    },
+    {
+      "name": "Particle Caster",
+      "quantity": 2
+    },
+    {
+      "name": "Transdimensional Beamer",
+      "quantity": 1
+    },
+    {
+      "name": "Particle Beamer",
+      "quantity": 1
+    },
+    {
+      "name": "Voltaic Staff",
+      "quantity": 1
+    },
+    {
+      "name": "Thermal Cutting Beam",
+      "quantity": 2
+    },
+    {
+      "name": "Entropic Lance",
+      "quantity": 1
+    },
+    {
+      "name": "Eldritch Lance",
+      "quantity": 2
+    },
+    {
+      "name": "Gauss Cannon",
+      "quantity": 2
+    },
+    {
+      "name": "Heavy Gauss Cannon",
+      "quantity": 1
+    },
+    {
+      "name": "Enmitic Annihilator",
+      "quantity": 1
+    },
+    {
+      "name": "Synaptic Disintegrator",
+      "quantity": 2
+    },
+    {
+      "name": "Particle Shredder",
+      "quantity": 1
+    },
+    {
+      "name": "Enmitic Exterminator",
+      "quantity": 1
+    },
+    {
+      "name": "Flensing Claw",
+      "quantity": 2
+    },
+    {
+      "name": "Voidblade",
+      "quantity": 2
+    },
+    {
+      "name": "Hyperphase Reap-Blade",
+      "quantity": 2
+    },
+    {
+      "name": "Hyperphase Sword",
+      "quantity": 2
+    },
+    {
+      "name": "Hyperphase Glaive",
+      "quantity": 3
+    },
+    {
+      "name": "Hyperphase Harvester",
+      "quantity": 2
+    },
+    {
+      "name": "Gauntlet of Fire",
+      "quantity": 3
+    },
+    {
+      "name": "Warscythe",
+      "quantity": 3
+    },
+    {
+      "name": "Monomolecular Proboscis",
+      "quantity": 2
+    },
+    {
+      "name": "Rod of Covenant",
+      "quantity": 2
+    },
+    {
+      "name": "Staff of Light",
+      "quantity": 2
+    },
+    {
+      "name": "Tachyon Arrow",
+      "quantity": 2
+    },
+    {
+      "name": "Hyperphase Thresher",
+      "quantity": 2
+    },
+    {
+      "name": "Phylactery",
+      "quantity": 3
+    },
+    {
+      "name": "Solar Pulse",
+      "quantity": 1
+    },
+    {
+      "name": "Phase Shifter",
+      "quantity": 2
+    },
+    {
+      "name": "Sempiternal Weave",
+      "quantity": 2
+    },
+    {
+      "name": "Quantum Shielding",
+      "quantity": 2
+    },
+    {
+      "name": "Lightning Field",
+      "quantity": 2
+    },
+    {
+      "name": "Dispersion Shield",
+      "quantity": 3
+    },
+    {
+      "name": "Bouclier balistique",
+      "quantity": 3
+    },
+    {
+      "name": "Veil of Darkness",
+      "quantity": 2
+    },
+    {
+      "name": "Nightmare Shroud",
+      "quantity": 1
+    },
+    {
+      "name": "Gloom Prism",
+      "quantity": 3
+    },
+    {
+      "name": "Chronometron",
+      "quantity": 3
+    },
+    {
+      "name": "Mindshackle Scarabs",
+      "quantity": 2
+    },
+    {
+      "name": "Armure thermique",
+      "quantity": 1
+    },
+    {
+      "name": "Protège-dents",
+      "quantity": 2
+    },
+    {
+      "name": "Casque militaire",
+      "quantity": 2
+    },
+    {
+      "name": "Gilet Kevlar",
+      "quantity": 2
+    },
+    {
+      "name": "Treillis de camouflage urbain",
+      "quantity": 2
+    },
+    {
+      "name": "Gilet de camouflage optique",
+      "quantity": 2
+    }
+  ],
+  "vehicles": [
+    {
+      "type": "TOURELLE",
+      "quantity": 1,
+      "sectorNumber": 20
+    },
+    {
+      "type": "VTT_BLINDE",
+      "quantity": 1,
+      "sectorNumber": 30
+    },
+    {
+      "type": "VTT_LEGER",
+      "quantity": 1,
+      "sectorNumber": 40
+    },
+    {
+      "type": "TANK",
+      "quantity": 1
+    },
+    {
+      "type": "HELICOPTERE",
+      "quantity": 1
+    },
+    {
+      "type": "AVION_TRANSPORT",
+      "quantity": 1
+    }
+  ],
+  "sectors": [
+    {
+      "sectorNumber": 20,
+      "army": [
+        {
+          "id": 1,
+          "type": "LARBIN",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Gauss Blaster",
+            "Flensing Claw",
+            "Phylactery"
+          ]
+        },
+        {
+          "id": 2,
+          "type": "LARBIN",
+          "classes": [
+            "TIREUR"
+          ],
+          "experience": 1,
+          "equipments": [
+            "Gauss Flayer",
+            "Hyperphase Reap-Blade",
+            "Phase Shifter"
+          ]
+        },
+        {
+          "id": 3,
+          "type": "VOYOU",
+          "classes": [
+            "TIREUR"
+          ],
+          "experience": 4,
+          "equipments": [
+            "Gauss Reaper",
+            "Hyperphase Sword",
+            "Sempiternal Weave",
+            "Quantum Shielding"
+          ]
+        }
+      ]
+    },
+    {
+      "sectorNumber": 30,
+      "army": [
+        {
+          "id": 4,
+          "type": "MALFRAT",
+          "classes": [
+            "SNIPER"
+          ],
+          "experience": 6,
+          "equipments": [
+            "Synaptic Disintegrator",
+            "Tachyon Arrow",
+            "Hyperphase Thresher",
+            "Treillis de camouflage urbain",
+            "Gilet de camouflage optique"
+          ]
+        },
+        {
+          "id": 5,
+          "type": "BRUTE",
+          "classes": [
+            "PILOTE_DESTRUCTEUR",
+            "MASTODONTE"
+          ],
+          "experience": 8,
+          "equipments": [
+            "Gauss Cannon",
+            "Staff of Light",
+            "Monomolecular Proboscis",
+            "Rod of Covenant",
+            "Protège-dents",
+            "Casque militaire",
+            "Gilet Kevlar",
+            "Dispersion Shield"
+          ]
+        },
+        {
+          "id": 6,
+          "type": "MALFRAT",
+          "classes": [
+            "MASTODONTE"
+          ],
+          "experience": 5,
+          "equipments": [
+            "Particle Caster",
+            "Hyperphase Glaive",
+            "Hyperphase Harvester",
+            "Lightning Field",
+            "Dispersion Shield",
+            "Bouclier balistique"
+          ]
+        }
+      ]
+    },
+    {
+      "sectorNumber": 40,
+      "army": [
+        {
+          "id": 7,
+          "type": "BRUTE",
+          "classes": [
+            "ELEMENTAIRE",
+            "MASTODONTE"
+          ],
+          "experience": 10,
+          "equipments": [
+            "Eldritch Lance",
+            "Gauntlet of Fire",
+            "Warscythe",
+            "Hyperphase Glaive",
+            "Gloom Prism",
+            "Chronometron",
+            "Mindshackle Scarabs",
+            "Bouclier balistique"
+          ]
+        },
+        {
+          "id": 8,
+          "type": "MALFRAT",
+          "classes": [
+            "ELEMENTAIRE"
+          ],
+          "experience": 5,
+          "equipments": [
+            "Thermal Cutting Beam",
+            "Gauntlet of Fire",
+            "Warscythe",
+            "Gloom Prism",
+            "Chronometron"
+          ]
+        },
+        {
+          "id": 9,
+          "type": "VOYOU",
+          "classes": [
+            "LEGER"
+          ],
+          "experience": 3,
+          "equipments": [
+            "Tesla Carbine",
+            "Voidblade",
+            "Phylactery",
+            "Veil of Darkness"
+          ]
+        }
+      ]
+    }
+  ],
+  "character": {
+    "name": "Trazyn",
+    "sectorNumber": 30,
+    "baseAttack": 300,
+    "baseDefense": 350,
+    "basePdf": 120,
+    "basePdc": 180,
+    "baseArmor": 100,
+    "baseEvasion": 15
+  },
+  "buildings": [
+    {
+      "type": "HEADQUARTERS",
+      "sectorNumber": 30
+    },
+    {
+      "type": "WEAPON_CACHE",
+      "sectorNumber": 30
+    },
+    {
+      "type": "BANK",
+      "sectorNumber": 30
+    }
+  ]
+}

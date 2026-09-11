@@ -238,7 +238,11 @@
           </div>
         }
 
-        <mat-tab-group animationDuration="200ms">
+        <mat-tab-group
+          animationDuration="200ms"
+          [selectedIndex]="selectedTabIndex()"
+          (selectedIndexChange)="selectedTabIndex.set($event)"
+        >
           <mat-tab label="Équipements">
             <div class="search-bar-container">
               <div class="search-wrapper">

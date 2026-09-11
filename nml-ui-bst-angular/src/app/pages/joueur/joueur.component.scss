@@ -20,6 +20,33 @@
 }
 .card {
   @include shared.card;
+  --section-accent: #{shared.$primary-color};
+
+  margin-bottom: 28px;
+  border-top: 5px solid var(--section-accent);
+  background: color-mix(in srgb, var(--section-accent) 4%, #fff);
+}
+
+.card--troops {
+  --section-accent: #2563eb;
+}
+.card--vehicles {
+  --section-accent: #0e7490;
+}
+.card--character {
+  --section-accent: #7c3aed;
+}
+.card--equipment {
+  --section-accent: #c2410c;
+}
+.card--resources {
+  --section-accent: #047857;
+}
+.card--forces {
+  --section-accent: #dc2626;
+}
+.card--powers {
+  --section-accent: #4f46e5;
 }
 .error-alert {
   @include shared.error-alert;
@@ -103,6 +130,16 @@
 .section-header {
   @include shared.section-header;
   flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+
+  > mat-icon {
+    color: var(--section-accent, #{shared.$primary-color});
+  }
+
+  .shop-btn {
+    margin-left: auto;
+  }
 }
 
 .section-subtitle {
@@ -346,6 +383,11 @@
   color: shared.$text-muted;
 }
 
+.sector-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .no-forces {
   margin: 0;
   font-size: 0.875rem;
@@ -515,20 +557,23 @@
   }
 }
 
-// Cartes ressources / réserve véhicules
-.resource-card {
+// Cartes de réserve (véhicules non déployés)
+.reserve-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 2px solid #d97706;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid shared.$primary-color;
   border-radius: 8px;
-  transition: all 0.3s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
   }
 }
 
@@ -537,29 +582,28 @@
   margin-top: 4px;
 }
 
-.resource-info {
+.reserve-info {
   display: flex;
   align-items: center;
   gap: 12px;
 
-  .resource-icon {
+  .reserve-icon {
     font-size: 32px;
     width: 32px;
     height: 32px;
-    color: #b45309;
+    color: shared.$primary-color;
   }
 
   h4 {
     margin: 0 0 4px;
     font-weight: 600;
-    color: #78350f;
+    color: #1e293b;
   }
 
-  .quantity-label,
   .value-label {
     display: block;
     font-size: 0.75rem;
-    color: #92400e;
+    color: shared.$text-muted;
     margin-top: 2px;
   }
 }

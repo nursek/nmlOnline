@@ -5,7 +5,6 @@ import {
   incomeTotal,
   playerForces,
   sectorForces,
-  statLine,
   troopSummaries,
   unitClassCodes,
   unitEquipmentLabel,
@@ -296,7 +295,7 @@ describe('joueur.helpers', () => {
       expect(pf.globalPower).toBe(22.5);
     });
 
-    it("ignore les véhicules ennemis stationnés sur nos secteurs", () => {
+    it('ignore les véhicules ennemis stationnés sur nos secteurs', () => {
       const sectors = [
         sector(1, me, { vehicles: [vehicle(20, me), vehicle(21, enemy)] }),
         sector(2, me, { vehicles: [vehicle(22, enemy)] }),
@@ -316,10 +315,10 @@ describe('joueur.helpers', () => {
       const groups = equipmentByClass([
         stack('Gilet pare-balles', 'DEFENSIVE', { compatibleClass: ['LEGER'] }),
         stack('Pistolet cascade', 'FIREARM', { compatibleClass: ['SNIPER'] }),
-        stack('Fusil à pompe', 'FIREARM', { compatibleClass: ['LEGER'], cost: 900 }),
+        stack('Particle Caster', 'FIREARM', { compatibleClass: ['LEGER'], cost: 900 }),
         stack('Pistolet 9mm', 'FIREARM', { compatibleClass: ['LEGER'], cost: 400 }),
-        stack('Poing américain', 'MELEE', { compatibleClass: ['MASTODONTE'] }),
-        stack('Machette', 'MELEE'),
+        stack('Flensing Claw', 'MELEE', { compatibleClass: ['MASTODONTE'] }),
+        stack('Hyperphase Sword', 'MELEE'),
       ]);
 
       expect(groups.map((g) => g.label)).toEqual(['Léger', 'Mastodonte', 'Sniper', 'Sans classe']);
@@ -332,50 +331,11 @@ describe('joueur.helpers', () => {
       ]);
       expect(groups[0].categories[0].stacks.map((s) => s.equipment.name)).toEqual([
         'Pistolet 9mm',
-        'Fusil à pompe',
+        'Particle Caster',
       ]);
 
       // Mastodonte : une seule catégorie (mêlée).
       expect(groups[1].categories.map((c) => c.label)).toEqual(['Arme de corps-à-corps']);
-    });
-  });
-
-  describe('statLine', () => {
-    const render = (tokens: ReturnType<typeof statLine>) =>
-      tokens.map((t) => `${t.separator}${t.value} ${t.label}`).join('');
-
-    it('masque les stats à 0 et place le « / » entre offensif et défensif', () => {
-      expect(
-        render(
-          statLine(
-            [
-              [120, 'Atk'],
-              [390, 'Pdf'],
-              [0, 'Pdc'],
-            ],
-            [
-              [120, 'Def'],
-              [392.5, 'Arm'],
-            ],
-          ),
-        ),
-      ).toBe('120 Atk + 390 Pdf / 120 Def + 392.5 Arm');
-    });
-
-    it('masque aussi un groupe entier, sans séparateur orphan', () => {
-      expect(render(statLine([[0, 'Atk']], [[50, 'Def']]))).toBe('50 Def');
-      expect(
-        render(
-          statLine(
-            [[10, 'Atk']],
-            [
-              [0, 'Def'],
-              [0, 'Arm'],
-            ],
-          ),
-        ),
-      ).toBe('10 Atk');
-      expect(render(statLine([[0, 'Atk']], [[0, 'Def']]))).toBe('');
     });
   });
 

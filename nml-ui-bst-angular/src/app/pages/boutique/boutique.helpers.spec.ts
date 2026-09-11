@@ -57,25 +57,25 @@ function vt(name: string, cost: number, basePdf: number, baseDefense: number): V
 describe('boutique.helpers — tri par défaut', () => {
   it('trie par classe (léger→élémentaire) puis catégorie (mêlée→arme à feu→défensif) puis prix', () => {
     const items = [
-      eq('Pistolet 9mm', 400, 'FIREARM', 'LEGER'),
-      eq('Poing américain', 100, 'MELEE', 'LEGER'),
-      eq('Matraque télescopique', 200, 'MELEE', 'LEGER'),
-      eq('Tenue ultra légère', 750, 'DEFENSIVE', 'LEGER'),
-      eq('Hache de bûcheron', 450, 'MELEE', 'MASTODONTE'),
-      eq('Couteau de combat', 300, 'MELEE', 'SNIPER'),
-      eq('Bombes collantes', 3400, 'FIREARM', 'PILOTE_DESTRUCTEUR'),
-      eq('Gantelet électrique', 1000, 'MELEE', 'ELEMENTAIRE'),
+      eq('Enmitic Disintegrator Pistol', 400, 'FIREARM', 'LEGER'),
+      eq('Flensing Claw', 100, 'MELEE', 'LEGER'),
+      eq('Voidblade', 200, 'MELEE', 'LEGER'),
+      eq('Phylactery', 750, 'DEFENSIVE', 'LEGER'),
+      eq('Hyperphase Glaive', 450, 'MELEE', 'MASTODONTE'),
+      eq('Hyperphase Thresher', 300, 'MELEE', 'SNIPER'),
+      eq('Gauss Cannon', 3400, 'FIREARM', 'PILOTE_DESTRUCTEUR'),
+      eq('Warscythe', 1000, 'MELEE', 'ELEMENTAIRE'),
     ];
     const sorted = sortEquipments(items);
     expect(sorted.map((i) => i.name)).toEqual([
-      'Poing américain',
-      'Matraque télescopique',
-      'Pistolet 9mm',
-      'Tenue ultra légère',
-      'Hache de bûcheron',
-      'Couteau de combat',
-      'Bombes collantes',
-      'Gantelet électrique',
+      'Flensing Claw',
+      'Voidblade',
+      'Enmitic Disintegrator Pistol',
+      'Phylactery',
+      'Hyperphase Glaive',
+      'Hyperphase Thresher',
+      'Gauss Cannon',
+      'Warscythe',
     ]);
   });
 
@@ -99,14 +99,14 @@ describe('boutique.helpers — tri par défaut', () => {
 
 describe('boutique.helpers — résumés compacts', () => {
   it('résumé équipement : « Nom (Catégorie FR) : +n % Xxx. coût ₡. »', () => {
-    expect(equipmentSummary(eq('Poing américain', 100, 'MELEE', 'LEGER', { pdcBonus: 20 }))).toBe(
-      'Poing américain (Arme de corps-à-corps) : +20 % Pdc. 100 ₡.',
+    expect(equipmentSummary(eq('Flensing Claw', 100, 'MELEE', 'LEGER', { pdcBonus: 20 }))).toBe(
+      'Flensing Claw (Arme de corps-à-corps) : +20 % Pdc. 100 ₡.',
     );
     expect(
       equipmentSummary(
-        eq('Pistolet-mitrailleur', 850, 'FIREARM', 'LEGER', { pdfBonus: 150, armBonus: 25 }),
+        eq('Gauss Blaster', 850, 'FIREARM', 'LEGER', { pdfBonus: 150, armBonus: 25 }),
       ),
-    ).toBe('Pistolet-mitrailleur (Arme à feu) : +150 % Pdf ; +25 % Arm. 850 ₡.');
+    ).toBe('Gauss Blaster (Arme à feu) : +150 % Pdf ; +25 % Arm. 850 ₡.');
   });
 
   it('résumé équipement sans bonus', () => {

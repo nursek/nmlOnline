@@ -49,6 +49,12 @@ public class PlayerStartupImporter implements ApplicationRunner {
     @Value("classpath:players/cegorach.json")
     private Resource player5;
 
+    @Value("classpath:players/imotekh.json")
+    private Resource player6;
+
+    @Value("classpath:players/trazyn.json")
+    private Resource player7;
+
     public PlayerStartupImporter(PlayerImportService playerImportService,
                                  PlayerService playerService,
                                  BoardService boardService,
@@ -88,6 +94,8 @@ public class PlayerStartupImporter implements ApplicationRunner {
         importIfPresent(player3, board);
         importIfPresent(player4, board);
         importIfPresent(player5, board);
+        importIfPresent(player6, board);
+        importIfPresent(player7, board);
 
         log.info("Sauvegarde finale du Board (merge) avec {} secteurs...", board.getAllSectors().size());
         boardService.save(board);
@@ -168,6 +176,9 @@ public class PlayerStartupImporter implements ApplicationRunner {
                     }
 
                     player = playerService.save(player);
+
+                    playerImportService.importVehicles(dto, player, board);
+                    log.info("Véhicules importés pour {} (en mémoire)", player.getName());
 
                     playerImportService.importSectors(dto, player, board);
                     log.info("Secteurs et unités importés pour {} (en mémoire)", player.getName());

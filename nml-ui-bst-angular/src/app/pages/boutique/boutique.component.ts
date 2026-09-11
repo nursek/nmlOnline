@@ -1,4 +1,12 @@
-﻿import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+﻿import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -71,6 +79,20 @@ export class BoutiqueComponent {
   readonly vehicleTypes = this.shop.vehicleTypes;
 
   readonly player = this.playerService.player;
+
+  readonly tab = input<string>('equipements');
+  readonly selectedTabIndex = linkedSignal(() => this.tabIndex(this.tab()));
+
+  private tabIndex(tab: string): number {
+    switch (tab) {
+      case 'vehicules':
+        return 1;
+      case 'revente':
+        return 2;
+      default:
+        return 0;
+    }
+  }
 
   readonly showCart = signal(false);
   readonly showFilters = signal(false);

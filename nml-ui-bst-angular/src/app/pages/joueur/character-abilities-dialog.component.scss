@@ -1,0 +1,106 @@
+@use '../../../styles/shared' as shared;
+
+// Material plafonne le contenu à 65vh : on l'enlève pour tenir sans scroll dans la fenêtre.
+:host ::ng-deep .mat-mdc-dialog-content {
+  max-height: none;
+}
+
+.cad {
+  min-width: 320px;
+  width: 100%;
+}
+
+.cad-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px 0 4px;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+  }
+}
+
+.cad-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0 8px;
+}
+
+.cad-description {
+  max-width: 760px;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  text-align: center;
+  color: shared.$text-muted;
+}
+
+.cad-abilities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.ability-card {
+  border-radius: 12px;
+}
+
+.ability-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.ability-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: #ede9fe;
+  border: 2px solid #a78bfa;
+  border-radius: 50%;
+  color: #6d28d9;
+}
+
+.ability-kind {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: shared.$text-muted;
+}
+
+.ability-card h3 {
+  margin: 2px 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ability-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: shared.$text-muted;
+}
+
+.ability-bonus {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  color: #5b21b6;
+}

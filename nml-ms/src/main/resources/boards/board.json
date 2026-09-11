@@ -5,17 +5,18 @@
   "sectors": [
     {
       "number": 1,
-      "name": "QG Central",
+      "name": "Havre du Saint",
       "income": 4019,
       "army": [],
       "neighbors": [
+        16,
         3
       ],
-      "resource": "or"
+      "resource": "Alcool"
     },
     {
       "number": 2,
-      "name": "Place du Marché",
+      "name": "Lac Dontor",
       "income": 2000,
       "army": [],
       "neighbors": [
@@ -23,22 +24,24 @@
         15,
         17,
         19
-      ]
+      ],
+      "resource": "Uranium"
     },
     {
       "number": 3,
-      "name": "Entrepôt Abandonné",
+      "name": "Anneau du Néant",
       "income": 2000,
       "army": [],
       "neighbors": [
         1,
         4,
         7
-      ]
+      ],
+      "resource": "Antiquités"
     },
     {
       "number": 4,
-      "name": "Zone Industrielle",
+      "name": "Enclaves Industrielles",
       "income": 2000,
       "army": [],
       "neighbors": [
@@ -47,31 +50,33 @@
         15,
         22
       ],
-      "resource": "acier"
+      "resource": "Uranium"
     },
     {
       "number": 5,
-      "name": "Marché Noir",
+      "name": "Macro-Chantier",
       "income": 2000,
       "army": [],
       "neighbors": [
         4,
         15
-      ]
+      ],
+      "resource": "Alcool"
     },
     {
       "number": 7,
-      "name": "Dépôt d'Armes",
+      "name": "Muraille Hyperia-Mortwald",
       "income": 2000,
       "army": [],
       "neighbors": [
         3,
         9
-      ]
+      ],
+      "resource": "Alcool"
     },
     {
       "number": 9,
-      "name": "Terrain Vague",
+      "name": "Forêts de Cactus de l'Est",
       "income": 2000,
       "army": [],
       "neighbors": [
@@ -79,31 +84,33 @@
         14,
         18
       ],
-      "resource": "alcool"
+      "resource": "Antiquités"
     },
     {
       "number": 10,
-      "name": "Bar Clandestin",
+      "name": "Champ de Smog",
       "income": 2000,
       "army": [],
       "neighbors": [
         11
-      ]
+      ],
+      "resource": "Cigares"
     },
     {
       "number": 11,
-      "name": "Raffinerie",
+      "name": "Delta de Mesha",
       "income": 2000,
       "army": [],
       "neighbors": [
         2,
         10,
         17
-      ]
+      ],
+      "resource": "Antiquités"
     },
     {
       "number": 14,
-      "name": "Parc Abandonné",
+      "name": "Quais de Nouvelle-Vitae",
       "income": 2000,
       "army": [],
       "neighbors": [
@@ -111,11 +118,11 @@
         16,
         18
       ],
-      "resource": "pièces"
+      "resource": "Antiquités"
     },
     {
       "number": 15,
-      "name": "Station Service",
+      "name": "Quartier de la Négation",
       "income": 2000,
       "army": [],
       "neighbors": [
@@ -123,21 +130,24 @@
         4,
         5,
         22
-      ]
+      ],
+      "resource": "Uranium"
     },
     {
       "number": 16,
-      "name": "Garage Mécanique",
+      "name": "Cité-Ruche Djodrolev",
       "income": 2000,
       "army": [],
       "neighbors": [
+        21,
         14,
-        21
-      ]
+        1
+      ],
+      "resource": "Antiquités"
     },
     {
       "number": 17,
-      "name": "Base Militaire",
+      "name": "Nouvel Horizon",
       "income": 2000,
       "army": [],
       "neighbors": [
@@ -146,155 +156,179 @@
         19,
         28
       ],
-      "resource": "or"
+      "resource": "Uranium"
     },
     {
       "number": 18,
-      "name": "Quartier Résidentiel",
+      "name": "Fort-Port Rejuvenus",
       "income": 2000,
       "army": [],
       "neighbors": [
         9,
         14
-      ]
+      ],
+      "resource": "Alcool"
     },
     {
       "number": 19,
-      "name": "Casino",
+      "name": "Sous-cité Pravdus",
       "income": 2000,
       "army": [],
       "neighbors": [
         2,
         17,
         24
-      ]
+      ],
+      "resource": "Ivoire"
     },
     {
       "number": 21,
-      "name": "Port de Contrebande",
+      "name": "Usines de Chair Biosantique",
       "income": 2000,
       "army": [],
       "neighbors": [
-        16,
-        27
+        36,
+        27,
+        25,
+        16
       ],
-      "resource": "acier"
+      "resource": "Uranium"
     },
     {
       "number": 22,
-      "name": "Arsenal",
+      "name": "Ruches Trinité",
       "income": 2000,
       "army": [],
       "neighbors": [
-        4,
-        15
-      ]
+        35,
+        26,
+        24,
+        15,
+        4
+      ],
+      "resource": "Or"
     },
     {
       "number": 24,
-      "name": "Usine Chimique",
+      "name": "Sous-cité Tzimitria",
       "income": 2000,
       "army": [],
       "neighbors": [
+        43,
+        22,
         19
-      ]
+      ],
+      "resource": "Ivoire"
     },
     {
       "number": 25,
-      "name": "Entrepôt Naval",
+      "name": "Les Creux",
       "income": 2000,
       "army": [],
       "neighbors": [
-        26,
+        39,
         34,
-        39
+        26,
+        21
       ],
-      "resource": "alcool"
+      "resource": "Uranium"
     },
     {
       "number": 26,
-      "name": "Centre Commercial",
+      "name": "Aquadine III",
       "income": 2000,
       "army": [],
       "neighbors": [
+        34,
         25,
-        34
-      ]
+        22
+      ],
+      "resource": "Ivoire"
     },
     {
       "number": 27,
-      "name": "Bunker Souterrain",
+      "name": "Ligne de Trzeller",
       "income": 2000,
       "army": [],
       "neighbors": [
+        36,
         21
-      ]
+      ],
+      "resource": "Alcool"
     },
     {
       "number": 28,
-      "name": "Tour de Contrôle",
+      "name": "Muraille Dontoria-Kaelac",
       "income": 2000,
       "army": [],
       "neighbors": [
         17,
         38
       ],
-      "resource": "pièces"
+      "resource": "Alcool"
     },
     {
       "number": 34,
-      "name": "Prison Abandonnée",
+      "name": "Solor",
       "income": 2000,
       "army": [],
       "neighbors": [
         25,
         26,
         39
-      ]
+      ],
+      "resource": "Ivoire"
     },
     {
       "number": 35,
-      "name": "Aéroport",
+      "name": "Ruche Magmathérmide",
       "income": 2000,
       "army": [],
       "neighbors": [
+        42,
         40,
-        42
-      ]
+        22
+      ],
+      "resource": "Ivoire"
     },
     {
       "number": 36,
-      "name": "Gare de Triage",
+      "name": "Sacrus Tora Hawking",
       "income": 2000,
       "army": [],
       "neighbors": [
-        29
+        29,
+        27,
+        21
       ],
-      "resource": "or"
+      "resource": "Antiquités"
     },
     {
       "number": 38,
-      "name": "Centrale Électrique",
+      "name": "Cratères d'Héliostrike",
       "income": 2000,
       "army": [],
       "neighbors": [
         28,
         43
-      ]
+      ],
+      "resource": "Alcool"
     },
     {
       "number": 39,
-      "name": "Silos à Grain",
+      "name": "Ceinture-ruche Ellerophosus",
       "income": 2000,
       "army": [],
       "neighbors": [
-        25,
-        34
-      ]
+        42,
+        34,
+        25
+      ],
+      "resource": "Ivoire"
     },
     {
       "number": 40,
-      "name": "Dock de Pêche",
+      "name": "Canaux Voschiens",
       "income": 2000,
       "army": [],
       "neighbors": [
@@ -303,69 +337,77 @@
         30,
         31
       ],
-      "resource": "acier"
+      "resource": "Uranium"
     },
     {
       "number": 41,
-      "name": "Mine de Charbon",
+      "name": "Fléau de Kaelac",
       "income": 2000,
       "army": [],
       "neighbors": [
         32,
         13
-      ]
+      ],
+      "resource": "Alcool"
     },
     {
       "number": 42,
-      "name": "Forêt Dense",
+      "name": "Grand Coke",
       "income": 2000,
       "army": [],
       "neighbors": [
-        35,
         40,
+        39,
+        37,
+        35,
         31,
-        12,
-        37
-      ]
+        12
+      ],
+      "resource": "Joyaux"
     },
     {
       "number": 43,
-      "name": "Marais",
+      "name": "Boucle de Quixotine",
       "income": 2000,
       "army": [],
       "neighbors": [
         38,
+        33,
         32,
-        13,
-        33
+        30,
+        24,
+        13
       ],
-      "resource": "alcool"
+      "resource": "Joyaux"
     },
     {
       "number": 29,
-      "name": "Carrière",
+      "name": "Ruche-foreuse Scelerus",
       "income": 2000,
       "army": [],
       "neighbors": [
         36,
         23,
         6
-      ]
+      ],
+      "resource": "Antiquités"
     },
     {
       "number": 30,
-      "name": "Champ de Tir",
+      "name": "Districts Pyroclastes",
       "income": 2000,
       "army": [],
       "neighbors": [
+        43,
         40,
         31,
         20
-      ]
+      ],
+      "resource": "Or"
     },
     {
       "number": 31,
-      "name": "Camp Militaire",
+      "name": "Géo-ruche Vulcanide",
       "income": 2000,
       "army": [],
       "neighbors": [
@@ -375,45 +417,48 @@
         20,
         12
       ],
-      "resource": "pièces"
+      "resource": "Or"
     },
     {
       "number": 32,
-      "name": "Observatoire",
+      "name": "Gacia Omicroid",
       "income": 2000,
       "army": [],
       "neighbors": [
         41,
         43,
         13
-      ]
+      ],
+      "resource": "Ivoire"
     },
     {
       "number": 23,
-      "name": "Phare",
+      "name": "Treuil Omnimessie",
       "income": 2000,
       "army": [],
       "neighbors": [
         29,
         8,
         6
-      ]
+      ],
+      "resource": "Ivoire"
     },
     {
       "number": 20,
-      "name": "Scierie",
+      "name": "Marche de l'Omnimessie",
       "income": 2000,
       "army": [],
       "neighbors": [
-        30,
+        33,
         31,
+        30,
         12
       ],
-      "resource": "or"
+      "resource": "Uranium"
     },
     {
       "number": 13,
-      "name": "Ferme",
+      "name": "Glacia Betus",
       "income": 2000,
       "army": [],
       "neighbors": [
@@ -421,54 +466,59 @@
         43,
         32,
         33
-      ]
+      ],
+      "resource": "Uranium"
     },
     {
       "number": 12,
-      "name": "Château d'Eau",
+      "name": "Tertre de Phaestos",
       "income": 2000,
       "army": [],
       "neighbors": [
         42,
         31,
         20
-      ]
+      ],
+      "resource": "Ivoire"
     },
     {
       "number": 33,
-      "name": "Station Radio",
+      "name": "Cratères de Venstran",
       "income": 2000,
       "army": [],
       "neighbors": [
         43,
+        20,
         13
       ],
-      "resource": "acier"
+      "resource": "Ivoire"
     },
     {
       "number": 37,
-      "name": "Pont Suspendu",
+      "name": "Muraille Storvhal-Megaborealis",
       "income": 2000,
       "army": [],
       "neighbors": [
         42,
         8
-      ]
+      ],
+      "resource": "Alcool"
     },
     {
       "number": 8,
-      "name": "Tunnel",
+      "name": "Niveaux Noirs",
       "income": 2000,
       "army": [],
       "neighbors": [
         23,
         37,
         6
-      ]
+      ],
+      "resource": "Antiquités"
     },
     {
       "number": 6,
-      "name": "Dépôt de Bus",
+      "name": "Kraxxon",
       "income": 2000,
       "army": [],
       "neighbors": [
@@ -476,7 +526,7 @@
         23,
         8
       ],
-      "resource": "alcool"
+      "resource": "Antiquités"
     }
   ]
 }

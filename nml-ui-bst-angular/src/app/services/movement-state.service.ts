@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { MovementOrder } from '../models';
@@ -20,6 +20,10 @@ export class MovementStateService {
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
 
+  readonly pendingEntityIds = computed<ReadonlySet<number>>(
+    () => new Set(this._orders().flatMap((o) => o.entityIds ?? [])),
+  );
+
   pendingForUnit(unitId: number): MovementOrder[] {
     return this._orders().filter((o) => o.entityIds?.includes(unitId));
   }
@@ -40,10 +44,10 @@ export class MovementStateService {
     }
   }
 
-  async placeFootOrder(unitId: number, route: number[]): Promise<MovementOrder | null> {
+  async placeFootOrder(entityIds: number[], route: number[]): Promise<MovementOrder | null> {
     this._error.set(null);
     try {
-      const order = await firstValueFrom(this.api.placeFootOrder([unitId], route));
+      const order = await firstValueFrom(this.api.placeFootOrder(entityIds, route));
       await this.loadOrders();
       return order;
     } catch (error) {

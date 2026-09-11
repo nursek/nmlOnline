@@ -1,0 +1,47 @@
+<div class="cad">
+  <div class="cad-header">
+    <h2 mat-dialog-title>
+      <mat-icon>auto_awesome</mat-icon>
+      Capacités
+    </h2>
+    <button mat-icon-button (click)="close()" aria-label="Fermer">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <div class="cad-body">
+      <app-character-portrait
+        class="cad-portrait"
+        [playerName]="data.playerName"
+        [character]="data.character"
+        [sectorNumber]="data.character.sectorNumber ?? null"
+        size="lg"
+      />
+
+      <p class="cad-description">{{ abilities().description }}</p>
+
+      <div class="cad-abilities">
+        @for (a of abilityList(); track a.kind) {
+          <mat-card class="ability-card">
+            <mat-card-content>
+              <div class="ability-head">
+                <div class="ability-icon">
+                  <mat-icon>{{ a.icon }}</mat-icon>
+                </div>
+                <div>
+                  <span class="ability-kind">{{ kindLabel(a.kind) }}</span>
+                  <h3>{{ a.name }}</h3>
+                </div>
+              </div>
+              <p class="ability-desc">{{ a.description }}</p>
+              @if (a.bonus) {
+                <span class="ability-bonus">{{ a.bonus }}</span>
+              }
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    </div>
+  </mat-dialog-content>
+</div>

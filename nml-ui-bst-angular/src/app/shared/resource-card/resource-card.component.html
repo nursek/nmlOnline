@@ -1,0 +1,31 @@
+<div class="resource-card">
+  <div class="rc-thumb">
+    @if (!imgError()) {
+      <img [src]="imageUrl()" (error)="onImgError()" [alt]="resource().name" />
+    } @else {
+      <mat-icon>inventory_2</mat-icon>
+    }
+  </div>
+
+  <div class="rc-info">
+    <div class="rc-head">
+      <h4>{{ resource().name }}</h4>
+      <span class="rc-qty">×{{ resource().quantity }}</span>
+    </div>
+    <span class="rc-unit">{{ resource().baseValue ?? '?' }} ₡/unité</span>
+    <span class="rc-total">Valeur estimée : {{ totalValue() | number: '1.0-0' }} ₡</span>
+  </div>
+
+  <div class="rc-actions">
+    <button
+      mat-flat-button
+      color="primary"
+      [disabled]="resource().quantity <= 0"
+      (click)="sell.emit()"
+      matTooltip="Vendre cette ressource immédiatement"
+    >
+      <mat-icon>sell</mat-icon>
+      Vendre
+    </button>
+  </div>
+</div>
