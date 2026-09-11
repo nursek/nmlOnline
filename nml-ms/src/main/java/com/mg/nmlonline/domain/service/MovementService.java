@@ -435,6 +435,7 @@ public class MovementService {
             List<Long> entityIds = order.getEntityIds();
             List<CombatEntity> toMove = fromSector.getCombatEntities().stream()
                     .filter(e -> entityIds.contains(e.getId()))
+                    .filter(e -> e instanceof Unit || e instanceof GameCharacter)
                     .toList();
             for (CombatEntity entity : toMove) {
                 entity.setSector(targetSector);

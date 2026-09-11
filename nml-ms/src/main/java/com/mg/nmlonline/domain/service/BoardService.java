@@ -126,15 +126,15 @@ public class BoardService {
     // Mapping dans la transaction (sectorsList et sous-collections sont LAZY).
 
     public List<BoardDto> getAllBoardsDto() {
-        return getAllBoards().stream().map(boardMapper::toDto).toList();
+        return getAllBoards().stream().map(boardMapper::toPublicDto).toList();
     }
 
     public Optional<BoardDto> getBoardByIdDto(Long id) {
-        return getBoardById(id).map(boardMapper::toDto);
+        return getBoardById(id).map(boardMapper::toPublicDto);
     }
 
     public Optional<BoardDto> getBoardByNameDto(String name) {
-        return getBoardByName(name).map(boardMapper::toDto);
+        return getBoardByName(name).map(boardMapper::toPublicDto);
     }
 
     public BoardDto createBoardDto(BoardDto boardDto) {

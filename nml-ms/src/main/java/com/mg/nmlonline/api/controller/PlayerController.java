@@ -33,12 +33,13 @@ public class PlayerController {
 
     @GetMapping
     public Page<PlayerDto> findAll(Pageable pageable) {
-        return playerService.findAllDto(pageable);
+        return playerService.findAllSummaryDto(pageable);
     }
 
     @GetMapping("/{name}")
-    public ResponseEntity<PlayerDto> findByName(@PathVariable String name) {
-        return playerService.findByNameDto(name)
+    public ResponseEntity<PlayerDto> findByName(@PathVariable String name, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return playerService.findByNameDto(name, userId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

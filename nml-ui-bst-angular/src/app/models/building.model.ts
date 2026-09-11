@@ -1,7 +1,6 @@
 import type { PlayerResource } from './player.model';
 import type { EquipmentStack } from './unit.model';
 
-// Types pour les bâtiments
 /**
  * IMPORTANT: This type is coupled to the BuildingType enum on the backend.
  * The string values here must exactly match the enum constants used by the API.
@@ -18,19 +17,15 @@ export interface Building {
   playerId: number | null;
   buildingType: BuildingType;
   displayName: string;
-  // Stats de combat
   attack: number;
   defense: number;
-  // État
   isDestroyed: boolean;
   isCaptured: boolean;
   capturedByPlayerId: number | null;
   capturedTurn: number | null;
-  // Déplacement
   lastMovedTurn: number | null;
   canMove: boolean;
   moveCooldown: number;
-  // Localisation
   sectorNumber: number | null;
   // Spécifique au QG
   isOperational?: boolean;

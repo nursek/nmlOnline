@@ -6,7 +6,6 @@
   padding: 32px 16px;
 }
 
-// === Header ===
 .admin-header {
   display: flex;
   align-items: center;
@@ -43,7 +42,6 @@
   margin-bottom: 16px;
 }
 
-// === Gestion du tour ===
 .turn-panel {
   display: flex;
   align-items: center;
@@ -84,7 +82,6 @@
   }
 }
 
-// === Consultation & résolution des ordres ===
 .orders-panel {
   padding: 16px;
   margin-bottom: 16px;
@@ -231,7 +228,6 @@
   }
 }
 
-// === Compte-rendu de résolution ===
 .resolution-report {
   padding: 16px;
   margin-bottom: 16px;
@@ -400,13 +396,11 @@
   }
 }
 
-// === Loading ===
 .loading-container {
   @include shared.loading-container;
   min-height: 40vh;
 }
 
-// === Player panel ===
 .player-panel {
   margin-bottom: 8px !important;
   border-radius: 8px !important;
@@ -473,7 +467,6 @@
   }
 }
 
-// === Panel content ===
 .panel-content {
   padding-top: 8px;
 }
@@ -499,7 +492,6 @@
   }
 }
 
-// === Stats grid ===
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -533,7 +525,6 @@
   }
 }
 
-// === Equipment list ===
 .equipment-list {
   display: flex;
   flex-wrap: wrap;
@@ -567,7 +558,6 @@
   }
 }
 
-// === Sectors & Army ===
 .sector-block {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -668,7 +658,6 @@
   }
 }
 
-// === Actions ===
 .actions-row {
   display: flex;
   gap: 12px;
@@ -682,7 +671,6 @@
   }
 }
 
-// === Empty state ===
 .empty-state {
   @include shared.empty-state;
   margin-top: 48px;
@@ -694,7 +682,6 @@
   font-size: 0.85rem;
 }
 
-// === Responsive ===
 @media (max-width: 768px) {
   .admin-header {
     flex-direction: column;
@@ -702,7 +689,7 @@
   }
 
   .stats-chips {
-    display: none; // Masquer les stats compactes sur mobile
+    display: none;
   }
 
   .stats-grid {
@@ -725,7 +712,6 @@
   }
 }
 
-// === Snackbar overrides ===
 :host ::ng-deep {
   .success-snackbar .mdc-snackbar__surface {
     background: #047857 !important;

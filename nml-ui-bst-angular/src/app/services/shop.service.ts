@@ -41,7 +41,6 @@ export class ShopService {
   private readonly player = inject(PlayerService);
   private readonly auth = inject(AuthService);
 
-  // --- Read-only catalogs via httpResource (gated on authentication) ---
   // Returning `undefined` as the URL defers the request until the user is
   // authenticated, avoiding the 401 storm on app bootstrap.
   private readonly equipmentsRef = httpResource<PageResult<Equipment>>(() =>
@@ -62,7 +61,6 @@ export class ShopService {
     () => this._error() === null && this.vehicleTypesRef.isLoading(),
   );
 
-  // --- Carts (signal state, persisted via effect) ------------------------
   private readonly _cart = signal<CartItem[]>(this.cartStorage.loadCart());
   private readonly _vehicleCart = signal<VehicleCartItem[]>(this.cartStorage.loadVehicleCart());
   private readonly _sellCart = signal<SellCartItem[]>([]);
@@ -104,7 +102,6 @@ export class ShopService {
     });
   }
 
-  // --- Equipment cart mutators ------------------------------------------
   addToCart(equipment: Equipment): void {
     this._cart.update((cart) => {
       const idx = cart.findIndex((i) => i.equipment.name === equipment.name);
@@ -132,7 +129,6 @@ export class ShopService {
     this._cart.set([]);
   }
 
-  // --- Vehicle cart mutators --------------------------------------------
   addVehicleToCart(vehicleType: VehicleTypeInfo, quantity: number): void {
     const qty = safeQty(quantity);
     this._vehicleCart.update((cart) => {
@@ -163,7 +159,6 @@ export class ShopService {
     this._vehicleCart.set([]);
   }
 
-  // --- Sell cart mutators -----------------------------------------------
   addToSellCart(resource: PlayerResource, quantity: number): void {
     const qty = safeQty(quantity);
     this._sellCart.update((cart) => {
@@ -200,7 +195,6 @@ export class ShopService {
     this._sellCart.set([]);
   }
 
-  // --- Checkouts (mutations through HttpClient) -------------------------
   async checkoutVehicles(): Promise<Vehicle[]> {
     this._purchaseLoading.set(true);
     this._error.set(null);

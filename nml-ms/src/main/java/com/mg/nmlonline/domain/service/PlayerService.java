@@ -28,6 +28,7 @@ public class PlayerService {
     private final EquipmentService equipmentService;
     private final PlayerMapper playerMapper;
     private final BoardService boardService;
+    private final PlayerActionService playerActionService;
     private final EntityManager entityManager;
 
     public PlayerService(PlayerRepository playerRepository,
@@ -35,12 +36,14 @@ public class PlayerService {
                           EquipmentService equipmentService,
                           PlayerMapper playerMapper,
                           BoardService boardService,
+                          PlayerActionService playerActionService,
                           EntityManager entityManager) {
         this.playerRepository = playerRepository;
         this.sectorService = sectorService;
         this.equipmentService = equipmentService;
         this.playerMapper = playerMapper;
         this.boardService = boardService;
+        this.playerActionService = playerActionService;
         this.entityManager = entityManager;
     }
 
@@ -58,6 +61,11 @@ public class PlayerService {
 
     public Player findByUserId(Long userId) {
         return playerRepository.findByUserId(userId).orElse(null);
+    }
+
+    /** Verrou pessimiste : sérialise les mutations d'inventaire avec les achats (anti lost-update). */
+    public Player findByUserIdForUpdate(Long userId) {
+        return playerRepository.findByUserIdForUpdate(userId).orElse(null);
     }
 
     @Transactional
@@ -104,6 +112,8 @@ public class PlayerService {
             if (!success) {
                 throw new IllegalStateException("Failed to apply purchase for: " + resolved.equipment().getName());
             }
+            playerActionService.recordBuyEquipment(playerId, resolved.equipment().getName(),
+                    resolved.quantity(), (double) resolved.equipment().getCost() * resolved.quantity());
         }
 
         return playerRepository.save(player);
@@ -129,6 +139,7 @@ public class PlayerService {
                 .getResultList()
                 .forEach(entityManager::remove);
         sectorService.removePlayerFromSectors(id);
+        playerActionService.deleteForPlayer(id);
         playerRepository.deleteById(id);
         return true;
     }
@@ -142,11 +153,22 @@ public class PlayerService {
                 .map(p -> playerMapper.toDtoWithSectors(p, board));
     }
 
+    /** Vue publique (liste des joueurs) : pas d'état privé d'autrui. */
     @Transactional(readOnly = true)
-    public Optional<PlayerDto> findByNameDto(String name) {
+    public Page<PlayerDto> findAllSummaryDto(Pageable pageable) {
+        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        return playerRepository.findAllByOrderByNameAsc(pageable)
+                .map(p -> playerMapper.toSummaryDto(p, board));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<PlayerDto> findByNameDto(String name, Long requesterUserId) {
         Player player = playerRepository.findByName(name).orElse(null);
         if (player == null) return Optional.empty();
         Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        if (requesterUserId == null || !requesterUserId.equals(player.getUserId())) {
+            return Optional.of(playerMapper.toSummaryDto(player, board));
+        }
         return Optional.of(playerMapper.toDtoWithSectors(player, board));
     }
 

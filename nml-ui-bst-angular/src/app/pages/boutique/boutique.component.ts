@@ -64,7 +64,6 @@ export class BoutiqueComponent {
   private readonly playerService = inject(PlayerService);
   private readonly dialog = inject(MatDialog);
 
-  // Catalog + carts come straight from the shop service signals.
   readonly allEquipments = this.shop.equipments;
   readonly cart = this.shop.cart;
   readonly vehicleCart = this.shop.vehicleCart;
@@ -79,10 +78,8 @@ export class BoutiqueComponent {
   readonly sellCartTotalValue = this.shop.sellCartTotalValue;
   readonly vehicleTypes = this.shop.vehicleTypes;
 
-  // Player profile is owned by PlayerService.
   readonly player = this.playerService.player;
 
-  /** Onglet ciblé par le query param `tab` (ex: /boutique?tab=revente). */
   readonly tab = input<string>('equipements');
   readonly selectedTabIndex = linkedSignal(() => this.tabIndex(this.tab()));
 
@@ -97,7 +94,6 @@ export class BoutiqueComponent {
     }
   }
 
-  // UI state (local).
   readonly showCart = signal(false);
   readonly showFilters = signal(false);
   readonly searchTerm = signal('');
@@ -148,7 +144,6 @@ export class BoutiqueComponent {
     return filtered.sort(compareEquipments);
   });
 
-  /** Véhicules triés par coût croissant. */
   readonly sortedVehicleTypes = computed(() => sortVehiclesByCost(this.vehicleTypes()));
 
   /**
@@ -227,11 +222,6 @@ export class BoutiqueComponent {
     this.dialog.open(PurchaseSuccessDialogComponent, { width: '400px', data });
   }
 
-  /**
-   * Shared checkout skeleton: guard on empty cart, close the drawer, run the
-   * checkout, then open the success dialog. Errors surface via the shop
-   * service's `error` signal.
-   */
   private async runCheckout(
     itemCount: number,
     checkout: () => Promise<unknown>,
@@ -245,8 +235,6 @@ export class BoutiqueComponent {
       // Error already surfaced through the shop service's `error` signal.
     }
   }
-
-  // --- Equipment cart ---
 
   toggleCart(): void {
     this.showCart.update((v) => !v);
@@ -301,8 +289,6 @@ export class BoutiqueComponent {
     );
   }
 
-  // --- Vehicle cart ---
-
   addVehicleToCart(vehicleType: VehicleTypeInfo): void {
     const qty = this.vehicleQuantities()[vehicleType.name] ?? 1;
     this.shop.addVehicleToCart(vehicleType, qty);
@@ -349,8 +335,6 @@ export class BoutiqueComponent {
   canAffordVehicle(vehicleCost: number, qty: number = 1): boolean {
     return (this.player()?.stats?.money ?? 0) >= vehicleCost * qty;
   }
-
-  // --- Sell cart ---
 
   getSellQty(resource: PlayerResource): number {
     return resource.id != null ? (this.resourceSellQuantities()[resource.id] ?? 1) : 1;
@@ -402,8 +386,6 @@ export class BoutiqueComponent {
     this.shop.clearSellCart();
   }
 
-  // --- Filters ---
-
   clearSearch(): void {
     this.searchTerm.set('');
   }
@@ -425,8 +407,6 @@ export class BoutiqueComponent {
     this.selectedBonusFilter.set('all');
   }
 
-  // --- Libellés FR + résumés compacts (délégués aux helpers purs) ---
-
   equipmentCategoryLabel = equipmentCategoryLabel;
   unitClassLabel = unitClassLabel;
   equipmentSummary = equipmentSummary;
@@ -435,8 +415,6 @@ export class BoutiqueComponent {
   vehicleSummary = vehicleSummary;
   saleMultiplier = saleMultiplier;
   saleValue = saleValue;
-
-  // --- Vignettes boutique (assets statiques, fallback sur erreur) ---
 
   equipmentImageUrl(equipment: Equipment): string {
     return `assets/shop/equipment/${slugify(equipment.name)}.png`;

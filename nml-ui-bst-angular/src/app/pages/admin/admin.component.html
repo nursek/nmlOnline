@@ -1,5 +1,4 @@
 <div class="admin-container">
-  <!-- Header -->
   <div class="admin-header">
     <div class="header-left">
       <div class="admin-avatar">
@@ -30,7 +29,6 @@
     </button>
   </div>
 
-  <!-- Import progress -->
   @if (importing()) {
     <mat-progress-bar mode="indeterminate" class="import-progress"></mat-progress-bar>
   }
@@ -57,7 +55,6 @@
     </button>
   </div>
 
-  <!-- Consultation & résolution des ordres de déplacement (admin) -->
   <div class="orders-panel">
     <div class="orders-header">
       <div class="orders-title">
@@ -96,7 +93,6 @@
       </div>
     </div>
 
-    <!-- Filtres par statut -->
     <mat-chip-listbox
       aria-label="Filtrer les ordres par statut"
       (change)="onOrderStatusChange($any($event)?.value ?? 'ALL')"
@@ -110,7 +106,6 @@
       }
     </mat-chip-listbox>
 
-    <!-- Liste des ordres -->
     @if (ordersLoading()) {
       <div class="loading-container">
         <mat-spinner diameter="32"></mat-spinner>
@@ -140,7 +135,7 @@
                   #{{ o.vehicleId }}
                 } @else {
                   <mat-icon matTooltip="Mouvement à pied">directions_walk</mat-icon>
-                  {{ o.entityIds?.length || 0 }} ent.
+                  {{ o.entityIds.length }} ent.
                 }
               </span>
             </div>
@@ -154,7 +149,6 @@
     }
   </div>
 
-  <!-- Compte-rendu de résolution / aperçu -->
   @if (resolutionReport(); as r) {
     <div class="resolution-report">
       <div class="report-header">
@@ -246,7 +240,6 @@
     </div>
   }
 
-  <!-- Search -->
   <mat-form-field appearance="outline" class="search-field">
     <mat-icon matPrefix>search</mat-icon>
     <mat-label>Rechercher un joueur...</mat-label>
@@ -258,14 +251,12 @@
     />
   </mat-form-field>
 
-  <!-- Loading state -->
   @if (loading() && !importing()) {
     <div class="loading-container">
       <mat-spinner diameter="48"></mat-spinner>
     </div>
   }
 
-  <!-- Player count -->
   @if (!loading()) {
     <div class="player-count">
       {{ filteredPlayers().length }} joueur{{ filteredPlayers().length > 1 ? 's' : '' }}
@@ -275,12 +266,10 @@
     </div>
   }
 
-  <!-- Player list -->
   @if (!loading()) {
     <mat-accordion multi>
       @for (player of filteredPlayers(); track player.id) {
         <mat-expansion-panel class="player-panel">
-          <!-- Panel header -->
           <mat-expansion-panel-header>
             <mat-panel-title class="panel-title">
               <mat-icon class="player-icon">person</mat-icon>
@@ -308,9 +297,7 @@
             </mat-panel-description>
           </mat-expansion-panel-header>
 
-          <!-- Panel content -->
           <div class="panel-content">
-            <!-- Stats résumé -->
             <div class="section">
               <div class="section-title">
                 <mat-icon>bar_chart</mat-icon>
@@ -356,7 +343,6 @@
 
             <mat-divider></mat-divider>
 
-            <!-- Équipements -->
             @if (player.equipments && player.equipments.length > 0) {
               <div class="section">
                 <div class="section-title">
@@ -378,7 +364,6 @@
               <mat-divider></mat-divider>
             }
 
-            <!-- Ressources -->
             @if (player.resources && player.resources.length > 0) {
               <div class="section">
                 <div class="section-title">
@@ -400,7 +385,6 @@
               <mat-divider></mat-divider>
             }
 
-            <!-- Secteurs et armée -->
             @if (player.sectors && player.sectors.length > 0) {
               <div class="section">
                 <div class="section-title">
@@ -470,7 +454,6 @@
 
             <mat-divider></mat-divider>
 
-            <!-- Actions -->
             <div class="actions-row">
               <button
                 mat-stroked-button
@@ -496,7 +479,6 @@
     </mat-accordion>
   }
 
-  <!-- Empty state -->
   @if (!loading() && filteredPlayers().length === 0 && searchQuery()) {
     <div class="empty-state">
       <mat-icon>search_off</mat-icon>

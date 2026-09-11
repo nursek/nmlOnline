@@ -57,14 +57,14 @@ function vt(name: string, cost: number, basePdf: number, baseDefense: number): V
 describe('boutique.helpers — tri par défaut', () => {
   it('trie par classe (léger→élémentaire) puis catégorie (mêlée→arme à feu→défensif) puis prix', () => {
     const items = [
-      eq('Enmitic Disintegrator Pistol', 400, 'FIREARM', 'LEGER'), // Léger, FIREARM, 400
-      eq('Flensing Claw', 100, 'MELEE', 'LEGER'), // Léger, MELEE, 100  ← 1er
-      eq('Voidblade', 200, 'MELEE', 'LEGER'), // Léger, MELEE, 200  ← 2e
-      eq('Phylactery', 750, 'DEFENSIVE', 'LEGER'), // Léger, DEFENSIVE
-      eq('Hyperphase Glaive', 450, 'MELEE', 'MASTODONTE'), // Mastodonte, MELEE
-      eq('Hyperphase Thresher', 300, 'MELEE', 'SNIPER'), // Sniper, MELEE
+      eq('Enmitic Disintegrator Pistol', 400, 'FIREARM', 'LEGER'),
+      eq('Flensing Claw', 100, 'MELEE', 'LEGER'),
+      eq('Voidblade', 200, 'MELEE', 'LEGER'),
+      eq('Phylactery', 750, 'DEFENSIVE', 'LEGER'),
+      eq('Hyperphase Glaive', 450, 'MELEE', 'MASTODONTE'),
+      eq('Hyperphase Thresher', 300, 'MELEE', 'SNIPER'),
       eq('Gauss Cannon', 3400, 'FIREARM', 'PILOTE_DESTRUCTEUR'),
-      eq('Warscythe', 1000, 'MELEE', 'ELEMENTAIRE'), // Élémentaire → dernier
+      eq('Warscythe', 1000, 'MELEE', 'ELEMENTAIRE'),
     ];
     const sorted = sortEquipments(items);
     expect(sorted.map((i) => i.name)).toEqual([

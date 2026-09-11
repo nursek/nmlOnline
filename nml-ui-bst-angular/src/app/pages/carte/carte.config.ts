@@ -42,7 +42,6 @@ export const MAP_THEME = {
     selected: 3,
   },
 
-  // Effets appliqués au secteur sélectionné.
   selection: {
     // Rayon de dilatation feMorphology : produit un contour net qui déborde
     // des limites géométriques du path (effet « halo crisp » hors bordures).

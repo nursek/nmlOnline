@@ -196,7 +196,7 @@ JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run
 
 - Database: H2 in-memory, `ddl-auto=update`, wiped on every restart
 - Imports the demo board and the 5 demo players, but creates **no user account** — you cannot log in
-- `app.cookie.secure=true` (use `dev` for plain HTTP)
+- Refresh cookie is always `Secure` (works on `localhost`, a secure context)
 - Swagger UI available
 
 ### `dev` — H2 in-memory + seed data
@@ -206,7 +206,6 @@ JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run -Dspring-boot.run.profiles=
 ```
 
 - Same H2 in-memory DB and same demo import as the default profile
-- `app.cookie.secure=false` (works over HTTP)
 - **Auto-creates the 6 dev accounts** listed above (`DevDataInitializer`, `dev` only)
 - H2 console **disabled** (even in dev)
 
@@ -250,7 +249,7 @@ loud boot failure than a silent misconfiguration.
 - `spring.jpa.open-in-view=false` — **do not override it with `SPRING_JPA_OPEN_IN_VIEW=true`**: it hides
   lazy-loading bugs instead of fixing them. DTOs are built inside the service transaction
   (`AdminService`, `PlayerService.findAllDto`, `BoardService`…), never in a controller.
-- `app.cookie.secure=true` — refresh cookies are `Secure`
+- Refresh cookies are `Secure` (+ `HttpOnly`, `SameSite=Lax`)
 - Actuator: `/actuator/health`, `/actuator/info`, `/actuator/metrics`
 - No seed data
 
@@ -443,6 +442,9 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 | POST | `/api/players/equipment/buy` | Bearer | Buy equipment (atomic) |
 | POST | `/api/players/resources/{id}/sell` | Bearer | Sell a resource |
 | POST | `/api/players/resources/sell-batch` | Bearer | Sell multiple resources (atomic) |
+| GET | `/api/players/actions` | Bearer | List the player's actions for the current turn |
+| POST | `/api/players/actions/{id}/undo` | Bearer | Undo this action and all later ones (current turn, LIFO) |
+| POST | `/api/players/actions/undo-all` | Bearer | Undo all current-turn actions |
 | GET | `/api/boards` | Public | List boards |
 | GET | `/api/equipment?page=0&size=100` | Public | List equipment (paginated) |
 | POST | `/api/vehicles/buy-batch` | Bearer | Buy vehicles (atomic batch) |

@@ -21,13 +21,16 @@ public class ResourceService {
     private final ResourceRepository resourceRepository;
     private final PlayerResourceRepository playerResourceRepository;
     private final PlayerRepository playerRepository;
+    private final PlayerActionService playerActionService;
 
     public ResourceService(ResourceRepository resourceRepository,
                            PlayerResourceRepository playerResourceRepository,
-                           PlayerRepository playerRepository) {
+                           PlayerRepository playerRepository,
+                           PlayerActionService playerActionService) {
         this.resourceRepository = resourceRepository;
         this.playerResourceRepository = playerResourceRepository;
         this.playerRepository = playerRepository;
+        this.playerActionService = playerActionService;
     }
 
     public double getBaseValue(String resourceName) {
@@ -77,7 +80,7 @@ public class ResourceService {
 
     @Transactional
     public SaleResult sellResource(Long resourceId, int quantity, Long userId) {
-        Player player = playerRepository.findByUserId(userId)
+        Player player = playerRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable : " + userId));
 
         PlayerResource playerResource = playerResourceRepository.findById(resourceId)
@@ -107,6 +110,8 @@ public class ResourceService {
         }
 
         playerRepository.save(owner);
+
+        playerActionService.recordSellResource(owner.getId(), resourceName, quantity, sellPrice);
 
         return new SaleResult(resourceName, quantity, sellPrice);
     }

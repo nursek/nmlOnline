@@ -21,6 +21,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { PageResult, Player, Sector } from '../../models';
 import { environment } from '../../../environments/environment';
+import { sanitizeSvg } from '../../core/svg-sanitize';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { MAP_THEME } from './carte.config';
 
@@ -99,15 +100,16 @@ export class CarteComponent {
   readonly svgContent = computed<SafeHtml | string | null>(() => {
     const text = this.svgTextRef.value();
     if (!text) return null;
-    // ponytail: bypass direct — le sanitizer HTML d'Angular jette les balises SVG.
-    // OK car c'est un asset statique embarqué (assets/maps), pas de l'input utilisateur.
     // Defense-in-depth: on ne bypass que si l'URL est same-origin (chemin relatif en "/").
     // Sinon on renvoie la string brute — Angular sanitize lui-même au binding [innerHTML].
     const url = this.svgOverlayUrl();
     if (!url || !isSameOriginAssetUrl(url)) {
       return text;
     }
-    return this.sanitizer.bypassSecurityTrustHtml(text);
+    // ponytail: bypass direct — le sanitizer HTML d'Angular jette les balises SVG ;
+    // on neutralise donc les éléments/attributs actifs (upload admin) avant injection.
+    const sanitized = sanitizeSvg(text);
+    return sanitized ? this.sanitizer.bypassSecurityTrustHtml(sanitized) : null;
   });
   readonly svgLoaded = computed(() => this.svgContent() !== null);
 
@@ -124,7 +126,6 @@ export class CarteComponent {
 
   private readonly svgContainer = viewChild<ElementRef<HTMLDivElement>>('svgContainer');
 
-  // Derived sector lookups.
   private readonly playerMap = computed(() => {
     const map = new Map<number, Player>();
     this.players().forEach((p) => {
@@ -245,7 +246,6 @@ export class CarteComponent {
       svg.appendChild(defs);
     }
 
-    // Motif de hachures neutres.
     if (!svg.querySelector('#neutral-stripes')) {
       const np = MAP_THEME.neutralPattern;
       const pattern = document.createElementNS(svgNs, 'pattern');
@@ -429,10 +429,8 @@ export class CarteComponent {
       }
       const above = minDist >= MARGIN * MARGIN;
       if (bestAboveMargin) {
-        // Ne garder que les candidats sous marge, et le max parmi eux.
         if (!above || minDist <= bestDist) continue;
       } else if (above) {
-        // Premier candidat sous marge : il devient le nouveau best.
         bestAboveMargin = true;
       } else if (minDist <= bestDist) {
         continue;
@@ -546,7 +544,6 @@ export class CarteComponent {
     return this.getPlayerColor(sector.ownerId);
   }
 
-  /** Readable text color (white or dark) for a given hex background. */
   getContrastColor(): string {
     return '#1e293b';
   }

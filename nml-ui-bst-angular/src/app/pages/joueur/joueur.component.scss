@@ -1,6 +1,5 @@
 @use '../../../styles/shared' as shared;
 
-// Base layout
 .loading-container {
   @include shared.loading-container;
 }
@@ -56,7 +55,6 @@
   @include shared.empty-state;
 }
 
-// Secteurs conquis (ligne sous l'en-tête)
 .conquered-row {
   display: flex;
   align-items: center;
@@ -86,7 +84,6 @@
   margin-top: 8px;
 }
 
-// Stats row
 .stats-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -130,7 +127,6 @@
   }
 }
 
-// Section header
 .section-header {
   @include shared.section-header;
   flex-wrap: wrap;
@@ -188,7 +184,6 @@
   margin: 0 0 16px;
 }
 
-// Details grid
 .details-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -202,7 +197,6 @@
   margin-bottom: 4px;
 }
 
-// Équipements
 // La classe est le titre du panneau dépliable ; la catégorie devient le sous-titre interne.
 .category-section-title {
   margin: 16px 0 8px;
@@ -448,6 +442,10 @@
   white-space: nowrap;
 }
 
+.force-action {
+  color: shared.$primary-color;
+}
+
 .class-codes {
   font-size: 0.75rem;
   font-weight: 700;
@@ -505,13 +503,57 @@
   line-height: 1.5;
 }
 
-// Onglet Actions
 .actions-tab {
   padding-top: 24px;
 
   .empty-hint {
     margin-top: 8px;
     font-size: 0.8rem;
+  }
+
+  .actions-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+  }
+
+  .actions-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+  }
+
+  .action-icon {
+    color: shared.$text-muted;
+  }
+
+  .action-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .action-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .action-money {
+    font-size: 0.8rem;
+    color: shared.$text-muted;
   }
 }
 

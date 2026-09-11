@@ -62,7 +62,7 @@ public class Unit extends CombatEntity {
 
     public Unit(double experience, UnitClass primaryClass) {
         this.experience = experience;
-        this.type = UnitType.getTypeByExperience((int) experience);
+        this.type = UnitType.getTypeByExperience(experience);
         this.classesSet = new HashSet<>();
         this.classesSet.add(primaryClass);
 
@@ -179,7 +179,7 @@ public class Unit extends CombatEntity {
 
     public void gainExperience(double exp) {
         this.experience += exp;
-        UnitType newType = UnitType.getTypeByExperience((int) experience);
+        UnitType newType = UnitType.getTypeByExperience(experience);
         if (newType != this.type) {
             evolve(newType);
         }
@@ -267,6 +267,29 @@ public class Unit extends CombatEntity {
             recalculateBaseStats();
         }
         return removed;
+    }
+
+    /** Retire une occurrence et renvoie la ligne persistée à em.remove (null si absente). */
+    public UnitEquipment removeOneEquipment(String equipmentName) {
+        if (unitEquipments == null) return null;
+        UnitEquipment row = unitEquipments.stream()
+                .filter(ue -> ue.getEquipment() != null && equipmentName.equals(ue.getEquipment().getName()))
+                .findFirst()
+                .orElse(null);
+        if (row == null) return null;
+
+        unitEquipments.remove(row);
+        if (equipments != null) {
+            for (int i = 0; i < equipments.size(); i++) {
+                Equipment e = equipments.get(i);
+                if (e != null && equipmentName.equals(e.getName())) {
+                    equipments.remove(i);
+                    break;
+                }
+            }
+        }
+        recalculateBaseStats();
+        return row;
     }
 
     public List<Equipment> getEquipmentsByCategory(EquipmentCategory category) {

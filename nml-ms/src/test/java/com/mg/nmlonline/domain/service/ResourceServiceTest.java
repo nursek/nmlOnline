@@ -35,6 +35,9 @@ class ResourceServiceTest {
     @Mock
     PlayerRepository playerRepository;
 
+    @Mock
+    PlayerActionService playerActionService;
+
     @InjectMocks
     ResourceService resourceService;
 
@@ -109,7 +112,7 @@ class ResourceServiceTest {
         @Test
         @DisplayName("Joueur introuvable est rejeté")
         void shouldRejectUnknownPlayer() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.empty());
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.empty());
 
             assertThrows(RuntimeException.class,
                     () -> resourceService.sellResource(7L, 1, 10L));
@@ -118,7 +121,7 @@ class ResourceServiceTest {
         @Test
         @DisplayName("Ressource introuvable est rejetée")
         void shouldRejectUnknownResource() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.empty());
 
             assertThrows(RuntimeException.class,
@@ -133,7 +136,7 @@ class ResourceServiceTest {
             PlayerResource pr = new PlayerResource("Or", 5);
             pr.setPlayer(other);
 
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
 
             assertThrows(SecurityException.class,
@@ -143,7 +146,7 @@ class ResourceServiceTest {
         @Test
         @DisplayName("Quantité insuffisante est rejetée")
         void shouldRejectInsufficientQuantity() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(ownedResource("Or", 5)));
 
             assertThrows(IllegalArgumentException.class,
@@ -154,7 +157,7 @@ class ResourceServiceTest {
         @DisplayName("Vente partielle crédite le prix exact et conserve le stack")
         void shouldSellPartialQuantity() {
             PlayerResource pr = ownedResource("Or", 5);
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
             when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 1700.0)));
 
@@ -174,7 +177,7 @@ class ResourceServiceTest {
         @DisplayName("Vente totale supprime le stack")
         void shouldDeleteStackWhenQuantityReachesZero() {
             PlayerResource pr = ownedResource("Or", 5);
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
             when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 1700.0)));
 
@@ -189,7 +192,7 @@ class ResourceServiceTest {
         @DisplayName("Vendre une quantité nulle est un no-op silencieux")
         void shouldPinZeroQuantitySaleAsNoOp() {
             PlayerResource pr = ownedResource("Or", 5);
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
             when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 1700.0)));
 
@@ -219,7 +222,7 @@ class ResourceServiceTest {
         void shouldSellBatch() {
             PlayerResource gold = ownedResource("Or", 5);
             PlayerResource ivory = ownedResource("Ivoire", 3);
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(gold));
             when(playerResourceRepository.findById(8L)).thenReturn(Optional.of(ivory));
             when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 1700.0)));

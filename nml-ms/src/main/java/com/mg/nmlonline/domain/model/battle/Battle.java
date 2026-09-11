@@ -21,7 +21,7 @@ public class Battle {
 
     private static final Logger logger = LoggerFactory.getLogger(Battle.class);
 
-    private int sectorId; // ID du secteur où se déroule le combat
+    private int sectorId;
 
     private List<Player> defenders = new ArrayList<>();
     private List<Player> attackers = new ArrayList<>();

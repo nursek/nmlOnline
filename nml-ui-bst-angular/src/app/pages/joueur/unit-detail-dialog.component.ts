@@ -143,7 +143,6 @@ export class UnitDetailDialogComponent {
     return Array.from({ length: count }, (_, i) => i);
   }
 
-  /** Ouvre le sélecteur d'équipement pour une catégorie de slot. */
   openSlotPicker(group: SlotGroup): void {
     const pickerData: UnitSlotPickerData = {
       unitId: this.unit().id,
@@ -160,8 +159,6 @@ export class UnitDetailDialogComponent {
   readonly pendingOrdersForUnit = computed(() =>
     this.movementState.orders().filter((o) => (o.entityIds ?? []).includes(this.unit()?.id ?? -1)),
   );
-
-  // === Actions ===
 
   async unequip(eq: Equipment): Promise<void> {
     if (this.busy()) return;

@@ -89,6 +89,18 @@ export class PlayerService {
     }
   }
 
+  async moveBuilding(buildingId: number, boardId: number, sectorNumber: number): Promise<boolean> {
+    this._error.set(null);
+    try {
+      await firstValueFrom(this.api.moveBuilding(buildingId, boardId, sectorNumber));
+      void this.loadCurrent();
+      return true;
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, 'Erreur lors du déplacement du bâtiment'));
+      return false;
+    }
+  }
+
   private messageFor(error: unknown, fallback: string): string {
     if ((error as { status?: number })?.status === 404) {
       const username = this.auth.user()?.username ?? '';
@@ -97,7 +109,6 @@ export class PlayerService {
     return httpErrorMessage(error, fallback);
   }
 
-  // === Équipement d'unité (depuis l'inventaire du joueur) ===
   // Recharge le player après succès pour rafraîchir sectors[].army et equipments[].available.
 
   async assignUnitEquipment(unitId: number, equipmentName: string): Promise<Unit | null> {

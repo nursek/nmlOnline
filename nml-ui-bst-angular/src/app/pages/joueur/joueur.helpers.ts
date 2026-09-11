@@ -210,7 +210,6 @@ export function sectorForces(sector: Sector, playerId: number | null): SectorFor
   };
 }
 
-/** Puissance globale = (offensif + défensif) / 2. */
 export function playerForces(sectors: Sector[], playerId: number | null): PlayerForces {
   const sectorForceList = sectors
     .map((s) => sectorForces(s, playerId))

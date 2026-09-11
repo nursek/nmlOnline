@@ -27,17 +27,20 @@ public class BuildingService {
     private final BoardService boardService;
     private final TurnService turnService;
     private final BuildingMapper buildingMapper;
+    private final PlayerActionService playerActionService;
 
     public BuildingService(BuildingRepository buildingRepository,
                            PlayerRepository playerRepository,
                            BoardService boardService,
                            TurnService turnService,
-                           BuildingMapper buildingMapper) {
+                           BuildingMapper buildingMapper,
+                           PlayerActionService playerActionService) {
         this.buildingRepository = buildingRepository;
         this.playerRepository = playerRepository;
         this.boardService = boardService;
         this.turnService = turnService;
         this.buildingMapper = buildingMapper;
+        this.playerActionService = playerActionService;
     }
 
     public Optional<Building> findById(Long buildingId) {
@@ -78,7 +81,7 @@ public class BuildingService {
         if (hqOpt.isEmpty()) return false;
 
         Headquarters hq = hqOpt.get();
-        Player player = playerRepository.findById(playerId).orElse(null);
+        Player player = playerRepository.findByIdForUpdate(playerId).orElse(null);
         if (player == null) return false;
 
         double cost = HQ_RECONSTRUCTION_SAME_LOCATION_COST;
@@ -127,7 +130,7 @@ public class BuildingService {
         }
 
         // Valider le joueur capturant AVANT de muter le cache.
-        Player capturingPlayer = playerRepository.findById(capturingPlayerId)
+        Player capturingPlayer = playerRepository.findByIdForUpdate(capturingPlayerId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Le joueur capturant avec l'ID " + capturingPlayerId + " n'existe pas"));
 
@@ -154,7 +157,7 @@ public class BuildingService {
         }
 
         // Valider le joueur capturant AVANT de muter la banque.
-        Player capturingPlayer = playerRepository.findById(capturingPlayerId)
+        Player capturingPlayer = playerRepository.findByIdForUpdate(capturingPlayerId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Le joueur capturant avec l'ID " + capturingPlayerId + " n'existe pas"));
 
@@ -191,11 +194,12 @@ public class BuildingService {
         return bankOpt.get().calculateVampirizedAmount(income, currentTurn);
     }
 
-    public boolean moveBuilding(Long buildingId, Long boardId, int newSectorNumber, int currentTurn) {
+    public boolean moveBuilding(Long buildingId, Long boardId, int newSectorNumber) {
         Building building = buildingRepository.findById(buildingId).orElse(null);
         if (building == null) {
             throw new IllegalArgumentException("Bâtiment introuvable : " + buildingId);
         }
+        int currentTurn = turnService.getCurrentTurn();
         if (!building.canMove(currentTurn)) {
             throw new IllegalStateException("Le bâtiment ne peut pas se déplacer ce tour-ci");
         }
@@ -208,9 +212,18 @@ public class BuildingService {
             throw new IllegalStateException("Le secteur cible n'appartient pas au propriétaire du bâtiment");
         }
 
+        Integer fromSector = building.getSector() != null ? building.getSector().getNumber() : null;
+        Integer prevLastMoved = building.getLastMovedTurn();
+        Boolean prevHasMoved = building instanceof Bank bank ? bank.isHasMoved() : null;
+
         building.setSector(targetSector);
         building.recordMove(currentTurn);
         buildingRepository.save(building);
+
+        if (fromSector != null) {
+            playerActionService.recordMoveBuilding(building.getPlayerId(), buildingId, boardId,
+                    fromSector, newSectorNumber, prevLastMoved, prevHasMoved);
+        }
         return true;
     }
 

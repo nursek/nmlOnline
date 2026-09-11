@@ -12,7 +12,6 @@
   </div>
 } @else {
   <div class="container fade-in">
-    <!-- Header -->
     <div class="page-header">
       <div class="avatar">
         <mat-icon>map</mat-icon>
@@ -24,7 +23,6 @@
     </div>
 
     <div class="map-layout">
-      <!-- Légende des joueurs -->
       <mat-card class="legend-card">
         <mat-card-content>
           <div class="section-header">
@@ -41,7 +39,7 @@
               <div class="legend-color" [style.background-color]="getPlayerColor(player.id)"></div>
               <div class="legend-info">
                 <span class="legend-name">{{ player.name }}</span>
-                <span class="legend-count">{{ player.sectors.length }} secteur(s)</span>
+                <span class="legend-count">{{ player.sectorCount ?? 0 }} secteur(s)</span>
               </div>
             </button>
           }
@@ -66,10 +64,8 @@
         </mat-card-content>
       </mat-card>
 
-      <!-- Carte interactive -->
       <div class="map-container">
         @if (svgLoaded()) {
-          <!-- Mode SVG : Image JPG + Overlay SVG -->
           <div
             class="svg-map-wrapper"
             role="button"
@@ -84,11 +80,9 @@
             [style.--map-overlay-offset-y.px]="overlayOffsetY"
             [style.--map-overlay-offset-x.px]="overlayOffsetX"
           >
-            <!-- Image de fond -->
             @if (mapImageUrl(); as url) {
               <img [src]="url" alt="Carte du monde NML Online" class="map-background" #mapImg />
             }
-            <!-- Overlay SVG interactif -->
             <div
               #svgContainer
               class="svg-overlay"
@@ -96,7 +90,6 @@
               role="img"
               aria-label="Carte interactive des secteurs"
             ></div>
-            <!-- Tooltip flottant -->
             @if (hoveredSectorNumber() !== null) {
               <div class="hover-tooltip">
                 {{ getHoveredSectorName() }}
@@ -104,7 +97,6 @@
             }
           </div>
         } @else {
-          <!-- Chargement du SVG -->
           <div class="svg-loading">
             <mat-spinner diameter="40"></mat-spinner>
             <p>Chargement de la carte...</p>
@@ -112,7 +104,6 @@
         }
       </div>
 
-      <!-- Détails du secteur sélectionné -->
       @if (selectedSector(); as sector) {
         <mat-card class="details-card">
           <mat-card-content>
@@ -156,7 +147,7 @@
               @if (sector.character) {
                 <div class="stat-row">
                   <span>Personnage</span>
-                  <span class="value">{{ sector.character?.name }}</span>
+                  <span class="value">{{ sector.character.name }}</span>
                 </div>
               }
               @if (sector.army?.length) {
@@ -246,7 +237,6 @@
       }
     </div>
 
-    <!-- Statistiques globales -->
     <mat-card class="stats-card">
       <mat-card-content>
         <div class="section-header">

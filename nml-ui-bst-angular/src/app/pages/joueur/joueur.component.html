@@ -1,4 +1,4 @@
-@if (loading()) {
+@if (loading() && !player()) {
   <div class="loading-container" role="status" aria-label="Chargement">
     <mat-spinner diameter="60"></mat-spinner>
   </div>
@@ -21,7 +21,11 @@
       </div>
     </div>
 
-    <mat-tab-group animationDuration="200ms" class="joueur-tabs">
+    <mat-tab-group
+      animationDuration="200ms"
+      class="joueur-tabs"
+      (selectedTabChange)="onTabChange($event)"
+    >
       <mat-tab label="Aperçu">
         <div class="stats-row">
           @for (stat of mainStats(); track stat.label) {
@@ -348,6 +352,16 @@
                                 {{ s.separator }}{{ s.value | number: '1.0-0' }} {{ s.label }}
                               }
                             </span>
+                            @if (b.canMove && b.id !== null) {
+                              <button
+                                mat-icon-button
+                                class="force-action"
+                                matTooltip="Déplacer le bâtiment"
+                                (click)="openBuildingMove(b)"
+                              >
+                                <mat-icon>move_up</mat-icon>
+                              </button>
+                            }
                           </div>
                         }
 
@@ -489,14 +503,54 @@
             Historique de vos actions du tour : achats et changements d'équipement
           </p>
 
-          <div class="empty-state">
-            <mat-icon>history</mat-icon>
-            <p>Aucune action enregistrée ce tour.</p>
-            <p class="empty-hint">
-              L'historique des achats et des équipements modifiés sera journalisé ici. Les ordres de
-              déplacement se consultent sur la page « Mes ordres ».
-            </p>
-          </div>
+          @if (actionsError(); as err) {
+            <div class="error-alert" role="alert">
+              <mat-icon>error</mat-icon>
+              {{ err }}
+            </div>
+          }
+
+          @if (actions().length === 0) {
+            <div class="empty-state">
+              <mat-icon>history</mat-icon>
+              <p>Aucune action enregistrée ce tour.</p>
+              <p class="empty-hint">
+                L'historique des achats et des équipements modifiés sera journalisé ici. Les ordres de
+                déplacement se consultent sur la page « Mes ordres ».
+              </p>
+            </div>
+          } @else {
+            <div class="actions-toolbar">
+              <button mat-stroked-button color="warn" (click)="undoAll()">
+                <mat-icon>undo</mat-icon>
+                Tout annuler
+              </button>
+            </div>
+            <ul class="actions-list">
+              @for (action of actions(); track action.id) {
+                <li class="action-row">
+                  <mat-icon class="action-icon">{{ actionIcon(action.type) }}</mat-icon>
+                  <div class="action-main">
+                    <span class="action-label">{{ action.label }}</span>
+                    @if (action.money) {
+                      <span class="action-money"
+                        >{{ action.type === 'SELL_RESOURCE' ? '+' : '-'
+                        }}{{ action.money | number: '1.0-0' }} ₡</span
+                      >
+                    }
+                  </div>
+                  <button
+                    mat-stroked-button
+                    matTooltip="Annule cette action et toutes les suivantes de ce tour"
+                    (click)="undoFrom(action)"
+                  >
+                    <mat-icon>undo</mat-icon>
+                    Annuler
+                  </button>
+                </li>
+              }
+            </ul>
+          }
         </div>
       </mat-tab>
     </mat-tab-group>

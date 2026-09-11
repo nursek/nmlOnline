@@ -3,6 +3,7 @@ import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dial
 import { of } from 'rxjs';
 import { JoueurComponent } from './joueur.component';
 import { PlayerService } from '../../services/player.service';
+import { PlayerActionsService } from '../../services/player-actions.service';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 import { Vehicle, Sector } from '../../models';
@@ -99,6 +100,18 @@ describe('JoueurComponent — déploiement véhicule', () => {
           },
         },
         { provide: AuthService, useValue: { user: () => ({ id: 1, username: 'tester' }) } },
+        {
+          provide: PlayerActionsService,
+          useValue: {
+            actions: () => [],
+            loading: () => false,
+            error: () => null,
+            hasActions: () => false,
+            loadActions: jest.fn(),
+            undoFrom: jest.fn(),
+            undoAll: jest.fn(),
+          },
+        },
         { provide: ApiService, useValue: {} },
       ],
     })

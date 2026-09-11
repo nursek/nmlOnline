@@ -25,13 +25,16 @@ public class VehicleService {
     private final VehicleRepository vehicleRepository;
     private final SectorRepository sectorRepository;
     private final VehicleMapper vehicleMapper;
+    private final PlayerActionService playerActionService;
 
     public VehicleService(PlayerRepository playerRepository, VehicleRepository vehicleRepository,
-                          SectorRepository sectorRepository, VehicleMapper vehicleMapper) {
+                          SectorRepository sectorRepository, VehicleMapper vehicleMapper,
+                          PlayerActionService playerActionService) {
         this.playerRepository = playerRepository;
         this.vehicleRepository = vehicleRepository;
         this.sectorRepository = sectorRepository;
         this.vehicleMapper = vehicleMapper;
+        this.playerActionService = playerActionService;
     }
 
     public List<VehicleType> getAllVehicleTypes() {
@@ -62,7 +65,9 @@ public class VehicleService {
             if (vehicle == null) {
                 throw new InsufficientFundsException("Fonds insuffisants pour acheter ce véhicule (coût : " + vehicleType.getCost() + " ₡)");
             }
-            created.add(vehicleRepository.save(vehicle));
+            Vehicle saved = vehicleRepository.save(vehicle);
+            created.add(saved);
+            playerActionService.recordBuyVehicle(player.getId(), saved.getId(), vehicleType.getCost());
         }
         playerRepository.save(player);
         return created;
@@ -107,7 +112,9 @@ public class VehicleService {
             if (vehicle == null) {
                 throw new InsufficientFundsException("Fonds insuffisants pour acheter le véhicule " + vehicleType.name());
             }
-            created.add(vehicleRepository.save(vehicle));
+            Vehicle saved = vehicleRepository.save(vehicle);
+            created.add(saved);
+            playerActionService.recordBuyVehicle(player.getId(), saved.getId(), vehicleType.getCost());
         }
         playerRepository.save(player);
         return created;
@@ -131,6 +138,13 @@ public class VehicleService {
             throw new SecurityException("Ce véhicule ne vous appartient pas");
         }
 
+        if (vehicle.getSector() != null) {
+            throw new IllegalStateException("Le véhicule est déjà déployé.");
+        }
+        if (vehicle.isDestroyed()) {
+            throw new IllegalStateException("Le véhicule est détruit.");
+        }
+
         Sector sector = sectorRepository.findByBoard_IdAndNumber(boardId, sectorNumber)
                 .orElseThrow(() -> new RuntimeException("Secteur introuvable"));
 
@@ -139,7 +153,9 @@ public class VehicleService {
         }
 
         vehicle.setSector(sector);
-        return vehicleRepository.save(vehicle);
+        Vehicle saved = vehicleRepository.save(vehicle);
+        playerActionService.recordPlaceVehicle(player.getId(), saved.getId(), boardId, sectorNumber);
+        return saved;
     }
 
     // === Mapping dans la transaction (passengers/pilot/sector sont LAZY) ===
