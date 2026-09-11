@@ -3,13 +3,25 @@
   "money": 20000,
   "resources": [
     {
-      "resourceId": 1,
+      "name": "Cigares",
       "quantity": 9
     }
   ],
   "equipments": [
     {
       "name": "Tesla Carbine",
+      "quantity": 1
+    },
+    {
+      "name": "Gauss Destructor",
+      "quantity": 1
+    },
+    {
+      "name": "Sempiternal Weave",
+      "quantity": 1
+    },
+    {
+      "name": "Quantum Shielding",
       "quantity": 1
     }
   ],

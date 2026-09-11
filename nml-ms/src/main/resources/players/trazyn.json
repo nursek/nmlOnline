@@ -3,23 +3,23 @@
   "money": 28000,
   "resources": [
     {
-      "resourceId": 1,
+      "name": "Cigares",
       "quantity": 10
     },
     {
-      "resourceId": 3,
+      "name": "Antiquités",
       "quantity": 7
     },
     {
-      "resourceId": 4,
+      "name": "Ivoire",
       "quantity": 5
     },
     {
-      "resourceId": 6,
+      "name": "Or",
       "quantity": 8
     },
     {
-      "resourceId": 7,
+      "name": "Joyaux",
       "quantity": 6
     }
   ],

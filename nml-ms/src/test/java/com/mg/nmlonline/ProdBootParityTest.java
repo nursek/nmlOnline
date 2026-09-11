@@ -1,11 +1,22 @@
 package com.mg.nmlonline;
 
+import com.mg.nmlonline.config.DemoDataResetter;
+import com.mg.nmlonline.config.PlayerStartupImporter;
+import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.JwtService;
+import com.mg.nmlonline.domain.service.PlayerImportService;
+import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.infrastructure.loader.CsvDataLoader;
+import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
+import com.mg.nmlonline.infrastructure.repository.PlayerResourceRepository;
+import com.mg.nmlonline.infrastructure.repository.SectorRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
+import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -19,6 +30,9 @@ import static io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider.ZO
 import static io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseType.POSTGRES;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,6 +55,24 @@ class ProdBootParityTest {
     private JwtService jwtService;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private DemoDataResetter demoDataResetter;
+    @Autowired
+    private CsvDataLoader csvDataLoader;
+    @Autowired
+    private PlayerStartupImporter playerStartupImporter;
+    @Autowired
+    private PlayerImportService playerImportService;
+    @Autowired
+    private PlayerService playerService;
+    @Autowired
+    private EquipmentRepository equipmentRepository;
+    @Autowired
+    private PlayerResourceRepository playerResourceRepository;
+    @Autowired
+    private SectorRepository sectorRepository;
+    @Autowired
+    private VehicleRepository vehicleRepository;
 
     @DynamicPropertySource
     static void prodConfiguration(DynamicPropertyRegistry registry) {
@@ -70,5 +102,21 @@ class ProdBootParityTest {
         mockMvc.perform(get("/api/admin/players").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(greaterThan(0)));
+    }
+
+    /** Rejoue le boot démo sur une base déjà remplie : sans reset préalable, saveBoard rend des secteurs détachés. */
+    @Test
+    void demoBootSequenceReplaysOnExistingGameData() {
+        demoDataResetter.run();
+        csvDataLoader.run();
+        playerImportService.clearEquipmentCache();
+        playerStartupImporter.run(new DefaultApplicationArguments());
+
+        assertTrue(equipmentRepository.findByName("Gauss Blaster").isPresent());
+        assertTrue(playerResourceRepository.count() > 0);
+        Player trazyn = playerService.findByName("trazyn");
+        assertNotNull(trazyn);
+        assertFalse(vehicleRepository.findByPlayerId(trazyn.getId()).isEmpty());
+        assertFalse(sectorRepository.findByOwnerId(trazyn.getId()).isEmpty());
     }
 }

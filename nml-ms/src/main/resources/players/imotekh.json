@@ -3,23 +3,23 @@
   "money": 25000,
   "resources": [
     {
-      "resourceId": 1,
+      "name": "Cigares",
       "quantity": 12
     },
     {
-      "resourceId": 2,
+      "name": "Alcool",
       "quantity": 8
     },
     {
-      "resourceId": 5,
+      "name": "Uranium",
       "quantity": 6
     },
     {
-      "resourceId": 6,
+      "name": "Or",
       "quantity": 10
     },
     {
-      "resourceId": 7,
+      "name": "Joyaux",
       "quantity": 4
     }
   ],
