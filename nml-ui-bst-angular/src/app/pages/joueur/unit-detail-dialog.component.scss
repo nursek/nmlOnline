@@ -44,8 +44,6 @@ $stat-colors: (
     }
   }
 
-  // === Layout 3 colonnes ===
-
   .udd-body {
     display: grid;
     grid-template-columns: 1fr 1.4fr 1fr;
@@ -79,8 +77,6 @@ $stat-colors: (
       align-self: stretch;
     }
   }
-
-  // === Slots ===
 
   .udd-slot-group {
     display: flex;
@@ -167,8 +163,6 @@ $stat-colors: (
     }
   }
 
-  // === Stats (bandeau horizontal) ===
-
   .udd-stats-section {
     width: 100%;
 
@@ -232,8 +226,6 @@ $stat-colors: (
     }
   }
 
-  // === Portrait ===
-
   .udd-portrait {
     display: flex;
     flex-direction: column;
@@ -292,8 +284,6 @@ $stat-colors: (
       }
     }
   }
-
-  // === Ordre de déplacement (pleine largeur) ===
 
   .udd-move-section {
     margin-top: 20px;
@@ -378,8 +368,6 @@ $stat-colors: (
     font-style: italic;
     font-size: 0.85rem;
   }
-
-  // === Responsive : stack vertical ===
 
   @media (max-width: 720px) {
     .udd-body {

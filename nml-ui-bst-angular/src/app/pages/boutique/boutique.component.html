@@ -1,5 +1,4 @@
 <mat-sidenav-container class="sidenav-container">
-  <!-- Cart Drawer -->
   <mat-sidenav
     #cartDrawer
     mode="over"
@@ -72,7 +71,6 @@
         </div>
       }
 
-      <!-- ── SECTION ÉQUIPEMENTS ── -->
       @if (cart().length > 0) {
         <div class="cart-section-title">
           <mat-icon>build</mat-icon>
@@ -103,7 +101,6 @@
         <mat-divider></mat-divider>
       }
 
-      <!-- ── SECTION VÉHICULES ── -->
       @if (vehicleCart().length > 0) {
         <div class="cart-section-title">
           <mat-icon>directions_car</mat-icon>
@@ -140,7 +137,6 @@
         <mat-divider></mat-divider>
       }
 
-      <!-- ── SECTION REVENTE ── -->
       @if (sellCart().length > 0) {
         <div class="cart-section-title sell-section">
           <mat-icon>sell</mat-icon>
@@ -206,7 +202,6 @@
       </div>
     } @else {
       <div class="container fade-in">
-        <!-- Header -->
         <div class="page-header">
           <div class="header-left">
             <div class="avatar">
@@ -243,11 +238,8 @@
           </div>
         }
 
-        <!-- Onglets Équipements / Véhicules -->
         <mat-tab-group animationDuration="200ms">
-          <!-- ===== ONGLET ÉQUIPEMENTS ===== -->
           <mat-tab label="Équipements">
-            <!-- Barre de recherche avec filtres déroulants -->
             <div class="search-bar-container">
               <div class="search-wrapper">
                 <mat-icon class="search-icon">search</mat-icon>
@@ -286,7 +278,6 @@
                 </div>
               </div>
 
-              <!-- Panneau de filtres déroulant -->
               <div class="filters-panel" [class.open]="showFilters()">
                 <div class="filters-content">
                   <div class="filters-chips-container">
@@ -373,7 +364,6 @@
               </div>
             </div>
 
-            <!-- Compteur et message -->
             <div class="results-header">
               <span class="results-count"
                 >{{ filteredEquipments().length }} équipement(s) trouvé(s)</span
@@ -394,7 +384,6 @@
               </div>
             }
 
-            <!-- Liste des équipements -->
             @if (!hasActiveFilters()) {
               <!-- Vue par défaut : groupée par classe -->
               @for (group of groupedEquipments(); track group.classKey) {
@@ -420,7 +409,6 @@
               </div>
             }
           </mat-tab>
-          <!-- Fin onglet Équipements -->
 
           <!-- Template réutilisable d'une carte équipement -->
           <ng-template #equipmentCard let-equipment>
@@ -449,7 +437,6 @@
                 <!-- Résumé compact : « Nom (Catégorie FR) : +20 % Pdc. 100 ₡. » -->
                 <p class="summary">{{ equipmentSummary(equipment) }}</p>
 
-                <!-- Bonus -->
                 <div class="bonus-chips">
                   @if (equipment.pdfBonus > 0) {
                     <mat-chip class="bonus pdf">+{{ equipment.pdfBonus }} % PDF</mat-chip>
@@ -465,7 +452,6 @@
                   }
                 </div>
 
-                <!-- Classes compatibles -->
                 <div class="compatible-classes">
                   <span class="label">Compatible avec:</span>
                   <div class="class-chips">
@@ -486,7 +472,6 @@
                   }
                 </p>
 
-                <!-- Contrôles d'ajout au panier -->
                 <div class="card-actions">
                   @if (getCartQuantity(equipment.name) === 0) {
                     <button
@@ -534,7 +519,6 @@
             </mat-card>
           </ng-template>
 
-          <!-- ===== ONGLET VÉHICULES ===== -->
           <mat-tab label="Véhicules">
             <div class="vehicles-section">
               @if (error(); as vehicleError) {
@@ -578,7 +562,6 @@
                       <!-- Résumé compact : « VTT léger (Véhicule) : 50 Def. 4 000 ₡. » -->
                       <p class="summary">{{ vehicleSummary(vt) }}</p>
 
-                      <!-- Stats de combat -->
                       <div class="bonus-chips">
                         @if (vt.basePdf > 0) {
                           <mat-chip class="bonus pdf">{{ vt.basePdf }} PDF</mat-chip>
@@ -586,7 +569,6 @@
                         <mat-chip class="bonus arm">{{ vt.baseDefense }} DEF</mat-chip>
                       </div>
 
-                      <!-- Caractéristiques -->
                       <div class="vehicle-stats">
                         <span class="stat-item">
                           <mat-icon>speed</mat-icon>
@@ -666,9 +648,7 @@
               </div>
             </div>
           </mat-tab>
-          <!-- Fin onglet Véhicules -->
 
-          <!-- ===== ONGLET REVENTE ===== -->
           <mat-tab label="Revente">
             <div class="vehicles-section">
               @if (!player()?.resources?.length) {
@@ -758,7 +738,6 @@
               }
             </div>
           </mat-tab>
-          <!-- Fin onglet Revente -->
         </mat-tab-group>
       </div>
     }

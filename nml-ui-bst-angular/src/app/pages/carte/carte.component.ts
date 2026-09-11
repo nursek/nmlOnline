@@ -127,7 +127,6 @@ export class CarteComponent {
 
   private readonly svgContainer = viewChild<ElementRef<HTMLDivElement>>('svgContainer');
 
-  // Derived sector lookups.
   private readonly playerMap = computed(() => {
     const map = new Map<number, Player>();
     this.players().forEach((p) => {
@@ -248,7 +247,6 @@ export class CarteComponent {
       svg.appendChild(defs);
     }
 
-    // Motif de hachures neutres.
     if (!svg.querySelector('#neutral-stripes')) {
       const np = MAP_THEME.neutralPattern;
       const pattern = document.createElementNS(svgNs, 'pattern');
@@ -432,10 +430,8 @@ export class CarteComponent {
       }
       const above = minDist >= MARGIN * MARGIN;
       if (bestAboveMargin) {
-        // Ne garder que les candidats sous marge, et le max parmi eux.
         if (!above || minDist <= bestDist) continue;
       } else if (above) {
-        // Premier candidat sous marge : il devient le nouveau best.
         bestAboveMargin = true;
       } else if (minDist <= bestDist) {
         continue;
@@ -549,7 +545,6 @@ export class CarteComponent {
     return this.getPlayerColor(sector.ownerId);
   }
 
-  /** Readable text color (white or dark) for a given hex background. */
   getContrastColor(): string {
     return '#1e293b';
   }

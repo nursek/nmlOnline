@@ -109,7 +109,6 @@ export class PlayerService {
     return httpErrorMessage(error, fallback);
   }
 
-  // === Équipement d'unité (depuis l'inventaire du joueur) ===
   // Recharge le player après succès pour rafraîchir sectors[].army et equipments[].available.
 
   async assignUnitEquipment(unitId: number, equipmentName: string): Promise<Unit | null> {

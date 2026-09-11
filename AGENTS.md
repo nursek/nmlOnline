@@ -14,25 +14,22 @@ npm start / npm test / npm run lint / npm run format
 
 ## Commentaires
 
-Un commentaire ne survit que s'il porte une information **absente du code**. En français,
-1 ligne max. Test : en le supprimant, un lecteur perd-il quelque chose ?
+Défaut : **zéro commentaire**. Un commentaire ne survit que s'il dit **pourquoi** — piège,
+arbitrage, couplage inter-fichier, sortie non déductible — en français, 1 ligne max, dans
+**tous** les fichiers (Java, TS, HTML, SCSS, SQL, YAML/properties, Dockerfile). Exemple gardé :
+`// Sans orphanRemoval : em.remove d'une occurrence.` — exemple supprimé : `// Retire l'équipement.`
 
-Garder seulement si le commentaire :
-
-- dit **pourquoi** (arbitrage, couplage inter-fichier, piège, limite connue) ;
-- justifie un `catch` vide ou un comportement contre-intuitif ;
-- donne une sortie non déductible (`« 3 x 850 = 2550 ₡ »`).
-
-Supprimer sinon, en particulier s'il :
-
-- reformule le nom ou le code juste en dessous ;
-- est une en-tête de section (`// --- Helpers ---`, `// HTTP`) ou double un titre visible
-  (`<!-- Équipements -->` au-dessus d'un `<h2>Équipements</h2>`) ;
-- est une Javadoc multi-lignes, ou un `@param`/`@return` qui répète l'évident.
+Avant de finir une tâche, relire les lignes `+` de `git diff -U0` et supprimer :
+- en-têtes de section ou de fichier : `// === Tour ===`, `// --- Helpers ---`, `// Types pour X`,
+  `/* Stats globales */`, `<!-- Header -->`, `# --- Sécurité ---`, `# Stage 1 — …` ;
+- JSDoc/Javadoc de classe, fichier ou méthode qui redit le nom, les annotations ou les étapes
+  (`/** Stocke le token. */`, `/** Ouvre le dialogue. */`) ;
+- commentaire qui paraphrase la ligne suivante (`// Démarrer un nouveau refresh`) ou double un
+  titre visible (`<!-- Équipements -->` au-dessus d'un `<h2>Équipements</h2>`) ;
+- blocs décoratifs `/** … */`, `/* ===== … ===== */`, `# ==== … ====`.
 
 Seul marqueur autorisé : `// ponytail:` + plafond + voie d'upgrade
 (`// ponytail: lock global, passer par-compte si le débit devient un souci`).
-Avant de commit : relire chaque commentaire ajouté et en supprimer la moitié.
 Réponses et commentaires en **français** ; README/docs en anglais.
 
 ## Règles dures
@@ -48,6 +45,8 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 - Minimal wins : pas d'abstraction spéculative, pas d'échafaudage « pour plus tard »,
   pas de nouvelle dépendance quand quelques lignes suffisent. Supprimer > ajouter.
 - Logique non triviale = **un** test qui casse si la logique casse. Pas de suite par fonction.
+- **Commentaires** : zéro par défaut — relire les lignes `+` de `git diff -U0` avant de rendre
+  la main (voir « Commentaires »). Un `catch` vide ne survit que justifié en une ligne.
 
 ## Backend
 

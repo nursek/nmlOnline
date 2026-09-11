@@ -1,6 +1,5 @@
 import type { Equipment } from './equipment.model';
 
-// Types pour les unités
 export interface UnitType {
   name: string;
   level: number;
@@ -47,11 +46,9 @@ export interface GameCharacter {
   basePdc: number;
   baseArmor: number;
   baseEvasion: number;
-  // Localisation
   sectorNumber: number | null;
 }
 
-// Types pour les équipements et classes d'unités
 export interface UnitClass {
   name: string;
   code: string;

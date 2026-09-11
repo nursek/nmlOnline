@@ -44,7 +44,6 @@ export interface Player {
   equipments: EquipmentStack[];
   resources: PlayerResource[];
   sectors: Sector[];
-  // Nouveaux champs
   character: GameCharacter | null;
   buildings: Building[];
 }

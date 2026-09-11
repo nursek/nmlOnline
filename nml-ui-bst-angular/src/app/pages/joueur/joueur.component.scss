@@ -1,6 +1,5 @@
 @use '../../../styles/shared' as shared;
 
-// Base layout
 .loading-container {
   @include shared.loading-container;
 }
@@ -29,7 +28,6 @@
   @include shared.empty-state;
 }
 
-// Secteurs conquis (ligne sous l'en-tête)
 .conquered-row {
   display: flex;
   align-items: center;
@@ -59,7 +57,6 @@
   margin-top: 8px;
 }
 
-// Stats row
 .stats-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -103,7 +100,6 @@
   }
 }
 
-// Section header
 .section-header {
   @include shared.section-header;
   flex-wrap: wrap;
@@ -151,7 +147,6 @@
   margin: 0 0 16px;
 }
 
-// Details grid
 .details-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -165,7 +160,6 @@
   margin-bottom: 4px;
 }
 
-// Équipements
 // La classe est le titre du panneau dépliable ; la catégorie devient le sous-titre interne.
 .category-section-title {
   margin: 16px 0 8px;
@@ -467,7 +461,6 @@
   line-height: 1.5;
 }
 
-// Onglet Actions
 .actions-tab {
   padding-top: 24px;
 

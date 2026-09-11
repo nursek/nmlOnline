@@ -1,4 +1,3 @@
-// Types pour les véhicules
 export interface Vehicle {
   id: number | null;
   playerId: number | null;

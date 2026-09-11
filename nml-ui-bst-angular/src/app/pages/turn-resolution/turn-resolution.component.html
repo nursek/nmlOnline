@@ -75,7 +75,6 @@
     </div>
   }
 
-  <!-- Pas de session active : démarrage -->
   @if (!active()) {
     <div class="actions-row">
       <button
@@ -100,7 +99,6 @@
     </p>
   }
 
-  <!-- Session active -->
   @if (active()) {
     @if (lastReport()) {
       <div class="last-report">

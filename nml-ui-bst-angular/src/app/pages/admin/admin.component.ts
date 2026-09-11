@@ -67,12 +67,10 @@ export class AdminComponent {
   readonly currentTurn = this.admin.currentTurn;
   readonly advancingTurn = this.admin.advancingTurn;
 
-  // === Ordres du tour courant ===
   readonly orders = this.admin.orders;
   readonly ordersLoading = this.admin.ordersLoading;
   readonly orderStatusFilter = this.admin.orderStatusFilter;
 
-  // === Compte-rendu de résolution ===
   readonly resolutionReport = this.admin.resolutionReport;
   readonly previewing = this.admin.previewing;
   readonly resolving = this.admin.resolving;
@@ -99,12 +97,10 @@ export class AdminComponent {
   });
 
   constructor() {
-    // Bootstrap: trigger the admin players fetch and load the current turn.
     this.admin.reloadPlayers();
     void this.admin.loadCurrentTurn();
     this.admin.reloadOrders();
 
-    // Surface admin success/error messages as snackbars (DOM side effect only).
     effect(() => {
       const msg = this.successMessage();
       if (msg) {
@@ -125,7 +121,6 @@ export class AdminComponent {
     this.searchQuery.set(value);
   }
 
-  // === Tour — finir le tour (résout les mouvements + incrémente) ===
   onAdvanceTurn(): void {
     this.dialog
       .open(ConfirmDialogComponent, {
@@ -147,7 +142,6 @@ export class AdminComponent {
       });
   }
 
-  // === Ordres du tour courant : changement de filtre de statut ===
   onOrderStatusChange(status: MovementStatusFilter): void {
     this.orderStatusFilter.set(status);
   }
@@ -186,7 +180,6 @@ export class AdminComponent {
     this.admin.clearResolutionReport();
   }
 
-  // === Import joueur ===
   triggerImport(): void {
     const input = document.createElement('input');
     input.type = 'file';
@@ -215,7 +208,6 @@ export class AdminComponent {
     input.click();
   }
 
-  // === Import board (board.json + assets optionnels) ===
   triggerBoardImport(): void {
     this.dialog
       .open(BoardImportDialogComponent)
@@ -230,7 +222,6 @@ export class AdminComponent {
       });
   }
 
-  // === Export ===
   async exportPlayer(player: Player): Promise<void> {
     if (player.id === null) return;
     try {
@@ -250,7 +241,6 @@ export class AdminComponent {
     }
   }
 
-  // === Delete ===
   confirmDelete(player: Player): void {
     if (player.id === null) return;
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
@@ -268,7 +258,6 @@ export class AdminComponent {
     });
   }
 
-  // === Display helpers ===
   getTotalArmySize(player: Player): number {
     return player.sectors?.reduce((sum, s) => sum + (s.army?.length || 0), 0) || 0;
   }

@@ -374,7 +374,6 @@ mat-sidenav {
   margin-bottom: 24px;
 }
 
-/* Barre de recherche avec boutons d'action */
 .search-bar-container {
   margin-bottom: 24px;
 }
@@ -471,7 +470,6 @@ mat-sidenav {
   }
 }
 
-/* Panneau de filtres déroulant avec animation slide */
 .filters-panel {
   display: grid;
   grid-template-rows: 0fr;
@@ -561,7 +559,6 @@ mat-sidenav {
         box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
         transform: translateY(-2px);
       }
-      /* Couleurs spécifiques pour les bonus */
       &.bonus-chip {
         &.pdf {
           &:not(.active) {
@@ -712,7 +709,6 @@ mat-sidenav {
   }
 }
 
-// Onglet Véhicules
 .vehicles-section {
   padding: 24px 0;
 }
@@ -746,8 +742,6 @@ mat-sidenav {
     font-weight: 600;
   }
 }
-
-/* ─── Sidenav : sections multi-paniers ─────────────────────── */
 
 .cart-section-title {
   display: flex;
@@ -806,7 +800,6 @@ mat-sidenav {
   }
 }
 
-/* Badge "dans le panier" sur la carte véhicule */
 .in-cart-badge {
   font-size: 0.78rem;
   color: #4f46e5;
@@ -818,7 +811,6 @@ mat-sidenav {
   display: inline-block;
 }
 
-/* Badge "dans le panier de vente" */
 .in-sell-cart-badge {
   display: flex;
   align-items: center;
@@ -839,12 +831,10 @@ mat-sidenav {
   }
 }
 
-/* Prix de vente (vert) */
 .sell-price {
   color: #047857 !important;
 }
 
-/* Valeur de base ressource */
 .resource-value-info {
   display: flex;
   align-items: center;

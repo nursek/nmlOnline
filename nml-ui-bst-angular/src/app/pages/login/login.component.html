@@ -2,7 +2,6 @@
   <div class="login-container">
     <mat-card class="login-card">
       <mat-card-content>
-        <!-- Logo et titre -->
         <div class="header">
           <div class="avatar">
             <mat-icon>shield</mat-icon>
@@ -11,9 +10,7 @@
           <p class="subtitle">Connectez-vous pour conquérir des territoires</p>
         </div>
 
-        <!-- Formulaire -->
         <form (submit)="onSubmit($event)" aria-label="Formulaire de connexion">
-          <!-- Erreur -->
           @if (error(); as error) {
             <div class="error-alert" role="alert">
               <mat-icon>error</mat-icon>
@@ -21,7 +18,6 @@
             </div>
           }
 
-          <!-- Nom d'utilisateur -->
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Nom d'utilisateur</mat-label>
             <input
@@ -36,7 +32,6 @@
             }
           </mat-form-field>
 
-          <!-- Mot de passe -->
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Mot de passe</mat-label>
             <input
@@ -51,7 +46,6 @@
             }
           </mat-form-field>
 
-          <!-- Se souvenir de moi -->
           <mat-checkbox
             color="primary"
             [checked]="rememberMe()"
@@ -60,7 +54,6 @@
             Se souvenir de moi (30 jours)
           </mat-checkbox>
 
-          <!-- Bouton de connexion -->
           <button
             mat-raised-button
             color="primary"

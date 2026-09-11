@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** Entité combattante (unité/personnage/bâtiment) — héritage JPA SINGLE_TABLE avec discriminateur. */
 @Entity
 @Table(name = "COMBAT_ENTITIES")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
