@@ -230,12 +230,12 @@ public class PlayerImportService {
     private void importResources(Player player, List<ResourceDTO> resources) {
         if (resources == null) return;
         for (ResourceDTO resourceDto : resources) {
-            Optional<Resource> resourceOpt = resourceRepository.findById(resourceDto.resourceId);
+            Optional<Resource> resourceOpt = resourceRepository.findByName(resourceDto.name);
             if (resourceOpt.isPresent()) {
                 Resource resource = resourceOpt.get();
                 player.addResource(resource.getName(), resourceDto.quantity);
             } else {
-                logger.warn("Ressource avec ID '{}' non trouvée en BDD", resourceDto.resourceId);
+                logger.warn("Ressource '{}' non trouvée en BDD", resourceDto.name);
             }
         }
     }
@@ -358,7 +358,7 @@ public class PlayerImportService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class ResourceDTO {
-        public Long resourceId;
+        public String name;
         public int quantity;
     }
 }

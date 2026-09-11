@@ -13,7 +13,6 @@ import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
-import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import com.mg.nmlonline.mapper.BoardMapper;
@@ -34,7 +33,6 @@ public class AdminService {
     private final BoardService boardService;
     private final UserService userService;
     private final UserRepository userRepository;
-    private final ResourceRepository resourceRepository;
     private final VehicleRepository vehicleRepository;
     private final EntityManager entityManager;
     private final PlayerMapper playerMapper;
@@ -46,7 +44,6 @@ public class AdminService {
                         BoardService boardService,
                         UserService userService,
                         UserRepository userRepository,
-                        ResourceRepository resourceRepository,
                         VehicleRepository vehicleRepository,
                         EntityManager entityManager,
                         PlayerMapper playerMapper,
@@ -57,7 +54,6 @@ public class AdminService {
         this.boardService = boardService;
         this.userService = userService;
         this.userRepository = userRepository;
-        this.resourceRepository = resourceRepository;
         this.vehicleRepository = vehicleRepository;
         this.entityManager = entityManager;
         this.playerMapper = playerMapper;
@@ -145,8 +141,7 @@ public class AdminService {
         List<Map<String, Object>> resources = new ArrayList<>();
         for (PlayerResource pr : player.getResources()) {
             Map<String, Object> res = new LinkedHashMap<>();
-            var dbResource = resourceRepository.findByName(pr.getResourceName());
-            res.put("resourceId", dbResource.map(com.mg.nmlonline.domain.model.resource.Resource::getId).orElse(null));
+            res.put("name", pr.getResourceName());
             res.put("quantity", pr.getQuantity());
             resources.add(res);
         }
