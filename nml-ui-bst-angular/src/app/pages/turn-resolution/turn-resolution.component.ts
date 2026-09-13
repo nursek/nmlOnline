@@ -51,7 +51,6 @@ export class TurnResolutionComponent {
   readonly finalizeResult = this.resolution.finalizeResult;
   readonly active = this.resolution.active;
   readonly devScenarioAvailable = this.resolution.devScenarioAvailable;
-  readonly standoffDevScenarioAvailable = this.resolution.standoffDevScenarioAvailable;
   readonly seeding = this.resolution.seeding;
   readonly seedReport = this.resolution.seedReport;
 

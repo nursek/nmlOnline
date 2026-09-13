@@ -157,8 +157,8 @@ export class ApiService {
   // Scénario de test pas-à-pas (dev uniquement). En prod, le contrôleur
   // @Profile("dev") n'est pas enregistré → ces endpoints renvoient 404 (probe
   // servant à cacher le bouton UI côté frontend).
-  adminGetDevScenarioStatus(): Observable<{ available: boolean; standoffAvailable?: boolean }> {
-    return this.http.get<{ available: boolean; standoffAvailable?: boolean }>(
+  adminGetDevScenarioStatus(): Observable<{ available: boolean }> {
+    return this.http.get<{ available: boolean }>(
       `${this.baseUrl}/admin/dev/seed-resolution-scenario`,
     );
   }

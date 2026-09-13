@@ -26,22 +26,20 @@
         }
         Seeder le scénario 2 hops
       </button>
-      @if (standoffDevScenarioAvailable()) {
-        <button
-          mat-flat-button
-          color="primary"
-          (click)="onSeedStandoffScenario()"
-          [disabled]="seeding() || busy()"
-          matTooltip="Cegorach défend 32, imotekh et lurio y arrivent au même hop"
-        >
-          @if (seeding()) {
-            <mat-spinner diameter="20"></mat-spinner>
-          } @else {
-            <mat-icon>groups</mat-icon>
-          }
-          Seeder l'impasse 3 camps
-        </button>
-      }
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="onSeedStandoffScenario()"
+        [disabled]="seeding() || busy()"
+        matTooltip="Cegorach défend 32, imotekh et lurio y arrivent au même hop"
+      >
+        @if (seeding()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>groups</mat-icon>
+        }
+        Seeder l'impasse 3 camps
+      </button>
     </div>
   }
 

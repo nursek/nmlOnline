@@ -40,6 +40,9 @@ COPY --from=backend-build --chown=nmlonline:nmlonline /app-ms/nml-ms/target/nml-
 
 COPY --from=frontend-build --chown=nmlonline:nmlonline /app-ui/dist/nml-ui-copilot-angular/browser /app/static
 
+# Logback écrit /app/logs/combat.log ; le volume nommé hérite de ce propriétaire.
+RUN mkdir -p /app/logs && chown nmlonline:nmlonline /app/logs
+
 USER nmlonline:nmlonline
 
 # Spring Boot serves static files from /app/static and classpath:/static/

@@ -4,7 +4,6 @@ import lombok.Data;
 
 import java.util.List;
 
-/** Payload persisté (JSON) et réponse API des rapports de combat. */
 @Data
 public class BattleReportDto {
     private int turn;

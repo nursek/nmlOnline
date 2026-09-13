@@ -152,10 +152,7 @@ public class CombatService {
                 casualtyDetails, experienceGains, List.copyOf(battle.getLog()));
     }
 
-    /**
-     * Impasse mexicaine : chaque camp frappe le suivant (cercle fourni par la détection).
-     * L'unique camp avec des combattants hors bâtiments l'emporte et capture les bâtiments des autres.
-     */
+    /** L'unique camp avec des combattants hors bâtiments l'emporte et capture les bâtiments des autres. */
     public StandoffBattleResult simulateSectorStandoff(List<Player> participants, Board board, int sectorNumber) {
         if (participants == null || participants.size() < 3 || board == null) {
             return failedStandoff("Paramètres invalides");

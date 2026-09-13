@@ -85,4 +85,50 @@ class BattleReportServiceTest {
         assertEquals("VOYOU", dto.getExperienceGains().getFirst().getTypeAfter());
         assertEquals("Attaquant", dto.getExperienceGains().getFirst().getPlayerName());
     }
+
+    @Test
+    @DisplayName("Le rapport d'impasse conserve les 3 camps et l'élimination de chacun")
+    void standoffReportKeepsEveryCamp() {
+        Player premier = new Player("Cegorach");
+        premier.setId(1L);
+        Player deuxieme = new Player("Imotekh");
+        deuxieme.setId(2L);
+        Player troisieme = new Player("Lurio");
+        troisieme.setId(3L);
+
+        CombatService.StandoffBattleResult result = new CombatService.StandoffBattleResult(
+                true, "Impasse terminée", premier, 1,
+                List.of(
+                        new CombatService.StandoffBattleResult.PlayerOutcome(1L, 0, 1, false, false),
+                        new CombatService.StandoffBattleResult.PlayerOutcome(2L, 2, 0, true, true),
+                        new CombatService.StandoffBattleResult.PlayerOutcome(3L, 1, 0, false, true)),
+                List.of(new CombatService.CasualtyInfo(2L, "Brute", "INFANTRY", UnitType.LARBIN, 2, 3.0)),
+                List.of(),
+                List.of());
+
+        service.saveStandoffReport(12, 32, List.of(premier, deuxieme, troisieme), result);
+
+        ArgumentCaptor<BattleReport> captor = ArgumentCaptor.forClass(BattleReport.class);
+        verify(reportRepository).save(captor.capture());
+        BattleReport saved = captor.getValue();
+        assertTrue(saved.isStandoff());
+        assertEquals(12, saved.getTurn());
+        assertEquals(Set.of(1L, 2L, 3L), saved.getParticipantIds());
+
+        when(playerRepository.findByUserId(99L)).thenReturn(Optional.of(deuxieme));
+        when(reportRepository.findByParticipantId(2L)).thenReturn(List.of(saved));
+
+        BattleReportDto dto = service.getReportsForUser(99L).getFirst();
+
+        assertTrue(dto.isStandoff());
+        assertEquals("Cegorach", dto.getWinnerName());
+        assertEquals(3, dto.getCamps().size());
+        assertEquals(1L, dto.getCamps().getFirst().getPlayerId());
+        assertFalse(dto.getCamps().getFirst().isEliminated());
+        assertTrue(dto.getCamps().get(1).isEliminated());
+        assertEquals("Imotekh", dto.getCamps().get(1).getPlayerName());
+        assertTrue(dto.getCamps().get(1).isCharacterLost());
+        assertEquals(1, dto.getCasualties().size());
+        assertEquals("Imotekh", dto.getCasualties().getFirst().getPlayerName());
+    }
 }

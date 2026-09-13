@@ -295,11 +295,24 @@ public class MovementService {
                     .map(MovementOrder::getPlayerId)
                     .collect(Collectors.toSet());
 
-            // Unités quittant ce secteur en croisement : présence transitoire, ne sont pas défenseurs.
-            Set<Long> leavingCrosserPlayerIds = validOrders.stream()
-                    .filter(o -> crossingIds.contains(o.getId()) && !ctx.stoppedIds.contains(o.getId()))
+            // Entités emportées par un croisement partant de ce secteur.
+            Set<Long> leavingEntityIds = validOrders.stream()
+                    .filter(o -> crossingIds.contains(o.getId()))
                     .filter(o -> ctx.currentPosition.get(o.getId()).equals(targetNum))
-                    .map(MovementOrder::getPlayerId)
+                    .flatMap(o -> (o.isVehicleMovement() ? List.of(o.getVehicleId()) : o.getEntityIds()).stream())
+                    .collect(Collectors.toSet());
+
+            // Un joueur ne cesse d'être défenseur que si toutes ses entités du secteur partent en croisement.
+            Set<Long> stayingPlayerIds = targetSector.getCombatEntities().stream()
+                    .filter(e -> !leavingEntityIds.contains(e.getId()))
+                    .map(CombatEntity::getPlayerId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            Set<Long> leavingCrosserPlayerIds = targetSector.getCombatEntities().stream()
+                    .filter(e -> leavingEntityIds.contains(e.getId()))
+                    .map(CombatEntity::getPlayerId)
+                    .filter(Objects::nonNull)
+                    .filter(pid -> !stayingPlayerIds.contains(pid))
                     .collect(Collectors.toSet());
 
             // Capturer les défenseurs AVANT de déplacer les arrivants (stationnaires + arrivés aux steps précédents).
@@ -317,7 +330,7 @@ public class MovementService {
             if (arrivingPlayerIds.isEmpty()) continue;
 
             for (SectorConflict conflict : buildStepConflicts(
-                    targetNum, targetSector, arriving, crossingIds, defenderPlayerIds, ctx)) {
+                    targetNum, targetSector, arriving, defenderPlayerIds, ctx)) {
                 stepConflicts.add(conflict);
                 ctx.conflicts.add(conflict);
             }
@@ -414,22 +427,16 @@ public class MovementService {
         return crossingIds;
     }
 
-    /**
-     * Un groupe par secteur : 2 camps = duel [arrivant, défenseur], 3+ = impasse mexicaine
-     * [défenseurs puis arrivants par ordre d'envoi]. Les croiseurs sont exclus du groupe —
-     * les inclure forcerait un croiseur à attaquer l'autre, ce qu'interdit la règle de croisement.
-     */
+    /** Duel [arrivant, défenseur] ou impasse [défenseurs puis arrivants] ; un croiseur est un arrivant, seul son partenaire d'échange quitte et est exclu des défenseurs. */
     private List<SectorConflict> buildStepConflicts(int targetNum, Sector targetSector,
-                                                    List<MovementOrder> arriving, Set<Long> crossingIds,
+                                                    List<MovementOrder> arriving,
                                                     Set<Long> defenderPlayerIds, ResolutionContext ctx) {
         List<Long> stationary = defenderPlayerIds.stream()
                 .filter(pid -> hasBattleFighters(targetSector, pid))
                 .sorted()
                 .toList();
 
-        List<Long> arrivals = orderedArrivalPlayers(
-                arriving.stream().filter(o -> !crossingIds.contains(o.getId())).toList(), ctx)
-                .stream()
+        List<Long> arrivals = orderedArrivalPlayers(arriving, ctx).stream()
                 .filter(pid -> hasBattleFighters(targetSector, pid))
                 .toList();
 
@@ -440,27 +447,10 @@ public class MovementService {
             List<Long> circle = new ArrayList<>(stationary);
             circle.addAll(arrivals);
             conflicts.add(new SectorConflict(targetNum, List.copyOf(circle)));
-            return conflicts;
-        }
-
-        if (!arrivals.isEmpty() && contenders == 2) {
+        } else if (!arrivals.isEmpty() && contenders == 2) {
             List<Long> duel = new ArrayList<>(arrivals);
             duel.addAll(stationary);
             conflicts.add(new SectorConflict(targetNum, List.copyOf(duel)));
-            return conflicts;
-        }
-
-        Set<Long> crosserPlayers = arriving.stream()
-                .filter(o -> crossingIds.contains(o.getId()))
-                .map(MovementOrder::getPlayerId)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        for (Long crosser : crosserPlayers) {
-            if (!hasBattleFighters(targetSector, crosser)) {
-                continue;
-            }
-            for (Long defender : stationary) {
-                conflicts.add(new SectorConflict(targetNum, List.of(crosser, defender)));
-            }
         }
         return conflicts;
     }

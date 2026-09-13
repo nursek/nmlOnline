@@ -14,8 +14,7 @@ export interface AdminMovementOrder {
   statusMessage?: string | null;
 }
 
-// Conflit groupé par secteur (mirror de SectorConflictDto) : duel à 2 camps
-// [arrivant, défenseur] ou impasse mexicaine à 3+ (défenseurs puis arrivants).
+// Conflit groupé (mirror de SectorConflictDto) : duel [arrivant, défenseur] ou impasse 3+.
 export interface SectorConflictParticipant {
   playerId: number;
   playerName: string | null;

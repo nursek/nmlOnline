@@ -52,8 +52,7 @@ public class DemoDataResetter implements CommandLineRunner {
 
     @SuppressWarnings("unchecked")
     private void truncateH2() {
-        // H2 ne supporte ni le TRUNCATE multi-tables ni CASCADE : purge table par table,
-        // contraintes désactivées, en épargnant credentials (les comptes survivent au reset).
+        // H2 ne supporte ni TRUNCATE multi-tables ni CASCADE : purge table par table, contraintes coupées, credentials épargnés.
         List<String> tables = entityManager.createNativeQuery(
                         "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
                                 + "WHERE TABLE_SCHEMA = 'PUBLIC' AND TABLE_TYPE = 'BASE TABLE' "

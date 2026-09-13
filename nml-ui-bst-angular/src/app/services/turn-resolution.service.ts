@@ -43,14 +43,10 @@ export class TurnResolutionService {
   // @Profile("dev") n'existe pas → 404 → httpResource renvoie undefined.
   private readonly devScenarioRef = httpResource<{
     available: boolean;
-    standoffAvailable?: boolean;
   }>(() => ({
     url: `${environment.apiBaseUrl}/admin/dev/seed-resolution-scenario`,
   }));
   readonly devScenarioAvailable = computed(() => this.devScenarioRef.value()?.available ?? false);
-  readonly standoffDevScenarioAvailable = computed(
-    () => this.devScenarioRef.value()?.standoffAvailable ?? false,
-  );
   private readonly _seeding = signal(false);
   private readonly _seedReport = signal<ScenarioSummary | null>(null);
   readonly seeding = this._seeding.asReadonly();

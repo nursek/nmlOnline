@@ -366,10 +366,7 @@ public class Battle {
         finishBattle(attacker, defender, attackerUnits, defenderUnits);
     }
 
-    /**
-     * Impasse mexicaine : le camp i frappe le camp (i+1) % n. À chaque phase, tous les points
-     * sortants sont calculés avant application — un camp détruit dans la phase frappe quand même.
-     */
+    /** Le camp i frappe (i+1) % n ; les points sortants sont calculés avant application — un camp détruit frappe quand même. */
     public void classicStandoffConfiguration(List<Player> players, List<List<CombatEntity>> camps) {
         int n = camps.size();
         if (n < 3 || players.size() != n) {

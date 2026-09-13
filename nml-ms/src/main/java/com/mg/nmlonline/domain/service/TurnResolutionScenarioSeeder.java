@@ -17,15 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Seeder dev-only de scénarios de test pour la résolution pas-à-pas.
- *
- * <p>Scénario 2 hops : lurio (LEGER) part du secteur 41 via la route [41, 13, 32]
- * vers cegorach en 32 (2 TIREUR BRUTE 100/100 ajoutés si manquants, combat déterministe).
- * Step 1 = secteur 13 allié (pas de conflit), step 2 = secteur 32 ennemi (conflit).
- * Impasse : imotekh puis lurio arrivent en 32 au même hop — cercle cegorach → imotekh → lurio.
- * Idempotent : nettoie les PENDING antérieurs des joueurs concernés et n'ajoute les défenseurs que s'ils manquent.</p>
- */
+/** Dev-only, idempotent : purge les PENDING du tour et n'ajoute que les unités manquantes. */
 @Service
 public class TurnResolutionScenarioSeeder {
 
@@ -118,10 +110,7 @@ public class TurnResolutionScenarioSeeder {
         return dto;
     }
 
-    /**
-     * Impasse mexicaine : cegorach défend 32, imotekh (secteur 43) et lurio (secteur 41) y arrivent
-     * au même hop. L'ordre d'envoi (imotekh d'abord) fixe le cercle cegorach → imotekh → lurio.
-     */
+    /** Impasse : cegorach défend 32 ; imotekh (43) puis lurio (41) y arrivent au même hop, dans cet ordre d'envoi. */
     @Transactional
     public ScenarioSummaryDto seedStandoffScenario() {
         Board board = requireBoard();
