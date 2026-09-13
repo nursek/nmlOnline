@@ -14,6 +14,8 @@ import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
+import com.mg.nmlonline.domain.model.vehicle.Vehicle;
+import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import jakarta.persistence.EntityManager;
@@ -145,6 +147,37 @@ class CombatServiceBuildingsCharactersBattleTest {
 
     private Sector loadSector(int sectorNumber) {
         return boardRepository.findAll().stream().findFirst().orElseThrow().getSector(sectorNumber);
+    }
+
+    @Test
+    @DisplayName("Pilote unité tué au combat : détaché du véhicule avant le DELETE, la bataille aboutit")
+    void unitPilotKilledInBattleIsDetachedFromVehicle() {
+        World w = seedDefenderHolding();
+        Long vehicleId = new TransactionTemplate(txManager).execute(status -> {
+            Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
+            Sector sector = loadSector(w.sectorNumber());
+            Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, defender.getId());
+            vehicle.setSector(sector);
+            sector.getVehicles().add(vehicle);
+            em.persist(vehicle);
+
+            Unit pilot = new Unit(0.0, UnitClass.PILOTE_DESTRUCTEUR);
+            pilot.setPlayerId(defender.getId());
+            sector.addUnit(pilot);
+            vehicle.assignPilot(pilot);
+            em.flush();
+            return vehicle.getId();
+        });
+        seedAttackerUnits(w.attackerId(), w.sectorNumber(), 8.0, 6);
+
+        CombatService.SectorBattleResult r = runBattle(w);
+
+        assertTrue(r.success(), "La suppression du pilote ne doit pas faire échouer la résolution");
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Vehicle vehicle = em.find(Vehicle.class, vehicleId);
+            assertNotNull(vehicle, "Le véhicule survit au pilote");
+            assertNull(vehicle.getPilot(), "Le pilote tué est détaché du véhicule");
+        });
     }
 
     @Test

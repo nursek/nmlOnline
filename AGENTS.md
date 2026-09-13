@@ -9,7 +9,7 @@ Fast lane. Détails dans [README.md](README.md).
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"   # JWT_SECRET + JWT_PEPPER requis
 .\mvnw.cmd clean test                                          # PostgreSQL 14 embarqué (Zonky), sans config
 # nml-ui-bst-angular/ (Angular 22)
-npm start / npm test / npm run lint / npm run format
+npm start / npm test / npm run lint / npm run format / npm run build
 ```
 
 ## Commentaires
@@ -40,6 +40,8 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 - Jamais de `JWT_SECRET` / `JWT_PEPPER` / identifiants DB dans le dépôt — variables
   d'environnement uniquement. Pas de console H2, pas de `@CrossOrigin` (CORS dans `CorsConfig`).
 - **JWT** : access token = claim `type=access`, refresh = `type=refresh` ; ne jamais accepter l'un pour l'autre.
+- **Verrous** : joueur (`findByUserIdForUpdate`) puis véhicule (`findByIdForUpdate`) — la FK
+  `player_actions.player_id` pose un KEY SHARE sur `players` ; l'ordre inverse deadlock.
 - **Lecture** : jamais l'état privé d'autrui — `PlayerDto` complet = propriétaire/admin,
   carte via `BoardMapper.toPublicDto` ; SVG admin = `sanitizeSvg` client + CSP `sandbox` (`/boards/**`).
 - Minimal wins : pas d'abstraction spéculative, pas d'échafaudage « pour plus tard »,
@@ -66,6 +68,10 @@ Réponses et commentaires en **français** ; README/docs en anglais.
   Session de l'orchestrateur en mémoire, JVM unique, perdue au redémarrage.
 - **`BoardService.saveBoard` fusionne par numéro, ne vide jamais `sectorsList`** : supprimer
   un secteur reste une opération explicite (vider la liste cascade-delete secteurs + armées).
+- **Véhicules** : pilote = personnage ou unité `PILOTE_DESTRUCTEUR`, passagers ≤ `VehicleType.capacity` ;
+  occupants laissés dans `Sector.army`/`characters` (stats inchangées) et référencés par le véhicule ;
+  le véhicule les emporte, ils sont exclus des ordres à pied. Détacher un pilote unité avant `em.remove`
+  (FK `pilot_id` portée par la ligne véhicule — `CombatService.detachPilotFromVehicles`).
 
 ## Données prod
 

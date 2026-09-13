@@ -175,7 +175,7 @@ from the entities, or Flyway from the `.sql` files), and what gets seeded.
 | | *default* (none) | `dev` | `test` | `prod` |
 |---|---|---|---|---|
 | **Engine** | H2 in-memory | H2 in-memory | **PostgreSQL 14** (embedded) | **PostgreSQL 14** |
-| **Schema built by** | Hibernate `ddl-auto=update` | Hibernate `ddl-auto=update` | **Flyway V1→V10** | **Flyway V1→V10** |
+| **Schema built by** | Hibernate `ddl-auto=update` | Hibernate `ddl-auto=update` | **Flyway (toutes)** | **Flyway (toutes)** |
 | **Hibernate role** | writes | writes | **validates** | **validates** |
 | **Flyway** | disabled | disabled | enabled | enabled |
 | **Demo board + 5 players** | yes | yes | yes | no |
@@ -220,7 +220,7 @@ JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run -Dspring-boot.run.profiles=
 
 - **Real PostgreSQL 14**, started inside the JVM by the `@EmbeddedPostgresTest` annotation (native
   binaries pulled from Maven — no Docker, nothing to install)
-- Schema built by Flyway V1→V10 and verified by `ddl-auto=validate`, exactly like prod
+- Schema built by Flyway and verified by `ddl-auto=validate`, exactly like prod
 - Hardcoded test secrets
 - No external configuration needed
 

@@ -122,7 +122,8 @@ public class UnitService {
     }
 
     public MovementOrder placeFootOrder(Long userId, List<Long> entityIds, List<Integer> route) {
-        Player player = requirePlayerByUserId(userId);
+        // Verrou joueur : sérialise avec setCrew (occupant vs ordre à pied) sur le même ordre P→V.
+        Player player = requirePlayerByUserIdForUpdate(userId);
         Board board = requireBoard();
         int turn = turnService.getCurrentTurn();
         return movementService.placeFootOrder(player.getId(), turn, entityIds, route, board);
