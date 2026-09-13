@@ -329,6 +329,16 @@
           color: shared.$text-muted;
         }
       }
+
+      .standoff-badge {
+        padding: 1px 8px;
+        border-radius: 999px;
+        background: rgba(249, 115, 22, 0.15);
+        color: #9a3412;
+        font-size: 0.72rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
     }
 
     .transit-row {

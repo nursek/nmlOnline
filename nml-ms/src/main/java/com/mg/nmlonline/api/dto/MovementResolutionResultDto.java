@@ -12,7 +12,7 @@ public class MovementResolutionResultDto {
     private int turn;
     private List<AdminMovementOrderDto> resolved;
     private List<AdminMovementOrderDto> blocked;
-    private List<DestinationConflictDto> conflicts;
+    private List<SectorConflictDto> conflicts;
     private List<TransitCombatResultDto> transitCombats;
     private boolean hasConflicts;
     private boolean hasTransitCombats;

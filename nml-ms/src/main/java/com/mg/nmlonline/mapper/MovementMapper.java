@@ -1,13 +1,13 @@
 package com.mg.nmlonline.mapper;
 
 import com.mg.nmlonline.api.dto.AdminMovementOrderDto;
-import com.mg.nmlonline.api.dto.DestinationConflictDto;
 import com.mg.nmlonline.api.dto.MovementOrderDto;
 import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
+import com.mg.nmlonline.api.dto.SectorConflictDto;
 import com.mg.nmlonline.api.dto.TransitCombatResultDto;
-import com.mg.nmlonline.domain.model.movement.DestinationConflict;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
+import com.mg.nmlonline.domain.model.movement.SectorConflict;
 import com.mg.nmlonline.domain.model.movement.TransitCombatResult;
 import org.springframework.stereotype.Component;
 
@@ -78,16 +78,21 @@ public class MovementMapper {
         return list;
     }
 
-    private List<DestinationConflictDto> toConflictDtoList(List<DestinationConflict> conflicts,
-                                                           Function<Long, String> namesById) {
-        List<DestinationConflictDto> list = new ArrayList<>(conflicts.size());
-        for (DestinationConflict c : conflicts) {
-            DestinationConflictDto dto = new DestinationConflictDto();
+    private List<SectorConflictDto> toConflictDtoList(List<SectorConflict> conflicts,
+                                                      Function<Long, String> namesById) {
+        List<SectorConflictDto> list = new ArrayList<>(conflicts.size());
+        for (SectorConflict c : conflicts) {
+            SectorConflictDto dto = new SectorConflictDto();
             dto.setSectorNumber(c.sectorNumber());
-            dto.setAttackerPlayerId(c.attackerPlayerId());
-            dto.setAttackerName(namesById.apply(c.attackerPlayerId()));
-            dto.setDefenderPlayerId(c.defenderPlayerId());
-            dto.setDefenderName(namesById.apply(c.defenderPlayerId()));
+            dto.setStandoff(c.isStandoff());
+            dto.setParticipants(c.participantPlayerIds().stream()
+                    .map(pid -> {
+                        SectorConflictDto.ParticipantDto participant = new SectorConflictDto.ParticipantDto();
+                        participant.setPlayerId(pid);
+                        participant.setPlayerName(namesById.apply(pid));
+                        return participant;
+                    })
+                    .toList());
             list.add(dto);
         }
         return list;

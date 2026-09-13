@@ -1,10 +1,11 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.board.Board;
-import com.mg.nmlonline.domain.model.movement.DestinationConflict;
+import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
+import com.mg.nmlonline.domain.model.movement.SectorConflict;
 import com.mg.nmlonline.domain.model.movement.TransitCombatResult;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
@@ -17,6 +18,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -160,9 +162,10 @@ public class MovementService {
         final List<Long> validOrderIds = new ArrayList<>();
         final List<MovementOrder> activeOrders = new ArrayList<>();
         final Map<Long, Integer> currentPosition = new HashMap<>();
+        final Map<Long, Instant> firstOrderAt = new HashMap<>();
         final Set<Long> stoppedIds = new HashSet<>();
         final List<MovementOrder> blockedOrders = new ArrayList<>();
-        final List<DestinationConflict> conflicts = new ArrayList<>();
+        final List<SectorConflict> conflicts = new ArrayList<>();
         final List<TransitCombatResult> transitCombats = new ArrayList<>();
         final List<MovementOrder> resolvedOrders = new ArrayList<>();
         int maxSteps = 0;
@@ -181,7 +184,8 @@ public class MovementService {
         public List<MovementOrder> getActiveOrders() { return activeOrders; }
         public Set<Long> getStoppedIds() { return stoppedIds; }
         public Map<Long, Integer> getCurrentPosition() { return currentPosition; }
-        public List<DestinationConflict> getConflicts() { return conflicts; }
+        public Map<Long, Instant> getFirstOrderAt() { return firstOrderAt; }
+        public List<SectorConflict> getConflicts() { return conflicts; }
         public List<TransitCombatResult> getTransitCombats() { return transitCombats; }
         public List<MovementOrder> getBlockedOrders() { return blockedOrders; }
         public List<MovementOrder> getResolvedOrders() { return resolvedOrders; }
@@ -206,6 +210,7 @@ public class MovementService {
             }
         }
         ctx.activeOrders.addAll(validOrders);
+        recordFirstOrderTimes(ctx, validOrders);
 
         ctx.maxSteps = validOrders.stream()
                 .mapToInt(o -> o.getRoute().size() - 1)
@@ -224,6 +229,7 @@ public class MovementService {
      */
     public void refreshActiveOrders(ResolutionContext ctx) {
         ctx.activeOrders.clear();
+        ctx.firstOrderAt.clear();
         if (ctx.validOrderIds.isEmpty()) {
             return;
         }
@@ -236,6 +242,14 @@ public class MovementService {
             ctx.activeOrders.addAll(orderRepository.findAllById(activeIds).stream()
                     .filter(o -> !o.isNotPending())
                     .toList());
+            recordFirstOrderTimes(ctx, ctx.activeOrders);
+        }
+    }
+
+    private void recordFirstOrderTimes(ResolutionContext ctx, List<MovementOrder> orders) {
+        for (MovementOrder order : orders) {
+            Instant submitted = order.getSubmittedAt() != null ? order.getSubmittedAt() : Instant.EPOCH;
+            ctx.firstOrderAt.merge(order.getPlayerId(), submitted, (a, b) -> a.isBefore(b) ? a : b);
         }
     }
 
@@ -244,8 +258,8 @@ public class MovementService {
      * enregistre les conflits de destination et combats de transit, persiste les
      * ordres bloqués en transit. Retourne les conflits du hop pour résolution admin.
      */
-    public List<DestinationConflict> resolveStep(Board board, int step, ResolutionContext ctx) {
-        List<DestinationConflict> stepConflicts = new ArrayList<>();
+    public List<SectorConflict> resolveStep(Board board, int step, ResolutionContext ctx) {
+        List<SectorConflict> stepConflicts = new ArrayList<>();
         if (ctx.activeOrders.isEmpty()) {
             ctx.currentStep = Math.max(ctx.currentStep, step);
             return stepConflicts;
@@ -281,17 +295,24 @@ public class MovementService {
                     .map(MovementOrder::getPlayerId)
                     .collect(Collectors.toSet());
 
-            // Non-croiseurs uniquement : pour les conflits entre arrivants (A⇔B ne se combattent pas).
-            Set<Long> nonCrossingArrivingPlayerIds = arriving.stream()
-                    .filter(o -> !crossingIds.contains(o.getId()))
-                    .map(MovementOrder::getPlayerId)
+            // Entités emportées par un croisement partant de ce secteur.
+            Set<Long> leavingEntityIds = validOrders.stream()
+                    .filter(o -> crossingIds.contains(o.getId()))
+                    .filter(o -> ctx.currentPosition.get(o.getId()).equals(targetNum))
+                    .flatMap(o -> (o.isVehicleMovement() ? List.of(o.getVehicleId()) : o.getEntityIds()).stream())
                     .collect(Collectors.toSet());
 
-            // Unités quittant ce secteur en croisement : présence transitoire, ne sont pas défenseurs.
-            Set<Long> leavingCrosserPlayerIds = validOrders.stream()
-                    .filter(o -> crossingIds.contains(o.getId()) && !ctx.stoppedIds.contains(o.getId()))
-                    .filter(o -> ctx.currentPosition.get(o.getId()).equals(targetNum))
-                    .map(MovementOrder::getPlayerId)
+            // Un joueur ne cesse d'être défenseur que si toutes ses entités du secteur partent en croisement.
+            Set<Long> stayingPlayerIds = targetSector.getCombatEntities().stream()
+                    .filter(e -> !leavingEntityIds.contains(e.getId()))
+                    .map(CombatEntity::getPlayerId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            Set<Long> leavingCrosserPlayerIds = targetSector.getCombatEntities().stream()
+                    .filter(e -> leavingEntityIds.contains(e.getId()))
+                    .map(CombatEntity::getPlayerId)
+                    .filter(Objects::nonNull)
+                    .filter(pid -> !stayingPlayerIds.contains(pid))
                     .collect(Collectors.toSet());
 
             // Capturer les défenseurs AVANT de déplacer les arrivants (stationnaires + arrivés aux steps précédents).
@@ -308,24 +329,10 @@ public class MovementService {
 
             if (arrivingPlayerIds.isEmpty()) continue;
 
-            // Conflit arrivants (croiseurs inclus) vs défenseurs en place.
-            for (Long attacker : arrivingPlayerIds) {
-                for (Long defender : defenderPlayerIds) {
-                    DestinationConflict conflict = new DestinationConflict(targetNum, attacker, defender);
-                    stepConflicts.add(conflict);
-                    ctx.conflicts.add(conflict);
-                }
-            }
-
-            // Conflits entre arrivants non-croiseurs (A⇔B ne se combattent pas).
-            List<Long> arrivingList = new ArrayList<>(nonCrossingArrivingPlayerIds);
-            for (int i = 0; i < arrivingList.size(); i++) {
-                for (int j = i + 1; j < arrivingList.size(); j++) {
-                    DestinationConflict conflict = new DestinationConflict(
-                            targetNum, arrivingList.get(i), arrivingList.get(j));
-                    stepConflicts.add(conflict);
-                    ctx.conflicts.add(conflict);
-                }
+            for (SectorConflict conflict : buildStepConflicts(
+                    targetNum, targetSector, arriving, defenderPlayerIds, ctx)) {
+                stepConflicts.add(conflict);
+                ctx.conflicts.add(conflict);
             }
 
             if (!defenderPlayerIds.isEmpty()) {
@@ -418,6 +425,76 @@ public class MovementService {
             }
         }
         return crossingIds;
+    }
+
+    /** Duel [arrivant, défenseur] ou impasse [défenseurs puis arrivants] ; un croiseur est un arrivant, seul son partenaire d'échange quitte et est exclu des défenseurs. */
+    private List<SectorConflict> buildStepConflicts(int targetNum, Sector targetSector,
+                                                    List<MovementOrder> arriving,
+                                                    Set<Long> defenderPlayerIds, ResolutionContext ctx) {
+        List<Long> stationary = defenderPlayerIds.stream()
+                .filter(pid -> hasBattleFighters(targetSector, pid))
+                .sorted()
+                .toList();
+
+        List<Long> arrivals = orderedArrivalPlayers(arriving, ctx).stream()
+                .filter(pid -> hasBattleFighters(targetSector, pid))
+                .toList();
+
+        List<SectorConflict> conflicts = new ArrayList<>();
+        int contenders = stationary.size() + arrivals.size();
+
+        if (!arrivals.isEmpty() && contenders >= 3) {
+            List<Long> circle = new ArrayList<>(stationary);
+            circle.addAll(arrivals);
+            conflicts.add(new SectorConflict(targetNum, List.copyOf(circle)));
+        } else if (!arrivals.isEmpty() && contenders == 2) {
+            List<Long> duel = new ArrayList<>(arrivals);
+            duel.addAll(stationary);
+            conflicts.add(new SectorConflict(targetNum, List.copyOf(duel)));
+        }
+        return conflicts;
+    }
+
+    /** Arrivants distincts triés par premier ordre envoyé du tour, puis par id d'ordre. */
+    private List<Long> orderedArrivalPlayers(List<MovementOrder> orders, ResolutionContext ctx) {
+        Map<Long, MovementOrder> earliest = new LinkedHashMap<>();
+        for (MovementOrder order : orders) {
+            earliest.merge(order.getPlayerId(), order,
+                    (current, candidate) -> compareSubmission(current, candidate, ctx) <= 0 ? current : candidate);
+        }
+        return earliest.values().stream()
+                .sorted((a, b) -> compareSubmission(a, b, ctx))
+                .map(MovementOrder::getPlayerId)
+                .toList();
+    }
+
+    private int compareSubmission(MovementOrder a, MovementOrder b, ResolutionContext ctx) {
+        int byTime = submissionTime(a, ctx).compareTo(submissionTime(b, ctx));
+        if (byTime != 0) {
+            return byTime;
+        }
+        return Long.compare(orderId(a), orderId(b));
+    }
+
+    private Instant submissionTime(MovementOrder order, ResolutionContext ctx) {
+        Instant first = ctx.firstOrderAt.get(order.getPlayerId());
+        if (first != null) {
+            return first;
+        }
+        return order.getSubmittedAt() != null ? order.getSubmittedAt() : Instant.EPOCH;
+    }
+
+    private long orderId(MovementOrder order) {
+        return order.getId() != null ? order.getId() : Long.MAX_VALUE;
+    }
+
+    /** Combattant au sol : unité, personnage ou bâtiment actif — les véhicules ne participent pas au combat de secteur. */
+    private boolean hasBattleFighters(Sector sector, Long playerId) {
+        return sector.getCombatEntities().stream()
+                .filter(e -> playerId.equals(e.getPlayerId()))
+                .filter(e -> !e.isDestroyed())
+                .filter(e -> !(e instanceof Building building) || !building.isCaptured())
+                .anyMatch(e -> !(e instanceof Vehicle));
     }
 
     /** {@code fromSectorNum} = position courante de l'ordre (secteur intermédiaire pour un véhicule multi-hop). */

@@ -1,0 +1,161 @@
+:host {
+  display: block;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.page-header {
+  margin-bottom: 1.25rem;
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    mat-icon {
+      color: #6366f1;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+  }
+
+  .subtitle {
+    margin: 0.5rem 0 0;
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+}
+
+.error-banner {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  color: #000000;
+  font-size: 0.9rem;
+}
+
+.hint {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.report-panel {
+  border-radius: 10px;
+
+  mat-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .sector {
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .turn {
+    color: #64748b;
+    font-size: 0.85rem;
+  }
+
+  .standoff-badge {
+    background: rgba(249, 115, 22, 0.15);
+    color: #9a3412;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  h3 {
+    margin: 1rem 0 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #475569;
+  }
+
+  .camps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+  }
+
+  .camp {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.1);
+    color: #3730a3;
+    font-size: 0.85rem;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    em {
+      color: #b45309;
+      font-style: normal;
+      font-size: 0.8rem;
+    }
+  }
+
+  .camp.eliminated {
+    opacity: 0.65;
+    text-decoration: line-through;
+  }
+
+  .result-list {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: #334155;
+    font-size: 0.88rem;
+
+    li {
+      margin-bottom: 0.25rem;
+    }
+
+    .owner {
+      margin-left: 0.4rem;
+      color: #94a3b8;
+      font-size: 0.8rem;
+    }
+
+    .evolved {
+      color: #15803d;
+    }
+  }
+
+  .none {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+
+  .capture {
+    margin: 0.5rem 0 0;
+    color: #b45309;
+    font-size: 0.85rem;
+  }
+}

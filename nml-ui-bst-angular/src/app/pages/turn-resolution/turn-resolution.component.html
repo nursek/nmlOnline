@@ -4,10 +4,11 @@
       <div class="dev-scenario-info">
         <mat-icon>science</mat-icon>
         <div class="dev-scenario-text">
-          <strong>Scénario de test (dev)</strong>
+          <strong>Scénarios de test (dev)</strong>
           <span>
-            Prépare un ordre PENDING de lurio (secteur 41) → secteur 32 (cegorach), route 2 hops
-            [41, 13, 32]. Re-jouable à la demande.
+            2 hops : lurio (secteur 41) → secteur 32 (cegorach), route [41, 13, 32]. Impasse :
+            cegorach défend 32, imotekh (43) et lurio (41) y arrivent au même hop. Re-jouables à la
+            demande.
           </span>
         </div>
       </div>
@@ -24,6 +25,20 @@
           <mat-icon>play_circle</mat-icon>
         }
         Seeder le scénario 2 hops
+      </button>
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="onSeedStandoffScenario()"
+        [disabled]="seeding() || busy()"
+        matTooltip="Cegorach défend 32, imotekh et lurio y arrivent au même hop"
+      >
+        @if (seeding()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>groups</mat-icon>
+        }
+        Seeder l'impasse 3 camps
       </button>
     </div>
   }
@@ -100,15 +115,29 @@
   }
 
   @if (active()) {
-    @if (lastReport()) {
+    @if (lastReport(); as report) {
       <div class="last-report">
         <mat-icon>gavel</mat-icon>
-        <span>
-          Dernier combat — secteur {{ lastReport()?.sectorNumber }} :
-          {{ lastReport()?.attackerName ?? '?' }} vs {{ lastReport()?.defenderName ?? '?' }} —
-          {{ lastReport()?.attackerCasualties }} pertes att. /
-          {{ lastReport()?.defenderCasualties }} pertes déf.
-        </span>
+        @if (report.standoff) {
+          <span>
+            Dernière impasse — secteur {{ report.sectorNumber }} :
+            {{ report.participants?.length }} camps — vainqueur
+            {{ report.winnerName ?? 'aucun' }}
+          </span>
+        } @else {
+          <span>
+            Dernier combat — secteur {{ report.sectorNumber }} :
+            {{ report.attackerName ?? '?' }} vs {{ report.defenderName ?? '?' }} —
+            {{ report.attackerCasualties }} pertes att. /
+            {{ report.defenderCasualties }} pertes déf.
+          </span>
+        }
+        @if (report.battleLog?.length) {
+          <button mat-stroked-button color="accent" class="detail-button" (click)="onShowDetail(report)">
+            <mat-icon>receipt_long</mat-icon>
+            Détail
+          </button>
+        }
       </div>
     }
 
@@ -126,22 +155,39 @@
       } @else {
         <div class="conflict-list">
           @for (c of state()?.pendingConflicts; track c.conflictId) {
-            <div class="conflict-row">
+            <div class="conflict-row" [class.standoff]="c.standoff">
               <div class="conflict-where">
                 <mat-icon>place</mat-icon>
                 <span>Secteur {{ c.sectorNumber }}</span>
+                @if (c.standoff) {
+                  <span class="standoff-badge">Impasse mexicaine</span>
+                }
               </div>
-              <div class="conflict-vs">
-                <span class="player attacker">
-                  <mat-icon>flight_takeoff</mat-icon>
-                  {{ c.attackerName ?? '#' + c.attackerPlayerId }}
-                </span>
-                <span class="vs">vs</span>
-                <span class="player defender">
-                  <mat-icon>shield</mat-icon>
-                  {{ c.defenderName ?? '#' + c.defenderPlayerId }}
-                </span>
-              </div>
+              @if (c.standoff) {
+                <div
+                  class="standoff-cycle"
+                  matTooltip="Chaque camp frappe le suivant, en simultané. Le défenseur ouvre le cercle, puis les arrivants par ordre d'envoi."
+                >
+                  @for (p of c.participants; track p.playerId; let last = $last) {
+                    <span class="player" [title]="p.submittedAt ?? 'défenseur en place'">
+                      {{ p.playerName ?? '#' + p.playerId }}
+                    </span>
+                    <mat-icon class="arrow">{{ last ? 'loop' : 'arrow_forward' }}</mat-icon>
+                  }
+                </div>
+              } @else {
+                <div class="conflict-vs">
+                  <span class="player attacker">
+                    <mat-icon>flight_takeoff</mat-icon>
+                    {{ c.attackerName ?? '#' + c.attackerPlayerId }}
+                  </span>
+                  <span class="vs">vs</span>
+                  <span class="player defender">
+                    <mat-icon>shield</mat-icon>
+                    {{ c.defenderName ?? '#' + c.defenderPlayerId }}
+                  </span>
+                </div>
+              }
               <div class="conflict-actions">
                 <!-- ponytail: emplacement réservé pour les bonus/malus manuels (à venir) -->
                 <button
@@ -182,24 +228,51 @@
         </h2>
         <div class="resolved-list">
           @for (b of state()?.resolvedConflicts; track b.sectorNumber + '-' + $index) {
-            <div class="resolved-row">
+            <div class="resolved-row" [class.standoff]="b.standoff">
               <span class="where">Secteur {{ b.sectorNumber }}</span>
-              <span class="who">
-                {{ b.attackerName ?? '#' + b.attackerPlayerId }}
-                vs {{ b.defenderName ?? '#' + b.defenderPlayerId }}
-              </span>
-              @if (b.success) {
-                <span class="counts">
-                  {{ b.attackerCasualties }} pertes att. / {{ b.defenderCasualties }} pertes déf.
-                  @if (b.attackerInjured) {
-                    · {{ b.attackerInjured }} blessé att.
+              @if (b.standoff) {
+                <span class="standoff-badge">Impasse mexicaine</span>
+                <div class="standoff-results">
+                  @for (p of b.participants; track p.playerId) {
+                    <span class="camp" [class.eliminated]="p.eliminated">
+                      <strong>{{ p.playerName ?? '#' + p.playerId }}</strong>
+                      {{ p.casualties }} pertes
+                      @if (p.injured > 0) {
+                        · {{ p.injured }} blessé(s)
+                      }
+                      @if (p.characterLost) {
+                        · personnage perdu
+                      }
+                      @if (p.eliminated) {
+                        · éliminé
+                      }
+                    </span>
                   }
-                  @if (b.defenderInjured) {
-                    · {{ b.defenderInjured }} blessé déf.
-                  }
-                </span>
+                </div>
               } @else {
-                <span class="counts no-op">no-op ({{ b.message }})</span>
+                <span class="who">
+                  {{ b.attackerName ?? '#' + b.attackerPlayerId }}
+                  vs {{ b.defenderName ?? '#' + b.defenderPlayerId }}
+                </span>
+                @if (b.success) {
+                  <span class="counts">
+                    {{ b.attackerCasualties }} pertes att. / {{ b.defenderCasualties }} pertes déf.
+                    @if (b.attackerInjured) {
+                      · {{ b.attackerInjured }} blessé att.
+                    }
+                    @if (b.defenderInjured) {
+                      · {{ b.defenderInjured }} blessé déf.
+                    }
+                  </span>
+                } @else {
+                  <span class="counts no-op">no-op ({{ b.message }})</span>
+                }
+              }
+              @if (b.battleLog?.length) {
+                <button mat-stroked-button color="accent" class="detail-button" (click)="onShowDetail(b)">
+                  <mat-icon>receipt_long</mat-icon>
+                  Détail
+                </button>
               }
               @if (b.winnerName) {
                 <span class="winner">Vainqueur : {{ b.winnerName }}</span>

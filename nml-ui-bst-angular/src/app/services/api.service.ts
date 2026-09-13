@@ -20,6 +20,7 @@ import {
   ResourceBatchSaleResponse,
   Board,
   PlayerAction,
+  BattleReport,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -169,6 +170,10 @@ export class ApiService {
     );
   }
 
+  adminSeedStandoffScenario(): Observable<ScenarioSummary> {
+    return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/seed-standoff-scenario`, {});
+  }
+
   getVehicleTypes(): Observable<VehicleTypeInfo[]> {
     return this.http.get<VehicleTypeInfo[]>(`${this.baseUrl}/vehicles/types`);
   }
@@ -221,6 +226,10 @@ export class ApiService {
 
   getPlayerActions(): Observable<PlayerAction[]> {
     return this.http.get<PlayerAction[]>(`${this.baseUrl}/players/actions`);
+  }
+
+  getBattleReports(): Observable<BattleReport[]> {
+    return this.http.get<BattleReport[]>(`${this.baseUrl}/battle-reports`);
   }
 
   undoPlayerActions(actionId: number): Observable<PlayerAction[]> {

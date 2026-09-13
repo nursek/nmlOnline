@@ -41,7 +41,9 @@ export class TurnResolutionService {
 
   // Probe : GET /admin/dev/seed-resolution-scenario. En prod le contrôleur
   // @Profile("dev") n'existe pas → 404 → httpResource renvoie undefined.
-  private readonly devScenarioRef = httpResource<{ available: boolean }>(() => ({
+  private readonly devScenarioRef = httpResource<{
+    available: boolean;
+  }>(() => ({
     url: `${environment.apiBaseUrl}/admin/dev/seed-resolution-scenario`,
   }));
   readonly devScenarioAvailable = computed(() => this.devScenarioRef.value()?.available ?? false);
@@ -142,6 +144,21 @@ export class TurnResolutionService {
       await this.loadState();
     } catch (error) {
       this._error.set(httpErrorMessage(error, 'Erreur lors du seeding du scénario'));
+    } finally {
+      this._seeding.set(false);
+    }
+  }
+
+  async seedStandoffScenario(): Promise<void> {
+    this._seeding.set(true);
+    this._error.set(null);
+    this._seedReport.set(null);
+    try {
+      const report = await firstValueFrom(this.api.adminSeedStandoffScenario());
+      this._seedReport.set(report);
+      await this.loadState();
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, "Erreur lors du seeding de l'impasse"));
     } finally {
       this._seeding.set(false);
     }

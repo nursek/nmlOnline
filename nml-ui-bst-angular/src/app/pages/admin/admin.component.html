@@ -186,11 +186,17 @@
             @for (c of r.conflicts; track $index) {
               <div class="conflict-row">
                 <span class="conflict-sector">Secteur {{ c.sectorNumber }}</span>
+                @if (c.standoff) {
+                  <span class="standoff-badge">Impasse mexicaine</span>
+                }
                 <span class="conflict-players">
-                  <mat-icon>arrow_right_alt</mat-icon>
-                  {{ c.attackerName ?? '#' + c.attackerPlayerId }}
-                  vs
-                  {{ c.defenderName ?? '#' + c.defenderPlayerId }}
+                  <mat-icon>{{ c.standoff ? 'groups' : 'arrow_right_alt' }}</mat-icon>
+                  @for (p of c.participants; track p.playerId; let last = $last) {
+                    <span>{{ p.playerName ?? '#' + p.playerId }}</span>
+                    @if (!last) {
+                      <span class="vs">→</span>
+                    }
+                  }
                 </span>
               </div>
             }

@@ -10,13 +10,25 @@ export interface ScenarioUnit {
   fromSector: number;
 }
 
-export interface ScenarioSummary {
-  turn: number;
-  attacker: ScenarioActor;
-  defender: ScenarioActor;
-  attackerUnit: ScenarioUnit;
-  defendersAdded: number;
+export interface ScenarioOrder {
+  playerId: number;
+  playerName: string;
+  unitId: number;
+  unitClass: string;
+  fromSector: number;
   route: number[];
   orderId: number;
+}
+
+export interface ScenarioSummary {
+  turn: number;
+  standoff: boolean;
+  attacker?: ScenarioActor;
+  defender: ScenarioActor;
+  attackerUnit?: ScenarioUnit;
+  defendersAdded: number;
+  route?: number[];
+  orderId?: number;
+  orders?: ScenarioOrder[];
   message: string | null;
 }

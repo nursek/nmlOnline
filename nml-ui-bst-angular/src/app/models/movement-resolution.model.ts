@@ -14,13 +14,16 @@ export interface AdminMovementOrder {
   statusMessage?: string | null;
 }
 
-// Conflit à la destination (mirror de DestinationConflictDto).
-export interface DestinationConflict {
+// Conflit groupé (mirror de SectorConflictDto) : duel [arrivant, défenseur] ou impasse 3+.
+export interface SectorConflictParticipant {
+  playerId: number;
+  playerName: string | null;
+}
+
+export interface SectorConflict {
   sectorNumber: number;
-  attackerPlayerId: number;
-  attackerName: string | null;
-  defenderPlayerId: number;
-  defenderName: string | null;
+  standoff: boolean;
+  participants: SectorConflictParticipant[];
 }
 
 // Combat de transit (mirror de TransitCombatResultDto).
@@ -35,7 +38,7 @@ export interface MovementResolutionResult {
   turn: number;
   resolved: AdminMovementOrder[];
   blocked: AdminMovementOrder[];
-  conflicts: DestinationConflict[];
+  conflicts: SectorConflict[];
   transitCombats: TransitCombatResult[];
   hasConflicts: boolean;
   hasTransitCombats: boolean;

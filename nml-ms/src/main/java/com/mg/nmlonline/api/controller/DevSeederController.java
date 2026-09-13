@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-/**
- * Dev uniquement (@Profile "dev" → 404 en prod) ; le GET sert de probe de disponibilité pour l'UI admin.
- */
+/** Dev uniquement ; le GET sert de probe de disponibilité pour l'UI admin. */
 @RestController
 @RequestMapping("/api/admin/dev")
 @Profile("dev")
@@ -32,11 +30,15 @@ public class DevSeederController {
         return Map.of("available", scenarioSeeder.isAvailable());
     }
 
-    /**
-     * Scénario hardcoded lurio→cegorach (2 hops), re-jouable.
-     */
+    /** Scénario hardcoded lurio→cegorach (2 hops), re-jouable. */
     @PostMapping("/seed-resolution-scenario")
     public ResponseEntity<ScenarioSummaryDto> seedScenario() {
         return ResponseEntity.ok(scenarioSeeder.seedScenario());
+    }
+
+    /** Impasse mexicaine : cegorach en 32, imotekh (43) et lurio (41) arrivent au même hop. */
+    @PostMapping("/seed-standoff-scenario")
+    public ResponseEntity<ScenarioSummaryDto> seedStandoffScenario() {
+        return ResponseEntity.ok(scenarioSeeder.seedStandoffScenario());
     }
 }
