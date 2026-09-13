@@ -20,6 +20,7 @@ import {
   ResourceBatchSaleResponse,
   Board,
   PlayerAction,
+  BattleReport,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -156,8 +157,8 @@ export class ApiService {
   // Scénario de test pas-à-pas (dev uniquement). En prod, le contrôleur
   // @Profile("dev") n'est pas enregistré → ces endpoints renvoient 404 (probe
   // servant à cacher le bouton UI côté frontend).
-  adminGetDevScenarioStatus(): Observable<{ available: boolean }> {
-    return this.http.get<{ available: boolean }>(
+  adminGetDevScenarioStatus(): Observable<{ available: boolean; standoffAvailable?: boolean }> {
+    return this.http.get<{ available: boolean; standoffAvailable?: boolean }>(
       `${this.baseUrl}/admin/dev/seed-resolution-scenario`,
     );
   }
@@ -167,6 +168,10 @@ export class ApiService {
       `${this.baseUrl}/admin/dev/seed-resolution-scenario`,
       {},
     );
+  }
+
+  adminSeedStandoffScenario(): Observable<ScenarioSummary> {
+    return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/seed-standoff-scenario`, {});
   }
 
   getVehicleTypes(): Observable<VehicleTypeInfo[]> {
@@ -221,6 +226,10 @@ export class ApiService {
 
   getPlayerActions(): Observable<PlayerAction[]> {
     return this.http.get<PlayerAction[]>(`${this.baseUrl}/players/actions`);
+  }
+
+  getBattleReports(): Observable<BattleReport[]> {
+    return this.http.get<BattleReport[]>(`${this.baseUrl}/battle-reports`);
   }
 
   undoPlayerActions(actionId: number): Observable<PlayerAction[]> {

@@ -172,7 +172,7 @@ from the entities, or Flyway from the `.sql` files), and what gets seeded.
 | | *default* (none) | `dev` | `test` | `prod` |
 |---|---|---|---|---|
 | **Engine** | H2 in-memory | H2 in-memory | **PostgreSQL 14** (embedded) | **PostgreSQL 14** |
-| **Schema built by** | Hibernate `ddl-auto=update` | Hibernate `ddl-auto=update` | **Flyway V1→V7** | **Flyway V1→V7** |
+| **Schema built by** | Hibernate `ddl-auto=update` | Hibernate `ddl-auto=update` | **Flyway V1→V10** | **Flyway V1→V10** |
 | **Hibernate role** | writes | writes | **validates** | **validates** |
 | **Flyway** | disabled | disabled | enabled | enabled |
 | **Demo board + 5 players** | yes | yes | yes | no |
@@ -217,7 +217,7 @@ JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run -Dspring-boot.run.profiles=
 
 - **Real PostgreSQL 14**, started inside the JVM by the `@EmbeddedPostgresTest` annotation (native
   binaries pulled from Maven — no Docker, nothing to install)
-- Schema built by Flyway V1→V7 and verified by `ddl-auto=validate`, exactly like prod
+- Schema built by Flyway V1→V10 and verified by `ddl-auto=validate`, exactly like prod
 - Hardcoded test secrets
 - No external configuration needed
 
@@ -443,6 +443,7 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 | POST | `/api/players/resources/{id}/sell` | Bearer | Sell a resource |
 | POST | `/api/players/resources/sell-batch` | Bearer | Sell multiple resources (atomic) |
 | GET | `/api/players/actions` | Bearer | List the player's actions for the current turn |
+| GET | `/api/battle-reports` | Bearer | Combat reports of the authenticated player |
 | POST | `/api/players/actions/{id}/undo` | Bearer | Undo this action and all later ones (current turn, LIFO) |
 | POST | `/api/players/actions/undo-all` | Bearer | Undo all current-turn actions |
 | GET | `/api/boards` | Public | List boards |
@@ -455,6 +456,14 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 | POST | `/api/admin/players/import` | Admin | Import player from JSON |
 | GET | `/actuator/health` | Public | Health check |
 | GET | `/swagger-ui.html` | Public | API documentation |
+
+### Combat logs
+
+Every resolved battle is also written to `logs/combat.log` (daily rotation, 30 days kept) by the
+`Battle` and `CombatService` loggers. Override the directory with `LOG_DIR`; in Docker, mount a
+volume (`-v nml-logs:/app/logs`) to persist it. Players see the summarized result in the
+**Rapports** page (`GET /api/battle-reports`); the full step-by-step log stays admin-only and is
+kept for the current resolution session.
 
 ---
 

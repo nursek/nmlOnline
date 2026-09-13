@@ -1,20 +1,45 @@
 // Mirror des DTO backend de la résolution pas-à-pas par hop
 // (TurnResolutionStateDto, PendingConflictDto, ResolvedBattleDto, TurnFinalizeResultDto).
 
+export interface PendingConflictParticipant {
+  playerId: number;
+  playerName: string | null;
+  submittedAt: string | null;
+}
+
 export interface PendingConflict {
   conflictId: number;
   sectorNumber: number;
-  attackerPlayerId: number;
+  standoff: boolean;
+  participants: PendingConflictParticipant[];
+  attackerPlayerId: number | null;
   attackerName: string | null;
-  defenderPlayerId: number;
+  defenderPlayerId: number | null;
   defenderName: string | null;
+}
+
+export interface StandoffParticipantResult {
+  playerId: number;
+  playerName: string | null;
+  casualties: number;
+  injured: number;
+  characterLost: boolean;
+  eliminated: boolean;
+}
+
+export interface BattleLogEntry {
+  phase: string;
+  outcome: string;
+  message: string;
 }
 
 export interface ResolvedBattle {
   sectorNumber: number;
-  attackerPlayerId: number;
+  standoff: boolean;
+  participants: StandoffParticipantResult[] | null;
+  attackerPlayerId: number | null;
   attackerName: string | null;
-  defenderPlayerId: number;
+  defenderPlayerId: number | null;
   defenderName: string | null;
   success: boolean;
   message: string | null;
@@ -24,6 +49,11 @@ export interface ResolvedBattle {
   defenderCasualties: number;
   attackerInjured: number;
   defenderInjured: number;
+  capturedBuildings: number;
+  attackerCharacterLost: boolean;
+  defenderCharacterLost: boolean;
+  defenderHeadquartersCaptured: boolean;
+  battleLog: BattleLogEntry[] | null;
 }
 
 export interface TurnResolutionState {

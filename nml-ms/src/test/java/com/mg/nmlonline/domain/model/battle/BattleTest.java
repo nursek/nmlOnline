@@ -454,5 +454,26 @@ class BattleTest {
             assertTrue(defenderUnits.isEmpty(), "Le pdf du personnage a frappé en phase PDF");
             assertEquals(attacker, battle.getWinner());
         }
+
+        @Test
+        @DisplayName("Journal : trace l'état initial, les phases, les destructions et le vainqueur")
+        void battleLogRecordsPhasesAndOutcomes() {
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(brute()));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(larbin()));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            List<BattleLogEntry> log = battle.getLog();
+            assertFalse(log.isEmpty());
+            assertEquals("État initial", log.getFirst().phase(), "Le journal commence par l'état initial");
+            assertTrue(log.stream().anyMatch(e -> "État initial".equals(e.phase()) && e.message().contains("100 Atk")),
+                    "L'état initial détaille les statistiques des entités");
+            assertTrue(log.stream().anyMatch(e -> e.message().contains("Début du combat")));
+            assertTrue(log.stream().anyMatch(e -> e.message().startsWith("=== Phase")));
+            assertTrue(log.stream().anyMatch(e -> BattleLogEntry.DESTROYED.equals(e.outcome())
+                            && e.message().contains("Attaquant détruit Défenseur")),
+                    "La destruction nomme l'attaquant et le propriétaire de la cible");
+            assertTrue(log.stream().anyMatch(e -> BattleLogEntry.WINNER.equals(e.outcome())));
+        }
     }
 }

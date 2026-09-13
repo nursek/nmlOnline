@@ -29,7 +29,7 @@ public class DevSeederController {
 
     @GetMapping("/seed-resolution-scenario")
     public Map<String, Object> getScenarioStatus() {
-        return Map.of("available", scenarioSeeder.isAvailable());
+        return Map.of("available", scenarioSeeder.isAvailable(), "standoffAvailable", scenarioSeeder.isAvailable());
     }
 
     /**
@@ -38,5 +38,13 @@ public class DevSeederController {
     @PostMapping("/seed-resolution-scenario")
     public ResponseEntity<ScenarioSummaryDto> seedScenario() {
         return ResponseEntity.ok(scenarioSeeder.seedScenario());
+    }
+
+    /**
+     * Impasse mexicaine : cegorach en 32, imotekh (43) et lurio (41) arrivent au même hop.
+     */
+    @PostMapping("/seed-standoff-scenario")
+    public ResponseEntity<ScenarioSummaryDto> seedStandoffScenario() {
+        return ResponseEntity.ok(scenarioSeeder.seedStandoffScenario());
     }
 }

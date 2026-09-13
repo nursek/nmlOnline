@@ -1,0 +1,103 @@
+<section class="reports-page">
+  <header class="page-header">
+    <div class="title">
+      <mat-icon>history</mat-icon>
+      <h1>Rapports de combat</h1>
+    </div>
+    <p class="subtitle">
+      Camps engagés, pertes et expérience gagnée lors des affrontements de fin de tour.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  }
+
+  @if (error()) {
+    <div class="error-banner" role="alert">⚠ {{ error() }}</div>
+  }
+
+  @if (!loading() && !reports().length) {
+    <p class="hint">Aucun rapport pour le moment — les combats de fin de tour apparaîtront ici.</p>
+  }
+
+  <div class="report-list">
+    @for (report of reports(); track $index) {
+      <mat-expansion-panel class="report-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <span class="sector">Secteur {{ report.sectorNumber }}</span>
+            <span class="turn">Tour {{ report.turn }}</span>
+            @if (report.standoff) {
+              <span class="standoff-badge">Impasse mexicaine</span>
+            }
+          </mat-panel-title>
+          <mat-panel-description>
+            @if (report.winnerName) {
+              Victoire de {{ report.winnerName }}
+            } @else {
+              Aucun vainqueur
+            }
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <div class="camps">
+          @for (camp of report.camps; track camp.playerId) {
+            <span class="camp" [class.eliminated]="camp.eliminated">
+              <mat-icon>shield</mat-icon>
+              {{ camp.playerName ?? '#' + camp.playerId }}
+              @if (camp.characterLost) {
+                <em>personnage perdu</em>
+              }
+              @if (camp.eliminated) {
+                <em>éliminé</em>
+              }
+            </span>
+          }
+        </div>
+
+        <h3>Pertes</h3>
+        @if (report.casualties.length) {
+          <ul class="result-list">
+            @for (casualty of report.casualties; track $index) {
+              <li>
+                <strong>{{ casualty.label }}</strong>
+                @if (casualty.experience !== null) {
+                  ({{ casualty.experience | exp }} Exp)
+                }
+                <span class="owner">{{ casualty.playerName ?? '#' + casualty.playerId }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="none">Aucune perte.</p>
+        }
+
+        @if (report.capturedBuildings > 0) {
+          <p class="capture">{{ report.capturedBuildings }} bâtiment(s) capturé(s).</p>
+        }
+
+        <h3>Expérience gagnée</h3>
+        @if (report.experienceGains.length) {
+          <ul class="result-list">
+            @for (gain of report.experienceGains; track $index) {
+              <li>
+                <strong>{{ gain.typeBefore }} n°{{ gain.unitNumber }}</strong>
+                {{ gain.experienceBefore | exp }} Exp + {{ gain.gained | exp }}
+                @if (gain.typeAfter !== gain.typeBefore) {
+                  → <strong class="evolved">{{ gain.typeAfter }}</strong>
+                } @else {
+                  → {{ gain.typeAfter }}
+                }
+                ({{ gain.experienceAfter | exp }} Exp)
+                <span class="owner">{{ gain.playerName ?? '#' + gain.playerId }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="none">Aucune expérience gagnée.</p>
+        }
+      </mat-expansion-panel>
+    }
+  </div>
+</section>

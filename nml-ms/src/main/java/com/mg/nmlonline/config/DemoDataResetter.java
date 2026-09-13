@@ -9,6 +9,11 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+
 @Component
 @Order(0)
 @Profile("!test")
@@ -16,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DemoDataResetter implements CommandLineRunner {
 
     private final EntityManager entityManager;
+    private final DataSource dataSource;
 
     @Value("${app.import-demo-data:true}")
     private boolean importDemoData;
@@ -26,9 +32,40 @@ public class DemoDataResetter implements CommandLineRunner {
         if (!importDemoData) {
             return;
         }
-        // CASCADE : purge secteurs/armées/ordres/actions ; credentials exclu, les comptes survivent au reset.
-        entityManager.createNativeQuery(
-                        "TRUNCATE TABLE boards, players, equipment, resource RESTART IDENTITY CASCADE")
-                .executeUpdate();
+        if (isH2()) {
+            truncateH2();
+        } else {
+            // CASCADE : purge secteurs/armées/ordres/actions ; credentials exclu, les comptes survivent au reset.
+            entityManager.createNativeQuery(
+                            "TRUNCATE TABLE battle_reports, boards, players, equipment, resource RESTART IDENTITY CASCADE")
+                    .executeUpdate();
+        }
+    }
+
+    private boolean isH2() {
+        try (Connection connection = dataSource.getConnection()) {
+            return connection.getMetaData().getDatabaseProductName().toLowerCase().contains("h2");
+        } catch (SQLException e) {
+            throw new IllegalStateException("Type de base indétectable pour le reset des données démo", e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void truncateH2() {
+        // H2 ne supporte ni le TRUNCATE multi-tables ni CASCADE : purge table par table,
+        // contraintes désactivées, en épargnant credentials (les comptes survivent au reset).
+        List<String> tables = entityManager.createNativeQuery(
+                        "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
+                                + "WHERE TABLE_SCHEMA = 'PUBLIC' AND TABLE_TYPE = 'BASE TABLE' "
+                                + "AND TABLE_NAME NOT IN ('CREDENTIALS', 'FLYWAY_SCHEMA_HISTORY')")
+                .getResultList();
+        entityManager.createNativeQuery("SET REFERENTIAL_INTEGRITY FALSE").executeUpdate();
+        try {
+            for (String table : tables) {
+                entityManager.createNativeQuery("TRUNCATE TABLE " + table + " RESTART IDENTITY").executeUpdate();
+            }
+        } finally {
+            entityManager.createNativeQuery("SET REFERENTIAL_INTEGRITY TRUE").executeUpdate();
+        }
     }
 }

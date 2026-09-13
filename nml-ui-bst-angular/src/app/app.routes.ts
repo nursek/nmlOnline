@@ -49,6 +49,12 @@ export const routes: Routes = [
     canActivate: [authGuard, playerGuard],
   },
   {
+    path: 'rapports',
+    loadComponent: () =>
+      import('./pages/rapports/rapports.component').then((m) => m.RapportsComponent),
+    canActivate: [authGuard, playerGuard],
+  },
+  {
     path: '',
     redirectTo: 'carte',
     pathMatch: 'full',

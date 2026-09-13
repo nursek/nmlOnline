@@ -14,6 +14,7 @@ import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
+import com.mg.nmlonline.infrastructure.repository.BattleReportRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import jakarta.persistence.EntityManager;
@@ -51,6 +52,9 @@ class TurnResolutionOrchestratorTest {
 
     @Autowired
     private MovementOrderRepository orderRepository;
+
+    @Autowired
+    private BattleReportRepository battleReportRepository;
 
     @Autowired
     private EntityManager em;
@@ -129,6 +133,11 @@ class TurnResolutionOrchestratorTest {
         assertEquals(1, report.getDefenderCasualties(), "Le LARBIN est détruit");
         assertEquals(1, report.getAttackerInjured(), "Le BRUTE est blessé (defense 90 < 100)");
         assertEquals(0, report.getDefenderInjured());
+        assertNotNull(report.getBattleLog());
+        assertTrue(report.getBattleLog().stream().anyMatch(e -> "WINNER".equals(e.getOutcome())),
+                "Le journal de combat est exposé à l'admin");
+        assertEquals(1, battleReportRepository.findByParticipantId(defenderId).size(),
+                "Un rapport de combat est persisté pour les joueurs impliqués");
 
         state = orchestrator.getState();
         assertTrue(state.getPendingConflicts().isEmpty());

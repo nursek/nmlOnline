@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,6 +60,9 @@ public class MovementOrder {
     @Column(name = "status_message", length = 500)
     private String statusMessage;
 
+    @Column(name = "submitted_at", nullable = false)
+    private Instant submittedAt;
+
     public static MovementOrder createFootOrder(Long playerId, int turn, List<Long> entityIds, List<Integer> route) {
         if (route == null || route.size() < 2) {
             throw new IllegalArgumentException("La route doit contenir au moins 2 secteurs (départ et arrivée).");
@@ -71,6 +75,7 @@ public class MovementOrder {
         order.setRoute(new ArrayList<>(route));
         order.setEntityIds(new ArrayList<>(entityIds));
         order.setStatus(MovementStatus.PENDING);
+        order.setSubmittedAt(Instant.now());
         return order;
     }
 
@@ -86,6 +91,7 @@ public class MovementOrder {
         order.setToSectorNumber(route.getLast());
         order.setRoute(new ArrayList<>(route));
         order.setStatus(MovementStatus.PENDING);
+        order.setSubmittedAt(Instant.now());
         return order;
     }
 

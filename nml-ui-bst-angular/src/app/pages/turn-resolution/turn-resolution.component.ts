@@ -10,6 +10,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { TurnResolutionService } from '../../services/turn-resolution.service';
+import { ResolvedBattle } from '../../models';
+import { CombatLogDialogComponent } from './combat-log-dialog.component';
 
 /**
  * Page admin dédiée à la résolution de fin de tour pas-à-pas, hop par hop.
@@ -49,6 +51,7 @@ export class TurnResolutionComponent {
   readonly finalizeResult = this.resolution.finalizeResult;
   readonly active = this.resolution.active;
   readonly devScenarioAvailable = this.resolution.devScenarioAvailable;
+  readonly standoffDevScenarioAvailable = this.resolution.standoffDevScenarioAvailable;
   readonly seeding = this.resolution.seeding;
   readonly seedReport = this.resolution.seedReport;
 
@@ -59,9 +62,15 @@ export class TurnResolutionComponent {
     effect(() => {
       const report = this.lastReport();
       if (report) {
-        const msg = report.success
-          ? `Secteur ${report.sectorNumber}: ${report.defenderCasualties} pertes déf., ${report.attackerInjured} blessé(s) attaquant`
-          : `Secteur ${report.sectorNumber}: ${report.message ?? 'échec'}`;
+        let msg: string;
+        if (!report.success) {
+          msg = `Secteur ${report.sectorNumber}: ${report.message ?? 'échec'}`;
+        } else if (report.standoff) {
+          const pertes = report.participants?.reduce((sum, p) => sum + p.casualties, 0) ?? 0;
+          msg = `Impasse secteur ${report.sectorNumber}: ${pertes} pertes — vainqueur ${report.winnerName ?? 'aucun'}`;
+        } else {
+          msg = `Secteur ${report.sectorNumber}: ${report.defenderCasualties} pertes déf., ${report.attackerInjured} blessé(s) attaquant`;
+        }
         this.snackBar.open(msg, 'OK', { duration: 4000, panelClass: 'toast-info' });
         this.resolution.clearLastReport();
       }
@@ -79,11 +88,10 @@ export class TurnResolutionComponent {
     effect(() => {
       const seed = this.seedReport();
       if (seed) {
-        this.snackBar.open(
-          `Scénario prêt — ${seed.attacker.name} → secteur ${seed.route.at(-1)} (${seed.defender.name})`,
-          'OK',
-          { duration: 6000, panelClass: 'toast-success' },
-        );
+        const msg = seed.standoff
+          ? `Impasse prête — ${seed.defender.name} défend le secteur ${seed.orders?.at(0)?.route.at(-1) ?? '?'}`
+          : `Scénario prêt — ${seed.attacker?.name} → secteur ${seed.route?.at(-1)} (${seed.defender.name})`;
+        this.snackBar.open(msg, 'OK', { duration: 6000, panelClass: 'toast-success' });
         this.resolution.clearSeedReport();
       }
     });
@@ -101,6 +109,10 @@ export class TurnResolutionComponent {
 
   onResolveBattle(conflictId: number): void {
     void this.resolution.resolveBattle(conflictId).catch(() => {});
+  }
+
+  onShowDetail(report: ResolvedBattle): void {
+    this.dialog.open(CombatLogDialogComponent, { data: report, width: '720px' });
   }
 
   onFinalize(): void {
@@ -143,6 +155,12 @@ export class TurnResolutionComponent {
 
   onSeedScenario(): void {
     void this.resolution.seedDevScenario().catch(() => {
+      /* service positionne déjà le signal d'erreur */
+    });
+  }
+
+  onSeedStandoffScenario(): void {
+    void this.resolution.seedStandoffScenario().catch(() => {
       /* service positionne déjà le signal d'erreur */
     });
   }

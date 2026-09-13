@@ -105,10 +105,7 @@ public class MovementAdminService {
         Set<Long> ids = new HashSet<>();
         result.getResolved().forEach(o -> ids.add(o.getPlayerId()));
         result.getBlocked().forEach(o -> ids.add(o.getPlayerId()));
-        result.getConflicts().forEach(c -> {
-            ids.add(c.attackerPlayerId());
-            ids.add(c.defenderPlayerId());
-        });
+        result.getConflicts().forEach(c -> ids.addAll(c.participantPlayerIds()));
         return ids;
     }
 

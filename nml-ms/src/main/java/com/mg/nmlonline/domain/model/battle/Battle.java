@@ -31,6 +31,10 @@ public class Battle {
 
     private Random random;
 
+    private final List<BattleLogEntry> log = new ArrayList<>();
+
+    private String currentPhase = "Combat";
+
     public Battle() {
         this.random = new Random();
     }
@@ -40,8 +44,17 @@ public class Battle {
     }
 
     public PhaseResult classicPhaseConfiguration(List<CombatEntity> defender, double availableAttackerPoints, String damageType) {
+        return classicPhaseConfiguration(defender, availableAttackerPoints, damageType, null, null);
+    }
+
+    private PhaseResult classicPhaseConfiguration(List<CombatEntity> defender, double availableAttackerPoints,
+                                                  String damageType, String actor, String targetOwner) {
         List<CombatEntity> casualties = new ArrayList<>();
         logger.info("    Points d'attaque disponibles : {}", availableAttackerPoints);
+        if (actor != null && availableAttackerPoints > 0) {
+            recordEvent(BattleLogEntry.INFO, actor + " engage " + formatPoints(availableAttackerPoints)
+                    + " points (" + damageType + ") contre " + targetOwner);
+        }
 
         while (availableAttackerPoints > 0 && !defender.isEmpty()) {
             CombatEntity targetUnit = defender.getLast();
@@ -49,9 +62,12 @@ public class Battle {
             double armor = targetUnit.getArmor();
             double defense = targetUnit.getDefense();
             double resistance = targetUnit.getDamageReduction(damageType);
+            String target = targetLabel(targetOwner, targetUnit);
 
             if (evasion > 0 && rand() <= evasion) {
-                logger.info("      > {} esquive l'attaque !", targetUnit.getDisplayName());
+                String message = target + " esquive l'attaque" + (actor != null ? " de " + actor : "");
+                logger.info("      > {}", message);
+                recordEvent(BattleLogEntry.DODGE, message);
                 availableAttackerPoints -= (defense + armor);
                 continue;
             }
@@ -62,19 +78,28 @@ public class Battle {
             }
 
             if ((armor + defense) <= effectivePoints) {
-                logger.info("      > {} (ID: {}) est détruit pendant la phase {} !", targetUnit.getDisplayName(), targetUnit.getId(), damageType);
+                String message = (actor != null ? actor + " détruit " : "Détruit ") + target + " (" + damageType + ")";
+                logger.info("      > {}", message);
+                recordEvent(BattleLogEntry.DESTROYED, message);
                 availableAttackerPoints -= (defense + armor) / (1 - resistance);
                 defender.remove(targetUnit);
                 casualties.add(targetUnit);
             } else if (effectivePoints <= armor) {
                 targetUnit.setArmor(armor - effectivePoints);
-                logger.info("      > {} perd {} d'armure (reste: {})", targetUnit.getDisplayName(), String.format("%.2f", effectivePoints), String.format("%.2f", targetUnit.getArmor()));
+                String message = attackMessage(actor, target, "armure " + formatPoints(armor)
+                        + " → " + formatPoints(targetUnit.getArmor()));
+                logger.info("      > {}", message);
+                recordEvent(BattleLogEntry.DAMAGE, message);
                 availableAttackerPoints = 0;
             } else {
                 targetUnit.setArmor(0);
                 double remainingPoints = effectivePoints - armor;
                 targetUnit.setDefense(defense - remainingPoints);
-                logger.info("      > {} perd toute son armure et {} de défense (reste: {})", targetUnit.getDisplayName(), String.format("%.2f", remainingPoints), String.format("%.2f", targetUnit.getDefense()));
+                String damage = (armor > 0 ? "armure " + formatPoints(armor) + " → 0, " : "")
+                        + "défense " + formatPoints(defense) + " → " + formatPoints(targetUnit.getDefense());
+                String message = attackMessage(actor, target, damage);
+                logger.info("      > {}", message);
+                recordEvent(BattleLogEntry.DAMAGE, message);
                 availableAttackerPoints = 0;
             }
         }
@@ -92,6 +117,36 @@ public class Battle {
             }
         }
         return new PhaseResult(casualties, defender, availableAttackerPoints);
+    }
+
+    private static String targetLabel(String owner, CombatEntity entity) {
+        return owner != null ? owner + " · " + entity.getDisplayName() : entity.getDisplayName();
+    }
+
+    private static String attackMessage(String actor, String target, String damage) {
+        return (actor != null ? actor + " attaque " : "Attaque sur ") + target + " : " + damage;
+    }
+
+    private static String formatPoints(double value) {
+        return Math.abs(value - Math.rint(value)) < 0.05 ? String.valueOf((long) Math.rint(value)) : String.format("%.1f", value);
+    }
+
+    private void recordEvent(String outcome, String message) {
+        log.add(new BattleLogEntry(currentPhase, outcome, message));
+    }
+
+    public void appendLog(String phase, String outcome, String message) {
+        log.add(new BattleLogEntry(phase, outcome, message));
+    }
+
+    private void recordInitialState(Player player, List<CombatEntity> units) {
+        if (units.isEmpty()) {
+            return;
+        }
+        recordEvent(BattleLogEntry.INFO, player.getName() + " engage " + units.size() + " entité(s) :");
+        for (CombatEntity entity : units) {
+            recordEvent(BattleLogEntry.INFO, "  " + entity);
+        }
     }
 
     private static void logUnit(CombatEntity unit) {
@@ -122,12 +177,18 @@ public class Battle {
 
         logger.info("\n=== Début du combat entre {} et {} ===", attacker.getName(), defender.getName());
 
+        this.currentPhase = "État initial";
+        recordInitialState(attacker, attackerUnits);
+        recordInitialState(defender, defenderUnits);
+        this.currentPhase = "Combat";
+        recordEvent(BattleLogEntry.INFO, "Début du combat : " + attacker.getName() + " attaque " + defender.getName());
+
         printPhaseHeader("PDF");
         double attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
         double defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF");
 
-        PhaseResult attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF");
-        PhaseResult defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF");
+        PhaseResult attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF", attacker.getName(), defender.getName());
+        PhaseResult defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF", defender.getName(), attacker.getName());
 
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
@@ -149,8 +210,8 @@ public class Battle {
             attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
             defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF");
 
-            attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF");
-            defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF");
+            attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF", attacker.getName(), defender.getName());
+            defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF", defender.getName(), attacker.getName());
 
             defenderUnits = attackerPhaseResult.survivors();
             attackerUnits = defenderPhaseResult.survivors();
@@ -173,8 +234,8 @@ public class Battle {
         double attackerSecondariesAtk = sumAttack(attackerUnits, Battle::isSecondaryBuilding);
         double defenderSecondariesAtk = sumAttack(defenderUnits, Battle::isSecondaryBuilding);
 
-        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerSecondariesAtk, "ATK");
-        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderSecondariesAtk, "ATK");
+        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerSecondariesAtk, "ATK", attacker.getName(), defender.getName());
+        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderSecondariesAtk, "ATK", defender.getName(), attacker.getName());
 
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
@@ -192,8 +253,8 @@ public class Battle {
         double attackerTotalPdc = getAvailablePoints(attackerUnits, "PDC");
         double defenderTotalPdc = getAvailablePoints(defenderUnits, "PDC");
 
-        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC");
-        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC");
+        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC", attacker.getName(), defender.getName());
+        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC", defender.getName(), attacker.getName());
 
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
@@ -215,8 +276,8 @@ public class Battle {
             attackerTotalPdc = getAvailablePoints(attackerUnits, "PDC");
             defenderTotalPdc = getAvailablePoints(defenderUnits, "PDC");
 
-            attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC");
-            defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC");
+            attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC", attacker.getName(), defender.getName());
+            defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC", defender.getName(), attacker.getName());
 
             defenderUnits = attackerPhaseResult.survivors();
             attackerUnits = defenderPhaseResult.survivors();
@@ -239,8 +300,8 @@ public class Battle {
         double attackerTotalAtk = sumAttack(attackerUnits, Battle::isInfantry);
         double defenderTotalAtk = sumAttack(defenderUnits, Battle::isInfantry);
 
-        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalAtk, "ATK");
-        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalAtk, "ATK");
+        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalAtk, "ATK", attacker.getName(), defender.getName());
+        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalAtk, "ATK", defender.getName(), attacker.getName());
 
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
@@ -262,8 +323,8 @@ public class Battle {
         double attackerHqAtk = sumAttack(attackerUnits, Battle::isHeadquarters);
         double defenderHqAtk = sumAttack(defenderUnits, Battle::isHeadquarters);
 
-        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerHqAtk, "ATK");
-        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderHqAtk, "ATK");
+        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerHqAtk, "ATK", attacker.getName(), defender.getName());
+        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderHqAtk, "ATK", defender.getName(), attacker.getName());
 
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
@@ -282,8 +343,8 @@ public class Battle {
         double attackerCharacterAtk = sumAttack(attackerUnits, Battle::isCharacter);
         double defenderCharacterAtk = sumAttack(defenderUnits, Battle::isCharacter);
 
-        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerCharacterAtk, "ATK");
-        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderCharacterAtk, "ATK");
+        attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerCharacterAtk, "ATK", attacker.getName(), defender.getName());
+        defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderCharacterAtk, "ATK", defender.getName(), attacker.getName());
 
         defenderUnits = attackerPhaseResult.survivors();
         attackerUnits = defenderPhaseResult.survivors();
@@ -305,6 +366,105 @@ public class Battle {
         finishBattle(attacker, defender, attackerUnits, defenderUnits);
     }
 
+    /**
+     * Impasse mexicaine : le camp i frappe le camp (i+1) % n. À chaque phase, tous les points
+     * sortants sont calculés avant application — un camp détruit dans la phase frappe quand même.
+     */
+    public void classicStandoffConfiguration(List<Player> players, List<List<CombatEntity>> camps) {
+        int n = camps.size();
+        if (n < 3 || players.size() != n) {
+            throw new IllegalArgumentException("Une impasse mexicaine nécessite au moins 3 camps.");
+        }
+        logger.info("\n=== Impasse mexicaine à {} camps ===", n);
+        this.currentPhase = "État initial";
+        for (int i = 0; i < n; i++) {
+            recordInitialState(players.get(i), camps.get(i));
+        }
+        this.currentPhase = "Combat";
+        recordEvent(BattleLogEntry.INFO, "Impasse mexicaine à " + n + " camps : "
+                + players.stream().map(Player::getName).collect(Collectors.joining(" → "))
+                + " → " + players.getFirst().getName());
+
+        this.currentPhase = "Impasse — PDF";
+        standoffPhase(players, camps, "PDF", e -> true, e -> true);
+        if (anyPointsInCamps(camps, "PDF")) {
+            this.currentPhase = "Impasse — PDF round 2";
+            standoffPhase(players, camps, "PDF", e -> true, e -> true);
+        }
+
+        this.currentPhase = "Impasse — Bâtiments secondaires";
+        standoffPhase(players, camps, "ATK", null, Battle::isSecondaryBuilding);
+
+        this.currentPhase = "Impasse — PDC";
+        standoffPhase(players, camps, "PDC", e -> true, e -> true);
+        if (anyPointsInCamps(camps, "PDC")) {
+            this.currentPhase = "Impasse — PDC round 2";
+            standoffPhase(players, camps, "PDC", e -> true, e -> true);
+        }
+
+        this.currentPhase = "Impasse — ATK";
+        standoffPhase(players, camps, "ATK", Battle::isInfantry, Battle::isInfantry);
+        this.currentPhase = "Impasse — QG";
+        standoffPhase(players, camps, "ATK", null, Battle::isHeadquarters);
+        this.currentPhase = "Impasse — Personnages";
+        standoffPhase(players, camps, "ATK", null, Battle::isCharacter);
+
+        finishStandoff(players, camps);
+    }
+
+    private void standoffPhase(List<Player> players, List<List<CombatEntity>> camps, String pointsType,
+                               Predicate<CombatEntity> reassignFilter,
+                               Predicate<CombatEntity> strikeFilter) {
+        int n = camps.size();
+        double[] points = new double[n];
+        for (int i = 0; i < n; i++) {
+            points[i] = camps.get(i).stream()
+                    .filter(strikeFilter)
+                    .mapToDouble(e -> getUnitPoints(e, pointsType))
+                    .sum();
+        }
+
+        PhaseResult[] results = new PhaseResult[n];
+        for (int i = 0; i < n; i++) {
+            Player striker = players.get(i);
+            Player target = players.get((i + 1) % n);
+            recordEvent(BattleLogEntry.INFO, striker.getName() + " frappe " + target.getName() + " (" + pointsType + ")");
+            results[i] = classicPhaseConfiguration(camps.get((i + 1) % n), points[i], pointsType,
+                    striker.getName(), target.getName());
+        }
+
+        if (reassignFilter != null) {
+            for (int i = 0; i < n; i++) {
+                reassignPointsForNextPhase(
+                        camps.get(i).stream().filter(reassignFilter).collect(Collectors.toList()),
+                        results[i].remainingPoints(), pointsType);
+            }
+        }
+    }
+
+    private boolean anyPointsInCamps(List<List<CombatEntity>> camps, String pointsType) {
+        return camps.stream().anyMatch(camp -> checkPointsTypeInUnits(camp, pointsType) > 0);
+    }
+
+    private void finishStandoff(List<Player> players, List<List<CombatEntity>> camps) {
+        for (List<CombatEntity> camp : camps) {
+            injureDamagedInfantry(camp);
+        }
+        List<Integer> survivingCamps = new ArrayList<>();
+        for (int i = 0; i < camps.size(); i++) {
+            if (!hasNoSurvivingFighters(camps.get(i))) {
+                survivingCamps.add(i);
+            }
+        }
+        this.winner = survivingCamps.size() == 1 ? players.get(survivingCamps.getFirst()) : null;
+        if (this.winner != null) {
+            logger.info("=== Vainqueur de l'impasse : {} ===", this.winner.getName());
+            recordEvent(BattleLogEntry.WINNER, "Vainqueur de l'impasse : " + this.winner.getName());
+        } else {
+            recordEvent(BattleLogEntry.WINNER, "Aucun vainqueur — plusieurs camps conservent des combattants");
+        }
+    }
+
     /** Les bâtiments ne comptent pas : attaquant anéanti ⇒ le défenseur garde le secteur. */
     private void finishBattle(Player attacker, Player defender, List<CombatEntity> attackerUnits, List<CombatEntity> defenderUnits) {
         if (hasNoSurvivingFighters(attackerUnits)) {
@@ -316,6 +476,9 @@ public class Battle {
         }
         if (this.winner != null) {
             logger.info("=== Vainqueur : {} ===", this.winner.getName());
+            recordEvent(BattleLogEntry.WINNER, "Vainqueur : " + this.winner.getName());
+        } else {
+            recordEvent(BattleLogEntry.WINNER, "Aucun vainqueur — les deux camps conservent des combattants");
         }
     }
 
@@ -358,6 +521,8 @@ public class Battle {
 
     private void printPhaseHeader(String phase) {
         logger.info("\n  === Phase {} ===", phase);
+        this.currentPhase = phase;
+        recordEvent(BattleLogEntry.INFO, "=== Phase " + phase + " ===");
     }
 
     private void printUnitsIndented(List<CombatEntity> units, String label) {
