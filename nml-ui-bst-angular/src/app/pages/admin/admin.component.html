@@ -174,6 +174,9 @@
         <span class="summary-chip transit {{ r.hasTransitCombats ? 'active' : '' }}">
           Combats transit : {{ r.transitCombats.length }}
         </span>
+        <span class="summary-chip captured {{ r.capturedSectors.length > 0 ? 'active' : '' }}">
+          Secteurs capturés : {{ r.capturedSectors.length }}
+        </span>
       </div>
 
       @if (r.conflicts.length > 0) {
@@ -218,6 +221,26 @@
                 <span class="transit-fired {{ t.vehicleFired ? 'fired' : 'no-fire' }}">
                   {{ t.vehicleFired ? 'a tiré' : 'passif' }}
                 </span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      @if (r.capturedSectors.length > 0) {
+        <div class="report-section">
+          <div class="report-section-title">
+            <mat-icon>flag</mat-icon>
+            <span>Captures ({{ r.capturedSectors.length }})</span>
+          </div>
+          <div class="captures-list">
+            @for (c of r.capturedSectors; track c.sectorNumber) {
+              <div class="capture-row">
+                <span class="capture-sector">Secteur {{ c.sectorNumber }}</span>
+                <span class="capture-player">{{ c.playerName ?? '#' + c.playerId }}</span>
+                @if (c.onTheFly) {
+                  <span class="capture-badge">à la volée</span>
+                }
               </div>
             }
           </div>

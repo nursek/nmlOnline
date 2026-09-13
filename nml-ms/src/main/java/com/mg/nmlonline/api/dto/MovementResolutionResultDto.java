@@ -14,6 +14,7 @@ public class MovementResolutionResultDto {
     private List<AdminMovementOrderDto> blocked;
     private List<SectorConflictDto> conflicts;
     private List<TransitCombatResultDto> transitCombats;
+    private List<SectorCaptureDto> capturedSectors;
     private boolean hasConflicts;
     private boolean hasTransitCombats;
 }

@@ -155,6 +155,12 @@ class TurnResolutionOrchestratorTest {
         TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
         assertEquals(turn + 1, fin.getNewTurn());
         assertTrue(fin.getResolvedOrders() >= 1, "L'ordre de l'attaquant doit être résolu");
+        assertEquals(1, fin.getCapturedSectors().size(),
+                "Le vainqueur de la bataille capture le secteur");
+        assertEquals(s2.getNumber(), fin.getCapturedSectors().getFirst().getSectorNumber());
+        assertEquals(attackerId, fin.getCapturedSectors().getFirst().getPlayerId());
+        assertEquals(attackerId, s2Refreshed.getOwnerId(),
+                "Le secteur contesté passe au vainqueur à la finalisation");
 
         assertFalse(orchestrator.getState().isActive());
     }

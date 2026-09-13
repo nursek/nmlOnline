@@ -106,6 +106,7 @@ public class MovementAdminService {
         result.getResolved().forEach(o -> ids.add(o.getPlayerId()));
         result.getBlocked().forEach(o -> ids.add(o.getPlayerId()));
         result.getConflicts().forEach(c -> ids.addAll(c.participantPlayerIds()));
+        result.getCaptures().forEach(c -> ids.add(c.playerId()));
         return ids;
     }
 

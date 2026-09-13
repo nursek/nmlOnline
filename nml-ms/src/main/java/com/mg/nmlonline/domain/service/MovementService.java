@@ -5,6 +5,7 @@ import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
+import com.mg.nmlonline.domain.model.movement.SectorCapture;
 import com.mg.nmlonline.domain.model.movement.SectorConflict;
 import com.mg.nmlonline.domain.model.movement.TransitCombatResult;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -28,7 +29,9 @@ import java.util.stream.Collectors;
  *
  * <p>Règles : croisement A→B/B→A sans combat ; arrivée en secteur occupé =
  * combat ; transit véhicule : seul le véhicule combat (passagers débarqués si
- * détruit) ; bâtiments : déplacement en secteur allié uniquement.</p>
+ * détruit) ; bâtiments : déplacement en secteur allié uniquement ; capture en fin
+ * de tour par présence, ou à la volée par un ordre à pied traversant un secteur
+ * intermédiaire sans autre arrivée ni combat.</p>
  */
 @Service
 @Transactional
@@ -173,6 +176,9 @@ public class MovementService {
         final List<SectorConflict> conflicts = new ArrayList<>();
         final List<TransitCombatResult> transitCombats = new ArrayList<>();
         final List<MovementOrder> resolvedOrders = new ArrayList<>();
+        final Map<Integer, Set<Long>> arrivingOrderIds = new HashMap<>();
+        final Map<Integer, Map<Long, Long>> transitOrderPlayers = new HashMap<>();
+        final Map<Integer, SectorCapture> captures = new LinkedHashMap<>();
         int maxSteps = 0;
         int currentStep = 0;
         boolean finalized = false;
@@ -330,6 +336,11 @@ public class MovementService {
             for (MovementOrder order : arriving) {
                 advanceOrder(order, ctx.currentPosition.get(order.getId()), targetSector, board);
                 ctx.currentPosition.put(order.getId(), targetNum);
+                ctx.arrivingOrderIds.computeIfAbsent(targetNum, k -> new HashSet<>()).add(order.getId());
+                if (order.isFootMovement() && step < order.getRoute().size() - 1) {
+                    ctx.transitOrderPlayers.computeIfAbsent(targetNum, k -> new LinkedHashMap<>())
+                            .put(order.getId(), order.getPlayerId());
+                }
             }
 
             if (arrivingPlayerIds.isEmpty()) continue;
@@ -377,6 +388,7 @@ public class MovementService {
         if (ctx.finalized) {
             return buildResult(ctx);
         }
+        resolveSectorCaptures(board, ctx);
         ctx.activeOrders.stream()
                 .filter(o -> !ctx.stoppedIds.contains(o.getId()))
                 .filter(o -> !o.isNotPending())
@@ -398,7 +410,65 @@ public class MovementService {
         ctx.blockedOrders.forEach(result::addBlocked);
         ctx.transitCombats.forEach(result::addTransitCombat);
         ctx.conflicts.forEach(result::addConflict);
+        ctx.captures.values().forEach(result::addCapture);
         return result;
+    }
+
+    /** Transits avant présences : une entité adverse stationnaire (ex. véhicule) doit rester maîtresse du secteur. */
+    private void resolveSectorCaptures(Board board, ResolutionContext ctx) {
+        captureTransitedSectors(board, ctx);
+        for (Sector sector : board.getAllSectors()) {
+            captureByPresence(board, sector, ctx);
+        }
+    }
+
+    private void captureTransitedSectors(Board board, ResolutionContext ctx) {
+        for (Map.Entry<Integer, Map<Long, Long>> entry : ctx.transitOrderPlayers.entrySet()) {
+            int sectorNumber = entry.getKey();
+            Map<Long, Long> transits = entry.getValue();
+            if (transits.size() != 1) continue;
+
+            Map.Entry<Long, Long> transit = transits.entrySet().iterator().next();
+            Set<Long> arrivals = ctx.arrivingOrderIds.getOrDefault(sectorNumber, Set.of());
+            if (arrivals.size() != 1 || !arrivals.contains(transit.getKey())) continue;
+            if (ctx.conflicts.stream().anyMatch(c -> c.sectorNumber() == sectorNumber)) continue;
+
+            Sector sector = board.getSector(sectorNumber);
+            if (sector != null) {
+                capture(board, sector, transit.getValue(), true, ctx);
+            }
+        }
+    }
+
+    /** Un seul joueur présent avec une unité/personnage/véhicule survivant ; les bâtiments ne capturent pas mais bloquent. */
+    private void captureByPresence(Board board, Sector sector, ResolutionContext ctx) {
+        Set<Long> presentPlayers = new HashSet<>();
+        boolean hasCapturingEntity = false;
+        for (CombatEntity entity : sector.getCombatEntities()) {
+            if (entity.isDestroyed() || entity.getPlayerId() == null) continue;
+            if (entity instanceof Building building && building.isCaptured()) continue;
+            presentPlayers.add(entity.getPlayerId());
+            if (!(entity instanceof Building)) {
+                hasCapturingEntity = true;
+            }
+        }
+        if (presentPlayers.size() != 1 || !hasCapturingEntity) return;
+
+        capture(board, sector, presentPlayers.iterator().next(), false, ctx);
+    }
+
+    private void capture(Board board, Sector sector, Long playerId, boolean onTheFly, ResolutionContext ctx) {
+        if (sector.isOwnedBy(playerId)) return;
+        sector.setOwnerAndColor(playerId, playerColor(board, playerId));
+        ctx.captures.put(sector.getNumber(), new SectorCapture(sector.getNumber(), playerId, onTheFly));
+    }
+
+    private String playerColor(Board board, Long playerId) {
+        return board.getSectorsByOwner(playerId).stream()
+                .map(Sector::getColor)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse("#ffffff");
     }
 
     /** Croisements au step N : paires ennemies qui échangent exactement leurs positions (se croisent sans combat). */

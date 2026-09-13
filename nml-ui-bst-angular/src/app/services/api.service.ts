@@ -7,6 +7,7 @@ import {
   Player,
   MovementOrder,
   MovementResolutionResult,
+  SectorCapture,
   TurnResolutionState,
   TurnFinalizeResult,
   ResolvedBattle,
@@ -101,8 +102,11 @@ export class ApiService {
     return this.http.get<{ currentTurn: number }>(`${this.baseUrl}/admin/turn/current`);
   }
 
-  adminAdvanceTurn(): Observable<{ currentTurn: number }> {
-    return this.http.post<{ currentTurn: number }>(`${this.baseUrl}/admin/turn/next`, {});
+  adminAdvanceTurn(): Observable<{ currentTurn: number; capturedSectors: SectorCapture[] }> {
+    return this.http.post<{ currentTurn: number; capturedSectors: SectorCapture[] }>(
+      `${this.baseUrl}/admin/turn/next`,
+      {},
+    );
   }
 
   // Aperçu (dry-run) de la résolution des mouvements du tour courant :

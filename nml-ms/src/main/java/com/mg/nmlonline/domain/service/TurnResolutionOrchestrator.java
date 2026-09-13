@@ -2,11 +2,13 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
+import com.mg.nmlonline.api.dto.SectorCaptureDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
 import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
+import com.mg.nmlonline.domain.model.movement.SectorCapture;
 import com.mg.nmlonline.domain.model.movement.SectorConflict;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
@@ -159,6 +161,7 @@ public class TurnResolutionOrchestrator {
             turnService.publishTurn(s.turnEnding + 1);
 
             int newTurn = board.getCurrentTurn();
+            List<SectorCapture> captures = result.getCaptures();
             TurnFinalizeResultDto dto = new TurnFinalizeResultDto();
             dto.setNewTurn(newTurn);
             dto.setTurnEnding(s.turnEnding);
@@ -166,7 +169,10 @@ public class TurnResolutionOrchestrator {
             dto.setBlockedOrders(result.getBlocked().size());
             dto.setConflictsResolved(s.resolvedConflicts.size());
             dto.setTransitCombats(result.getTransitCombats().size());
-            dto.setMessage("Tour " + newTurn + " démarré.");
+            dto.setCapturedSectors(toCaptureDtoList(captures));
+            dto.setMessage(captures.isEmpty()
+                    ? "Tour " + newTurn + " démarré."
+                    : "Tour " + newTurn + " démarré — " + captures.size() + " secteur(s) capturé(s).");
             return dto;
         } finally {
             turnLock.release();
@@ -273,6 +279,21 @@ public class TurnResolutionOrchestrator {
         var players = playerRepository.findAllById(ids);
         return players.stream()
                 .collect(Collectors.toMap(Player::getId, Player::getName, (a, b) -> a))::get;
+    }
+
+    private List<SectorCaptureDto> toCaptureDtoList(List<SectorCapture> captures) {
+        Function<Long, String> names = resolveNamesForIds(
+                captures.stream().map(SectorCapture::playerId).distinct().toList());
+        return captures.stream()
+                .map(capture -> {
+                    SectorCaptureDto dto = new SectorCaptureDto();
+                    dto.setSectorNumber(capture.sectorNumber());
+                    dto.setPlayerId(capture.playerId());
+                    dto.setPlayerName(names.apply(capture.playerId()));
+                    dto.setOnTheFly(capture.onTheFly());
+                    return dto;
+                })
+                .toList();
     }
 
     private ResolvedBattleDto toBattleDto(ResolvedBattle rb, Function<Long, String> names) {
