@@ -8,6 +8,7 @@ import {
   troopSummaries,
   unitClassCodes,
   unitEquipmentLabel,
+  vehicleLabels,
 } from './joueur.helpers';
 import type {
   Building,
@@ -130,6 +131,9 @@ function vehicle(id: number, playerId: number): Vehicle {
     capacity: 0,
     passengerCount: 0,
     hasPilot: false,
+    pilotId: null,
+    pilotName: null,
+    passengerIds: [],
     sectorNumber: 1,
     boardId: 1,
   };
@@ -388,6 +392,34 @@ describe('joueur.helpers', () => {
         vehicleValue: 0,
         total: 22519,
       });
+    });
+  });
+
+  describe('vehicleLabels', () => {
+    it('numérote les véhicules par type dans l’ordre des ids et tague pilote/passagers', () => {
+      const vehicles = [
+        {
+          ...vehicle(9, me),
+          vehicleType: 'VTT_LEGER',
+          displayName: 'VTT léger',
+          pilotId: 10,
+          passengerIds: [12, 13],
+        },
+        { ...vehicle(3, me), vehicleType: 'VTT_LEGER', displayName: 'VTT léger', pilotId: 11 },
+        { ...vehicle(5, me), vehicleType: 'TANK', displayName: 'Tank', pilotId: null },
+      ];
+
+      const { labels, pilotTags, passengerTags } = vehicleLabels(vehicles);
+
+      expect(labels.get(3)).toBe('VTT léger n°1');
+      expect(labels.get(9)).toBe('VTT léger n°2');
+      expect(labels.get(5)).toBe('Tank n°1');
+      expect(pilotTags.get(11)).toBe('pilote · VTT léger n°1');
+      expect(pilotTags.get(10)).toBe('pilote · VTT léger n°2');
+      expect(passengerTags.get(12)).toBe('passager · VTT léger n°2');
+      expect(passengerTags.get(13)).toBe('passager · VTT léger n°2');
+      expect([...pilotTags.keys()]).toHaveLength(2);
+      expect([...passengerTags.keys()]).toHaveLength(2);
     });
   });
 });

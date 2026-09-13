@@ -193,6 +193,23 @@ export class ApiService {
     });
   }
 
+  setVehicleCrew(
+    vehicleId: number,
+    pilotId: number | null,
+    passengerIds: number[],
+  ): Observable<Vehicle> {
+    return this.http.put<Vehicle>(`${this.baseUrl}/vehicles/${vehicleId}/crew`, {
+      pilotId,
+      passengerIds,
+    });
+  }
+
+  placeVehicleMovement(vehicleId: number, route: number[]): Observable<MovementOrder> {
+    return this.http.post<MovementOrder>(`${this.baseUrl}/vehicles/${vehicleId}/movement`, {
+      route,
+    });
+  }
+
   buyEquipments(items: BuyEquipmentItem[]): Observable<Player> {
     return this.http.post<Player>(`${this.baseUrl}/players/equipment/buy`, items);
   }

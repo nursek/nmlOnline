@@ -1,10 +1,13 @@
 package com.mg.nmlonline;
 
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.domain.service.UserService;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.SectorRepository;
+import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.junit.jupiter.api.AfterAll;
@@ -14,6 +17,7 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,6 +47,10 @@ class DemoDataRebootTest {
 
         try (ConfigurableApplicationContext first = boot(jdbcUrl)) {
             assertTrue(first.getBean(EquipmentRepository.class).findByName("Gauss Blaster").isPresent());
+
+            User trazynUser = first.getBean(UserRepository.class).findByUsername("trazyn");
+            assertNotNull(trazynUser, "l'import de démo doit créer le compte manquant");
+            assertTrue(first.getBean(UserService.class).checkPassword("trazyn", trazynUser.getPassword()));
         }
 
         try (ConfigurableApplicationContext second = boot(jdbcUrl)) {
@@ -51,6 +59,7 @@ class DemoDataRebootTest {
 
             Player trazyn = second.getBean(PlayerService.class).findByName("trazyn");
             assertNotNull(trazyn);
+            assertEquals(second.getBean(UserRepository.class).findByUsername("trazyn").getId(), trazyn.getUserId());
             assertFalse(second.getBean(VehicleRepository.class).findByPlayerId(trazyn.getId()).isEmpty());
             assertFalse(second.getBean(SectorRepository.class).findByOwnerId(trazyn.getId()).isEmpty());
         }

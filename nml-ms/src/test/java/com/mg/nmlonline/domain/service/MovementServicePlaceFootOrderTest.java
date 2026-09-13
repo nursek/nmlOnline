@@ -97,4 +97,29 @@ class MovementServicePlaceFootOrderTest {
 
         assertTrue(erreur.getMessage().contains("déjà engagée"));
     }
+
+    @Test
+    @DisplayName("Refuse une entité qui est dans un véhicule")
+    void shouldRejectEntityInVehicle() {
+        when(orderRepository.findPendingEntityIds(eq(1), any())).thenReturn(List.of());
+        when(vehicleRepository.existsByPilot_Id(UNITE_1_ID)).thenReturn(true);
+
+        IllegalArgumentException erreur = assertThrows(IllegalArgumentException.class, () ->
+                service.placeFootOrder(JOUEUR, 1, List.of(UNITE_1_ID, UNITE_2_ID), List.of(1, 2), board));
+
+        assertTrue(erreur.getMessage().contains("véhicule"));
+    }
+
+    @Test
+    @DisplayName("Refuse un passager de véhicule")
+    void shouldRejectVehiclePassenger() {
+        when(orderRepository.findPendingEntityIds(eq(1), any())).thenReturn(List.of());
+        when(vehicleRepository.existsByPilot_Id(UNITE_1_ID)).thenReturn(false);
+        when(vehicleRepository.existsByPassengers_Id(UNITE_1_ID)).thenReturn(true);
+
+        IllegalArgumentException erreur = assertThrows(IllegalArgumentException.class, () ->
+                service.placeFootOrder(JOUEUR, 1, List.of(UNITE_1_ID, UNITE_2_ID), List.of(1, 2), board));
+
+        assertTrue(erreur.getMessage().contains("véhicule"));
+    }
 }

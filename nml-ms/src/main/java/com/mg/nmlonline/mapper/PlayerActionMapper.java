@@ -37,6 +37,7 @@ public class PlayerActionMapper {
             case BUY_VEHICLE -> "Achat d'un véhicule";
             case PLACE_VEHICLE -> "Placement d'un véhicule sur le secteur " + action.getToSectorNumber();
             case MOVE_BUILDING -> "Déplacement vers le secteur " + action.getToSectorNumber();
+            case SET_VEHICLE_CREW -> "Équipage du véhicule #" + action.getVehicleId() + " modifié";
         };
     }
 }

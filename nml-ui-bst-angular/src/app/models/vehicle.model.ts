@@ -10,6 +10,9 @@ export interface Vehicle {
   capacity: number;
   passengerCount: number;
   hasPilot: boolean;
+  pilotId: number | null;
+  pilotName: string | null;
+  passengerIds: number[];
   sectorNumber: number | null;
   boardId: number | null;
 }

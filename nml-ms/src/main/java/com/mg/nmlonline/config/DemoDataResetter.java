@@ -16,7 +16,8 @@ import java.util.List;
 
 @Component
 @Order(0)
-@Profile("!test")
+// H2 (mem, vierge à chaque boot) ne supporte pas le TRUNCATE multi-table : réservé à la prod persistante.
+@Profile("prod")
 @RequiredArgsConstructor
 public class DemoDataResetter implements CommandLineRunner {
 

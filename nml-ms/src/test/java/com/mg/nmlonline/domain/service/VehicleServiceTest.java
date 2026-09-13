@@ -6,9 +6,11 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
+import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.SectorRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
+import com.mg.nmlonline.mapper.MovementMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -37,6 +39,24 @@ class VehicleServiceTest {
 
     @Mock
     SectorRepository sectorRepository;
+
+    @Mock
+    MovementOrderRepository movementOrderRepository;
+
+    @Mock
+    BoardService boardService;
+
+    @Mock
+    MovementService movementService;
+
+    @Mock
+    TurnService turnService;
+
+    @Mock
+    VehicleCrewService vehicleCrewService;
+
+    @Mock
+    MovementMapper movementMapper;
 
     @Mock
     PlayerActionService playerActionService;

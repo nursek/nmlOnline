@@ -63,6 +63,7 @@ public class MovementService {
         Sector fromSector = board.getSector(from);
         validateEntitiesInSector(fromSector, entityIds, playerId);
         validateNotAlreadyOrdered(turn, entityIds);
+        validateNotInVehicle(entityIds);
 
         int hops = route.size() - 1;
         validateFootHops(fromSector, entityIds, playerId, hops);
@@ -85,7 +86,7 @@ public class MovementService {
             throw new IllegalArgumentException("La route n'est pas valide (secteurs non adjacents).");
         }
 
-        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+        Vehicle vehicle = vehicleRepository.findByIdForUpdate(vehicleId)
                 .orElseThrow(() -> new IllegalArgumentException("Véhicule introuvable : " + vehicleId));
 
         if (!vehicle.getPlayerId().equals(playerId)) {
@@ -104,6 +105,10 @@ public class MovementService {
 
         if (vehicle.cantMove()) {
             throw new IllegalArgumentException("Le véhicule ne peut pas se déplacer (détruit ou sans pilote).");
+        }
+
+        if (!orderRepository.findByVehicleIdAndTurnAndStatus(vehicleId, turn, MovementStatus.PENDING).isEmpty()) {
+            throw new IllegalStateException("Un ordre de déplacement est déjà en attente pour ce véhicule.");
         }
 
         int hops = route.size() - 1;
@@ -349,13 +354,11 @@ public class MovementService {
                     // TODO : appeler CombatService ici pour résolution réelle du combat de transit
                     if (vehicle.isDestroyed()) {
                         for (CombatEntity occupant : vehicle.disembarkAll()) {
-                            occupant.setSector(targetSector);
-                            if (occupant instanceof Unit unit) {
-                                targetSector.getArmy().add(unit);
-                            } else if (occupant instanceof GameCharacter character) {
-                                targetSector.getCharacters().add(character);
-                            }
+                            moveOccupantToSector(occupant, targetSector);
                         }
+                        targetSector.sortArmy();
+                        targetSector.reassignUnitIds();
+                        targetSector.recalculateMilitaryPower();
                         order.block("Véhicule détruit en transit au secteur " + targetNum);
                         orderRepository.save(order);
                         ctx.blockedOrders.add(order);
@@ -507,6 +510,7 @@ public class MovementService {
                 if (fromSector != null) fromSector.getVehicles().remove(vehicle);
                 targetSector.getVehicles().add(vehicle);
                 vehicle.setSector(targetSector);
+                if (fromSector != null) moveOccupants(vehicle, fromSector, targetSector);
             }
         } else if (fromSector != null) {
             List<Long> entityIds = order.getEntityIds();
@@ -530,6 +534,38 @@ public class MovementService {
         targetSector.recalculateMilitaryPower();
     }
 
+    private void moveOccupants(Vehicle vehicle, Sector from, Sector to) {
+        for (CombatEntity occupant : vehicle.getAllOccupants()) {
+            if (occupant instanceof Unit unit) {
+                from.getArmy().remove(unit);
+                to.getArmy().add(unit);
+            } else if (occupant instanceof GameCharacter character) {
+                from.getCharacters().remove(character);
+                to.getCharacters().add(character);
+            }
+            occupant.setSector(to);
+        }
+    }
+
+    private void moveOccupantToSector(CombatEntity occupant, Sector target) {
+        if (occupant instanceof Unit unit) {
+            if (occupant.getSector() != null) {
+                occupant.getSector().getArmy().remove(unit);
+            }
+            if (!target.getArmy().contains(unit)) {
+                target.getArmy().add(unit);
+            }
+        } else if (occupant instanceof GameCharacter character) {
+            if (occupant.getSector() != null) {
+                occupant.getSector().getCharacters().remove(character);
+            }
+            if (!target.getCharacters().contains(character)) {
+                target.getCharacters().add(character);
+            }
+        }
+        occupant.setSector(target);
+    }
+
     private void validateBasicOrder(int from, int to, Board board) {
         if (board == null) throw new IllegalArgumentException("Le plateau de jeu est requis.");
         if (from == to) throw new IllegalArgumentException("Le secteur de départ et d'arrivée doivent être différents.");
@@ -551,6 +587,15 @@ public class MovementService {
         if (!alreadyOrdered.isEmpty()) {
             throw new IllegalArgumentException(
                     "Entité(s) déjà engagée(s) dans un ordre en attente : " + alreadyOrdered + ".");
+        }
+    }
+
+    private void validateNotInVehicle(List<Long> entityIds) {
+        for (Long entityId : entityIds) {
+            if (vehicleRepository.existsByPilot_Id(entityId)
+                    || vehicleRepository.existsByPassengers_Id(entityId)) {
+                throw new IllegalArgumentException("L'entité " + entityId + " est dans un véhicule.");
+            }
         }
     }
 

@@ -21,6 +21,9 @@ function vehicle(id: number, playerId = 1): Vehicle {
     capacity: 0,
     passengerCount: 0,
     hasPilot: false,
+    pilotId: null,
+    pilotName: null,
+    passengerIds: [],
     sectorNumber: null,
     boardId: null,
   };
@@ -35,7 +38,7 @@ function sector(): Sector {
     stats: undefined,
     buildings: [],
     character: null,
-    vehicles: [],
+    vehicles: [vehicle(1), vehicle(2, 99)],
     ownerId: 1,
     boardId: 10,
     color: '#fff',
@@ -43,7 +46,6 @@ function sector(): Sector {
     neighbors: [],
     x: 0,
     y: 0,
-    vehicles: [vehicle(1), vehicle(2, 99)],
   };
 }
 

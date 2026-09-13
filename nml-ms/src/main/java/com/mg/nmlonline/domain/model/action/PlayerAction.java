@@ -69,6 +69,13 @@ public class PlayerAction {
     @Column(name = "prev_has_moved")
     private Boolean prevHasMoved;
 
+    @Column(name = "prev_pilot_id")
+    private Long prevPilotId;
+
+    // CSV d'IDs de passagers : le payload plat ne peut pas porter une collection.
+    @Column(name = "prev_passenger_ids", length = 2000)
+    private String prevPassengerIds;
+
     public static PlayerAction buyEquipment(Long playerId, int turn, String equipmentName, int quantity, double money) {
         PlayerAction action = base(playerId, turn, PlayerActionType.BUY_EQUIPMENT);
         action.setEquipmentName(equipmentName);
@@ -124,6 +131,15 @@ public class PlayerAction {
         action.setToSectorNumber(toSectorNumber);
         action.setPrevLastMovedTurn(prevLastMovedTurn);
         action.setPrevHasMoved(prevHasMoved);
+        return action;
+    }
+
+    public static PlayerAction setVehicleCrew(Long playerId, int turn, Long vehicleId,
+                                               Long prevPilotId, String prevPassengerIds) {
+        PlayerAction action = base(playerId, turn, PlayerActionType.SET_VEHICLE_CREW);
+        action.setVehicleId(vehicleId);
+        action.setPrevPilotId(prevPilotId);
+        action.setPrevPassengerIds(prevPassengerIds);
         return action;
     }
 

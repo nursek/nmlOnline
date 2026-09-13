@@ -3,7 +3,7 @@ import { DecimalPipe } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { GameCharacter, Sector } from '../../models';
-import { sectorForces, totalsStats, troopSummaries } from './joueur.helpers';
+import { sectorForces, totalsStats, troopSummaries, vehicleLabels } from './joueur.helpers';
 import { CharacterPortraitComponent } from '../../shared/character-portrait/character-portrait.component';
 import {
   CharacterAbilitiesDialogComponent,
@@ -40,6 +40,17 @@ export class CharacterPanelComponent {
   readonly totals = computed(() => {
     const forces = this.forces();
     return forces ? totalsStats(forces.totals) : [];
+  });
+
+  readonly vehicleChips = computed(() => {
+    const forces = this.forces();
+    if (!forces) return [];
+    const { labels } = vehicleLabels(forces.vehicles);
+    return forces.vehicles.map((v) => ({
+      id: v.id,
+      label: v.id != null ? (labels.get(v.id) ?? v.displayName) : v.displayName,
+      pilotName: v.pilotName,
+    }));
   });
 
   /** Vide hors personnage : celui-ci est déjà montré dans le cadre, inutile de le lister. */

@@ -7,6 +7,7 @@ import com.mg.nmlonline.domain.service.BoardImportService;
 import com.mg.nmlonline.domain.service.BoardService;
 import com.mg.nmlonline.domain.service.PlayerImportService;
 import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.domain.service.UserService;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +28,7 @@ public class PlayerStartupImporter implements ApplicationRunner {
     private final BoardService boardService;
     private final BoardImportService boardImportService;
     private final UserRepository userRepository;
+    private final UserService userService;
 
     @Value("${app.import-demo-data:true}")
     private boolean importDemoData;
@@ -59,12 +61,14 @@ public class PlayerStartupImporter implements ApplicationRunner {
                                  PlayerService playerService,
                                  BoardService boardService,
                                  BoardImportService boardImportService,
-                                 UserRepository userRepository) {
+                                 UserRepository userRepository,
+                                 UserService userService) {
         this.playerImportService = playerImportService;
         this.playerService = playerService;
         this.boardService = boardService;
         this.boardImportService = boardImportService;
         this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     @Override
@@ -152,12 +156,17 @@ public class PlayerStartupImporter implements ApplicationRunner {
                     }
 
                     User user = userRepository.findByUsername(player.getName());
-                    if (user != null) {
-                        player.setUserId(user.getId());
-                        log.info("userId {} lié au joueur {}", user.getId(), player.getName());
-                    } else {
-                        log.warn("Aucun compte CREDENTIALS trouvé pour le joueur '{}'", player.getName());
+                    if (user == null) {
+                        // Fixture sans compte (démo prod) : même convention que DevDataInitializer, mdp = nom.
+                        user = new User();
+                        user.setUsername(player.getName());
+                        user.setPassword(userService.encodePassword(player.getName()));
+                        user.setRole("USER");
+                        user = userRepository.save(user);
+                        log.info("Compte démo créé pour {}", player.getName());
                     }
+                    player.setUserId(user.getId());
+                    log.info("userId {} lié au joueur {}", user.getId(), player.getName());
                     player = playerService.save(player);
                     log.info("Joueur {} créé avec l'ID {}", player.getName(), player.getId());
 

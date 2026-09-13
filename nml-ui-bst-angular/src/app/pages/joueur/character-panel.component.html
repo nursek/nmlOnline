@@ -52,8 +52,13 @@
               <div class="chp-group">
                 <span class="chp-label">Véhicules</span>
                 <div class="chp-chips">
-                  @for (v of forces()!.vehicles; track v.id ?? v.displayName) {
-                    <span class="chp-chip">{{ v.displayName }}</span>
+                  @for (v of vehicleChips(); track v.id ?? v.label) {
+                    <span class="chp-chip">
+                      {{ v.label }}
+                      @if (v.pilotName) {
+                        · {{ v.pilotName }}
+                      }
+                    </span>
                   }
                 </div>
               </div>

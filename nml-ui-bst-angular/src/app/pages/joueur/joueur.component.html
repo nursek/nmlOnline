@@ -327,6 +327,18 @@
                           <div class="force-line character">
                             <mat-icon class="force-icon">face</mat-icon>
                             <span class="force-name">{{ character.name }}</span>
+                            @if (
+                              character.id !== null && vehicleDisplay().pilotTags.get(character.id);
+                              as tag
+                            ) {
+                              <span class="badge">{{ tag }}</span>
+                            } @else if (
+                              character.id !== null &&
+                              vehicleDisplay().passengerTags.get(character.id);
+                              as tag
+                            ) {
+                              <span class="badge">{{ tag }}</span>
+                            }
                             <span class="force-stats">
                               @for (s of characterStats(character); track s.label) {
                                 {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
@@ -370,13 +382,17 @@
                             <mat-icon class="force-icon">{{
                               v.isDestroyed ? 'car_crash' : 'local_shipping'
                             }}</mat-icon>
-                            <span class="force-name">{{ v.displayName }}</span>
+                            <span class="force-name">{{
+                              vehicleDisplay().labels.get(v.id!) ?? v.displayName
+                            }}</span>
                             @if (!v.hasPilot) {
                               <span class="badge">Sans pilote</span>
+                            } @else if (v.pilotName) {
+                              <span class="badge">Pilote : {{ v.pilotName }}</span>
                             }
                             @if (v.capacity > 0) {
                               <span class="badge"
-                                >{{ v.passengerCount }}/{{ v.capacity }} passagers</span
+                                >{{ v.passengerIds.length }}/{{ v.capacity }} passagers</span
                               >
                             }
                             @if (v.isDestroyed) {
@@ -387,6 +403,26 @@
                                 {{ s.separator }}{{ s.value | number: '1.0-0' }} {{ s.label }}
                               }
                             </span>
+                            @if (!v.isDestroyed && v.id !== null) {
+                              <button
+                                mat-icon-button
+                                class="force-action"
+                                matTooltip="Composer l'équipage"
+                                (click)="openVehicleCrew(v, sf.sector)"
+                              >
+                                <mat-icon>groups</mat-icon>
+                              </button>
+                              @if (v.hasPilot || v.passengerIds.length > 0) {
+                                <button
+                                  mat-icon-button
+                                  class="force-action"
+                                  matTooltip="Vider le véhicule"
+                                  (click)="clearVehicleCrew(v)"
+                                >
+                                  <mat-icon>person_remove</mat-icon>
+                                </button>
+                              }
+                            }
                           </div>
                         }
 
@@ -404,6 +440,11 @@
                             }
                             <span class="force-name">{{ u.type.name }} n°{{ u.number }}</span>
                             <span class="unit-exp">{{ u.experience | exp }} Exp</span>
+                            @if (vehicleDisplay().pilotTags.get(u.id); as tag) {
+                              <span class="badge">{{ tag }}</span>
+                            } @else if (vehicleDisplay().passengerTags.get(u.id); as tag) {
+                              <span class="badge">{{ tag }}</span>
+                            }
                             @if (u.isInjured) {
                               <span class="badge badge-danger">Blessé</span>
                             }

@@ -210,6 +210,35 @@ export function sectorForces(sector: Sector, playerId: number | null): SectorFor
   };
 }
 
+export interface VehicleLabels {
+  labels: ReadonlyMap<number, string>;
+  pilotTags: ReadonlyMap<number, string>;
+  passengerTags: ReadonlyMap<number, string>;
+}
+
+/** Numérote les véhicules par type dans le secteur : plusieurs exemplaires identiques n'ont pas de numéro en base. */
+export function vehicleLabels(vehicles: Vehicle[]): VehicleLabels {
+  const labels = new Map<number, string>();
+  const pilotTags = new Map<number, string>();
+  const passengerTags = new Map<number, string>();
+  const counters = new Map<string, number>();
+  const sorted = [...vehicles].sort((a, b) => num(a.id) - num(b.id));
+  for (const vehicle of sorted) {
+    const number = (counters.get(vehicle.vehicleType) ?? 0) + 1;
+    counters.set(vehicle.vehicleType, number);
+    if (vehicle.id == null) continue;
+    const label = `${vehicle.displayName} n°${number}`;
+    labels.set(vehicle.id, label);
+    if (vehicle.pilotId != null) {
+      pilotTags.set(vehicle.pilotId, `pilote · ${label}`);
+    }
+    for (const passengerId of vehicle.passengerIds ?? []) {
+      passengerTags.set(passengerId, `passager · ${label}`);
+    }
+  }
+  return { labels, pilotTags, passengerTags };
+}
+
 export function playerForces(sectors: Sector[], playerId: number | null): PlayerForces {
   const sectorForceList = sectors
     .map((s) => sectorForces(s, playerId))

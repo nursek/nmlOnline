@@ -49,6 +49,7 @@ class MovementSimulationTest {
     private static final Long UNITE_C_ID  = 103L;
     private static final Long VEHICULE_C_ID = 201L;
     private static final Long PILOTE_C_ID   = 301L;
+    private static final Long PASSAGER_C_ID = 302L;
 
     private Board  board;
     private Sector secteur1, secteur2, secteur3, secteur4;
@@ -96,10 +97,21 @@ class MovementSimulationTest {
         vehiculeC = new Vehicle(VehicleType.VTT_LEGER, JOUEUR_C);
         vehiculeC.setId(VEHICULE_C_ID);
         vehiculeC.setSector(secteur4);
+
         Unit pilote = new Unit(10.0, UnitClass.PILOTE_DESTRUCTEUR);
         pilote.setId(PILOTE_C_ID);
         pilote.setPlayerId(JOUEUR_C);
+        pilote.setSector(secteur4);
+        secteur4.getArmy().add(pilote);
         vehiculeC.assignPilot(pilote);
+
+        Unit passager = new Unit(5.0, UnitClass.ELEMENTAIRE);
+        passager.setId(PASSAGER_C_ID);
+        passager.setPlayerId(JOUEUR_C);
+        passager.setSector(secteur4);
+        secteur4.getArmy().add(passager);
+        vehiculeC.embark(passager);
+
         secteur4.getVehicles().add(vehiculeC);
 
         when(orderRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -141,6 +153,21 @@ class MovementSimulationTest {
         assertTrue(
                 secteur2.getArmy().stream().anyMatch(u -> u.getId().equals(UNITE_C_ID)),
                 "Unité C doit être en secteur 2 après 2 steps"
+        );
+
+        assertTrue(
+                secteur2.getArmy().stream().anyMatch(u -> u.getId().equals(PILOTE_C_ID)),
+                "Le pilote de C doit suivre le véhicule en secteur 2"
+        );
+
+        assertTrue(
+                secteur2.getArmy().stream().anyMatch(u -> u.getId().equals(PASSAGER_C_ID)),
+                "Le passager de C doit suivre le véhicule en secteur 2"
+        );
+
+        assertTrue(
+                secteur4.getArmy().stream().noneMatch(u -> u.getId().equals(PILOTE_C_ID)),
+                "Le pilote ne doit plus être en secteur 4"
         );
 
         assertTrue(

@@ -89,6 +89,25 @@ export class PlayerService {
     }
   }
 
+  async setVehicleCrew(
+    vehicleId: number,
+    pilotId: number | null,
+    passengerIds: number[],
+  ): Promise<Vehicle | null> {
+    this._error.set(null);
+    try {
+      const vehicle = await firstValueFrom(
+        this.api.setVehicleCrew(vehicleId, pilotId, passengerIds),
+      );
+      this._vehicles.update((list) => list.map((v) => (v.id === vehicle.id ? vehicle : v)));
+      void this.loadCurrent();
+      return vehicle;
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, 'Erreur lors de la composition de l’équipage'));
+      return null;
+    }
+  }
+
   async moveBuilding(buildingId: number, boardId: number, sectorNumber: number): Promise<boolean> {
     this._error.set(null);
     try {

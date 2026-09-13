@@ -115,7 +115,7 @@ class VehicleTest {
     class PilotTests {
 
         @Test
-        @DisplayName("Unit sans PILOTE_DESTRUCTEUR ne peut pas piloter")
+        @DisplayName("Une unité sans PILOTE_DESTRUCTEUR ne peut pas piloter")
         void shouldRefuseUnitWithoutPilotClass() {
             Vehicle vehicle = new Vehicle(VehicleType.TANK, 1L);
 
@@ -124,7 +124,7 @@ class VehicleTest {
         }
 
         @Test
-        @DisplayName("Unit avec PILOTE_DESTRUCTEUR peut piloter")
+        @DisplayName("Une unité PILOTE_DESTRUCTEUR peut piloter")
         void shouldAcceptUnitWithPilotClass() {
             Vehicle vehicle = new Vehicle(VehicleType.TANK, 1L);
 

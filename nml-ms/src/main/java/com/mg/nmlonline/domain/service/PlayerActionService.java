@@ -8,12 +8,14 @@ import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
+import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
+import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerActionRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.SectorRepository;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 // LIFO par suffixe : pré-requis d'annulation (ex. déséquiper) toujours satisfaits.
@@ -39,6 +42,8 @@ public class PlayerActionService {
     private final VehicleRepository vehicleRepository;
     private final BuildingRepository buildingRepository;
     private final SectorRepository sectorRepository;
+    private final MovementOrderRepository movementOrderRepository;
+    private final VehicleCrewService vehicleCrewService;
     private final TurnService turnService;
     private final PlayerActionMapper actionMapper;
     private final EntityManager em;
@@ -49,6 +54,8 @@ public class PlayerActionService {
                                VehicleRepository vehicleRepository,
                                BuildingRepository buildingRepository,
                                SectorRepository sectorRepository,
+                               MovementOrderRepository movementOrderRepository,
+                               VehicleCrewService vehicleCrewService,
                                TurnService turnService,
                                PlayerActionMapper actionMapper,
                                EntityManager em) {
@@ -58,6 +65,8 @@ public class PlayerActionService {
         this.vehicleRepository = vehicleRepository;
         this.buildingRepository = buildingRepository;
         this.sectorRepository = sectorRepository;
+        this.movementOrderRepository = movementOrderRepository;
+        this.vehicleCrewService = vehicleCrewService;
         this.turnService = turnService;
         this.actionMapper = actionMapper;
         this.em = em;
@@ -91,6 +100,11 @@ public class PlayerActionService {
                                    int toSectorNumber, Integer prevLastMovedTurn, Boolean prevHasMoved) {
         save(PlayerAction.moveBuilding(playerId, turnService.getCurrentTurn(), buildingId, boardId,
                 fromSectorNumber, toSectorNumber, prevLastMovedTurn, prevHasMoved));
+    }
+
+    public void recordSetVehicleCrew(Long playerId, Long vehicleId, Long prevPilotId, String prevPassengerIds) {
+        save(PlayerAction.setVehicleCrew(playerId, turnService.getCurrentTurn(), vehicleId,
+                prevPilotId, prevPassengerIds));
     }
 
     @Transactional(readOnly = true)
@@ -149,6 +163,7 @@ public class PlayerActionService {
             case BUY_VEHICLE -> undoBuyVehicle(action, player);
             case PLACE_VEHICLE -> undoPlaceVehicle(action);
             case MOVE_BUILDING -> undoMoveBuilding(action);
+            case SET_VEHICLE_CREW -> undoSetVehicleCrew(action);
         }
     }
 
@@ -227,6 +242,7 @@ public class PlayerActionService {
     private void undoPlaceVehicle(PlayerAction action) {
         Vehicle vehicle = vehicleRepository.findById(action.getVehicleId())
                 .orElseThrow(() -> new PlayerActionUndoException("Véhicule introuvable."));
+        vehicleCrewService.applyCrew(vehicle, null, List.of());
         vehicle.setSector(null);
         vehicleRepository.save(vehicle);
     }
@@ -245,6 +261,37 @@ public class PlayerActionService {
             bank.setHasMoved(Boolean.TRUE.equals(action.getPrevHasMoved()));
         }
         buildingRepository.save(building);
+    }
+
+    private void undoSetVehicleCrew(PlayerAction action) {
+        Vehicle vehicle = vehicleRepository.findById(action.getVehicleId())
+                .orElseThrow(() -> new PlayerActionUndoException("Véhicule introuvable."));
+        int turn = turnService.getCurrentTurn();
+        if (!movementOrderRepository
+                .findByVehicleIdAndTurnAndStatus(vehicle.getId(), turn, MovementStatus.PENDING).isEmpty()) {
+            throw new PlayerActionUndoException(
+                    "Le véhicule a un ordre de mouvement en attente : annulez-le d'abord.");
+        }
+        List<Long> restoredIds = new ArrayList<>(parseIds(action.getPrevPassengerIds()));
+        if (action.getPrevPilotId() != null) {
+            restoredIds.add(action.getPrevPilotId());
+        }
+        if (!restoredIds.isEmpty()) {
+            List<Long> engaged = movementOrderRepository.findPendingEntityIds(turn, restoredIds);
+            if (!engaged.isEmpty()) {
+                throw new PlayerActionUndoException(
+                        "Des occupants ont un ordre à pied en attente : annulez-le d'abord.");
+            }
+        }
+        vehicleCrewService.applyCrew(vehicle, action.getPrevPilotId(), parseIds(action.getPrevPassengerIds()));
+        vehicleRepository.save(vehicle);
+    }
+
+    private List<Long> parseIds(String csv) {
+        if (csv == null || csv.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(csv.split(",")).map(String::trim).map(Long::valueOf).toList();
     }
 
     private Unit requireUnit(Long unitId, Player player) {
