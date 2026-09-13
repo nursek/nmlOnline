@@ -491,13 +491,20 @@ public class MovementService {
         return order.getId() != null ? order.getId() : Long.MAX_VALUE;
     }
 
-    /** Combattant au sol : unité, personnage ou bâtiment actif — les véhicules ne participent pas au combat de secteur. */
+    /** Combattant au sol : unité, personnage ou bâtiment actif — véhicules et occupants à bord exclus (sinon arrivée d'un véhicule seul = conflit fantôme). */
     private boolean hasBattleFighters(Sector sector, Long playerId) {
         return sector.getCombatEntities().stream()
                 .filter(e -> playerId.equals(e.getPlayerId()))
                 .filter(e -> !e.isDestroyed())
                 .filter(e -> !(e instanceof Building building) || !building.isCaptured())
+                .filter(e -> !isEmbarked(sector, e))
                 .anyMatch(e -> !(e instanceof Vehicle));
+    }
+
+    private boolean isEmbarked(Sector sector, CombatEntity entity) {
+        return sector.getVehicles().stream()
+                .flatMap(v -> v.getAllOccupants().stream())
+                .anyMatch(occupant -> occupant == entity);
     }
 
     /** {@code fromSectorNum} = position courante de l'ordre (secteur intermédiaire pour un véhicule multi-hop). */

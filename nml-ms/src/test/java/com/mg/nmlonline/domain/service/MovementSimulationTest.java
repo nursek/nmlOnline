@@ -156,21 +156,6 @@ class MovementSimulationTest {
         );
 
         assertTrue(
-                secteur2.getArmy().stream().anyMatch(u -> u.getId().equals(PILOTE_C_ID)),
-                "Le pilote de C doit suivre le véhicule en secteur 2"
-        );
-
-        assertTrue(
-                secteur2.getArmy().stream().anyMatch(u -> u.getId().equals(PASSAGER_C_ID)),
-                "Le passager de C doit suivre le véhicule en secteur 2"
-        );
-
-        assertTrue(
-                secteur4.getArmy().stream().noneMatch(u -> u.getId().equals(PILOTE_C_ID)),
-                "Le pilote ne doit plus être en secteur 4"
-        );
-
-        assertTrue(
                 secteur1.getArmy().stream().noneMatch(u -> u.getId().equals(UNITE_A_ID)),
                 "Unité A ne doit plus être en secteur 1"
         );
@@ -201,5 +186,20 @@ class MovementSimulationTest {
 
         assertEquals(secteur2, vehiculeC.getSector(),
                 "Le véhicule termine bien en secteur 2");
+
+        assertTrue(
+                secteur2.getArmy().stream().anyMatch(u -> u.getId().equals(PILOTE_C_ID)),
+                "Le pilote suit le véhicule en secteur 2"
+        );
+
+        assertTrue(
+                secteur2.getArmy().stream().anyMatch(u -> u.getId().equals(PASSAGER_C_ID)),
+                "Le passager suit le véhicule en secteur 2"
+        );
+
+        assertTrue(
+                secteur4.getArmy().stream().noneMatch(u -> u.getId().equals(PILOTE_C_ID)),
+                "Le pilote ne doit plus être en secteur 4"
+        );
     }
 }
