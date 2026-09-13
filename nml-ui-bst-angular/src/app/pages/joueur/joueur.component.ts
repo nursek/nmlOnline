@@ -43,6 +43,11 @@ import {
 import { UnitDetailDialogComponent, UnitDetailDialogData } from './unit-detail-dialog.component';
 import { GroupMoveDialogComponent, GroupMoveDialogData } from './group-move-dialog.component';
 import {
+  VehicleCrewModalComponent,
+  VehicleCrewDialogData,
+  VehicleCrewDialogResult,
+} from './vehicle-crew-modal.component';
+import {
   SellResourceDialogComponent,
   SellResourceDialogData,
 } from './sell-resource-dialog.component';
@@ -65,6 +70,7 @@ import {
   unitClassCodes,
   unitEquipmentLabel,
   unitStats,
+  vehicleLabels,
   vehicleStats,
 } from './joueur.helpers';
 import { characterStats } from '../../core/stats';
@@ -131,16 +137,29 @@ export class JoueurComponent {
   readonly forces = computed(() =>
     playerForces(this.conqueredSectors(), this.player()?.id ?? null),
   );
+  readonly vehicleDisplay = computed(() => {
+    const labels = new Map<number, string>();
+    const pilotTags = new Map<number, string>();
+    const passengerTags = new Map<number, string>();
+    for (const sf of this.forces().sectors) {
+      const sectorLabels = vehicleLabels(sf.vehicles);
+      sectorLabels.labels.forEach((label, id) => labels.set(id, label));
+      sectorLabels.pilotTags.forEach((tag, id) => pilotTags.set(id, tag));
+      sectorLabels.passengerTags.forEach((tag, id) => passengerTags.set(id, tag));
+    }
+    return { labels, pilotTags, passengerTags };
+  });
   readonly movableSectorNumbers = computed<ReadonlySet<number>>(() => {
     const playerId = this.player()?.id;
     if (playerId == null) return new Set();
     const pending = this.movementState.pendingEntityIds();
+    const pendingVehicles = this.movementState.pendingVehicleIds();
     const numbers = new Set<number>();
     for (const sf of this.forces().sectors) {
       const number = sf.sector.number;
       if (number == null) continue;
-      const { units, character } = movableEntities(sf.sector, playerId, pending);
-      if (units.length > 0 || character !== null) numbers.add(number);
+      const { units, character, vehicles } = movableEntities(sf.sector, playerId, pending, pendingVehicles);
+      if (units.length > 0 || character !== null || vehicles.length > 0) numbers.add(number);
     }
     return numbers;
   });
@@ -203,6 +222,8 @@ export class JoueurComponent {
         return 'place';
       case 'MOVE_BUILDING':
         return 'move_up';
+      case 'SET_VEHICLE_CREW':
+        return 'groups';
     }
   }
 
@@ -323,6 +344,44 @@ export class JoueurComponent {
       width: '720px',
       maxWidth: '95vw',
       data,
+    });
+  }
+
+  openVehicleCrew(vehicle: Vehicle, sector: Sector): void {
+    const playerId = this.player()?.id;
+    const vehicleId = vehicle.id;
+    if (vehicleId == null || playerId == null) return;
+    const data: VehicleCrewDialogData = { vehicle, sector, playerId };
+    this.dialog
+      .open(VehicleCrewModalComponent, { width: '480px', data })
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result: VehicleCrewDialogResult | null) => {
+        if (!result) return;
+        this.applyCrew(vehicleId, result.pilotId, result.passengerIds, 'Équipage mis à jour');
+      });
+  }
+
+  clearVehicleCrew(vehicle: Vehicle): void {
+    const vehicleId = vehicle.id;
+    if (vehicleId == null) return;
+    this.applyCrew(vehicleId, null, [], 'Véhicule vidé');
+  }
+
+  private applyCrew(
+    vehicleId: number,
+    pilotId: number | null,
+    passengerIds: number[],
+    message: string,
+  ): void {
+    void this.playerService.setVehicleCrew(vehicleId, pilotId, passengerIds).then((updated) => {
+      if (updated) {
+        void this.playerActionsService.loadActions();
+        this.snackBar.open(message, 'Fermer', { duration: 3000 });
+      } else {
+        const error = this.playerService.error();
+        if (error) this.snackBar.open(error, 'Fermer', { duration: 5000 });
+      }
     });
   }
 

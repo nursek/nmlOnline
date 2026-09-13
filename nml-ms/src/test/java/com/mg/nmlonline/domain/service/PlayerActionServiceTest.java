@@ -4,7 +4,9 @@ import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.BuyEquipmentItemDto;
 import com.mg.nmlonline.api.dto.BuyVehicleRequestDto;
 import com.mg.nmlonline.api.dto.PlayerActionDto;
+import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.config.TestDataInitializer;
+import com.mg.nmlonline.domain.exception.PlayerActionUndoException;
 import com.mg.nmlonline.domain.model.action.PlayerActionType;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Bank;
@@ -17,6 +19,7 @@ import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.domain.model.user.User;
+import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
@@ -291,6 +294,190 @@ class PlayerActionServiceTest {
 
         assertEquals(1, unit.getEquipments().size());
         assertEquals(0, availableOf(player, melee.getName()));
+    }
+
+    @Test
+    @DisplayName("Équipage : l'affectation laisse les unités dans le secteur, l'annulation libère le véhicule")
+    void undoSetVehicleCrewRestoresCrew() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        fund(player);
+
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        Sector sector = findNeutralSector(board);
+        sector.setOwnerId(player.getId());
+        entityManager.flush();
+
+        Long vehicleId = placeVehicle(player, board, sector);
+        Unit pilote = addUnit(sector, player, UnitClass.PILOTE_DESTRUCTEUR);
+        Unit passager = addUnit(sector, player, UnitClass.LEGER);
+
+        VehicleDto dto = vehicleService.setCrew(player.getUserId(), vehicleId,
+                pilote.getId(), List.of(passager.getId()));
+
+        assertEquals(pilote.getId(), dto.getPilotId());
+        assertEquals(List.of(passager.getId()), dto.getPassengerIds());
+        assertTrue(sector.getArmy().stream().anyMatch(u -> u.getId().equals(pilote.getId())),
+                "Le pilote reste une unité normale du secteur");
+        assertTrue(sector.getArmy().stream().anyMatch(u -> u.getId().equals(passager.getId())),
+                "Le passager reste une unité normale du secteur");
+
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        assertEquals(PlayerActionType.SET_VEHICLE_CREW, actions.getLast().getType());
+
+        playerActionService.undoFrom(player.getUserId(), actions.getLast().getId());
+
+        Vehicle reloaded = vehicleRepository.findById(vehicleId).orElseThrow();
+        assertNull(reloaded.getPilot());
+        assertEquals(0, reloaded.getPassengerCount());
+        assertTrue(sector.getArmy().stream().anyMatch(u -> u.getId().equals(pilote.getId())));
+        assertTrue(sector.getArmy().stream().anyMatch(u -> u.getId().equals(passager.getId())));
+    }
+
+    @Test
+    @DisplayName("Équipage : l'annulation restaure l'équipage précédent complet")
+    void undoSetVehicleCrewRestoresPreviousCrew() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        fund(player);
+
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        Sector sector = findNeutralSector(board);
+        sector.setOwnerId(player.getId());
+        entityManager.flush();
+
+        Long vehicleId = placeVehicle(player, board, sector);
+        Unit pilote = addUnit(sector, player, UnitClass.PILOTE_DESTRUCTEUR);
+        Unit passager = addUnit(sector, player, UnitClass.LEGER);
+
+        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()));
+        vehicleService.setCrew(player.getUserId(), vehicleId, null, List.of());
+
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        playerActionService.undoFrom(player.getUserId(), actions.getLast().getId());
+
+        Vehicle reloaded = vehicleRepository.findById(vehicleId).orElseThrow();
+        assertEquals(pilote.getId(), reloaded.getPilot().getId());
+        assertEquals(passager.getId(), reloaded.getPassengers().getFirst().getId());
+    }
+
+    @Test
+    @DisplayName("Équipage : annulation bloquée si un ordre de mouvement du véhicule est en attente")
+    void undoSetVehicleCrewBlockedByPendingVehicleOrder() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        fund(player);
+
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        Sector sector = findNeutralSector(board);
+        sector.setOwnerId(player.getId());
+        entityManager.flush();
+
+        Long vehicleId = placeVehicle(player, board, sector);
+        Unit pilote = addUnit(sector, player, UnitClass.PILOTE_DESTRUCTEUR);
+        Unit passager = addUnit(sector, player, UnitClass.LEGER);
+
+        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()));
+        vehicleService.placeVehicleOrderDto(player.getUserId(), vehicleId,
+                List.of(sector.getNumber(), sector.getNeighbors().getFirst()));
+
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        assertThrows(PlayerActionUndoException.class,
+                () -> playerActionService.undoFrom(player.getUserId(), actions.getLast().getId()));
+    }
+
+    @Test
+    @DisplayName("Équipage : annulation bloquée si un ancien occupant a un ordre à pied en attente")
+    void undoSetVehicleCrewBlockedByPendingFootOrder() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        fund(player);
+
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        Sector sector = findNeutralSector(board);
+        sector.setOwnerId(player.getId());
+        entityManager.flush();
+
+        Long vehicleId = placeVehicle(player, board, sector);
+        Unit pilote = addUnit(sector, player, UnitClass.PILOTE_DESTRUCTEUR);
+        Unit passager = addUnit(sector, player, UnitClass.LEGER);
+
+        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()));
+        vehicleService.setCrew(player.getUserId(), vehicleId, null, List.of());
+        unitService.placeFootOrder(player.getUserId(), List.of(passager.getId()),
+                List.of(sector.getNumber(), sector.getNeighbors().getFirst()));
+
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        assertThrows(PlayerActionUndoException.class,
+                () -> playerActionService.undoFrom(player.getUserId(), actions.getLast().getId()));
+    }
+
+    @Test
+    @DisplayName("Équipage : une entité hors du secteur du véhicule est refusée")
+    void setCrewRejectsEntityOutsideVehicleSector() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        fund(player);
+
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        List<Sector> sectors = board.getAllSectors().stream().limit(2).toList();
+        Sector vehicleSector = sectors.get(0);
+        vehicleSector.setOwnerId(player.getId());
+        entityManager.flush();
+
+        Long vehicleId = placeVehicle(player, board, vehicleSector);
+        Unit farUnit = newUnit(player.getId(), UnitType.MALFRAT, Set.of(UnitClass.LEGER));
+        sectors.get(1).addUnit(farUnit);
+        entityManager.persist(farUnit);
+        entityManager.flush();
+
+        assertThrows(IllegalArgumentException.class, () -> vehicleService.setCrew(
+                player.getUserId(), vehicleId, null, List.of(farUnit.getId())));
+    }
+
+    @Test
+    @DisplayName("Désengagement : annuler le placement retire le véhicule et libère l'équipage")
+    void undoPlaceVehicleReturnsCrewToSector() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        fund(player);
+
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        Sector sector = findNeutralSector(board);
+        sector.setOwnerId(player.getId());
+        entityManager.flush();
+
+        Long vehicleId = placeVehicle(player, board, sector);
+        Unit pilote = addUnit(sector, player, UnitClass.PILOTE_DESTRUCTEUR);
+        Unit passager = addUnit(sector, player, UnitClass.LEGER);
+
+        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()));
+        PlayerActionDto placement = playerActionService.getCurrentTurnActions(player.getUserId()).stream()
+                .filter(a -> a.getType() == PlayerActionType.PLACE_VEHICLE)
+                .findFirst().orElseThrow();
+
+        playerActionService.undoFrom(player.getUserId(), placement.getId());
+
+        Vehicle reloaded = vehicleRepository.findById(vehicleId).orElseThrow();
+        assertNull(reloaded.getSector());
+        assertNull(reloaded.getPilot());
+        assertEquals(0, reloaded.getPassengerCount());
+        assertTrue(sector.getArmy().stream().anyMatch(u -> u.getId().equals(pilote.getId())),
+                "Le pilote reste dans le secteur");
+        assertTrue(sector.getArmy().stream().anyMatch(u -> u.getId().equals(passager.getId())),
+                "Le passager reste dans le secteur");
+    }
+
+    private Unit addUnit(Sector sector, Player player, UnitClass... classes) {
+        Unit unit = newUnit(player.getId(), UnitType.MALFRAT, Set.of(classes));
+        sector.addUnit(unit);
+        entityManager.persist(unit);
+        entityManager.flush();
+        return unit;
+    }
+
+    private Long placeVehicle(Player player, Board board, Sector sector) {
+        BuyVehicleRequestDto item = new BuyVehicleRequestDto();
+        item.setVehicleType("VTT_LEGER");
+        item.setQuantity(1);
+        Long vehicleId = vehicleService.buyVehiclesBatch(player.getUserId(), List.of(item))
+                .getFirst().getId();
+        vehicleService.placeVehicle(vehicleId, board.getId(), sector.getNumber(), player.getUserId());
+        return vehicleId;
     }
 
     private double fund(Player player) {

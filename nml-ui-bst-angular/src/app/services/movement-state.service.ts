@@ -24,6 +24,10 @@ export class MovementStateService {
     () => new Set(this._orders().flatMap((o) => o.entityIds ?? [])),
   );
 
+  readonly pendingVehicleIds = computed<ReadonlySet<number>>(
+    () => new Set(this._orders().flatMap((o) => (o.vehicleId != null ? [o.vehicleId] : []))),
+  );
+
   pendingForUnit(unitId: number): MovementOrder[] {
     return this._orders().filter((o) => o.entityIds?.includes(unitId));
   }
@@ -53,6 +57,20 @@ export class MovementStateService {
     } catch (error) {
       this._error.set(
         httpErrorMessage(error, "Erreur lors de la création de l'ordre de déplacement"),
+      );
+      return null;
+    }
+  }
+
+  async placeVehicleOrder(vehicleId: number, route: number[]): Promise<MovementOrder | null> {
+    this._error.set(null);
+    try {
+      const order = await firstValueFrom(this.api.placeVehicleMovement(vehicleId, route));
+      await this.loadOrders();
+      return order;
+    } catch (error) {
+      this._error.set(
+        httpErrorMessage(error, "Erreur lors de la création de l'ordre de déplacement du véhicule"),
       );
       return null;
     }

@@ -123,10 +123,13 @@ Open **http://localhost:4200** in your browser.
 
 | Username | Password | Role |
 |----------|----------|------|
-| test | test | USER |
-| a | a | USER |
+| cegorach | cegorach | USER |
+| mortarion | mortarion | USER |
+| angron | angron | USER |
 | lurio | lurio | USER |
 | nursek | nursek | USER |
+| imotekh | imotekh | USER |
+| trazyn | trazyn | USER |
 | admin | admin | ADMIN |
 
 ---
@@ -172,7 +175,7 @@ from the entities, or Flyway from the `.sql` files), and what gets seeded.
 | | *default* (none) | `dev` | `test` | `prod` |
 |---|---|---|---|---|
 | **Engine** | H2 in-memory | H2 in-memory | **PostgreSQL 14** (embedded) | **PostgreSQL 14** |
-| **Schema built by** | Hibernate `ddl-auto=update` | Hibernate `ddl-auto=update` | **Flyway V1→V10** | **Flyway V1→V10** |
+| **Schema built by** | Hibernate `ddl-auto=update` | Hibernate `ddl-auto=update` | **Flyway (toutes)** | **Flyway (toutes)** |
 | **Hibernate role** | writes | writes | **validates** | **validates** |
 | **Flyway** | disabled | disabled | enabled | enabled |
 | **Demo board + 5 players** | yes | yes | yes | no |
@@ -195,7 +198,7 @@ JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run
 ```
 
 - Database: H2 in-memory, `ddl-auto=update`, wiped on every restart
-- Imports the demo board and the 5 demo players, but creates **no user account** — you cannot log in
+- Imports the demo board and the 7 demo players, and creates a login per player (password = username)
 - Refresh cookie is always `Secure` (works on `localhost`, a secure context)
 - Swagger UI available
 
@@ -206,7 +209,7 @@ JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run -Dspring-boot.run.profiles=
 ```
 
 - Same H2 in-memory DB and same demo import as the default profile
-- **Auto-creates the 6 dev accounts** listed above (`DevDataInitializer`, `dev` only)
+- **Auto-creates the 8 dev accounts** listed above (`DevDataInitializer`, `dev` only)
 - H2 console **disabled** (even in dev)
 
 ### `test` — used by Maven Surefire
@@ -217,7 +220,7 @@ JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run -Dspring-boot.run.profiles=
 
 - **Real PostgreSQL 14**, started inside the JVM by the `@EmbeddedPostgresTest` annotation (native
   binaries pulled from Maven — no Docker, nothing to install)
-- Schema built by Flyway V1→V10 and verified by `ddl-auto=validate`, exactly like prod
+- Schema built by Flyway and verified by `ddl-auto=validate`, exactly like prod
 - Hardcoded test secrets
 - No external configuration needed
 

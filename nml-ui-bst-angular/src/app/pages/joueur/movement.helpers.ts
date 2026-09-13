@@ -1,10 +1,11 @@
-import type { GameCharacter, Sector, Unit } from '../../models';
+import type { GameCharacter, Sector, Unit, Vehicle } from '../../models';
 
 export type SectorKind = 'own' | 'neutral' | 'enemy' | 'unknown';
 
 export interface MovableEntities {
   units: Unit[];
   character: GameCharacter | null;
+  vehicles: Vehicle[];
 }
 
 /** Portée d'une unité = max de ses classes (défaut 1). */
@@ -15,10 +16,15 @@ export function unitMaxHops(unit: Unit): number {
 }
 
 /** Portée du groupe = min des entités : le backend valide la route hop par hop. */
-export function groupMaxHops(units: Unit[], character: GameCharacter | null): number {
+export function groupMaxHops(
+  units: Unit[],
+  character: GameCharacter | null,
+  vehicles: Vehicle[] = [],
+): number {
   const hops = units.map(unitMaxHops);
   // Le personnage n'a pas de classe : 1 secteur, comme MovementService.validateFootHops.
   if (character) hops.push(1);
+  vehicles.forEach((vehicle) => hops.push(vehicle.speed));
   return hops.length ? Math.min(...hops) : 0;
 }
 
@@ -82,21 +88,39 @@ export function sectorKind(sector: Sector | null | undefined, playerId: number |
 
 /**
  * Entités déplaçables d'un secteur : propriété stricte (le backend exige
- * `playerId.equals`) et hors des ordres PENDING existants.
+ * `playerId.equals`) et hors des ordres PENDING existants. Un véhicule sans
+ * pilote ne bouge pas (Vehicle.cantMove).
  */
 export function movableEntities(
   sector: Sector,
   playerId: number,
   pendingIds: ReadonlySet<number>,
+  pendingVehicleIds: ReadonlySet<number> = new Set(),
 ): MovableEntities {
-  const units = (sector.army ?? []).filter((u) => u.playerId === playerId && !pendingIds.has(u.id));
+  const crewIds = new Set<number>();
+  for (const vehicle of sector.vehicles ?? []) {
+    if (vehicle.pilotId != null) crewIds.add(vehicle.pilotId);
+    for (const passengerId of vehicle.passengerIds ?? []) crewIds.add(passengerId);
+  }
+  const units = (sector.army ?? []).filter(
+    (u) => u.playerId === playerId && !pendingIds.has(u.id) && !crewIds.has(u.id),
+  );
   const character = sector.character;
   const movableCharacter =
     character &&
     character.playerId === playerId &&
     character.id != null &&
-    !pendingIds.has(character.id)
+    !pendingIds.has(character.id) &&
+    !crewIds.has(character.id)
       ? character
       : null;
-  return { units, character: movableCharacter };
+  const vehicles = (sector.vehicles ?? []).filter(
+    (v) =>
+      v.id != null &&
+      v.playerId === playerId &&
+      !v.isDestroyed &&
+      v.hasPilot &&
+      !pendingVehicleIds.has(v.id),
+  );
+  return { units, character: movableCharacter, vehicles };
 }

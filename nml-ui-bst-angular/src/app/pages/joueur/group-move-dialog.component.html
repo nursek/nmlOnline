@@ -53,6 +53,22 @@
         </div>
       }
 
+      @for (vehicle of movable().vehicles; track vehicle.id) {
+        <div class="gmd-entity">
+          <mat-checkbox
+            [checked]="isSelected(vehicle.id!)"
+            (change)="toggle(vehicle.id!, $event.checked)"
+            [attr.aria-label]="'Sélectionner le véhicule ' + vehicle.displayName"
+          >
+            <span class="gmd-name">{{ vehicle.displayName }}</span>
+          </mat-checkbox>
+          @if (vehicle.pilotName) {
+            <span class="gmd-exp">Pilote : {{ vehicle.pilotName }}</span>
+          }
+          <span class="gmd-hops">{{ vehicle.speed }} secteur(s)</span>
+        </div>
+      }
+
       @if (totalMovableCount() === 0) {
         <div class="gmd-empty">
           <mat-icon>block</mat-icon>

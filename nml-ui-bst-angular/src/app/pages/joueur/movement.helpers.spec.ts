@@ -6,7 +6,7 @@ import {
   sectorKind,
   unitMaxHops,
 } from './movement.helpers';
-import type { GameCharacter, Sector, Unit } from '../../models';
+import type { GameCharacter, Sector, Unit, Vehicle } from '../../models';
 
 function unit(id: number, playerId: number | null, maxHops: number): Unit {
   return {
@@ -86,6 +86,28 @@ function sector(
   };
 }
 
+function vehicle(id: number, playerId: number, extra: Partial<Vehicle> = {}): Vehicle {
+  return {
+    id,
+    playerId,
+    vehicleType: 'VTT_LEGER',
+    displayName: 'VTT léger',
+    pdf: 0,
+    defense: 50,
+    isDestroyed: false,
+    speed: 2,
+    capacity: 10,
+    passengerCount: 0,
+    hasPilot: true,
+    pilotId: 99,
+    pilotName: 'PILOTE n°1',
+    passengerIds: [],
+    sectorNumber: 1,
+    boardId: 1,
+    ...extra,
+  };
+}
+
 // Graphe : 1-2, 2-3, 3-4, 2-5.
 const graph: Sector[] = [
   sector(1, 1, [2]),
@@ -109,6 +131,11 @@ describe('movement.helpers', () => {
     it('compte le personnage comme 1 secteur', () => {
       expect(groupMaxHops([unit(1, 1, 2)], character(9, 1))).toBe(1);
       expect(groupMaxHops([], null)).toBe(0);
+    });
+
+    it('borne le groupe par la vitesse du véhicule', () => {
+      expect(groupMaxHops([], null, [vehicle(50, 1)])).toBe(2);
+      expect(groupMaxHops([unit(1, 1, 1)], null, [vehicle(50, 1)])).toBe(1);
     });
   });
 
@@ -166,6 +193,33 @@ describe('movement.helpers', () => {
 
       const ordered = sector(1, 1, [], { character: character(99, 1) });
       expect(movableEntities(ordered, 1, new Set([99])).character).toBeNull();
+    });
+
+    it('ne retient que les véhicules possédés, pilotés et hors ordre', () => {
+      const s = sector(1, 1, [], {
+        vehicles: [
+          vehicle(50, 1),
+          vehicle(51, 1, { hasPilot: false }),
+          vehicle(52, 2),
+          vehicle(53, 1, { isDestroyed: true }),
+        ],
+      });
+
+      const movable = movableEntities(s, 1, new Set(), new Set([50]));
+
+      expect(movable.vehicles.map((v) => v.id)).toEqual([]);
+      expect(movableEntities(s, 1, new Set(), new Set()).vehicles.map((v) => v.id)).toEqual([50]);
+    });
+
+    it('exclut pilote et passagers du déplacement à pied', () => {
+      const s = sector(1, 1, [], {
+        army: [unit(10, 1, 1), unit(11, 1, 1), unit(12, 1, 1)],
+        vehicles: [vehicle(50, 1, { pilotId: 10, passengerIds: [11] })],
+      });
+
+      const movable = movableEntities(s, 1, new Set(), new Set());
+
+      expect(movable.units.map((u) => u.id)).toEqual([12]);
     });
   });
 });

@@ -2,6 +2,7 @@ package com.mg.nmlonline.mapper;
 
 import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.api.dto.VehicleTypeDto;
+import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,11 @@ public class VehicleMapper {
         dto.setCapacity(vehicle.getCapacity());
         dto.setPassengerCount(vehicle.getPassengerCount());
         dto.setHasPilot(vehicle.hasPilot());
+        if (vehicle.getPilot() != null) {
+            dto.setPilotId(vehicle.getPilot().getId());
+            dto.setPilotName(vehicle.getPilot().getDisplayName());
+        }
+        dto.setPassengerIds(vehicle.getPassengers().stream().map(CombatEntity::getId).toList());
         if (vehicle.getSector() != null) {
             dto.setSectorNumber(vehicle.getSector().getNumber());
             dto.setBoardId(vehicle.getSector().getBoard() != null ? vehicle.getSector().getBoard().getId() : null);

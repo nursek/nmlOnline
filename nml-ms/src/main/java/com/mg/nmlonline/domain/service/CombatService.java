@@ -257,6 +257,7 @@ public class CombatService {
 
         for (Unit unit : new ArrayList<>(sector.getUnits())) {
             if (isCasualty(unit, beforeIds, survivorIds)) {
+                detachPilotFromVehicles(unit);
                 // Sector.army sans orphanRemoval (docs/jpa-pitfalls.md §1, V6) : em.remove cascade vers Unit.unitEquipments (cascade=ALL) → DELETE propre. Retrait mémoire pour cohérence de sector.getUnits().
                 em.remove(unit);
                 sector.getUnits().remove(unit);
@@ -469,6 +470,15 @@ public class CombatService {
             }
             vehicle.disembark(character);
         }
+    }
+
+    // pilot_id est porté par la ligne du véhicule : un pilote supprimé doit être détaché avant le DELETE.
+    private void detachPilotFromVehicles(CombatEntity entity) {
+        List<Vehicle> piloted = em.createQuery(
+                        "select v from Vehicle v where v.pilot.id = :entityId", Vehicle.class)
+                .setParameter("entityId", entity.getId())
+                .getResultList();
+        piloted.forEach(Vehicle::removePilot);
     }
 
     private SectorBattleResult failedResult(String message) {

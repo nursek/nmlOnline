@@ -6,7 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { GameCharacter, Sector } from '../../models';
+import { GameCharacter, Sector, Vehicle } from '../../models';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { MovementStateService } from '../../services/movement-state.service';
 import { ExpPipe } from '../../shared/exp.pipe';
@@ -73,7 +73,12 @@ export class GroupMoveDialogComponent {
 
   /** Déplaçables = propriété stricte + hors ordres PENDING (mis à jour après loadOrders). */
   readonly movable = computed(() =>
-    movableEntities(this.data.sector, this.data.playerId, this.movementState.pendingEntityIds()),
+    movableEntities(
+      this.data.sector,
+      this.data.playerId,
+      this.movementState.pendingEntityIds(),
+      this.movementState.pendingVehicleIds(),
+    ),
   );
 
   readonly selectedUnits = computed(() =>
@@ -85,15 +90,27 @@ export class GroupMoveDialogComponent {
     return character?.id != null && !this.deselectedIds().has(character.id) ? character : null;
   });
 
+  readonly selectedVehicles = computed(() =>
+    this.movable().vehicles.filter((v) => v.id != null && !this.deselectedIds().has(v.id)),
+  );
+
   readonly selectedCount = computed(
-    () => this.selectedUnits().length + (this.selectedCharacter() ? 1 : 0),
+    () =>
+      this.selectedUnits().length +
+      (this.selectedCharacter() ? 1 : 0) +
+      this.selectedVehicles().length,
   );
 
   readonly totalMovableCount = computed(
-    () => this.movable().units.length + (this.movable().character ? 1 : 0),
+    () =>
+      this.movable().units.length +
+      (this.movable().character ? 1 : 0) +
+      this.movable().vehicles.length,
   );
 
-  readonly maxHops = computed(() => groupMaxHops(this.selectedUnits(), this.selectedCharacter()));
+  readonly maxHops = computed(() =>
+    groupMaxHops(this.selectedUnits(), this.selectedCharacter(), this.selectedVehicles()),
+  );
 
   readonly reachableTargets = computed(() =>
     reachableTargets(this.allSectors(), this.data.sectorNumber, this.maxHops()),
@@ -134,6 +151,9 @@ export class GroupMoveDialogComponent {
     const ids = new Set<number>(this.movable().units.map((u) => u.id));
     const character = this.movable().character;
     if (character?.id != null) ids.add(character.id);
+    this.movable().vehicles.forEach((v) => {
+      if (v.id != null) ids.add(v.id);
+    });
     this.deselectedIds.set(ids);
   }
 
@@ -146,8 +166,11 @@ export class GroupMoveDialogComponent {
     const entityIds = this.selectedUnits().map((u) => u.id);
     const character = this.selectedCharacter();
     if (character?.id != null) entityIds.push(character.id);
+    const vehicleIds = this.selectedVehicles()
+      .map((v) => v.id)
+      .filter((id): id is number => id != null);
 
-    if (to === null || entityIds.length === 0) return;
+    if (to === null || (entityIds.length === 0 && vehicleIds.length === 0)) return;
 
     const route = findRoute(this.allSectors(), this.data.sectorNumber, to, this.maxHops());
     if (route.length < 2) {
@@ -159,18 +182,37 @@ export class GroupMoveDialogComponent {
 
     this.busy.set(true);
     try {
-      const order = await this.movementState.placeFootOrder(entityIds, route);
-      if (order) {
-        this.snackBar.open(
-          `Ordre groupé : secteur ${this.data.sectorNumber} → ${to} (${entityIds.length} entité(s))`,
-          'OK',
-          { duration: 3000 },
-        );
-        this.dialogRef.close(true);
-      } else {
+      let movedCount = 0;
+      let ok = true;
+      if (entityIds.length > 0) {
+        const order = await this.movementState.placeFootOrder(entityIds, route);
+        if (order) {
+          movedCount += entityIds.length;
+        } else {
+          ok = false;
+        }
+      }
+      for (const vehicleId of vehicleIds) {
+        const order = await this.movementState.placeVehicleOrder(vehicleId, route);
+        if (order) {
+          movedCount += 1;
+        } else {
+          ok = false;
+        }
+      }
+
+      if (!ok) {
         const error = this.movementState.error();
         if (error) this.snackBar.open(error, 'Fermer', { duration: 5000 });
+        return;
       }
+
+      this.snackBar.open(
+        `Ordre groupé : secteur ${this.data.sectorNumber} → ${to} (${movedCount} entité(s))`,
+        'OK',
+        { duration: 3000 },
+      );
+      this.dialogRef.close(true);
     } finally {
       this.busy.set(false);
     }

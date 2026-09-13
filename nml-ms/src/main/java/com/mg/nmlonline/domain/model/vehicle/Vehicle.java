@@ -3,8 +3,8 @@ package com.mg.nmlonline.domain.model.vehicle;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.EntityCategory;
-import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.Unit;
+import com.mg.nmlonline.domain.model.unit.UnitClass;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -82,12 +82,9 @@ public class Vehicle extends CombatEntity {
 
     public boolean assignPilot(CombatEntity entity) {
         if (entity == null) return false;
-
         if (entity instanceof Unit unit && !unit.getClassesSet().contains(UnitClass.PILOTE_DESTRUCTEUR)) {
-                return false;
+            return false;
         }
-
-        // Les personnages peuvent piloter sans restriction de classe.
         this.pilot = entity;
         return true;
     }

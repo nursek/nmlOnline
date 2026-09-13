@@ -2,7 +2,10 @@ package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.BuyVehicleBatchRequestDto;
 import com.mg.nmlonline.api.dto.BuyVehicleRequestDto;
+import com.mg.nmlonline.api.dto.MovementOrderDto;
+import com.mg.nmlonline.api.dto.PlaceVehicleOrderRequestDto;
 import com.mg.nmlonline.api.dto.PlaceVehicleRequestDto;
+import com.mg.nmlonline.api.dto.SetVehicleCrewRequestDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.api.dto.VehicleTypeDto;
 import com.mg.nmlonline.domain.service.VehicleService;
@@ -75,5 +78,30 @@ public class VehicleController {
         }
         VehicleDto vehicle = vehicleService.placeVehicleDto(id, request.getBoardId(), request.getSectorNumber(), authenticatedUserId);
         return ResponseEntity.ok(vehicle);
+    }
+
+    @PutMapping("/{id}/crew")
+    public ResponseEntity<VehicleDto> setCrew(@PathVariable Long id,
+                                              @RequestBody SetVehicleCrewRequestDto request,
+                                              HttpServletRequest httpRequest) {
+        Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
+        if (authenticatedUserId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        VehicleDto vehicle = vehicleService.setCrew(authenticatedUserId, id,
+                request.getPilotId(), request.getPassengerIds());
+        return ResponseEntity.ok(vehicle);
+    }
+
+    @PostMapping("/{id}/movement")
+    public ResponseEntity<MovementOrderDto> placeVehicleOrder(@PathVariable Long id,
+                                                              @Valid @RequestBody PlaceVehicleOrderRequestDto request,
+                                                              HttpServletRequest httpRequest) {
+        Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
+        if (authenticatedUserId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        MovementOrderDto order = vehicleService.placeVehicleOrderDto(authenticatedUserId, id, request.getRoute());
+        return ResponseEntity.ok(order);
     }
 }
