@@ -434,10 +434,35 @@ public class MovementService {
             if (ctx.conflicts.stream().anyMatch(c -> c.sectorNumber() == sectorNumber)) continue;
 
             Sector sector = board.getSector(sectorNumber);
-            if (sector != null) {
-                capture(board, sector, transit.getValue(), true, ctx);
-            }
+            if (sector == null || holdsOtherPlayerEntity(sector, transit.getValue())) continue;
+            capture(board, sector, transit.getValue(), true, ctx);
         }
+    }
+
+    /** Cession du secteur au vainqueur d'une bataille résolue par l'admin : ses survivants peuvent quitter le secteur au hop suivant. */
+    public void captureAfterBattle(Board board, ResolutionContext ctx, int sectorNumber, Long winnerId) {
+        Sector sector = board.getSector(sectorNumber);
+        if (sector == null || winnerId == null) return;
+        if (holdsOtherPlayerEntity(sector, winnerId) || !hasSurvivingCapturingEntity(sector, winnerId)) return;
+        capture(board, sector, winnerId, false, ctx);
+    }
+
+    /** Une entité étrangère non détruite tient le terrain : elle garde le secteur, pas de capture à la volée. */
+    private boolean holdsOtherPlayerEntity(Sector sector, Long playerId) {
+        return sector.getCombatEntities().stream()
+                .filter(e -> !e.isDestroyed())
+                .filter(e -> e.getPlayerId() != null && !e.getPlayerId().equals(playerId))
+                .filter(e -> !(e instanceof Building building) || !building.isCaptured())
+                .findAny()
+                .isPresent();
+    }
+
+    /** Anéantissement mutuel : un vainqueur sans survivant ne prend pas le secteur (les bâtiments ne capturent pas). */
+    private boolean hasSurvivingCapturingEntity(Sector sector, Long playerId) {
+        return sector.getCombatEntities().stream()
+                .filter(e -> playerId.equals(e.getPlayerId()))
+                .filter(e -> !e.isDestroyed())
+                .anyMatch(e -> !(e instanceof Building));
     }
 
     /** Un seul joueur présent avec une unité/personnage/véhicule survivant ; les bâtiments ne capturent pas mais bloquent. */

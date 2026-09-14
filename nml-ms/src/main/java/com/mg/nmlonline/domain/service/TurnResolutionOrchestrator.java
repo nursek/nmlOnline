@@ -137,6 +137,10 @@ public class TurnResolutionOrchestrator {
             rb = ResolvedBattle.duel(pc.sectorNumber, attacker.getId(), defender.getId(), r);
         }
 
+        if (rb.winnerId() != null) {
+            movementService.captureAfterBattle(board, s.ctx, pc.sectorNumber, rb.winnerId());
+        }
+
         s.resolvedConflicts.add(rb);
         s.pendingConflicts.remove(pc);
         return toBattleDto(rb, resolveNames(rb));

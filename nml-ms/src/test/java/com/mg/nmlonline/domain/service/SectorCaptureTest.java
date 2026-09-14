@@ -194,6 +194,26 @@ class SectorCaptureTest {
     }
 
     @Test
+    @DisplayName("un véhicule adverse stationnaire annule la capture à la volée sans capture fantôme")
+    void vehiculeAdverseStationnaire_annuleLaCaptureALaVolee() {
+        secteur1.setOwnerId(JOUEUR_A);
+        secteur2.setOwnerId(JOUEUR_B);
+        Vehicle vehicule = new Vehicle(VehicleType.VTT_LEGER, JOUEUR_B);
+        vehicule.setId(201L);
+        vehicule.setSector(secteur2);
+        secteur2.getVehicles().add(vehicule);
+        addUnit(secteur1, JOUEUR_A, 101L, UnitClass.LEGER);
+        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2, 3));
+        ordre.setId(1L);
+        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordre));
+
+        MovementResolutionResult resultat = service.resolveAllMovements(1, board);
+
+        assertEquals(JOUEUR_B, secteur2.getOwnerId(), "Le véhicule stationnaire reste maître du secteur");
+        assertNull(captureFor(resultat, 2), "Aucune capture ne doit être rapportée pour ce secteur");
+    }
+
+    @Test
     @DisplayName("véhicule ou personnage seul présent sur un secteur neutre le capture en fin de tour")
     void vehiculeEtPersonnage_capturentParPresence() {
         Vehicle vehicule = new Vehicle(VehicleType.VTT_LEGER, JOUEUR_C);
