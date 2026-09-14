@@ -86,7 +86,12 @@ export class AdminService {
     try {
       const res = await firstValueFrom(this.api.adminAdvanceTurn());
       this._currentTurn.set(res.currentTurn);
-      this._successMessage.set(`Tour ${res.currentTurn} en cours — mouvements résolus.`);
+      const captures = res.capturedSectors?.length ?? 0;
+      this._successMessage.set(
+        captures > 0
+          ? `Tour ${res.currentTurn} en cours — mouvements résolus, ${captures} secteur(s) capturé(s).`
+          : `Tour ${res.currentTurn} en cours — mouvements résolus.`,
+      );
       this.reloadPlayers();
       this.reloadOrders();
     } catch (error) {

@@ -3,10 +3,12 @@ package com.mg.nmlonline.mapper;
 import com.mg.nmlonline.api.dto.AdminMovementOrderDto;
 import com.mg.nmlonline.api.dto.MovementOrderDto;
 import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
+import com.mg.nmlonline.api.dto.SectorCaptureDto;
 import com.mg.nmlonline.api.dto.SectorConflictDto;
 import com.mg.nmlonline.api.dto.TransitCombatResultDto;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
+import com.mg.nmlonline.domain.model.movement.SectorCapture;
 import com.mg.nmlonline.domain.model.movement.SectorConflict;
 import com.mg.nmlonline.domain.model.movement.TransitCombatResult;
 import org.springframework.stereotype.Component;
@@ -64,6 +66,7 @@ public class MovementMapper {
         dto.setBlocked(toAdminDtoList(result.getBlocked(), namesById));
         dto.setConflicts(toConflictDtoList(result.getConflicts(), namesById));
         dto.setTransitCombats(toTransitDtoList(result.getTransitCombats()));
+        dto.setCapturedSectors(toCaptureDtoList(result.getCaptures(), namesById));
         dto.setHasConflicts(result.hasConflicts());
         dto.setHasTransitCombats(result.hasTransitCombats());
         return dto;
@@ -105,6 +108,20 @@ public class MovementMapper {
             dto.setSectorNumber(t.sectorNumber());
             dto.setVehicleId(t.vehicleId());
             dto.setVehicleFired(t.vehicleFired());
+            list.add(dto);
+        }
+        return list;
+    }
+
+    private List<SectorCaptureDto> toCaptureDtoList(List<SectorCapture> captures,
+                                                    Function<Long, String> namesById) {
+        List<SectorCaptureDto> list = new ArrayList<>(captures.size());
+        for (SectorCapture capture : captures) {
+            SectorCaptureDto dto = new SectorCaptureDto();
+            dto.setSectorNumber(capture.sectorNumber());
+            dto.setPlayerId(capture.playerId());
+            dto.setPlayerName(namesById.apply(capture.playerId()));
+            dto.setOnTheFly(capture.onTheFly());
             list.add(dto);
         }
         return list;

@@ -274,6 +274,13 @@
       color: #991b1b;
       font-weight: 700;
     }
+
+    .summary-chip.captured.active {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #065f46;
+      font-weight: 700;
+    }
   }
 
   .report-section {
@@ -298,6 +305,7 @@
 
     .conflicts-list,
     .transit-list,
+    .captures-list,
     .blocked-list {
       display: flex;
       flex-direction: column;
@@ -359,6 +367,31 @@
       }
       .transit-fired.no-fire {
         color: shared.$text-muted;
+      }
+    }
+
+    .capture-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: #ecfdf5;
+
+      .capture-sector {
+        font-weight: 700;
+        color: #065f46;
+        min-width: 110px;
+      }
+
+      .capture-badge {
+        padding: 1px 8px;
+        border-radius: 999px;
+        background: rgba(16, 185, 129, 0.15);
+        color: #065f46;
+        font-size: 0.72rem;
+        font-weight: 600;
+        white-space: nowrap;
       }
     }
 

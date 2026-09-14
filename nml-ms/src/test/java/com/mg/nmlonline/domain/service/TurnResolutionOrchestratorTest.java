@@ -155,8 +155,125 @@ class TurnResolutionOrchestratorTest {
         TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
         assertEquals(turn + 1, fin.getNewTurn());
         assertTrue(fin.getResolvedOrders() >= 1, "L'ordre de l'attaquant doit être résolu");
+        assertEquals(1, fin.getCapturedSectors().size(),
+                "Le vainqueur de la bataille capture le secteur");
+        assertEquals(s2.getNumber(), fin.getCapturedSectors().getFirst().getSectorNumber());
+        assertEquals(attackerId, fin.getCapturedSectors().getFirst().getPlayerId());
+        assertEquals(attackerId, s2Refreshed.getOwnerId(),
+                "Le secteur contesté passe au vainqueur à la finalisation");
 
         assertFalse(orchestrator.getState().isActive());
+    }
+
+    @Test
+    @DisplayName("le vainqueur d'une bataille intermédiaire garde le secteur même si son unité repart au hop suivant")
+    @Transactional
+    void battleWinnerKeepsIntermediateSectorAfterMovingOn() {
+        Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+        List<Player> players = playerRepository.findAll();
+        Player attacker = players.get(0);
+        Player defender = players.stream()
+                .filter(p -> !p.getId().equals(attacker.getId()))
+                .findFirst().orElseThrow();
+
+        Sector departure = board.getSector(7);
+        Sector contested = board.getSector(9);
+        Sector destination = board.getSector(14);
+        assertTrue(contested.isNeutral() && contested.getArmySize() == 0,
+                "Prérequis : le secteur 9 est neutre et vide");
+
+        Unit leger = new Unit(8.0, UnitClass.LEGER);
+        leger.setPlayerId(attacker.getId());
+        departure.addUnit(leger);
+        Unit larbin = new Unit(0.0, UnitClass.TIREUR);
+        larbin.setPlayerId(defender.getId());
+        contested.addUnit(larbin);
+        em.flush();
+
+        int turn = turnService.getCurrentTurn();
+        orderRepository.deleteAll(orderRepository.findPendingByTurn(turn));
+        em.flush();
+
+        MovementOrder order = MovementOrder.createFootOrder(attacker.getId(), turn, List.of(leger.getId()),
+                List.of(departure.getNumber(), contested.getNumber(), destination.getNumber()));
+        orderRepository.save(order);
+        em.flush();
+
+        orchestrator.startSession();
+        TurnResolutionStateDto state = orchestrator.advanceHop();
+        assertEquals(1, state.getPendingConflicts().size(), "Conflit attendu au secteur intermédiaire");
+        PendingConflictDto conflict = state.getPendingConflicts().getFirst();
+        assertEquals(contested.getNumber(), conflict.getSectorNumber());
+        ResolvedBattleDto report = orchestrator.resolveBattle(conflict.getConflictId());
+        assertTrue(report.isSuccess());
+        assertEquals(attacker.getId(), report.getWinnerId(), "Le LEGER anéantit le LARBIN");
+
+        state = orchestrator.advanceHop();
+        assertEquals(2, state.getCurrentStep(), "Le LEGER repart vers le secteur 14");
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+
+        em.flush();
+        em.clear();
+        Sector contestedRefreshed = boardRepository.findAll().stream()
+                .findFirst().orElseThrow().getSector(contested.getNumber());
+        assertEquals(attacker.getId(), contestedRefreshed.getOwnerId(),
+                "Le vainqueur de la bataille garde le contrôle du secteur quitté");
+        assertTrue(fin.getCapturedSectors().stream()
+                        .anyMatch(c -> c.getSectorNumber() == contested.getNumber()),
+                "La capture du secteur intermédiaire est rapportée");
+    }
+
+    @Test
+    @DisplayName("anéantissement mutuel : le secteur contesté reste neutre")
+    @Transactional
+    void mutualAnnihilationLeavesSectorNeutral() {
+        Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+        List<Player> players = playerRepository.findAll();
+        Player attacker = players.get(0);
+        Player defender = players.stream()
+                .filter(p -> !p.getId().equals(attacker.getId()))
+                .findFirst().orElseThrow();
+
+        Sector s1 = board.getAllSectors().stream()
+                .filter(s -> s.isNeutral() && s.getArmySize() == 0)
+                .findFirst().orElseThrow(() -> new AssertionError("Aucun secteur neutre vide pour s1"));
+        Sector s2 = board.getAllSectors().stream()
+                .filter(s -> s.isNeutral() && s.getArmySize() == 0 && s.getNumber() != s1.getNumber())
+                .findFirst().orElseThrow(() -> new AssertionError("Aucun secteur neutre vide pour s2"));
+
+        // 10 atk vs 10 def : les deux LARBINs se détruisent, le défenseur est déclaré vainqueur sans survivant.
+        Unit attaquant = new Unit(0.0, UnitClass.TIREUR);
+        attaquant.setPlayerId(attacker.getId());
+        s1.addUnit(attaquant);
+        Unit defenseur = new Unit(0.0, UnitClass.TIREUR);
+        defenseur.setPlayerId(defender.getId());
+        s2.addUnit(defenseur);
+        em.flush();
+
+        int turn = turnService.getCurrentTurn();
+        orderRepository.deleteAll(orderRepository.findPendingByTurn(turn));
+        em.flush();
+
+        MovementOrder order = MovementOrder.createFootOrder(attacker.getId(), turn, List.of(attaquant.getId()),
+                List.of(s1.getNumber(), s2.getNumber()));
+        orderRepository.save(order);
+        em.flush();
+
+        orchestrator.startSession();
+        TurnResolutionStateDto state = orchestrator.advanceHop();
+        ResolvedBattleDto report = orchestrator.resolveBattle(state.getPendingConflicts().getFirst().getConflictId());
+        assertEquals(defender.getId(), report.getWinnerId(), "Les deux camps sont anéantis : le défenseur est vainqueur");
+        assertEquals(1, report.getAttackerCasualties());
+        assertEquals(1, report.getDefenderCasualties());
+
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+
+        em.flush();
+        em.clear();
+        Sector s2Refreshed = boardRepository.findAll().stream()
+                .findFirst().orElseThrow().getSector(s2.getNumber());
+        assertNull(s2Refreshed.getOwnerId(), "Sans survivant, le vainqueur ne prend pas le secteur neutre");
+        assertTrue(fin.getCapturedSectors().stream().noneMatch(c -> c.getSectorNumber() == s2.getNumber()));
     }
 
     @Test

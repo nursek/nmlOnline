@@ -122,9 +122,10 @@ public class AdminController {
 
     @PostMapping("/turn/next")
     public Map<String, Object> advanceTurn() {
-        int newTurn = turnService.advanceTurn();
-        logger.info("[ADMIN] Tour avancé -> {}", newTurn);
-        return Map.of("currentTurn", newTurn);
+        TurnService.TurnAdvanceResult result = turnService.advanceTurnAndReport();
+        logger.info("[ADMIN] Tour avancé -> {} ({} secteur(s) capturé(s))",
+                result.newTurn(), result.captures().size());
+        return Map.of("currentTurn", result.newTurn(), "capturedSectors", result.captures());
     }
 
     @GetMapping("/turn/orders")

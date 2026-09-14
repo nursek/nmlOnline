@@ -1,11 +1,15 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
+import com.mg.nmlonline.domain.model.movement.SectorCapture;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.util.List;
 
 /**
  * Source unique de vérité du tour courant du plateau ({@link Board#getCurrentTurn()}).
@@ -80,6 +84,13 @@ public class TurnService {
 
     /** Termine le tour : résout les mouvements PENDING puis incrémente le compteur. */
     public int advanceTurn() {
+        return advanceTurnAndReport().newTurn();
+    }
+
+    public record TurnAdvanceResult(int newTurn, List<SectorCapture> captures) {
+    }
+
+    public TurnAdvanceResult advanceTurnAndReport() {
         if (!turnLock.tryAcquire()) {
             throw new IllegalStateException("Un advanceTurn ou une résolution pas-à-pas est déjà en cours");
         }
@@ -91,7 +102,7 @@ public class TurnService {
             int turnEnding = board.getCurrentTurn();
 
             // Résolution des mouvements du tour qui se termine, AVANT l'incrément.
-            movementService.resolveAllMovements(turnEnding, board);
+            MovementResolutionResult result = movementService.resolveAllMovements(turnEnding, board);
 
             characterService.regenerateAllCharacters();
 
@@ -99,7 +110,7 @@ public class TurnService {
             board.setCurrentTurn(newTurn);
             board = boardRepository.save(board);
             publishTurn(newTurn);
-            return board.getCurrentTurn();
+            return new TurnAdvanceResult(board.getCurrentTurn(), result.getCaptures());
         } finally {
             turnLock.release();
         }

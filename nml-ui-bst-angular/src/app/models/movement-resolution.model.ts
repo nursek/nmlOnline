@@ -33,6 +33,15 @@ export interface TransitCombatResult {
   vehicleFired: boolean;
 }
 
+// Capture de secteur en fin de tour (mirror de SectorCaptureDto).
+// onTheFly = secteur traversé capturé par une unité à double déplacement.
+export interface SectorCapture {
+  sectorNumber: number;
+  playerId: number;
+  playerName?: string | null;
+  onTheFly: boolean;
+}
+
 // Compte-rendu de résolution des mouvements (mirror de MovementResolutionResultDto).
 export interface MovementResolutionResult {
   turn: number;
@@ -40,6 +49,7 @@ export interface MovementResolutionResult {
   blocked: AdminMovementOrder[];
   conflicts: SectorConflict[];
   transitCombats: TransitCombatResult[];
+  capturedSectors: SectorCapture[];
   hasConflicts: boolean;
   hasTransitCombats: boolean;
 }
