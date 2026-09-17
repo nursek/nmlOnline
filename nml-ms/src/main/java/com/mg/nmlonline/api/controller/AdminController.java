@@ -4,6 +4,7 @@ import com.mg.nmlonline.api.dto.AdminMovementOrderDto;
 import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
 import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
+import com.mg.nmlonline.api.dto.RankingCommentRequestDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
@@ -12,8 +13,10 @@ import com.mg.nmlonline.domain.service.AdminService;
 import com.mg.nmlonline.domain.service.BoardAssetStorageService;
 import com.mg.nmlonline.domain.service.MovementAdminService;
 import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.domain.service.RankingService;
 import com.mg.nmlonline.domain.service.TurnResolutionOrchestrator;
 import com.mg.nmlonline.domain.service.TurnService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
@@ -41,19 +44,22 @@ public class AdminController {
     private final TurnService turnService;
     private final MovementAdminService movementAdminService;
     private final TurnResolutionOrchestrator turnResolutionOrchestrator;
+    private final RankingService rankingService;
 
     public AdminController(AdminService adminService,
                            PlayerService playerService,
                            BoardAssetStorageService boardAssetStorageService,
                            TurnService turnService,
                            MovementAdminService movementAdminService,
-                           TurnResolutionOrchestrator turnResolutionOrchestrator) {
+                           TurnResolutionOrchestrator turnResolutionOrchestrator,
+                           RankingService rankingService) {
         this.adminService = adminService;
         this.playerService = playerService;
         this.boardAssetStorageService = boardAssetStorageService;
         this.turnService = turnService;
         this.movementAdminService = movementAdminService;
         this.turnResolutionOrchestrator = turnResolutionOrchestrator;
+        this.rankingService = rankingService;
     }
 
     @GetMapping("/players")
@@ -84,6 +90,14 @@ public class AdminController {
     public ResponseEntity<Map<String, String>> deletePlayer(@PathVariable Long id) {
         adminService.deletePlayer(id);
         return ResponseEntity.ok(Map.of("message", "Joueur supprimé avec succès"));
+    }
+
+    @PutMapping("/players/{id}/ranking-comment")
+    public ResponseEntity<Map<String, String>> updateRankingComment(
+            @PathVariable Long id,
+            @Valid @RequestBody RankingCommentRequestDto request) {
+        rankingService.updateRankingComment(id, request.getComment());
+        return ResponseEntity.ok(Map.of("message", "Commentaire enregistré"));
     }
 
     /**

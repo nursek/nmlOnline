@@ -1,0 +1,119 @@
+<mat-card class="rankings-card">
+  <mat-card-content>
+    <div class="section-header">
+      <mat-icon color="primary">leaderboard</mat-icon>
+      <h2>Classements</h2>
+      @if (available()) {
+        <span class="turn-badge">Tour {{ rankings()!.turn }}</span>
+      }
+    </div>
+
+    @if (!rankings() && rankingsRef.isLoading()) {
+      <p class="rankings-empty">Chargement des classements...</p>
+    } @else if (rankingsRef.error()) {
+      <p class="rankings-error" role="alert">Impossible de charger les classements.</p>
+    } @else if (!available()) {
+      <p class="rankings-empty">Les classements sont disponibles à partir du tour 2.</p>
+    } @else {
+      <div class="rankings-grid">
+        <section class="ranking" aria-label="Classement militaire">
+          <h3><mat-icon>military_tech</mat-icon> Militaire</h3>
+          @for (entry of rankings()!.military; track entry.playerId; let i = $index) {
+            <div class="ranking-row">
+              <span
+                class="rank"
+                [class.rank-1]="i === 0"
+                [class.rank-2]="i === 1"
+                [class.rank-3]="i === 2"
+                >{{ i + 1 }}</span
+              >
+              <span class="dot" [style.background-color]="getPlayerColor(entry.playerId)"></span>
+              <div class="entry-body">
+                <div class="entry-line">
+                  <span class="entry-name">{{ entry.name }}</span>
+                  @if (entry.comment && editingPlayerId() !== entry.playerId) {
+                    <span class="entry-comment" [attr.title]="entry.comment">{{
+                      entry.comment
+                    }}</span>
+                  }
+                  <span class="entry-power">{{ entry.power | number: '1.0-0' }}</span>
+                  @if (isAdmin() && editingPlayerId() !== entry.playerId) {
+                    <button
+                      type="button"
+                      class="edit-icon-btn"
+                      (click)="startEdit(entry)"
+                      [attr.aria-label]="
+                        entry.comment ? 'Modifier l’indice' : 'Ajouter un indice pour ce joueur'
+                      "
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                  }
+                </div>
+                @if (isAdmin() && editingPlayerId() === entry.playerId) {
+                  <div class="comment-edit">
+                    <div
+                      #commentEditor
+                      class="comment-input"
+                      contenteditable="plaintext-only"
+                      role="textbox"
+                      tabindex="0"
+                      aria-label="Indice du MJ"
+                      data-placeholder="Indice pour les joueurs"
+                      (input)="onDraftInput($event)"
+                      (keydown.enter)="save(entry); $event.preventDefault()"
+                      (keydown.escape)="cancelEdit()"
+                    ></div>
+                    <button
+                      mat-icon-button
+                      color="primary"
+                      [disabled]="saving()"
+                      (click)="save(entry)"
+                      aria-label="Enregistrer l'indice"
+                    >
+                      <mat-icon>check</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      [disabled]="saving()"
+                      (click)="cancelEdit()"
+                      aria-label="Annuler la modification"
+                    >
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          } @empty {
+            <p class="rankings-empty">Aucun joueur classé.</p>
+          }
+        </section>
+
+        <section class="ranking" aria-label="Classement économique">
+          <h3><mat-icon>paid</mat-icon> Économique</h3>
+          @for (entry of rankings()!.economic; track entry.playerId; let i = $index) {
+            <div class="ranking-row">
+              <span
+                class="rank"
+                [class.rank-1]="i === 0"
+                [class.rank-2]="i === 1"
+                [class.rank-3]="i === 2"
+                >{{ i + 1 }}</span
+              >
+              <span class="dot" [style.background-color]="getPlayerColor(entry.playerId)"></span>
+              <div class="entry-body">
+                <div class="entry-line">
+                  <span class="entry-name">{{ entry.name }}</span>
+                  <span class="entry-power">{{ entry.power | number: '1.0-0' }}</span>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <p class="rankings-empty">Aucun joueur classé.</p>
+          }
+        </section>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

@@ -70,6 +70,12 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/admin/players/${id}`);
   }
 
+  adminUpdateRankingComment(playerId: number, comment: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/ranking-comment`, {
+      comment,
+    });
+  }
+
   // Board — import en 2 étapes : upload des assets visuels (image + SVG),
   // puis import du board.json en lui passant les URLs renvoyées par l'étape 1.
   adminUploadBoardAssets(

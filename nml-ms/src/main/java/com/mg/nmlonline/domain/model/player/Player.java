@@ -44,6 +44,10 @@ public class Player {
     @Column(name = "user_id", unique = true)
     private Long userId;
 
+    /** Indice du MJ, exposé publiquement dans le classement militaire. */
+    @Column(name = "ranking_comment", length = 500)
+    private String rankingComment;
+
     @Embedded
     private PlayerStats stats = new PlayerStats();
 
