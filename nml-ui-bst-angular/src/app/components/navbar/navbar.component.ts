@@ -80,7 +80,12 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
           @if (!isMobile()) {
             <nav class="nav-links">
               @for (item of menuItems(); track item.path) {
-                <a mat-button [routerLink]="item.path" routerLinkActive="active">
+                <a
+                  mat-button
+                  [routerLink]="item.path"
+                  routerLinkActive="active"
+                  [routerLinkActiveOptions]="{ exact: true }"
+                >
                   <mat-icon>{{ item.icon }}</mat-icon>
                   {{ item.label }}
                 </a>
@@ -133,6 +138,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
                 mat-list-item
                 [routerLink]="item.path"
                 routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
                 (click)="toggleDrawer()"
               >
                 <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
@@ -161,9 +167,19 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         left: 0;
         right: 0;
         z-index: 1001;
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--paper-2);
+        border-bottom: 3px solid var(--ink);
+        box-shadow: 0 6px 0 rgba(23, 21, 15, 0.06);
+      }
+
+      .navbar::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -3px;
+        width: 140px;
+        height: 3px;
+        background: var(--accent);
       }
 
       .navbar-content {
@@ -172,53 +188,63 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         width: 100%;
         max-width: 1400px;
         margin: 0 auto;
-        gap: 16px;
+        gap: 18px;
       }
 
       .logo-link {
         display: flex;
         align-items: center;
         text-decoration: none;
-        color: inherit;
-        gap: 8px;
+        color: var(--ink);
+        gap: 10px;
       }
 
       .logo-icon {
-        font-size: 32px;
-        width: 32px;
-        height: 32px;
-        color: #6366f1;
+        font-size: 20px;
+        width: 34px;
+        height: 34px;
+        line-height: 34px;
+        text-align: center;
+        color: var(--surface);
+        background: var(--accent);
+        border: 1.5px solid var(--ink);
+        border-radius: var(--r-sm);
+        transform: rotate(-3deg);
       }
 
       .logo-text {
-        font-size: 1.25rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--ink);
       }
 
       .nav-links {
         display: flex;
-        gap: 8px;
-        margin-left: 24px;
+        gap: 4px;
+        margin-left: 18px;
       }
 
       .nav-links a {
-        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--ink-2);
 
         &:hover {
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(23, 21, 15, 0.08);
+          color: var(--ink);
         }
 
         &.active {
-          background: #6366f1;
-          color: white;
+          background: var(--line-2);
+          color: var(--ink);
         }
 
         mat-icon {
-          margin-right: 8px;
+          margin-right: 6px;
         }
       }
 
@@ -238,7 +264,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(23, 21, 15, 0.55);
         z-index: 999;
         animation: fadeIn 0.2s ease;
         touch-action: none;
@@ -251,36 +277,40 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         width: 280px;
         max-width: 80vw;
         height: calc(100dvh - 56px);
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        background: var(--paper);
         z-index: 1000;
-        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.4);
+        border-top: 3px solid var(--ink);
+        box-shadow: 6px 0 0 rgba(23, 21, 15, 0.18);
         animation: slideIn 0.25s ease;
         overflow-y: auto;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
-        border-top: 1px solid rgba(99, 102, 241, 0.3);
 
         mat-nav-list {
           padding-top: 8px;
         }
 
         a {
-          color: rgba(255, 255, 255, 0.8);
+          color: var(--ink-2);
+          font-size: 0.82rem;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
 
           mat-icon {
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--ink-3);
           }
 
           &:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(23, 21, 15, 0.06);
           }
 
           &.active {
-            background: rgba(99, 102, 241, 0.2);
-            color: #818cf8;
+            background: var(--line-2);
+            color: var(--ink);
 
             mat-icon {
-              color: #818cf8;
+              color: var(--accent-ink);
             }
           }
         }

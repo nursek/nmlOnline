@@ -57,7 +57,7 @@ export interface PurchaseSuccessData {
         font-size: 36px;
         width: 36px;
         height: 36px;
-        color: #10b981;
+        color: var(--forest);
       }
       h2[mat-dialog-title] {
         margin: 0;
@@ -69,7 +69,7 @@ export interface PurchaseSuccessData {
       }
       .items-list li {
         margin-bottom: 4px;
-        color: rgba(255, 255, 255, 0.85);
+        color: var(--ink-2);
       }
       .total-row {
         display: flex;
@@ -78,16 +78,16 @@ export interface PurchaseSuccessData {
         padding: 12px 0 4px;
       }
       .total-label {
-        color: rgba(255, 255, 255, 0.6);
+        color: var(--muted);
         font-size: 0.9rem;
       }
       .total-value {
         font-weight: 700;
         font-size: 1.1rem;
-        color: #f59e0b;
+        color: var(--sun-deep);
       }
       .total-value.sale {
-        color: #10b981;
+        color: var(--forest-deep);
       }
     `,
   ],

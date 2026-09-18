@@ -7,12 +7,25 @@
 }
 
 .admin-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2.5px solid var(--ink);
   flex-wrap: wrap;
   gap: 16px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2.5px;
+    width: 64px;
+    height: 10px;
+    background: var(--danger);
+  }
 
   .header-left {
     display: flex;
@@ -22,14 +35,11 @@
 
   .admin-avatar {
     @include shared.avatar(56px, 32px);
-    background: linear-gradient(135deg, #ef4444 0%, #ea580c 100%);
+    background: var(--danger);
   }
 
   .admin-title {
     @include shared.gradient-title;
-    background: linear-gradient(135deg, #ef4444 0%, #ea580c 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
   }
 
   .admin-subtitle {
@@ -49,9 +59,9 @@
   gap: 16px;
   padding: 12px 16px;
   margin-bottom: 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--surface);
   flex-wrap: wrap;
 
   .turn-info {
@@ -72,7 +82,7 @@
 
     .turn-value {
       font-weight: 600;
-      color: #b45309;
+      color: var(--sun-deep);
     }
   }
 
@@ -85,9 +95,9 @@
 .orders-panel {
   padding: 16px;
   margin-bottom: 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--surface);
 
   .orders-header {
     display: flex;
@@ -141,9 +151,9 @@
       justify-content: space-between;
       gap: 12px;
       padding: 8px 10px;
-      border-radius: 6px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
+      border-radius: var(--r-xs);
+      background: var(--paper);
+      border: 1.5px solid var(--ink);
 
       .order-main {
         display: flex;
@@ -167,7 +177,7 @@
 
         .order-route {
           font-weight: 600;
-          color: #b45309;
+          color: var(--sun-deep);
 
           .order-route-detail {
             margin-left: 6px;
@@ -194,7 +204,7 @@
 
       .status-badge {
         padding: 2px 8px;
-        border-radius: 999px;
+        border-radius: var(--r-xs);
         font-size: 11px;
         font-weight: 700;
         letter-spacing: 0.04em;
@@ -202,27 +212,27 @@
       }
 
       .status-badge.status-pending {
-        background: rgba(59, 130, 246, 0.18);
-        color: #1e40af;
+        background: rgba(38,64,121, 0.18);
+        color: var(--cobalt-deep);
       }
       .status-badge.status-resolved {
-        background: rgba(34, 197, 94, 0.18);
-        color: #065f46;
+        background: rgba(40,104,67, 0.18);
+        color: var(--forest-deep);
       }
       .status-badge.status-blocked {
-        background: #fef2f2;
-        color: #991b1b;
+        background: var(--danger-tint);
+        color: var(--danger-deep);
       }
       .status-badge.status-cancelled {
-        background: rgba(148, 163, 184, 0.18);
-        color: #475569;
+        background: rgba(93,86,69, 0.18);
+        color: var(--ink-3);
       }
     }
 
     .order-message {
       padding: 4px 10px 6px;
       margin-top: -2px;
-      color: #991b1b;
+      color: var(--danger-deep);
       font-size: 11px;
     }
   }
@@ -231,9 +241,9 @@
 .resolution-report {
   padding: 16px;
   margin-bottom: 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--surface);
 
   .report-header {
     display: flex;
@@ -248,7 +258,7 @@
       font-weight: 600;
 
       mat-icon {
-        color: #b45309;
+        color: var(--sun-deep);
       }
     }
   }
@@ -261,24 +271,24 @@
 
     .summary-chip {
       padding: 4px 10px;
-      border-radius: 999px;
+      border-radius: var(--r-xs);
       font-size: 12px;
-      background: #f1f5f9;
-      border: 1px solid #e2e8f0;
+      background: var(--paper-2);
+      border: 1.5px solid var(--ink);
     }
 
     .summary-chip.conflicts.active,
     .summary-chip.transit.active {
-      background: #fef2f2;
-      border-color: #fecaca;
-      color: #991b1b;
+      background: var(--danger-tint);
+      border-color: var(--danger-line);
+      color: var(--danger-deep);
       font-weight: 700;
     }
 
     .summary-chip.captured.active {
-      background: #ecfdf5;
-      border-color: #a7f3d0;
-      color: #065f46;
+      background: var(--forest-tint);
+      border-color: var(--forest-line);
+      color: var(--forest-deep);
       font-weight: 700;
     }
   }
@@ -292,7 +302,7 @@
       gap: 6px;
       font-size: 13px;
       font-weight: 600;
-      color: #334155;
+      color: var(--ink);
       margin-bottom: 6px;
 
       mat-icon {
@@ -317,12 +327,12 @@
       align-items: center;
       gap: 12px;
       padding: 6px 10px;
-      border-radius: 6px;
-      background: #fef2f2;
+      border-radius: var(--r-xs);
+      background: var(--danger-tint);
 
       .conflict-sector {
         font-weight: 700;
-        color: #991b1b;
+        color: var(--danger-deep);
         min-width: 110px;
       }
       .conflict-players {
@@ -340,9 +350,9 @@
 
       .standoff-badge {
         padding: 1px 8px;
-        border-radius: 999px;
-        background: rgba(249, 115, 22, 0.15);
-        color: #9a3412;
+        border-radius: var(--r-xs);
+        background: rgba(195,75,28, 0.15);
+        color: var(--accent-ink);
         font-size: 0.72rem;
         font-weight: 600;
         white-space: nowrap;
@@ -354,15 +364,15 @@
       align-items: center;
       gap: 12px;
       padding: 6px 10px;
-      border-radius: 6px;
-      background: #f8fafc;
+      border-radius: var(--r-xs);
+      background: var(--paper);
 
       .transit-sector {
         font-weight: 700;
         min-width: 110px;
       }
       .transit-fired.fired {
-        color: #991b1b;
+        color: var(--danger-deep);
         font-weight: 600;
       }
       .transit-fired.no-fire {
@@ -375,20 +385,20 @@
       align-items: center;
       gap: 12px;
       padding: 6px 10px;
-      border-radius: 6px;
-      background: #ecfdf5;
+      border-radius: var(--r-xs);
+      background: var(--forest-tint);
 
       .capture-sector {
         font-weight: 700;
-        color: #065f46;
+        color: var(--forest-deep);
         min-width: 110px;
       }
 
       .capture-badge {
         padding: 1px 8px;
-        border-radius: 999px;
-        background: rgba(16, 185, 129, 0.15);
-        color: #065f46;
+        border-radius: var(--r-xs);
+        background: rgba(40,104,67, 0.15);
+        color: var(--forest-deep);
         font-size: 0.72rem;
         font-weight: 600;
         white-space: nowrap;
@@ -400,8 +410,8 @@
       align-items: center;
       gap: 12px;
       padding: 6px 10px;
-      border-radius: 6px;
-      background: #fef2f2;
+      border-radius: var(--r-xs);
+      background: var(--danger-tint);
       font-size: 12px;
 
       .blocked-player {
@@ -409,10 +419,10 @@
         min-width: 100px;
       }
       .blocked-route {
-        color: #b45309;
+        color: var(--sun-deep);
       }
       .blocked-msg {
-        color: #991b1b;
+        color: var(--danger-deep);
         flex: 1;
       }
     }
@@ -446,7 +456,7 @@
 
 .player-panel {
   margin-bottom: 8px !important;
-  border-radius: 8px !important;
+  border-radius: var(--r-sm) !important;
   @include shared.hover-lift;
 
   .panel-title {
@@ -496,16 +506,16 @@
     }
 
     &.money {
-      color: #b45309;
+      color: var(--sun-deep);
     }
     &.sectors {
-      color: #4f46e5;
+      color: var(--accent-deep);
     }
     &.army {
-      color: #dc2626;
+      color: var(--danger);
     }
     &.equipment {
-      color: #047857;
+      color: var(--forest-deep);
     }
   }
 }
@@ -524,7 +534,7 @@
     margin-bottom: 12px;
     font-weight: 600;
     font-size: 0.95rem;
-    color: #334155;
+    color: var(--ink);
 
     mat-icon {
       color: shared.$primary-color;
@@ -544,9 +554,9 @@
     display: flex;
     flex-direction: column;
     padding: 8px 12px;
-    background: #f8fafc;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    background: var(--paper);
+    border-radius: var(--r-sm);
+    border: 1.5px solid var(--ink);
 
     .stat-label {
       font-size: 0.7rem;
@@ -558,10 +568,10 @@
     .stat-value {
       font-size: 1rem;
       font-weight: 600;
-      color: #1e293b;
+      color: var(--ink);
 
       &.money {
-        color: #b45309;
+        color: var(--sun-deep);
       }
       @include shared.stat-colors;
     }
@@ -578,11 +588,11 @@
     align-items: center;
     gap: 4px;
     padding: 4px 10px;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
+    background: var(--paper-2);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--r-md);
     font-size: 0.8rem;
-    color: #334155;
+    color: var(--ink);
 
     .eq-qty {
       font-weight: 600;
@@ -596,15 +606,15 @@
   }
 
   .resource-chip {
-    background: #fffbeb;
-    border-color: #fde68a;
+    background: var(--sun-tint);
+    border-color: var(--sun-tint);
   }
 }
 
 .sector-block {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-sm);
   padding: 12px;
   margin-bottom: 8px;
 
@@ -617,7 +627,7 @@
 
     .sector-name {
       font-weight: 600;
-      color: #1e293b;
+      color: var(--ink);
     }
 
     .sector-meta {
@@ -629,7 +639,7 @@
       margin-left: auto;
       font-size: 0.8rem;
       font-weight: 500;
-      color: #dc2626;
+      color: var(--danger);
     }
   }
 }
@@ -644,14 +654,14 @@
     align-items: center;
     gap: 12px;
     padding: 4px 8px;
-    background: white;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
+    background: var(--surface);
+    border-radius: var(--r-xs);
+    border: 1.5px solid var(--ink);
     font-size: 0.8rem;
 
     .unit-type {
       font-weight: 600;
-      color: #334155;
+      color: var(--ink);
       min-width: 100px;
       cursor: help;
     }
@@ -678,7 +688,7 @@
     }
 
     .injured-icon {
-      color: #dc2626;
+      color: var(--danger);
       font-size: 16px;
       width: 16px;
       height: 16px;
@@ -694,7 +704,7 @@
   font-size: 0.8rem;
   font-weight: 500;
   color: shared.$text-muted;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px dashed var(--line);
 
   span {
     @include shared.stat-colors;
@@ -757,9 +767,9 @@
 
 :host ::ng-deep {
   .success-snackbar .mdc-snackbar__surface {
-    background: #047857 !important;
+    background: var(--forest-deep) !important;
   }
   .error-snackbar .mdc-snackbar__surface {
-    background: #b91c1c !important;
+    background: var(--danger-deep) !important;
   }
 }

@@ -75,10 +75,10 @@ interface LogGroup {
         font-size: 1.15rem;
       }
       .standoff-badge {
-        background: rgba(249, 115, 22, 0.15);
-        color: #9a3412;
+        background: rgba(195,75,28, 0.15);
+        color: var(--accent-ink);
         padding: 0.1rem 0.5rem;
-        border-radius: 999px;
+        border-radius: var(--r-xs);
         font-size: 0.75rem;
         font-weight: 600;
       }
@@ -92,33 +92,33 @@ interface LogGroup {
       }
       .camp {
         padding: 0.15rem 0.55rem;
-        border-radius: 999px;
-        background: rgba(148, 163, 184, 0.18);
-        color: #334155;
+        border-radius: var(--r-xs);
+        background: rgba(93,86,69, 0.18);
+        color: var(--ink);
       }
       .camp.eliminated {
         opacity: 0.6;
         text-decoration: line-through;
       }
       .camp.attacker {
-        background: rgba(249, 115, 22, 0.15);
-        color: #9a3412;
+        background: rgba(195,75,28, 0.15);
+        color: var(--accent-ink);
       }
       .camp.defender {
-        background: rgba(59, 130, 246, 0.15);
-        color: #1e40af;
+        background: rgba(38,64,121, 0.15);
+        color: var(--cobalt-deep);
       }
       .vs {
-        color: #94a3b8;
+        color: var(--muted);
         font-size: 0.8rem;
       }
       .winner {
         margin-left: auto;
-        color: #15803d;
+        color: var(--forest);
         font-weight: 600;
       }
       .winner.none {
-        color: #64748b;
+        color: var(--muted);
         font-weight: 400;
       }
       .phase {
@@ -130,36 +130,36 @@ interface LogGroup {
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: #475569;
+        color: var(--ink-3);
       }
       .entry {
         font-size: 0.85rem;
-        color: #334155;
+        color: var(--ink);
         padding: 0.1rem 0;
       }
       .entry.dodge {
-        color: #0369a1;
+        color: var(--cobalt);
       }
       .entry.damage {
-        color: #b45309;
+        color: var(--sun-deep);
       }
       .entry.destroyed {
-        color: #b91c1c;
+        color: var(--danger-deep);
         font-weight: 600;
       }
       .entry.loss {
-        color: #b91c1c;
+        color: var(--danger-deep);
       }
       .entry.gain {
-        color: #15803d;
+        color: var(--forest);
         font-weight: 600;
       }
       .entry.winner {
-        color: #15803d;
+        color: var(--forest);
         font-weight: 600;
       }
       .entry.info {
-        color: #475569;
+        color: var(--ink-3);
       }
     `,
   ],

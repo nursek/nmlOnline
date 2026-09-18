@@ -6,7 +6,20 @@
 }
 
 .page-header {
+  position: relative;
   margin-bottom: 1.25rem;
+  padding-bottom: 16px;
+  border-bottom: 2.5px solid var(--ink);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2.5px;
+    width: 64px;
+    height: 10px;
+    background: var(--accent);
+  }
 
   .title {
     display: flex;
@@ -14,7 +27,7 @@
     gap: 0.5rem;
 
     mat-icon {
-      color: #6366f1;
+      color: var(--accent);
     }
 
     h1 {
@@ -26,7 +39,7 @@
 
   .subtitle {
     margin: 0.5rem 0 0;
-    color: #64748b;
+    color: var(--muted);
     font-size: 0.9rem;
   }
 }
@@ -34,15 +47,15 @@
 .error-banner {
   margin: 0 0 1rem;
   padding: 0.6rem 0.9rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  border-radius: 8px;
-  color: #000000;
+  background: rgba(157,46,25, 0.1);
+  border: 1px solid rgba(157,46,25, 0.35);
+  border-radius: var(--r-sm);
+  color: var(--ink);
   font-size: 0.9rem;
 }
 
 .hint {
-  color: #64748b;
+  color: var(--muted);
   font-size: 0.9rem;
   margin: 0;
 }
@@ -54,7 +67,7 @@
 }
 
 .report-panel {
-  border-radius: 10px;
+  border-radius: var(--r-sm);
 
   mat-panel-title {
     display: flex;
@@ -64,19 +77,19 @@
 
   .sector {
     font-weight: 600;
-    color: #1e293b;
+    color: var(--ink);
   }
 
   .turn {
-    color: #64748b;
+    color: var(--muted);
     font-size: 0.85rem;
   }
 
   .standoff-badge {
-    background: rgba(249, 115, 22, 0.15);
-    color: #9a3412;
+    background: rgba(195,75,28, 0.15);
+    color: var(--accent-ink);
     padding: 0.1rem 0.5rem;
-    border-radius: 999px;
+    border-radius: var(--r-xs);
     font-size: 0.75rem;
     font-weight: 600;
   }
@@ -87,7 +100,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #475569;
+    color: var(--ink-3);
   }
 
   .camps {
@@ -102,9 +115,9 @@
     align-items: center;
     gap: 0.25rem;
     padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    background: rgba(99, 102, 241, 0.1);
-    color: #3730a3;
+    border-radius: var(--r-xs);
+    background: rgba(192,62,29, 0.1);
+    color: var(--accent-ink);
     font-size: 0.85rem;
 
     mat-icon {
@@ -114,7 +127,7 @@
     }
 
     em {
-      color: #b45309;
+      color: var(--sun-deep);
       font-style: normal;
       font-size: 0.8rem;
     }
@@ -128,7 +141,7 @@
   .result-list {
     margin: 0;
     padding-left: 1.1rem;
-    color: #334155;
+    color: var(--ink);
     font-size: 0.88rem;
 
     li {
@@ -137,25 +150,25 @@
 
     .owner {
       margin-left: 0.4rem;
-      color: #94a3b8;
+      color: var(--muted);
       font-size: 0.8rem;
     }
 
     .evolved {
-      color: #15803d;
+      color: var(--forest);
     }
   }
 
   .none {
     margin: 0;
-    color: #94a3b8;
+    color: var(--muted);
     font-size: 0.85rem;
     font-style: italic;
   }
 
   .capture {
     margin: 0.5rem 0 0;
-    color: #b45309;
+    color: var(--sun-deep);
     font-size: 0.85rem;
   }
 }

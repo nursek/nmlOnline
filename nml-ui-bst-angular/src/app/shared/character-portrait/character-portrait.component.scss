@@ -9,9 +9,9 @@
   padding: 16px;
   text-decoration: none;
   color: inherit;
-  background: #f5f3ff;
-  border: 2px solid #c4b5fd;
-  border-radius: 12px;
+  background: var(--plum-tint);
+  border: 2px solid var(--accent-line);
+  border-radius: var(--r-md);
   transition:
     transform 0.3s,
     box-shadow 0.3s;
@@ -22,11 +22,11 @@
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(124, 58, 237, 0.25);
+    box-shadow: 3px 3px 0 rgba(131,46,83, 0.25);
   }
 
   &:focus-visible {
-    outline: 3px solid #7c3aed;
+    outline: 3px solid var(--accent-deep);
     outline-offset: 2px;
   }
 }
@@ -38,9 +38,9 @@
   width: 140px;
   height: 140px;
   overflow: hidden;
-  background: #ede9fe;
-  border: 1px solid #ddd6fe;
-  border-radius: 8px;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
 
   img {
     width: 100%;
@@ -54,7 +54,7 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: #6d28d9;
+  color: var(--accent-deep);
 
   mat-icon {
     font-size: 40px;
@@ -71,7 +71,7 @@
 .cp-name {
   font-size: 1rem;
   font-weight: 700;
-  color: #4c1d95;
+  color: var(--accent-ink);
 }
 
 .cp-sector {
@@ -79,7 +79,7 @@
   align-items: center;
   gap: 4px;
   font-size: 0.75rem;
-  color: #6d28d9;
+  color: var(--accent-deep);
 
   mat-icon {
     font-size: 14px;
@@ -90,7 +90,7 @@
 
 .cp-stats {
   font-size: 0.7rem;
-  color: #6d28d9;
+  color: var(--accent-deep);
 }
 
 .cp-hint {
@@ -100,7 +100,7 @@
   margin-top: 4px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #7c3aed;
+  color: var(--plum-deep);
 
   mat-icon {
     font-size: 16px;

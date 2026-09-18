@@ -58,12 +58,12 @@ export interface VehiclePlacementDialogData {
         margin-right: 8px;
       }
       .vehicle-info {
-        color: #aaa;
+        color: var(--muted);
         font-size: 0.9rem;
         margin-bottom: 8px;
       }
       .no-sectors {
-        color: #f44336;
+        color: var(--danger);
         font-size: 0.9rem;
       }
       .sector-select {

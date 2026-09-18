@@ -1,7 +1,7 @@
-$border: #e2e8f0;
-$bg-soft: #f8fafc;
-$text-primary: #1e293b;
-$text-secondary: #64748b;
+$border: var(--line);
+$bg-soft: var(--paper);
+$text-primary: var(--ink);
+$text-secondary: var(--muted);
 
 .gmd {
   width: 100%;
@@ -51,7 +51,7 @@ $text-secondary: #64748b;
   overflow-x: hidden;
   padding: 8px;
   border: 1px solid $border;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: $bg-soft;
 }
 
@@ -62,10 +62,10 @@ $text-secondary: #64748b;
   gap: 10px;
   min-width: 0;
   padding: 4px 6px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
 
   &:hover {
-    background: #eef2f7;
+    background: var(--paper-2);
   }
 
   .gmd-name {
@@ -88,9 +88,9 @@ $text-secondary: #64748b;
 
   .gmd-badge {
     padding: 1px 6px;
-    border-radius: 10px;
-    background: #fee2e2;
-    color: #b91c1c;
+    border-radius: var(--r-sm);
+    background: var(--danger-tint);
+    color: var(--danger-deep);
     font-size: 0.7rem;
     font-weight: 600;
   }
@@ -126,9 +126,9 @@ $text-secondary: #64748b;
 
     .gmd-pill {
       padding: 6px 12px;
-      border-radius: 16px;
-      background: #e0e7ff;
-      color: #3730a3;
+      border-radius: var(--r-md);
+      background: var(--accent-tint);
+      color: var(--accent-ink);
       font-weight: 600;
       font-size: 0.85rem;
       white-space: nowrap;
@@ -154,27 +154,27 @@ $text-secondary: #64748b;
 .gmd-kind {
   margin-left: 8px;
   padding: 1px 6px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   font-size: 0.7rem;
   font-weight: 600;
 
   &.gmd-kind-own {
-    background: #dcfce7;
-    color: #15803d;
+    background: var(--forest-tint);
+    color: var(--forest);
   }
 
   &.gmd-kind-neutral {
-    background: #e2e8f0;
-    color: #475569;
+    background: var(--line);
+    color: var(--ink-3);
   }
 
   &.gmd-kind-enemy {
-    background: #fee2e2;
-    color: #b91c1c;
+    background: var(--danger-tint);
+    color: var(--danger-deep);
   }
 
   &.gmd-kind-unknown {
-    background: #fef3c7;
-    color: #92400e;
+    background: var(--sun-tint);
+    color: var(--sun-deep);
   }
 }

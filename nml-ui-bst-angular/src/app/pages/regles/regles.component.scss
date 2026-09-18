@@ -33,9 +33,9 @@
   top: 72px;
   align-self: start;
   padding: 16px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-md);
 
   .toc-head {
     display: flex;
@@ -63,7 +63,7 @@
     width: 100%;
     padding: 8px 10px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--r-sm);
     background: transparent;
     color: shared.$text-muted;
     font: inherit;
@@ -79,7 +79,7 @@
     }
 
     &:hover {
-      background: #f1f5f9;
+      background: var(--paper-2);
       color: shared.$primary-color;
     }
   }
@@ -111,9 +111,9 @@
 .soon {
   margin-left: auto;
   padding: 2px 8px;
-  border-radius: 10px;
-  background: rgba(245, 158, 11, 0.15);
-  color: #b45309;
+  border-radius: var(--r-sm);
+  background: rgba(195,124,28, 0.15);
+  color: var(--sun-deep);
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -126,8 +126,8 @@
 
   code {
     padding: 2px 6px;
-    background: #f1f5f9;
-    border-radius: 6px;
+    background: var(--paper-2);
+    border-radius: var(--r-xs);
     font-size: 0.85rem;
   }
 }
@@ -158,7 +158,7 @@
   gap: 12px;
   align-items: flex-start;
   padding: 16px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   margin-bottom: 16px;
 
   mat-icon {
@@ -173,8 +173,8 @@
 }
 
 .callout {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
 
   mat-icon {
     color: shared.$primary-color;
@@ -182,11 +182,11 @@
 }
 
 .draft {
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(217, 119, 6, 0.35);
+  background: rgba(195,124,28, 0.08);
+  border: 1px solid rgba(156,92,16, 0.35);
 
   mat-icon {
-    color: #b45309;
+    color: var(--sun-deep);
   }
 }
 
@@ -204,12 +204,12 @@
   td {
     padding: 10px 12px;
     text-align: left;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--line);
     vertical-align: top;
   }
 
   th {
-    background: #f8fafc;
+    background: var(--paper);
     color: shared.$text-muted;
     font-weight: 600;
     white-space: nowrap;
@@ -229,8 +229,8 @@
 .stat-badge {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 8px;
-  background: #f1f5f9;
+  border-radius: var(--r-sm);
+  background: var(--paper-2);
   font-weight: 600;
   font-size: 0.8rem;
   @include shared.stat-colors;
@@ -240,19 +240,19 @@
 .tag-inactif {
   display: inline-block;
   padding: 2px 8px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   font-size: 0.7rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .tag-actif {
-  background: rgba(16, 185, 129, 0.15);
-  color: #047857;
+  background: rgba(40,104,67, 0.15);
+  color: var(--forest-deep);
 }
 
 .tag-inactif {
-  background: #f1f5f9;
+  background: var(--paper-2);
   color: shared.$text-muted;
 }
 
@@ -265,23 +265,23 @@
 
 .podium-item {
   padding: 20px;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   text-align: center;
   border: 1px solid;
 
   &.gold {
-    background: rgba(245, 158, 11, 0.1);
-    border-color: #d97706;
+    background: rgba(195,124,28, 0.1);
+    border-color: var(--sun-deep);
   }
 
   &.silver {
-    background: rgba(156, 163, 175, 0.1);
-    border-color: #6b7280;
+    background: rgba(93,86,69, 0.1);
+    border-color: var(--muted);
   }
 
   &.bronze {
-    background: rgba(249, 115, 22, 0.1);
-    border-color: #c2410c;
+    background: rgba(195,75,28, 0.1);
+    border-color: var(--accent-deep);
   }
 
   .emoji {

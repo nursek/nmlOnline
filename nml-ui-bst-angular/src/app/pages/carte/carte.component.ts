@@ -547,7 +547,7 @@ export class CarteComponent {
   }
 
   getContrastColor(): string {
-    return '#1e293b';
+    return '#17150F';
   }
 
   selectSector(sector: SectorWithPlayer): void {

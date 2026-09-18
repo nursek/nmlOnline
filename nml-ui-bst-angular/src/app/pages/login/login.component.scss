@@ -1,47 +1,75 @@
 @use '../../../styles/shared' as shared;
 
 .login-page {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e293b 100%);
-  padding: 16px;
+  padding: 24px;
+  overflow: hidden;
+  background-color: var(--ink);
+  background-image:
+    radial-gradient(circle at 10% 16%, var(--accent) 0 200px, transparent 200px),
+    radial-gradient(circle at 90% 84%, var(--sun) 0 240px, transparent 240px),
+    radial-gradient(rgba(239,224,193, 0.16) 1px, transparent 1.1px);
+  background-size:
+    auto,
+    auto,
+    26px 26px;
+}
+
+.login-page::after {
+  content: '';
+  position: absolute;
+  inset: 18px;
+  border: 1.5px solid rgba(239,224,193, 0.35);
+  pointer-events: none;
 }
 
 .login-container {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 450px;
+  max-width: 460px;
 }
 
 .login-card {
-  padding: 32px;
-  border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 36px 32px;
+  border-radius: var(--r-md);
+  border: 2px solid var(--ink);
+  box-shadow: 10px 10px 0 var(--accent);
 }
 
 .header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .avatar {
-  @include shared.avatar(80px, 48px);
-  margin: 0 auto 16px;
+  @include shared.avatar(84px, 44px);
+  margin: 0 auto 18px;
 }
 
 .title {
   @include shared.gradient-title;
+  font-size: clamp(2.1rem, 1.5rem + 1.6vw, 2.7rem);
   margin: 0 0 8px;
 }
 
 .subtitle {
   @include shared.subtitle;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .full-width {
   width: 100%;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .error-alert {
@@ -50,20 +78,23 @@
   margin-bottom: 16px;
 
   mat-icon {
-    color: #dc2626;
+    color: var(--danger);
   }
 }
 
 mat-checkbox {
-  margin-bottom: 24px;
+  margin-bottom: 22px;
   display: block;
 }
 
 .submit-btn {
   width: 100%;
-  padding: 12px;
-  font-size: 1rem;
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
   font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   display: flex;
   align-items: center;
   justify-content: center;

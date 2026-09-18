@@ -180,21 +180,21 @@ export class JoueurComponent {
         label: 'Argent',
         value: `${p.stats.money.toFixed(0)} ₡`,
         icon: 'attach_money',
-        color: '#b45309',
+        color: 'var(--sun-deep)',
       },
       {
         label: 'Revenus',
         value: `${this.income().toFixed(0)} ₡/tour`,
         icon: 'trending_up',
-        color: '#047857',
+        color: 'var(--forest-deep)',
       },
       {
         label: 'Puissance globale',
         value: this.forces().globalPower.toFixed(0),
         icon: 'shield',
-        color: '#6366f1',
+        color: 'var(--accent)',
       },
-      { label: 'Territoires', value: p.sectors.length, icon: 'place', color: '#8b5cf6' },
+      { label: 'Territoires', value: p.sectors.length, icon: 'place', color: 'var(--sun)' },
     ];
   });
 

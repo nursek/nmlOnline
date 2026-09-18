@@ -49,7 +49,7 @@
 }
 
 .ability-card {
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 
 .ability-head {
@@ -66,10 +66,10 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  background: #ede9fe;
-  border: 2px solid #a78bfa;
+  background: var(--accent-tint);
+  border: 2px solid var(--plum);
   border-radius: 50%;
-  color: #6d28d9;
+  color: var(--accent-deep);
 }
 
 .ability-kind {
@@ -99,8 +99,8 @@
   padding: 4px 10px;
   font-size: 0.75rem;
   font-weight: 600;
-  background: #f5f3ff;
-  border: 1px solid #ddd6fe;
-  border-radius: 8px;
-  color: #5b21b6;
+  background: var(--plum-tint);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  color: var(--accent-ink);
 }

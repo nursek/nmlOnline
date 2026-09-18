@@ -6,7 +6,7 @@
 }
 
 .rankings-card {
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 
 .section-header {
@@ -21,8 +21,8 @@
 .turn-badge {
   margin-left: auto;
   padding: 4px 10px;
-  border-radius: 999px;
-  background: #eef2ff;
+  border-radius: var(--r-xs);
+  background: var(--accent-tint);
   color: shared.$primary-color;
   font-size: 0.8rem;
   font-weight: 600;
@@ -41,7 +41,7 @@
     gap: 8px;
     margin: 0 0 12px;
     font-size: 1rem;
-    color: #1e293b;
+    color: var(--ink);
 
     mat-icon {
       width: 20px;
@@ -57,8 +57,8 @@
   align-items: flex-start;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 8px;
-  background: #f8fafc;
+  border-radius: var(--r-sm);
+  background: var(--paper);
 
   & + .ranking-row {
     margin-top: 8px;
@@ -73,24 +73,24 @@
   min-width: 22px;
   height: 22px;
   padding: 0 4px;
-  border-radius: 999px;
+  border-radius: var(--r-xs);
   font-size: 0.75rem;
   font-weight: 700;
   color: shared.$text-muted;
 
   &.rank-1 {
-    background: linear-gradient(135deg, #fcd34d, #f59e0b);
-    color: #78350f;
+    background: linear-gradient(135deg, var(--sun-line), var(--sun));
+    color: var(--ink);
   }
 
   &.rank-2 {
-    background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
-    color: #334155;
+    background: linear-gradient(135deg, var(--paper-2), var(--line-2));
+    color: var(--ink);
   }
 
   &.rank-3 {
-    background: linear-gradient(135deg, #e8a87c, #cd7f32);
-    color: #4a2408;
+    background: linear-gradient(135deg, var(--sun), var(--accent-deep));
+    color: var(--ink);
   }
 }
 
@@ -117,7 +117,7 @@
   min-width: 0;
   overflow: hidden;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--ink);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -127,7 +127,7 @@
   overflow: hidden;
   font-size: 0.85rem;
   font-style: italic;
-  color: #92400e;
+  color: var(--sun-deep);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -145,7 +145,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: #94a3b8;
+  color: var(--muted);
   cursor: pointer;
 
   mat-icon {
@@ -170,9 +170,9 @@
     min-width: 0;
     min-height: 34px;
     padding: 6px 8px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    background: #fff;
+    border: 1.5px solid var(--ink-2);
+    border-radius: var(--r-xs);
+    background: var(--surface);
     font: inherit;
     font-size: 0.85rem;
     line-height: 1.4;
@@ -181,7 +181,7 @@
 
     &:empty::before {
       content: attr(data-placeholder);
-      color: #94a3b8;
+      color: var(--muted);
     }
   }
 }
@@ -194,5 +194,5 @@
 }
 
 .rankings-error {
-  color: #dc2626;
+  color: var(--danger);
 }

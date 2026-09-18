@@ -1,21 +1,21 @@
 @use '../../../styles/shared' as shared;
 @use 'sass:map';
 
-$border: #e2e8f0;
-$bg-soft: #f8fafc;
-$bg-card: #ffffff;
+$border: var(--line);
+$bg-soft: var(--paper);
+$bg-card: var(--surface);
 $portrait-size: 240px;
-$text-primary: #1e293b;
-$text-secondary: #64748b;
-$text-muted: #64748b;
+$text-primary: var(--ink);
+$text-secondary: var(--muted);
+$text-muted: var(--muted);
 
 $stat-colors: (
-  atk: #dc2626,
-  def: #047857,
-  pdf: #c2410c,
-  pdc: #0e7490,
-  arm: #15803d,
-  esq: #b45309,
+  atk: var(--danger),
+  def: var(--forest-deep),
+  pdf: var(--accent-deep),
+  pdc: var(--teal),
+  arm: var(--forest),
+  esq: var(--sun-deep),
 );
 
 :host ::ng-deep .udd .mat-mdc-dialog-title {
@@ -100,7 +100,7 @@ $stat-colors: (
       color: $text-muted;
       background: $bg-soft;
       border: 1px solid $border;
-      border-radius: 999px;
+      border-radius: var(--r-xs);
       padding: 0 8px;
     }
   }
@@ -116,26 +116,26 @@ $stat-colors: (
     align-items: center;
     gap: 4px;
     padding: 4px 6px 4px 10px;
-    border-radius: 8px;
+    border-radius: var(--r-sm);
     font-size: 0.82rem;
     min-height: 34px;
     transition: all 0.15s;
 
     &.udd-slot-filled {
-      background: #eef2ff;
-      border: 1px solid #c7d2fe;
-      color: #3730a3;
+      background: var(--accent-tint);
+      border: 1px solid var(--accent-line);
+      color: var(--accent-ink);
       cursor: pointer;
 
       &:hover {
-        background: #e0e7ff;
-        border-color: #a5b4fc;
+        background: var(--accent-tint);
+        border-color: var(--accent-line);
       }
     }
 
     &.udd-slot-empty {
       background: $bg-card;
-      border: 1px dashed #cbd5e1;
+      border: 1px dashed var(--line-2);
       color: $text-muted;
       cursor: pointer;
       width: 34px;
@@ -193,7 +193,7 @@ $stat-colors: (
       padding: 6px 2px;
       background: $bg-card;
       border: 1px solid $border;
-      border-radius: 6px;
+      border-radius: var(--r-xs);
 
       @each $key, $val in $stat-colors {
         &.#{$key} .udd-val {
@@ -238,7 +238,7 @@ $stat-colors: (
       max-width: 100%;
       height: $portrait-size;
       object-fit: cover;
-      border-radius: 10px;
+      border-radius: var(--r-sm);
       border: 1px solid $border;
       background: $bg-soft;
     }
@@ -252,8 +252,8 @@ $stat-colors: (
       align-items: center;
       justify-content: center;
       gap: 8px;
-      border-radius: 10px;
-      border: 1px dashed #cbd5e1;
+      border-radius: var(--r-sm);
+      border: 1px dashed var(--line-2);
       color: $text-muted;
       text-align: center;
       text-transform: uppercase;
@@ -275,7 +275,7 @@ $stat-colors: (
       font-size: 0.9rem;
 
       .udd-injured {
-        color: #b91c1c;
+        color: var(--danger-deep);
         display: inline-flex;
         align-items: center;
         gap: 4px;
@@ -331,10 +331,10 @@ $stat-colors: (
 
     .udd-pill {
       padding: 6px 10px;
-      border-radius: 999px;
-      background: #fffbeb;
-      border: 1px solid #fcd34d;
-      color: #92400e;
+      border-radius: var(--r-xs);
+      background: var(--sun-tint);
+      border: 1px solid var(--sun-line);
+      color: var(--sun-deep);
       font-size: 0.85rem;
     }
     .udd-label {
@@ -358,11 +358,11 @@ $stat-colors: (
       align-items: center;
       justify-content: space-between;
       padding: 4px 8px;
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: 4px;
+      background: var(--sun-tint);
+      border: 1px solid var(--sun-tint);
+      border-radius: var(--r-xs);
       font-size: 0.82rem;
-      color: #92400e;
+      color: var(--sun-deep);
     }
   }
 

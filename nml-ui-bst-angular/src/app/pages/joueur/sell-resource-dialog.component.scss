@@ -1,5 +1,5 @@
-$border: #e2e8f0;
-$text-secondary: #64748b;
+$border: var(--line);
+$text-secondary: var(--muted);
 
 .srd {
   min-width: 320px;
@@ -33,8 +33,8 @@ h2 {
   margin-top: 12px;
   padding: 12px;
   border: 1px solid $border;
-  border-radius: 8px;
-  background: #f8fafc;
+  border-radius: var(--r-sm);
+  background: var(--paper);
 
   .srd-row {
     display: flex;
@@ -52,7 +52,7 @@ h2 {
     font-size: 1rem;
 
     strong {
-      color: #047857;
+      color: var(--forest-deep);
     }
   }
 }

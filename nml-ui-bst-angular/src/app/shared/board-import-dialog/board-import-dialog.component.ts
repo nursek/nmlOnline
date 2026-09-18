@@ -77,7 +77,7 @@ export interface BoardImportResult {
   styles: [
     `
       .hint {
-        color: rgba(0, 0, 0, 0.6);
+        color: var(--muted);
         font-size: 0.85rem;
         margin-bottom: 16px;
       }
@@ -85,7 +85,7 @@ export interface BoardImportResult {
         margin-bottom: 12px;
       }
       .warn {
-        color: #dc2626;
+        color: var(--danger);
         font-size: 0.8rem;
       }
     `,

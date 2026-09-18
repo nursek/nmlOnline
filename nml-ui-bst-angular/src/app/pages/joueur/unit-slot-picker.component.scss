@@ -36,16 +36,16 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 10px;
-    border-radius: 6px;
+    border-radius: var(--r-xs);
     margin-bottom: 4px;
 
     &.usp-ok {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
+      background: var(--forest-tint);
+      border: 1px solid var(--forest-line);
     }
     &.usp-na {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
+      background: var(--paper);
+      border: 1.5px solid var(--ink);
       opacity: 0.6;
     }
 
@@ -57,7 +57,7 @@
       .usp-name {
         font-size: 0.92rem;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--ink);
       }
       .usp-bonuses {
         display: flex;
@@ -69,22 +69,22 @@
         font-size: 0.7rem;
         font-weight: 600;
         padding: 1px 6px;
-        border-radius: 8px;
+        border-radius: var(--r-sm);
         &.pdf {
-          background: #ffedd5;
-          color: #9a3412;
+          background: var(--sun-tint);
+          color: var(--accent-ink);
         }
         &.pdc {
-          background: #cffafe;
-          color: #155e75;
+          background: var(--teal-tint);
+          color: var(--teal-deep);
         }
         &.arm {
-          background: #dcfce7;
-          color: #065f46;
+          background: var(--forest-tint);
+          color: var(--forest-deep);
         }
         &.esq {
-          background: #fef3c7;
-          color: #92400e;
+          background: var(--sun-tint);
+          color: var(--sun-deep);
         }
       }
       .usp-cat {

@@ -72,7 +72,7 @@ export class RankingsPanelComponent {
   }
 
   getPlayerColor(playerId: number): string {
-    return this.playerColors().get(playerId) ?? '#94a3b8';
+    return this.playerColors().get(playerId) ?? 'var(--muted)';
   }
 
   startEdit(entry: RankingEntry): void {

@@ -19,13 +19,13 @@
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
-    color: #4c1d95;
+    color: var(--accent-ink);
   }
 }
 
 .chp-meta {
   font-size: 0.75rem;
-  color: #6d28d9;
+  color: var(--accent-deep);
 }
 
 .chp-groups {
@@ -54,10 +54,10 @@
   padding: 4px 10px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: #fff;
-  border: 1px solid #c4b5fd;
-  border-radius: 16px;
-  color: #5b21b6;
+  background: var(--surface);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-md);
+  color: var(--accent-ink);
 }
 
 .chp-totals {
@@ -65,7 +65,7 @@
   margin-top: 12px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #4c1d95;
+  color: var(--accent-ink);
 }
 
 .chp-none {

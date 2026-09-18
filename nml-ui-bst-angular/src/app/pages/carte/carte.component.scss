@@ -42,7 +42,7 @@
 .legend-card,
 .details-card,
 .stats-card {
-  border-radius: 12px;
+  border-radius: var(--r-md);
   height: fit-content;
 }
 
@@ -60,7 +60,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: 8px;
@@ -74,11 +74,11 @@
   color: inherit;
   &:hover {
     opacity: 1;
-    background: #f1f5f9;
+    background: var(--paper-2);
   }
   &.active {
     opacity: 1;
-    background: #ede9fe;
+    background: var(--accent-tint);
   }
   &.neutral {
     cursor: pointer;
@@ -88,7 +88,7 @@
 .legend-color {
   width: 24px;
   height: 24px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   flex-shrink: 0;
 }
 
@@ -113,8 +113,9 @@
 }
 
 .map-container {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  border-radius: 16px;
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: var(--r-md);
   padding: 24px;
   overflow: auto;
   min-height: 500px;
@@ -146,12 +147,12 @@
 .sector-color {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 
 .detail-section {
   padding: 16px 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--line);
   h3 {
     display: flex;
     align-items: center;
@@ -182,19 +183,19 @@
   .value {
     font-weight: 600;
     &.gold {
-      color: #f59e0b;
+      color: var(--sun-deep);
     }
     &.red {
-      color: #ef4444;
+      color: var(--danger);
     }
     &.green {
-      color: #10b981;
+      color: var(--forest-deep);
     }
     &.blue {
-      color: #3b82f6;
+      color: var(--cobalt);
     }
     &.purple {
-      color: #8b5cf6;
+      color: var(--plum);
     }
   }
 }
@@ -206,9 +207,9 @@
 }
 
 .mini-stat {
-  background: #f8fafc;
+  background: var(--paper);
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
   text-align: center;
   .label {
     display: block;
@@ -253,8 +254,8 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
+  background: var(--paper);
+  border-radius: var(--r-sm);
   mat-icon {
     font-size: 32px;
     width: 32px;
@@ -265,7 +266,7 @@
     display: block;
     font-size: 1.5rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--ink);
   }
   .stat-label {
     font-size: 0.8rem;
@@ -282,9 +283,9 @@
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   overflow: hidden;
-  background: #1e293b;
+  background: var(--ink);
   display: inline-block;
 }
 
@@ -295,9 +296,9 @@
   justify-content: center;
   min-height: 400px;
   gap: 16px;
-  color: #cbd5e1;
-  background: #1e293b;
-  border-radius: 12px;
+  color: var(--line-2);
+  background: var(--ink);
+  border-radius: var(--r-md);
 
   p {
     margin: 0;
@@ -308,7 +309,7 @@
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 
 .svg-overlay {
@@ -351,13 +352,13 @@
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(30, 41, 59, 0.95);
+  background: rgba(23, 21, 15, 0.95);
   color: white;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   font-size: 0.9rem;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.3);
   pointer-events: none;
   z-index: 100;
   white-space: nowrap;

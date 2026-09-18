@@ -42,17 +42,17 @@ import { MatCardModule } from '@angular/material/card';
         font-size: 64px;
         width: 64px;
         height: 64px;
-        color: #6366f1;
+        color: var(--accent);
         margin-bottom: 16px;
       }
       h1 {
         font-size: 4rem;
         margin: 0 0 8px;
         font-weight: 700;
-        color: #1e293b;
+        color: var(--ink);
       }
       p {
-        color: #64748b;
+        color: var(--muted);
         margin-bottom: 24px;
       }
     `,

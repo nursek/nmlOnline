@@ -17,11 +17,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--danger-tint);
+  color: var(--danger);
   padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #fecaca;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--danger-line);
 }
 
 .page-header {
@@ -54,9 +54,9 @@
       font-size: 0.8rem;
       font-weight: 600;
       color: shared.$primary-color;
-      background: #eef2ff;
-      border: 1px solid #c7d2fe;
-      border-radius: 999px;
+      background: var(--accent-tint);
+      border: 1px solid var(--accent-line);
+      border-radius: var(--r-xs);
       padding: 4px 12px;
     }
   }
@@ -89,16 +89,16 @@
       font-weight: 600;
 
       .order-seg {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 999px;
+        background: var(--paper);
+        border: 1.5px solid var(--ink);
+        border-radius: var(--r-xs);
         padding: 4px 12px;
         font-size: 0.9rem;
       }
       .order-seg-to {
-        background: #eef2ff;
-        border-color: #c7d2fe;
-        color: #3730a3;
+        background: var(--accent-tint);
+        border-color: var(--accent-line);
+        color: var(--accent-ink);
       }
       .order-arrow {
         color: shared.$text-muted;
@@ -131,27 +131,27 @@
         text-transform: uppercase;
         letter-spacing: 0.04em;
         padding: 2px 10px;
-        border-radius: 999px;
+        border-radius: var(--r-xs);
 
         &.status-PENDING {
-          background: #fffbeb;
-          color: #92400e;
-          border: 1px solid #fcd34d;
+          background: var(--sun-tint);
+          color: var(--sun-deep);
+          border: 1px solid var(--sun-line);
         }
         &.status-RESOLVED {
-          background: #f0fdf4;
-          color: #065f46;
-          border: 1px solid #bbf7d0;
+          background: var(--forest-tint);
+          color: var(--forest-deep);
+          border: 1px solid var(--forest-line);
         }
         &.status-BLOCKED {
-          background: #fef2f2;
-          color: #991b1b;
-          border: 1px solid #fecaca;
+          background: var(--danger-tint);
+          color: var(--danger-deep);
+          border: 1px solid var(--danger-line);
         }
         &.status-CANCELLED {
-          background: #f1f5f9;
-          color: #475569;
-          border: 1px solid #e2e8f0;
+          background: var(--paper-2);
+          color: var(--ink-3);
+          border: 1.5px solid var(--ink);
         }
       }
       .status-msg {

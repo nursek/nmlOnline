@@ -2,22 +2,22 @@ export const MAP_THEME = {
   // Palette affectée par index sur les joueurs triés par id (stable au refresh,
   // contrairement à l'ordre d'insertion précédent).
   playerPalette: [
-    '#6366f1',
-    '#ef4444',
-    '#10b981',
-    '#f59e0b',
-    '#5f5c32',
-    '#ec4899',
-    '#f97316',
-    '#06b6d4',
-    '#84cc16',
-    '#14b8a6',
-    '#f43f5e',
-    '#a855f7',
+    '#c03e1d',
+    '#264079',
+    '#205737',
+    '#e59826',
+    '#832e53',
+    '#0b5557',
+    '#a56d38',
+    '#581f0e',
+    '#192d5a',
+    '#5a6723',
+    '#b53d6d',
+    '#3b3529',
   ],
 
   // Couleur unique des secteurs neutres (fond, hachures, label, légende).
-  neutralColor: '#94a3b8',
+  neutralColor: '#7c6a47',
 
   // Motif de hachures des secteurs neutres (injecté en <defs> au chargement).
   neutralPattern: {
@@ -25,7 +25,7 @@ export const MAP_THEME = {
     height: 8,
     rotateDeg: 45,
     stripeWidth: 1,
-    background: '#ffffff',
+    background: '#fff5db',
   },
 
   // Canal alpha hex (sur 2 chiffres) appliqué à la couleur propriétaire.
@@ -59,9 +59,9 @@ export const MAP_THEME = {
   label: {
     fontPx: 20,
     weight: 800,
-    strokeColor: '#000000', // halo du chiffre (lisible sur tout fond)
+    strokeColor: '#17150f', // halo du chiffre (lisible sur tout fond)
     strokeWidthPx: 4,
     contrastOnSelect: true,
-    selectedStroke: '#ffffff',
+    selectedStroke: '#fff5db',
   },
 } as const;

@@ -80,7 +80,7 @@ export interface VehicleCrewDialogResult {
         margin-right: 8px;
       }
       .hint {
-        color: #64748b;
+        color: var(--muted);
         font-size: 0.85rem;
       }
       h3 {
@@ -88,7 +88,7 @@ export interface VehicleCrewDialogResult {
         font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: #64748b;
+        color: var(--muted);
       }
       .pilots,
       .passengers {
@@ -100,12 +100,12 @@ export interface VehicleCrewDialogResult {
         max-height: 240px;
         overflow-y: auto;
         padding: 8px;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
+        background: var(--paper);
       }
       .empty {
-        color: #64748b;
+        color: var(--muted);
         font-size: 0.85rem;
       }
     `,

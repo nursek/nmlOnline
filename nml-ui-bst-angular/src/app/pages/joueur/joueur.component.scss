@@ -24,29 +24,29 @@
 
   margin-bottom: 28px;
   border-top: 5px solid var(--section-accent);
-  background: color-mix(in srgb, var(--section-accent) 4%, #fff);
+  background: color-mix(in srgb, var(--section-accent) 4%, var(--surface));
 }
 
 .card--troops {
-  --section-accent: #2563eb;
+  --section-accent: var(--cobalt);
 }
 .card--vehicles {
-  --section-accent: #0e7490;
+  --section-accent: var(--teal);
 }
 .card--character {
-  --section-accent: #7c3aed;
+  --section-accent: var(--plum);
 }
 .card--equipment {
-  --section-accent: #c2410c;
+  --section-accent: var(--sun-deep);
 }
 .card--resources {
-  --section-accent: #047857;
+  --section-accent: var(--forest);
 }
 .card--forces {
-  --section-accent: #dc2626;
+  --section-accent: var(--danger);
 }
 .card--powers {
-  --section-accent: #4f46e5;
+  --section-accent: var(--sun-deep);
 }
 .error-alert {
   @include shared.error-alert;
@@ -92,7 +92,7 @@
 }
 
 .stat-card {
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 
 .stat-content {
@@ -131,7 +131,7 @@
   @include shared.section-header;
   flex-wrap: wrap;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--line);
 
   > mat-icon {
     color: var(--section-accent, #{shared.$primary-color});
@@ -162,9 +162,9 @@
   gap: 4px;
   padding: 2px 8px;
   font-size: 0.8rem;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  background: var(--paper-2);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-xs);
 }
 
 .troop-count {
@@ -203,7 +203,7 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: shared.$text-muted;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  border-bottom: 1px solid rgba(93,86,69, 0.2);
   padding-bottom: 4px;
 
   &:first-child {
@@ -218,13 +218,13 @@
 }
 
 .equipment-card {
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 8px;
   transition: all 0.3s;
   &:hover {
     border-color: shared.$primary-color;
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.1);
   }
 
   mat-card-content {
@@ -250,8 +250,8 @@
   width: 48px;
   height: 48px;
   object-fit: cover;
-  border-radius: 6px;
-  background: #1e293b;
+  border-radius: var(--r-xs);
+  background: var(--ink);
 }
 
 .eq-thumb-fallback {
@@ -260,8 +260,8 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  border-radius: 6px;
-  background: #f1f5f9;
+  border-radius: var(--r-xs);
+  background: var(--paper-2);
   color: shared.$text-muted;
 
   mat-icon {
@@ -300,19 +300,19 @@
   min-height: 20px !important;
   padding: 0 6px !important;
   &.pdf {
-    background: #b91c1c !important;
+    background: var(--danger-deep) !important;
     color: white !important;
   }
   &.pdc {
-    background: #0e7490 !important;
+    background: var(--teal) !important;
     color: white !important;
   }
   &.arm {
-    background: #047857 !important;
+    background: var(--forest-deep) !important;
     color: white !important;
   }
   &.esq {
-    background: #b45309 !important;
+    background: var(--sun-deep) !important;
     color: white !important;
   }
 }
@@ -327,12 +327,12 @@
 .badge {
   @include shared.tag;
   &.badge-danger {
-    background: #fee2e2;
-    color: #b91c1c;
+    background: var(--danger-tint);
+    color: var(--danger-deep);
   }
   &.badge-warning {
-    background: #fef3c7;
-    color: #b45309;
+    background: var(--sun-tint);
+    color: var(--sun-deep);
   }
 }
 
@@ -340,7 +340,7 @@
 .equipment-panel,
 .sector-panel {
   margin-bottom: 12px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 
   &:last-of-type {
     margin-bottom: 0;
@@ -407,15 +407,15 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 8px 12px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-xs);
 }
 
 // Le personnage principal passe en tête du secteur (au-dessus des bâtiments).
 .force-line.character {
-  background: #eef2ff;
-  border-color: #c7d2fe;
+  background: var(--accent-tint);
+  border-color: var(--accent-line);
 
 .force-icon {
     color: shared.$primary-color;
@@ -438,7 +438,7 @@
   margin-left: auto;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--ink);
   white-space: nowrap;
 }
 
@@ -467,7 +467,7 @@
 .sector-total {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px dashed #cbd5e1;
+  border-top: 1px dashed var(--line-2);
   font-size: 0.875rem;
   font-weight: 700;
   text-align: right;
@@ -482,9 +482,9 @@
 
 .power-item {
   padding: 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-sm);
 }
 
 .power-value {
@@ -531,9 +531,9 @@
     align-items: center;
     gap: 12px;
     padding: 10px 12px;
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    background: var(--surface);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--r-xs);
   }
 
   .action-icon {
@@ -563,17 +563,17 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
   border-left: 4px solid shared.$primary-color;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   transition:
     transform 0.2s,
     box-shadow 0.2s;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.08);
   }
 }
 
@@ -597,7 +597,7 @@
   h4 {
     margin: 0 0 4px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--ink);
   }
 
   .value-label {
