@@ -24,6 +24,7 @@ import { environment } from '../../../environments/environment';
 import { sanitizeSvg } from '../../core/svg-sanitize';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { MAP_THEME } from './carte.config';
+import { RankingsPanelComponent } from './rankings-panel.component';
 
 interface SectorWithPlayer extends Sector {
   playerName?: string | null;
@@ -47,6 +48,7 @@ function isSameOriginAssetUrl(url: string): boolean {
     MatDividerModule,
     MatButtonModule,
     MatTooltipModule,
+    RankingsPanelComponent,
   ],
   templateUrl: './carte.component.html',
   styleUrls: ['./carte.component.scss'],
@@ -80,7 +82,7 @@ export class CarteComponent {
   readonly board = this.activeBoard.board;
   readonly players = computed(() => this.playersRef.value()?.content ?? []);
 
-  private readonly playerColorMap = computed(() => {
+  readonly playerColorMap = computed(() => {
     const map = new Map<number, string>();
     // Indexation par id trié : la couleur d'un joueur ne dépend plus de
     // l'ordre d'insertion renvoyé par l'API, donc reste stable au refresh.

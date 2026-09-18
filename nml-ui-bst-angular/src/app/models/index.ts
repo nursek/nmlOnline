@@ -13,6 +13,7 @@ export * from './turn-resolution.model';
 export * from './player-action.model';
 export * from './battle-report.model';
 export * from './dev-seed.model';
+export * from './ranking.model';
 
 /** Minimal Spring Data page wrapper — only `content` is ever read. */
 export interface PageResult<T> {
