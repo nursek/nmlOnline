@@ -29,13 +29,55 @@
 }
 
 .map-layout {
+  position: relative;
   display: grid;
   grid-template-columns: 250px 1fr 300px;
   gap: 24px;
   margin-bottom: 24px;
   align-items: start;
+
+  .legend-card,
+  .details-card {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    overflow-y: auto;
+    @include shared.custom-scrollbar(8px);
+  }
+
+  .map-container {
+    grid-column: 2;
+  }
+
+  .legend-card {
+    left: 0;
+    width: 250px;
+  }
+
+  .details-card {
+    right: 0;
+    width: 300px;
+  }
+
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;
+    gap: 16px;
+
+    .map-container {
+      grid-column: auto;
+      order: -1;
+    }
+
+    .legend-card {
+      order: 1;
+    }
+
+    .legend-card,
+    .details-card {
+      position: static;
+      width: auto;
+      overflow: visible;
+    }
   }
 }
 
@@ -43,7 +85,6 @@
 .details-card,
 .stats-card {
   border-radius: var(--r-md);
-  height: fit-content;
 }
 
 .section-header {
@@ -113,17 +154,10 @@
 }
 
 .map-container {
-  background: var(--ink);
-  border: 2px solid var(--ink);
+  background: var(--paper-2);
   border-radius: var(--r-md);
-  padding: 24px;
+  padding: 8px;
   overflow: auto;
-  min-height: 500px;
-}
-
-.details-card {
-  position: sticky;
-  top: 100px;
 }
 
 .sector-header {
@@ -280,13 +314,12 @@
 
 .svg-map-wrapper {
   position: relative;
+  display: block;
   width: 100%;
   max-width: 100%;
-  margin: 0 auto;
-  border-radius: var(--r-md);
+  border-radius: var(--r-sm);
   overflow: hidden;
-  background: var(--ink);
-  display: inline-block;
+  background: var(--paper-2);
 }
 
 .svg-loading {
@@ -294,11 +327,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
+  min-height: 320px;
   gap: 16px;
-  color: var(--line-2);
-  background: var(--ink);
-  border-radius: var(--r-md);
+  color: var(--muted);
+  background: var(--paper-2);
+  border-radius: var(--r-sm);
 
   p {
     margin: 0;
@@ -309,7 +342,25 @@
   display: block;
   width: 100%;
   height: auto;
-  border-radius: var(--r-md);
+  filter: sepia(0.3) saturate(0.9) brightness(1.01);
+}
+
+@media (max-width: 768px) {
+  .map-container {
+    margin: 0 -20px;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .svg-map-wrapper,
+  .map-background,
+  .svg-loading {
+    border-radius: 0;
+  }
+
+  .legend-card {
+    display: none;
+  }
 }
 
 .svg-overlay {

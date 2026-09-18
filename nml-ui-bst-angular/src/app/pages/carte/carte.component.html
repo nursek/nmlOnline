@@ -73,7 +73,7 @@
             aria-label="Carte interactive des secteurs — cliquez ou appuyez sur Entrée pour annuler la sélection"
             (click)="onMapBackgroundClick($event)"
             (keydown.enter)="selectedSector.set(null)"
-            [style.--map-label-fontPx.px]="labelFontPx"
+            [style.--map-label-fontPx.px]="labelFontPx()"
             [style.--map-label-weight]="labelWeight"
             [style.--map-label-stroke]="labelStrokeColor"
             [style.--map-label-strokeWidth.px]="labelStrokeWidth"

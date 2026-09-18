@@ -11,7 +11,10 @@ import {
 } from '@angular/core';
 import { SlicePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { map } from 'rxjs/operators';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -55,9 +58,21 @@ function isSameOriginAssetUrl(url: string): boolean {
 })
 export class CarteComponent {
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly breakpointObserver = inject(BreakpointObserver);
+
+  // Les libellés vivent dans le viewBox SVG : sans grossissement, ils deviennent
+  // illisibles quand la carte est réduite à la largeur d'un téléphone.
+  private readonly narrowViewport = toSignal(
+    this.breakpointObserver
+      .observe([Breakpoints.XSmall])
+      .pipe(map((result) => result.matches)),
+    { initialValue: false },
+  );
 
   readonly neutralColor = MAP_THEME.neutralColor;
-  readonly labelFontPx = MAP_THEME.label.fontPx;
+  readonly labelFontPx = computed(() =>
+    this.narrowViewport() ? MAP_THEME.label.fontPx * 2 : MAP_THEME.label.fontPx,
+  );
   readonly labelWeight = MAP_THEME.label.weight;
   readonly labelStrokeColor = MAP_THEME.label.strokeColor;
   readonly labelStrokeWidth = MAP_THEME.label.strokeWidthPx;
