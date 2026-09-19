@@ -40,6 +40,20 @@
         }
         Seeder l'impasse 3 camps
       </button>
+      <button
+        mat-stroked-button
+        color="primary"
+        (click)="onSeedExchangeScenario()"
+        [disabled]="seeding() || busy()"
+        matTooltip="Offre en attente lurio → cegorach et échange accepté imotekh → nursek"
+      >
+        @if (seeding()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>swap_horiz</mat-icon>
+        }
+        Seeder un échange
+      </button>
     </div>
   }
 
@@ -126,14 +140,18 @@
           </span>
         } @else {
           <span>
-            Dernier combat — secteur {{ report.sectorNumber }} :
-            {{ report.attackerName ?? '?' }} vs {{ report.defenderName ?? '?' }} —
-            {{ report.attackerCasualties }} pertes att. /
+            Dernier combat — secteur {{ report.sectorNumber }} : {{ report.attackerName ?? '?' }} vs
+            {{ report.defenderName ?? '?' }} — {{ report.attackerCasualties }} pertes att. /
             {{ report.defenderCasualties }} pertes déf.
           </span>
         }
         @if (report.battleLog?.length) {
-          <button mat-stroked-button color="accent" class="detail-button" (click)="onShowDetail(report)">
+          <button
+            mat-stroked-button
+            color="accent"
+            class="detail-button"
+            (click)="onShowDetail(report)"
+          >
             <mat-icon>receipt_long</mat-icon>
             Détail
           </button>
@@ -269,7 +287,12 @@
                 }
               }
               @if (b.battleLog?.length) {
-                <button mat-stroked-button color="accent" class="detail-button" (click)="onShowDetail(b)">
+                <button
+                  mat-stroked-button
+                  color="accent"
+                  class="detail-button"
+                  (click)="onShowDetail(b)"
+                >
                   <mat-icon>receipt_long</mat-icon>
                   Détail
                 </button>

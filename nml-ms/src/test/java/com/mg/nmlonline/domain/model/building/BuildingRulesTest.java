@@ -13,8 +13,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @DisplayName("Bâtiments — Règles métier")
 class BuildingRulesTest {
 
@@ -54,9 +52,13 @@ class BuildingRulesTest {
     class HeadquartersTests {
 
         @Test
-        @DisplayName("Déplaçable si jamais déplacé")
-        void shouldMoveWhenNeverMoved() {
-            assertTrue(new Headquarters(1L).canMove(1));
+        @DisplayName("Premier déplacement à partir du tour 5")
+        void shouldMoveOnlyFromTurnFiveWhenNeverMoved() {
+            Headquarters hq = new Headquarters(1L);
+
+            assertFalse(hq.canMove(1));
+            assertFalse(hq.canMove(4));
+            assertTrue(hq.canMove(5));
         }
 
         @Test

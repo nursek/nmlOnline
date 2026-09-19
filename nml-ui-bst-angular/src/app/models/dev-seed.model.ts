@@ -20,7 +20,13 @@ export interface ScenarioOrder {
   orderId: number;
 }
 
-export interface ScenarioSummary {
+export interface SeedReport {
+  turn?: number;
+  route?: number[];
+  message: string | null;
+}
+
+export interface ScenarioSummary extends SeedReport {
   turn: number;
   standoff: boolean;
   attacker?: ScenarioActor;
@@ -31,4 +37,11 @@ export interface ScenarioSummary {
   orderId?: number;
   orders?: ScenarioOrder[];
   message: string | null;
+}
+
+export interface ExchangeScenarioSummary extends SeedReport {
+  turn: number;
+  pendingOfferId: number | null;
+  acceptedOfferId: number | null;
+  message: string;
 }

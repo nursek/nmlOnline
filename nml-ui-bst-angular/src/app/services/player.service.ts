@@ -120,6 +120,24 @@ export class PlayerService {
     }
   }
 
+  async discardEquipment(
+    buildingId: number,
+    equipmentName: string,
+    quantity: number,
+  ): Promise<boolean> {
+    this._error.set(null);
+    try {
+      await firstValueFrom(
+        this.api.discardWeaponCacheEquipment(buildingId, equipmentName, quantity),
+      );
+      void this.loadCurrent();
+      return true;
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, "Erreur lors du jet de l'équipement"));
+      return false;
+    }
+  }
+
   private messageFor(error: unknown, fallback: string): string {
     if ((error as { status?: number })?.status === 404) {
       const username = this.auth.user()?.username ?? '';

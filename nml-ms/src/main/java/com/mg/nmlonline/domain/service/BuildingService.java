@@ -90,7 +90,7 @@ public class BuildingService {
         }
 
         hq.reconstructSameLocation();
-        player.getStats().setMoney(player.getStats().getMoney() - cost);
+        player.spendMoney(cost);
         playerRepository.save(player);
         buildingRepository.save(hq);
         return true;
@@ -162,10 +162,17 @@ public class BuildingService {
                         "Le joueur capturant avec l'ID " + capturingPlayerId + " n'existe pas"));
 
         bank.onCapture(capturingPlayerId, currentTurn);
+        // Les 75 % exposés sont débités au propriétaire (sinon la capture crée de la monnaie), puis crédités.
+        Player owner = playerRepository.findByIdForUpdate(bank.getPlayerId()).orElse(null);
+        bank.updateStoredMoney(owner != null ? owner.getStats().getMoney() : 0.0);
         double transferredMoney = bank.transferMoney();
         List<PlayerResource> transferredResources = bank.transferResources();
         buildingRepository.save(bank);
 
+        if (owner != null && transferredMoney > 0) {
+            owner.spendMoney(transferredMoney);
+            playerRepository.save(owner);
+        }
         capturingPlayer.incrementMoney(transferredMoney);
 
         if (transferredResources != null && !transferredResources.isEmpty()) {
@@ -227,18 +234,63 @@ public class BuildingService {
         return true;
     }
 
+    public void discardPlayerEquipment(Long buildingId, String equipmentName, int quantity, Long userId) {
+        if (equipmentName == null || equipmentName.isBlank() || quantity <= 0) {
+            throw new IllegalArgumentException("Équipement ou quantité invalide");
+        }
+
+        Player player = playerRepository.findByUserIdForUpdate(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable"));
+        Building building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new IllegalArgumentException("Bâtiment introuvable : " + buildingId));
+        if (!(building instanceof WeaponCache cache)) {
+            throw new IllegalStateException("Le bâtiment n'est pas une cache d'armes");
+        }
+        if (!player.getId().equals(cache.getPlayerId())) {
+            throw new SecurityException("Cette cache n'appartient pas au joueur");
+        }
+        if (cache.isDestroyed()) {
+            throw new IllegalStateException("La cache d'armes est détruite");
+        }
+
+        EquipmentStack stack = player.getEquipments().stream()
+                .filter(s -> s.getEquipment() != null
+                        && equipmentName.equals(s.getEquipment().getName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Équipement introuvable : " + equipmentName));
+        // Seul le matériel disponible (non équipé sur une unité) peut être jeté.
+        if (stack.getAvailable() < quantity) {
+            throw new IllegalArgumentException("Quantité disponible insuffisante");
+        }
+
+        for (int i = 0; i < quantity; i++) {
+            player.removeEquipmentFromStack(stack.getEquipment());
+        }
+        player.setTotalEquipmentValue();
+        player.calculateTotalEconomyPower();
+        playerRepository.save(player);
+    }
+
     // Mapping dans la transaction (relations LAZY : sector, storedEquipments, storedResources).
 
     public Optional<BuildingDto> getHeadquartersDto(Long playerId) {
-        return getHeadquarters(playerId).map(buildingMapper::toDto);
+        Double money = ownerMoney(playerId);
+        return getHeadquarters(playerId).map(hq -> buildingMapper.toDto(hq, money));
     }
 
     public Optional<BuildingDto> getBankDto(Long playerId) {
-        return getBank(playerId).map(buildingMapper::toDto);
+        Double money = ownerMoney(playerId);
+        return getBank(playerId).map(bank -> buildingMapper.toDto(bank, money));
     }
 
     public List<BuildingDto> getWeaponCachesDto(Long playerId) {
         return getWeaponCaches(playerId).stream().map(buildingMapper::toDto).toList();
+    }
+
+    private Double ownerMoney(Long playerId) {
+        return playerRepository.findById(playerId)
+                .map(player -> player.getStats().getMoney())
+                .orElse(null);
     }
 
     /** playerId ignoré (tour global) — conservé pour compatibilité. Source unique : TurnService. */

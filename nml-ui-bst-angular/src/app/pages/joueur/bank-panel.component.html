@@ -1,0 +1,78 @@
+<mat-card class="building-card building-card--bank">
+  <mat-card-content>
+    <div class="building-head">
+      <mat-icon class="building-icon">account_balance</mat-icon>
+      <h2>Banque</h2>
+    </div>
+    <p class="building-subtitle">Compte, coffre et échanges entre joueurs</p>
+
+    @if (building(); as bank) {
+      <div class="building-metrics">
+        <div class="metric-row">
+          <span class="metric-label">Compte disponible</span>
+          <span class="metric-value">{{ money() | number: '1.0-0' }} ₡</span>
+        </div>
+        <div class="metric-row">
+          <span
+            class="metric-label"
+            matTooltip="75 % de votre fortune — exposée à la capture de la banque"
+            >Stocké dans la banque</span
+          >
+          <span class="metric-value">{{ bank.storedMoney ?? 0 | number: '1.0-0' }} ₡</span>
+        </div>
+        <div class="metric-row">
+          <span
+            class="metric-label"
+            matTooltip="Dotation de départ, non transférable tant qu'elle n'est pas dépensée"
+            >Dotation restante</span
+          >
+          <span class="metric-value">{{ startingMoneyRemaining() | number: '1.0-0' }} ₡</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label" matTooltip="Argent échangeable avec les autres joueurs"
+            >Transférable</span
+          >
+          <span class="metric-value">{{ transferableMoney() | number: '1.0-0' }} ₡</span>
+        </div>
+        @if (bank.isCaptured && bank.currentVampirizeRate) {
+          <div class="metric-row">
+            <span class="metric-label">Vampirisation des revenus</span>
+            <span class="metric-value"
+              >{{ bank.currentVampirizeRate * 100 | number: '1.0-0' }} %</span
+            >
+          </div>
+        }
+      </div>
+
+      <div class="building-status" [class.ready]="status()?.canMove">
+        <mat-icon>{{ status()?.canMove ? 'check_circle' : 'schedule' }}</mat-icon>
+        {{ status()?.label }}
+      </div>
+
+      <div class="building-actions">
+        <button mat-stroked-button color="primary" (click)="exchange.emit()">
+          <mat-icon>swap_horiz</mat-icon>
+          Échange
+          @if (pendingOffers() > 0) {
+            ({{ pendingOffers() }})
+          }
+        </button>
+        <button
+          mat-stroked-button
+          color="primary"
+          [disabled]="!status()?.canMove"
+          matTooltip="Déplacer la banque vers un de vos secteurs"
+          (click)="requestMove()"
+        >
+          <mat-icon>move_up</mat-icon>
+          Déplacer
+        </button>
+      </div>
+    } @else {
+      <div class="building-empty">
+        <mat-icon>account_balance</mat-icon>
+        <p>Aucune banque en votre possession.</p>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

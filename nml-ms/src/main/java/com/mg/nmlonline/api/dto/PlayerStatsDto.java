@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class PlayerStatsDto {
     private Double money;
+    private Double startingMoneyTotal;
+    private Double startingMoneyRemaining;
     private Double totalIncome;
     private Double totalVehiclesValue;
     private Double totalEquipmentValue;

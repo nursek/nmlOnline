@@ -1,4 +1,5 @@
 import {
+  buildingMoveStatus,
   economyBreakdown,
   equipmentByClass,
   equipmentStackCost,
@@ -420,6 +421,53 @@ describe('joueur.helpers', () => {
       expect(passengerTags.get(13)).toBe('passager · VTT léger n°2');
       expect([...pilotTags.keys()]).toHaveLength(2);
       expect([...passengerTags.keys()]).toHaveLength(2);
+    });
+  });
+
+  describe('buildingMoveStatus', () => {
+    it('affiche la recharge restante du QG (cooldown 5)', () => {
+      const hq = building(1, me, {
+        canMove: false,
+        moveCooldown: 5,
+        lastMovedTurn: 8,
+        isOperational: true,
+      });
+
+      expect(buildingMoveStatus(hq, 10)).toEqual({ canMove: false, label: 'Recharge : 3 tours' });
+      expect(buildingMoveStatus({ ...hq, canMove: true }, 13)).toEqual({
+        canMove: true,
+        label: 'Déplacement disponible',
+      });
+      expect(buildingMoveStatus(hq, null).label).toBe('Déplacement indisponible');
+    });
+
+    it('QG jamais déplacé : disponible à partir du tour 5', () => {
+      const hq = building(1, me, { canMove: false, moveCooldown: 5, isOperational: true });
+
+      expect(buildingMoveStatus(hq, 3).label).toBe('Déplacement disponible au tour 5');
+    });
+
+    it('gère le déplacement unique de la banque (tour 5, puis définitif)', () => {
+      const bank = building(2, me, {
+        buildingType: 'BANK',
+        canMove: false,
+        moveCooldown: -1,
+        hasMoved: false,
+      });
+
+      expect(buildingMoveStatus(bank, 3).label).toBe('Déplacement disponible au tour 5');
+      expect(buildingMoveStatus(bank, 6).label).toBe('Déplacement indisponible');
+      expect(buildingMoveStatus({ ...bank, hasMoved: true }, 6).label).toBe(
+        'Déplacement unique utilisé',
+      );
+    });
+
+    it('priorise détruit, capturé et QG inopérant', () => {
+      expect(buildingMoveStatus(building(1, me, { isDestroyed: true }), 10).label).toBe('Détruit');
+      expect(buildingMoveStatus(building(1, me, { isCaptured: true }), 10).label).toBe('Capturé');
+      expect(
+        buildingMoveStatus(building(1, me, { isOperational: false, canMove: false }), 10).label,
+      ).toBe('QG inopérant');
     });
   });
 });

@@ -1,0 +1,59 @@
+<mat-card class="building-card building-card--cache">
+  <mat-card-content>
+    <div class="building-head">
+      <mat-icon class="building-icon">inventory_2</mat-icon>
+      <h2>Cache d'armes</h2>
+    </div>
+    <p class="building-subtitle">Capacité de stockage de votre arsenal</p>
+
+    @if (building()) {
+      <div class="building-metrics">
+        <div class="metric-row">
+          <span class="metric-label">Équipements en cache</span>
+          <span class="metric-value">{{ total() }} / {{ maxCapacity() }}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label" matTooltip="Non équipés sur une unité, donc jetables"
+            >Disponibles</span
+          >
+          <span class="metric-value">{{ available() }}</span>
+        </div>
+      </div>
+
+      <div class="capacity-bar">
+        <span [style.width.%]="fillPercentage()"></span>
+      </div>
+
+      <div class="building-status" [class.ready]="status()?.canMove">
+        <mat-icon>{{ status()?.canMove ? 'check_circle' : 'schedule' }}</mat-icon>
+        {{ status()?.label }}
+      </div>
+
+      <div class="building-actions">
+        <button mat-stroked-button color="primary" (click)="equipments.emit()">
+          <mat-icon>inventory_2</mat-icon>
+          Équipements ({{ total() }})
+        </button>
+        <button
+          mat-stroked-button
+          color="primary"
+          [disabled]="!status()?.canMove"
+          matTooltip="Déplacer la cache vers un de vos secteurs"
+          (click)="requestMove()"
+        >
+          <mat-icon>move_up</mat-icon>
+          Déplacer
+        </button>
+        <button mat-stroked-button disabled matTooltip="Nécessite une amélioration à venir">
+          <mat-icon>recycling</mat-icon>
+          Recycler
+        </button>
+      </div>
+    } @else {
+      <div class="building-empty">
+        <mat-icon>inventory_2</mat-icon>
+        <p>Aucune cache d'armes en votre possession.</p>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

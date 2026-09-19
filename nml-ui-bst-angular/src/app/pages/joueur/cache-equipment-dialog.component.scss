@@ -1,0 +1,52 @@
+@use '../../../styles/shared' as shared;
+
+h2 mat-icon {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.hint {
+  color: shared.$text-muted;
+  font-size: 0.875rem;
+  margin: 0 0 12px;
+}
+
+.equipment-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--paper);
+}
+
+.equipment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.equipment-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.equipment-qty {
+  color: shared.$text-muted;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.empty {
+  color: shared.$text-muted;
+  font-size: 0.875rem;
+  margin: 0;
+}

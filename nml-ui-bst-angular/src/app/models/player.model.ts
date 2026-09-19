@@ -5,6 +5,8 @@ import type { Sector } from './sector.model';
 // Types pour les joueurs - Correspondant à PlayerStatsDto du backend
 export interface PlayerStats {
   money: number;
+  startingMoneyTotal?: number;
+  startingMoneyRemaining?: number;
   totalIncome: number;
   totalVehiclesValue: number;
   totalEquipmentValue: number;

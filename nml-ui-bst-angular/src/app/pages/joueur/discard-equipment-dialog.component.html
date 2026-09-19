@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>
+  <mat-icon>delete_forever</mat-icon>
+  Jeter {{ data.stack.equipment.name }}
+</h2>
+
+<mat-dialog-content>
+  <p class="warning">
+    Perte définitive : ces équipements ne pourront être ni revendus ni récupérés.
+  </p>
+
+  <div class="quantity-row">
+    <button mat-icon-button type="button" (click)="decrease()" aria-label="Diminuer">
+      <mat-icon>remove</mat-icon>
+    </button>
+    <mat-form-field appearance="outline">
+      <mat-label>Quantité</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [max]="maxQuantity()"
+        [value]="quantity()"
+        (input)="onInput($event)"
+      />
+    </mat-form-field>
+    <button mat-icon-button type="button" (click)="increase()" aria-label="Augmenter">
+      <mat-icon>add</mat-icon>
+    </button>
+    <button mat-button type="button" (click)="setMax()">Max ({{ maxQuantity() }})</button>
+  </div>
+
+  <p class="available">Disponible : {{ data.stack.available }} / {{ data.stack.quantity }}</p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Annuler</button>
+  <button mat-raised-button color="warn" (click)="confirm()" [disabled]="saving()">
+    <mat-icon>delete_forever</mat-icon>
+    Jeter
+  </button>
+</mat-dialog-actions>

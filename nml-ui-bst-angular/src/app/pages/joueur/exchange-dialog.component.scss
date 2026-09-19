@@ -1,0 +1,140 @@
+@use '../../../styles/shared' as shared;
+
+h2 mat-icon {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.hint {
+  color: shared.$text-muted;
+  font-size: 0.875rem;
+  margin: 0 0 12px;
+}
+
+.dialog-error {
+  @include shared.error-alert;
+  margin-bottom: 12px;
+}
+
+h3 {
+  margin: 16px 0 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: shared.$text-muted;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+
+  mat-form-field {
+    flex: 1;
+  }
+}
+
+.item-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.item-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 12px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-md);
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+  font-size: 0.8rem;
+
+  button {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.offer-card {
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: var(--surface);
+}
+
+.offer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.offer-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 4px 0;
+  font-size: 0.875rem;
+}
+
+.offer-amount {
+  font-weight: 600;
+}
+
+.offer-resources {
+  color: var(--ink-2);
+}
+
+.offer-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: shared.$text-muted;
+}
+
+.offer-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.status {
+  @include shared.tag(var(--line), var(--ink-2));
+}
+
+.status--PENDING {
+  background: var(--sun-tint);
+  color: var(--sun-deep);
+}
+
+.status--ACCEPTED {
+  background: var(--forest-tint);
+  color: var(--forest-deep);
+}
+
+.status--DECLINED,
+.status--CANCELLED,
+.status--EXPIRED {
+  background: var(--danger-tint);
+  color: var(--danger-deep);
+}
+
+.empty-line {
+  color: shared.$text-muted;
+  font-size: 0.875rem;
+  margin: 0 0 8px;
+}

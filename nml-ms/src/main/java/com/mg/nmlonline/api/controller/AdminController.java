@@ -1,6 +1,7 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.AdminMovementOrderDto;
+import com.mg.nmlonline.api.dto.ExchangeOfferDto;
 import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
 import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
@@ -11,6 +12,7 @@ import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.service.AdminService;
 import com.mg.nmlonline.domain.service.BoardAssetStorageService;
+import com.mg.nmlonline.domain.service.ExchangeOfferService;
 import com.mg.nmlonline.domain.service.MovementAdminService;
 import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.RankingService;
@@ -45,6 +47,7 @@ public class AdminController {
     private final MovementAdminService movementAdminService;
     private final TurnResolutionOrchestrator turnResolutionOrchestrator;
     private final RankingService rankingService;
+    private final ExchangeOfferService exchangeOfferService;
 
     public AdminController(AdminService adminService,
                            PlayerService playerService,
@@ -52,7 +55,8 @@ public class AdminController {
                            TurnService turnService,
                            MovementAdminService movementAdminService,
                            TurnResolutionOrchestrator turnResolutionOrchestrator,
-                           RankingService rankingService) {
+                           RankingService rankingService,
+                           ExchangeOfferService exchangeOfferService) {
         this.adminService = adminService;
         this.playerService = playerService;
         this.boardAssetStorageService = boardAssetStorageService;
@@ -60,11 +64,22 @@ public class AdminController {
         this.movementAdminService = movementAdminService;
         this.turnResolutionOrchestrator = turnResolutionOrchestrator;
         this.rankingService = rankingService;
+        this.exchangeOfferService = exchangeOfferService;
     }
 
     @GetMapping("/players")
     public Page<PlayerDto> getAllPlayers(Pageable pageable) {
         return playerService.findAllDto(pageable);
+    }
+
+    @GetMapping("/exchanges")
+    public ResponseEntity<Page<ExchangeOfferDto>> getAllExchanges(@RequestParam(required = false) String status,
+                                                                  Pageable pageable) {
+        try {
+            return ResponseEntity.ok(exchangeOfferService.getAllOffers(status, pageable));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/players/{id}/export")

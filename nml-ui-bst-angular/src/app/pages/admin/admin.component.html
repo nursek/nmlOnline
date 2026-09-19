@@ -55,9 +55,9 @@
     </button>
   </div>
 
-  <div class="orders-panel">
-    <div class="orders-header">
-      <div class="orders-title">
+  <div class="admin-panel">
+    <div class="panel-header">
+      <div class="panel-title">
         <mat-icon>route</mat-icon>
         <span>Ordres du tour {{ currentTurnLabel() }}</span>
       </div>
@@ -144,6 +144,67 @@
           @if (o.statusMessage) {
             <div class="order-message">{{ o.statusMessage }}</div>
           }
+        }
+      </div>
+    }
+  </div>
+
+  <div class="admin-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <mat-icon>swap_horiz</mat-icon>
+        <span>Échanges entre joueurs</span>
+      </div>
+      <button
+        mat-stroked-button
+        color="accent"
+        (click)="onReloadExchanges()"
+        [disabled]="exchangesLoading()"
+        matTooltip="Recharge la liste des offres"
+      >
+        <mat-icon>refresh</mat-icon>
+        Rafraîchir
+      </button>
+    </div>
+
+    <mat-chip-listbox
+      aria-label="Filtrer les échanges par statut"
+      (change)="onExchangeStatusChange($any($event)?.value ?? 'ALL')"
+      [value]="exchangeStatusFilter()"
+      class="status-chips"
+    >
+      @for (s of exchangeFilters; track s) {
+        <mat-chip-option [value]="s" [selected]="exchangeStatusFilter() === s">
+          {{ s === 'ALL' ? 'TOUTES' : exchangeStatusLabels[s] }}
+        </mat-chip-option>
+      }
+    </mat-chip-listbox>
+
+    @if (exchangesLoading()) {
+      <div class="loading-container">
+        <mat-spinner diameter="32"></mat-spinner>
+      </div>
+    } @else if (exchanges().length === 0) {
+      <p class="empty-text">Aucune offre pour ce filtre.</p>
+    } @else {
+      <div class="orders-list">
+        @for (offer of exchanges(); track offer.id) {
+          <div class="order-row">
+            <div class="order-main">
+              <span class="order-player" matTooltip="Émetteur → destinataire">
+                <mat-icon>person</mat-icon>
+                {{ offer.senderName }} → {{ offer.receiverName }}
+              </span>
+              <span class="order-route">{{ exchangeItemsLabel(offer) }}</span>
+              <span class="order-type" matTooltip="Tour de création">
+                <mat-icon>schedule</mat-icon>
+                T{{ offer.createdTurn }}
+              </span>
+            </div>
+            <span class="status-badge {{ exchangeStatusClass(offer.status) }}">
+              {{ exchangeStatusLabels[offer.status] }}
+            </span>
+          </div>
         }
       </div>
     }

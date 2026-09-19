@@ -5,9 +5,13 @@ import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
 import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
+import com.mg.nmlonline.domain.model.equipment.Equipment;
+import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
+import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -152,12 +157,15 @@ class BuildingServiceTest {
     class CaptureBankTests {
 
         @Test
-        @DisplayName("Succès : argent et ressources transférés au conquérant, vampirisation activée")
+        @DisplayName("Succès : 75 % de la fortune du propriétaire et les ressources transférés, vampirisation activée")
         void shouldTransferMoneyAndResourcesToCapturer() {
             Bank bank = new Bank(1L);
-            bank.setStoredMoney(5000.0);
             bank.getStoredResources().add(new PlayerResource("Or", 100));
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(bank));
+            Player owner = new Player("Proprietaire");
+            owner.setId(1L);
+            owner.getStats().setMoney(10000.0);
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(owner));
             Player capturer = new Player("Capturer");
             capturer.setId(2L);
             capturer.getStats().setMoney(1000.0);
@@ -165,13 +173,31 @@ class BuildingServiceTest {
 
             BuildingService.CaptureResult result = buildingService.captureBank(50L, 2L, 3);
 
-            assertEquals(5000.0, result.money());
+            assertEquals(7500.0, result.money());
+            assertEquals(2500.0, owner.getStats().getMoney(), "les 75 % exposés sont débités au propriétaire");
             assertEquals(1, result.resources().size());
-            assertEquals(6000.0, capturer.getStats().getMoney());
+            assertEquals(8500.0, capturer.getStats().getMoney());
             assertEquals(0.0, bank.getStoredMoney());
             assertTrue(bank.getStoredResources().isEmpty());
             assertTrue(bank.isCaptured());
             assertSame(capturer, result.resources().getFirst().getPlayer());
+        }
+
+        @Test
+        @DisplayName("Propriétaire introuvable : aucun argent transféré")
+        void shouldTransferNoMoneyWhenOwnerMissing() {
+            Bank bank = new Bank(1L);
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(bank));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
+            Player capturer = new Player("Capturer");
+            capturer.setId(2L);
+            capturer.getStats().setMoney(1000.0);
+            when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(capturer));
+
+            BuildingService.CaptureResult result = buildingService.captureBank(50L, 2L, 3);
+
+            assertEquals(0.0, result.money());
+            assertEquals(1000.0, capturer.getStats().getMoney());
         }
 
         @Test
@@ -320,6 +346,62 @@ class BuildingServiceTest {
         void shouldDelegateToTurnService() {
             when(turnService.getCurrentTurn()).thenReturn(7);
             assertEquals(7, buildingService.getCurrentTurn(1L));
+        }
+    }
+
+    @Nested
+    @DisplayName("Jet d'équipement (cache d'armes)")
+    class DiscardEquipmentTests {
+
+        private Equipment equipmentOf(String name) {
+            return new Equipment(name, 100, 10, 0, 0, 0,
+                    Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
+        }
+
+        @Test
+        @DisplayName("Jette uniquement le matériel disponible (non équipé)")
+        void shouldDiscardOnlyAvailableEquipment() {
+            Equipment equipment = equipmentOf("Pistolet");
+            player.addEquipmentToStack(equipment, 3);
+            player.decrementEquipmentAvailability(equipment);
+            WeaponCache cache = new WeaponCache(1L);
+            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
+
+            buildingService.discardPlayerEquipment(50L, "Pistolet", 2, 7L);
+
+            EquipmentStack stack = player.getEquipments().getFirst();
+            assertEquals(1, stack.getQuantity());
+            assertEquals(0, stack.getAvailable());
+            verify(playerRepository).save(player);
+        }
+
+        @Test
+        @DisplayName("Refuse de jeter du matériel équipé")
+        void shouldRefuseDiscardWhenNotEnoughAvailable() {
+            Equipment equipment = equipmentOf("Pistolet");
+            player.addEquipmentToStack(equipment, 3);
+            player.decrementEquipmentAvailability(equipment);
+            WeaponCache cache = new WeaponCache(1L);
+            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 3, 7L));
+
+            assertEquals(3, player.getEquipments().getFirst().getQuantity());
+            verify(playerRepository, never()).save(any(Player.class));
+        }
+
+        @Test
+        @DisplayName("Refuse une cache qui n'appartient pas au joueur")
+        void shouldRefuseDiscardOnForeignCache() {
+            WeaponCache cache = new WeaponCache(99L);
+            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
+
+            assertThrows(SecurityException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 1, 7L));
         }
     }
 }

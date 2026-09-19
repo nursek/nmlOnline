@@ -85,6 +85,7 @@ public class SectorMapper {
                 building.setStoredMoney(null);
                 building.setStoredResources(null);
                 building.setStoredEquipments(null);
+                building.setStoredWealth(null);
             });
         }
         return dto;

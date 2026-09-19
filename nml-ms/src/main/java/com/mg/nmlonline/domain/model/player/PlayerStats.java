@@ -14,6 +14,13 @@ public class PlayerStats {
     @Column(name = "money")
     private double money = 0.0;
 
+    // Dotation de départ : protégée des échanges tant qu'elle n'est pas dépensée (les dépenses la vident en premier).
+    @Column(name = "starting_money_total")
+    private double startingMoneyTotal = 0.0;
+
+    @Column(name = "starting_money_remaining")
+    private double startingMoneyRemaining = 0.0;
+
     @Column(name = "total_income")
     private double totalIncome = 0.0 ; // Revenu quotidien : somme des revenus de chaque secteur possédé
 

@@ -1,0 +1,117 @@
+@use '../../../styles/shared' as shared;
+
+.building-card {
+  @include shared.card;
+  --building-accent: #{shared.$primary-color};
+
+  height: 100%;
+  margin-bottom: 0;
+  border-top: 5px solid var(--building-accent);
+  background: color-mix(in srgb, var(--building-accent) 4%, var(--surface));
+}
+
+.building-card--bank {
+  --building-accent: var(--sun-deep);
+}
+
+.building-card--cache {
+  --building-accent: var(--teal);
+}
+
+.building-card--hq {
+  --building-accent: var(--cobalt);
+}
+
+.building-head {
+  @include shared.section-header;
+
+  .building-icon {
+    color: var(--building-accent);
+  }
+}
+
+.building-subtitle {
+  color: shared.$text-muted;
+  font-size: 0.875rem;
+  margin: 0 0 12px;
+}
+
+.building-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.metric-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.9rem;
+
+  .metric-label {
+    color: shared.$text-muted;
+  }
+
+  .metric-value {
+    font-weight: 600;
+  }
+}
+
+.capacity-bar {
+  height: 8px;
+  border-radius: var(--r-sm);
+  background: var(--paper-3);
+  overflow: hidden;
+  margin-bottom: 12px;
+
+  span {
+    display: block;
+    height: 100%;
+    background: var(--building-accent);
+  }
+}
+
+.building-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: shared.$text-muted;
+  margin: 4px 0 12px;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &.ready {
+    color: var(--forest-deep);
+  }
+}
+
+.building-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.building-empty {
+  text-align: center;
+  padding: 24px 8px;
+  color: shared.$text-muted;
+
+  mat-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 8px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+  }
+}

@@ -72,8 +72,10 @@ public class PlayerActionService {
         this.em = em;
     }
 
-    public void recordBuyEquipment(Long playerId, String equipmentName, int quantity, double cost) {
-        save(PlayerAction.buyEquipment(playerId, turnService.getCurrentTurn(), equipmentName, quantity, cost));
+    public void recordBuyEquipment(Long playerId, String equipmentName, int quantity, double cost,
+                                   double startingMoneySpent) {
+        save(PlayerAction.buyEquipment(playerId, turnService.getCurrentTurn(), equipmentName, quantity, cost,
+                startingMoneySpent));
     }
 
     public void recordSellResource(Long playerId, String resourceName, int quantity, double value) {
@@ -88,8 +90,8 @@ public class PlayerActionService {
         save(PlayerAction.unequipUnit(playerId, turnService.getCurrentTurn(), unitId, equipmentName));
     }
 
-    public void recordBuyVehicle(Long playerId, Long vehicleId, double cost) {
-        save(PlayerAction.buyVehicle(playerId, turnService.getCurrentTurn(), vehicleId, cost));
+    public void recordBuyVehicle(Long playerId, Long vehicleId, double cost, double startingMoneySpent) {
+        save(PlayerAction.buyVehicle(playerId, turnService.getCurrentTurn(), vehicleId, cost, startingMoneySpent));
     }
 
     public void recordPlaceVehicle(Long playerId, Long vehicleId, Long boardId, int sectorNumber) {
@@ -177,7 +179,7 @@ public class PlayerActionService {
         for (int i = 0; i < quantity; i++) {
             player.removeEquipmentFromStack(stack.getEquipment());
         }
-        player.incrementMoney(action.getMoney() != null ? action.getMoney() : 0);
+        player.refundMoney(action.getMoney() != null ? action.getMoney() : 0, action.getStartingMoneySpent());
         player.setTotalEquipmentValue();
         player.calculateTotalEconomyPower();
     }
@@ -234,7 +236,7 @@ public class PlayerActionService {
         }
         double cost = action.getMoney() != null ? action.getMoney() : 0;
         em.remove(vehicle);
-        player.incrementMoney(cost);
+        player.refundMoney(cost, action.getStartingMoneySpent());
         player.getStats().setTotalVehiclesValue(player.getStats().getTotalVehiclesValue() - cost);
         player.calculateTotalEconomyPower();
     }

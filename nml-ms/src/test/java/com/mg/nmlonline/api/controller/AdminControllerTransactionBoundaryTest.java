@@ -43,6 +43,19 @@ class AdminControllerTransactionBoundaryTest {
     }
 
     @Test
+    void getAllExchanges() throws Exception {
+        mockMvc.perform(get("/api/admin/exchanges").header("Authorization", bearer()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getAllExchangesRejectsUnknownStatus() throws Exception {
+        mockMvc.perform(get("/api/admin/exchanges").param("status", "INCONNU")
+                        .header("Authorization", bearer()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void importPlayer() throws Exception {
         mockMvc.perform(multipart("/api/admin/players/import")
                         .file(jsonPart("file", "players/lurio.json"))

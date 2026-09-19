@@ -22,6 +22,9 @@ import {
   Board,
   PlayerAction,
   BattleReport,
+  CreateExchangeOfferPayload,
+  ExchangeOffer,
+  ExchangeScenarioSummary,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -184,6 +187,13 @@ export class ApiService {
     return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/seed-standoff-scenario`, {});
   }
 
+  adminSeedExchangeScenario(): Observable<ExchangeScenarioSummary> {
+    return this.http.post<ExchangeScenarioSummary>(
+      `${this.baseUrl}/admin/dev/seed-exchange-scenario`,
+      {},
+    );
+  }
+
   getVehicleTypes(): Observable<VehicleTypeInfo[]> {
     return this.http.get<VehicleTypeInfo[]>(`${this.baseUrl}/vehicles/types`);
   }
@@ -272,5 +282,36 @@ export class ApiService {
       boardId,
       newSectorNumber,
     });
+  }
+
+  discardWeaponCacheEquipment(
+    buildingId: number,
+    equipmentName: string,
+    quantity: number,
+  ): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/buildings/${buildingId}/weapon-cache/discard`, {
+      equipmentName,
+      quantity,
+    });
+  }
+
+  getExchangeOffers(): Observable<ExchangeOffer[]> {
+    return this.http.get<ExchangeOffer[]>(`${this.baseUrl}/bank/offers`);
+  }
+
+  createExchangeOffer(payload: CreateExchangeOfferPayload): Observable<ExchangeOffer> {
+    return this.http.post<ExchangeOffer>(`${this.baseUrl}/bank/offers`, payload);
+  }
+
+  acceptExchangeOffer(offerId: number): Observable<ExchangeOffer> {
+    return this.http.post<ExchangeOffer>(`${this.baseUrl}/bank/offers/${offerId}/accept`, {});
+  }
+
+  declineExchangeOffer(offerId: number): Observable<ExchangeOffer> {
+    return this.http.post<ExchangeOffer>(`${this.baseUrl}/bank/offers/${offerId}/decline`, {});
+  }
+
+  cancelExchangeOffer(offerId: number): Observable<ExchangeOffer> {
+    return this.http.post<ExchangeOffer>(`${this.baseUrl}/bank/offers/${offerId}/cancel`, {});
   }
 }

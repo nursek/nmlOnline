@@ -86,8 +86,7 @@ public class Player {
             return false;
         }
         double totalCost = (double) equipment.getCost() * quantity;
-        if (stats.getMoney() >= totalCost) {
-            stats.setMoney(stats.getMoney() - totalCost);
+        if (spendMoney(totalCost)) {
             addEquipmentToStack(equipment, quantity);
             setTotalEquipmentValue();
             calculateTotalEconomyPower();
@@ -99,8 +98,7 @@ public class Player {
     public Vehicle buyVehicle(VehicleType vehicleType) {
         if (vehicleType == null) return null;
         int cost = vehicleType.getCost();
-        if (stats.getMoney() >= cost) {
-            stats.setMoney(stats.getMoney() - cost);
+        if (spendMoney(cost)) {
             stats.setTotalVehiclesValue(stats.getTotalVehiclesValue() + cost);
             calculateTotalEconomyPower();
             return new Vehicle(vehicleType, this.id);
@@ -292,6 +290,47 @@ public class Player {
             stats.setMoney(stats.getMoney() - amount);
             calculateTotalEconomyPower();
         }
+    }
+
+    /** Dotation initiale = argent importé à la création ; seul l'argent au-delà est transférable. */
+    public void initializeStartingMoney() {
+        stats.setStartingMoneyTotal(stats.getMoney());
+        stats.setStartingMoneyRemaining(stats.getMoney());
+    }
+
+    public double getTransferableMoney() {
+        return Math.max(0, stats.getMoney() - Math.max(0, stats.getStartingMoneyRemaining()));
+    }
+
+    /** Débit normal : la dotation de départ se vide avant les revenus. */
+    public boolean spendMoney(double amount) {
+        if (amount <= 0 || stats.getMoney() < amount) {
+            return false;
+        }
+        stats.setMoney(stats.getMoney() - amount);
+        double fromStarting = Math.min(amount, Math.max(0, stats.getStartingMoneyRemaining()));
+        stats.setStartingMoneyRemaining(stats.getStartingMoneyRemaining() - fromStarting);
+        calculateTotalEconomyPower();
+        return true;
+    }
+
+    /** Part de dotation qu'un débit de ce montant va consommer (spendMoney vide la dotation en premier). */
+    public double startingShareOf(double amount) {
+        return Math.min(amount, Math.max(0, stats.getStartingMoneyRemaining()));
+    }
+
+    /** Remboursement d'annulation : restaure la dotation réellement consommée par l'achat annulé. */
+    public void refundMoney(double amount, double startingMoneySpent) {
+        if (amount <= 0) {
+            return;
+        }
+        stats.setMoney(stats.getMoney() + amount);
+        double restore = Math.min(startingMoneySpent,
+                stats.getStartingMoneyTotal() - stats.getStartingMoneyRemaining());
+        if (restore > 0) {
+            stats.setStartingMoneyRemaining(stats.getStartingMoneyRemaining() + restore);
+        }
+        calculateTotalEconomyPower();
     }
 
 

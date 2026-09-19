@@ -7,7 +7,6 @@ import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
-import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.mapper.PlayerMapper;
 import jakarta.persistence.EntityManager;
@@ -108,12 +107,14 @@ public class PlayerService {
         }
 
         for (ResolvedItem resolved : resolvedItems) {
+            double cost = (double) resolved.equipment().getCost() * resolved.quantity();
+            double startingShare = player.startingShareOf(cost);
             boolean success = player.buyEquipment(resolved.equipment(), resolved.quantity());
             if (!success) {
                 throw new IllegalStateException("Failed to apply purchase for: " + resolved.equipment().getName());
             }
             playerActionService.recordBuyEquipment(playerId, resolved.equipment().getName(),
-                    resolved.quantity(), (double) resolved.equipment().getCost() * resolved.quantity());
+                    resolved.quantity(), cost, startingShare);
         }
 
         return playerRepository.save(player);
