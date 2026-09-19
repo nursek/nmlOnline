@@ -1,0 +1,61 @@
+<mat-card class="building-card building-card--hq">
+  <mat-card-content>
+    <div class="building-head">
+      <mat-icon class="building-icon">military_tech</mat-icon>
+      <h2>Quartier Général</h2>
+    </div>
+    <p class="building-subtitle">Cœur de votre armée et diplomatie</p>
+
+    @if (building(); as hq) {
+      <div class="building-metrics">
+        <div class="metric-row">
+          <span class="metric-label">État</span>
+          <span class="metric-value">{{
+            hq.isOperational === false ? 'Inopérant' : 'Opérationnel'
+          }}</span>
+        </div>
+        <div class="metric-row">
+          <span
+            class="metric-label"
+            matTooltip="25 % de votre fortune — protégée à la capture du QG"
+            >Stocké dans le QG</span
+          >
+          <span class="metric-value">{{ hq.storedWealth ?? 0 | number: '1.0-0' }} ₡</span>
+        </div>
+        @if (hq.isCaptured) {
+          <div class="metric-row">
+            <span class="metric-label">Statut</span>
+            <span class="metric-value">Capturé</span>
+          </div>
+        }
+      </div>
+
+      <div class="building-status" [class.ready]="status()?.canMove">
+        <mat-icon>{{ status()?.canMove ? 'check_circle' : 'schedule' }}</mat-icon>
+        {{ status()?.label }}
+      </div>
+
+      <div class="building-actions">
+        <button mat-stroked-button color="primary" disabled matTooltip="Bientôt disponible">
+          <mat-icon>handshake</mat-icon>
+          Alliance
+        </button>
+        <button
+          mat-stroked-button
+          color="primary"
+          [disabled]="!status()?.canMove"
+          matTooltip="Déplacer le QG vers un de vos secteurs"
+          (click)="requestMove()"
+        >
+          <mat-icon>move_up</mat-icon>
+          Déplacer
+        </button>
+      </div>
+    } @else {
+      <div class="building-empty">
+        <mat-icon>military_tech</mat-icon>
+        <p>Aucun quartier général en votre possession.</p>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

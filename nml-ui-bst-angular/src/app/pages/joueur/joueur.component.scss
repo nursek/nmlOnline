@@ -91,6 +91,19 @@
   margin-bottom: 24px;
 }
 
+.buildings-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 1100px) {
+  .buildings-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .stat-card {
   border-radius: var(--r-md);
 }
@@ -417,7 +430,7 @@
   background: var(--accent-tint);
   border-color: var(--accent-line);
 
-.force-icon {
+  .force-icon {
     color: shared.$primary-color;
   }
 }

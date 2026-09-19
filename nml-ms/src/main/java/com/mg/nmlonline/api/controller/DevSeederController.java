@@ -1,6 +1,8 @@
 package com.mg.nmlonline.api.controller;
 
+import com.mg.nmlonline.api.dto.ExchangeScenarioSummaryDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
+import com.mg.nmlonline.domain.service.ExchangeScenarioSeeder;
 import com.mg.nmlonline.domain.service.TurnResolutionScenarioSeeder;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +22,12 @@ import java.util.Map;
 public class DevSeederController {
 
     private final TurnResolutionScenarioSeeder scenarioSeeder;
+    private final ExchangeScenarioSeeder exchangeScenarioSeeder;
 
-    public DevSeederController(TurnResolutionScenarioSeeder scenarioSeeder) {
+    public DevSeederController(TurnResolutionScenarioSeeder scenarioSeeder,
+                               ExchangeScenarioSeeder exchangeScenarioSeeder) {
         this.scenarioSeeder = scenarioSeeder;
+        this.exchangeScenarioSeeder = exchangeScenarioSeeder;
     }
 
     @GetMapping("/seed-resolution-scenario")
@@ -40,5 +45,11 @@ public class DevSeederController {
     @PostMapping("/seed-standoff-scenario")
     public ResponseEntity<ScenarioSummaryDto> seedStandoffScenario() {
         return ResponseEntity.ok(scenarioSeeder.seedStandoffScenario());
+    }
+
+    /** Une offre en attente (lurio→cegorach) et un échange accepté (imotekh→nursek), re-jouable. */
+    @PostMapping("/seed-exchange-scenario")
+    public ResponseEntity<ExchangeScenarioSummaryDto> seedExchangeScenario() {
+        return ResponseEntity.ok(exchangeScenarioSeeder.seedExchangeScenario());
     }
 }

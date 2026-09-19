@@ -86,13 +86,15 @@ export class TurnResolutionComponent {
     });
     effect(() => {
       const seed = this.seedReport();
-      if (seed) {
-        const msg = seed.standoff
-          ? `Impasse prête — ${seed.defender.name} défend le secteur ${seed.orders?.at(0)?.route.at(-1) ?? '?'}`
-          : `Scénario prêt — ${seed.attacker?.name} → secteur ${seed.route?.at(-1)} (${seed.defender.name})`;
-        this.snackBar.open(msg, 'OK', { duration: 6000, panelClass: 'toast-success' });
-        this.resolution.clearSeedReport();
-      }
+      if (!seed) return;
+      const msg =
+        'standoff' in seed
+          ? seed.standoff
+            ? `Impasse prête — ${seed.defender.name} défend le secteur ${seed.orders?.at(0)?.route.at(-1) ?? '?'}`
+            : `Scénario prêt — ${seed.attacker?.name} → secteur ${seed.route?.at(-1)} (${seed.defender.name})`
+          : seed.message;
+      this.snackBar.open(msg, 'OK', { duration: 6000, panelClass: 'toast-success' });
+      this.resolution.clearSeedReport();
     });
   }
 
@@ -160,6 +162,12 @@ export class TurnResolutionComponent {
 
   onSeedStandoffScenario(): void {
     void this.resolution.seedStandoffScenario().catch(() => {
+      /* service positionne déjà le signal d'erreur */
+    });
+  }
+
+  onSeedExchangeScenario(): void {
+    void this.resolution.seedExchangeScenario().catch(() => {
       /* service positionne déjà le signal d'erreur */
     });
   }

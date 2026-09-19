@@ -9,6 +9,8 @@ import {
   PageResult,
   Player,
   Board,
+  ExchangeOffer,
+  ExchangeOfferStatusFilter,
 } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 import { environment } from '../../environments/environment';
@@ -42,6 +44,17 @@ export class AdminService {
   readonly orders = computed(() => this.ordersRef.value() ?? []);
   readonly ordersLoading = computed(() => this.ordersRef.isLoading());
 
+  readonly exchangeStatusFilter = signal<ExchangeOfferStatusFilter>('ALL');
+  private readonly exchangesRef = httpResource<PageResult<ExchangeOffer>>(() => {
+    const filter = this.exchangeStatusFilter();
+    return {
+      url: `${environment.apiBaseUrl}/admin/exchanges`,
+      params: (filter !== 'ALL' ? { status: filter } : {}) as Record<string, string>,
+    };
+  });
+  readonly exchanges = computed(() => this.exchangesRef.value()?.content ?? []);
+  readonly exchangesLoading = computed(() => this.exchangesRef.isLoading());
+
   private readonly _importing = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _successMessage = signal<string | null>(null);
@@ -66,6 +79,10 @@ export class AdminService {
 
   reloadOrders(): void {
     this.ordersRef.reload();
+  }
+
+  reloadExchanges(): void {
+    this.exchangesRef.reload();
   }
 
   /** Charge le tour courant depuis la source unique de vérité (TurnService). */
@@ -94,6 +111,7 @@ export class AdminService {
       );
       this.reloadPlayers();
       this.reloadOrders();
+      this.reloadExchanges();
     } catch (error) {
       this._error.set(httpErrorMessage(error, 'Erreur lors du passage au tour suivant'));
     } finally {

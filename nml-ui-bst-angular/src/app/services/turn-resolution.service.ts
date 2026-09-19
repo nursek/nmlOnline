@@ -3,6 +3,7 @@ import { httpResource } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import {
+  ExchangeScenarioSummary,
   ResolvedBattle,
   ScenarioSummary,
   TurnFinalizeResult,
@@ -48,7 +49,7 @@ export class TurnResolutionService {
   }));
   readonly devScenarioAvailable = computed(() => this.devScenarioRef.value()?.available ?? false);
   private readonly _seeding = signal(false);
-  private readonly _seedReport = signal<ScenarioSummary | null>(null);
+  private readonly _seedReport = signal<ScenarioSummary | ExchangeScenarioSummary | null>(null);
   readonly seeding = this._seeding.asReadonly();
   readonly seedReport = this._seedReport.asReadonly();
 
@@ -159,6 +160,20 @@ export class TurnResolutionService {
       await this.loadState();
     } catch (error) {
       this._error.set(httpErrorMessage(error, "Erreur lors du seeding de l'impasse"));
+    } finally {
+      this._seeding.set(false);
+    }
+  }
+
+  async seedExchangeScenario(): Promise<void> {
+    this._seeding.set(true);
+    this._error.set(null);
+    this._seedReport.set(null);
+    try {
+      const report = await firstValueFrom(this.api.adminSeedExchangeScenario());
+      this._seedReport.set(report);
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, "Erreur lors du seeding de l'échange"));
     } finally {
       this._seeding.set(false);
     }

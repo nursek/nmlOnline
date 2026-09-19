@@ -64,7 +64,7 @@ public class PlayerMapper {
 
         if (player.getBuildings() != null) {
             List<BuildingDto> buildingDtos = player.getBuildings().stream()
-                    .map(buildingMapper::toDto)
+                    .map(building -> buildingMapper.toDto(building, player.getStats().getMoney()))
                     .toList();
             dto.setBuildings(buildingDtos);
         }
@@ -121,6 +121,8 @@ public class PlayerMapper {
         PlayerStatsDto statsDto = new PlayerStatsDto();
         PlayerStats stats = player.getStats();
         statsDto.setMoney(stats.getMoney());
+        statsDto.setStartingMoneyTotal(stats.getStartingMoneyTotal());
+        statsDto.setStartingMoneyRemaining(stats.getStartingMoneyRemaining());
         statsDto.setTotalIncome(stats.getTotalIncome());
         statsDto.setTotalVehiclesValue(stats.getTotalVehiclesValue());
         statsDto.setTotalEquipmentValue(stats.getTotalEquipmentValue());

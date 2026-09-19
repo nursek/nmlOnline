@@ -70,6 +70,7 @@ public class PlayerImportService {
     public Player importPlayer(PlayerDTO dto) {
         Player player = new Player(dto.name);
         player.getStats().setMoney(dto.money);
+        player.initializeStartingMoney();
         return player;
     }
 

@@ -1,0 +1,172 @@
+<h2 mat-dialog-title>
+  <mat-icon>swap_horiz</mat-icon>
+  Échange entre joueurs
+</h2>
+
+<mat-dialog-content>
+  <p class="hint">
+    Une offre reste valable jusqu'à la fin du tour. Trois offres en attente maximum ; l'acceptation
+    transfère argent et ressources d'un seul coup.
+  </p>
+
+  @if (error(); as message) {
+    <div class="dialog-error">{{ message }}</div>
+  }
+
+  @if (data.startingMoneyRemaining > 0) {
+    <p class="hint">
+      Dotation de départ non transférable :
+      {{ data.startingMoneyRemaining | number: '1.0-0' }} ₡. Montant transférable :
+      {{ data.transferableMoney | number: '1.0-0' }} ₡.
+    </p>
+  }
+
+  <h3>Nouvelle offre</h3>
+  <div class="form-row">
+    <mat-form-field appearance="outline">
+      <mat-label>Destinataire</mat-label>
+      <mat-select [value]="receiverId()" (valueChange)="receiverId.set($event)">
+        @for (partner of partners(); track partner.id) {
+          <mat-option [value]="partner.id">{{ partner.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Argent (₡)</mat-label>
+      <input
+        matInput
+        type="number"
+        min="0"
+        [max]="data.transferableMoney"
+        [value]="money()"
+        (input)="setMoney($event)"
+      />
+    </mat-form-field>
+  </div>
+
+  <div class="form-row form-row--resource">
+    <mat-form-field appearance="outline">
+      <mat-label>Ressource</mat-label>
+      <mat-select [value]="resourceName()" (valueChange)="resourceName.set($event)">
+        @for (resource of data.resources; track resource.name) {
+          <mat-option [value]="resource.name">
+            {{ resource.name }} ({{ resource.quantity }})
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Quantité</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [max]="selectedResource()?.quantity ?? 1"
+        [value]="resourceQuantity()"
+        (input)="setResourceQuantity($event)"
+      />
+    </mat-form-field>
+
+    <button
+      mat-stroked-button
+      color="primary"
+      type="button"
+      [disabled]="!canAdd()"
+      (click)="addItem()"
+    >
+      <mat-icon>add</mat-icon>
+      Ajouter
+    </button>
+  </div>
+
+  @if (items().length > 0) {
+    <div class="item-chips">
+      @for (item of items(); track item.resourceName) {
+        <span class="item-chip">
+          {{ item.quantity }} × {{ item.resourceName }}
+          <button mat-icon-button type="button" (click)="removeItem(item.resourceName)">
+            <mat-icon>close</mat-icon>
+          </button>
+        </span>
+      }
+    </div>
+  }
+
+  <h3>Offres reçues</h3>
+  @if (received().length === 0) {
+    <p class="empty-line">Aucune offre reçue.</p>
+  } @else {
+    @for (offer of received(); track offer.id) {
+      <div class="offer-card">
+        <div class="offer-head">
+          <span>{{ offer.senderName }} → vous</span>
+          <span class="status status--{{ offer.status }}">{{ statusLabel(offer.status) }}</span>
+        </div>
+        <div class="offer-body">
+          @if (offer.money > 0) {
+            <span class="offer-amount">{{ offer.money | number: '1.0-0' }} ₡</span>
+          }
+          @if (offer.resources.length > 0) {
+            <span class="offer-resources">{{ itemsLabel(offer) }}</span>
+          }
+        </div>
+        <div class="offer-foot">
+          <span>Tour {{ offer.createdTurn }}</span>
+          @if (offer.status === 'PENDING') {
+            <span class="offer-actions">
+              <button
+                mat-stroked-button
+                color="primary"
+                [disabled]="saving()"
+                (click)="accept(offer)"
+              >
+                Accepter
+              </button>
+              <button mat-button [disabled]="saving()" (click)="decline(offer)">Refuser</button>
+            </span>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  <h3>Offres envoyées</h3>
+  @if (sent().length === 0) {
+    <p class="empty-line">Aucune offre envoyée.</p>
+  } @else {
+    @for (offer of sent(); track offer.id) {
+      <div class="offer-card">
+        <div class="offer-head">
+          <span>vous → {{ offer.receiverName }}</span>
+          <span class="status status--{{ offer.status }}">{{ statusLabel(offer.status) }}</span>
+        </div>
+        <div class="offer-body">
+          @if (offer.money > 0) {
+            <span class="offer-amount">{{ offer.money | number: '1.0-0' }} ₡</span>
+          }
+          @if (offer.resources.length > 0) {
+            <span class="offer-resources">{{ itemsLabel(offer) }}</span>
+          }
+        </div>
+        <div class="offer-foot">
+          <span>Tour {{ offer.createdTurn }}</span>
+          @if (offer.status === 'PENDING') {
+            <button mat-button color="warn" [disabled]="saving()" (click)="cancel(offer)">
+              Annuler
+            </button>
+          }
+        </div>
+      </div>
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Fermer</button>
+  <button mat-raised-button color="primary" [disabled]="!canSubmit()" (click)="submit()">
+    <mat-icon>send</mat-icon>
+    Envoyer l'offre
+  </button>
+</mat-dialog-actions>

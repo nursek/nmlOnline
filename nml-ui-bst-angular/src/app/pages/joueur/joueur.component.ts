@@ -31,6 +31,7 @@ import {
 import { PlayerService } from '../../services/player.service';
 import { PlayerActionsService } from '../../services/player-actions.service';
 import { MovementStateService } from '../../services/movement-state.service';
+import { ExchangeService } from '../../services/exchange.service';
 import { slugify } from '../../core/slug';
 import {
   VehiclePlacementModalComponent,
@@ -51,6 +52,14 @@ import {
   SellResourceDialogComponent,
   SellResourceDialogData,
 } from './sell-resource-dialog.component';
+import { ExchangeDialogComponent, ExchangeDialogData } from './exchange-dialog.component';
+import {
+  CacheEquipmentDialogComponent,
+  CacheEquipmentDialogData,
+} from './cache-equipment-dialog.component';
+import { BankPanelComponent } from './bank-panel.component';
+import { WeaponCachePanelComponent } from './weapon-cache-panel.component';
+import { HeadquartersPanelComponent } from './headquarters-panel.component';
 import { movableEntities } from './movement.helpers';
 import { CharacterPanelComponent } from './character-panel.component';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
@@ -93,6 +102,9 @@ import { characterStats } from '../../core/stats';
     MatSnackBarModule,
     CharacterPanelComponent,
     ResourceCardComponent,
+    BankPanelComponent,
+    WeaponCachePanelComponent,
+    HeadquartersPanelComponent,
   ],
   templateUrl: './joueur.component.html',
   styleUrls: ['./joueur.component.scss'],
@@ -101,6 +113,7 @@ export class JoueurComponent {
   private readonly playerService = inject(PlayerService);
   private readonly playerActionsService = inject(PlayerActionsService);
   private readonly movementState = inject(MovementStateService);
+  private readonly exchangeService = inject(ExchangeService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
@@ -122,10 +135,34 @@ export class JoueurComponent {
     void this.playerService.loadCurrentTurn();
     void this.playerActionsService.loadActions();
     void this.movementState.loadOrders();
+    void this.exchangeService.loadOffers();
   }
 
   readonly playerCharacter = computed(() => this.player()?.character ?? null);
   readonly conqueredSectors = computed(() => this.player()?.sectors ?? []);
+  readonly buildings = computed(() => this.player()?.buildings ?? []);
+  readonly headquarters = computed(
+    () => this.buildings().find((building) => building.buildingType === 'HEADQUARTERS') ?? null,
+  );
+  readonly bank = computed(
+    () => this.buildings().find((building) => building.buildingType === 'BANK') ?? null,
+  );
+  readonly weaponCache = computed(
+    () =>
+      this.buildings().find(
+        (building) => building.buildingType === 'WEAPON_CACHE' && !building.isDestroyed,
+      ) ??
+      this.buildings().find((building) => building.buildingType === 'WEAPON_CACHE') ??
+      null,
+  );
+  readonly inventoryStacks = computed(() => this.player()?.equipments ?? []);
+  readonly startingMoneyRemaining = computed(
+    () => this.player()?.stats?.startingMoneyRemaining ?? 0,
+  );
+  readonly transferableMoney = computed(() =>
+    Math.max(0, (this.player()?.stats?.money ?? 0) - this.startingMoneyRemaining()),
+  );
+  readonly pendingExchangeOffers = this.exchangeService.pendingSentCount;
   readonly characterSector = computed(() => {
     const number = this.playerCharacter()?.sectorNumber;
     return this.conqueredSectors().find((s) => s.number === number) ?? null;
@@ -158,7 +195,12 @@ export class JoueurComponent {
     for (const sf of this.forces().sectors) {
       const number = sf.sector.number;
       if (number == null) continue;
-      const { units, character, vehicles } = movableEntities(sf.sector, playerId, pending, pendingVehicles);
+      const { units, character, vehicles } = movableEntities(
+        sf.sector,
+        playerId,
+        pending,
+        pendingVehicles,
+      );
       if (units.length > 0 || character !== null || vehicles.length > 0) numbers.add(number);
     }
     return numbers;
@@ -291,12 +333,14 @@ export class JoueurComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((sector: Sector | null) => {
         if (sector?.boardId != null && sector.number != null) {
-          void this.playerService.moveBuilding(buildingId, sector.boardId, sector.number).then((ok) => {
-            if (ok) {
-              void this.playerActionsService.loadActions();
-              this.snackBar.open('Bâtiment déplacé', 'Fermer', { duration: 3000 });
-            }
-          });
+          void this.playerService
+            .moveBuilding(buildingId, sector.boardId, sector.number)
+            .then((ok) => {
+              if (ok) {
+                void this.playerActionsService.loadActions();
+                this.snackBar.open('Bâtiment déplacé', 'Fermer', { duration: 3000 });
+              }
+            });
         }
       });
   }
@@ -389,6 +433,29 @@ export class JoueurComponent {
     const data: SellResourceDialogData = { resource };
     this.dialog.open(SellResourceDialogComponent, {
       width: '420px',
+      maxWidth: '95vw',
+      data,
+    });
+  }
+
+  openExchangeDialog(): void {
+    const player = this.player();
+    if (player?.id == null) return;
+    const data: ExchangeDialogData = {
+      playerId: player.id,
+      resources: player.resources ?? [],
+      transferableMoney: this.transferableMoney(),
+      startingMoneyRemaining: this.startingMoneyRemaining(),
+    };
+    this.dialog.open(ExchangeDialogComponent, { width: '640px', maxWidth: '95vw', data });
+  }
+
+  openCacheEquipments(): void {
+    const cacheId = this.weaponCache()?.id;
+    if (cacheId == null) return;
+    const data: CacheEquipmentDialogData = { buildingId: cacheId };
+    this.dialog.open(CacheEquipmentDialogComponent, {
+      width: '560px',
       maxWidth: '95vw',
       data,
     });

@@ -20,7 +20,15 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
-import { Player, UnitClass, UnitType, MovementStatusFilter } from '../../models';
+import {
+  Player,
+  UnitClass,
+  UnitType,
+  MovementStatusFilter,
+  ExchangeOffer,
+  ExchangeOfferStatus,
+  ExchangeOfferStatusFilter,
+} from '../../models';
 import { AdminService } from '../../services/admin.service';
 import { ApiService } from '../../services/api.service';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
@@ -71,6 +79,10 @@ export class AdminComponent {
   readonly ordersLoading = this.admin.ordersLoading;
   readonly orderStatusFilter = this.admin.orderStatusFilter;
 
+  readonly exchanges = this.admin.exchanges;
+  readonly exchangesLoading = this.admin.exchangesLoading;
+  readonly exchangeStatusFilter = this.admin.exchangeStatusFilter;
+
   readonly resolutionReport = this.admin.resolutionReport;
   readonly previewing = this.admin.previewing;
   readonly resolving = this.admin.resolving;
@@ -82,6 +94,23 @@ export class AdminComponent {
     'BLOCKED',
     'CANCELLED',
   ];
+
+  readonly exchangeFilters: ReadonlyArray<ExchangeOfferStatusFilter> = [
+    'ALL',
+    'PENDING',
+    'ACCEPTED',
+    'DECLINED',
+    'CANCELLED',
+    'EXPIRED',
+  ];
+
+  readonly exchangeStatusLabels: Record<ExchangeOfferStatus, string> = {
+    PENDING: 'En attente',
+    ACCEPTED: 'Acceptée',
+    DECLINED: 'Refusée',
+    CANCELLED: 'Annulée',
+    EXPIRED: 'Expirée',
+  };
 
   readonly searchQuery = signal('');
 
@@ -100,6 +129,7 @@ export class AdminComponent {
     this.admin.reloadPlayers();
     void this.admin.loadCurrentTurn();
     this.admin.reloadOrders();
+    this.admin.reloadExchanges();
 
     effect(() => {
       const msg = this.successMessage();
@@ -144,6 +174,14 @@ export class AdminComponent {
 
   onOrderStatusChange(status: MovementStatusFilter): void {
     this.orderStatusFilter.set(status);
+  }
+
+  onExchangeStatusChange(status: ExchangeOfferStatusFilter): void {
+    this.exchangeStatusFilter.set(status);
+  }
+
+  onReloadExchanges(): void {
+    this.admin.reloadExchanges();
   }
 
   // === Aperçu des conflits (dry-run, non mutant) ===
@@ -260,6 +298,26 @@ export class AdminComponent {
 
   getTotalArmySize(player: Player): number {
     return player.sectors?.reduce((sum, s) => sum + (s.army?.length || 0), 0) || 0;
+  }
+
+  exchangeItemsLabel(offer: ExchangeOffer): string {
+    const parts = offer.resources.map((item) => `${item.quantity} × ${item.resourceName}`);
+    if (offer.money > 0) parts.unshift(`${this.formatMoney(offer.money)} ₡`);
+    return parts.length > 0 ? parts.join(', ') : '—';
+  }
+
+  exchangeStatusClass(status: ExchangeOfferStatus): string {
+    switch (status) {
+      case 'PENDING':
+        return 'status-pending';
+      case 'ACCEPTED':
+        return 'status-resolved';
+      case 'DECLINED':
+      case 'EXPIRED':
+        return 'status-blocked';
+      case 'CANCELLED':
+        return 'status-cancelled';
+    }
   }
 
   formatMoney(amount: number): string {

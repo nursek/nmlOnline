@@ -134,6 +134,41 @@ export function buildingStats(b: Building): StatToken[] {
   return statLine([[num(b.attack), 'Atk']], [[num(b.defense), 'Def']]);
 }
 
+/** QG et banque ne se déplacent qu'à partir du tour 5 (règle backend). */
+const FIRST_MOVE_TURN = 5;
+
+export interface BuildingMoveStatus {
+  canMove: boolean;
+  label: string;
+}
+
+/** `canMove` du DTO fait foi ; `currentTurn` null = tour pas encore chargé. */
+export function buildingMoveStatus(
+  building: Building,
+  currentTurn: number | null,
+): BuildingMoveStatus {
+  if (building.isDestroyed) return { canMove: false, label: 'Détruit' };
+  if (building.isCaptured) return { canMove: false, label: 'Capturé' };
+  if (building.canMove) return { canMove: true, label: 'Déplacement disponible' };
+  if (building.buildingType === 'HEADQUARTERS' && building.isOperational === false) {
+    return { canMove: false, label: 'QG inopérant' };
+  }
+  if (building.lastMovedTurn == null && currentTurn != null && currentTurn < FIRST_MOVE_TURN) {
+    return { canMove: false, label: `Déplacement disponible au tour ${FIRST_MOVE_TURN}` };
+  }
+  if (building.moveCooldown < 0) {
+    if (building.hasMoved) return { canMove: false, label: 'Déplacement unique utilisé' };
+    return { canMove: false, label: 'Déplacement indisponible' };
+  }
+  if (building.lastMovedTurn != null && currentTurn != null) {
+    const remaining = building.moveCooldown - (currentTurn - building.lastMovedTurn);
+    if (remaining > 0) {
+      return { canMove: false, label: `Recharge : ${remaining} tour${remaining > 1 ? 's' : ''}` };
+    }
+  }
+  return { canMove: false, label: 'Déplacement indisponible' };
+}
+
 export function vehicleStats(v: Vehicle): StatToken[] {
   return statLine([[num(v.pdf), 'Pdf']], [[num(v.defense), 'Def']]);
 }

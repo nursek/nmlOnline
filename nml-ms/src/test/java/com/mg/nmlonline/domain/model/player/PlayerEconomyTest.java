@@ -14,8 +14,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @DisplayName("Player — Économie")
 class PlayerEconomyTest {
 
@@ -187,9 +185,42 @@ class PlayerEconomyTest {
     }
 
     @Nested
+    @DisplayName("Dotation de départ")
+    class StartingMoneyTests {
+
+        @Test
+        @DisplayName("Les dépenses vident la dotation avant les revenus ; transfert limité au reste")
+        void shouldSpendStartingMoneyFirstAndCapTransfers() {
+            player.initializeStartingMoney();
+            player.incrementMoney(500.0);
+            assertEquals(500.0, player.getTransferableMoney());
+
+            assertTrue(player.spendMoney(300.0));
+            assertEquals(700.0, player.getStats().getStartingMoneyRemaining());
+            assertEquals(500.0, player.getTransferableMoney());
+
+            assertTrue(player.spendMoney(900.0));
+            assertEquals(0.0, player.getStats().getStartingMoneyRemaining());
+            assertEquals(300.0, player.getTransferableMoney());
+
+            player.refundMoney(400.0);
+            assertEquals(400.0, player.getStats().getStartingMoneyRemaining());
+            assertEquals(300.0, player.getTransferableMoney());
+        }
+
+        @Test
+        @DisplayName("Dotation non consommée : rien de transférable même si le solde est inférieur")
+        void shouldClampTransferableMoneyAtZero() {
+            player.initializeStartingMoney();
+            player.decrementMoney(900.0);
+
+            assertEquals(0.0, player.getTransferableMoney());
+        }
+    }
+
+    @Nested
     @DisplayName("Formules de puissance économique")
     class EconomyPowerFormulaTests {
-
         @Test
         @DisplayName("economyPower = income + equipmentValue + money + vehiclesValue")
         void shouldPinEconomyPowerFormula() {

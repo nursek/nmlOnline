@@ -5,9 +5,13 @@ import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
 import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
+import com.mg.nmlonline.domain.model.equipment.Equipment;
+import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
+import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -320,6 +325,62 @@ class BuildingServiceTest {
         void shouldDelegateToTurnService() {
             when(turnService.getCurrentTurn()).thenReturn(7);
             assertEquals(7, buildingService.getCurrentTurn(1L));
+        }
+    }
+
+    @Nested
+    @DisplayName("Jet d'équipement (cache d'armes)")
+    class DiscardEquipmentTests {
+
+        private Equipment equipmentOf(String name) {
+            return new Equipment(name, 100, 10, 0, 0, 0,
+                    Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
+        }
+
+        @Test
+        @DisplayName("Jette uniquement le matériel disponible (non équipé)")
+        void shouldDiscardOnlyAvailableEquipment() {
+            Equipment equipment = equipmentOf("Pistolet");
+            player.addEquipmentToStack(equipment, 3);
+            player.decrementEquipmentAvailability(equipment);
+            WeaponCache cache = new WeaponCache(1L);
+            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
+
+            buildingService.discardPlayerEquipment(50L, "Pistolet", 2, 7L);
+
+            EquipmentStack stack = player.getEquipments().getFirst();
+            assertEquals(1, stack.getQuantity());
+            assertEquals(0, stack.getAvailable());
+            verify(playerRepository).save(player);
+        }
+
+        @Test
+        @DisplayName("Refuse de jeter du matériel équipé")
+        void shouldRefuseDiscardWhenNotEnoughAvailable() {
+            Equipment equipment = equipmentOf("Pistolet");
+            player.addEquipmentToStack(equipment, 3);
+            player.decrementEquipmentAvailability(equipment);
+            WeaponCache cache = new WeaponCache(1L);
+            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 3, 7L));
+
+            assertEquals(3, player.getEquipments().getFirst().getQuantity());
+            verify(playerRepository, never()).save(any(Player.class));
+        }
+
+        @Test
+        @DisplayName("Refuse une cache qui n'appartient pas au joueur")
+        void shouldRefuseDiscardOnForeignCache() {
+            WeaponCache cache = new WeaponCache(99L);
+            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
+
+            assertThrows(SecurityException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 1, 7L));
         }
     }
 }

@@ -177,7 +177,7 @@ public class PlayerActionService {
         for (int i = 0; i < quantity; i++) {
             player.removeEquipmentFromStack(stack.getEquipment());
         }
-        player.incrementMoney(action.getMoney() != null ? action.getMoney() : 0);
+        player.refundMoney(action.getMoney() != null ? action.getMoney() : 0);
         player.setTotalEquipmentValue();
         player.calculateTotalEconomyPower();
     }
@@ -234,7 +234,7 @@ public class PlayerActionService {
         }
         double cost = action.getMoney() != null ? action.getMoney() : 0;
         em.remove(vehicle);
-        player.incrementMoney(cost);
+        player.refundMoney(cost);
         player.getStats().setTotalVehiclesValue(player.getStats().getTotalVehiclesValue() - cost);
         player.calculateTotalEconomyPower();
     }

@@ -1,0 +1,27 @@
+@use '../../../styles/shared' as shared;
+
+h2 mat-icon {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+.warning {
+  @include shared.error-alert;
+  margin: 0 0 12px;
+}
+
+.quantity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-form-field {
+    width: 120px;
+  }
+}
+
+.available {
+  color: shared.$text-muted;
+  font-size: 0.8rem;
+  margin: 0;
+}

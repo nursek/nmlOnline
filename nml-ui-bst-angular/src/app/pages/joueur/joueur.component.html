@@ -45,6 +45,31 @@
           }
         </div>
 
+        <div class="buildings-row">
+          <app-bank-panel
+            [building]="bank()"
+            [money]="player.stats.money"
+            [startingMoneyRemaining]="startingMoneyRemaining()"
+            [transferableMoney]="transferableMoney()"
+            [currentTurn]="currentTurn()"
+            [pendingOffers]="pendingExchangeOffers()"
+            (move)="openBuildingMove($event)"
+            (exchange)="openExchangeDialog()"
+          />
+          <app-weapon-cache-panel
+            [building]="weaponCache()"
+            [stacks]="inventoryStacks()"
+            [currentTurn]="currentTurn()"
+            (move)="openBuildingMove($event)"
+            (equipments)="openCacheEquipments()"
+          />
+          <app-headquarters-panel
+            [building]="headquarters()"
+            [currentTurn]="currentTurn()"
+            (move)="openBuildingMove($event)"
+          />
+        </div>
+
         <mat-card class="card card--troops">
           <mat-card-content>
             <div class="section-header">
@@ -70,6 +95,24 @@
             }
           </mat-card-content>
         </mat-card>
+
+        @if (playerCharacter()) {
+          <mat-card class="card card--character">
+            <mat-card-content>
+              <div class="section-header">
+                <mat-icon>face</mat-icon>
+                <h2>Personnage</h2>
+              </div>
+              <p class="section-subtitle">Votre leader sur le terrain</p>
+              <app-character-panel
+                [playerName]="player.name"
+                [character]="playerCharacter()"
+                [sector]="characterSector()"
+                [playerId]="player.id"
+              />
+            </mat-card-content>
+          </mat-card>
+        }
 
         <mat-card class="card card--vehicles">
           <mat-card-content>
@@ -124,24 +167,6 @@
             }
           </mat-card-content>
         </mat-card>
-
-        @if (playerCharacter()) {
-          <mat-card class="card card--character">
-            <mat-card-content>
-              <div class="section-header">
-                <mat-icon>face</mat-icon>
-                <h2>Personnage</h2>
-              </div>
-              <p class="section-subtitle">Votre leader sur le terrain</p>
-              <app-character-panel
-                [playerName]="player.name"
-                [character]="playerCharacter()"
-                [sector]="characterSector()"
-                [playerId]="player.id"
-              />
-            </mat-card-content>
-          </mat-card>
-        }
 
         <mat-card class="card card--equipment">
           <mat-card-content>
@@ -334,7 +359,7 @@
                               <span class="badge">{{ tag }}</span>
                             } @else if (
                               character.id !== null &&
-                              vehicleDisplay().passengerTags.get(character.id);
+                                vehicleDisplay().passengerTags.get(character.id);
                               as tag
                             ) {
                               <span class="badge">{{ tag }}</span>
@@ -556,8 +581,8 @@
               <mat-icon>history</mat-icon>
               <p>Aucune action enregistrée ce tour.</p>
               <p class="empty-hint">
-                L'historique des achats et des équipements modifiés sera journalisé ici. Les ordres de
-                déplacement se consultent sur la page « Mes ordres ».
+                L'historique des achats et des équipements modifiés sera journalisé ici. Les ordres
+                de déplacement se consultent sur la page « Mes ordres ».
               </p>
             </div>
           } @else {

@@ -24,6 +24,11 @@ public class BuildingMapper {
     }
 
     public BuildingDto toDto(Building building) {
+        return toDto(building, null);
+    }
+
+    /** ownerMoney null = contexte sans propriétaire (carte publique) : parts de fortune laissées de côté. */
+    public BuildingDto toDto(Building building, Double ownerMoney) {
         if (building == null) return null;
 
         BuildingDto dto = new BuildingDto();
@@ -48,19 +53,22 @@ public class BuildingMapper {
         }
 
         if (building instanceof Headquarters hq) {
-            mapHeadquartersToDto(hq, dto);
+            mapHeadquartersToDto(hq, dto, ownerMoney);
         } else if (building instanceof WeaponCache cache) {
             mapWeaponCacheToDto(cache, dto);
         } else if (building instanceof Bank bank) {
-            mapBankToDto(bank, dto);
+            mapBankToDto(bank, dto, ownerMoney);
         }
 
         return dto;
     }
 
-    private void mapHeadquartersToDto(Headquarters hq, BuildingDto dto) {
+    private void mapHeadquartersToDto(Headquarters hq, BuildingDto dto, Double ownerMoney) {
         dto.setIsOperational(hq.isOperational());
         dto.setCanMove(hq.canMove(getCurrentTurn()));
+        if (ownerMoney != null) {
+            dto.setStoredWealth(hq.getStoredWealth(ownerMoney));
+        }
     }
 
     private void mapWeaponCacheToDto(WeaponCache cache, BuildingDto dto) {
@@ -78,9 +86,9 @@ public class BuildingMapper {
         }
     }
 
-    private void mapBankToDto(Bank bank, BuildingDto dto) {
+    private void mapBankToDto(Bank bank, BuildingDto dto, Double ownerMoney) {
         dto.setHasMoved(bank.isHasMoved());
-        dto.setStoredMoney(bank.getStoredMoney());
+        dto.setStoredMoney(ownerMoney != null ? bank.calculateStoredWealth(ownerMoney) : bank.getStoredMoney());
         dto.setCanMove(bank.canMove(getCurrentTurn()));
         dto.setCurrentVampirizeRate(bank.getVampirizeRate(getCurrentTurn()));
 

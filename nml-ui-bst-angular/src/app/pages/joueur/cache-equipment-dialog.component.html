@@ -1,0 +1,36 @@
+<h2 mat-dialog-title>
+  <mat-icon>inventory_2</mat-icon>
+  Équipements de la cache
+</h2>
+
+<mat-dialog-content>
+  <p class="hint">
+    {{ total() }} équipement(s) — jeter est définitif, sans revente ni récupération.
+  </p>
+
+  @if (stacks().length === 0) {
+    <p class="empty">Aucun équipement dans votre inventaire.</p>
+  } @else {
+    <div class="equipment-list">
+      @for (stack of stacks(); track stack.equipment.name) {
+        <div class="equipment-row">
+          <span class="equipment-name">{{ stack.equipment.name }}</span>
+          <span class="equipment-qty">{{ stack.available }}/{{ stack.quantity }}</span>
+          <button
+            mat-icon-button
+            color="warn"
+            [disabled]="stack.available <= 0"
+            matTooltip="Se débarrasser définitivement de cet équipement"
+            (click)="openDiscard(stack)"
+          >
+            <mat-icon>delete_forever</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Fermer</button>
+</mat-dialog-actions>

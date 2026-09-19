@@ -92,14 +92,14 @@
   }
 }
 
-.orders-panel {
+.admin-panel {
   padding: 16px;
   margin-bottom: 16px;
   border: 1.5px solid var(--ink);
   border-radius: var(--r-sm);
   background: var(--surface);
 
-  .orders-header {
+  .panel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -107,7 +107,7 @@
     gap: 12px;
     margin-bottom: 12px;
 
-    .orders-title {
+    .panel-title {
       display: flex;
       align-items: center;
       gap: 8px;
@@ -212,11 +212,11 @@
       }
 
       .status-badge.status-pending {
-        background: rgba(38,64,121, 0.18);
+        background: rgba(38, 64, 121, 0.18);
         color: var(--cobalt-deep);
       }
       .status-badge.status-resolved {
-        background: rgba(40,104,67, 0.18);
+        background: rgba(40, 104, 67, 0.18);
         color: var(--forest-deep);
       }
       .status-badge.status-blocked {
@@ -224,7 +224,7 @@
         color: var(--danger-deep);
       }
       .status-badge.status-cancelled {
-        background: rgba(93,86,69, 0.18);
+        background: rgba(93, 86, 69, 0.18);
         color: var(--ink-3);
       }
     }
@@ -351,7 +351,7 @@
       .standoff-badge {
         padding: 1px 8px;
         border-radius: var(--r-xs);
-        background: rgba(195,75,28, 0.15);
+        background: rgba(195, 75, 28, 0.15);
         color: var(--accent-ink);
         font-size: 0.72rem;
         font-weight: 600;
@@ -397,7 +397,7 @@
       .capture-badge {
         padding: 1px 8px;
         border-radius: var(--r-xs);
-        background: rgba(40,104,67, 0.15);
+        background: rgba(40, 104, 67, 0.15);
         color: var(--forest-deep);
         font-size: 0.72rem;
         font-weight: 600;

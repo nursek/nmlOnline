@@ -18,6 +18,7 @@ public class Headquarters extends Building {
 
     public static final double DEFAULT_WEALTH_STORAGE_PERCENTAGE = 0.25;
     public static final int DEFAULT_MOVE_COOLDOWN = 5;
+    public static final int MIN_TURN_FOR_MOVE = 5;
 
     @Column(name = "is_operational")
     private boolean isOperational = true;
@@ -31,17 +32,13 @@ public class Headquarters extends Building {
 
     @Override
     public boolean canMove(int currentTurn) {
-        return canMove(currentTurn, DEFAULT_MOVE_COOLDOWN);
-    }
-
-    public boolean canMove(int currentTurn, int moveCooldown) {
         if (!isOperational || isDestroyed()) {
             return false;
         }
         if (getLastMovedTurn() == null) {
-            return true;
+            return currentTurn >= MIN_TURN_FOR_MOVE;
         }
-        return currentTurn - getLastMovedTurn() >= moveCooldown;
+        return currentTurn - getLastMovedTurn() >= DEFAULT_MOVE_COOLDOWN;
     }
 
     @Override

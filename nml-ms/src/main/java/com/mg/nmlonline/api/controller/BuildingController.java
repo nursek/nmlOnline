@@ -1,20 +1,11 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.BuildingDto;
-import com.mg.nmlonline.domain.model.building.Bank;
-import com.mg.nmlonline.domain.model.building.Building;
-import com.mg.nmlonline.domain.model.building.Headquarters;
-import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.service.AuthorizationService;
 import com.mg.nmlonline.domain.service.BuildingService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -106,5 +97,20 @@ public class BuildingController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{buildingId}/weapon-cache/discard")
+    public ResponseEntity<Void> discardWeaponCacheEquipment(
+            @PathVariable Long buildingId,
+            @RequestBody DiscardEquipmentRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = getAuthenticatedUserId(httpRequest);
+        if (userId == null) return ResponseEntity.status(401).build();
+        if (!authorizationService.isBuildingOwner(userId, buildingId)) return ResponseEntity.status(403).build();
+
+        buildingService.discardPlayerEquipment(buildingId, request.equipmentName(), request.quantity(), userId);
+        return ResponseEntity.ok().build();
+    }
+
     public record MoveBuildingRequest(Long boardId, int newSectorNumber) {}
+
+    public record DiscardEquipmentRequest(String equipmentName, int quantity) {}
 }
