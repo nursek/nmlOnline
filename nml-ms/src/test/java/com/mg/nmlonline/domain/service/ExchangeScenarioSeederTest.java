@@ -56,6 +56,12 @@ class ExchangeScenarioSeederTest {
         ExchangeScenarioSummaryDto second = seeder.seedExchangeScenario();
 
         assertNotEquals(first.pendingOfferId(), second.pendingOfferId());
+
+        // 6 seeds = 12 « Or » demandés pour 10 disponibles au départ : couvre l'épuisement de la ressource.
+        for (int i = 0; i < 4; i++) {
+            seeder.seedExchangeScenario();
+        }
+
         assertEquals(offersAfterFirst, exchangeOfferRepository.count(), "Pas de doublon après re-seed");
     }
 }

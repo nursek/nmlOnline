@@ -25,7 +25,6 @@ import {
   CreateExchangeOfferPayload,
   ExchangeOffer,
   ExchangeScenarioSummary,
-  PageResult,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -48,12 +47,6 @@ export class ApiService {
 
   getPlayer(username: string): Observable<Player> {
     return this.http.get<Player>(`${this.baseUrl}/players/${username}`);
-  }
-
-  getPlayers(): Observable<PageResult<Player>> {
-    return this.http.get<PageResult<Player>>(`${this.baseUrl}/players`, {
-      params: { size: 500 },
-    });
   }
 
   sellResourcesBatch(items: SellResourceBatchItem[]): Observable<ResourceBatchSaleResponse> {
@@ -116,12 +109,6 @@ export class ApiService {
 
   adminGetCurrentTurn(): Observable<{ currentTurn: number }> {
     return this.http.get<{ currentTurn: number }>(`${this.baseUrl}/admin/turn/current`);
-  }
-
-  adminGetExchanges(status: string | null): Observable<PageResult<ExchangeOffer>> {
-    const params: Record<string, string> = { page: '0', size: '100' };
-    if (status && status !== 'ALL') params['status'] = status;
-    return this.http.get<PageResult<ExchangeOffer>>(`${this.baseUrl}/admin/exchanges`, { params });
   }
 
   adminAdvanceTurn(): Observable<{ currentTurn: number; capturedSectors: SectorCapture[] }> {

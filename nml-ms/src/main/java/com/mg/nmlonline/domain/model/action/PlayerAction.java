@@ -45,6 +45,9 @@ public class PlayerAction {
 
     private Double money;
 
+    @Column(name = "starting_money_spent", nullable = false)
+    private double startingMoneySpent;
+
     @Column(name = "unit_id")
     private Long unitId;
 
@@ -76,11 +79,13 @@ public class PlayerAction {
     @Column(name = "prev_passenger_ids", length = 2000)
     private String prevPassengerIds;
 
-    public static PlayerAction buyEquipment(Long playerId, int turn, String equipmentName, int quantity, double money) {
+    public static PlayerAction buyEquipment(Long playerId, int turn, String equipmentName, int quantity,
+                                            double money, double startingMoneySpent) {
         PlayerAction action = base(playerId, turn, PlayerActionType.BUY_EQUIPMENT);
         action.setEquipmentName(equipmentName);
         action.setQuantity(quantity);
         action.setMoney(money);
+        action.setStartingMoneySpent(startingMoneySpent);
         return action;
     }
 
@@ -106,10 +111,12 @@ public class PlayerAction {
         return action;
     }
 
-    public static PlayerAction buyVehicle(Long playerId, int turn, Long vehicleId, double money) {
+    public static PlayerAction buyVehicle(Long playerId, int turn, Long vehicleId, double money,
+                                          double startingMoneySpent) {
         PlayerAction action = base(playerId, turn, PlayerActionType.BUY_VEHICLE);
         action.setVehicleId(vehicleId);
         action.setMoney(money);
+        action.setStartingMoneySpent(startingMoneySpent);
         return action;
     }
 

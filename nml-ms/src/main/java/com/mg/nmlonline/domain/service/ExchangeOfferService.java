@@ -22,8 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+// noRollbackFor : l'expiration paresseuse doit survivre au refus qui la déclenche, sinon elle est perdue.
 @Service
-@Transactional
+@Transactional(noRollbackFor = IllegalStateException.class)
 public class ExchangeOfferService {
 
     private static final int MAX_PENDING_OFFERS = 3;

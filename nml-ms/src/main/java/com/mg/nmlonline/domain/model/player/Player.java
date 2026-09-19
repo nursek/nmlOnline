@@ -314,13 +314,19 @@ public class Player {
         return true;
     }
 
-    /** Remboursement d'annulation : restaure la dotation consommée, plafonnée à la dotation initiale. */
-    public void refundMoney(double amount) {
+    /** Part de dotation qu'un débit de ce montant va consommer (spendMoney vide la dotation en premier). */
+    public double startingShareOf(double amount) {
+        return Math.min(amount, Math.max(0, stats.getStartingMoneyRemaining()));
+    }
+
+    /** Remboursement d'annulation : restaure la dotation réellement consommée par l'achat annulé. */
+    public void refundMoney(double amount, double startingMoneySpent) {
         if (amount <= 0) {
             return;
         }
         stats.setMoney(stats.getMoney() + amount);
-        double restore = Math.min(amount, stats.getStartingMoneyTotal() - stats.getStartingMoneyRemaining());
+        double restore = Math.min(startingMoneySpent,
+                stats.getStartingMoneyTotal() - stats.getStartingMoneyRemaining());
         if (restore > 0) {
             stats.setStartingMoneyRemaining(stats.getStartingMoneyRemaining() + restore);
         }

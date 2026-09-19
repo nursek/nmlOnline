@@ -85,13 +85,14 @@ public class VehicleService {
 
         List<Vehicle> created = new ArrayList<>();
         for (int i = 0; i < quantity; i++) {
+            double startingShare = player.startingShareOf(vehicleType.getCost());
             Vehicle vehicle = player.buyVehicle(vehicleType);
             if (vehicle == null) {
                 throw new InsufficientFundsException("Fonds insuffisants pour acheter ce véhicule (coût : " + vehicleType.getCost() + " ₡)");
             }
             Vehicle saved = vehicleRepository.save(vehicle);
             created.add(saved);
-            playerActionService.recordBuyVehicle(player.getId(), saved.getId(), vehicleType.getCost());
+            playerActionService.recordBuyVehicle(player.getId(), saved.getId(), vehicleType.getCost(), startingShare);
         }
         playerRepository.save(player);
         return created;
@@ -132,13 +133,14 @@ public class VehicleService {
 
         List<Vehicle> created = new ArrayList<>();
         for (VehicleType vehicleType : toCreate) {
+            double startingShare = player.startingShareOf(vehicleType.getCost());
             Vehicle vehicle = player.buyVehicle(vehicleType);
             if (vehicle == null) {
                 throw new InsufficientFundsException("Fonds insuffisants pour acheter le véhicule " + vehicleType.name());
             }
             Vehicle saved = vehicleRepository.save(vehicle);
             created.add(saved);
-            playerActionService.recordBuyVehicle(player.getId(), saved.getId(), vehicleType.getCost());
+            playerActionService.recordBuyVehicle(player.getId(), saved.getId(), vehicleType.getCost(), startingShare);
         }
         playerRepository.save(player);
         return created;

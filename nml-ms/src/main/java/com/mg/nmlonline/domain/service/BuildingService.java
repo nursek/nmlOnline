@@ -162,6 +162,11 @@ public class BuildingService {
                         "Le joueur capturant avec l'ID " + capturingPlayerId + " n'existe pas"));
 
         bank.onCapture(capturingPlayerId, currentTurn);
+        // Seul alimentateur de storedMoney : 75 % de la fortune live du propriétaire, comme affiché au joueur.
+        double ownerMoney = playerRepository.findById(bank.getPlayerId())
+                .map(owner -> owner.getStats().getMoney())
+                .orElse(0.0);
+        bank.updateStoredMoney(ownerMoney);
         double transferredMoney = bank.transferMoney();
         List<PlayerResource> transferredResources = bank.transferResources();
         buildingRepository.save(bank);

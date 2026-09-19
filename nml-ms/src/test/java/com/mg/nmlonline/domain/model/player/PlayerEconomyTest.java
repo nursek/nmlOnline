@@ -203,9 +203,26 @@ class PlayerEconomyTest {
             assertEquals(0.0, player.getStats().getStartingMoneyRemaining());
             assertEquals(300.0, player.getTransferableMoney());
 
-            player.refundMoney(400.0);
-            assertEquals(400.0, player.getStats().getStartingMoneyRemaining());
-            assertEquals(300.0, player.getTransferableMoney());
+            player.refundMoney(900.0, 700.0);
+            assertEquals(700.0, player.getStats().getStartingMoneyRemaining());
+            assertEquals(500.0, player.getTransferableMoney());
+        }
+
+        @Test
+        @DisplayName("Achat payé avec les revenus : l'annulation ne restaure pas de dotation épuisée")
+        void shouldNotRestoreExhaustedStartingMoneyOnRefund() {
+            player.initializeStartingMoney();
+            assertTrue(player.spendMoney(1000.0));
+            player.incrementMoney(500.0);
+            assertEquals(500.0, player.getTransferableMoney());
+
+            double startingShare = player.startingShareOf(500.0);
+            assertEquals(0.0, startingShare);
+            assertTrue(player.spendMoney(500.0));
+            player.refundMoney(500.0, startingShare);
+
+            assertEquals(0.0, player.getStats().getStartingMoneyRemaining());
+            assertEquals(500.0, player.getTransferableMoney());
         }
 
         @Test

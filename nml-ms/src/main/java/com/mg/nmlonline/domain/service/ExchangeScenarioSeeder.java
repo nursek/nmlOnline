@@ -55,6 +55,7 @@ public class ExchangeScenarioSeeder {
         purgeOffers(List.of(sender, receiver, secondSender, secondReceiver));
         ensureEarnedMoney(sender, PENDING_MONEY);
         ensureEarnedMoney(secondSender, ACCEPTED_MONEY);
+        ensureResource(secondSender, "Or", 2);
 
         ExchangeOfferDto pending = exchangeOfferService.createOffer(requireUserId(sender),
                 new CreateExchangeOfferRequestDto(receiver.getId(), PENDING_MONEY,
@@ -102,6 +103,14 @@ public class ExchangeScenarioSeeder {
         double missing = target - player.getTransferableMoney();
         if (missing > 0) {
             player.incrementMoney(missing);
+            playerRepository.save(player);
+        }
+    }
+
+    /** L'échange accepté sort définitivement les « Or » du donneur : re-crédit pour rester re-jouable. */
+    private void ensureResource(Player player, String resourceName, int quantity) {
+        if (player.getResourceQuantity(resourceName) < quantity) {
+            player.addResource(resourceName, quantity);
             playerRepository.save(player);
         }
     }
