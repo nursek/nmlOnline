@@ -27,5 +27,3 @@ export interface CreateExchangeOfferPayload {
   money: number;
   resources: ExchangeOfferItem[];
 }
-
-export const MAX_PENDING_EXCHANGE_OFFERS = 3;

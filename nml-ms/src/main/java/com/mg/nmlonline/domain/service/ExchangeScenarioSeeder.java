@@ -16,7 +16,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Dev-only, idempotent : purge les offres des joueurs du scénario puis recrée une offre en attente et un échange accepté. */
 @Service
 public class ExchangeScenarioSeeder {
 

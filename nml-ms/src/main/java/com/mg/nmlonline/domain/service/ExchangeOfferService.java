@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.api.dto.CreateExchangeOfferRequestDto;
 import com.mg.nmlonline.api.dto.ExchangeOfferDto;
 import com.mg.nmlonline.api.dto.ExchangeOfferItemDto;
+import com.mg.nmlonline.domain.exception.OfferExpiredException;
 import com.mg.nmlonline.domain.model.bank.ExchangeOffer;
 import com.mg.nmlonline.domain.model.bank.ExchangeOfferResource;
 import com.mg.nmlonline.domain.model.bank.ExchangeOfferStatus;
@@ -24,7 +25,7 @@ import java.util.Set;
 
 // noRollbackFor : l'expiration paresseuse doit survivre au refus qui la déclenche, sinon elle est perdue.
 @Service
-@Transactional(noRollbackFor = IllegalStateException.class)
+@Transactional(noRollbackFor = OfferExpiredException.class)
 public class ExchangeOfferService {
 
     private static final int MAX_PENDING_OFFERS = 3;
@@ -55,13 +56,23 @@ public class ExchangeOfferService {
             throw new IllegalArgumentException("Montant invalide");
         }
 
-        Player sender = playerRepository.findByUserIdForUpdate(userId)
+        int turn = turnService.getCurrentTurn();
+        // Purge avant comptage : une offre expirée ne doit plus consommer un emplacement.
+        exchangeOfferRepository.expirePendingOffers(ExchangeOfferStatus.PENDING,
+                ExchangeOfferStatus.EXPIRED, turn);
+
+        Player senderRef = playerRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable"));
-        Player receiver = playerRepository.findById(request.receiverPlayerId())
-                .orElseThrow(() -> new IllegalArgumentException("Destinataire introuvable"));
-        if (sender.getId().equals(receiver.getId())) {
+        Long receiverId = request.receiverPlayerId();
+        if (senderRef.getId().equals(receiverId)) {
             throw new IllegalArgumentException("Impossible de s'échanger des ressources à soi-même");
         }
+
+        // L'INSERT prend un KEY SHARE sur les deux joueurs : même ordre croissant que acceptOffer.
+        Player first = lockPlayer(Math.min(senderRef.getId(), receiverId));
+        Player second = lockPlayer(Math.max(senderRef.getId(), receiverId));
+        Player sender = first.getId().equals(senderRef.getId()) ? first : second;
+        Player receiver = first.getId().equals(receiverId) ? first : second;
 
         List<ExchangeOfferItemDto> items = validatedItems(request.resources());
         if (request.money() <= 0 && items.isEmpty()) {
@@ -77,7 +88,6 @@ public class ExchangeOfferService {
             throw new IllegalStateException("Trois offres en attente maximum");
         }
 
-        int turn = turnService.getCurrentTurn();
         ExchangeOffer offer = new ExchangeOffer(sender.getId(), receiver.getId(), request.money(),
                 turn, turn + 1);
         for (ExchangeOfferItemDto item : items) {
@@ -223,7 +233,7 @@ public class ExchangeOfferService {
         if (offer.isExpiredAt(turn)) {
             offer.expire(turn);
             exchangeOfferRepository.save(offer);
-            throw new IllegalStateException("Cette offre a expiré");
+            throw new OfferExpiredException("Cette offre a expiré");
         }
     }
 

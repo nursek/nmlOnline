@@ -47,7 +47,6 @@ public class DevSeederController {
         return ResponseEntity.ok(scenarioSeeder.seedStandoffScenario());
     }
 
-    /** Une offre en attente (lurio→cegorach) et un échange accepté (imotekh→nursek), re-jouable. */
     @PostMapping("/seed-exchange-scenario")
     public ResponseEntity<ExchangeScenarioSummaryDto> seedExchangeScenario() {
         return ResponseEntity.ok(exchangeScenarioSeeder.seedExchangeScenario());

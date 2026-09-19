@@ -28,6 +28,7 @@ export class DiscardEquipmentDialogComponent {
 
   readonly maxQuantity = computed(() => Math.max(1, this.data.stack.available));
   readonly quantity = signal(Math.max(1, this.data.stack.available));
+  readonly saving = signal(false);
 
   decrease(): void {
     this.setQuantity(this.quantity() - 1);
@@ -51,19 +52,25 @@ export class DiscardEquipmentDialogComponent {
   }
 
   async confirm(): Promise<void> {
-    const ok = await this.playerService.discardEquipment(
-      this.data.buildingId,
-      this.data.stack.equipment.name,
-      this.quantity(),
-    );
-    if (!ok) {
-      this.snackBar.open(this.playerService.error() ?? 'Erreur lors du jet', 'Fermer', {
-        duration: 5000,
-      });
-      return;
+    if (this.saving()) return;
+    this.saving.set(true);
+    try {
+      const ok = await this.playerService.discardEquipment(
+        this.data.buildingId,
+        this.data.stack.equipment.name,
+        this.quantity(),
+      );
+      if (!ok) {
+        this.snackBar.open(this.playerService.error() ?? 'Erreur lors du jet', 'Fermer', {
+          duration: 5000,
+        });
+        return;
+      }
+      this.dialogRef.close();
+      this.snackBar.open('Équipements jetés définitivement', 'Fermer', { duration: 3000 });
+    } finally {
+      this.saving.set(false);
     }
-    this.dialogRef.close();
-    this.snackBar.open('Équipements jetés définitivement', 'Fermer', { duration: 3000 });
   }
 
   close(): void {

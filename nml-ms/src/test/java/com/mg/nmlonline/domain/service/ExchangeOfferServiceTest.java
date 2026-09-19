@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -81,8 +82,7 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Auto-échange refusé")
         void shouldRejectSelfOffer() {
-            when(playerRepository.findByUserIdForUpdate(11L)).thenReturn(Optional.of(sender));
-            when(playerRepository.findById(1L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
 
             assertThrows(IllegalArgumentException.class,
                     () -> exchangeOfferService.createOffer(11L,
@@ -94,8 +94,9 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Quatrième offre en attente refusée")
         void shouldRejectWhenTooManyPendingOffers() {
-            when(playerRepository.findByUserIdForUpdate(11L)).thenReturn(Optional.of(sender));
-            when(playerRepository.findById(2L)).thenReturn(Optional.of(receiver));
+            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
             when(exchangeOfferRepository.countBySenderPlayerIdAndStatus(1L, ExchangeOfferStatus.PENDING))
                     .thenReturn(3L);
 
@@ -109,8 +110,9 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Succès : statut PENDING et expiration au tour suivant")
         void shouldCreateOfferExpiringNextTurn() {
-            when(playerRepository.findByUserIdForUpdate(11L)).thenReturn(Optional.of(sender));
-            when(playerRepository.findById(2L)).thenReturn(Optional.of(receiver));
+            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
             when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 10.0)));
             when(turnService.getCurrentTurn()).thenReturn(4);
             when(exchangeOfferRepository.save(any(ExchangeOffer.class)))
@@ -132,12 +134,39 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Offre vide refusée")
         void shouldRejectEmptyOffer() {
-            when(playerRepository.findByUserIdForUpdate(11L)).thenReturn(Optional.of(sender));
-            when(playerRepository.findById(2L)).thenReturn(Optional.of(receiver));
+            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
 
             assertThrows(IllegalArgumentException.class,
                     () -> exchangeOfferService.createOffer(11L,
                             new CreateExchangeOfferRequestDto(2L, 0.0, List.of())));
+        }
+
+        @Test
+        @DisplayName("Verrous joueurs par id croissant et purge des expirées avant le quota")
+        void shouldLockPlayersInAscendingOrderAndExpireBeforeCounting() {
+            Player senderHighId = new Player("SenderHighId");
+            senderHighId.setId(9L);
+            senderHighId.setUserId(11L);
+            senderHighId.getStats().setMoney(1000.0);
+            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(senderHighId));
+            when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
+            when(playerRepository.findByIdForUpdate(9L)).thenReturn(Optional.of(senderHighId));
+            when(turnService.getCurrentTurn()).thenReturn(4);
+            when(exchangeOfferRepository.save(any(ExchangeOffer.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            exchangeOfferService.createOffer(11L,
+                    new CreateExchangeOfferRequestDto(2L, 10.0, List.of()));
+
+            InOrder inOrder = inOrder(exchangeOfferRepository, playerRepository);
+            inOrder.verify(exchangeOfferRepository).expirePendingOffers(
+                    ExchangeOfferStatus.PENDING, ExchangeOfferStatus.EXPIRED, 4);
+            inOrder.verify(playerRepository).findByIdForUpdate(2L);
+            inOrder.verify(playerRepository).findByIdForUpdate(9L);
+            inOrder.verify(exchangeOfferRepository).countBySenderPlayerIdAndStatus(
+                    9L, ExchangeOfferStatus.PENDING);
         }
     }
 
@@ -219,8 +248,9 @@ class ExchangeOfferServiceTest {
         @DisplayName("Offre refusée tant que la dotation n'est pas dépensée")
         void shouldRefuseOfferFromStartingMoney() {
             sender.initializeStartingMoney();
-            when(playerRepository.findByUserIdForUpdate(11L)).thenReturn(Optional.of(sender));
-            when(playerRepository.findById(2L)).thenReturn(Optional.of(receiver));
+            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
 
             assertThrows(IllegalArgumentException.class,
                     () -> exchangeOfferService.createOffer(11L,
@@ -234,8 +264,9 @@ class ExchangeOfferServiceTest {
         void shouldCapOfferToEarnedMoney() {
             sender.initializeStartingMoney();
             sender.incrementMoney(400.0);
-            when(playerRepository.findByUserIdForUpdate(11L)).thenReturn(Optional.of(sender));
-            when(playerRepository.findById(2L)).thenReturn(Optional.of(receiver));
+            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
             when(exchangeOfferRepository.countBySenderPlayerIdAndStatus(1L, ExchangeOfferStatus.PENDING))
                     .thenReturn(0L);
             when(turnService.getCurrentTurn()).thenReturn(2);

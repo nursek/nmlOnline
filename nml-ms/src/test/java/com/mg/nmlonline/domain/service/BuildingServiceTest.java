@@ -165,7 +165,7 @@ class BuildingServiceTest {
             Player owner = new Player("Proprietaire");
             owner.setId(1L);
             owner.getStats().setMoney(10000.0);
-            when(playerRepository.findById(1L)).thenReturn(Optional.of(owner));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(owner));
             Player capturer = new Player("Capturer");
             capturer.setId(2L);
             capturer.getStats().setMoney(1000.0);
@@ -174,6 +174,7 @@ class BuildingServiceTest {
             BuildingService.CaptureResult result = buildingService.captureBank(50L, 2L, 3);
 
             assertEquals(7500.0, result.money());
+            assertEquals(2500.0, owner.getStats().getMoney(), "les 75 % exposés sont débités au propriétaire");
             assertEquals(1, result.resources().size());
             assertEquals(8500.0, capturer.getStats().getMoney());
             assertEquals(0.0, bank.getStoredMoney());
@@ -187,7 +188,7 @@ class BuildingServiceTest {
         void shouldTransferNoMoneyWhenOwnerMissing() {
             Bank bank = new Bank(1L);
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(bank));
-            when(playerRepository.findById(1L)).thenReturn(Optional.empty());
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
             Player capturer = new Player("Capturer");
             capturer.setId(2L);
             capturer.getStats().setMoney(1000.0);
