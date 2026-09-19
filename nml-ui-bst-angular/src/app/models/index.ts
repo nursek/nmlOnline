@@ -15,6 +15,7 @@ export * from './battle-report.model';
 export * from './dev-seed.model';
 export * from './ranking.model';
 export * from './exchange-offer.model';
+export * from './alliance.model';
 
 /** Minimal Spring Data page wrapper — only `content` is ever read. */
 export interface PageResult<T> {

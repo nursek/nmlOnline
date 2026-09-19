@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -74,8 +76,13 @@ public class TurnResolutionOrchestrator {
             Board board = loadBoard();
             int turnEnding = board.getCurrentTurn();
             MovementService.ResolutionContext ctx = movementService.prepareResolution(turnEnding, board);
-            this.session = new Session(ctx, turnEnding);
-            return toStateDto(session);
+            Session s = new Session(ctx, turnEnding);
+            // Conflits de rupture/trahison détectés dès la préparation (ex-alliés co-localisés).
+            for (SectorConflict conflict : ctx.getConflicts()) {
+                s.pendingConflicts.add(new PendingConflict(++s.conflictIdSeq, conflict));
+            }
+            this.session = s;
+            return toStateDto(s);
         } catch (RuntimeException e) {
             turnLock.release();
             throw e;
@@ -102,7 +109,7 @@ public class TurnResolutionOrchestrator {
         return toStateDto(s);
     }
 
-    /** Résout le conflit : duel classique à 2 camps, impasse mexicaine à 3+ (un seul appel pour tout le cercle). */
+    /** Résout le conflit : duel classique à 2 camps (1 ou 2 alliés), impasse à 3+ (un seul appel pour tout le cercle). */
     public ResolvedBattleDto resolveBattle(int conflictId) {
         Session s = requireSession();
         PendingConflict pc = s.pendingConflicts.stream()
@@ -111,39 +118,45 @@ public class TurnResolutionOrchestrator {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Conflit " + conflictId + " introuvable ou déjà résolu"));
         Board board = loadBoard();
+        Map<Long, Player> locked = lockPlayers(pc.camps);
 
         ResolvedBattle rb;
         if (pc.standoff) {
-            // Verrou pessimiste : les stats de combat de tous les camps sont recalculées/flushées pendant la bataille.
-            List<Player> participants = new ArrayList<>();
-            for (Long playerId : pc.participantPlayerIds) {
-                participants.add(playerRepository.findByIdForUpdate(playerId)
-                        .orElseThrow(() -> new IllegalStateException("Joueur " + playerId + " introuvable")));
-            }
+            List<List<Player>> camps = pc.camps.stream()
+                    .map(camp -> camp.stream().map(locked::get).toList())
+                    .toList();
             CombatService.StandoffBattleResult r =
-                    combatService.simulateSectorStandoff(participants, board, pc.sectorNumber);
-            battleReportService.saveStandoffReport(s.turnEnding, pc.sectorNumber, participants, r);
-            rb = ResolvedBattle.standoff(pc.sectorNumber, r);
+                    combatService.simulateSectorStandoff(camps, board, pc.sectorNumber);
+            battleReportService.saveStandoffReport(s.turnEnding, pc.sectorNumber,
+                    camps.stream().flatMap(List::stream).toList(), r);
+            rb = ResolvedBattle.standoff(pc.sectorNumber, camps, r);
         } else {
-            Player attacker = playerRepository.findByIdForUpdate(pc.participantPlayerIds.get(0))
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Joueur attaquant " + pc.participantPlayerIds.get(0) + " introuvable"));
-            Player defender = playerRepository.findByIdForUpdate(pc.participantPlayerIds.get(1))
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Joueur défenseur " + pc.participantPlayerIds.get(1) + " introuvable"));
+            List<Player> attackerCamp = pc.camps.get(0).stream().map(locked::get).toList();
+            List<Player> defenderCamp = pc.camps.get(1).stream().map(locked::get).toList();
             CombatService.SectorBattleResult r =
-                    combatService.simulateSectorBattle(attacker, defender, board, pc.sectorNumber);
-            battleReportService.saveDuelReport(s.turnEnding, pc.sectorNumber, attacker, defender, r);
-            rb = ResolvedBattle.duel(pc.sectorNumber, attacker.getId(), defender.getId(), r);
+                    combatService.simulateSectorBattle(attackerCamp, defenderCamp, board, pc.sectorNumber);
+            battleReportService.saveDuelReport(s.turnEnding, pc.sectorNumber, attackerCamp, defenderCamp, r);
+            rb = ResolvedBattle.duel(pc.sectorNumber, attackerCamp, defenderCamp, r);
         }
 
-        if (rb.winnerId() != null) {
-            movementService.captureAfterBattle(board, s.ctx, pc.sectorNumber, rb.winnerId());
+        if (!rb.winningCampPlayerIds().isEmpty()) {
+            movementService.captureAfterBattle(board, s.ctx, pc.sectorNumber, rb.winningCampPlayerIds());
         }
 
         s.resolvedConflicts.add(rb);
         s.pendingConflicts.remove(pc);
         return toBattleDto(rb, resolveNames(rb));
+    }
+
+    /** Lock pessimiste ordonné par id sur tous les combattants : évite le deadlock entre deux résolutions. */
+    private Map<Long, Player> lockPlayers(List<List<Long>> camps) {
+        List<Long> ids = camps.stream().flatMap(List::stream).distinct().sorted().toList();
+        Map<Long, Player> players = new HashMap<>();
+        for (Long id : ids) {
+            players.put(id, playerRepository.findByIdForUpdate(id)
+                    .orElseThrow(() -> new IllegalStateException("Joueur " + id + " introuvable")));
+        }
+        return players;
     }
 
     /** Finalise le tour (ordres RESOLVED + incrémentation), libère le verrou. Nécessite tous hops + batailles résolus. */
@@ -247,7 +260,8 @@ public class TurnResolutionOrchestrator {
         dto.setConflictId(pc.id);
         dto.setSectorNumber(pc.sectorNumber);
         dto.setStandoff(pc.standoff);
-        dto.setParticipants(pc.participantPlayerIds.stream()
+        List<Long> participants = pc.participantPlayerIds();
+        dto.setParticipants(participants.stream()
                 .map(playerId -> {
                     PendingConflictDto.ParticipantDto participant = new PendingConflictDto.ParticipantDto();
                     participant.setPlayerId(playerId);
@@ -256,18 +270,25 @@ public class TurnResolutionOrchestrator {
                     return participant;
                 })
                 .toList());
-        if (!pc.standoff && pc.participantPlayerIds.size() == 2) {
-            dto.setAttackerPlayerId(pc.participantPlayerIds.get(0));
-            dto.setAttackerName(names.apply(pc.participantPlayerIds.get(0)));
-            dto.setDefenderPlayerId(pc.participantPlayerIds.get(1));
-            dto.setDefenderName(names.apply(pc.participantPlayerIds.get(1)));
+        if (!pc.standoff && pc.camps.size() == 2) {
+            dto.setAttackerPlayerId(pc.camps.get(0).getFirst());
+            dto.setAttackerName(campNames(pc.camps.get(0), names));
+            dto.setDefenderPlayerId(pc.camps.get(1).getFirst());
+            dto.setDefenderName(campNames(pc.camps.get(1), names));
         }
         return dto;
     }
 
+    private static String campNames(List<Long> camp, Function<Long, String> names) {
+        if (camp == null || camp.isEmpty()) {
+            return null;
+        }
+        return camp.stream().map(names).collect(Collectors.joining(" + "));
+    }
+
     private Function<Long, String> resolveNamesForSession(Session s) {
         List<Long> ids = new ArrayList<>();
-        s.pendingConflicts.forEach(pc -> ids.addAll(pc.participantPlayerIds));
+        s.pendingConflicts.forEach(pc -> ids.addAll(pc.participantPlayerIds()));
         s.resolvedConflicts.forEach(rb -> ids.addAll(rb.participantPlayerIds()));
         return resolveNamesForIds(ids);
     }
@@ -335,9 +356,9 @@ public class TurnResolutionOrchestrator {
             return dto;
         }
         dto.setAttackerPlayerId(rb.attackerPlayerId());
-        dto.setAttackerName(rb.attackerPlayerId() != null ? names.apply(rb.attackerPlayerId()) : null);
+        dto.setAttackerName(campNames(rb.attackerCampPlayerIds(), names));
         dto.setDefenderPlayerId(rb.defenderPlayerId());
-        dto.setDefenderName(rb.defenderPlayerId() != null ? names.apply(rb.defenderPlayerId()) : null);
+        dto.setDefenderName(campNames(rb.defenderCampPlayerIds(), names));
         dto.setAttackerCasualties(rb.attackerCasualties());
         dto.setDefenderCasualties(rb.defenderCasualties());
         dto.setAttackerInjured(rb.attackerInjured());
@@ -364,18 +385,24 @@ public class TurnResolutionOrchestrator {
     private static final class PendingConflict {
         final int id;
         final int sectorNumber;
-        final List<Long> participantPlayerIds;
+        final List<List<Long>> camps;
         final boolean standoff;
 
         PendingConflict(int id, SectorConflict c) {
             this.id = id;
             this.sectorNumber = c.sectorNumber();
-            this.participantPlayerIds = c.participantPlayerIds();
+            this.camps = c.camps();
             this.standoff = c.isStandoff();
+        }
+
+        List<Long> participantPlayerIds() {
+            return camps.stream().flatMap(List::stream).toList();
         }
     }
 
     private record ResolvedBattle(int sectorNumber, boolean standoff, List<Long> participantPlayerIds,
+                                  List<Long> attackerCampPlayerIds, List<Long> defenderCampPlayerIds,
+                                  List<Long> winningCampPlayerIds,
                                   Long attackerPlayerId, Long defenderPlayerId, boolean success, String message,
                                   Long winnerId, int attackerCasualties, int defenderCasualties,
                                   int attackerInjured, int defenderInjured, int capturedBuildings,
@@ -384,10 +411,16 @@ public class TurnResolutionOrchestrator {
                                   List<CombatService.StandoffBattleResult.PlayerOutcome> outcomes,
                                   List<BattleLogEntry> battleLog) {
 
-        static ResolvedBattle duel(int sectorNumber, Long attackerPlayerId, Long defenderPlayerId,
+        static ResolvedBattle duel(int sectorNumber, List<Player> attackerCamp, List<Player> defenderCamp,
                                    CombatService.SectorBattleResult r) {
-            return new ResolvedBattle(sectorNumber, false, List.of(attackerPlayerId, defenderPlayerId),
-                    attackerPlayerId, defenderPlayerId, r.success(), r.message(),
+            List<Long> attackerIds = attackerCamp.stream().map(Player::getId).toList();
+            List<Long> defenderIds = defenderCamp.stream().map(Player::getId).toList();
+            List<Long> winning = r.winner() == null ? List.of()
+                    : attackerIds.contains(r.winner().getId()) ? attackerIds : defenderIds;
+            List<Long> participants = new ArrayList<>(attackerIds);
+            participants.addAll(defenderIds);
+            return new ResolvedBattle(sectorNumber, false, participants, attackerIds, defenderIds, winning,
+                    attackerIds.getFirst(), defenderIds.getFirst(), r.success(), r.message(),
                     r.winner() != null ? r.winner().getId() : null,
                     r.attackerCasualties().size(), r.defenderCasualties().size(),
                     r.attackerInjured().size(), r.defenderInjured().size(),
@@ -395,9 +428,17 @@ public class TurnResolutionOrchestrator {
                     r.defenderHeadquartersCaptured(), null, r.battleLog());
         }
 
-        static ResolvedBattle standoff(int sectorNumber, CombatService.StandoffBattleResult r) {
-            return new ResolvedBattle(sectorNumber, true,
-                    r.outcomes().stream().map(CombatService.StandoffBattleResult.PlayerOutcome::playerId).toList(),
+        static ResolvedBattle standoff(int sectorNumber, List<List<Player>> camps,
+                                       CombatService.StandoffBattleResult r) {
+            List<Long> participants = camps.stream().flatMap(List::stream).map(Player::getId).toList();
+            List<Long> winning = r.winner() == null ? List.of()
+                    : camps.stream()
+                            .filter(camp -> camp.stream()
+                                    .anyMatch(player -> player.getId().equals(r.winner().getId())))
+                            .findFirst()
+                            .map(camp -> camp.stream().map(Player::getId).toList())
+                            .orElse(List.of(r.winner().getId()));
+            return new ResolvedBattle(sectorNumber, true, participants, List.of(), List.of(), winning,
                     null, null, r.success(), r.message(),
                     r.winner() != null ? r.winner().getId() : null,
                     0, 0, 0, 0, r.capturedBuildings(), false, false, false, r.outcomes(), r.battleLog());

@@ -1,6 +1,6 @@
 import type { GameCharacter, Sector, Unit, Vehicle } from '../../models';
 
-export type SectorKind = 'own' | 'neutral' | 'enemy' | 'unknown';
+export type SectorKind = 'own' | 'neutral' | 'enemy' | 'ally' | 'unknown';
 
 export interface MovableEntities {
   units: Unit[];
@@ -80,10 +80,15 @@ export function findRoute(sectors: Sector[], from: number, to: number, maxHops: 
   return [];
 }
 
-export function sectorKind(sector: Sector | null | undefined, playerId: number | null): SectorKind {
+export function sectorKind(
+  sector: Sector | null | undefined,
+  playerId: number | null,
+  allyPlayerIds: ReadonlySet<number> = new Set(),
+): SectorKind {
   if (!sector || playerId == null) return 'unknown';
   if (sector.ownerId == null) return 'neutral';
-  return sector.ownerId === playerId ? 'own' : 'enemy';
+  if (sector.ownerId === playerId) return 'own';
+  return allyPlayerIds.has(sector.ownerId) ? 'ally' : 'enemy';
 }
 
 /**

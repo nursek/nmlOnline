@@ -35,12 +35,24 @@ public class Battle {
 
     private String currentPhase = "Combat";
 
+    /** Bonus de trahison (en %) du camp, actif uniquement le tour de la trahison. */
+    private double attackerBonusPercent;
+    private double defenderBonusPercent;
+
     public Battle() {
         this.random = new Random();
     }
 
     private int rand() {
         return random.nextInt(100) + 1;
+    }
+
+    private double attackerMultiplier() {
+        return 1 + attackerBonusPercent / 100.0;
+    }
+
+    private double defenderMultiplier() {
+        return 1 + defenderBonusPercent / 100.0;
     }
 
     public PhaseResult classicPhaseConfiguration(List<CombatEntity> defender, double availableAttackerPoints, String damageType) {
@@ -184,8 +196,8 @@ public class Battle {
         recordEvent(BattleLogEntry.INFO, "Début du combat : " + attacker.getName() + " attaque " + defender.getName());
 
         printPhaseHeader("PDF");
-        double attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
-        double defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF");
+        double attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF") * attackerMultiplier();
+        double defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF") * defenderMultiplier();
 
         PhaseResult attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF", attacker.getName(), defender.getName());
         PhaseResult defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF", defender.getName(), attacker.getName());
@@ -207,8 +219,8 @@ public class Battle {
 
         if (checkPointsTypeInUnits(attackerUnits, "PDF") > 0 || checkPointsTypeInUnits(defenderUnits, "PDF") > 0) {
             printPhaseHeader("PDF - Round 2");
-            attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF");
-            defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF");
+            attackerTotalPdf = getAvailablePoints(attackerUnits, "PDF") * attackerMultiplier();
+            defenderTotalPdf = getAvailablePoints(defenderUnits, "PDF") * defenderMultiplier();
 
             attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdf, "PDF", attacker.getName(), defender.getName());
             defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdf, "PDF", defender.getName(), attacker.getName());
@@ -231,8 +243,8 @@ public class Battle {
 
         // Riposte des secondaires : leur attack n'entre jamais dans les pools partagés.
         printPhaseHeader("Bâtiments secondaires");
-        double attackerSecondariesAtk = sumAttack(attackerUnits, Battle::isSecondaryBuilding);
-        double defenderSecondariesAtk = sumAttack(defenderUnits, Battle::isSecondaryBuilding);
+        double attackerSecondariesAtk = sumAttack(attackerUnits, Battle::isSecondaryBuilding) * attackerMultiplier();
+        double defenderSecondariesAtk = sumAttack(defenderUnits, Battle::isSecondaryBuilding) * defenderMultiplier();
 
         attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerSecondariesAtk, "ATK", attacker.getName(), defender.getName());
         defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderSecondariesAtk, "ATK", defender.getName(), attacker.getName());
@@ -250,8 +262,8 @@ public class Battle {
         }
 
         printPhaseHeader("PDC");
-        double attackerTotalPdc = getAvailablePoints(attackerUnits, "PDC");
-        double defenderTotalPdc = getAvailablePoints(defenderUnits, "PDC");
+        double attackerTotalPdc = getAvailablePoints(attackerUnits, "PDC") * attackerMultiplier();
+        double defenderTotalPdc = getAvailablePoints(defenderUnits, "PDC") * defenderMultiplier();
 
         attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC", attacker.getName(), defender.getName());
         defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC", defender.getName(), attacker.getName());
@@ -273,8 +285,8 @@ public class Battle {
 
         if (checkPointsTypeInUnits(attackerUnits, "PDC") > 0 || checkPointsTypeInUnits(defenderUnits, "PDC") > 0) {
             printPhaseHeader("PDC - Round 2");
-            attackerTotalPdc = getAvailablePoints(attackerUnits, "PDC");
-            defenderTotalPdc = getAvailablePoints(defenderUnits, "PDC");
+            attackerTotalPdc = getAvailablePoints(attackerUnits, "PDC") * attackerMultiplier();
+            defenderTotalPdc = getAvailablePoints(defenderUnits, "PDC") * defenderMultiplier();
 
             attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalPdc, "PDC", attacker.getName(), defender.getName());
             defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalPdc, "PDC", defender.getName(), attacker.getName());
@@ -297,8 +309,8 @@ public class Battle {
 
         // Pool unités seules : l'attack des bâtiments/QG/personnage est réservée à leur phase.
         printPhaseHeader("ATK");
-        double attackerTotalAtk = sumAttack(attackerUnits, Battle::isInfantry);
-        double defenderTotalAtk = sumAttack(defenderUnits, Battle::isInfantry);
+        double attackerTotalAtk = sumAttack(attackerUnits, Battle::isInfantry) * attackerMultiplier();
+        double defenderTotalAtk = sumAttack(defenderUnits, Battle::isInfantry) * defenderMultiplier();
 
         attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerTotalAtk, "ATK", attacker.getName(), defender.getName());
         defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderTotalAtk, "ATK", defender.getName(), attacker.getName());
@@ -320,8 +332,8 @@ public class Battle {
         }
 
         printPhaseHeader("Quartier Général");
-        double attackerHqAtk = sumAttack(attackerUnits, Battle::isHeadquarters);
-        double defenderHqAtk = sumAttack(defenderUnits, Battle::isHeadquarters);
+        double attackerHqAtk = sumAttack(attackerUnits, Battle::isHeadquarters) * attackerMultiplier();
+        double defenderHqAtk = sumAttack(defenderUnits, Battle::isHeadquarters) * defenderMultiplier();
 
         attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerHqAtk, "ATK", attacker.getName(), defender.getName());
         defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderHqAtk, "ATK", defender.getName(), attacker.getName());
@@ -340,8 +352,8 @@ public class Battle {
 
         // attack seul : ses pdf/pdc ont déjà servi dans les phases partagées.
         printPhaseHeader("Personnages");
-        double attackerCharacterAtk = sumAttack(attackerUnits, Battle::isCharacter);
-        double defenderCharacterAtk = sumAttack(defenderUnits, Battle::isCharacter);
+        double attackerCharacterAtk = sumAttack(attackerUnits, Battle::isCharacter) * attackerMultiplier();
+        double defenderCharacterAtk = sumAttack(defenderUnits, Battle::isCharacter) * defenderMultiplier();
 
         attackerPhaseResult = classicPhaseConfiguration(defenderUnits, attackerCharacterAtk, "ATK", attacker.getName(), defender.getName());
         defenderPhaseResult = classicPhaseConfiguration(attackerUnits, defenderCharacterAtk, "ATK", defender.getName(), attacker.getName());
@@ -366,10 +378,20 @@ public class Battle {
         finishBattle(attacker, defender, attackerUnits, defenderUnits);
     }
 
-    /** Le camp i frappe (i+1) % n ; les points sortants sont calculés avant application — un camp détruit frappe quand même. */
+    /** Compat sans alliance : chaque camp frappe le suivant du cercle, sans bonus. */
     public void classicStandoffConfiguration(List<Player> players, List<List<CombatEntity>> camps) {
+        int[] targets = new int[camps.size()];
+        for (int i = 0; i < camps.size(); i++) {
+            targets[i] = camps.size() > 1 ? (i + 1) % camps.size() : -1;
+        }
+        classicStandoffConfiguration(players, camps, targets, new double[camps.size()]);
+    }
+
+    /** Le camp i frappe son camp cible (prochain non-allié de la ronde) ; -1 = passe. Les points sortants sont calculés avant application. */
+    public void classicStandoffConfiguration(List<Player> players, List<List<CombatEntity>> camps,
+                                             int[] targets, double[] bonusPercents) {
         int n = camps.size();
-        if (n < 3 || players.size() != n) {
+        if (n < 3 || players.size() != n || targets.length != n || bonusPercents.length != n) {
             throw new IllegalArgumentException("Une impasse mexicaine nécessite au moins 3 camps.");
         }
         logger.info("\n=== Impasse mexicaine à {} camps ===", n);
@@ -383,50 +405,57 @@ public class Battle {
                 + " → " + players.getFirst().getName());
 
         this.currentPhase = "Impasse — PDF";
-        standoffPhase(players, camps, "PDF", e -> true, e -> true);
+        standoffPhase(players, camps, "PDF", e -> true, e -> true, targets, bonusPercents);
         if (anyPointsInCamps(camps, "PDF")) {
             this.currentPhase = "Impasse — PDF round 2";
-            standoffPhase(players, camps, "PDF", e -> true, e -> true);
+            standoffPhase(players, camps, "PDF", e -> true, e -> true, targets, bonusPercents);
         }
 
         this.currentPhase = "Impasse — Bâtiments secondaires";
-        standoffPhase(players, camps, "ATK", null, Battle::isSecondaryBuilding);
+        standoffPhase(players, camps, "ATK", null, Battle::isSecondaryBuilding, targets, bonusPercents);
 
         this.currentPhase = "Impasse — PDC";
-        standoffPhase(players, camps, "PDC", e -> true, e -> true);
+        standoffPhase(players, camps, "PDC", e -> true, e -> true, targets, bonusPercents);
         if (anyPointsInCamps(camps, "PDC")) {
             this.currentPhase = "Impasse — PDC round 2";
-            standoffPhase(players, camps, "PDC", e -> true, e -> true);
+            standoffPhase(players, camps, "PDC", e -> true, e -> true, targets, bonusPercents);
         }
 
         this.currentPhase = "Impasse — ATK";
-        standoffPhase(players, camps, "ATK", Battle::isInfantry, Battle::isInfantry);
+        standoffPhase(players, camps, "ATK", Battle::isInfantry, Battle::isInfantry, targets, bonusPercents);
         this.currentPhase = "Impasse — QG";
-        standoffPhase(players, camps, "ATK", null, Battle::isHeadquarters);
+        standoffPhase(players, camps, "ATK", null, Battle::isHeadquarters, targets, bonusPercents);
         this.currentPhase = "Impasse — Personnages";
-        standoffPhase(players, camps, "ATK", null, Battle::isCharacter);
+        standoffPhase(players, camps, "ATK", null, Battle::isCharacter, targets, bonusPercents);
 
         finishStandoff(players, camps);
     }
 
     private void standoffPhase(List<Player> players, List<List<CombatEntity>> camps, String pointsType,
                                Predicate<CombatEntity> reassignFilter,
-                               Predicate<CombatEntity> strikeFilter) {
+                               Predicate<CombatEntity> strikeFilter,
+                               int[] targets, double[] bonusPercents) {
         int n = camps.size();
         double[] points = new double[n];
         for (int i = 0; i < n; i++) {
             points[i] = camps.get(i).stream()
                     .filter(strikeFilter)
                     .mapToDouble(e -> getUnitPoints(e, pointsType))
-                    .sum();
+                    .sum() * (1 + bonusPercents[i] / 100.0);
         }
 
         PhaseResult[] results = new PhaseResult[n];
         for (int i = 0; i < n; i++) {
             Player striker = players.get(i);
-            Player target = players.get((i + 1) % n);
+            int targetIndex = targets[i];
+            if (targetIndex < 0) {
+                recordEvent(BattleLogEntry.INFO, striker.getName() + " ne frappe personne (" + pointsType + ")");
+                results[i] = new PhaseResult(List.of(), camps.get(i), points[i]);
+                continue;
+            }
+            Player target = players.get(targetIndex);
             recordEvent(BattleLogEntry.INFO, striker.getName() + " frappe " + target.getName() + " (" + pointsType + ")");
-            results[i] = classicPhaseConfiguration(camps.get((i + 1) % n), points[i], pointsType,
+            results[i] = classicPhaseConfiguration(camps.get(targetIndex), points[i], pointsType,
                     striker.getName(), target.getName());
         }
 

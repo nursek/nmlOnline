@@ -2,6 +2,7 @@ package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.domain.service.BoardService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,20 +29,20 @@ public class BoardController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BoardDto>> getAllBoards() {
-        return ResponseEntity.ok(boardService.getAllBoardsDto());
+    public ResponseEntity<List<BoardDto>> getAllBoards(HttpServletRequest request) {
+        return ResponseEntity.ok(boardService.getAllBoardsDto((Long) request.getAttribute("userId")));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BoardDto> getBoardById(@PathVariable("id") Long id) {
-        return boardService.getBoardByIdDto(id)
+    public ResponseEntity<BoardDto> getBoardById(@PathVariable("id") Long id, HttpServletRequest request) {
+        return boardService.getBoardByIdDto(id, (Long) request.getAttribute("userId"))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/name/{name}")
-    public ResponseEntity<BoardDto> getBoardByName(@PathVariable("name") String name) {
-        return boardService.getBoardByNameDto(name)
+    public ResponseEntity<BoardDto> getBoardByName(@PathVariable("name") String name, HttpServletRequest request) {
+        return boardService.getBoardByNameDto(name, (Long) request.getAttribute("userId"))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

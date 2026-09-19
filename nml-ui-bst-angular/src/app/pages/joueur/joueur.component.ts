@@ -32,6 +32,7 @@ import { PlayerService } from '../../services/player.service';
 import { PlayerActionsService } from '../../services/player-actions.service';
 import { MovementStateService } from '../../services/movement-state.service';
 import { ExchangeService } from '../../services/exchange.service';
+import { AllianceStateService } from '../../services/alliance-state.service';
 import { slugify } from '../../core/slug';
 import {
   VehiclePlacementModalComponent,
@@ -63,6 +64,7 @@ import { HeadquartersPanelComponent } from './headquarters-panel.component';
 import { movableEntities } from './movement.helpers';
 import { CharacterPanelComponent } from './character-panel.component';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
+import { AllianceComponent } from '../alliance/alliance.component';
 import { ExpPipe } from '../../shared/exp.pipe';
 import { ResourceCardComponent } from '../../shared/resource-card/resource-card.component';
 import {
@@ -114,6 +116,7 @@ export class JoueurComponent {
   private readonly playerActionsService = inject(PlayerActionsService);
   private readonly movementState = inject(MovementStateService);
   private readonly exchangeService = inject(ExchangeService);
+  private readonly allianceState = inject(AllianceStateService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
@@ -136,6 +139,7 @@ export class JoueurComponent {
     void this.playerActionsService.loadActions();
     void this.movementState.loadOrders();
     void this.exchangeService.loadOffers();
+    void this.allianceState.loadMe();
   }
 
   readonly playerCharacter = computed(() => this.player()?.character ?? null);
@@ -345,6 +349,14 @@ export class JoueurComponent {
       });
   }
 
+  openAllianceDialog(): void {
+    this.dialog.open(AllianceComponent, {
+      width: '860px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+    });
+  }
+
   undoFrom(action: PlayerAction): void {
     this.confirmAndUndo(
       'Annuler les actions',
@@ -383,7 +395,12 @@ export class JoueurComponent {
     const playerId = this.player()?.id;
     const number = sf.sector.number;
     if (playerId == null || number == null) return;
-    const data: GroupMoveDialogData = { sector: sf.sector, sectorNumber: number, playerId };
+    const data: GroupMoveDialogData = {
+      sector: sf.sector,
+      sectorNumber: number,
+      playerId,
+      allyPlayerIds: this.allianceState.alliedPlayerIds(),
+    };
     this.dialog.open(GroupMoveDialogComponent, {
       width: '720px',
       maxWidth: '95vw',

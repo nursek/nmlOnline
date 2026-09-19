@@ -1,0 +1,179 @@
+<h2 mat-dialog-title class="alliance-title">
+  <mat-icon>handshake</mat-icon>
+  <span>Alliances</span>
+  <button mat-icon-button class="close-btn" (click)="close()" aria-label="Fermer">
+    <mat-icon>close</mat-icon>
+  </button>
+</h2>
+
+<mat-dialog-content class="alliance-dialog">
+  <p class="subtitle">
+    Alliances bilatérales : plusieurs possibles, non transitives. Elles sont annoncées publiquement au tour suivant.
+  </p>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  }
+
+  @if (error()) {
+    <div class="error-banner" role="alert">
+      <mat-icon>error</mat-icon>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  @if (me(); as me) {
+    @if (!me.headquartersOperational) {
+      <div class="warning-banner" role="alert">
+        <mat-icon>warning</mat-icon>
+        <span>
+          QG opérationnel requis pour proposer, accepter ou gérer une alliance. La trahison reste
+          possible.
+        </span>
+      </div>
+    }
+
+    @if (me.activeBetrayalBonuses.length) {
+      <div class="bonus-banner">
+        @for (bonus of me.activeBetrayalBonuses; track bonus.victimPlayerId) {
+          <span>
+            <mat-icon>local_fire_department</mat-icon>
+            Bonus de trahison contre {{ bonus.victimName }} : +{{ bonus.bonusPercent }} % ce tour
+          </span>
+        }
+      </div>
+    }
+
+    <div class="card">
+      <h2>Mes alliances</h2>
+      @if (!me.alliances.length) {
+        <p class="hint">Aucune alliance active.</p>
+      } @else {
+        <div class="alliance-list">
+          @for (alliance of me.alliances; track alliance.id) {
+            <div class="alliance-row" [class.selected]="selectedAllianceId() === alliance.id">
+              <button mat-button class="alliance-select" (click)="selectAlliance(alliance.id)">
+                <mat-icon>shield</mat-icon>
+                {{ alliance.allyName }}
+                <span class="since">depuis le tour {{ alliance.createdTurn }}</span>
+              </button>
+              <div class="alliance-actions">
+                <button mat-stroked-button (click)="proposeRupture(alliance.allyPlayerId)">
+                  <mat-icon>handshake</mat-icon>
+                  Rupture amiable
+                </button>
+                <button mat-flat-button color="warn" (click)="betray(alliance.id, alliance.allyName)">
+                  <mat-icon>local_fire_department</mat-icon>
+                  Trahir
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="card">
+      <h2>Propositions</h2>
+
+      <h3>Reçues</h3>
+      @if (!me.incomingProposals.length) {
+        <p class="hint">Aucune proposition reçue.</p>
+      } @else {
+        @for (proposal of me.incomingProposals; track proposal.id) {
+          <div class="proposal-row">
+            <span class="proposal-label">
+              <mat-icon>{{ proposal.kind === 'RUPTURE' ? 'handshake' : 'add' }}</mat-icon>
+              {{ proposal.fromPlayerName }}
+              {{ proposal.kind === 'RUPTURE' ? 'propose une rupture amiable' : "propose une alliance" }}
+            </span>
+            <div class="proposal-actions">
+              <button mat-flat-button color="primary" (click)="accept(proposal.id)">Accepter</button>
+              <button mat-button (click)="decline(proposal.id)">Refuser</button>
+            </div>
+          </div>
+        }
+      }
+
+      <h3>Envoyées</h3>
+      @if (!me.outgoingProposals.length) {
+        <p class="hint">Aucune proposition envoyée.</p>
+      } @else {
+        @for (proposal of me.outgoingProposals; track proposal.id) {
+          <div class="proposal-row">
+            <span class="proposal-label">
+              <mat-icon>{{ proposal.kind === 'RUPTURE' ? 'handshake' : 'add' }}</mat-icon>
+              À {{ proposal.toPlayerName }}
+              ({{ proposal.kind === 'RUPTURE' ? 'rupture amiable' : 'alliance' }})
+            </span>
+            <button mat-button (click)="withdraw(proposal.id)">Retirer</button>
+          </div>
+        }
+      }
+
+      <h3>Proposer une alliance</h3>
+      <div class="propose-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Joueur</mat-label>
+          <mat-select
+            [ngModel]="targetPlayerId()"
+            (ngModelChange)="targetPlayerId.set($event)"
+            placeholder="Choisir un joueur"
+          >
+            @for (candidate of players(); track candidate.id) {
+              @if (candidate.id !== player()?.id) {
+                <mat-option [value]="candidate.id">{{ candidate.name }}</mat-option>
+              }
+            }
+          </mat-select>
+        </mat-form-field>
+        <button
+          mat-flat-button
+          color="primary"
+          [disabled]="targetPlayerId() === null || !me.headquartersOperational"
+          (click)="propose()"
+        >
+          <mat-icon>add</mat-icon>
+          Proposer
+        </button>
+      </div>
+    </div>
+
+    @if (me.alliances.length) {
+      <div class="card chat-card">
+        <h2>
+          Chat d'alliance
+          @if (selectedAlliance(); as selected) {
+            <span class="since">avec {{ selected.allyName }}</span>
+          }
+        </h2>
+        <div class="chat-messages">
+          @if (!messages().length) {
+            <p class="hint">Aucun message. Servez-vous du chat pour négocier… ou bluffer.</p>
+          }
+          @for (message of messages(); track message.id) {
+            <div class="chat-message" [class.mine]="message.senderPlayerId === player()?.id">
+              <span class="sender">{{ message.senderName }} · tour {{ message.turn }}</span>
+              <span class="body">{{ message.body }}</span>
+            </div>
+          }
+        </div>
+        <div class="chat-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Message</mat-label>
+            <input
+              matInput
+              maxlength="1000"
+              [ngModel]="messageDraft()"
+              (ngModelChange)="messageDraft.set($event)"
+              (keyup.enter)="sendMessage()"
+            />
+          </mat-form-field>
+          <button mat-flat-button color="primary" [disabled]="!messageDraft().trim()" (click)="sendMessage()">
+            <mat-icon>send</mat-icon>
+          </button>
+        </div>
+      </div>
+    }
+  }
+</mat-dialog-content>

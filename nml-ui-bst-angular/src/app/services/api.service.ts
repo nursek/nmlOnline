@@ -25,6 +25,13 @@ import {
   CreateExchangeOfferPayload,
   ExchangeOffer,
   ExchangeScenarioSummary,
+  PageResult,
+  AllianceMe,
+  AllianceProposal,
+  ProposalKind,
+  AllianceMessage,
+  Announcement,
+  PendingCapture,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -313,5 +320,64 @@ export class ApiService {
 
   cancelExchangeOffer(offerId: number): Observable<ExchangeOffer> {
     return this.http.post<ExchangeOffer>(`${this.baseUrl}/bank/offers/${offerId}/cancel`, {});
+  }
+
+  getAllianceMe(): Observable<AllianceMe> {
+    return this.http.get<AllianceMe>(`${this.baseUrl}/alliances/me`);
+  }
+
+  getPlayerSummaries(size = 100): Observable<PageResult<Player>> {
+    return this.http.get<PageResult<Player>>(`${this.baseUrl}/players`, { params: { size } });
+  }
+
+  proposeAlliance(kind: ProposalKind, targetPlayerId: number): Observable<AllianceProposal> {
+    return this.http.post<AllianceProposal>(`${this.baseUrl}/alliances/proposals`, {
+      kind,
+      targetPlayerId,
+    });
+  }
+
+  acceptAllianceProposal(proposalId: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/alliances/proposals/${proposalId}/accept`, {});
+  }
+
+  declineAllianceProposal(proposalId: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/alliances/proposals/${proposalId}/decline`, {});
+  }
+
+  withdrawAllianceProposal(proposalId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/alliances/proposals/${proposalId}`);
+  }
+
+  betrayAlliance(allianceId: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/alliances/${allianceId}/betray`, {});
+  }
+
+  getAllianceMessages(allianceId: number): Observable<AllianceMessage[]> {
+    return this.http.get<AllianceMessage[]>(`${this.baseUrl}/alliances/${allianceId}/messages`);
+  }
+
+  postAllianceMessage(allianceId: number, body: string): Observable<AllianceMessage> {
+    return this.http.post<AllianceMessage>(`${this.baseUrl}/alliances/${allianceId}/messages`, {
+      body,
+    });
+  }
+
+  getAnnouncements(): Observable<Announcement[]> {
+    return this.http.get<Announcement[]>(`${this.baseUrl}/announcements`);
+  }
+
+  adminGetPendingCaptures(): Observable<PendingCapture[]> {
+    return this.http.get<PendingCapture[]>(`${this.baseUrl}/admin/pending-captures`);
+  }
+
+  adminResolvePendingCapture(pendingId: number, playerId: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/pending-captures/${pendingId}/resolve`, null, {
+      params: { playerId },
+    });
+  }
+
+  adminDismissPendingCapture(pendingId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/pending-captures/${pendingId}`);
   }
 }

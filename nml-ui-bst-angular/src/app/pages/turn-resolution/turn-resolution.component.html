@@ -79,6 +79,32 @@
     </p>
   </header>
 
+  @if (pendingCaptures().length) {
+    <mat-card class="pending-captures">
+      <h2>
+        <mat-icon>flag</mat-icon>
+        Secteurs conquis par un camp allié — attribution en attente
+      </h2>
+      @for (pending of pendingCaptures(); track pending.id) {
+        <div class="pending-row">
+          <span class="sector">Secteur {{ pending.sectorNumber }} (tour {{ pending.turn }})</span>
+          <div class="candidates">
+            @for (candidate of pending.candidates; track candidate.playerId) {
+              <button
+                mat-flat-button
+                color="primary"
+                (click)="onResolvePendingCapture(pending, candidate.playerId, candidate.playerName)"
+              >
+                Attribuer à {{ candidate.playerName }}
+              </button>
+            }
+            <button mat-button (click)="onDismissPendingCapture(pending)">Laisser neutre</button>
+          </div>
+        </div>
+      }
+    </mat-card>
+  }
+
   @if (loading()) {
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
   }

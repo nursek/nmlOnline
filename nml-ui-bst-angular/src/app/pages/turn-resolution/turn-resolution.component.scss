@@ -399,3 +399,40 @@ button[disabled] mat-spinner {
   background: var(--ink-3) !important;
   color: var(--surface) !important;
 }
+
+.pending-captures {
+  margin: 1rem 0;
+  padding: 1rem 1.1rem;
+  border-radius: var(--r-sm);
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.6rem;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-2);
+  }
+
+  .pending-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px dashed var(--line-2);
+
+    .sector {
+      font-weight: 600;
+    }
+
+    .candidates {
+      margin-left: auto;
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+  }
+}

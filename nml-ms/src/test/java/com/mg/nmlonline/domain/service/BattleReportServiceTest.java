@@ -55,7 +55,7 @@ class BattleReportServiceTest {
                         UnitType.VOYOU, 3.0)),
                 List.of());
 
-        service.saveDuelReport(7, 32, attacker, defender, result);
+        service.saveDuelReport(7, 32, List.of(attacker), List.of(defender), result);
 
         ArgumentCaptor<BattleReport> captor = ArgumentCaptor.forClass(BattleReport.class);
         verify(reportRepository).save(captor.capture());

@@ -162,17 +162,6 @@ public class Board {
         return false;
     }
 
-    public boolean isAlliedRoute(List<Integer> route, Long ownerId) {
-        if (isInvalidRoute(route)) return false;
-        for (int sectorNumber : route) {
-            Sector sector = getSector(sectorNumber);
-            if (sector == null || !sector.isOwnedBy(ownerId)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     public List<Integer> findRoute(int from, int to, int maxHops) {
         if (from == to) return List.of(from);
         if (!hasSector(from) || !hasSector(to)) return Collections.emptyList();

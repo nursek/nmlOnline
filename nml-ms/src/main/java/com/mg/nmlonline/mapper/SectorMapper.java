@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class SectorMapper {
@@ -71,24 +72,66 @@ public class SectorMapper {
         return sector;
     }
 
-    /** Vue publique de la carte : retire l'équipement des unités et le contenu privé des bâtiments (banque, cache). */
-    public SectorDto toPublicDto(Sector sector) {
-        SectorDto dto = toDto(sector);
-        if (dto == null) {
+    /** Contexte de lecture : propriétaire ou allié avec une troupe sur place → détail complet, sinon restrictif. */
+    public record Visibility(Long requesterPlayerId, Set<Long> allyIds) {
+
+        public static Visibility none() {
+            return new Visibility(null, Set.of());
+        }
+
+        public boolean canSeeDetail(Sector sector) {
+            if (requesterPlayerId == null || sector == null) {
+                return false;
+            }
+            if (sector.isOwnedBy(requesterPlayerId)) {
+                return true;
+            }
+            Long ownerId = sector.getOwnerId();
+            return ownerId != null && allyIds.contains(ownerId) && hasOwnEntityPresent(sector, requesterPlayerId);
+        }
+    }
+
+    private static boolean hasOwnEntityPresent(Sector sector, Long playerId) {
+        return sector.getUnits().stream()
+                .anyMatch(unit -> playerId.equals(unit.getPlayerId()) && !unit.isDestroyed())
+                || sector.getCharacters().stream()
+                .anyMatch(character -> playerId.equals(character.getPlayerId()) && !character.isDestroyed());
+    }
+
+    /** Vue d'un secteur : détail complet si autorisé, sinon nom/propriétaire/ressource/voisins + présence de défenseurs. */
+    public SectorDto toPublicDto(Sector sector, Visibility visibility) {
+        if (sector == null) {
             return null;
         }
-        if (dto.getArmy() != null) {
-            dto.getArmy().forEach(unit -> unit.setEquipments(null));
+        if (visibility != null && visibility.canSeeDetail(sector)) {
+            return toDto(sector);
         }
-        if (dto.getBuildings() != null) {
-            dto.getBuildings().forEach(building -> {
-                building.setStoredMoney(null);
-                building.setStoredResources(null);
-                building.setStoredEquipments(null);
-                building.setStoredWealth(null);
-            });
+        return toRestrictedDto(sector);
+    }
+
+    /** Vue restreinte : aucun détail militaire (armée, personnages, véhicules, bâtiments, revenu, stats). */
+    public SectorDto toRestrictedDto(Sector sector) {
+        if (sector == null) return null;
+
+        SectorDto dto = new SectorDto();
+        dto.setNumber(sector.getNumber());
+        dto.setName(sector.getName());
+        dto.setOwnerId(sector.getOwnerId());
+        dto.setBoardId(sector.getBoard() != null ? sector.getBoard().getId() : null);
+        dto.setColor(sector.getColor());
+        if (sector.getResourceName() != null && !sector.getResourceName().isEmpty()) {
+            dto.setResource(sector.getResourceName());
         }
+        dto.setNeighbors(new ArrayList<>(sector.getNeighbors()));
+        dto.setX(sector.getX());
+        dto.setY(sector.getY());
+        dto.setHasDefenders(hasDefenders(sector));
         return dto;
+    }
+
+    private boolean hasDefenders(Sector sector) {
+        return sector.getUnits().stream().anyMatch(unit -> !unit.isDestroyed())
+                || sector.getCharacters().stream().anyMatch(character -> !character.isDestroyed());
     }
 
     public SectorDto toDto(Sector sector) {

@@ -98,7 +98,7 @@ class CombatExperienceTest {
             Player attacker = playerRepository.findById(w.attackerId()).orElseThrow();
             Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-            return combatService.simulateSectorBattle(attacker, defender, board, w.sectorNumber());
+            return combatService.simulateSectorBattle(List.of(attacker), List.of(defender), board, w.sectorNumber());
         });
     }
 

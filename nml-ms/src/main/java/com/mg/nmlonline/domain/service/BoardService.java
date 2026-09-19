@@ -4,7 +4,9 @@ import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
+import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.mapper.BoardMapper;
+import com.mg.nmlonline.mapper.SectorMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +22,15 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
     private final BoardMapper boardMapper;
+    private final PlayerRepository playerRepository;
+    private final AllianceGraph allianceGraph;
 
-    public BoardService(BoardRepository boardRepository, BoardMapper boardMapper) {
+    public BoardService(BoardRepository boardRepository, BoardMapper boardMapper,
+                        PlayerRepository playerRepository, AllianceGraph allianceGraph) {
         this.boardRepository = boardRepository;
         this.boardMapper = boardMapper;
+        this.playerRepository = playerRepository;
+        this.allianceGraph = allianceGraph;
     }
 
     public List<Board> getAllBoards() {
@@ -125,16 +132,29 @@ public class BoardService {
 
     // Mapping dans la transaction (sectorsList et sous-collections sont LAZY).
 
-    public List<BoardDto> getAllBoardsDto() {
-        return getAllBoards().stream().map(boardMapper::toPublicDto).toList();
+    public List<BoardDto> getAllBoardsDto(Long requesterUserId) {
+        SectorMapper.Visibility visibility = visibilityFor(requesterUserId);
+        return getAllBoards().stream().map(board -> boardMapper.toPublicDto(board, visibility)).toList();
     }
 
-    public Optional<BoardDto> getBoardByIdDto(Long id) {
-        return getBoardById(id).map(boardMapper::toPublicDto);
+    public Optional<BoardDto> getBoardByIdDto(Long id, Long requesterUserId) {
+        SectorMapper.Visibility visibility = visibilityFor(requesterUserId);
+        return getBoardById(id).map(board -> boardMapper.toPublicDto(board, visibility));
     }
 
-    public Optional<BoardDto> getBoardByNameDto(String name) {
-        return getBoardByName(name).map(boardMapper::toPublicDto);
+    public Optional<BoardDto> getBoardByNameDto(String name, Long requesterUserId) {
+        SectorMapper.Visibility visibility = visibilityFor(requesterUserId);
+        return getBoardByName(name).map(board -> boardMapper.toPublicDto(board, visibility));
+    }
+
+    private SectorMapper.Visibility visibilityFor(Long requesterUserId) {
+        if (requesterUserId == null) {
+            return SectorMapper.Visibility.none();
+        }
+        return playerRepository.findByUserId(requesterUserId)
+                .map(player -> new SectorMapper.Visibility(
+                        player.getId(), allianceGraph.alliedPlayerIds(player.getId())))
+                .orElseGet(SectorMapper.Visibility::none);
     }
 
     public BoardDto createBoardDto(BoardDto boardDto) {

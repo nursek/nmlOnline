@@ -19,9 +19,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +36,12 @@ class MovementStandoffDetectionTest {
 
     @Mock
     VehicleRepository vehicleRepository;
+
+    @Mock
+    AllianceGraph allianceGraph;
+
+    @Mock
+    PendingCaptureService pendingCaptureService;
 
     @InjectMocks
     MovementService service;
@@ -64,6 +72,8 @@ class MovementStandoffDetectionTest {
         secteur2.addNeighbor(4); secteur4.addNeighbor(2);
 
         lenient().when(orderRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(allianceGraph.activeAdjacency()).thenReturn(Map.of());
+        lenient().when(allianceGraph.endedAlliancesAtTurn(anyInt())).thenReturn(List.of());
     }
 
     private void addUnit(Sector sector, Long playerId, long id) {
