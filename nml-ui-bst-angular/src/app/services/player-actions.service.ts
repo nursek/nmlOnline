@@ -32,18 +32,24 @@ export class PlayerActionsService {
   }
 
   async undoFrom(actionId: number): Promise<boolean> {
-    return this.runMutation(() => this.api.undoPlayerActions(actionId),
-      "Erreur lors de l'annulation de l'action");
+    return this.runMutation(
+      () => this.api.undoPlayerActions(actionId),
+      "Erreur lors de l'annulation de l'action",
+    );
   }
 
   async undoAll(): Promise<boolean> {
-    return this.runMutation(() => this.api.undoAllPlayerActions(),
-      "Erreur lors de l'annulation de l'action");
+    return this.runMutation(
+      () => this.api.undoAllPlayerActions(),
+      "Erreur lors de l'annulation de l'action",
+    );
   }
 
   async harvest(choice: HarvestChoice, sectorNumbers: number[]): Promise<boolean> {
-    return this.runMutation(() => this.api.harvest(choice, sectorNumbers),
-      'Erreur lors de la récolte');
+    return this.runMutation(
+      () => this.api.harvest(choice, sectorNumbers),
+      'Erreur lors de la récolte',
+    );
   }
 
   private async runMutation(
@@ -51,6 +57,7 @@ export class PlayerActionsService {
     errorMessage: string,
   ): Promise<boolean> {
     this._error.set(null);
+    this._loading.set(true);
     try {
       this._actions.set(await firstValueFrom(request()));
       void this.playerService.loadCurrent();
@@ -59,6 +66,8 @@ export class PlayerActionsService {
     } catch (error) {
       this._error.set(httpErrorMessage(error, errorMessage));
       return false;
+    } finally {
+      this._loading.set(false);
     }
   }
 }

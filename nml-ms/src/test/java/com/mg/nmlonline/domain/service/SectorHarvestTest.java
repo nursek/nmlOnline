@@ -224,6 +224,58 @@ class SectorHarvestTest {
     }
 
     @Test
+    @DisplayName("Récolte manuelle fermée une fois le revenu du tour versé")
+    void harvestClosedAfterRevenueClaimed() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        Board board = turnTwoBoard();
+        ownedSector(board, player, 3, 100.0, "Or");
+
+        movementAdminService.resolveMovements(2);
+
+        assertThrows(HarvestClosedException.class, () -> playerActionService.harvest(player.getUserId(),
+                PlayerActionType.HARVEST_MONEY, List.of(3)));
+    }
+
+    @Test
+    @DisplayName("advanceTurn verse les secteurs non récoltés puis incrémente le tour")
+    void advanceTurnCreditsOwnedSectors() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        double before = player.getStats().getMoney();
+        Board board = turnTwoBoard();
+        ownedSector(board, player, 5, 100.0, "Or");
+
+        TurnService.TurnAdvanceResult result = turnService.advanceTurnAndReport();
+
+        assertEquals(before + 100.0, player.getStats().getMoney(), 0.001);
+        assertEquals(3, result.newTurn());
+        assertEquals(2, board.getRevenueClaimedTurn().intValue());
+    }
+
+    @Test
+    @DisplayName("Sans propriétaire au début de la résolution, le tour est figé : une capture en cours ne paie pas")
+    void resolveWithoutOwnersFreezesTurn() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        Board board = turnTwoBoard();
+        for (Sector sector : board.getAllSectors()) {
+            sector.setOwnerId(null);
+        }
+        entityManager.flush();
+        double before = player.getStats().getMoney();
+
+        movementAdminService.resolveMovements(2);
+
+        board.getSector(3).setOwnerId(player.getId());
+        entityManager.flush();
+
+        assertThrows(HarvestClosedException.class, () -> playerActionService.harvest(player.getUserId(),
+                PlayerActionType.HARVEST_MONEY, List.of(3)));
+
+        turnService.advanceTurnAndReport();
+        assertEquals(before, player.getStats().getMoney(), 0.001,
+                "Le capturant ne touche pas le revenu du tour résolu");
+    }
+
+    @Test
     @DisplayName("Récolte manuelle fermée pendant une résolution de tour")
     void harvestClosedWhileResolving() {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);

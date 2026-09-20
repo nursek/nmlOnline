@@ -8,6 +8,7 @@ import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerActionRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -27,12 +28,14 @@ public class HarvestAutoCollector {
     private final PlayerActionRepository actionRepository;
     private final PlayerRepository playerRepository;
     private final BoardRepository boardRepository;
+    private final EntityManager em;
 
     public HarvestAutoCollector(PlayerActionRepository actionRepository, PlayerRepository playerRepository,
-                                BoardRepository boardRepository) {
+                                BoardRepository boardRepository, EntityManager em) {
         this.actionRepository = actionRepository;
         this.playerRepository = playerRepository;
         this.boardRepository = boardRepository;
+        this.em = em;
     }
 
     public boolean hasClaimedRevenue(int turn) {
@@ -49,8 +52,13 @@ public class HarvestAutoCollector {
 
     /** {@code sectorOwners} = propriétaires au début de la résolution (avant combats/déplacements). */
     public void collectRemainingMoney(Board board, int turnEnding, Map<Integer, Long> sectorOwners) {
-        if (board == null || turnEnding < FIRST_HARVEST_TURN || Integer.valueOf(turnEnding).equals(board.getRevenueClaimedTurn())
-                || sectorOwners == null || sectorOwners.isEmpty()) {
+        if (board == null || turnEnding < FIRST_HARVEST_TURN
+                || Integer.valueOf(turnEnding).equals(board.getRevenueClaimedTurn())) {
+            return;
+        }
+        // Aucun propriétaire au début de la résolution : le tour est quand même figé, sinon une capture en cours rouvrirait la récolte.
+        if (sectorOwners == null || sectorOwners.isEmpty()) {
+            board.setRevenueClaimedTurn(turnEnding);
             return;
         }
 
@@ -60,10 +68,18 @@ public class HarvestAutoCollector {
                 .sorted()
                 .toList();
         Map<Long, Player> locked = new LinkedHashMap<>();
-        // Verrouillage AVANT lecture du journal : une récolte en vol (verrou joueur) devient visible ensuite,
-        // sinon elle committerait après la lecture et le secteur serait crédité deux fois.
+        // Verrouillage AVANT lecture du journal : sinon une récolte en vol committerait après et le secteur serait crédité deux fois.
         for (Long ownerId : ownerIds) {
             playerRepository.findByIdForUpdate(ownerId).ifPresent(player -> locked.put(ownerId, player));
+        }
+
+        // Le board a pu être lu avant le commit d'une résolution concurrente : la marque se relit une fois les verrous joueurs acquis.
+        List<Integer> claimed = em.createQuery(
+                        "select b.revenueClaimedTurn from Board b where b.id = :boardId", Integer.class)
+                .setParameter("boardId", board.getId())
+                .getResultList();
+        if (!claimed.isEmpty() && Integer.valueOf(turnEnding).equals(claimed.getFirst())) {
+            return;
         }
 
         Set<Integer> harvestedSectors = new HashSet<>();

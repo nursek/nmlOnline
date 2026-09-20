@@ -390,14 +390,18 @@ export class JoueurComponent {
 
   harvest(choice: HarvestChoice, sectorNumbers: number[]): void {
     if (sectorNumbers.length === 0) return;
-    void this.playerActionsService.harvest(choice, sectorNumbers).then((ok) => {
-      if (ok) {
-        this.snackBar.open('Récolte effectuée', 'Fermer', { duration: 3000 });
-        return;
-      }
-      const error = this.playerActionsService.error();
-      if (error) this.snackBar.open(error, 'Fermer', { duration: 5000 });
-    });
+    void this.playerActionsService
+      .harvest(choice, sectorNumbers)
+      .then((ok) => this.notifyMutation(ok, 'Récolte effectuée'));
+  }
+
+  private notifyMutation(ok: boolean, success: string): void {
+    if (ok) {
+      this.snackBar.open(success, 'Fermer', { duration: 3000 });
+      return;
+    }
+    const error = this.playerActionsService.error();
+    if (error) this.snackBar.open(error, 'Fermer', { duration: 5000 });
   }
 
   // Index 1 = onglet « Actions » (cf. template).
@@ -412,9 +416,7 @@ export class JoueurComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((confirmed) => {
         if (!confirmed) return;
-        void undo().then((ok) => {
-          if (ok) this.snackBar.open('Actions annulées', 'Fermer', { duration: 3000 });
-        });
+        void undo().then((ok) => this.notifyMutation(ok, 'Actions annulées'));
       });
   }
 
