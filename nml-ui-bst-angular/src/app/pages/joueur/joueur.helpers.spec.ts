@@ -6,6 +6,7 @@ import {
   incomeTotal,
   playerForces,
   sectorForces,
+  sectorHarvestStates,
   troopSummaries,
   unitClassCodes,
   unitEquipmentLabel,
@@ -17,6 +18,7 @@ import type {
   EquipmentStack,
   GameCharacter,
   Player,
+  PlayerAction,
   Sector,
   Unit,
   Vehicle,
@@ -393,6 +395,49 @@ describe('joueur.helpers', () => {
         vehicleValue: 0,
         total: 22519,
       });
+    });
+  });
+
+  describe('sectorHarvestStates', () => {
+    const harvestAction = (
+      id: number,
+      type: PlayerAction['type'],
+      sectorNumber: number,
+    ): PlayerAction => ({
+      id,
+      turn: 2,
+      type,
+      status: 'ACTIVE',
+      label: '',
+      money: null,
+      quantity: null,
+      equipmentName: null,
+      resourceName: null,
+      unitId: null,
+      vehicleId: null,
+      buildingId: null,
+      fromSectorNumber: sectorNumber,
+      toSectorNumber: null,
+    });
+
+    it('marque les secteurs récoltés (argent ou ressource) et ignore les autres actions', () => {
+      const states = sectorHarvestStates(
+        [
+          sector(1, me, { income: 100, resource: 'Or' }),
+          sector(2, me, { income: 200, resource: 'Ivoire' }),
+          sector(3, me, { income: 300, resource: 'Cigares' }),
+        ],
+        [
+          harvestAction(10, 'HARVEST_MONEY', 1),
+          harvestAction(11, 'HARVEST_RESOURCE', 3),
+          harvestAction(12, 'SELL_RESOURCE', 2),
+        ],
+      );
+
+      expect(states.map((state) => state.choice)).toEqual(['MONEY', null, 'RESOURCE']);
+      expect(states[0].money).toBe(100);
+      expect(states[2].resource).toBe('Cigares');
+      expect(states[0].action?.id).toBe(10);
     });
   });
 

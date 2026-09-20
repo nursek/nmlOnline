@@ -1,0 +1,121 @@
+<mat-card class="card--harvest">
+  <mat-card-content>
+    <div class="section-header">
+      <mat-icon>agriculture</mat-icon>
+      <h2>Récolte du tour {{ currentTurn() }}</h2>
+    </div>
+    <p class="section-subtitle">
+      Chaque territoire rapporte soit son revenu en argent, soit 1 unité de sa ressource. Un secteur
+      non récolté verse automatiquement son revenu en argent au début de la résolution du tour, avant
+      les combats et les déplacements. La récolte manuelle se ferme alors jusqu'au tour suivant.
+    </p>
+
+    @if (states().length === 0) {
+      <div class="empty-state">
+        <mat-icon>agriculture</mat-icon>
+        <p>Aucun territoire à récolter.</p>
+      </div>
+    } @else {
+      @if (pending().length > 0) {
+        <div class="harvest-toolbar">
+          <button
+            mat-stroked-button
+            color="primary"
+            [disabled]="loading()"
+            (click)="harvestAll('HARVEST_MONEY')"
+          >
+            <mat-icon>paid</mat-icon>
+            Tout en argent ({{ pendingMoney() | number: '1.0-0' }} ₡)
+          </button>
+          <button
+            mat-stroked-button
+            color="primary"
+            [disabled]="loading() || pendingWithResource().length === 0"
+            (click)="harvestAll('HARVEST_RESOURCE')"
+          >
+            <mat-icon>diamond</mat-icon>
+            Tout en ressource
+          </button>
+        </div>
+      } @else {
+        <p class="harvest-done">
+          <mat-icon>check_circle</mat-icon>
+          Tous vos territoires ont été récoltés ce tour.
+        </p>
+      }
+
+      <ul class="harvest-list">
+        @for (state of states(); track state.sector.number) {
+          <li class="harvest-row" [class.harvest-row--done]="state.choice !== null">
+            <div class="harvest-info">
+              <span class="harvest-sector">
+                Secteur {{ state.sector.number }} — {{ state.sector.name }}
+              </span>
+              <span class="harvest-meta">
+                {{ state.money | number: '1.0-0' }} ₡/tour
+                @if (state.resource) {
+                  · {{ state.resource }} ×1
+                }
+              </span>
+            </div>
+
+            @if (state.choice === 'MONEY') {
+              <span class="harvest-result">
+                <mat-icon>paid</mat-icon>
+                +{{ state.money | number: '1.0-0' }} ₡
+              </span>
+              <button
+                mat-stroked-button
+                color="warn"
+                [disabled]="loading()"
+                matTooltip="Annule la récolte et toutes les actions suivantes du tour"
+                (click)="cancel(state)"
+              >
+                <mat-icon>undo</mat-icon>
+                Annuler
+              </button>
+            } @else if (state.choice === 'RESOURCE') {
+              <span class="harvest-result">
+                <mat-icon>diamond</mat-icon>
+                +1 {{ state.resource }}
+              </span>
+              <button
+                mat-stroked-button
+                color="warn"
+                [disabled]="loading()"
+                matTooltip="Annule la récolte et toutes les actions suivantes du tour"
+                (click)="cancel(state)"
+              >
+                <mat-icon>undo</mat-icon>
+                Annuler
+              </button>
+            } @else {
+              <div class="harvest-choice">
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  [disabled]="loading()"
+                  matTooltip="Créditer le revenu du secteur maintenant"
+                  (click)="harvestOne(state, 'HARVEST_MONEY')"
+                >
+                  <mat-icon>paid</mat-icon>
+                  {{ state.money | number: '1.0-0' }} ₡
+                </button>
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  [disabled]="loading() || !state.resource"
+                  matTooltip="Créditer 1 unité de la ressource du secteur"
+                  (click)="harvestOne(state, 'HARVEST_RESOURCE')"
+                >
+                  <mat-icon>diamond</mat-icon>
+                  {{ state.resource ?? 'Ressource' }}
+                </button>
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </mat-card-content>
+</mat-card>

@@ -45,6 +45,16 @@
           }
         </div>
 
+        @if (showHarvest()) {
+          <app-harvest-panel
+            [states]="harvestStates()"
+            [currentTurn]="currentTurn()"
+            [loading]="actionsLoading()"
+            (harvest)="harvest($event.choice, $event.sectorNumbers)"
+            (undo)="undoFrom($event)"
+          />
+        }
+
         <div class="buildings-row">
           <app-bank-panel
             [building]="bank()"
@@ -567,7 +577,7 @@
             </h2>
           </div>
           <p class="section-subtitle">
-            Historique de vos actions du tour : achats et changements d'équipement
+            Historique de vos actions du tour : récoltes, achats et changements d'équipement
           </p>
 
           @if (actionsError(); as err) {
@@ -582,8 +592,8 @@
               <mat-icon>history</mat-icon>
               <p>Aucune action enregistrée ce tour.</p>
               <p class="empty-hint">
-                L'historique des achats et des équipements modifiés sera journalisé ici. Les ordres
-                de déplacement se consultent sur la page « Mes ordres ».
+                L'historique des récoltes, des achats et des équipements modifiés sera journalisé ici.
+                Les ordres de déplacement se consultent sur la page « Mes ordres ».
               </p>
             </div>
           } @else {
@@ -601,8 +611,8 @@
                     <span class="action-label">{{ action.label }}</span>
                     @if (action.money) {
                       <span class="action-money"
-                        >{{ action.type === 'SELL_RESOURCE' ? '+' : '-'
-                        }}{{ action.money | number: '1.0-0' }} ₡</span
+                        >{{ action.type === 'SELL_RESOURCE' || action.type === 'HARVEST_MONEY' ? '+'
+                        : '-' }}{{ action.money | number: '1.0-0' }} ₡</span
                       >
                     }
                   </div>

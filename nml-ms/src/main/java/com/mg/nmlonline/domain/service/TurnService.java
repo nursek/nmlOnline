@@ -23,16 +23,19 @@ public class TurnService {
     private final MovementService movementService;
     private final TurnLock turnLock;
     private final GameCharacterService characterService;
+    private final HarvestAutoCollector harvestAutoCollector;
 
     // Cache du tour (évite un N+1), publié avant commit et purgé sur rollback.
     private volatile Integer cachedTurn;
 
     public TurnService(BoardRepository boardRepository, MovementService movementService,
-                       TurnLock turnLock, GameCharacterService characterService) {
+                       TurnLock turnLock, GameCharacterService characterService,
+                       HarvestAutoCollector harvestAutoCollector) {
         this.boardRepository = boardRepository;
         this.movementService = movementService;
         this.turnLock = turnLock;
         this.characterService = characterService;
+        this.harvestAutoCollector = harvestAutoCollector;
     }
 
     /** Retourne 1 si aucun plateau n'existe encore. */
@@ -100,6 +103,9 @@ public class TurnService {
                     .orElseThrow(() -> new IllegalStateException("Aucun plateau trouvé pour avancer le tour"));
 
             int turnEnding = board.getCurrentTurn();
+
+            // Avant les captures : le revenu du tour revient à son propriétaire pendant le tour.
+            harvestAutoCollector.collectRemainingMoney(board, turnEnding);
 
             // Résolution des mouvements du tour qui se termine, AVANT l'incrément.
             MovementResolutionResult result = movementService.resolveAllMovements(turnEnding, board);

@@ -1,5 +1,6 @@
 package com.mg.nmlonline.api.controller;
 
+import com.mg.nmlonline.api.dto.HarvestRequestDto;
 import com.mg.nmlonline.api.dto.PlayerActionDto;
 import com.mg.nmlonline.domain.service.PlayerActionService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +35,16 @@ public class PlayerActionController {
             return ResponseEntity.status(401).build();
         }
         return ResponseEntity.ok(playerActionService.undoFrom(userId, actionId));
+    }
+
+    @PostMapping("/harvest")
+    public ResponseEntity<List<PlayerActionDto>> harvest(@RequestBody HarvestRequestDto body,
+                                                         HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(playerActionService.harvest(userId, body.choice(), body.sectorNumbers()));
     }
 
     @PostMapping("/undo-all")

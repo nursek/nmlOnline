@@ -13,6 +13,8 @@ public interface PlayerActionRepository extends JpaRepository<PlayerAction, Long
 
     List<PlayerAction> findByPlayerIdAndTurnAndStatusOrderByIdAsc(Long playerId, int turn, PlayerActionStatus status);
 
+    List<PlayerAction> findByTurnAndStatus(int turn, PlayerActionStatus status);
+
     List<PlayerAction> findByPlayerIdAndTurnAndStatusAndIdGreaterThanEqualOrderByIdAsc(
             Long playerId, int turn, PlayerActionStatus status, Long id);
 

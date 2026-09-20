@@ -22,6 +22,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Building,
   Equipment,
+  HarvestChoice,
   PlayerAction,
   PlayerResource,
   Sector,
@@ -61,6 +62,7 @@ import {
 import { BankPanelComponent } from './bank-panel.component';
 import { WeaponCachePanelComponent } from './weapon-cache-panel.component';
 import { HeadquartersPanelComponent } from './headquarters-panel.component';
+import { HarvestPanelComponent } from './harvest-panel.component';
 import { movableEntities } from './movement.helpers';
 import { CharacterPanelComponent } from './character-panel.component';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
@@ -76,6 +78,7 @@ import {
   incomeTotal,
   playerForces,
   SectorForces,
+  sectorHarvestStates,
   totalsStats,
   troopSummaries,
   unitClassCodes,
@@ -107,6 +110,7 @@ import { characterStats } from '../../core/stats';
     BankPanelComponent,
     WeaponCachePanelComponent,
     HeadquartersPanelComponent,
+    HarvestPanelComponent,
   ],
   templateUrl: './joueur.component.html',
   styleUrls: ['./joueur.component.scss'],
@@ -172,6 +176,13 @@ export class JoueurComponent {
     return this.conqueredSectors().find((s) => s.number === number) ?? null;
   });
   readonly income = computed(() => incomeTotal(this.conqueredSectors()));
+  readonly harvestStates = computed(() =>
+    sectorHarvestStates(this.conqueredSectors(), this.actions()),
+  );
+  readonly showHarvest = computed(() => {
+    const turn = this.currentTurn();
+    return turn != null && turn >= 2 && this.conqueredSectors().length > 0;
+  });
   readonly troopSummaries = computed(() =>
     troopSummaries(this.conqueredSectors(), this.player()?.id ?? null),
   );
@@ -270,6 +281,10 @@ export class JoueurComponent {
         return 'move_up';
       case 'SET_VEHICLE_CREW':
         return 'groups';
+      case 'HARVEST_MONEY':
+        return 'paid';
+      case 'HARVEST_RESOURCE':
+        return 'diamond';
     }
   }
 
@@ -371,6 +386,18 @@ export class JoueurComponent {
       'Annuler toutes les actions de ce tour ?',
       () => this.playerActionsService.undoAll(),
     );
+  }
+
+  harvest(choice: HarvestChoice, sectorNumbers: number[]): void {
+    if (sectorNumbers.length === 0) return;
+    void this.playerActionsService.harvest(choice, sectorNumbers).then((ok) => {
+      if (ok) {
+        this.snackBar.open('Récolte effectuée', 'Fermer', { duration: 3000 });
+        return;
+      }
+      const error = this.playerActionsService.error();
+      if (error) this.snackBar.open(error, 'Fermer', { duration: 5000 });
+    });
   }
 
   // Index 1 = onglet « Actions » (cf. template).

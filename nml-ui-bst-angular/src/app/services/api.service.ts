@@ -21,6 +21,7 @@ import {
   ResourceBatchSaleResponse,
   Board,
   PlayerAction,
+  HarvestChoice,
   BattleReport,
   CreateExchangeOfferPayload,
   ExchangeOffer,
@@ -282,6 +283,13 @@ export class ApiService {
 
   undoAllPlayerActions(): Observable<PlayerAction[]> {
     return this.http.post<PlayerAction[]>(`${this.baseUrl}/players/actions/undo-all`, {});
+  }
+
+  harvest(choice: HarvestChoice, sectorNumbers: number[]): Observable<PlayerAction[]> {
+    return this.http.post<PlayerAction[]>(`${this.baseUrl}/players/actions/harvest`, {
+      choice,
+      sectorNumbers,
+    });
   }
 
   moveBuilding(buildingId: number, boardId: number, newSectorNumber: number): Observable<void> {

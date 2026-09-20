@@ -150,6 +150,22 @@ public class PlayerAction {
         return action;
     }
 
+    public static PlayerAction harvestMoney(Long playerId, int turn, int sectorNumber, double money) {
+        PlayerAction action = base(playerId, turn, PlayerActionType.HARVEST_MONEY);
+        action.setFromSectorNumber(sectorNumber);
+        action.setMoney(money);
+        return action;
+    }
+
+    public static PlayerAction harvestResource(Long playerId, int turn, int sectorNumber,
+                                               String resourceName, int quantity) {
+        PlayerAction action = base(playerId, turn, PlayerActionType.HARVEST_RESOURCE);
+        action.setFromSectorNumber(sectorNumber);
+        action.setResourceName(resourceName);
+        action.setQuantity(quantity);
+        return action;
+    }
+
     private static PlayerAction base(Long playerId, int turn, PlayerActionType type) {
         PlayerAction action = new PlayerAction();
         action.setPlayerId(playerId);

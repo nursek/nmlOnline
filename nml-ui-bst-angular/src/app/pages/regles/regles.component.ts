@@ -52,6 +52,7 @@ export class ReglesComponent {
     { id: 'batiments', label: 'Bâtiments', icon: 'apartment' },
     { id: 'economie', label: 'Économie et échange', icon: 'payments' },
     { id: 'boutique', label: 'Boutique et équipements', icon: 'shopping_bag' },
+    { id: 'recolte', label: 'Récolte des revenus', icon: 'agriculture' },
     { id: 'combat', label: 'Affrontements', icon: 'sports_esports' },
     { id: 'impasse', label: 'Impasse mexicaine', icon: 'groups' },
     { id: 'alliances', label: 'Alliances', icon: 'handshake' },
