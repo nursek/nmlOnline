@@ -24,6 +24,7 @@ export interface GroupMoveDialogData {
   sector: Sector;
   sectorNumber: number;
   playerId: number;
+  allyPlayerIds?: ReadonlySet<number>;
 }
 
 interface MoveTarget {
@@ -35,6 +36,7 @@ interface MoveTarget {
 const KIND_LABELS: Record<SectorKind, string> = {
   own: 'Interne',
   neutral: 'Neutre',
+  ally: 'Allié',
   enemy: 'Ennemi',
   unknown: 'Inconnu',
 };
@@ -122,7 +124,7 @@ export class GroupMoveDialogComponent {
       return {
         number,
         name: sector?.name ?? `Secteur ${number}`,
-        kind: sectorKind(sector, this.data.playerId),
+        kind: sectorKind(sector, this.data.playerId, this.data.allyPlayerIds ?? new Set()),
       };
     }),
   );

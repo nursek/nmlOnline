@@ -26,6 +26,7 @@ import { PageResult, Player, Sector } from '../../models';
 import { environment } from '../../../environments/environment';
 import { sanitizeSvg } from '../../core/svg-sanitize';
 import { ActiveBoardService } from '../../services/active-board.service';
+import { AllianceStateService } from '../../services/alliance-state.service';
 import { MAP_THEME } from './carte.config';
 import { RankingsPanelComponent } from './rankings-panel.component';
 
@@ -83,10 +84,13 @@ export class CarteComponent {
   readonly overlayOffsetX = MAP_THEME.overlay.offsetX;
 
   private readonly activeBoard = inject(ActiveBoardService);
+  private readonly allianceState = inject(AllianceStateService);
   private readonly playersRef = httpResource<PageResult<Player>>(() => ({
     url: `${environment.apiBaseUrl}/players`,
     params: { page: '0', size: '50' },
   }));
+
+  readonly alliedPlayerIds = this.allianceState.alliedPlayerIds;
 
   readonly loading = computed(() => this.activeBoard.loading() || this.playersRef.isLoading());
   readonly error = computed(() => {
@@ -191,6 +195,7 @@ export class CarteComponent {
   private readonly eventCleanupFns: (() => void)[] = [];
 
   constructor() {
+    void this.allianceState.loadMe();
     // Attach SVG listeners once whenever a fresh SVG is rendered. Cleanup drops
     // them before re-attaching on the next SVG.
     afterRenderEffect((onCleanup) => {
@@ -215,6 +220,7 @@ export class CarteComponent {
       void this.selectedSector();
       void this.selectedPlayerIds();
       void this.showNeutral();
+      void this.alliedPlayerIds();
       this.updateAllPathColors(container);
       this.updateSectorLabelColors(container);
     });
@@ -502,6 +508,7 @@ export class CarteComponent {
     path.style.fill = isNeutral ? 'url(#neutral-stripes)' : color + MAP_THEME.fill.normalAlpha;
     path.style.stroke = color;
     path.style.strokeWidth = String(MAP_THEME.stroke.normal);
+    path.style.strokeDasharray = this.isAllyOwner(sector?.ownerId ?? null) ? '7 4' : '';
     path.style.cursor = 'pointer';
     path.style.transition = 'all 0.2s ease';
     path.style.opacity = isDimmed ? String(MAP_THEME.fill.dimmedOpacity) : '1';
@@ -559,6 +566,10 @@ export class CarteComponent {
 
   getSectorColor(sector: Sector | SectorWithPlayer): string {
     return this.getPlayerColor(sector.ownerId);
+  }
+
+  isAllyOwner(playerId: number | null): boolean {
+    return playerId != null && this.alliedPlayerIds().has(playerId);
   }
 
   getContrastColor(): string {

@@ -115,6 +115,9 @@
               <div>
                 <h2>{{ selectedSector()!.name }}</h2>
                 <span class="sector-id">Secteur n°{{ selectedSector()!.number }}</span>
+                @if (isAllyOwner(selectedSector()!.ownerId)) {
+                  <span class="ally-badge">Allié</span>
+                }
               </div>
             </div>
 
@@ -125,76 +128,95 @@
               <p class="owner-name">{{ selectedSector()!.playerName || 'Territoire neutre' }}</p>
             </div>
 
-            <div class="detail-section">
-              <h3><mat-icon>attach_money</mat-icon> Économie</h3>
-              <div class="stat-row">
-                <span>Revenus</span>
-                <span class="value gold">{{ selectedSector()!.income || 0 }} ₡/tour</span>
-              </div>
-              @if (selectedSector()!.resource) {
-                <div class="stat-row">
-                  <span>Ressource</span>
-                  <span class="value">{{ selectedSector()!.resource }}</span>
-                </div>
-              }
-            </div>
-
-            <div class="detail-section">
-              <h3>
-                <mat-icon>military_tech</mat-icon>
-                Armée
-              </h3>
-              @if (sector.character) {
-                <div class="stat-row">
-                  <span>Personnage</span>
-                  <span class="value">{{ sector.character.name }}</span>
-                </div>
-              }
-              @if (sector.army?.length) {
-                <div class="stat-row">
-                  <span>Unités</span>
-                  <span class="value">{{ sector.army!.length }}</span>
-                </div>
-              }
-              @if (sector.vehicles?.length) {
-                <div class="stat-row">
-                  <span>Véhicules</span>
-                  <span class="value">{{ sector.vehicles!.length }}</span>
-                </div>
-              }
-              @if (sector.buildings?.length) {
-                <div class="stat-row">
-                  <span>Batiments</span>
-                  <span class="value">{{ sector.buildings!.length }}</span>
-                </div>
-              }
-            </div>
-
-            @if (sector.stats) {
+            @if (sector.army) {
               <div class="detail-section">
-                <h3><mat-icon>shield</mat-icon> Statistiques</h3>
-                <div class="stats-grid">
-                  <div class="mini-stat">
-                    <span class="label">ATK</span>
-                    <span class="value red">{{ sector.stats!.totalAtk || 0 }}</span>
+                <h3><mat-icon>attach_money</mat-icon> Économie</h3>
+                <div class="stat-row">
+                  <span>Revenus</span>
+                  <span class="value gold">{{ selectedSector()!.income || 0 }} ₡/tour</span>
+                </div>
+                @if (selectedSector()!.resource) {
+                  <div class="stat-row">
+                    <span>Ressource</span>
+                    <span class="value">{{ selectedSector()!.resource }}</span>
                   </div>
-                  <div class="mini-stat">
-                    <span class="label">PDF</span>
-                    <span class="value blue">{{ sector.stats!.totalPdf || 0 }}</span>
+                }
+              </div>
+
+              <div class="detail-section">
+                <h3>
+                  <mat-icon>military_tech</mat-icon>
+                  Armée
+                </h3>
+                @if (sector.character) {
+                  <div class="stat-row">
+                    <span>Personnage</span>
+                    <span class="value">{{ sector.character.name }}</span>
                   </div>
-                  <div class="mini-stat">
-                    <span class="label">PDC</span>
-                    <span class="value blue">{{ sector.stats!.totalPdc || 0 }}</span>
+                }
+                @if (sector.army.length) {
+                  <div class="stat-row">
+                    <span>Unités</span>
+                    <span class="value">{{ sector.army.length }}</span>
                   </div>
-                  <div class="mini-stat">
-                    <span class="label">DEF</span>
-                    <span class="value green">{{ sector.stats!.totalDef || 0 }}</span>
+                }
+                @if (sector.vehicles?.length) {
+                  <div class="stat-row">
+                    <span>Véhicules</span>
+                    <span class="value">{{ sector.vehicles!.length }}</span>
                   </div>
-                  <div class="mini-stat">
-                    <span class="label">ARM</span>
-                    <span class="value purple">{{ sector.stats!.totalArmor || 0 }}</span>
+                }
+                @if (sector.buildings?.length) {
+                  <div class="stat-row">
+                    <span>Batiments</span>
+                    <span class="value">{{ sector.buildings!.length }}</span>
+                  </div>
+                }
+              </div>
+
+              @if (sector.stats) {
+                <div class="detail-section">
+                  <h3><mat-icon>shield</mat-icon> Statistiques</h3>
+                  <div class="stats-grid">
+                    <div class="mini-stat">
+                      <span class="label">ATK</span>
+                      <span class="value red">{{ sector.stats!.totalAtk || 0 }}</span>
+                    </div>
+                    <div class="mini-stat">
+                      <span class="label">PDF</span>
+                      <span class="value blue">{{ sector.stats!.totalPdf || 0 }}</span>
+                    </div>
+                    <div class="mini-stat">
+                      <span class="label">PDC</span>
+                      <span class="value blue">{{ sector.stats!.totalPdc || 0 }}</span>
+                    </div>
+                    <div class="mini-stat">
+                      <span class="label">DEF</span>
+                      <span class="value green">{{ sector.stats!.totalDef || 0 }}</span>
+                    </div>
+                    <div class="mini-stat">
+                      <span class="label">ARM</span>
+                      <span class="value purple">{{ sector.stats!.totalArmor || 0 }}</span>
+                    </div>
                   </div>
                 </div>
+              }
+            } @else {
+              <div class="detail-section restricted">
+                <h3><mat-icon>visibility_off</mat-icon> Informations restreintes</h3>
+                <p class="owner-name">
+                  {{
+                    sector.hasDefenders
+                      ? 'Défenseurs présents — composition inconnue'
+                      : 'Aucun défenseur détecté'
+                  }}
+                </p>
+                @if (sector.resource) {
+                  <div class="stat-row">
+                    <span>Ressource</span>
+                    <span class="value">{{ sector.resource }}</span>
+                  </div>
+                }
               </div>
             }
 

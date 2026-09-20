@@ -22,9 +22,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +39,12 @@ class SectorCaptureTest {
 
     @Mock
     VehicleRepository vehicleRepository;
+
+    @Mock
+    AllianceGraph allianceGraph;
+
+    @Mock
+    PendingCaptureService pendingCaptureService;
 
     @InjectMocks
     MovementService service;
@@ -69,6 +77,8 @@ class SectorCaptureTest {
         secteur4.addNeighbor(5); secteur5.addNeighbor(4);
 
         lenient().when(orderRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(allianceGraph.activeAdjacency()).thenReturn(Map.of());
+        lenient().when(allianceGraph.endedAlliancesAtTurn(anyInt())).thenReturn(List.of());
     }
 
     private Unit addUnit(Sector sector, Long playerId, long id, UnitClass unitClass) {

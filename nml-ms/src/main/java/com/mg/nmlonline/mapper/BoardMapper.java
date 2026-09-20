@@ -63,8 +63,8 @@ public class BoardMapper {
         return dto;
     }
 
-    /** Vue publique : pas de contenu privé d'autrui (argent/ressources des banques, équipements des caches et unités). */
-    public BoardDto toPublicDto(Board board) {
+    /** Vue filtrée par lecteur : détail complet uniquement sur ses secteurs (et secteurs alliés avec troupe). */
+    public BoardDto toPublicDto(Board board, SectorMapper.Visibility visibility) {
         if (board == null) return null;
 
         BoardDto dto = new BoardDto();
@@ -77,7 +77,7 @@ public class BoardMapper {
             Map<Integer, SectorDto> sectorsMap = board.getAllSectors().stream()
                     .collect(Collectors.toMap(
                             Sector::getNumber,
-                            sectorMapper::toPublicDto,
+                            sector -> sectorMapper.toPublicDto(sector, visibility),
                             (existing, replacement) -> existing,
                             LinkedHashMap::new
                     ));

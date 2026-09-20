@@ -19,6 +19,7 @@ export class HeadquartersPanelComponent {
   readonly currentTurn = input<number | null>(null);
 
   readonly move = output<Building>();
+  readonly openAlliance = output<void>();
 
   readonly status = computed(() => {
     const building = this.building();
@@ -28,5 +29,9 @@ export class HeadquartersPanelComponent {
   requestMove(): void {
     const building = this.building();
     if (building) this.move.emit(building);
+  }
+
+  requestAlliance(): void {
+    this.openAlliance.emit();
   }
 }

@@ -1,0 +1,205 @@
+@use '../../../styles/shared' as shared;
+
+:host {
+  display: block;
+}
+
+.alliance-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  mat-icon {
+    color: var(--accent);
+  }
+
+  .close-btn {
+    margin-left: auto;
+  }
+}
+
+.alliance-dialog {
+  padding-top: 0.5rem;
+
+  .subtitle {
+    margin: 0 0 1rem;
+    color: shared.$text-muted;
+    font-size: 0.9rem;
+  }
+}
+
+.error-banner {
+  @include shared.error-alert;
+  margin: 0 0 1rem;
+}
+
+.warning-banner {
+  @include shared.error-alert;
+  background: var(--sun-tint);
+  border-color: var(--sun-line);
+  color: var(--sun-deep);
+  margin: 0 0 1rem;
+}
+
+.bonus-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+  padding: 14px 16px;
+  border: 1.5px solid var(--accent-line);
+  border-left: 6px solid var(--accent);
+  border-radius: var(--r-sm);
+  background: var(--accent-tint);
+  color: var(--accent-ink);
+  font-size: 0.9rem;
+
+  mat-icon {
+    color: var(--accent);
+  }
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-weight: 600;
+  }
+}
+
+.card {
+  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+
+  h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-2);
+  }
+
+  h3 {
+    margin: 1rem 0 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: shared.$text-muted;
+  }
+}
+
+.hint {
+  color: shared.$text-muted;
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+.alliance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.alliance-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--r-sm);
+  border: 1.5px solid var(--line);
+
+  &.selected {
+    border-color: var(--ink);
+    background: var(--paper);
+  }
+
+  .alliance-select {
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .since {
+    margin-left: 0.4rem;
+    color: shared.$text-muted;
+    font-size: 0.8rem;
+    font-weight: 400;
+  }
+
+  .alliance-actions {
+    margin-left: auto;
+    display: inline-flex;
+    gap: 0.4rem;
+  }
+}
+
+.proposal-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed var(--line);
+
+  .proposal-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .proposal-actions {
+    margin-left: auto;
+    display: inline-flex;
+    gap: 0.4rem;
+  }
+}
+
+.propose-form,
+.chat-form {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  mat-form-field {
+    flex: 1;
+  }
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 320px;
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--r-sm);
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+
+  &.mine {
+    background: var(--accent-tint);
+    border-color: var(--accent-line);
+  }
+
+  .sender {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: shared.$text-muted;
+  }
+
+  .body {
+    white-space: pre-wrap;
+    color: var(--ink);
+  }
+}

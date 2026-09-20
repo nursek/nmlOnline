@@ -20,10 +20,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 // Propriété clé : une entité arrivée au step N est tangible pour tout arrivant au step N+1.
@@ -36,6 +39,12 @@ class MovementSimulationTest {
 
     @Mock
     VehicleRepository vehicleRepository;
+
+    @Mock
+    AllianceGraph allianceGraph;
+
+    @Mock
+    PendingCaptureService pendingCaptureService;
 
     @InjectMocks
     MovementService service;
@@ -115,6 +124,8 @@ class MovementSimulationTest {
         secteur4.getVehicles().add(vehiculeC);
 
         when(orderRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(allianceGraph.activeAdjacency()).thenReturn(Map.of());
+        lenient().when(allianceGraph.endedAlliancesAtTurn(anyInt())).thenReturn(List.of());
     }
 
     @Test

@@ -60,6 +60,42 @@
   margin: 0;
 }
 
+.announcements-card {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--r-sm);
+
+  h2 {
+    margin: 0 0 0.6rem;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-2);
+  }
+
+  .announcement {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px dashed var(--line-2);
+
+    mat-icon {
+      color: var(--forest);
+    }
+
+    &.betrayal mat-icon {
+      color: var(--accent);
+    }
+
+    .turn {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+  }
+}
+
 .report-list {
   display: flex;
   flex-direction: column;

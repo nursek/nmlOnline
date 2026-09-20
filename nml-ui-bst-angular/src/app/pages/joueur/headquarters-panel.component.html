@@ -36,7 +36,12 @@
       </div>
 
       <div class="building-actions">
-        <button mat-stroked-button color="primary" disabled matTooltip="Bientôt disponible">
+        <button
+          mat-stroked-button
+          color="primary"
+          matTooltip="Proposer, rompre ou trahir une alliance"
+          (click)="requestAlliance()"
+        >
           <mat-icon>handshake</mat-icon>
           Alliance
         </button>

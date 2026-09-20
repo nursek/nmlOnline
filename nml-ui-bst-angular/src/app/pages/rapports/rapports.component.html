@@ -13,6 +13,21 @@
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
   }
 
+  @if (announcements().length) {
+    <mat-card class="announcements-card">
+      <h2>Nouvelles publiques</h2>
+      @for (announcement of announcements(); track announcement.id) {
+        <div class="announcement" [class.betrayal]="announcement.type === 'BETRAYAL'">
+          <mat-icon>
+            {{ announcement.type === 'BETRAYAL' ? 'local_fire_department' : 'handshake' }}
+          </mat-icon>
+          <span class="label">{{ announcementLabel(announcement) }}</span>
+          <span class="turn">tour {{ announcement.turnCreated }}</span>
+        </div>
+      }
+    </mat-card>
+  }
+
   @if (error()) {
     <div class="error-banner" role="alert">⚠ {{ error() }}</div>
   }

@@ -491,12 +491,13 @@ textarea:focus-visible,
 }
 
 .mat-mdc-dialog-container {
-  --mdc-dialog-container-color: var(--surface);
-  --mdc-dialog-container-shape: var(--r-md);
-  --mdc-dialog-subhead-color: var(--ink);
-  --mdc-dialog-supporting-text-color: var(--ink-2);
+  --mat-dialog-container-color: var(--paper);
+  --mat-dialog-container-shape: var(--r-md);
+  --mat-dialog-container-elevation-shadow: none;
+  --mat-dialog-subhead-color: var(--ink);
+  --mat-dialog-supporting-text-color: var(--ink-2);
 
-  .mdc-dialog__surface {
+  .mat-mdc-dialog-surface {
     border: 1.5px solid var(--ink);
     box-shadow: var(--shadow-pop);
   }

@@ -99,15 +99,6 @@ $text-muted: var(--muted);
   gap: 10px;
   margin-bottom: 14px;
 
-  &::before {
-    content: '';
-    width: 11px;
-    height: 11px;
-    flex: 0 0 auto;
-    background: var(--accent);
-    border: 1.5px solid var(--ink);
-  }
-
   h2 {
     margin: 0;
     font-family: var(--font-sans);

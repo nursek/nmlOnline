@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, effect, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -10,7 +11,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { TurnResolutionService } from '../../services/turn-resolution.service';
-import { ResolvedBattle } from '../../models';
+import { ApiService } from '../../services/api.service';
+import { PendingCapture, ResolvedBattle } from '../../models';
 import { CombatLogDialogComponent } from './combat-log-dialog.component';
 
 /**
@@ -40,8 +42,11 @@ import { CombatLogDialogComponent } from './combat-log-dialog.component';
 })
 export class TurnResolutionComponent {
   private readonly resolution = inject(TurnResolutionService);
+  private readonly api = inject(ApiService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+
+  readonly pendingCaptures = signal<PendingCapture[]>([]);
 
   readonly state = this.resolution.state;
   readonly busy = this.resolution.busy;
@@ -56,6 +61,7 @@ export class TurnResolutionComponent {
 
   constructor() {
     void this.resolution.loadState();
+    void this.loadPendingCaptures();
 
     // Feedback snackbar sur le dernier rapport de bataille / finalisation.
     effect(() => {
@@ -170,5 +176,34 @@ export class TurnResolutionComponent {
     void this.resolution.seedExchangeScenario().catch(() => {
       /* service positionne déjà le signal d'erreur */
     });
+  }
+
+  async loadPendingCaptures(): Promise<void> {
+    try {
+      this.pendingCaptures.set(await firstValueFrom(this.api.adminGetPendingCaptures()));
+    } catch {
+      // Section secondaire : pas d'erreur bloquante.
+    }
+  }
+
+  async onResolvePendingCapture(pending: PendingCapture, playerId: number, playerName: string): Promise<void> {
+    try {
+      await firstValueFrom(this.api.adminResolvePendingCapture(pending.id, playerId));
+      this.snackBar.open(`Secteur ${pending.sectorNumber} attribué à ${playerName}`, 'OK', {
+        duration: 4000,
+      });
+      await this.loadPendingCaptures();
+    } catch {
+      this.snackBar.open("Échec de l'attribution", 'OK', { duration: 4000 });
+    }
+  }
+
+  async onDismissPendingCapture(pending: PendingCapture): Promise<void> {
+    try {
+      await firstValueFrom(this.api.adminDismissPendingCapture(pending.id));
+      await this.loadPendingCaptures();
+    } catch {
+      this.snackBar.open('Échec', 'OK', { duration: 4000 });
+    }
   }
 }

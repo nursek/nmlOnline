@@ -172,6 +172,10 @@ describe('movement.helpers', () => {
       expect(sectorKind(sector(3, 2), 1)).toBe('enemy');
       expect(sectorKind(null, 1)).toBe('unknown');
     });
+
+    it('marque le secteur d’un allié', () => {
+      expect(sectorKind(sector(3, 2), 1, new Set([2]))).toBe('ally');
+    });
   });
 
   describe('movableEntities', () => {

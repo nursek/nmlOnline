@@ -33,13 +33,15 @@ public class BattleReportService {
         this.objectMapper = objectMapper;
     }
 
-    public void saveDuelReport(int turn, int sectorNumber, Player attacker, Player defender,
+    public void saveDuelReport(int turn, int sectorNumber, List<Player> attackerCamp, List<Player> defenderCamp,
                                CombatService.SectorBattleResult result) {
         if (!result.success()) {
             return;
         }
-        Map<Long, String> names = Map.of(attacker.getId(), attacker.getName(),
-                defender.getId(), defender.getName());
+        List<Player> participants = new ArrayList<>(attackerCamp);
+        participants.addAll(defenderCamp);
+        Map<Long, String> names = participants.stream()
+                .collect(Collectors.toMap(Player::getId, Player::getName, (a, b) -> a));
 
         BattleReportDto dto = new BattleReportDto();
         dto.setTurn(turn);
@@ -49,15 +51,20 @@ public class BattleReportService {
         dto.setWinnerName(result.winner() != null ? result.winner().getName() : null);
         dto.setCapturedBuildings(result.capturedBuildings());
 
-        boolean attackerEliminated = result.winner() != null && result.winner().getId().equals(defender.getId());
-        boolean defenderEliminated = result.winner() != null && result.winner().getId().equals(attacker.getId());
-        dto.setCamps(List.of(
-                camp(attacker, attackerEliminated, result.attackerCharacterLost()),
-                camp(defender, defenderEliminated, result.defenderCharacterLost())));
+        boolean attackerEliminated = result.winner() != null && defenderCamp.stream()
+                .anyMatch(player -> player.getId().equals(result.winner().getId()));
+        boolean defenderEliminated = result.winner() != null && attackerCamp.stream()
+                .anyMatch(player -> player.getId().equals(result.winner().getId()));
+        List<BattleReportDto.CampDto> camps = new ArrayList<>();
+        attackerCamp.forEach(player -> camps.add(
+                camp(player, attackerEliminated, result.attackerCharacterLost())));
+        defenderCamp.forEach(player -> camps.add(
+                camp(player, defenderEliminated, result.defenderCharacterLost())));
+        dto.setCamps(camps);
 
         dto.setCasualties(mapCasualties(result.casualtyDetails(), names));
         dto.setExperienceGains(mapExperienceGains(result.experienceGains(), names));
-        persist(dto, List.of(attacker.getId(), defender.getId()));
+        persist(dto, participants.stream().map(Player::getId).toList());
     }
 
     public void saveStandoffReport(int turn, int sectorNumber, List<Player> participants,
