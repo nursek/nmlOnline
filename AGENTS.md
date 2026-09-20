@@ -49,42 +49,10 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 - Logique non triviale = **un** test qui casse si la logique casse. Pas de suite par fonction.
 - **Commentaires** : zéro par défaut — relire les lignes `+` de `git diff -U0` avant de rendre
   la main (voir « Commentaires »). Un `catch` vide ne survit que justifié en une ligne.
-- **Règles du jeu** : toute modification de gameplay met à jour [`## Règles du jeu`](#règles-du-jeu)
-  **dans le même commit** — le code et cette section ne divergent jamais.
-
-## Règles du jeu
-
-Source de vérité = le code ; toute évolution de gameplay met cette section à jour **dans le même commit**.
-
-- **Tour** : ordres de mouvement simultanés, résolus en fin de tour par le MJ (hop par hop, batailles
-  tranchées manuellement). Un ordre à pied = 1 secteur (2 pour la classe LEGER) ; véhicule = sa `speed`.
-  Le tour s'incrémente à la finalisation. Les annonces d'alliance/trahison d'un tour ne sont publiques
-  qu'au tour suivant.
-- **Camps** : deux alliés fusionnent en un seul camp **si chacun n'a que l'autre comme allié présent** ;
-  sinon chaque joueur est un camp séparé. Un joueur-pont (allié aux deux) ne frappe pas ses alliés
-  et passe s'il ne lui reste aucun ennemi.
-- **Duel** : exactement 2 camps (2v1 solidaire possible). **Impasse** : 3+ camps, ronde ordonnée
-  défenseurs (par id) puis arrivants (par heure d'ordre) ; chaque camp frappe le prochain camp
-  **non-allié** de la ronde, un camp sans ennemi passe. Stationnaires sans arrivée : pas de combat.
-- **Capture** : un camp unique avec survivant(s) — un seul survivant → capture directe ; plusieurs
-  alliés survivants → secteur neutre, le MJ attribue (immédiat). Bâtiments du camp perdant capturés
-  par le joueur dominant du camp vainqueur ; QG capturé = défaite.
-- **Alliances** : paires de 2 joueurs, plusieurs simultanées, **non transitives** (A-B et B-C
-  n'unissent pas A et C). QG opérationnel requis pour proposer/accepter/rupture amiable ; trahison
-  possible sans QG. Chat 1-à-1 entre les deux membres.
-  - **Trahison** (unilatérale) : bonus `15 % + 10 % × tours d'alliance`, **sans plafond**, actif
-    uniquement le tour de la trahison, en attaque comme en défense contre l'ex-allié.
-  - **Rupture amiable** : proposition + validation de l'autre, effective à l'acceptation, sans bonus.
-  - **Libre passage** : un allié ne bloque ni transit ni capture, on peut stationner/défendre chez
-    lui ; un secteur allié n'est jamais capturé. Un bâtiment ne se déplace que dans ses propres secteurs.
-  - **Après rupture/trahison** : les ex-alliés co-localisés se battent le tour de la rupture seulement.
-  - **Annonces publiques** (page Rapports) : formation, rupture et trahison révélées au tour suivant.
-- **Visibilité secteur** : public = nom, propriétaire/couleur, ressource, voisins, position, booléen
-  « défenseurs présents ». Détail complet (revenu, stats, armée, personnages, véhicules, bâtiments) =
-  propriétaire, ou allié **avec une entité sur place**. Neutre/ennemi : restreint même avec troupe.
-- **Échange** : offres d'argent (hors dotation de départ) et/ou ressources ; 3 offres en attente max
-  par émetteur ; expirent au tour suivant ; seul le destinataire accepte/refuse, l'émetteur annule.
-- **Pas d'échange d'unités ni d'armes** entre joueurs, alliés compris.
+- **Règles du jeu** : elles vivent dans la page Règles
+  (`nml-ui-bst-angular/src/app/pages/regles/`). Toute modification structurelle du gameplay
+  (tour, combat, capture, alliance, échange, visibilité…) doit vérifier que cette page est
+  toujours correcte et la mettre à jour **dans le même commit**.
 
 ## Backend
 

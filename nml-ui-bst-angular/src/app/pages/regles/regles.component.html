@@ -84,7 +84,7 @@
             Une unité d'infanterie qui survit à un combat avec une défense entamée devient
             <strong>blessée</strong> : ses statistiques de base (Attaque et Défense) sont divisées
             par 2. Aucun soin d'infanterie n'existe à ce jour. Le personnage, lui, n'est jamais
-            blessé.
+            blessé : il récupère une part de sa défense (50 points) à chaque tour.
           </p>
         </mat-expansion-panel>
 
@@ -175,6 +175,141 @@
           </div>
         </mat-expansion-panel>
 
+        <mat-expansion-panel id="deplacements" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>directions_walk</mat-icon>Déplacements</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Chaque tour, un joueur transmet ses ordres de déplacement. Tous les ordres du tour sont
+            résolus simultanément à la fin de celui-ci, secteur par secteur. Un ordre à pied fait
+            avancer le groupe d'un secteur (deux pour les unités de classe LEGER), le personnage se
+            déplace d'un secteur, et un véhicule emporte son équipage sur autant de secteurs que sa
+            vitesse.
+          </p>
+          <ul class="rule-list">
+            <li>
+              <strong>Un ordre par entité</strong> — une unité ou un personnage déjà engagé dans un
+              ordre ne peut pas en recevoir un second ; un ordre peut être annulé tant que le tour
+              n'est pas résolu.
+            </li>
+            <li>
+              <strong>Arrivée contestée</strong> — pénétrer dans un secteur occupé par des troupes
+              adverses déclenche un affrontement à la résolution ; si trois camps ou plus s'y
+              retrouvent, c'est l'impasse mexicaine.
+            </li>
+            <li>
+              <strong>Équipage</strong> — le pilote et les passagers d'un véhicule voyagent avec lui
+              et sont exclus des ordres à pied tant qu'ils sont à bord.
+            </li>
+            <li>
+              <strong>Capture</strong> — à la fin du tour, un camp seul présent sur un secteur ennemi
+              ou neutre le capture (voir Affrontements).
+            </li>
+          </ul>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="vehicules" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>directions_car</mat-icon>Véhicules</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Les véhicules s'achètent à la boutique et se déploient dans un de vos secteurs. Chaque
+            type a sa vitesse (1 à 4 secteurs par tour) et sa capacité de passagers (0 à 50, pilote
+            non compté).
+          </p>
+          <ul class="rule-list">
+            <li>
+              <strong>Pilote obligatoire</strong> — le pilote est votre personnage ou une unité de
+              classe PILOTE_DESTRUCTEUR ; sans pilote, le véhicule ne peut pas bouger, et un pilote
+              ne peut conduire qu'un seul véhicule.
+            </li>
+            <li>
+              <strong>Réservé au propriétaire</strong> — l'équipage est choisi parmi vos entités
+              présentes dans le même secteur que le véhicule, et les passagers ne peuvent pas
+              dépasser la capacité du type.
+            </li>
+            <li>
+              <strong>Hors combat</strong> — les véhicules ne participent pas aux affrontements de
+              secteur : ce sont les unités et les personnages qui se battent.
+            </li>
+          </ul>
+          <div class="draft">
+            <mat-icon>construction</mat-icon>
+            <p>
+              À venir : interception d'un véhicule en transit, tirs en transit et débarquement de
+              l'équipage si le véhicule est détruit.
+            </p>
+          </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="batiments" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>apartment</mat-icon>Bâtiments</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Chaque joueur possède trois bâtiments : le quartier général, la banque et le cache
+            d'armes. Ce sont des entités combattantes : ils peuvent être endommagés, détruits,
+            capturés et déplacés.
+          </p>
+          <ul class="rule-list">
+            <li>
+              <strong>Quartier général</strong> — nécessaire pour gérer une alliance. Il représente
+              25 % de votre fortune. Détruit, il devient inopérant : vous pouvez le reconstruire sur
+              place pour <strong>75 000 ₡</strong>.
+            </li>
+            <li>
+              <strong>Banque</strong> — stocke de l'argent (75 % de votre fortune) et des ressources.
+              Capturée, son contenu est transféré au vainqueur.
+            </li>
+            <li>
+              <strong>Cache d'armes</strong> — stocke jusqu'à 300 équipements. Capturée, son contenu
+              rejoint l'inventaire du vainqueur.
+            </li>
+            <li>
+              <strong>Déplacement</strong> — un bâtiment ne se déplace que dans un secteur que vous
+              possédez : le QG une fois tous les 5 tours, la banque une seule fois (à partir du tour
+              5), le cache d'armes sans cooldown.
+            </li>
+            <li>
+              <strong>Capture</strong> — un bâtiment du camp perdant est capturé par le vainqueur
+              (voir Affrontements).
+            </li>
+          </ul>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="economie" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>payments</mat-icon>Économie et échange</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            L'argent vient de la dotation de départ et de la vente des ressources de votre
+            inventaire. La dotation de départ n'est pas transférable : seule la part gagnée peut être
+            offerte ou échangée.
+          </p>
+          <ul class="rule-list">
+            <li>
+              <strong>Vente de ressources</strong> — le prix dépend de la quantité vendue d'un seul
+              coup, en multiples de la valeur de base de la ressource : ×1 (1), ×3 (2), ×6 (3), ×9
+              (4), ×13 (5), ×19,5 (6), ×24,5 (7), ×33 (8), ×45 (9 et plus).
+            </li>
+            <li>
+              <strong>Échange</strong> — un joueur peut proposer une offre d'argent et/ou de
+              ressources à un autre. Trois offres en attente maximum par émetteur ; elles expirent au
+              tour suivant. Seul le destinataire peut accepter ou refuser, l'émetteur peut annuler.
+            </li>
+            <li>
+              <strong>Pas d'échange d'unités ni d'armes</strong>, entre alliés compris.
+            </li>
+          </ul>
+          <div class="draft">
+            <mat-icon>construction</mat-icon>
+            <p>
+              À venir : les revenus des secteurs et la vampirisation des banques capturées sont
+              affichés mais pas encore crédités automatiquement.
+            </p>
+          </div>
+        </mat-expansion-panel>
+
         <mat-expansion-panel id="boutique" class="rule-panel">
           <mat-expansion-panel-header>
             <mat-panel-title
@@ -260,7 +395,8 @@
           <p class="text">
             Quand trois armées ou plus se disputent le même secteur au même hop, le combat se résout
             en <strong>impasse mexicaine</strong> : les camps forment un cercle et chacun frappe le
-            suivant, en simultané. Le défenseur en place ouvre le cercle, puis les arrivants suivent
+            camp suivant — le prochain camp <strong>non allié</strong> si des alliances sont en jeu —,
+            en simultané. Le défenseur en place ouvre le cercle, puis les arrivants suivent
             par ordre d'envoi de leur premier ordre du tour, le dernier arrivant frappant le
             défenseur. Les frappes d'une même phase sont résolues ensemble : un camp détruit pendant
             une phase frappe quand même, ses pertes ne comptant qu'à partir de la phase suivante.
@@ -271,6 +407,61 @@
             aucun bâtiment n'est capturé. Un affrontement à exactement deux camps suit les règles
             classiques ci-dessus.
           </p>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="alliances" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>handshake</mat-icon>Alliances</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Une alliance unit exactement deux joueurs. On peut en avoir plusieurs en même temps, mais
+            elles ne sont pas transitives : si A est allié à B et B à C, A et C ne sont pas alliés
+            pour autant. La gestion se fait depuis le bouton <strong>Alliance</strong> du quartier
+            général : proposer, accepter, refuser, rompre à l'amiable ou trahir.
+          </p>
+          <p class="text">
+            Un <strong>QG opérationnel</strong> est requis pour proposer, accepter ou valider une
+            rupture amiable ; la trahison reste possible même sans QG. Les deux alliés disposent d'un
+            <strong>chat privé</strong>.
+          </p>
+          <ul class="rule-list">
+            <li>
+              <strong>Combat solidaire</strong> — deux alliés qui n'ont que l'autre comme allié
+              présent sur le secteur se battent comme une seule armée (2 contre 1 possible). Un
+              joueur allié aux deux camps ne frappe jamais ses alliés : il passe son tour s'il ne lui
+              reste aucun ennemi à frapper.
+            </li>
+            <li>
+              <strong>Libre passage</strong> — on peut traverser et stationner chez un allié pour le
+              défendre ; ses troupes ne bloquent ni la traversée ni la capture, et son secteur ne peut
+              pas être capturé. En revanche, un bâtiment ne se déplace que dans ses propres secteurs.
+            </li>
+            <li>
+              <strong>Conquête commune</strong> — si un camp allié gagne avec plusieurs survivants, le
+              secteur reste neutre jusqu'à l'arbitrage du MJ. Les bâtiments du camp perdant reviennent
+              au joueur dominant du camp vainqueur.
+            </li>
+            <li>
+              <strong>Trahison</strong> — rompre l'alliance unilatéralement offre au traître
+              <strong>+15 %, plus +10 % par tour d'alliance</strong> (sans plafond), uniquement le
+              tour de la trahison, en attaque comme en défense contre son ex-allié.
+            </li>
+            <li>
+              <strong>Rupture amiable</strong> — proposée puis validée par l'autre joueur, sans aucun
+              bonus. Après une rupture comme après une trahison, les ex-alliés présents sur le même
+              secteur se battent le tour de la rupture : il faut dégager ses unités.
+            </li>
+            <li>
+              <strong>Annonces</strong> — formation, rupture et trahison sont révélées publiquement au
+              tour suivant, dans <strong>Rapports</strong>.
+            </li>
+            <li>
+              <strong>Visibilité</strong> — un secteur d'autrui n'affiche que son nom, son
+              propriétaire, sa ressource, ses voisins et la présence de défenseurs. Le détail complet
+              (revenu, statistiques, armée, bâtiments) n'est visible que par le propriétaire ou par un
+              allié qui a une de ses entités sur place.
+            </li>
+          </ul>
         </mat-expansion-panel>
 
         <mat-expansion-panel id="frontieres" class="rule-panel">
