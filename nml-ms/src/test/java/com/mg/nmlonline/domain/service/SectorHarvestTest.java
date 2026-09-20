@@ -14,6 +14,7 @@ import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,16 @@ class SectorHarvestTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @BeforeEach
+    void pinSharedBoardState() {
+        // Board partagé par toute la suite : une classe commitante (TurnServiceTest…) a pu laisser turn/revenueClaimedTurn.
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        board.setCurrentTurn(1);
+        board.setRevenueClaimedTurn(null);
+        entityManager.flush();
+        turnService.invalidateTurnCache();
+    }
 
     @AfterEach
     void clearTurnCache() {
