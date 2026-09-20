@@ -8,5 +8,11 @@ public enum PlayerActionType {
     BUY_VEHICLE,
     PLACE_VEHICLE,
     MOVE_BUILDING,
-    SET_VEHICLE_CREW
+    SET_VEHICLE_CREW,
+    HARVEST_MONEY,
+    HARVEST_RESOURCE;
+
+    public boolean isHarvest() {
+        return this == HARVEST_MONEY || this == HARVEST_RESOURCE;
+    }
 }

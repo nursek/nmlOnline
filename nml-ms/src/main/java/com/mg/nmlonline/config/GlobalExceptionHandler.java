@@ -1,5 +1,6 @@
 package com.mg.nmlonline.config;
 
+import com.mg.nmlonline.domain.exception.HarvestClosedException;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.exception.PlayerActionUndoException;
 import jakarta.persistence.EntityNotFoundException;
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -42,6 +44,22 @@ public class GlobalExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
         problem.setTitle("Bad Request");
         return ResponseEntity.badRequest().body(problem);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ProblemDetail> handleUnreadableBody(HttpMessageNotReadableException e) {
+        logger.debug("Unreadable request body: {}", e.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Corps de requête invalide");
+        problem.setTitle("Bad Request");
+        return ResponseEntity.badRequest().body(problem);
+    }
+
+    @ExceptionHandler(HarvestClosedException.class)
+    public ResponseEntity<ProblemDetail> handleHarvestClosed(HarvestClosedException e) {
+        logger.debug("Harvest closed: {}", e.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+        problem.setTitle("Conflict");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
 
     @ExceptionHandler(PlayerActionUndoException.class)

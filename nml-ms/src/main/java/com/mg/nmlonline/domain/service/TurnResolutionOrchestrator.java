@@ -45,6 +45,7 @@ public class TurnResolutionOrchestrator {
     private final BattleReportService battleReportService;
     private final TurnService turnService;
     private final GameCharacterService characterService;
+    private final HarvestAutoCollector harvestAutoCollector;
 
     private volatile Session session;
 
@@ -56,7 +57,8 @@ public class TurnResolutionOrchestrator {
                                       CombatService combatService,
                                       BattleReportService battleReportService,
                                       TurnService turnService,
-                                      GameCharacterService characterService) {
+                                      GameCharacterService characterService,
+                                      HarvestAutoCollector harvestAutoCollector) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
@@ -65,6 +67,7 @@ public class TurnResolutionOrchestrator {
         this.battleReportService = battleReportService;
         this.turnService = turnService;
         this.characterService = characterService;
+        this.harvestAutoCollector = harvestAutoCollector;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -76,7 +79,7 @@ public class TurnResolutionOrchestrator {
             Board board = loadBoard();
             int turnEnding = board.getCurrentTurn();
             MovementService.ResolutionContext ctx = movementService.prepareResolution(turnEnding, board);
-            Session s = new Session(ctx, turnEnding);
+            Session s = new Session(ctx, turnEnding, HarvestAutoCollector.ownersBySector(board));
             // Conflits de rupture/trahison détectés dès la préparation (ex-alliés co-localisés).
             for (SectorConflict conflict : ctx.getConflicts()) {
                 s.pendingConflicts.add(new PendingConflict(++s.conflictIdSeq, conflict));
@@ -171,6 +174,9 @@ public class TurnResolutionOrchestrator {
         Board board = loadBoard();
         movementService.refreshActiveOrders(s.ctx);
         try {
+            // Propriété d'avant combats/déplacements : un secteur capturé pendant la résolution ne paie pas deux fois.
+            harvestAutoCollector.collectRemainingMoney(board, s.turnEnding, s.sectorOwners);
+
             MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
             characterService.regenerateAllCharacters();
             board.setCurrentTurn(s.turnEnding + 1);
@@ -372,13 +378,15 @@ public class TurnResolutionOrchestrator {
     private static final class Session {
         final MovementService.ResolutionContext ctx;
         final int turnEnding;
+        final Map<Integer, Long> sectorOwners;
         final List<PendingConflict> pendingConflicts = new ArrayList<>();
         final List<ResolvedBattle> resolvedConflicts = new ArrayList<>();
         int conflictIdSeq = 0;
 
-        Session(MovementService.ResolutionContext ctx, int turnEnding) {
+        Session(MovementService.ResolutionContext ctx, int turnEnding, Map<Integer, Long> sectorOwners) {
             this.ctx = ctx;
             this.turnEnding = turnEnding;
+            this.sectorOwners = sectorOwners;
         }
     }
 

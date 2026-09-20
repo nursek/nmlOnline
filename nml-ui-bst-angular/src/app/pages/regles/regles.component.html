@@ -337,6 +337,36 @@
           </p>
         </mat-expansion-panel>
 
+        <mat-expansion-panel id="recolte" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>agriculture</mat-icon>Récolte des revenus</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            À partir du <strong>tour 2</strong>, chaque secteur possédé peut être récolté
+            <strong>une fois par tour</strong>, à tout moment : soit son revenu en argent, soit
+            <strong>1 unité</strong> de sa ressource. Le crédit est immédiat.
+          </p>
+          <p class="text">
+            Un secteur non récolté verse automatiquement son revenu en argent au début de la
+            résolution du tour, avant les combats et les déplacements : récolter la ressource d'un
+            secteur fait donc renoncer à son revenu pour ce tour. Le revenu revient au propriétaire
+            du secteur à cet instant, même s'il est capturé pendant les combats.
+          </p>
+          <p class="text">
+            Dès que la résolution du tour commence, la récolte manuelle est fermée jusqu'au tour
+            suivant.
+          </p>
+          <div class="callout">
+            <mat-icon>undo</mat-icon>
+            <p>
+              Une récolte peut être annulée tant que l'argent ou la ressource est encore en votre
+              possession, mais l'annulation entraîne aussi celle des actions suivantes du tour. Elle
+              est refusée si le revenu a été dépensé ou transféré, ou si la ressource a été vendue
+              ou échangée.
+            </p>
+          </div>
+        </mat-expansion-panel>
+
         <mat-expansion-panel id="combat" class="rule-panel">
           <mat-expansion-panel-header>
             <mat-panel-title><mat-icon>sports_esports</mat-icon>Affrontements</mat-panel-title>

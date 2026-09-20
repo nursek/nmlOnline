@@ -38,6 +38,9 @@ public class PlayerActionMapper {
             case PLACE_VEHICLE -> "Placement d'un véhicule sur le secteur " + action.getToSectorNumber();
             case MOVE_BUILDING -> "Déplacement vers le secteur " + action.getToSectorNumber();
             case SET_VEHICLE_CREW -> "Équipage du véhicule #" + action.getVehicleId() + " modifié";
+            case HARVEST_MONEY -> "Récolte des revenus — secteur " + action.getFromSectorNumber();
+            case HARVEST_RESOURCE -> "Récolte de « " + action.getResourceName() + " » — secteur "
+                    + action.getFromSectorNumber();
         };
     }
 }

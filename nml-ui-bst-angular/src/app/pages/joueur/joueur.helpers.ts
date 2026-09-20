@@ -3,6 +3,7 @@ import type {
   EquipmentStack,
   GameCharacter,
   Player,
+  PlayerAction,
   Sector,
   Unit,
   Vehicle,
@@ -114,6 +115,40 @@ const sumUnits = (units: Unit[]): ForcesTotals =>
 
 export function incomeTotal(sectors: Sector[]): number {
   return sectors.reduce((sum, s) => sum + num(s.income), 0);
+}
+
+export interface SectorHarvestState {
+  sector: Sector;
+  action: PlayerAction | null;
+  choice: 'MONEY' | 'RESOURCE' | null;
+  money: number;
+  resource: string | null;
+}
+
+/** `choice` null = secteur pas encore récolté ce tour. */
+export function sectorHarvestStates(
+  sectors: Sector[],
+  actions: PlayerAction[],
+): SectorHarvestState[] {
+  const bySector = new Map<number, PlayerAction>();
+  for (const action of actions) {
+    if (
+      (action.type === 'HARVEST_MONEY' || action.type === 'HARVEST_RESOURCE') &&
+      action.fromSectorNumber != null
+    ) {
+      bySector.set(action.fromSectorNumber, action);
+    }
+  }
+  return sectors.map((sector) => {
+    const action = sector.number != null ? (bySector.get(sector.number) ?? null) : null;
+    return {
+      sector,
+      action,
+      choice: action == null ? null : action.type === 'HARVEST_MONEY' ? 'MONEY' : 'RESOURCE',
+      money: num(sector.income),
+      resource: sector.resource ?? null,
+    };
+  });
 }
 
 export function unitStats(u: Unit): StatToken[] {

@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { PlayerService } from './player.service';
-import { PlayerAction } from '../models';
+import { PlayerAction, HarvestChoice } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 
 @Injectable({ providedIn: 'root' })
@@ -32,23 +32,42 @@ export class PlayerActionsService {
   }
 
   async undoFrom(actionId: number): Promise<boolean> {
-    return this.runUndo(() => this.api.undoPlayerActions(actionId));
+    return this.runMutation(
+      () => this.api.undoPlayerActions(actionId),
+      "Erreur lors de l'annulation de l'action",
+    );
   }
 
   async undoAll(): Promise<boolean> {
-    return this.runUndo(() => this.api.undoAllPlayerActions());
+    return this.runMutation(
+      () => this.api.undoAllPlayerActions(),
+      "Erreur lors de l'annulation de l'action",
+    );
   }
 
-  private async runUndo(request: () => ReturnType<ApiService['getPlayerActions']>): Promise<boolean> {
+  async harvest(choice: HarvestChoice, sectorNumbers: number[]): Promise<boolean> {
+    return this.runMutation(
+      () => this.api.harvest(choice, sectorNumbers),
+      'Erreur lors de la récolte',
+    );
+  }
+
+  private async runMutation(
+    request: () => ReturnType<ApiService['getPlayerActions']>,
+    errorMessage: string,
+  ): Promise<boolean> {
     this._error.set(null);
+    this._loading.set(true);
     try {
       this._actions.set(await firstValueFrom(request()));
       void this.playerService.loadCurrent();
       void this.playerService.loadVehicles();
       return true;
     } catch (error) {
-      this._error.set(httpErrorMessage(error, "Erreur lors de l'annulation de l'action"));
+      this._error.set(httpErrorMessage(error, errorMessage));
       return false;
+    } finally {
+      this._loading.set(false);
     }
   }
 }

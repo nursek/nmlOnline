@@ -1,0 +1,111 @@
+@use '../../../styles/shared' as shared;
+
+.card--harvest {
+  @include shared.card;
+  --section-accent: var(--forest);
+
+  margin-bottom: 28px;
+  border-top: 5px solid var(--section-accent);
+  background: color-mix(in srgb, var(--section-accent) 4%, var(--surface));
+}
+
+.section-header {
+  @include shared.section-header;
+
+  > mat-icon {
+    color: var(--section-accent, #{shared.$primary-color});
+  }
+}
+
+.section-subtitle {
+  color: shared.$text-muted;
+  margin: 0 0 20px;
+  font-size: 0.875rem;
+}
+
+.empty-state {
+  @include shared.empty-state;
+}
+
+.harvest-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.harvest-done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: var(--forest-deep);
+  font-size: 0.875rem;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.harvest-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.harvest-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+
+  &--done {
+    border-color: color-mix(in srgb, var(--forest) 45%, var(--line));
+    background: color-mix(in srgb, var(--forest) 7%, var(--surface));
+  }
+}
+
+.harvest-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: auto;
+}
+
+.harvest-sector {
+  font-weight: 600;
+}
+
+.harvest-meta {
+  font-size: 0.8rem;
+  color: shared.$text-muted;
+}
+
+.harvest-result {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--forest-deep);
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.harvest-choice {
+  display: flex;
+  gap: 8px;
+}

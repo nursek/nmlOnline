@@ -1,9 +1,11 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.PlayerActionDto;
+import com.mg.nmlonline.domain.exception.HarvestClosedException;
 import com.mg.nmlonline.domain.exception.PlayerActionUndoException;
 import com.mg.nmlonline.domain.model.action.PlayerAction;
 import com.mg.nmlonline.domain.model.action.PlayerActionStatus;
+import com.mg.nmlonline.domain.model.action.PlayerActionType;
 import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
@@ -29,12 +31,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 // LIFO par suffixe : pré-requis d'annulation (ex. déséquiper) toujours satisfaits.
 @Service
 @Transactional
 public class PlayerActionService {
+
+    private static final int FIRST_HARVEST_TURN = 2;
 
     private final PlayerActionRepository actionRepository;
     private final PlayerRepository playerRepository;
@@ -45,6 +54,8 @@ public class PlayerActionService {
     private final MovementOrderRepository movementOrderRepository;
     private final VehicleCrewService vehicleCrewService;
     private final TurnService turnService;
+    private final TurnLock turnLock;
+    private final HarvestAutoCollector harvestAutoCollector;
     private final PlayerActionMapper actionMapper;
     private final EntityManager em;
 
@@ -57,6 +68,8 @@ public class PlayerActionService {
                                MovementOrderRepository movementOrderRepository,
                                VehicleCrewService vehicleCrewService,
                                TurnService turnService,
+                               TurnLock turnLock,
+                               HarvestAutoCollector harvestAutoCollector,
                                PlayerActionMapper actionMapper,
                                EntityManager em) {
         this.actionRepository = actionRepository;
@@ -68,6 +81,8 @@ public class PlayerActionService {
         this.movementOrderRepository = movementOrderRepository;
         this.vehicleCrewService = vehicleCrewService;
         this.turnService = turnService;
+        this.turnLock = turnLock;
+        this.harvestAutoCollector = harvestAutoCollector;
         this.actionMapper = actionMapper;
         this.em = em;
     }
@@ -109,6 +124,70 @@ public class PlayerActionService {
                 prevPilotId, prevPassengerIds));
     }
 
+    // Un secteur = une ligne : la cascade LIFO du journal suffit pour changer son choix.
+    public List<PlayerActionDto> harvest(Long userId, PlayerActionType choice, List<Integer> sectorNumbers) {
+        if (choice == null || !choice.isHarvest()) {
+            throw new IllegalArgumentException("Choix de récolte invalide");
+        }
+        if (sectorNumbers == null || sectorNumbers.isEmpty()) {
+            throw new IllegalArgumentException("Aucun secteur à récolter");
+        }
+
+        Player locked = lockPlayerByUserId(userId);
+        int turn = turnService.getCurrentTurn();
+        if (turn < FIRST_HARVEST_TURN) {
+            throw new IllegalStateException("La récolte est disponible à partir du tour " + FIRST_HARVEST_TURN);
+        }
+        // Le claim des revenus est figé au début de la résolution : un secteur ne peut plus payer.
+        if (turnLock.isLocked() || harvestAutoCollector.hasClaimedRevenue(turn)) {
+            throw new HarvestClosedException(
+                    "La résolution du tour est en cours — la récolte est fermée jusqu'au tour suivant");
+        }
+
+        Map<Integer, Sector> owned = sectorRepository.findByOwnerId(locked.getId()).stream()
+                .collect(Collectors.toMap(Sector::getNumber, sector -> sector, (a, b) -> a));
+        // Global par secteur : un secteur ne paie qu'une fois, même si sa propriété a changé.
+        Set<Integer> alreadyHarvested = actionRepository
+                .findByTurnAndStatus(turn, PlayerActionStatus.ACTIVE)
+                .stream()
+                .filter(action -> action.getType().isHarvest())
+                .map(PlayerAction::getFromSectorNumber)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<Integer> requested = new LinkedHashSet<>();
+        for (Integer number : sectorNumbers) {
+            if (number == null || !requested.add(number)) {
+                throw new IllegalArgumentException("Secteur dupliqué ou invalide : " + number);
+            }
+        }
+
+        List<PlayerAction> recorded = new ArrayList<>();
+        for (Integer number : requested) {
+            Sector sector = owned.get(number);
+            if (sector == null) {
+                throw new SecurityException("Le secteur " + number + " ne vous appartient pas");
+            }
+            if (alreadyHarvested.contains(number)) {
+                throw new IllegalStateException("Le secteur " + number + " a déjà été récolté ce tour");
+            }
+            if (choice == PlayerActionType.HARVEST_MONEY) {
+                double income = sector.getIncome();
+                locked.incrementMoney(income);
+                recorded.add(PlayerAction.harvestMoney(locked.getId(), turn, number, income));
+            } else {
+                String resourceName = sector.getResourceName();
+                if (resourceName == null || resourceName.isBlank()) {
+                    throw new IllegalStateException("Le secteur " + number + " ne produit aucune ressource");
+                }
+                locked.addResource(resourceName, 1);
+                recorded.add(PlayerAction.harvestResource(locked.getId(), turn, number, resourceName, 1));
+            }
+        }
+        actionRepository.saveAll(recorded);
+        playerRepository.save(locked);
+        return mapActive(locked.getId(), turn);
+    }
+
     @Transactional(readOnly = true)
     public List<PlayerActionDto> getCurrentTurnActions(Long userId) {
         Player player = requirePlayerByUserId(userId);
@@ -134,6 +213,13 @@ public class PlayerActionService {
                 .findByPlayerIdAndTurnAndStatusAndIdGreaterThanEqualOrderByIdAsc(
                         locked.getId(), turn, PlayerActionStatus.ACTIVE, actionId));
         toUndo.sort((a, b) -> b.getId().compareTo(a.getId()));
+
+        // Revenus déjà versés sur cette récolte : l'annuler priverait le secteur de tout revenu pour le tour.
+        if (harvestAutoCollector.hasClaimedRevenue(turn)
+                && toUndo.stream().anyMatch(action -> action.getType().isHarvest())) {
+            throw new HarvestClosedException(
+                    "Le revenu du tour a déjà été versé — la récolte n'est plus annulable");
+        }
 
         for (PlayerAction action : toUndo) {
             applyUndo(action, locked);
@@ -166,6 +252,8 @@ public class PlayerActionService {
             case PLACE_VEHICLE -> undoPlaceVehicle(action);
             case MOVE_BUILDING -> undoMoveBuilding(action);
             case SET_VEHICLE_CREW -> undoSetVehicleCrew(action);
+            case HARVEST_MONEY -> undoHarvestMoney(action, player);
+            case HARVEST_RESOURCE -> undoHarvestResource(action, player);
         }
     }
 
@@ -287,6 +375,24 @@ public class PlayerActionService {
         }
         vehicleCrewService.applyCrew(vehicle, action.getPrevPilotId(), parseIds(action.getPrevPassengerIds()));
         vehicleRepository.save(vehicle);
+    }
+
+    private void undoHarvestMoney(PlayerAction action, Player player) {
+        double amount = action.getMoney() != null ? action.getMoney() : 0;
+        if (player.getStats().getMoney() < amount) {
+            throw new PlayerActionUndoException(
+                    "Le revenu récolté a été dépensé ou transféré : récolte non annulable.");
+        }
+        player.decrementMoney(amount);
+    }
+
+    private void undoHarvestResource(PlayerAction action, Player player) {
+        int quantity = action.getQuantity() != null ? action.getQuantity() : 1;
+        if (!player.hasResource(action.getResourceName(), quantity)) {
+            throw new PlayerActionUndoException(
+                    "La ressource récoltée a été vendue ou transférée : récolte non annulable.");
+        }
+        player.removeResource(action.getResourceName(), quantity);
     }
 
     private List<Long> parseIds(String csv) {

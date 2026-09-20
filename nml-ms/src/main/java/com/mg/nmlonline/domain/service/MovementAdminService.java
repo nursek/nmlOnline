@@ -44,19 +44,25 @@ public class MovementAdminService {
     private final BoardRepository boardRepository;
     private final PlayerRepository playerRepository;
     private final PlatformTransactionManager txManager;
+    private final TurnLock turnLock;
+    private final HarvestAutoCollector harvestAutoCollector;
 
     public MovementAdminService(MovementService movementService,
                                 MovementMapper movementMapper,
                                 MovementOrderRepository orderRepository,
                                 BoardRepository boardRepository,
                                 PlayerRepository playerRepository,
-                                PlatformTransactionManager txManager) {
+                                PlatformTransactionManager txManager,
+                                TurnLock turnLock,
+                                HarvestAutoCollector harvestAutoCollector) {
         this.movementService = movementService;
         this.movementMapper = movementMapper;
         this.orderRepository = orderRepository;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
         this.txManager = txManager;
+        this.turnLock = turnLock;
+        this.harvestAutoCollector = harvestAutoCollector;
     }
 
     @Transactional(readOnly = true)
@@ -88,10 +94,19 @@ public class MovementAdminService {
 
     @Transactional
     public MovementResolutionResultDto resolveMovements(int turn) {
-        Board board = loadBoard();
-        MovementResolutionResult result = movementService.resolveAllMovements(turn, board);
-        Function<Long, String> names = resolveNames(collectPlayerIds(result));
-        return movementMapper.toResolutionDto(result, turn, names);
+        if (!turnLock.tryAcquire()) {
+            throw new IllegalStateException("Une résolution de fin de tour est déjà en cours");
+        }
+        try {
+            Board board = loadBoard();
+            // Revenus figés avant les mouvements : le claim par tour empêche un second versement à /turn/next.
+            harvestAutoCollector.collectRemainingMoney(board, turn, HarvestAutoCollector.ownersBySector(board));
+            MovementResolutionResult result = movementService.resolveAllMovements(turn, board);
+            Function<Long, String> names = resolveNames(collectPlayerIds(result));
+            return movementMapper.toResolutionDto(result, turn, names);
+        } finally {
+            turnLock.release();
+        }
     }
 
     private Board loadBoard() {

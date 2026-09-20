@@ -36,6 +36,10 @@ public class Board {
     @Column(name = "current_turn", nullable = false)
     private int currentTurn = 1;
 
+    /** Tour dont les revenus ont déjà été versés (le raccourci admin ne l'incrémente pas). */
+    @Column(name = "revenue_claimed_turn")
+    private Integer revenueClaimedTurn;
+
     /** Refuse tout host/schéma externe : un admin compromis ne doit pas pouvoir faire charger du JS arbitraire via l'overlay SVG. */
     public void setSvgOverlayUrl(String svgOverlayUrl) {
         if (svgOverlayUrl != null && !isSameOriginPath(svgOverlayUrl)) {

@@ -6,7 +6,11 @@ export type PlayerActionType =
   | 'BUY_VEHICLE'
   | 'PLACE_VEHICLE'
   | 'MOVE_BUILDING'
-  | 'SET_VEHICLE_CREW';
+  | 'SET_VEHICLE_CREW'
+  | 'HARVEST_MONEY'
+  | 'HARVEST_RESOURCE';
+
+export type HarvestChoice = 'HARVEST_MONEY' | 'HARVEST_RESOURCE';
 
 export type PlayerActionStatus = 'ACTIVE' | 'UNDONE';
 
