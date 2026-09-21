@@ -52,6 +52,7 @@ public class VehicleMapper {
         dto.setResistance(vt.getResistance());
         dto.setFiresInTransit(vt.isFiresInTransit());
         dto.setAerial(vt.isAerial());
+        dto.setAvailableFromTurn(vt.getAvailableFromTurn());
 
         return dto;
     }

@@ -1,4 +1,4 @@
-import type { Equipment, VehicleTypeInfo } from '../../models';
+import type { Equipment, UnitCartItem, VehicleTypeInfo } from '../../models';
 import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER } from '../../core/labels';
 
 const CATEGORY_ORDER: Readonly<Record<string, number>> = {
@@ -66,4 +66,25 @@ export function vehicleSummary(vt: VehicleTypeInfo): string {
 
 export function equipmentClassLabel(eq: Equipment): string {
   return unitClassLabel(eq.compatibleClass?.[0]?.name);
+}
+
+/** Le quota est par type, toutes classes confondues : le panier déjà rempli le consomme. */
+export function unitCartQuantityForType(cart: UnitCartItem[], typeName: string): number {
+  return cart
+    .filter((line) => line.unitType.name === typeName)
+    .reduce((sum, line) => sum + line.quantity, 0);
+}
+
+export function unitQuotaRemaining(
+  maxPerTurn: number,
+  purchasedThisTurn: number,
+  inCart: number,
+): number {
+  return Math.max(0, maxPerTurn - purchasedThisTurn - inCart);
+}
+
+/** Quantité proposée bornée au quota restant ; 0 = quota épuisé, l'appelant n'ajoute rien. */
+export function clampUnitQuantity(requested: number, remaining: number): number {
+  if (remaining <= 0) return 0;
+  return Math.max(1, Math.min(Math.trunc(requested) || 1, remaining));
 }

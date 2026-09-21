@@ -3,6 +3,9 @@
 .sidenav-container {
   height: 100%;
   min-height: 100vh;
+  // Le contenu du drawer est peint en blanc par Material et masque le fond texturé du body.
+  --mat-sidenav-content-background-color: transparent;
+  background: transparent;
 }
 
 .loading-container {
@@ -879,3 +882,9 @@ mat-sidenav {
 .hidden-spinner {
   display: none !important;
 }
+
+.class-select {
+  width: 100%;
+  margin-top: 8px;
+}
+

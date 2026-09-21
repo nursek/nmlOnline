@@ -19,15 +19,20 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Equipment, EquipmentStack, PlayerResource, VehicleTypeInfo } from '../../models';
-import { ShopService } from '../../services/shop.service';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { Equipment, EquipmentStack, PlayerResource, UnitCartItem, UnitCatalogEntry, VehicleTypeInfo } from '../../models';
+import { ShopService, unitCartKey } from '../../services/shop.service';
 import { PlayerService } from '../../services/player.service';
 import {
+  clampUnitQuantity,
   compareEquipments,
   equipmentBonusSummary,
   equipmentClassLabel,
   equipmentSummary,
   sortVehiclesByCost,
+  unitCartQuantityForType,
+  unitQuotaRemaining,
   vehicleSummary,
 } from './boutique.helpers';
 import { equipmentCategoryLabel, unitClassLabel } from '../../core/labels';
@@ -55,6 +60,8 @@ import {
     MatTabsModule,
     MatTooltipModule,
     MatDialogModule,
+    MatFormFieldModule,
+    MatSelectModule,
   ],
   templateUrl: './boutique.component.html',
   styleUrls: ['./boutique.component.scss'],
@@ -67,6 +74,7 @@ export class BoutiqueComponent {
   readonly allEquipments = this.shop.equipments;
   readonly cart = this.shop.cart;
   readonly vehicleCart = this.shop.vehicleCart;
+  readonly unitCart = this.shop.unitCart;
   readonly sellCart = this.shop.sellCart;
   readonly error = this.shop.error;
   readonly loading = this.shop.equipmentsLoading;
@@ -75,10 +83,16 @@ export class BoutiqueComponent {
   readonly totalPrice = this.shop.cartTotalPrice;
   readonly vehicleCartTotalItems = this.shop.vehicleCartTotalItems;
   readonly vehicleCartTotalPrice = this.shop.vehicleCartTotalPrice;
+  readonly unitCartTotalItems = this.shop.unitCartTotalItems;
+  readonly unitCartTotalPrice = this.shop.unitCartTotalPrice;
   readonly sellCartTotalValue = this.shop.sellCartTotalValue;
   readonly vehicleTypes = this.shop.vehicleTypes;
+  readonly unitCatalog = this.shop.unitCatalog;
+  readonly unitTypes = computed(() => this.shop.unitCatalog().entries);
+  readonly unitClasses = computed(() => this.shop.unitCatalog().classes);
 
   readonly player = this.playerService.player;
+  readonly currentTurn = this.playerService.currentTurn;
 
   readonly tab = input<string>('equipements');
   readonly selectedTabIndex = linkedSignal(() => this.tabIndex(this.tab()));
@@ -87,8 +101,10 @@ export class BoutiqueComponent {
     switch (tab) {
       case 'vehicules':
         return 1;
-      case 'revente':
+      case 'unites':
         return 2;
+      case 'revente':
+        return 3;
       default:
         return 0;
     }
@@ -100,6 +116,8 @@ export class BoutiqueComponent {
   readonly selectedCategory = signal<string>('all');
   readonly selectedBonusFilter = signal<string>('all');
   readonly vehicleQuantities = signal<Record<string, number>>({});
+  readonly unitQuantities = signal<Record<string, number>>({});
+  readonly unitClassChoices = signal<Record<string, string>>({});
   readonly resourceSellQuantities = signal<Record<number, number>>({});
 
   // Images boutique : track des vignettes introuvables (fallback icône).
@@ -166,7 +184,9 @@ export class BoutiqueComponent {
     return groups;
   });
 
-  readonly totalCartBadge = computed(() => this.totalItems() + this.vehicleCartTotalItems());
+  readonly totalCartBadge = computed(
+    () => this.totalItems() + this.vehicleCartTotalItems() + this.unitCartTotalItems(),
+  );
 
   // Normalized cart lines for the shared `cartItem` template.
   readonly equipmentCartLines = computed(() =>
@@ -194,6 +214,9 @@ export class BoutiqueComponent {
   readonly canAffordVehicleCart = computed(
     () => (this.player()?.stats?.money ?? 0) >= this.vehicleCartTotalPrice(),
   );
+  readonly canAffordUnitCart = computed(
+    () => (this.player()?.stats?.money ?? 0) >= this.unitCartTotalPrice(),
+  );
 
   readonly hasActiveFilters = computed(
     () =>
@@ -216,6 +239,8 @@ export class BoutiqueComponent {
   constructor() {
     // Ensure the player profile is loaded for the money display / sell tab.
     void this.playerService.loadCurrent();
+    void this.playerService.loadCurrentTurn();
+    this.shop.refreshUnitCatalog();
   }
 
   private openSuccessDialog(data: PurchaseSuccessData): void {
@@ -336,6 +361,118 @@ export class BoutiqueComponent {
     return (this.player()?.stats?.money ?? 0) >= vehicleCost * qty;
   }
 
+  /** Tour inconnu = on laisse acheter, le backend reste juge. */
+  vehicleAvailable(vt: VehicleTypeInfo): boolean {
+    const turn = this.currentTurn();
+    return turn == null || turn >= vt.availableFromTurn;
+  }
+
+  unitRemaining(entry: UnitCatalogEntry): number {
+    return unitQuotaRemaining(
+      entry.maxPerTurn,
+      entry.purchasedThisTurn,
+      unitCartQuantityForType(this.unitCart(), entry.name),
+    );
+  }
+
+  /** Quota consommé (achats + panier) : affiché pour rester cohérent avec « Limite atteinte ». */
+  unitQuotaUsed(entry: UnitCatalogEntry): number {
+    return entry.maxPerTurn - this.unitRemaining(entry);
+  }
+
+  private defaultUnitClass(): string {
+    const classes = this.unitClasses();
+    return classes.find((c) => c.name === 'ELEMENTAIRE')?.name ?? classes[0]?.name ?? '';
+  }
+
+  unitClassChoice(entry: UnitCatalogEntry): string {
+    return this.unitClassChoices()[entry.name] ?? this.defaultUnitClass();
+  }
+
+  setUnitClass(entryName: string, className: string): void {
+    this.unitClassChoices.update((prev) => ({ ...prev, [entryName]: className }));
+  }
+
+  getUnitQuantity(entryName: string): number {
+    return this.unitQuantities()[entryName] ?? 1;
+  }
+
+  /** Quantité réellement ajoutable : reflète le clamp quand le panier consomme déjà le quota. */
+  unitQuantityToAdd(entry: UnitCatalogEntry): number {
+    return clampUnitQuantity(this.getUnitQuantity(entry.name), this.unitRemaining(entry));
+  }
+
+  setUnitQuantity(entry: UnitCatalogEntry, qty: number): void {
+    const clamped = clampUnitQuantity(qty, this.unitRemaining(entry));
+    this.unitQuantities.update((prev) => ({
+      ...prev,
+      [entry.name]: Math.max(1, clamped),
+    }));
+  }
+
+  canAddUnit(entry: UnitCatalogEntry): boolean {
+    return entry.availableNow && this.unitRemaining(entry) > 0;
+  }
+
+  addUnitToCart(entry: UnitCatalogEntry): void {
+    const unitClass = this.unitClasses().find((c) => c.name === this.unitClassChoice(entry));
+    if (!unitClass) return;
+    const qty = this.unitQuantityToAdd(entry);
+    if (qty <= 0) return;
+    this.shop.addUnitToCart(entry, unitClass, qty);
+  }
+
+  unitCartLineQuantity(key: string): number {
+    return (
+      this.unitCart().find((i) => unitCartKey(i.unitType.name, i.unitClass.name) === key)?.quantity ??
+      0
+    );
+  }
+
+  decrementUnitCartQuantity(key: string): void {
+    const current = this.unitCartLineQuantity(key);
+    if (current > 1) {
+      this.shop.updateUnitCartItemQuantity(key, current - 1);
+    } else {
+      this.shop.removeUnitFromCart(key);
+    }
+  }
+
+  incrementUnitCartLine(item: UnitCartItem): void {
+    const entry = this.unitTypes().find((e) => e.name === item.unitType.name);
+    if (!entry || this.unitRemaining(entry) <= 0) return;
+    const key = unitCartKey(item.unitType.name, item.unitClass.name);
+    this.shop.updateUnitCartItemQuantity(key, this.unitCartLineQuantity(key) + 1);
+  }
+
+  canIncrementUnitCartLine(item: UnitCartItem): boolean {
+    const entry = this.unitTypes().find((e) => e.name === item.unitType.name);
+    return entry != null && this.unitRemaining(entry) > 0;
+  }
+
+  removeUnitFromCart(key: string): void {
+    this.shop.removeUnitFromCart(key);
+  }
+
+  clearUnitCart(): void {
+    this.shop.clearUnitCart();
+  }
+
+  async checkoutUnits(): Promise<void> {
+    const snapshot = [...this.unitCart()];
+    await this.runCheckout(
+      snapshot.length,
+      () => this.shop.checkoutUnits(),
+      () => ({
+        title: 'Unités recrutées !',
+        lines: snapshot.map(
+          (item) => `${item.quantity} × ${item.unitType.name} (${this.unitClassLabel(item.unitClass.name)})`,
+        ),
+        totalCost: snapshot.reduce((s, i) => s + i.unitType.cost * i.quantity, 0),
+      }),
+    );
+  }
+
   getSellQty(resource: PlayerResource): number {
     return resource.id != null ? (this.resourceSellQuantities()[resource.id] ?? 1) : 1;
   }
@@ -409,6 +546,7 @@ export class BoutiqueComponent {
 
   equipmentCategoryLabel = equipmentCategoryLabel;
   unitClassLabel = unitClassLabel;
+  unitCartKey = unitCartKey;
   equipmentSummary = equipmentSummary;
   equipmentBonusSummary = equipmentBonusSummary;
   equipmentClassLabel = equipmentClassLabel;
@@ -425,6 +563,10 @@ export class BoutiqueComponent {
   // fichier ; slugify remplacerait '_' par '-' et casserait l'URL.
   vehicleImageUrl(vt: VehicleTypeInfo): string {
     return `assets/shop/vehicles/${vt.name.toLowerCase()}.png`;
+  }
+
+  unitImageUrl(entry: UnitCatalogEntry): string {
+    return `assets/shop/units/${entry.name.toLowerCase()}.png`;
   }
 
   resourceImageUrl(resource: PlayerResource): string {

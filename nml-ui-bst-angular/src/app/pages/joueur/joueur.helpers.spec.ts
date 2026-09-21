@@ -5,6 +5,7 @@ import {
   equipmentStackCost,
   incomeTotal,
   playerForces,
+  reserveGroups,
   sectorForces,
   sectorHarvestStates,
   troopSummaries,
@@ -513,6 +514,29 @@ describe('joueur.helpers', () => {
       expect(
         buildingMoveStatus(building(1, me, { isOperational: false, canMove: false }), 10).label,
       ).toBe('QG inopérant');
+    });
+  });
+
+  describe('reserveGroups', () => {
+    it('groupe par type + classe et conserve les ids à déployer', () => {
+      const elementaire = {
+        name: 'ELEMENTAIRE',
+        code: 'E',
+        criticalChance: null,
+        criticalMultiplier: null,
+        damageReductionPdf: null,
+        damageReductionPdc: null,
+        maxMovementHops: 1,
+      };
+      const groups = reserveGroups([
+        unit(1, 0, me, { attack: 10, defense: 10 }),
+        unit(2, 0, me, { attack: 10, defense: 10 }),
+        unit(3, 0, me, { classes: [elementaire], attack: 12, defense: 14 }),
+      ]);
+
+      expect(groups.map((g) => g.key)).toEqual(['LARBIN#LEGER', 'LARBIN#ELEMENTAIRE']);
+      expect(groups[0]).toMatchObject({ count: 2, unitIds: [1, 2], attack: 10, defense: 10 });
+      expect(groups[1]).toMatchObject({ count: 1, unitIds: [3], attack: 12, defense: 14 });
     });
   });
 });

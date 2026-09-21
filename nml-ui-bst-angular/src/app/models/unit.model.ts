@@ -59,3 +59,20 @@ export interface UnitClass {
   /** Nombre max de secteurs parcourus par tour (LEGER = 2, autres = 1). */
   maxMovementHops: number;
 }
+
+// Catalogue de recrutement
+export interface UnitCatalogEntry {
+  name: string;
+  cost: number;
+  baseAttack: number;
+  baseDefense: number;
+  availableFromTurn: number;
+  maxPerTurn: number;
+  purchasedThisTurn: number;
+  availableNow: boolean;
+}
+
+export interface UnitCatalog {
+  classes: UnitClass[];
+  entries: UnitCatalogEntry[];
+}

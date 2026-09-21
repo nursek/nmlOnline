@@ -36,9 +36,9 @@ import { ExchangeService } from '../../services/exchange.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
 import { slugify } from '../../core/slug';
 import {
-  VehiclePlacementModalComponent,
-  VehiclePlacementDialogData,
-} from './vehicle-placement-modal.component';
+  PlacementModalComponent,
+  PlacementDialogData,
+} from './placement-modal.component';
 import {
   BuildingMoveModalComponent,
   BuildingMoveDialogData,
@@ -77,6 +77,8 @@ import {
   equipmentStackCost,
   incomeTotal,
   playerForces,
+  ReserveGroup,
+  reserveGroups,
   SectorForces,
   sectorHarvestStates,
   totalsStats,
@@ -88,6 +90,7 @@ import {
   vehicleStats,
 } from './joueur.helpers';
 import { characterStats } from '../../core/stats';
+import { unitClassLabel } from '../../core/labels';
 
 @Component({
   selector: 'app-joueur',
@@ -131,6 +134,9 @@ export class JoueurComponent {
   readonly error = this.playerService.error;
   readonly undeployedVehicles = this.playerService.undeployedVehicles;
   readonly vehiclesLoading = this.playerService.vehiclesLoading;
+  readonly reserveUnits = this.playerService.reserveUnits;
+  readonly reserveUnitsLoading = this.playerService.reserveUnitsLoading;
+  readonly reserveGroups = computed(() => reserveGroups(this.reserveUnits()));
   readonly currentTurn = this.playerService.currentTurn;
   readonly actions = this.playerActionsService.actions;
   readonly actionsLoading = this.playerActionsService.loading;
@@ -139,6 +145,7 @@ export class JoueurComponent {
   constructor() {
     void this.playerService.loadCurrent();
     void this.playerService.loadVehicles();
+    void this.playerService.loadReserveUnits();
     void this.playerService.loadCurrentTurn();
     void this.playerActionsService.loadActions();
     void this.movementState.loadOrders();
@@ -277,6 +284,10 @@ export class JoueurComponent {
         return 'directions_car';
       case 'PLACE_VEHICLE':
         return 'place';
+      case 'BUY_UNIT':
+        return 'person_add';
+      case 'PLACE_UNIT':
+        return 'place';
       case 'MOVE_BUILDING':
         return 'move_up';
       case 'SET_VEHICLE_CREW':
@@ -294,6 +305,7 @@ export class JoueurComponent {
   vehicleStats = vehicleStats;
   totalsStats = totalsStats;
   stackCost = equipmentStackCost;
+  unitClassLabel = unitClassLabel;
 
   private readonly brokenImages = signal(new Set<string>());
 
@@ -311,8 +323,11 @@ export class JoueurComponent {
 
   openPlacementModal(vehicle: Vehicle): void {
     const ownedSectors: Sector[] = this.player()?.sectors ?? [];
-    const dialogData: VehiclePlacementDialogData = { vehicle, ownedSectors };
-    const dialogRef = this.dialog.open(VehiclePlacementModalComponent, {
+    const dialogData: PlacementDialogData = {
+      title: `Déployer ${vehicle.displayName}`,
+      ownedSectors,
+    };
+    const dialogRef = this.dialog.open(PlacementModalComponent, {
       width: '420px',
       data: dialogData,
     });
@@ -325,6 +340,34 @@ export class JoueurComponent {
           void this.playerService.placeVehicle(vehicle.id, sector.boardId, sector.number);
         }
       });
+  }
+
+  openUnitPlacementModal(group: ReserveGroup): void {
+    const ownedSectors: Sector[] = this.player()?.sectors ?? [];
+    const dialogData: PlacementDialogData = {
+      title: `Déployer ${group.count} × ${group.type}`,
+      ownedSectors,
+    };
+    this.dialog
+      .open(PlacementModalComponent, { width: '420px', data: dialogData })
+      .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((sector: Sector | null) => {
+        if (!sector || sector.boardId == null || sector.number == null) return;
+        void this.placeReserveGroup(group, sector.boardId, sector.number);
+      });
+  }
+
+  private async placeReserveGroup(
+    group: ReserveGroup,
+    boardId: number,
+    sectorNumber: number,
+  ): Promise<void> {
+    for (const unitId of group.unitIds) {
+      const placed = await this.playerService.placeUnit(unitId, boardId, sectorNumber);
+      if (!placed) break;
+    }
+    void this.playerActionsService.loadActions();
   }
 
   openUnitDialog(unit: Unit, sector: Sector): void {

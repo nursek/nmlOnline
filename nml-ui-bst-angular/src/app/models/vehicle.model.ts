@@ -29,4 +29,5 @@ export interface VehicleTypeInfo {
   resistance: number;
   firesInTransit: boolean;
   aerial: boolean;
+  availableFromTurn: number;
 }

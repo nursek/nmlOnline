@@ -2,6 +2,7 @@ package com.mg.nmlonline.infrastructure.repository;
 
 import com.mg.nmlonline.domain.model.action.PlayerAction;
 import com.mg.nmlonline.domain.model.action.PlayerActionStatus;
+import com.mg.nmlonline.domain.model.action.PlayerActionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,6 +13,9 @@ import java.util.Optional;
 public interface PlayerActionRepository extends JpaRepository<PlayerAction, Long> {
 
     List<PlayerAction> findByPlayerIdAndTurnAndStatusOrderByIdAsc(Long playerId, int turn, PlayerActionStatus status);
+
+    List<PlayerAction> findByPlayerIdAndTurnAndTypeAndStatus(Long playerId, int turn, PlayerActionType type,
+                                                             PlayerActionStatus status);
 
     List<PlayerAction> findByTurnAndStatus(int turn, PlayerActionStatus status);
 

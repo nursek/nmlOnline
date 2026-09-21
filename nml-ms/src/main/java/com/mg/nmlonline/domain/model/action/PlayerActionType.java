@@ -7,6 +7,8 @@ public enum PlayerActionType {
     UNEQUIP_UNIT,
     BUY_VEHICLE,
     PLACE_VEHICLE,
+    BUY_UNIT,
+    PLACE_UNIT,
     MOVE_BUILDING,
     SET_VEHICLE_CREW,
     HARVEST_MONEY,

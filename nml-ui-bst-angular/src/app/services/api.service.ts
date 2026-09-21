@@ -17,6 +17,8 @@ import {
   BuyEquipmentItem,
   Vehicle,
   BuyVehicleBatchItem,
+  BuyUnitBatchItem,
+  UnitCatalog,
   SellResourceBatchItem,
   ResourceBatchSaleResponse,
   Board,
@@ -208,6 +210,25 @@ export class ApiService {
 
   getPlayerVehicles(): Observable<Vehicle[]> {
     return this.http.get<Vehicle[]>(`${this.baseUrl}/vehicles/my`);
+  }
+
+  getUnitCatalog(): Observable<UnitCatalog> {
+    return this.http.get<UnitCatalog>(`${this.baseUrl}/units/catalog`);
+  }
+
+  getReserveUnits(): Observable<Unit[]> {
+    return this.http.get<Unit[]>(`${this.baseUrl}/units/reserve`);
+  }
+
+  buyUnitsBatch(items: BuyUnitBatchItem[]): Observable<Unit[]> {
+    return this.http.post<Unit[]>(`${this.baseUrl}/units/buy-batch`, { items });
+  }
+
+  placeUnit(unitId: number, boardId: number, sectorNumber: number): Observable<Unit> {
+    return this.http.post<Unit>(`${this.baseUrl}/units/${unitId}/place`, {
+      boardId,
+      sectorNumber,
+    });
   }
 
   buyVehiclesBatch(items: BuyVehicleBatchItem[]): Observable<Vehicle[]> {

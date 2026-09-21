@@ -5,11 +5,12 @@ import { ApiService } from './api.service';
 import { CartStorageService } from './cart-storage.service';
 import { PlayerService } from './player.service';
 import { AuthService } from './auth.service';
-import { Equipment, PageResult, PlayerResource, Vehicle, VehicleTypeInfo } from '../models';
+import { Equipment, PageResult, PlayerResource, Unit, UnitCatalog, UnitCatalogEntry, UnitClass, Vehicle, VehicleTypeInfo } from '../models';
 import {
   CartItem,
   SellCartItem,
   SellResourceBatchItem,
+  UnitCartItem,
   VehicleCartItem,
 } from '../models/shop.model';
 import { httpErrorMessage } from '../core/http-error.interceptor';
@@ -25,6 +26,10 @@ function safeQty(qty: number, min = 1): number {
   const n = Math.trunc(qty);
   return Number.isNaN(n) || !Number.isFinite(n) ? min : Math.max(n, min);
 }
+
+/** Clé de ligne de panier : même type + même classe = même ligne. */
+export const unitCartKey = (unitType: string, unitClass: string): string =>
+  `${unitType}#${unitClass}`;
 
 /**
  * Shop state: equipment catalog & cart for equipment, vehicles and resource-sales.
@@ -51,6 +56,9 @@ export class ShopService {
   private readonly vehicleTypesRef = httpResource<VehicleTypeInfo[]>(() =>
     this.auth.isAuthenticated() ? { url: `${environment.apiBaseUrl}/vehicles/types` } : undefined,
   );
+  private readonly unitCatalogRef = httpResource<UnitCatalog>(() =>
+    this.auth.isAuthenticated() ? { url: `${environment.apiBaseUrl}/units/catalog` } : undefined,
+  );
 
   readonly equipments = computed(() => this.equipmentsRef.value()?.content ?? []);
   readonly equipmentsLoading = computed(
@@ -60,15 +68,21 @@ export class ShopService {
   readonly vehicleTypesLoading = computed(
     () => this._error() === null && this.vehicleTypesRef.isLoading(),
   );
+  readonly unitCatalog = computed(() => this.unitCatalogRef.value() ?? { classes: [], entries: [] });
+  readonly unitCatalogLoading = computed(
+    () => this._error() === null && this.unitCatalogRef.isLoading(),
+  );
 
   private readonly _cart = signal<CartItem[]>(this.cartStorage.loadCart());
   private readonly _vehicleCart = signal<VehicleCartItem[]>(this.cartStorage.loadVehicleCart());
+  private readonly _unitCart = signal<UnitCartItem[]>(this.cartStorage.loadUnitCart());
   private readonly _sellCart = signal<SellCartItem[]>([]);
   private readonly _purchaseLoading = signal(false);
   private readonly _error = signal<string | null>(null);
 
   readonly cart = this._cart.asReadonly();
   readonly vehicleCart = this._vehicleCart.asReadonly();
+  readonly unitCart = this._unitCart.asReadonly();
   readonly sellCart = this._sellCart.asReadonly();
   readonly purchaseLoading = this._purchaseLoading.asReadonly();
   readonly error = this._error.asReadonly();
@@ -85,6 +99,12 @@ export class ShopService {
   readonly vehicleCartTotalPrice = computed(() =>
     this._vehicleCart().reduce((sum, item) => sum + item.vehicleType.cost * item.quantity, 0),
   );
+  readonly unitCartTotalItems = computed(() =>
+    this._unitCart().reduce((sum, item) => sum + item.quantity, 0),
+  );
+  readonly unitCartTotalPrice = computed(() =>
+    this._unitCart().reduce((sum, item) => sum + item.unitType.cost * item.quantity, 0),
+  );
   readonly sellCartTotalValue = computed(() =>
     this._sellCart().reduce(
       (sum, item) => sum + saleValue(item.resource.baseValue ?? 0, item.quantity),
@@ -99,6 +119,9 @@ export class ShopService {
     });
     effect(() => {
       this.cartStorage.saveVehicleCart(this._vehicleCart());
+    });
+    effect(() => {
+      this.cartStorage.saveUnitCart(this._unitCart());
     });
   }
 
@@ -159,6 +182,44 @@ export class ShopService {
     this._vehicleCart.set([]);
   }
 
+  addUnitToCart(unitType: UnitCatalogEntry, unitClass: UnitClass, quantity: number): void {
+    const qty = safeQty(quantity);
+    const key = unitCartKey(unitType.name, unitClass.name);
+    this._unitCart.update((cart) => {
+      const idx = cart.findIndex((i) => unitCartKey(i.unitType.name, i.unitClass.name) === key);
+      if (idx >= 0) {
+        return cart.map((item, i) => (i === idx ? { ...item, quantity: item.quantity + qty } : item));
+      }
+      return [...cart, { unitType, unitClass, quantity: qty }];
+    });
+  }
+
+  removeUnitFromCart(key: string): void {
+    this._unitCart.update((cart) =>
+      cart.filter((i) => unitCartKey(i.unitType.name, i.unitClass.name) !== key),
+    );
+  }
+
+  updateUnitCartItemQuantity(key: string, quantity: number): void {
+    const qty = safeQty(quantity, 0);
+    this._unitCart.update((cart) =>
+      qty <= 0
+        ? cart.filter((i) => unitCartKey(i.unitType.name, i.unitClass.name) !== key)
+        : cart.map((i) =>
+            unitCartKey(i.unitType.name, i.unitClass.name) === key ? { ...i, quantity: qty } : i,
+          ),
+    );
+  }
+
+  clearUnitCart(): void {
+    this._unitCart.set([]);
+  }
+
+  /** Relance le catalogue : les quotas du tour changent après un achat annulé ailleurs. */
+  refreshUnitCatalog(): void {
+    this.unitCatalogRef.reload();
+  }
+
   addToSellCart(resource: PlayerResource, quantity: number): void {
     const qty = safeQty(quantity);
     this._sellCart.update((cart) => {
@@ -214,6 +275,37 @@ export class ShopService {
         402,
         'Fonds insuffisants pour acheter ces véhicules',
         "Erreur lors de l'achat des véhicules",
+      );
+      this._error.set(message);
+      throw new Error(message);
+    } finally {
+      this._purchaseLoading.set(false);
+    }
+  }
+
+  async checkoutUnits(): Promise<Unit[]> {
+    this._purchaseLoading.set(true);
+    this._error.set(null);
+    try {
+      const items = this._unitCart().map((i) => ({
+        unitType: i.unitType.name,
+        unitClass: i.unitClass.name,
+        quantity: i.quantity,
+      }));
+      const units = await firstValueFrom(this.api.buyUnitsBatch(items));
+      this.clearUnitCart();
+      void this.player.loadCurrent();
+      void this.player.loadReserveUnits();
+      void this.unitCatalogRef.reload();
+      return units;
+    } catch (error) {
+      // Le refus (quota/fonds) vient du serveur : resynchronise le catalogue plutôt que de garder un panier accepté à tort.
+      this.unitCatalogRef.reload();
+      const message = this.purchaseError(
+        error,
+        402,
+        'Fonds insuffisants pour recruter ces unités',
+        "Erreur lors de l'achat des unités",
       );
       this._error.set(message);
       throw new Error(message);

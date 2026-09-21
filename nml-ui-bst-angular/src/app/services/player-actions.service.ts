@@ -62,6 +62,7 @@ export class PlayerActionsService {
       this._actions.set(await firstValueFrom(request()));
       void this.playerService.loadCurrent();
       void this.playerService.loadVehicles();
+      void this.playerService.loadReserveUnits();
       return true;
     } catch (error) {
       this._error.set(httpErrorMessage(error, errorMessage));
