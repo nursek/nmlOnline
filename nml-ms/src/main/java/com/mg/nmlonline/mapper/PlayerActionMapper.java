@@ -36,6 +36,8 @@ public class PlayerActionMapper {
             case UNEQUIP_UNIT -> "Retrait de « " + action.getEquipmentName() + " » de l'unité #" + action.getUnitId();
             case BUY_VEHICLE -> "Achat d'un véhicule";
             case PLACE_VEHICLE -> "Placement d'un véhicule sur le secteur " + action.getToSectorNumber();
+            case BUY_UNIT -> "Achat d'un " + action.getUnitType();
+            case PLACE_UNIT -> "Placement d'une unité sur le secteur " + action.getToSectorNumber();
             case MOVE_BUILDING -> "Déplacement vers le secteur " + action.getToSectorNumber();
             case SET_VEHICLE_CREW -> "Équipage du véhicule #" + action.getVehicleId() + " modifié";
             case HARVEST_MONEY -> "Récolte des revenus — secteur " + action.getFromSectorNumber();

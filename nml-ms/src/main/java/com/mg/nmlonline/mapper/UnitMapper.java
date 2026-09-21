@@ -128,7 +128,7 @@ public class UnitMapper {
         }
     }
 
-    private UnitClassDto toUnitClassDto(UnitClass unitClass) {
+    public UnitClassDto toUnitClassDto(UnitClass unitClass) {
         if (unitClass == null) return null;
         UnitClassDto dto = new UnitClassDto();
         dto.setName(unitClass.name());

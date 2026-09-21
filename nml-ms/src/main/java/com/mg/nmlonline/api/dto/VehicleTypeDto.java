@@ -18,4 +18,5 @@ public class VehicleTypeDto {
     private int resistance;
     private boolean firesInTransit;
     private boolean aerial;
+    private int availableFromTurn;
 }

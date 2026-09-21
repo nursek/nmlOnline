@@ -34,6 +34,18 @@ interface ClasseUnite {
   actif: boolean;
 }
 
+interface RecrueUnite {
+  type: string;
+  cout: number;
+  dispo: number;
+  limite: string;
+}
+
+interface VehiculeDispo {
+  nom: string;
+  dispo: number;
+}
+
 @Component({
   selector: 'app-regles',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,6 +59,7 @@ export class ReglesComponent {
     { id: 'stats', label: 'Statistiques des unités', icon: 'insights' },
     { id: 'niveaux', label: 'Niveaux et évolution', icon: 'military_tech' },
     { id: 'classes', label: 'Classes', icon: 'badge' },
+    { id: 'recrutement', label: 'Recrutement des unités', icon: 'person_add' },
     { id: 'deplacements', label: 'Déplacements', icon: 'directions_walk' },
     { id: 'vehicules', label: 'Véhicules', icon: 'directions_car' },
     { id: 'batiments', label: 'Bâtiments', icon: 'apartment' },
@@ -171,6 +184,26 @@ export class ReglesComponent {
       effet: 'Aucun effet de combat implémenté.',
       actif: false,
     },
+  ];
+
+  readonly recrues: readonly RecrueUnite[] = [
+    {
+      type: 'LARBIN',
+      cout: 400,
+      dispo: 2,
+      limite: '20 / tour, puis 30 au tour 5 et 40 au tour 10',
+    },
+    { type: 'VOYOU', cout: 1500, dispo: 5, limite: '5 / tour, puis 10 au tour 10' },
+    { type: 'MALFRAT', cout: 5000, dispo: 10, limite: '5 / tour' },
+  ];
+
+  readonly vehiculesDispo: readonly VehiculeDispo[] = [
+    { nom: 'Véhicule à tourelle', dispo: 4 },
+    { nom: 'VTT léger', dispo: 5 },
+    { nom: 'VTT blindé', dispo: 7 },
+    { nom: 'Tank de combat', dispo: 8 },
+    { nom: 'Hélicoptère de combat', dispo: 8 },
+    { nom: 'Avion de transport', dispo: 12 },
   ];
 
   private readonly panneaux = viewChildren(MatExpansionPanel);

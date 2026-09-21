@@ -16,15 +16,19 @@ export class PlayerService {
 
   private readonly _player = signal<Player | null>(null);
   private readonly _vehicles = signal<Vehicle[]>([]);
+  private readonly _reserveUnits = signal<Unit[]>([]);
   private readonly _loading = signal(false);
   private readonly _vehiclesLoading = signal(false);
+  private readonly _reserveUnitsLoading = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _currentTurn = signal<number | null>(null);
 
   readonly player = this._player.asReadonly();
   readonly vehicles = this._vehicles.asReadonly();
+  readonly reserveUnits = this._reserveUnits.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly vehiclesLoading = this._vehiclesLoading.asReadonly();
+  readonly reserveUnitsLoading = this._reserveUnitsLoading.asReadonly();
   readonly error = this._error.asReadonly();
   readonly currentTurn = this._currentTurn.asReadonly();
 
@@ -66,6 +70,35 @@ export class PlayerService {
       this._error.set(this.messageFor(error, 'Erreur lors de la récupération des véhicules'));
     } finally {
       this._vehiclesLoading.set(false);
+    }
+  }
+
+  async loadReserveUnits(): Promise<void> {
+    this._reserveUnitsLoading.set(true);
+    this._error.set(null);
+    try {
+      const units = await firstValueFrom(this.api.getReserveUnits());
+      this._reserveUnits.set(units);
+    } catch (error) {
+      this._error.set(this.messageFor(error, 'Erreur lors de la récupération des recrues'));
+    } finally {
+      this._reserveUnitsLoading.set(false);
+    }
+  }
+
+  async placeUnit(unitId: number, boardId: number, sectorNumber: number): Promise<Unit | null> {
+    this._reserveUnitsLoading.set(true);
+    this._error.set(null);
+    try {
+      const unit = await firstValueFrom(this.api.placeUnit(unitId, boardId, sectorNumber));
+      this._reserveUnits.update((list) => list.filter((u) => u.id !== unit.id));
+      void this.loadCurrent();
+      return unit;
+    } catch (error) {
+      this._error.set(this.messageFor(error, "Erreur lors du déploiement de l'unité"));
+      return null;
+    } finally {
+      this._reserveUnitsLoading.set(false);
     }
   }
 

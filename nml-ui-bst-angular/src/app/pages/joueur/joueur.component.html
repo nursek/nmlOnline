@@ -104,6 +104,41 @@
                 }
               </div>
             }
+
+            @if (reserveGroups().length > 0) {
+              <p class="section-subtitle reserve-hint">
+                Recrues en réserve — à déployer avant la fin du tour, sinon elles rejoignent le QG.
+              </p>
+              <div class="details-grid">
+                @for (group of reserveGroups(); track group.key) {
+                  <div class="reserve-card">
+                    <div class="reserve-info">
+                      <mat-icon class="reserve-icon">person_add</mat-icon>
+                      <div>
+                        <h4>{{ group.count }} × {{ group.type }}</h4>
+                        @if (group.className) {
+                          <span class="badge">{{ unitClassLabel(group.className) }}</span>
+                        }
+                        <span class="value-label">
+                          {{ group.attack | number: '1.0-0' }} Atk /
+                          {{ group.defense | number: '1.0-0' }} Def
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      mat-stroked-button
+                      color="primary"
+                      [disabled]="reserveUnitsLoading()"
+                      (click)="openUnitPlacementModal(group)"
+                      class="deploy-btn"
+                    >
+                      <mat-icon>place</mat-icon>
+                      Déployer
+                    </button>
+                  </div>
+                }
+              </div>
+            }
           </mat-card-content>
         </mat-card>
 

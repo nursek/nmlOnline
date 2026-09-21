@@ -175,6 +175,58 @@
           </div>
         </mat-expansion-panel>
 
+        <mat-expansion-panel id="recrutement" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title
+              ><mat-icon>person_add</mat-icon>Recrutement des unités</mat-panel-title
+            >
+          </mat-expansion-panel-header>
+          <p class="text">
+            Les unités s'achètent dans l'onglet <strong>Unités</strong> de la boutique, au prix
+            indiqué par unité. Chaque recrue reçoit la <strong>classe choisie à l'achat</strong> et
+            les statistiques de base de son type (expérience 0, 2 ou 5 selon le type).
+          </p>
+          <div class="table-wrap">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Coût</th>
+                  <th>Disponible dès</th>
+                  <th>Limite par tour</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (recrue of recrues; track recrue.type) {
+                  <tr>
+                    <td>
+                      <strong>{{ recrue.type }}</strong>
+                    </td>
+                    <td>{{ recrue.cout }} ₡</td>
+                    <td>Tour {{ recrue.dispo }}</td>
+                    <td>{{ recrue.limite }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <ul class="rule-list">
+            <li>
+              <strong>Placement</strong> — une recrue achetée reste en réserve ; déployez-la dans un
+              de vos secteurs depuis la page Joueur (« Troupes disponibles »).
+            </li>
+            <li>
+              <strong>Placement automatique au QG</strong> — à la fin du tour, toute recrue encore en
+              réserve est placée dans le secteur du QG et participe à la résolution du tour.
+            </li>
+            <li>
+              <strong>Annulation</strong> — tant que le tour n'est pas résolu, l'achat d'une unité non
+              déployée et non équipée est annulable, comme le placement ; le quota du tour est alors
+              libéré.
+            </li>
+          </ul>
+        </mat-expansion-panel>
+
         <mat-expansion-panel id="deplacements" class="rule-panel">
           <mat-expansion-panel-header>
             <mat-panel-title><mat-icon>directions_walk</mat-icon>Déplacements</mat-panel-title>
@@ -217,6 +269,27 @@
             type a sa vitesse (1 à 4 secteurs par tour) et sa capacité de passagers (0 à 50, pilote
             non compté).
           </p>
+          <p class="text">
+            Chaque type n'est achetable qu'à partir d'un tour donné (voir le tableau ci-dessous).
+          </p>
+          <div class="table-wrap">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Disponible dès</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (vehicule of vehiculesDispo; track vehicule.nom) {
+                  <tr>
+                    <td>{{ vehicule.nom }}</td>
+                    <td>Tour {{ vehicule.dispo }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
           <ul class="rule-list">
             <li>
               <strong>Pilote obligatoire</strong> — le pilote est votre personnage ou une unité de
@@ -320,7 +393,9 @@
             Les équipements s'achètent, se stockent, puis s'assignent à une unité dans la limite de
             ses emplacements par catégorie et de la compatibilité de sa classe. Trois catégories
             existent : <strong>arme à feu</strong>, <strong>arme de corps-à-corps</strong> et
-            <strong>équipement défensif</strong>.
+            <strong>équipement défensif</strong>. L'onglet <strong>Unités</strong> sert au
+            recrutement d'infanterie (voir Recrutement des unités) et l'onglet
+            <strong>Véhicules</strong> à l'achat des véhicules.
           </p>
           <p class="text">
             Les bonus d'équipement se calculent à partir des statistiques de base de l'unité,

@@ -1,11 +1,14 @@
-import { Equipment, VehicleTypeInfo } from '../../models';
+import { Equipment, UnitCartItem, VehicleTypeInfo } from '../../models';
 import {
+  clampUnitQuantity,
   compareEquipments,
   equipmentBonusSummary,
   equipmentClassLabel,
   equipmentSummary,
   sortEquipments,
   sortVehiclesByCost,
+  unitCartQuantityForType,
+  unitQuotaRemaining,
   vehicleSummary,
 } from './boutique.helpers';
 
@@ -51,6 +54,7 @@ function vt(name: string, cost: number, basePdf: number, baseDefense: number): V
     resistance: 0,
     firesInTransit: false,
     aerial: false,
+    availableFromTurn: 4,
   };
 }
 
@@ -142,5 +146,57 @@ describe('boutique.helpers — résumés compacts', () => {
     expect(equipmentClassLabel(eq('X', 1, 'FIREARM', 'PILOTE_DESTRUCTEUR'))).toBe(
       'Pilote destructeur',
     );
+  });
+
+  describe('quota du panier unités', () => {
+    const unitLine = (typeName: string, className: string, quantity: number): UnitCartItem => ({
+      unitType: {
+        name: typeName,
+        cost: 400,
+        baseAttack: 10,
+        baseDefense: 10,
+        availableFromTurn: 2,
+        maxPerTurn: 20,
+        purchasedThisTurn: 0,
+        availableNow: true,
+      },
+      unitClass: {
+        name: className,
+        code: className.charAt(0),
+        criticalChance: null,
+        criticalMultiplier: null,
+        damageReductionPdf: null,
+        damageReductionPdc: null,
+        maxMovementHops: 1,
+      },
+      quantity,
+    });
+
+    it('cumule le panier par type, toutes classes confondues', () => {
+      const cart = [
+        unitLine('LARBIN', 'LEGER', 3),
+        unitLine('LARBIN', 'ELEMENTAIRE', 2),
+        unitLine('VOYOU', 'LEGER', 4),
+      ];
+      expect(unitCartQuantityForType(cart, 'LARBIN')).toBe(5);
+      expect(unitCartQuantityForType(cart, 'VOYOU')).toBe(4);
+      expect(unitCartQuantityForType(cart, 'MALFRAT')).toBe(0);
+    });
+
+    it('borne la quantité au quota restant et bloque à zéro', () => {
+      expect(clampUnitQuantity(50, 8)).toBe(8);
+      expect(clampUnitQuantity(3, 8)).toBe(3);
+      expect(clampUnitQuantity(0, 8)).toBe(1);
+      expect(clampUnitQuantity(3, 0)).toBe(0);
+      expect(clampUnitQuantity(3, -1)).toBe(0);
+    });
+
+    it('déduit du quota les achats du tour et le panier déjà rempli', () => {
+      expect(unitQuotaRemaining(20, 18, 2)).toBe(0);
+      expect(unitQuotaRemaining(20, 10, 2)).toBe(8);
+      expect(unitQuotaRemaining(20, 0, 25)).toBe(0);
+      expect(clampUnitQuantity(5, unitQuotaRemaining(20, 18, 2))).toBe(0);
+      expect(clampUnitQuantity(5, unitQuotaRemaining(20, 10, 2))).toBe(5);
+    });
   });
 });

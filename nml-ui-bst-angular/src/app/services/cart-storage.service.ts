@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CartItem, VehicleCartItem } from '../models';
+import { CartItem, UnitCartItem, VehicleCartItem } from '../models';
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -28,6 +28,7 @@ function isValidPricedItem(item: unknown): boolean {
 export class CartStorageService {
   private readonly CART_KEY = 'nml_cart';
   private readonly VEHICLE_CART_KEY = 'nml_vehicle_cart';
+  private readonly UNIT_CART_KEY = 'nml_unit_cart';
 
   loadCart(): CartItem[] {
     const parsed = this.parse<unknown[]>(sessionStorage.getItem(this.CART_KEY)) ?? [];
@@ -45,6 +46,15 @@ export class CartStorageService {
 
   saveVehicleCart(cart: VehicleCartItem[]): void {
     this.setOrRemove(this.VEHICLE_CART_KEY, cart);
+  }
+
+  loadUnitCart(): UnitCartItem[] {
+    const parsed = this.parse<unknown[]>(sessionStorage.getItem(this.UNIT_CART_KEY)) ?? [];
+    return parsed.filter((item): item is UnitCartItem => this.isValidUnitCartItem(item));
+  }
+
+  saveUnitCart(cart: UnitCartItem[]): void {
+    this.setOrRemove(this.UNIT_CART_KEY, cart);
   }
 
   private parse<T>(raw: string | null): T | null {
@@ -73,6 +83,20 @@ export class CartStorageService {
     const quantity = item['quantity'];
     return (
       isValidPricedItem(item['vehicleType']) &&
+      typeof quantity === 'number' &&
+      Number.isInteger(quantity) &&
+      quantity > 0
+    );
+  }
+
+  private isValidUnitCartItem(item: unknown): item is UnitCartItem {
+    if (!isObject(item)) return false;
+    const quantity = item['quantity'];
+    const unitClass = item['unitClass'];
+    return (
+      isValidPricedItem(item['unitType']) &&
+      isObject(unitClass) &&
+      typeof unitClass['name'] === 'string' &&
       typeof quantity === 'number' &&
       Number.isInteger(quantity) &&
       quantity > 0
