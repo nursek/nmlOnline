@@ -132,6 +132,7 @@ class PlayerActionServiceTest {
         Sector owned = findNeutralSector(board);
         owned.setOwnerId(player.getId());
         entityManager.flush();
+        setTurn(board, 12);
 
         BuyVehicleRequestDto item = new BuyVehicleRequestDto();
         item.setVehicleType("TANK");
@@ -471,6 +472,7 @@ class PlayerActionServiceTest {
     }
 
     private Long placeVehicle(Player player, Board board, Sector sector) {
+        setTurn(board, 12);
         BuyVehicleRequestDto item = new BuyVehicleRequestDto();
         item.setVehicleType("VTT_LEGER");
         item.setQuantity(1);
@@ -478,6 +480,12 @@ class PlayerActionServiceTest {
                 .getFirst().getId();
         vehicleService.placeVehicle(vehicleId, board.getId(), sector.getNumber(), player.getUserId());
         return vehicleId;
+    }
+
+    private void setTurn(Board board, int turn) {
+        board.setCurrentTurn(turn);
+        entityManager.flush();
+        turnService.publishTurn(turn);
     }
 
     private double fund(Player player) {

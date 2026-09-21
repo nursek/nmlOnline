@@ -161,6 +161,7 @@ describe('ShopService (carts + signals)', () => {
       resistance: 0,
       firesInTransit: false,
       aerial: false,
+      availableFromTurn: 4,
     };
     shop.addVehicleToCart(vt, 3);
     expect(shop.vehicleCart()).toHaveLength(1);
@@ -182,6 +183,7 @@ describe('ShopService (carts + signals)', () => {
       resistance: 0,
       firesInTransit: false,
       aerial: false,
+      availableFromTurn: 4,
     };
     shop.addVehicleToCart(vt, 1);
     shop.addVehicleToCart(vt, 2);
@@ -201,6 +203,7 @@ describe('ShopService (carts + signals)', () => {
       resistance: 0,
       firesInTransit: false,
       aerial: false,
+      availableFromTurn: 4,
     };
     shop.addVehicleToCart(vt, 1);
     shop.removeVehicleFromCart('Tank');

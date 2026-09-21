@@ -47,6 +47,48 @@ export interface TroopSummary {
   count: number;
 }
 
+export interface ReserveGroup {
+  key: string;
+  type: string;
+  className: string;
+  classCode: string;
+  count: number;
+  unitIds: number[];
+  attack: number;
+  defense: number;
+}
+
+/** Recrues non déployées groupées par type + classe (le placement reste unité par unité côté API). */
+export function reserveGroups(units: Unit[]): ReserveGroup[] {
+  const byKey = new Map<string, ReserveGroup>();
+  for (const unit of units) {
+    if (unit.id == null) continue;
+    const type = unit.type?.name ?? 'UNITÉ';
+    const unitClass = unit.classes?.[0];
+    const className = unitClass?.name ?? '';
+    const key = `${type}#${className}`;
+    const entry = byKey.get(key);
+    if (entry) {
+      entry.count++;
+      entry.unitIds.push(unit.id);
+    } else {
+      byKey.set(key, {
+        key,
+        type,
+        className,
+        classCode: unitClass?.code ?? '',
+        count: 1,
+        unitIds: [unit.id],
+        attack: num(unit.attack),
+        defense: num(unit.defense),
+      });
+    }
+  }
+  return Array.from(byKey.values()).sort(
+    (a, b) => b.count - a.count || a.type.localeCompare(b.type),
+  );
+}
+
 export interface EquipmentCategorySubGroup {
   key: string;
   label: string;

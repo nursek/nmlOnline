@@ -65,6 +65,14 @@ public class VehicleService {
         return Arrays.asList(VehicleType.values());
     }
 
+    private void requireAvailableAtCurrentTurn(VehicleType vehicleType) {
+        int turn = turnService.getCurrentTurn();
+        if (!vehicleType.isAvailableAt(turn)) {
+            throw new IllegalStateException("« " + vehicleType.getDisplayName()
+                    + " » est disponible à l'achat à partir du tour " + vehicleType.getAvailableFromTurn());
+        }
+    }
+
     @Transactional
     public List<Vehicle> buyVehicle(Long userId, String vehicleTypeName, int quantity) {
         if (vehicleTypeName == null || vehicleTypeName.isBlank()) {
@@ -79,6 +87,7 @@ public class VehicleService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Type de véhicule invalide : " + vehicleTypeName);
         }
+        requireAvailableAtCurrentTurn(vehicleType);
 
         Player player = playerRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
@@ -121,6 +130,7 @@ public class VehicleService {
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Type de véhicule invalide : " + item.getVehicleType());
             }
+            requireAvailableAtCurrentTurn(vehicleType);
             for (int i = 0; i < item.getQuantity(); i++) {
                 toCreate.add(vehicleType);
             }

@@ -1,9 +1,12 @@
 package com.mg.nmlonline.api.controller;
 
+import com.mg.nmlonline.api.dto.BuyUnitBatchRequestDto;
 import com.mg.nmlonline.api.dto.MovementOrderDto;
 import com.mg.nmlonline.api.dto.PlaceFootOrderRequestDto;
+import com.mg.nmlonline.api.dto.PlaceUnitRequestDto;
 import com.mg.nmlonline.api.dto.RemoveEquipmentRequestDto;
 import com.mg.nmlonline.api.dto.AssignEquipmentRequestDto;
+import com.mg.nmlonline.api.dto.UnitCatalogDto;
 import com.mg.nmlonline.api.dto.UnitDto;
 import com.mg.nmlonline.domain.service.UnitService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +27,46 @@ public class UnitController {
 
     public UnitController(UnitService unitService) {
         this.unitService = unitService;
+    }
+
+    @GetMapping("/catalog")
+    public ResponseEntity<UnitCatalogDto> getCatalog(HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(unitService.getCatalog(userId));
+    }
+
+    @GetMapping("/reserve")
+    public ResponseEntity<List<UnitDto>> getReserveUnits(HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(unitService.getReserveUnitsDto(userId));
+    }
+
+    @PostMapping("/buy-batch")
+    public ResponseEntity<List<UnitDto>> buyUnitsBatch(@Valid @RequestBody BuyUnitBatchRequestDto request,
+                                                       HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(unitService.buyUnitsDto(userId, request.getItems()));
+    }
+
+    @PostMapping("/{unitId}/place")
+    public ResponseEntity<UnitDto> placeUnit(@PathVariable Long unitId,
+                                             @Valid @RequestBody PlaceUnitRequestDto request,
+                                             HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(unitService.placeUnitDto(userId, unitId,
+                request.getBoardId(), request.getSectorNumber()));
     }
 
     @PostMapping("/{unitId}/equipment")

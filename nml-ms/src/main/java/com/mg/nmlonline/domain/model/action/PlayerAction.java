@@ -51,6 +51,9 @@ public class PlayerAction {
     @Column(name = "unit_id")
     private Long unitId;
 
+    @Column(name = "unit_type")
+    private String unitType;
+
     @Column(name = "vehicle_id")
     private Long vehicleId;
 
@@ -123,6 +126,24 @@ public class PlayerAction {
     public static PlayerAction placeVehicle(Long playerId, int turn, Long vehicleId, Long boardId, int sectorNumber) {
         PlayerAction action = base(playerId, turn, PlayerActionType.PLACE_VEHICLE);
         action.setVehicleId(vehicleId);
+        action.setBoardId(boardId);
+        action.setToSectorNumber(sectorNumber);
+        return action;
+    }
+
+    public static PlayerAction buyUnit(Long playerId, int turn, Long unitId, String unitType, double money,
+                                       double startingMoneySpent) {
+        PlayerAction action = base(playerId, turn, PlayerActionType.BUY_UNIT);
+        action.setUnitId(unitId);
+        action.setUnitType(unitType);
+        action.setMoney(money);
+        action.setStartingMoneySpent(startingMoneySpent);
+        return action;
+    }
+
+    public static PlayerAction placeUnit(Long playerId, int turn, Long unitId, Long boardId, int sectorNumber) {
+        PlayerAction action = base(playerId, turn, PlayerActionType.PLACE_UNIT);
+        action.setUnitId(unitId);
         action.setBoardId(boardId);
         action.setToSectorNumber(sectorNumber);
         return action;
