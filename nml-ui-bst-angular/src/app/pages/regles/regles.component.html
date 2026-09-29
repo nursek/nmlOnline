@@ -419,8 +419,9 @@
           <p class="text">
             Sans pilote destructeur, chaque frappe choisit à 50 % un véhicule ou une unité ennemie
             (et bascule sur l'autre catégorie si elle est vide) ; un pilote destructeur vise toujours
-            les véhicules en premier. Dans la catégorie choisie, la cible est la plus faible ;
-            l'ordre d'exposition des non-véhicules est :
+            les véhicules en premier. Dans la catégorie choisie, la cible la plus exposée encaisse :
+            la moins expérimentée puis la plus faible pour les unités (défense, puis attaque), la plus
+            faible pour les véhicules. Ordre d'exposition des non-véhicules :
             <strong>unités → Banque → Cache d'armes → QG → personnage</strong>.
           </p>
           <p class="text">
@@ -554,8 +555,9 @@
           <p class="text">
             Les unités survivantes gagnent de l'expérience selon leur participation active au
             combat, plafonnée à <strong>1 Exp</strong> : avoir tiré, encaissé des dégâts, esquivé ou
-            détruit une cible. Une unité qui n'a rien fait ne gagne rien. S'ajoute
-            <strong>+1 Exp</strong> si le personnage ennemi a été éliminé.
+            détruit une cible. Une unité sans participation ne gagne rien, sauf le
+            <strong>+1 Exp</strong> accordé à toutes les unités survivantes si le personnage ennemi
+            a été éliminé.
           </p>
           <p class="text">
             Le détail des pertes, des actions et des gains d'expérience figure dans la page

@@ -327,7 +327,8 @@ public class Battle {
             tracker(striker).fired = true;
             if (armor + defense <= effective) {
                 double cost = (armor + defense) / (1 - resistance);
-                remaining = gross - cost;
+                // Reste en points de base : le bonus anti-véhicule ne doit pas être réappliqué au surplus enchaîné.
+                remaining -= cost / (1 + bonus / 100);
                 tracker(striker).destroyedTarget = true;
                 tracker(striker).damageDealt += armor + defense;
                 tracker(target).damaged = true;

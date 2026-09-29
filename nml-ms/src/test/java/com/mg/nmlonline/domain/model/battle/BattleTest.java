@@ -280,6 +280,23 @@ class BattleTest {
         }
 
         @Test
+        @DisplayName("Bonus anti-véhicule : le surplus enchaîné reste en points de base, le bonus n'est pas doublé")
+        void vehicleBonusIsNotReappliedToChainedSurplus() {
+            Unit shooter = destructor(5);
+            shooter.addEquipment(antiGround(80));
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(shooter));
+            Vehicle first = new Vehicle(VehicleType.VTT_LEGER, 2L);
+            Vehicle second = new Vehicle(VehicleType.VTT_LEGER, 2L);
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(first, second));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertTrue(logContains("détruit Defenseur · VTT léger (PDF), bonus anti-véhicule +100 % (40 → 80)"));
+            assertTrue(logContains("bonus anti-véhicule +100 % (15 → 30)"),
+                    "Le surplus (40 − 25) reste en points de base : 15 ×2, pas 30 ×2");
+        }
+
+        @Test
         @DisplayName("Véhicule aérien : ciblable uniquement en PdF, jamais en PdC ni ATK")
         void aerialTargetsRequirePdf() {
             Unit attackerUnit = new Unit(5, UnitClass.TIREUR);

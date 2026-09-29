@@ -287,6 +287,9 @@ public class TurnResolutionScenarioSeeder {
             default -> throw new IllegalArgumentException("Scénario inconnu : " + definition.code());
         }
         entityManager.flush();
+        // purgeSector et place* court-circuitent addUnit : sans ce recalcul les stats du secteur restent celles d'avant le seed.
+        arena.recalculateMilitaryPower();
+        staging.recalculateMilitaryPower();
 
         deletePendingOrdersForArena(turn, arena.getNumber());
         MovementOrder order = movementService.placeFootOrder(
