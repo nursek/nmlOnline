@@ -13,7 +13,8 @@ import java.util.List;
 
 /**
  * Source unique de vérité du tour courant du plateau ({@link Board#getCurrentTurn()}).
- * Muté par {@link #advanceTurn()} : résout les mouvements PENDING puis incrémente.
+ * Muté par {@link #advanceTurn()} (résolution puis incrément) et {@link #setCurrentTurn(int)}
+ * (navigation manuelle dev, sans résolution).
  */
 @Service
 @Transactional
@@ -24,18 +25,21 @@ public class TurnService {
     private final TurnLock turnLock;
     private final GameCharacterService characterService;
     private final HarvestAutoCollector harvestAutoCollector;
+    private final VehicleMaintenanceService vehicleMaintenanceService;
 
     // Cache du tour (évite un N+1), publié avant commit et purgé sur rollback.
     private volatile Integer cachedTurn;
 
     public TurnService(BoardRepository boardRepository, MovementService movementService,
                        TurnLock turnLock, GameCharacterService characterService,
-                       HarvestAutoCollector harvestAutoCollector) {
+                       HarvestAutoCollector harvestAutoCollector,
+                       VehicleMaintenanceService vehicleMaintenanceService) {
         this.boardRepository = boardRepository;
         this.movementService = movementService;
         this.turnLock = turnLock;
         this.characterService = characterService;
         this.harvestAutoCollector = harvestAutoCollector;
+        this.vehicleMaintenanceService = vehicleMaintenanceService;
     }
 
     /** Retourne 1 si aucun plateau n'existe encore. */
@@ -111,12 +115,34 @@ public class TurnService {
             MovementResolutionResult result = movementService.resolveAllMovements(turnEnding, board);
 
             characterService.regenerateAllCharacters();
+            vehicleMaintenanceService.repairAllVehicles();
 
             int newTurn = turnEnding + 1;
             board.setCurrentTurn(newTurn);
             board = boardRepository.save(board);
             publishTurn(newTurn);
             return new TurnAdvanceResult(board.getCurrentTurn(), result.getCaptures());
+        } finally {
+            turnLock.release();
+        }
+    }
+
+    public int setCurrentTurn(int turn) {
+        if (turn < 1) {
+            throw new IllegalArgumentException("Tour invalide : " + turn);
+        }
+        if (!turnLock.tryAcquire()) {
+            throw new IllegalStateException("Une résolution de fin de tour est déjà en cours");
+        }
+        try {
+            Board board = boardRepository.findAll().stream()
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Aucun plateau trouvé pour naviguer au tour " + turn));
+            board.setCurrentTurn(turn);
+            boardRepository.save(board);
+            publishTurn(turn);
+            return turn;
         } finally {
             turnLock.release();
         }

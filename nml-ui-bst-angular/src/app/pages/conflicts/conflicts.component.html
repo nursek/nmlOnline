@@ -1,0 +1,142 @@
+<section class="conflicts-page">
+  <header class="page-header">
+    <div class="title">
+      <mat-icon>gavel</mat-icon>
+      <h1>Conflits</h1>
+    </div>
+    <p class="subtitle">
+      Aperçu (dry-run) des conflits du tour courant : les ordres restent PENDING, rien n'est
+      déplacé. L'aperçu est recalculé à chaque ouverture de la page.
+    </p>
+  </header>
+
+  @if (previewing()) {
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  }
+
+  @if (error()) {
+    <div class="error-banner" role="alert">⚠ {{ error() }}</div>
+  }
+
+  @if (report(); as r) {
+    @if (!hasReportContent()) {
+      <p class="empty-state">
+        <mat-icon>check_circle</mat-icon>
+        Aucun ordre PENDING pour le tour {{ r.turn }} — aucun conflit à prévisualiser.
+      </p>
+    } @else {
+      <div class="resolution-report">
+        <div class="report-header">
+          <div class="report-title">
+            <mat-icon>{{ r.hasConflicts ? 'warning' : 'check_circle' }}</mat-icon>
+            <span>Compte-rendu — tour {{ r.turn }}</span>
+          </div>
+        </div>
+
+        <div class="report-summary">
+          <span class="summary-chip resolved">Résolus : {{ r.resolved.length }}</span>
+          <span class="summary-chip blocked">Bloqués : {{ r.blocked.length }}</span>
+          <span class="summary-chip conflicts {{ r.hasConflicts ? 'active' : '' }}">
+            Conflits : {{ r.conflicts.length }}
+          </span>
+          <span class="summary-chip transit {{ r.hasTransitCombats ? 'active' : '' }}">
+            Combats transit : {{ r.transitCombats.length }}
+          </span>
+          <span class="summary-chip captured {{ r.capturedSectors.length > 0 ? 'active' : '' }}">
+            Secteurs capturés : {{ r.capturedSectors.length }}
+          </span>
+        </div>
+
+        @if (r.conflicts.length > 0) {
+          <div class="report-section">
+            <div class="report-section-title">
+              <mat-icon>gavel</mat-icon>
+              <span>Conflits potentiels ({{ r.conflicts.length }})</span>
+            </div>
+            <div class="conflicts-list">
+              @for (c of r.conflicts; track $index) {
+                <div class="conflict-row">
+                  <span class="conflict-sector">Secteur {{ c.sectorNumber }}</span>
+                  @if (c.standoff) {
+                    <span class="standoff-badge">Impasse mexicaine</span>
+                  }
+                  <span class="conflict-players">
+                    <mat-icon>{{ c.standoff ? 'groups' : 'arrow_right_alt' }}</mat-icon>
+                    @for (p of c.participants; track p.playerId; let last = $last) {
+                      <span>{{ p.playerName ?? '#' + p.playerId }}</span>
+                      @if (!last) {
+                        <span class="vs">→</span>
+                      }
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (r.transitCombats.length > 0) {
+          <div class="report-section">
+            <div class="report-section-title">
+              <mat-icon>local_shipping</mat-icon>
+              <span>Combats de transit ({{ r.transitCombats.length }})</span>
+            </div>
+            <div class="transit-list">
+              @for (t of r.transitCombats; track $index) {
+                <div class="transit-row">
+                  <span class="transit-sector">Secteur {{ t.sectorNumber }}</span>
+                  <span class="transit-vehicle">Véhicule #{{ t.vehicleId }}</span>
+                  <span class="transit-fired {{ t.vehicleFired ? 'fired' : 'no-fire' }}">
+                    {{ t.vehicleFired ? 'a tiré' : 'passif' }}
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (r.capturedSectors.length > 0) {
+          <div class="report-section">
+            <div class="report-section-title">
+              <mat-icon>flag</mat-icon>
+              <span>Captures ({{ r.capturedSectors.length }})</span>
+            </div>
+            <div class="captures-list">
+              @for (c of r.capturedSectors; track c.sectorNumber) {
+                <div class="capture-row">
+                  <span class="capture-sector">Secteur {{ c.sectorNumber }}</span>
+                  <span class="capture-player">{{ c.playerName ?? '#' + c.playerId }}</span>
+                  @if (c.onTheFly) {
+                    <span class="capture-badge">à la volée</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (r.blocked.length > 0) {
+          <div class="report-section">
+            <div class="report-section-title">
+              <mat-icon>block</mat-icon>
+              <span>Ordres bloqués ({{ r.blocked.length }})</span>
+            </div>
+            <div class="blocked-list">
+              @for (o of r.blocked; track o.id) {
+                <div class="blocked-row">
+                  <span class="blocked-player">{{ o.playerName ?? '#' + o.playerId }}</span>
+                  <span class="blocked-route"
+                    >{{ o.fromSectorNumber }} → {{ o.toSectorNumber }}</span
+                  >
+                  @if (o.statusMessage) {
+                    <span class="blocked-msg">{{ o.statusMessage }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</section>

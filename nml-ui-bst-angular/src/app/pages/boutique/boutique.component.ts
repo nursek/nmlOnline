@@ -30,7 +30,7 @@ import {
   sortVehiclesByCost,
   vehicleSummary,
 } from './boutique.helpers';
-import { equipmentCategoryLabel, unitClassLabel } from '../../core/labels';
+import { equipmentCategoryLabel, unitClassLabel, vehicleTargetLabel } from '../../core/labels';
 import { slugify } from '../../core/slug';
 import { saleMultiplier, saleValue } from '../../core/sale-multiplier';
 import {
@@ -409,6 +409,7 @@ export class BoutiqueComponent {
 
   equipmentCategoryLabel = equipmentCategoryLabel;
   unitClassLabel = unitClassLabel;
+  vehicleTargetLabel = vehicleTargetLabel;
   equipmentSummary = equipmentSummary;
   equipmentBonusSummary = equipmentBonusSummary;
   equipmentClassLabel = equipmentClassLabel;

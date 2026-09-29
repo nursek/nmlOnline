@@ -4,6 +4,7 @@ import com.mg.nmlonline.api.dto.EquipmentDto;
 import com.mg.nmlonline.api.dto.UnitClassDto;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
+import com.mg.nmlonline.domain.model.equipment.VehicleBonusTarget;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,8 @@ public class EquipmentMapper {
                 domain.getPdcBonus(),
                 domain.getArmBonus(),
                 domain.getEvasionBonus(),
+                domain.getVehicleBonus(),
+                domain.getVehicleBonusTarget() != null ? domain.getVehicleBonusTarget().name() : null,
                 compatibleClassDtos,
                 category
         );
@@ -49,7 +52,7 @@ public class EquipmentMapper {
             }
         }
 
-        return new Equipment(
+        Equipment equipment = new Equipment(
                 dto.getName(),
                 (int) dto.getCost(),
                 dto.getPdfBonus(),
@@ -59,6 +62,16 @@ public class EquipmentMapper {
                 compatibleClasses,
                 category
         );
+        equipment.setVehicleBonus(dto.getVehicleBonus());
+        if (dto.getVehicleBonusTarget() != null && !dto.getVehicleBonusTarget().isBlank()) {
+            try {
+                equipment.setVehicleBonusTarget(VehicleBonusTarget.valueOf(dto.getVehicleBonusTarget()));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                        "Cible anti-véhicule invalide : " + dto.getVehicleBonusTarget());
+            }
+        }
+        return equipment;
     }
 
     private Set<UnitClassDto> toUnitClassDto(Set<UnitClass> classes) {

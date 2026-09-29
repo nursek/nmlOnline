@@ -149,14 +149,6 @@ public class AdminController {
         return Map.of("currentTurn", turnService.getCurrentTurn());
     }
 
-    @PostMapping("/turn/next")
-    public Map<String, Object> advanceTurn() {
-        TurnService.TurnAdvanceResult result = turnService.advanceTurnAndReport();
-        logger.info("[ADMIN] Tour avancé -> {} ({} secteur(s) capturé(s))",
-                result.newTurn(), result.captures().size());
-        return Map.of("currentTurn", result.newTurn(), "capturedSectors", result.captures());
-    }
-
     @GetMapping("/turn/orders")
     public List<AdminMovementOrderDto> getOrders(
             @RequestParam(value = "status", required = false) MovementStatus status) {
@@ -172,18 +164,7 @@ public class AdminController {
     }
 
     /**
-     * Résout et persiste les mouvements du tour courant sans avancer le numéro de tour.
-     */
-    @PostMapping("/turn/movements/resolve")
-    public MovementResolutionResultDto resolveMovements() {
-        MovementResolutionResultDto report = movementAdminService.resolveMovements(turnService.getCurrentTurn());
-        logger.info("[ADMIN] Mouvements résolus : {} résolus, {} bloqués, {} conflits",
-                report.getResolved().size(), report.getBlocked().size(), report.getConflicts().size());
-        return report;
-    }
-
-    /**
-     * Démarre une session pas-à-pas ; verrouille /turn/next et les autres sessions ; 409 si déjà active.
+     * Démarre une session pas-à-pas ; verrouille les autres résolutions ; 409 si déjà active.
      */
     @PostMapping("/turn/resolve/start")
     public TurnResolutionStateDto startResolution() {

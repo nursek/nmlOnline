@@ -110,8 +110,8 @@ class CombatExperienceTest {
     }
 
     @Test
-    @DisplayName("Survivant : +1 Exp, LARBIN 1 Exp évolue en VOYOU 2 Exp")
-    void survivorGainsOneExperienceAndEvolves() {
+    @DisplayName("Participation : le tireur gagne 1 Exp, la cible seulement entamée 0,5 Exp")
+    void survivorGainsExperienceByParticipation() {
         World w = seed(false);
 
         CombatService.SectorBattleResult r = runBattle(w);
@@ -121,19 +121,19 @@ class CombatExperienceTest {
         assertEquals(2, r.experienceGains().size(), "Les deux unités attaquantes survivent");
 
         CombatService.ExperienceGain larbinGain = gainOf(r, w.attackerLarbinId());
-        assertEquals(1.0, larbinGain.gained());
+        assertEquals(0.5, larbinGain.gained(), "Dégâts encaissés mais aucun tir : 0,5 Exp");
         assertEquals(1.0, larbinGain.experienceBefore());
-        assertEquals(2.0, larbinGain.experienceAfter());
+        assertEquals(1.5, larbinGain.experienceAfter());
         assertEquals(UnitType.LARBIN, larbinGain.typeBefore());
-        assertEquals(UnitType.VOYOU, larbinGain.typeAfter(), "2 Exp ⇒ évolution en VOYOU");
+        assertEquals(UnitType.LARBIN, larbinGain.typeAfter(), "1,5 Exp : pas encore d'évolution");
 
         CombatService.ExperienceGain bruteGain = gainOf(r, w.attackerBruteId());
-        assertEquals(1.0, bruteGain.gained());
+        assertEquals(1.0, bruteGain.gained(), "Tir + cible détruite, plafonné à 1 Exp");
         assertEquals(9.0, bruteGain.experienceAfter());
 
         assertTrue(r.battleLog().stream().anyMatch(e -> "Résultat".equals(e.phase())
-                        && BattleLogEntry.GAIN.equals(e.outcome()) && e.message().contains("→ VOYOU")),
-                "La section Résultat trace le gain d'expérience et l'évolution");
+                        && BattleLogEntry.GAIN.equals(e.outcome()) && e.message().contains("10 dégâts encaissés")),
+                "La section Résultat trace la participation de l'unité");
         assertTrue(r.battleLog().stream().anyMatch(e -> "Résultat".equals(e.phase())
                         && BattleLogEntry.LOSS.equals(e.outcome()) && e.message().contains("Pertes DefenseurExp")),
                 "La section Résultat liste les pertes du camp vaincu");
@@ -152,10 +152,10 @@ class CombatExperienceTest {
         assertTrue(r.success());
         assertTrue(r.defenderCharacterLost());
         assertEquals(2, r.experienceGains().size());
-        assertEquals(List.of(2.0, 2.0),
+        assertEquals(List.of(2.0, 1.5),
                 r.experienceGains().stream().map(CombatService.ExperienceGain::gained).toList(),
-                "Participation (+1) + personnage éliminé (+1)");
-        assertEquals(3.0, gainOf(r, w.attackerLarbinId()).experienceAfter());
+                "Premier survivant : participation plafonnée (+1) + personnage (+1) ; second : dégâts encaissés (+0,5) + personnage (+1)");
+        assertEquals(2.5, gainOf(r, w.attackerLarbinId()).experienceAfter());
         assertTrue(r.casualtyDetails().stream()
                         .anyMatch(casualty -> "CHARACTER".equals(casualty.category())
                                 && "HerosExp".equals(casualty.label())),

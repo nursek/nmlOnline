@@ -73,7 +73,6 @@ export class AdminComponent {
   readonly successMessage = this.admin.successMessage;
   readonly errorMessage = this.admin.error;
   readonly currentTurn = this.admin.currentTurn;
-  readonly advancingTurn = this.admin.advancingTurn;
 
   readonly orders = this.admin.orders;
   readonly ordersLoading = this.admin.ordersLoading;
@@ -82,10 +81,6 @@ export class AdminComponent {
   readonly exchanges = this.admin.exchanges;
   readonly exchangesLoading = this.admin.exchangesLoading;
   readonly exchangeStatusFilter = this.admin.exchangeStatusFilter;
-
-  readonly resolutionReport = this.admin.resolutionReport;
-  readonly previewing = this.admin.previewing;
-  readonly resolving = this.admin.resolving;
 
   readonly statusFilters: ReadonlyArray<MovementStatusFilter> = [
     'ALL',
@@ -151,27 +146,6 @@ export class AdminComponent {
     this.searchQuery.set(value);
   }
 
-  onAdvanceTurn(): void {
-    this.dialog
-      .open(ConfirmDialogComponent, {
-        data: {
-          title: 'Finir le tour',
-          message:
-            'Terminer le tour courant ? Les ordres de déplacement PENDING seront résolus, puis le compteur passera au tour suivant.',
-          confirmLabel: 'Finir le tour',
-          cancelLabel: 'Annuler',
-        },
-      })
-      .afterClosed()
-      .subscribe((confirmed: boolean) => {
-        if (confirmed) {
-          void this.admin.advanceTurn().catch(() => {
-            // AdminService already set the error signal; ignore here.
-          });
-        }
-      });
-  }
-
   onOrderStatusChange(status: MovementStatusFilter): void {
     this.orderStatusFilter.set(status);
   }
@@ -182,40 +156,6 @@ export class AdminComponent {
 
   onReloadExchanges(): void {
     this.admin.reloadExchanges();
-  }
-
-  // === Aperçu des conflits (dry-run, non mutant) ===
-  onPreviewMovements(): void {
-    void this.admin.previewMovements().catch(() => {
-      // AdminService already set the error signal; ignore here.
-    });
-  }
-
-  // === Application de la résolution des mouvements (mutant) ===
-  onResolveMovements(): void {
-    this.dialog
-      .open(ConfirmDialogComponent, {
-        data: {
-          title: 'Résoudre les mouvements',
-          message:
-            'Appliquer la résolution des ordres PENDING du tour courant ? Les déplacements seront effectués ' +
-            'et les ordres marqués RESOLVED/BLOCKED. Le numéro de tour ne change pas (utiliser « Finir le tour » ensuite).',
-          confirmLabel: 'Résoudre',
-          cancelLabel: 'Annuler',
-        },
-      })
-      .afterClosed()
-      .subscribe((confirmed: boolean) => {
-        if (confirmed) {
-          void this.admin.resolveMovements().catch(() => {
-            // AdminService already set the error signal; ignore here.
-          });
-        }
-      });
-  }
-
-  clearResolutionReport(): void {
-    this.admin.clearResolutionReport();
   }
 
   triggerImport(): void {

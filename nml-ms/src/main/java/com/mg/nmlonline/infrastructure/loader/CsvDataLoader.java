@@ -2,6 +2,7 @@ package com.mg.nmlonline.infrastructure.loader;
 
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
+import com.mg.nmlonline.domain.model.equipment.VehicleBonusTarget;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
@@ -82,17 +83,28 @@ public class CsvDataLoader implements CommandLineRunner {
             return;
         }
 
-        List<Equipment> equipments = load("/equipments.csv", parts ->
-                parts.length >= 8 ? new Equipment(
-                        parts[0],                                    // name
-                        Integer.parseInt(parts[1]),                  // cost
-                        Double.parseDouble(parts[2]),                // pdfBonus
-                        Double.parseDouble(parts[3]),                // pdcBonus
-                        Double.parseDouble(parts[4]),                // armBonus
-                        Double.parseDouble(parts[5]),                // evasionBonus
-                        new HashSet<>(),                             // compatibleClasses (chargé après)
-                        EquipmentCategory.valueOf(parts[7])          // category
-                ) : null);
+        List<Equipment> equipments = load("/equipments.csv", parts -> {
+            if (parts.length < 8) {
+                return null;
+            }
+            Equipment equipment = new Equipment(
+                    parts[0],                                    // name
+                    Integer.parseInt(parts[1]),                  // cost
+                    Double.parseDouble(parts[2]),                // pdfBonus
+                    Double.parseDouble(parts[3]),                // pdcBonus
+                    Double.parseDouble(parts[4]),                // armBonus
+                    Double.parseDouble(parts[5]),                // evasionBonus
+                    new HashSet<>(),                             // compatibleClasses (chargé après)
+                    EquipmentCategory.valueOf(parts[7])          // category
+            );
+            if (parts.length >= 9 && !parts[8].isBlank()) {
+                equipment.setVehicleBonus(Double.parseDouble(parts[8]));
+            }
+            if (parts.length >= 10 && !parts[9].isBlank()) {
+                equipment.setVehicleBonusTarget(VehicleBonusTarget.valueOf(parts[9]));
+            }
+            return equipment;
+        });
         equipments.forEach(equipmentRepository::save);
 
         log.info("Successfully loaded {} equipments from CSV", equipments.size());

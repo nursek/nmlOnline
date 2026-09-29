@@ -173,8 +173,8 @@ class MovementSimulationTest {
     }
 
     @Test
-    @DisplayName("Véhicule seul : pas de conflit fantôme et pas de combat de transit en secteur vide")
-    void shouldNotGenerateConflictForVehicleOnlyArrival() {
+    @DisplayName("Véhicule seul : conflit au secteur défendu, pas de combat de transit en secteur vide")
+    void vehicleOnlyArrivalGeneratesConflict() {
         // Le combat de transit ne s'applique qu'aux secteurs intermédiaires, pas à l'arrivée.
         MovementOrder ordreC = MovementOrder.createVehicleOrder(JOUEUR_C, 1, VEHICULE_C_ID, List.of(4, 3, 2));
         ordreC.setId(1L);
@@ -189,8 +189,12 @@ class MovementSimulationTest {
                 "Aucun conflit ne doit être généré pour le secteur intermédiaire vide"
         );
 
-        assertTrue(resultat.getConflicts().isEmpty(),
-                "Un véhicule seul ne participe pas au combat de secteur : aucun conflit en secteur 2");
+        SectorConflict conflit = resultat.getConflicts().stream()
+                .filter(c -> c.sectorNumber() == 2)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Un véhicule combattant doit déclencher un conflit en secteur 2"));
+        assertEquals(2, conflit.participantPlayerIds().size());
+        assertTrue(conflit.participantPlayerIds().containsAll(List.of(JOUEUR_B, JOUEUR_C)));
 
         assertTrue(resultat.getTransitCombats().isEmpty(),
                 "Pas de combat de transit attendu (secteur intermédiaire vide)");

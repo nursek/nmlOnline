@@ -16,6 +16,8 @@ public class ScenarioSummaryDto {
     private Long orderId;
     private List<OrderDto> orders;
     private String message;
+    private String scenarioCode;
+    private List<String> observations;
 
     @Data
     public static class ActorDto {

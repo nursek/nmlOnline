@@ -1,5 +1,5 @@
 import type { Equipment, VehicleTypeInfo } from '../../models';
-import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER } from '../../core/labels';
+import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER, vehicleTargetLabel } from '../../core/labels';
 
 const CATEGORY_ORDER: Readonly<Record<string, number>> = {
   MELEE: 0,
@@ -45,6 +45,9 @@ export function equipmentBonusSummary(eq: Equipment): string {
   if (eq.pdcBonus > 0) parts.push(`${formatPercent(eq.pdcBonus)} Pdc`);
   if (eq.armBonus > 0) parts.push(`${formatPercent(eq.armBonus)} Arm`);
   if (eq.evasionBonus > 0) parts.push(`${formatPercent(eq.evasionBonus)} Esquive`);
+  if ((eq.vehicleBonus ?? 0) > 0) {
+    parts.push(`${formatPercent(eq.vehicleBonus ?? 0)} vs ${vehicleTargetLabel(eq.vehicleBonusTarget)}`);
+  }
   return parts.join(' ; ');
 }
 

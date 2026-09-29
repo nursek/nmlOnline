@@ -52,46 +52,6 @@
   margin-bottom: 16px;
 }
 
-.turn-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
-  margin-bottom: 16px;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  flex-wrap: wrap;
-
-  .turn-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    mat-icon {
-      color: shared.$text-muted;
-    }
-
-    .turn-label {
-      color: shared.$text-muted;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .turn-value {
-      font-weight: 600;
-      color: var(--sun-deep);
-    }
-  }
-
-  button mat-spinner {
-    display: inline-block;
-    margin-right: 8px;
-  }
-}
-
 .admin-panel {
   padding: 16px;
   margin-bottom: 16px;
@@ -107,28 +67,17 @@
     gap: 12px;
     margin-bottom: 12px;
 
-    .panel-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
+      .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
 
-      mat-icon {
-        color: shared.$primary-color;
+        mat-icon {
+          color: shared.$primary-color;
+        }
       }
     }
-
-    .orders-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-
-      button mat-spinner {
-        display: inline-block;
-        margin-right: 8px;
-      }
-    }
-  }
 
   .status-chips {
     margin-bottom: 12px;
@@ -234,197 +183,6 @@
       margin-top: -2px;
       color: var(--danger-deep);
       font-size: 11px;
-    }
-  }
-}
-
-.resolution-report {
-  padding: 16px;
-  margin-bottom: 16px;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-
-  .report-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-
-    .report-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-
-      mat-icon {
-        color: var(--sun-deep);
-      }
-    }
-  }
-
-  .report-summary {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
-
-    .summary-chip {
-      padding: 4px 10px;
-      border-radius: var(--r-xs);
-      font-size: 12px;
-      background: var(--paper-2);
-      border: 1.5px solid var(--ink);
-    }
-
-    .summary-chip.conflicts.active,
-    .summary-chip.transit.active {
-      background: var(--danger-tint);
-      border-color: var(--danger-line);
-      color: var(--danger-deep);
-      font-weight: 700;
-    }
-
-    .summary-chip.captured.active {
-      background: var(--forest-tint);
-      border-color: var(--forest-line);
-      color: var(--forest-deep);
-      font-weight: 700;
-    }
-  }
-
-  .report-section {
-    margin-top: 10px;
-
-    .report-section-title {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--ink);
-      margin-bottom: 6px;
-
-      mat-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
-        color: shared.$text-muted;
-      }
-    }
-
-    .conflicts-list,
-    .transit-list,
-    .captures-list,
-    .blocked-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .conflict-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 6px 10px;
-      border-radius: var(--r-xs);
-      background: var(--danger-tint);
-
-      .conflict-sector {
-        font-weight: 700;
-        color: var(--danger-deep);
-        min-width: 110px;
-      }
-      .conflict-players {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-          color: shared.$text-muted;
-        }
-      }
-
-      .standoff-badge {
-        padding: 1px 8px;
-        border-radius: var(--r-xs);
-        background: rgba(195, 75, 28, 0.15);
-        color: var(--accent-ink);
-        font-size: 0.72rem;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-    }
-
-    .transit-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 6px 10px;
-      border-radius: var(--r-xs);
-      background: var(--paper);
-
-      .transit-sector {
-        font-weight: 700;
-        min-width: 110px;
-      }
-      .transit-fired.fired {
-        color: var(--danger-deep);
-        font-weight: 600;
-      }
-      .transit-fired.no-fire {
-        color: shared.$text-muted;
-      }
-    }
-
-    .capture-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 6px 10px;
-      border-radius: var(--r-xs);
-      background: var(--forest-tint);
-
-      .capture-sector {
-        font-weight: 700;
-        color: var(--forest-deep);
-        min-width: 110px;
-      }
-
-      .capture-badge {
-        padding: 1px 8px;
-        border-radius: var(--r-xs);
-        background: rgba(40, 104, 67, 0.15);
-        color: var(--forest-deep);
-        font-size: 0.72rem;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-    }
-
-    .blocked-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 6px 10px;
-      border-radius: var(--r-xs);
-      background: var(--danger-tint);
-      font-size: 12px;
-
-      .blocked-player {
-        font-weight: 600;
-        min-width: 100px;
-      }
-      .blocked-route {
-        color: var(--sun-deep);
-      }
-      .blocked-msg {
-        color: var(--danger-deep);
-        flex: 1;
-      }
     }
   }
 }

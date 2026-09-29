@@ -16,10 +16,27 @@ export const routes: Routes = [
   },
   {
     path: 'admin/resolution',
+    redirectTo: 'admin/tour',
+    pathMatch: 'full',
+  },
+  {
+    path: 'admin/tour',
     loadComponent: () =>
-      import('./pages/turn-resolution/turn-resolution.component').then(
-        (m) => m.TurnResolutionComponent,
+      import('./pages/turn-management/turn-management.component').then(
+        (m) => m.TurnManagementComponent,
       ),
+    canActivate: [authGuard, adminGuard],
+  },
+  {
+    path: 'admin/conflits',
+    loadComponent: () =>
+      import('./pages/conflicts/conflicts.component').then((m) => m.ConflictsComponent),
+    canActivate: [authGuard, adminGuard],
+  },
+  {
+    path: 'admin/scenarios',
+    loadComponent: () =>
+      import('./pages/dev-scenarios/dev-scenarios.component').then((m) => m.DevScenariosComponent),
     canActivate: [authGuard, adminGuard],
   },
   {

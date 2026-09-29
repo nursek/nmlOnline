@@ -667,14 +667,15 @@ public class MovementService {
         return order.getId() != null ? order.getId() : Long.MAX_VALUE;
     }
 
-    /** Combattant au sol : unité, personnage ou bâtiment actif — véhicules et occupants à bord exclus (sinon arrivée d'un véhicule seul = conflit fantôme). */
+    /** Combattant au sol : unité, personnage, véhicule ou bâtiment actif — occupants à bord protégés, donc exclus. */
     private boolean hasBattleFighters(Sector sector, Long playerId) {
         return sector.getCombatEntities().stream()
                 .filter(e -> playerId.equals(e.getPlayerId()))
                 .filter(e -> !e.isDestroyed())
                 .filter(e -> !(e instanceof Building building) || !building.isCaptured())
                 .filter(e -> !isEmbarked(sector, e))
-                .anyMatch(e -> !(e instanceof Vehicle));
+                .findAny()
+                .isPresent();
     }
 
     private boolean isEmbarked(Sector sector, CombatEntity entity) {

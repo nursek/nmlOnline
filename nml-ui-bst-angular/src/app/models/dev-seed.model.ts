@@ -4,6 +4,15 @@ export interface ScenarioActor {
   name: string;
 }
 
+export interface CombatScenarioInfo {
+  code: string;
+  label: string;
+  description: string;
+  observations: string[];
+  arenaSector: number;
+  stagingSector: number;
+}
+
 export interface ScenarioUnit {
   id: number;
   unitClass: string;
@@ -36,6 +45,8 @@ export interface ScenarioSummary extends SeedReport {
   route?: number[];
   orderId?: number;
   orders?: ScenarioOrder[];
+  scenarioCode?: string;
+  observations?: string[];
   message: string | null;
 }
 

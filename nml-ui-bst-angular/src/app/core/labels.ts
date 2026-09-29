@@ -37,3 +37,7 @@ export function unitClassLabel(name: string | null | undefined): string {
   if (!name) return '';
   return UNIT_CLASS_LABELS[name] ?? name;
 }
+
+export function vehicleTargetLabel(target: string | null | undefined): string {
+  return target === 'AERIAL' ? 'véhicules aériens' : 'véhicules terrestres';
+}

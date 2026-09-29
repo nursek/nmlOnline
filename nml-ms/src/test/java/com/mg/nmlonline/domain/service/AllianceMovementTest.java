@@ -126,8 +126,8 @@ class AllianceMovementTest {
     }
 
     @Test
-    @DisplayName("Véhicule tiers : pas de camp fantôme dans le conflit de rupture")
-    void thirdPartyVehicleDoesNotCreateGhostCamp() {
+    @DisplayName("Véhicule tiers : combattant à part entière, donc camp supplémentaire")
+    void thirdPartyVehicleIsItsOwnCamp() {
         addUnit(secteur1, JOUEUR_A, 101L);
         addUnit(secteur1, JOUEUR_B, 102L);
         Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, 5L);
@@ -139,8 +139,9 @@ class AllianceMovementTest {
         MovementResolutionResult result = service.resolveAllMovements(1, board);
 
         assertEquals(1, result.getConflicts().size());
-        assertEquals(List.of(List.of(JOUEUR_A), List.of(JOUEUR_B)), result.getConflicts().getFirst().camps(),
-                "Le véhicule du tiers ne compte pas comme camp : pas d'impasse fantôme");
+        assertEquals(List.of(List.of(JOUEUR_A), List.of(JOUEUR_B), List.of(5L)),
+                result.getConflicts().getFirst().camps(),
+                "Le véhicule du tiers participe au combat : impasse à trois camps");
     }
 
     @Test

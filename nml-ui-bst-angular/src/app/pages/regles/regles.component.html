@@ -84,7 +84,9 @@
             Une unité d'infanterie qui survit à un combat avec une défense entamée devient
             <strong>blessée</strong> : ses statistiques de base (Attaque et Défense) sont divisées
             par 2. Aucun soin d'infanterie n'existe à ce jour. Le personnage, lui, n'est jamais
-            blessé : il récupère une part de sa défense (50 points) à chaque tour.
+            blessé : il récupère une part de sa défense (50 points) à chaque tour. Un véhicule
+            endommagé répare lui aussi <strong>50 points de défense par tour</strong>, sans
+            dépasser sa défense de base.
           </p>
         </mat-expansion-panel>
 
@@ -229,16 +231,32 @@
               dépasser la capacité du type.
             </li>
             <li>
-              <strong>Hors combat</strong> — les véhicules ne participent pas aux affrontements de
-              secteur : ce sont les unités et les personnages qui se battent.
+              <strong>Combat</strong> — un véhicule non détruit participe aux affrontements du
+              secteur : il tire sa PdF pendant la phase PdF et peut être ciblé, en priorité par les
+              pilotes destructeurs. Sans pilote, il reste une cible passive qui ne tire pas, mais
+              défend le secteur et bloque sa capture tant qu'il n'est pas détruit. Le Tank réduit de
+              50 % les dégâts PdF et PdC reçus.
+            </li>
+            <li>
+              <strong>Ciblage aérien</strong> — un véhicule aérien (hélicoptère, avion de transport)
+              n'est ciblable que par des tirs PdF, avec une chance de toucher selon l'attaquant :
+              LARBIN 10 %, VOYOU 25 %, MALFRAT 40 %, BRUTE 65 %, personnage 65 %, véhicule terrestre
+              50 %, véhicule aérien 75 %, arme anti-aérienne 75 %. Un tir manqué est perdu.
+            </li>
+            <li>
+              <strong>Équipage protégé</strong> — le pilote et les passagers sont intouchables tant
+              que le véhicule vit ; dans un véhicule armé et piloté, ils tirent leur propre PdF
+              (celle du pilote comprise). Véhicule détruit : l'équipage débarque et rejoint le combat
+              à pied.
+            </li>
+            <li>
+              <strong>Réparation</strong> — un véhicule endommagé récupère 50 points de défense par
+              tour, sans dépasser sa défense de base.
             </li>
           </ul>
           <div class="draft">
             <mat-icon>construction</mat-icon>
-            <p>
-              À venir : interception d'un véhicule en transit, tirs en transit et débarquement de
-              l'équipage si le véhicule est détruit.
-            </p>
+            <p>À venir : interception d'un véhicule en transit et tirs en transit.</p>
           </div>
         </mat-expansion-panel>
 
@@ -331,6 +349,12 @@
             <li><strong>Puissance de corps-à-corps</strong> = Attaque × bonus PdC / 100</li>
             <li><strong>Armure</strong> = Défense × bonus Arm / 100</li>
             <li><strong>Esquive</strong> = somme brute des bonus d'esquive</li>
+            <li>
+              <strong>Anti-véhicule</strong> — certains équipements (Gauss Cannon, Heavy Gauss
+              Cannon, Enmitic Annihilator) infligent des dégâts doublés contre leur catégorie de
+              cible : véhicules terrestres ou aériens. Le bonus s'applique aux tirs PdF et ne se
+              cumule pas entre armes (le meilleur bonus l'emporte).
+            </li>
           </ul>
           <p class="text">
             À l'achat, le coût est débité selon la quantité (<code>coût × quantité</code>).
@@ -372,33 +396,39 @@
             <mat-panel-title><mat-icon>sports_esports</mat-icon>Affrontements</mat-panel-title>
           </mat-expansion-panel-header>
           <p class="text">
-            Un affrontement oppose, sur un secteur, les entités combattantes (unités, personnages et
-            bâtiments) de l'attaquant et du défenseur. Les véhicules ne participent pas au combat.
-            Les phases s'enchaînent dans cet ordre, les deux camps frappant en même temps :
+            Un affrontement oppose, sur un secteur, les entités combattantes (unités, personnages,
+            bâtiments et véhicules) de l'attaquant et du défenseur. Les deux camps frappent en même
+            temps et chaque entité agit individuellement avec ses propres statistiques : chaque
+            frappe peut toucher, esquiver ou détruire une cible précise, et le journal de combat
+            détaille chaque action (tir, résultat, dégâts). Les phases s'enchaînent dans cet ordre :
           </p>
           <ol class="phase-list">
-            <li><strong>PdF</strong> — total de puissance de feu des deux camps.</li>
-            <li><strong>PdF, round 2</strong> — si des points de PdF subsistent.</li>
+            <li>
+              <strong>PdF</strong> — tirs de puissance de feu de chaque entité (véhicules et
+              équipage compris).
+            </li>
             <li>
               <strong>Bâtiments secondaires</strong> — riposte à l'Attaque (Banque et Cache d'armes,
               le QG est exclu).
             </li>
-            <li><strong>PdC</strong> — total de puissance de corps-à-corps des deux camps.</li>
-            <li><strong>PdC, round 2</strong> — si des points de PdC subsistent.</li>
+            <li><strong>PdC</strong> — puissance de corps-à-corps de chaque entité.</li>
             <li><strong>ATK</strong> — Attaque des unités d'infanterie.</li>
             <li><strong>QG</strong> — Attaque du quartier général.</li>
             <li><strong>Personnages</strong> — Attaque des personnages.</li>
           </ol>
           <p class="text">
-            À chaque phase, la cible est la dernière entité de la liste de défense. Cette liste est
-            triée par expérience, puis par défense et attaque : les unités les plus faibles et les
-            moins expérimentées encaissent en premier. L'ordre d'exposition, du premier touché au
-            dernier, est : <strong>unités → Banque → Cache d'armes → QG → personnage</strong>.
+            Sans pilote destructeur, chaque frappe choisit à 50 % un véhicule ou une unité ennemie
+            (et bascule sur l'autre catégorie si elle est vide) ; un pilote destructeur vise toujours
+            les véhicules en premier. Dans la catégorie choisie, la cible est la plus faible ;
+            l'ordre d'exposition des non-véhicules est :
+            <strong>unités → Banque → Cache d'armes → QG → personnage</strong>.
           </p>
           <p class="text">
-            L'armure encaisse les dégâts avant la défense. Une esquive réussie annule l'attaque mais
-            consomme quand même des points à l'attaquant. Le combat s'arrête dès qu'un camp n'a plus
-            de combattant (hors bâtiments).
+            L'armure encaisse les dégâts avant la défense. Les dégâts qui détruisent une cible
+            s'enchaînent sur la cible suivante, sans être perdus. Un véhicule aérien n'est ciblable
+            que par des tirs PdF, avec une chance de toucher selon l'attaquant (voir Véhicules).
+            Une esquive réussie annule la frappe, qui est perdue. Le combat s'arrête dès qu'un camp
+            n'a plus de combattant (hors bâtiments).
           </p>
           <div class="callout">
             <mat-icon>flag</mat-icon>
@@ -522,12 +552,13 @@
             </mat-panel-title>
           </mat-expansion-panel-header>
           <p class="text">
-            Les unités gagnent de l'expérience lorsqu'elles ressortent vivantes d'un affrontement
-            auquel elles ont activement participé : <strong>+1 Exp</strong> pour une participation
-            active, et <strong>+1 Exp supplémentaire</strong> par personnage ennemi éliminé.
+            Les unités survivantes gagnent de l'expérience selon leur participation active au
+            combat, plafonnée à <strong>1 Exp</strong> : avoir tiré, encaissé des dégâts, esquivé ou
+            détruit une cible. Une unité qui n'a rien fait ne gagne rien. S'ajoute
+            <strong>+1 Exp</strong> si le personnage ennemi a été éliminé.
           </p>
           <p class="text">
-            Le détail des pertes et des gains d'expérience figure dans la page
+            Le détail des pertes, des actions et des gains d'expérience figure dans la page
             <strong>Rapports</strong>.
           </p>
         </mat-expansion-panel>

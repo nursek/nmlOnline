@@ -17,6 +17,7 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
+import { DevScenarioService } from '../../services/dev-scenario.service';
 
 interface NavLink {
   path: string;
@@ -36,7 +37,9 @@ const BASE_MENU_ITEMS: NavLink[] = [
 const ADMIN_MENU_ITEMS: NavLink[] = [
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' },
-  { path: '/admin/resolution', label: 'Fin de tour', icon: 'skip_next' },
+  { path: '/admin/tour', label: 'Gestion du tour', icon: 'event_repeat' },
+  { path: '/admin/conflits', label: 'Conflits', icon: 'gavel' },
+  { path: '/admin/scenarios', label: 'Scénarios de tests', icon: 'science' },
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
 ];
 
@@ -338,6 +341,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
 })
 export class NavbarComponent {
   private readonly auth = inject(AuthService);
+  private readonly devScenarios = inject(DevScenarioService);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly document = inject(DOCUMENT);
 
@@ -354,9 +358,14 @@ export class NavbarComponent {
 
   readonly drawerOpen = signal(false);
 
-  readonly menuItems = computed<NavLink[]>(() =>
-    this.isAdmin() ? ADMIN_MENU_ITEMS : BASE_MENU_ITEMS,
-  );
+  readonly menuItems = computed<NavLink[]>(() => {
+    if (!this.isAdmin()) {
+      return BASE_MENU_ITEMS;
+    }
+    return this.devScenarios.available()
+      ? ADMIN_MENU_ITEMS
+      : ADMIN_MENU_ITEMS.filter((item) => item.path !== '/admin/scenarios');
+  });
 
   // Block body scroll while the mobile drawer is open (DOM/3rd-party sync effect).
   constructor() {

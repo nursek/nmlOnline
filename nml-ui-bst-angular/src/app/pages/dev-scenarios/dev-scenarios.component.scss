@@ -1,0 +1,163 @@
+:host {
+  display: block;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.page-header {
+  position: relative;
+  margin-bottom: 1.5rem;
+  padding-bottom: 16px;
+  border-bottom: 2.5px solid var(--ink);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -2.5px;
+    width: 64px;
+    height: 10px;
+    background: var(--accent);
+  }
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    mat-icon {
+      color: var(--accent);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+  }
+
+  .subtitle {
+    margin: 0.5rem 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+}
+
+.unavailable {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-size: 0.9rem;
+
+  mat-icon {
+    color: var(--ink-3);
+  }
+}
+
+.error-banner {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(157, 46, 25, 0.1);
+  border: 1px solid rgba(157, 46, 25, 0.35);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.dev-scenario-panel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1rem;
+  background: rgba(40, 104, 67, 0.08);
+  border: 1px solid rgba(40, 104, 67, 0.3);
+  border-radius: var(--r-sm);
+  margin-bottom: 1rem;
+
+  .dev-scenario-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 240px;
+
+    mat-icon {
+      color: var(--forest);
+    }
+
+    .dev-scenario-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      font-size: 0.85rem;
+      color: var(--forest-deep);
+
+      strong {
+        font-size: 0.95rem;
+        color: var(--forest-deep);
+      }
+    }
+  }
+}
+
+.seed-report {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  background: rgba(40, 104, 67, 0.12);
+  border: 1px solid rgba(40, 104, 67, 0.35);
+  border-radius: var(--r-sm);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--ink);
+
+  mat-icon {
+    color: var(--forest);
+  }
+}
+
+.combat-scenario-select {
+  min-width: 260px;
+}
+
+.combat-scenario-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.6rem 0.9rem;
+  background: rgba(40, 104, 67, 0.06);
+  border: 1px dashed rgba(40, 104, 67, 0.35);
+  border-radius: var(--r-sm);
+  margin: -0.4rem 0 1rem;
+  font-size: 0.85rem;
+  color: var(--forest-deep);
+
+  .combat-scenario-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+
+    .arena {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+  }
+
+  p {
+    margin: 0;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.1rem;
+  }
+}

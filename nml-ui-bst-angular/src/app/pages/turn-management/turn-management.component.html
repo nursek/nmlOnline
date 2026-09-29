@@ -1,83 +1,53 @@
 <section class="resolution-page">
-  @if (devScenarioAvailable()) {
-    <div class="dev-scenario-panel">
-      <div class="dev-scenario-info">
-        <mat-icon>science</mat-icon>
-        <div class="dev-scenario-text">
-          <strong>Scénarios de test (dev)</strong>
-          <span>
-            2 hops : lurio (secteur 41) → secteur 32 (cegorach), route [41, 13, 32]. Impasse :
-            cegorach défend 32, imotekh (43) et lurio (41) y arrivent au même hop. Re-jouables à la
-            demande.
-          </span>
-        </div>
-      </div>
-      <button
-        mat-flat-button
-        color="accent"
-        (click)="onSeedScenario()"
-        [disabled]="seeding() || busy()"
-        matTooltip="Sème le scénario pour le tour courant (idempotent)"
-      >
-        @if (seeding()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          <mat-icon>play_circle</mat-icon>
-        }
-        Seeder le scénario 2 hops
-      </button>
-      <button
-        mat-flat-button
-        color="primary"
-        (click)="onSeedStandoffScenario()"
-        [disabled]="seeding() || busy()"
-        matTooltip="Cegorach défend 32, imotekh et lurio y arrivent au même hop"
-      >
-        @if (seeding()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          <mat-icon>groups</mat-icon>
-        }
-        Seeder l'impasse 3 camps
-      </button>
-      <button
-        mat-stroked-button
-        color="primary"
-        (click)="onSeedExchangeScenario()"
-        [disabled]="seeding() || busy()"
-        matTooltip="Offre en attente lurio → cegorach et échange accepté imotekh → nursek"
-      >
-        @if (seeding()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          <mat-icon>swap_horiz</mat-icon>
-        }
-        Seeder un échange
-      </button>
-    </div>
-  }
-
-  @if (seedReport()) {
-    <div class="seed-report">
-      <mat-icon>check_circle</mat-icon>
-      <span>
-        {{ seedReport()?.message }}
-        @if (seedReport()?.route?.length) {
-          · Route {{ seedReport()?.route }} · Tour {{ seedReport()?.turn }}
-        }
-      </span>
-    </div>
-  }
   <header class="page-header">
     <div class="title">
-      <mat-icon>skip_next</mat-icon>
-      <h1>Résolution de fin de tour</h1>
+      <mat-icon>event_repeat</mat-icon>
+      <h1>Gestion du tour</h1>
     </div>
     <p class="subtitle">
-      Pilotage pas-à-pas, hop par hop. Les unités avancent d'un secteur, les batailles sont résolues
-      manuellement, puis le tour s'incrémente.
+      Résolution pas-à-pas, hop par hop. Les unités avancent d'un secteur, les batailles sont
+      résolues manuellement, puis le tour s'incrémente.
     </p>
   </header>
+
+  <div class="turn-panel">
+    <div class="turn-info">
+      <mat-icon>event_repeat</mat-icon>
+      <span class="turn-label">Tour courant</span>
+      <span class="turn-value">{{ currentTurnLabel() }}</span>
+      @if (active()) {
+        <span class="session-badge">session en cours</span>
+      }
+    </div>
+    @if (devScenarioAvailable()) {
+      <div class="turn-navigation">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Naviguer vers le tour</mat-label>
+          <input
+            matInput
+            type="number"
+            min="1"
+            [value]="targetTurn() ?? ''"
+            (input)="onTargetTurnChange($any($event.target).value)"
+          />
+        </mat-form-field>
+        <button
+          mat-stroked-button
+          color="accent"
+          (click)="onNavigateToTurn()"
+          [disabled]="!canNavigate()"
+          matTooltip="Fixe le compteur du tour sans résoudre les mouvements (dev)"
+        >
+          @if (navigating()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <mat-icon>trending_flat</mat-icon>
+          }
+          Naviguer
+        </button>
+      </div>
+    }
+  </div>
 
   @if (pendingCaptures().length) {
     <mat-card class="pending-captures">
@@ -306,6 +276,12 @@
                     }
                     @if (b.defenderInjured) {
                       · {{ b.defenderInjured }} blessé déf.
+                    }
+                    @if (b.capturedBuildings > 0) {
+                      · {{ b.capturedBuildings }} bâtiment(s) capturé(s)
+                      @if (b.defenderHeadquartersCaptured) {
+                        — QG capturé
+                      }
                     }
                   </span>
                 } @else {
