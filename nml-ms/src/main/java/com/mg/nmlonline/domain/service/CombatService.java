@@ -341,7 +341,7 @@ public class CombatService {
         for (Unit unit : new ArrayList<>(sector.getUnits())) {
             if (isCasualty(unit, beforeIds, survivorIds)) {
                 detachPilotFromVehicles(unit);
-                // Sector.army sans orphanRemoval (docs/jpa-pitfalls.md §1, V6) : em.remove cascade vers Unit.unitEquipments (cascade=ALL) → DELETE propre. Retrait mémoire pour cohérence de sector.getUnits().
+                // Sector.army sans orphanRemoval (V6) : em.remove cascade vers Unit.unitEquipments (cascade=ALL) → DELETE propre. Retrait mémoire pour cohérence de sector.getUnits().
                 em.remove(unit);
                 sector.getUnits().remove(unit);
                 casualties.add(unit);
@@ -369,7 +369,7 @@ public class CombatService {
 
         for (Building building : new ArrayList<>(sector.getBuildings())) {
             if (isCasualty(building, beforeIds, survivorIds)) {
-                // Jamais DELETE (orphanRemoval Player.buildings — docs/jpa-pitfalls.md) : marqué détruit.
+                // Jamais DELETE (orphanRemoval Player.buildings) : marqué détruit.
                 if (building instanceof Headquarters headquarters) {
                     headquarters.destroy();
                 } else {

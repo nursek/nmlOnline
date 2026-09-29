@@ -279,7 +279,7 @@ class TurnResolutionOrchestratorTest {
     @Test
     @DisplayName("resolveBattle détruit un défenseur équipé : la FK cascade efface ses rows unit_equipments (Phase 2)")
     void resolveBattle_perteUniteEquipee_effaceRowsUnitEquipmentsViaFkCascade() {
-        // Pas de @Transactional sur ce test : setup commité pour que l'orchestrateur voie les données (docs/jpa-pitfalls.md §2).
+        // Pas de @Transactional sur ce test : setup commité pour que l'orchestrateur voie les données.
         Long ueId = new TransactionTemplate(txManager).execute(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             List<Player> players = playerRepository.findAll();

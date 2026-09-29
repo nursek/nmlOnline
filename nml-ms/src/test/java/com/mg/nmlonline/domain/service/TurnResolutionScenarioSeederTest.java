@@ -12,6 +12,7 @@ import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
+import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.GameCharacterRepository;
@@ -78,7 +79,7 @@ class TurnResolutionScenarioSeederTest {
         assertNotNull(result.getOrderId());
         assertNotNull(result.getAttackerUnit());
         assertNotNull(result.getDefender());
-        assertEquals(32, result.getDefender().getId() > 0 ? 32 : 32);
+        assertEquals("cegorach", result.getDefender().getName());
 
         var createdOrders = movementOrderRepository.findByPlayerIdAndTurnAndStatus(
                 result.getAttacker().getId(), turn, MovementStatus.PENDING);
@@ -93,6 +94,30 @@ class TurnResolutionScenarioSeederTest {
                 "Re-seed ne crée pas de doublon d'ordre PENDING pour lurio");
         assertEquals(0, secondCall.getDefendersAdded(),
                 "Au second appel, aucun défenseur n'est ré-ajouté (idempotence)");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("Re-seed sans attaquant éligible en 41 : la route repart de 13 au lieu d'échouer sur 41")
+    void reseedWithAttackerInIntermediateSectorUsesRemainingRoute() {
+        ScenarioSummaryDto first = seeder.seedScenario();
+        Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+        List<Unit> movers = board.getSector(41).getUnits().stream()
+                .filter(u -> first.getAttacker().getId().equals(u.getPlayerId()))
+                .filter(u -> u.getMaxMovementHops() >= 2)
+                .toList();
+        movers.forEach(unit -> {
+            board.getSector(41).removeUnit(unit);
+            board.getSector(13).addUnit(unit);
+        });
+
+        ScenarioSummaryDto reseed = seeder.seedScenario();
+
+        assertEquals(List.of(13, 32), reseed.getRoute());
+        assertEquals(13, reseed.getAttackerUnit().getFromSector());
+        assertEquals(List.of(13, 32), movementOrderRepository
+                .findByPlayerIdAndTurnAndStatus(reseed.getAttacker().getId(), reseed.getTurn(), MovementStatus.PENDING)
+                .getFirst().getRoute());
     }
 
     @Test

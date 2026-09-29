@@ -62,6 +62,10 @@ public class EquipmentMapper {
                 compatibleClasses,
                 category
         );
+        if (dto.getVehicleBonus() < 0) {
+            throw new IllegalArgumentException(
+                    "Bonus anti-véhicule négatif interdit : " + dto.getVehicleBonus());
+        }
         equipment.setVehicleBonus(dto.getVehicleBonus());
         if (dto.getVehicleBonusTarget() != null && !dto.getVehicleBonusTarget().isBlank()) {
             try {

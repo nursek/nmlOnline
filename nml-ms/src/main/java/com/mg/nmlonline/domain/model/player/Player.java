@@ -62,12 +62,12 @@ public class Player {
     @BatchSize(size = 20)
     private List<Building> buildings = new ArrayList<>();
 
-    // orphanRemoval=true + FK player_id NOT NULL : risque 500 si chemin de transfert ajouté (voir docs/jpa-pitfalls.md).
+    // orphanRemoval=true + FK player_id NOT NULL : risque 500 si chemin de transfert ajouté.
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 20)
     private List<EquipmentStack> equipments = new ArrayList<>();
 
-    // orphanRemoval=true + FK player_id NOT NULL : risque 500 si chemin de transfert ajouté (voir docs/jpa-pitfalls.md).
+    // orphanRemoval=true + FK player_id NOT NULL : risque 500 si chemin de transfert ajouté.
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 20)
     private List<PlayerResource> resources = new ArrayList<>();

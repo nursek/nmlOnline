@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /** Dev-only, idempotent : purge les PENDING du tour et n'ajoute que les unités manquantes. */
 @Service
@@ -145,9 +146,12 @@ public class TurnResolutionScenarioSeeder {
 
     @Transactional
     public ScenarioSummaryDto seedScenario() {
+        return withTurnLock(this::seedScenarioUnlocked);
+    }
+
+    private ScenarioSummaryDto seedScenarioUnlocked() {
         Board board = requireBoard();
         int turn = turnService.getCurrentTurn();
-        requireNoActiveSession();
 
         Player lurio = resolvePlayerByName("lurio", "lurio introuvable — vérifiez le seed démo");
         Player cegorach = resolvePlayerByName("cegorach", "cegorach introuvable — vérifiez le seed démo");
@@ -160,10 +164,14 @@ public class TurnResolutionScenarioSeeder {
         Sector sAttackerFrom = requireSector(board, SECTOR_ATTACKER_FROM, "attaquant");
         Unit attackerUnit = pickAttacker(sAttackerFrom, lurio.getId());
         boolean addedAttacker = false;
+        int fromSector = sAttackerFrom.getNumber();
         if (attackerUnit == null) {
             Sector sIntermediate = board.getSector(SECTOR_INTERMEDIATE);
             if (sIntermediate != null) {
                 attackerUnit = pickAttacker(sIntermediate, lurio.getId());
+                if (attackerUnit != null) {
+                    fromSector = sIntermediate.getNumber();
+                }
             }
         }
         if (attackerUnit == null) {
@@ -175,13 +183,14 @@ public class TurnResolutionScenarioSeeder {
         }
 
         Long attackerUnitId = attackerUnit.getId();
-        int fromSector = sAttackerFrom.getNumber();
+        List<Integer> route = fromSector == SECTOR_ATTACKER_FROM
+                ? List.of(SECTOR_ATTACKER_FROM, SECTOR_INTERMEDIATE, SECTOR_DEFENDER)
+                : List.of(SECTOR_INTERMEDIATE, SECTOR_DEFENDER);
 
         deletePendingOrders(turn, List.of(lurio.getId(), cegorach.getId()));
 
         MovementOrder order = movementService.placeFootOrder(
-                lurio.getId(), turn, List.of(attackerUnitId),
-                List.of(SECTOR_ATTACKER_FROM, SECTOR_INTERMEDIATE, SECTOR_DEFENDER), board);
+                lurio.getId(), turn, List.of(attackerUnitId), route, board);
 
         ScenarioSummaryDto dto = new ScenarioSummaryDto();
         dto.setTurn(turn);
@@ -189,20 +198,25 @@ public class TurnResolutionScenarioSeeder {
         dto.setDefender(actor(cegorach));
         dto.setAttackerUnit(unit(attackerUnit, fromSector));
         dto.setDefendersAdded(defendersAdded);
-        dto.setRoute(List.of(SECTOR_ATTACKER_FROM, SECTOR_INTERMEDIATE, SECTOR_DEFENDER));
+        dto.setRoute(route);
         dto.setOrderId(order.getId());
+        String hops = route.size() == 3 ? "2 hops" : "1 hop";
         dto.setMessage(addedAttacker
-                ? "Scénario prêt — unité attaquante ajoutée en " + fromSector + ". Démarrez la session puis 2 hops."
-                : "Scénario prêt — démarrez la session pas-à-pas, puis avancez de 2 hops et résolvez le conflit sur le secteur " + SECTOR_DEFENDER + ".");
+                ? "Scénario prêt — unité attaquante ajoutée en " + fromSector + ". Démarrez la session puis " + hops + "."
+                : "Scénario prêt — démarrez la session pas-à-pas, puis avancez de " + hops
+                        + " et résolvez le conflit sur le secteur " + SECTOR_DEFENDER + ".");
         return dto;
     }
 
     /** Impasse : cegorach défend 32 ; imotekh (43) puis lurio (41) y arrivent au même hop, dans cet ordre d'envoi. */
     @Transactional
     public ScenarioSummaryDto seedStandoffScenario() {
+        return withTurnLock(this::seedStandoffScenarioUnlocked);
+    }
+
+    private ScenarioSummaryDto seedStandoffScenarioUnlocked() {
         Board board = requireBoard();
         int turn = turnService.getCurrentTurn();
-        requireNoActiveSession();
 
         Player lurio = resolvePlayerByName("lurio", "lurio introuvable — vérifiez le seed démo");
         Player imotekh = resolvePlayerByName("imotekh", "imotekh introuvable — vérifiez le seed démo");
@@ -256,9 +270,12 @@ public class TurnResolutionScenarioSeeder {
     /** Purge l'arène dédiée puis la peuple : chaque scénario est rejouable sans polluer les autres. */
     @Transactional
     public ScenarioSummaryDto seedCombatScenario(String code) {
+        return withTurnLock(() -> seedCombatScenarioUnlocked(code));
+    }
+
+    private ScenarioSummaryDto seedCombatScenarioUnlocked(String code) {
         Board board = requireBoard();
         int turn = turnService.getCurrentTurn();
-        requireNoActiveSession();
 
         CombatScenarioDefinition definition = COMBAT_SCENARIOS.stream()
                 .filter(scenario -> scenario.code().equals(code))
@@ -557,10 +574,15 @@ public class TurnResolutionScenarioSeeder {
                 .orElseThrow(() -> new IllegalStateException("Aucun plateau trouvé — importez d'abord un board"));
     }
 
-    private void requireNoActiveSession() {
-        if (turnLock.isLocked()) {
+    private ScenarioSummaryDto withTurnLock(Supplier<ScenarioSummaryDto> seed) {
+        if (!turnLock.tryAcquire()) {
             throw new IllegalStateException(
                     "Une session pas-à-pas est active — finalisez ou abandonnez-la avant de re-seeder");
+        }
+        try {
+            return seed.get();
+        } finally {
+            turnLock.release();
         }
     }
 

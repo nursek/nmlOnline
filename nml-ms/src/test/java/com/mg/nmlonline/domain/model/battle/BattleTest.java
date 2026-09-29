@@ -413,6 +413,15 @@ class BattleTest {
             heavy.setVehicleBonusTarget(VehicleBonusTarget.AERIAL);
             antiAir.addEquipment(heavy);
             assertEquals(0.75, antiAir.getAerialHitChance());
+
+            Unit withDefensiveAA = brute();
+            Equipment shield = new Equipment("Bouclier AA", 100, 0, 0, 0, 0,
+                    Set.of(UnitClass.TIREUR), EquipmentCategory.DEFENSIVE);
+            shield.setVehicleBonus(100);
+            shield.setVehicleBonusTarget(VehicleBonusTarget.AERIAL);
+            withDefensiveAA.addEquipment(shield);
+            assertEquals(0.65, withDefensiveAA.getAerialHitChance(),
+                    "Un équipement défensif n'est pas une arme anti-aérienne");
         }
     }
 

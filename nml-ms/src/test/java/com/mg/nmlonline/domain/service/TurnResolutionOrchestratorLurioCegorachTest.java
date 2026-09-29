@@ -127,7 +127,7 @@ class TurnResolutionOrchestratorLurioCegorachTest {
         assertFalse(report.isDefenderCharacterLost(),
                 "Le personnage de cegorach combat au secteur 32 mais survit : l'attaquant est anéanti avant lui");
 
-        // Pas de @Transactional sur ce test : un @Transactional de test masquerait la DataIntegrityViolationException au commit (docs/jpa-pitfalls.md §2).
+        // Pas de @Transactional sur ce test : un @Transactional de test masquerait la DataIntegrityViolationException au commit.
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Sector secteur32 = boardRepository.findAll().stream()
                     .findFirst().orElseThrow().getSector(32);

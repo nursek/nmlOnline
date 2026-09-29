@@ -392,6 +392,7 @@ public class Unit extends CombatEntity {
     private boolean hasAntiAerialWeapon() {
         return getEquipmentsForCalculation().stream()
                 .filter(this::isEquipmentCompatible)
+                .filter(equipment -> equipment.getCategory() == EquipmentCategory.FIREARM)
                 .anyMatch(equipment -> equipment.getVehicleBonus() > 0
                         && equipment.getVehicleBonusTarget() == VehicleBonusTarget.AERIAL);
     }
