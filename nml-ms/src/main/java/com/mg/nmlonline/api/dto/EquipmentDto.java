@@ -16,6 +16,8 @@ public class EquipmentDto {
     private double pdcBonus;
     private double armBonus;
     private double evasionBonus;
+    private double vehicleBonus;
+    private String vehicleBonusTarget;
     private Set<UnitClassDto> compatibleClass;
     private String category;
 }

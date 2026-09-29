@@ -32,6 +32,12 @@
                 @if (st.equipment.evasionBonus > 0) {
                   <span class="usp-bonus esq">+{{ st.equipment.evasionBonus }} % ESQ</span>
                 }
+                @if ((st.equipment.vehicleBonus ?? 0) > 0) {
+                  <span class="usp-bonus vehicle"
+                    >+{{ st.equipment.vehicleBonus }} % VS
+                    {{ st.equipment.vehicleBonusTarget === 'AERIAL' ? 'aériens' : 'terrestres' }}</span
+                  >
+                }
               </span>
               <span class="usp-cat">x{{ st.available }} dispo</span>
             </div>

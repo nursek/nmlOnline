@@ -58,7 +58,8 @@ public class CombatService {
 
     /**
      * Combat sur un secteur : chaque camp (1 ou 2 alliés fusionnés) engage unités + personnages + bâtiments
-     * co-localisés (véhicules exclus). Les bâtiments du camp perdant passent au joueur dominant du camp vainqueur.
+     * + véhicules co-localisés (équipage protégé tant que le véhicule vit). Les bâtiments du camp perdant
+     * passent au joueur dominant du camp vainqueur.
      */
     public SectorBattleResult simulateSectorBattle(List<Player> attackerCamp, List<Player> defenderCamp,
                                                    Board board, int sectorNumber) {
@@ -118,8 +119,8 @@ public class CombatService {
                 .anyMatch(player -> characterLost.getOrDefault(player.getId(), false));
 
         List<ExperienceGain> experienceGains = new ArrayList<>();
-        awardExperience(attackerFighters, defenderCharacterLost, experienceGains);
-        awardExperience(defenderFighters, attackerCharacterLost, experienceGains);
+        awardExperience(battle, attackerFighters, defenderCharacterLost, experienceGains);
+        awardExperience(battle, defenderFighters, attackerCharacterLost, experienceGains);
         List<CasualtyInfo> casualtyDetails = casualties.stream().map(this::toCasualtyInfo).toList();
 
         sector.recalculateMilitaryPower();
@@ -235,7 +236,7 @@ public class CombatService {
             int struck = targets[i];
             boolean struckCharacterLost = struck >= 0 && activeCamps.get(struck).stream()
                     .anyMatch(player -> characterLost.getOrDefault(player.getId(), false));
-            awardExperience(camps.get(i), struckCharacterLost, experienceGains);
+            awardExperience(battle, camps.get(i), struckCharacterLost, experienceGains);
         }
         List<CasualtyInfo> casualtyDetails = casualties.stream().map(this::toCasualtyInfo).toList();
 
@@ -340,7 +341,7 @@ public class CombatService {
         for (Unit unit : new ArrayList<>(sector.getUnits())) {
             if (isCasualty(unit, beforeIds, survivorIds)) {
                 detachPilotFromVehicles(unit);
-                // Sector.army sans orphanRemoval (docs/jpa-pitfalls.md §1, V6) : em.remove cascade vers Unit.unitEquipments (cascade=ALL) → DELETE propre. Retrait mémoire pour cohérence de sector.getUnits().
+                // Sector.army sans orphanRemoval (V6) : em.remove cascade vers Unit.unitEquipments (cascade=ALL) → DELETE propre. Retrait mémoire pour cohérence de sector.getUnits().
                 em.remove(unit);
                 sector.getUnits().remove(unit);
                 casualties.add(unit);
@@ -368,7 +369,7 @@ public class CombatService {
 
         for (Building building : new ArrayList<>(sector.getBuildings())) {
             if (isCasualty(building, beforeIds, survivorIds)) {
-                // Jamais DELETE (orphanRemoval Player.buildings — docs/jpa-pitfalls.md) : marqué détruit.
+                // Jamais DELETE (orphanRemoval Player.buildings) : marqué détruit.
                 if (building instanceof Headquarters headquarters) {
                     headquarters.destroy();
                 } else {
@@ -376,6 +377,16 @@ public class CombatService {
                     building.recalculateBaseStats();
                 }
                 casualties.add(building);
+            }
+        }
+
+        for (Vehicle vehicle : new ArrayList<>(sector.getVehicles())) {
+            if (isCasualty(vehicle, beforeIds, survivorIds)) {
+                // Épave conservée dans le secteur (pas de DELETE) : équipage débarqué, stats à zéro.
+                vehicle.disembarkAll();
+                vehicle.setDestroyed(true);
+                vehicle.recalculateBaseStats();
+                casualties.add(vehicle);
             }
         }
 
@@ -416,7 +427,7 @@ public class CombatService {
     private record CaptureReport(int capturedBuildings, boolean headquartersCaptured) {
     }
 
-    /** Filtrage par joueurs ; véhicules exclus (listes unités/personnages/bâtiments uniquement). */
+    /** Inclut les véhicules et l'équipage embarqué (protégé tant que son véhicule vit). */
     private List<CombatEntity> collectBattleParticipants(Sector sector, Collection<Long> playerIds) {
         List<CombatEntity> fighters = new ArrayList<>();
 
@@ -438,6 +449,11 @@ public class CombatService {
                 .filter(u -> !u.isDestroyed())
                 .forEach(fighters::add);
 
+        sector.getVehicles().stream()
+                .filter(v -> playerIds.contains(v.getPlayerId()))
+                .filter(v -> !v.isDestroyed())
+                .forEach(fighters::add);
+
         return fighters;
     }
 
@@ -453,18 +469,26 @@ public class CombatService {
         }
     }
 
-    /** +1 Exp pour la participation, +1 si le camp adverse a perdu son personnage. */
-    private void awardExperience(List<CombatEntity> survivors, boolean enemyCharacterLost,
+    /** Participation active plafonnée à 1 Exp (tir, dégâts encaissés, esquive, destruction), +1 si personnage ennemi éliminé. */
+    private void awardExperience(Battle battle, List<CombatEntity> survivors, boolean enemyCharacterLost,
                                  List<ExperienceGain> gains) {
-        double amount = enemyCharacterLost ? 2 : 1;
+        Map<CombatEntity, Battle.Participation> participation = battle.getParticipation();
         for (CombatEntity entity : survivors) {
-            if (entity instanceof Unit unit) {
-                UnitType typeBefore = unit.getType();
-                double expBefore = unit.getExperience();
-                unit.gainExperience(amount);
-                gains.add(new ExperienceGain(unit.getPlayerId(), unit.getId(), unit.getNumber(), typeBefore,
-                        expBefore, amount, unit.getType(), unit.getExperience()));
+            if (!(entity instanceof Unit unit)) {
+                continue;
             }
+            Battle.Participation p = participation.getOrDefault(unit, Battle.Participation.NONE);
+            double actions = (p.fired() ? 1 : 0) + (p.damaged() ? 0.5 : 0)
+                    + (p.dodged() ? 0.5 : 0) + (p.destroyedTarget() ? 0.5 : 0);
+            double amount = Math.min(1.0, actions) + (enemyCharacterLost ? 1 : 0);
+            if (amount <= 0) {
+                continue;
+            }
+            UnitType typeBefore = unit.getType();
+            double expBefore = unit.getExperience();
+            unit.gainExperience(amount);
+            gains.add(new ExperienceGain(unit.getPlayerId(), unit.getId(), unit.getNumber(), typeBefore,
+                    expBefore, amount, unit.getType(), unit.getExperience()));
         }
     }
 
@@ -507,7 +531,8 @@ public class CombatService {
                         "Expérience " + name + " : " + gain.typeBefore() + " n°" + gain.unitNumber()
                                 + " " + formatExperience(gain.experienceBefore()) + " Exp + "
                                 + formatExperience(gain.gained()) + " → " + gain.typeAfter()
-                                + " (" + formatExperience(gain.experienceAfter()) + " Exp)");
+                                + " (" + formatExperience(gain.experienceAfter()) + " Exp)"
+                                + participationSummary(battle, camp, gain));
             }
         }
         if (capturedBuildings > 0) {
@@ -519,6 +544,25 @@ public class CombatService {
     private void appendResult(Battle battle, String outcome, String message) {
         battle.appendLog("Résultat", outcome, message);
         logger.info("[Résultat] {}", message);
+    }
+
+    private static String participationSummary(Battle battle, ResultCamp camp, ExperienceGain gain) {
+        Unit unit = camp.survivors().stream()
+                .filter(Unit.class::isInstance)
+                .map(Unit.class::cast)
+                .filter(candidate -> candidate.getId() != null && candidate.getId().equals(gain.unitId()))
+                .findFirst()
+                .orElse(null);
+        if (unit == null) {
+            return "";
+        }
+        Battle.Participation p = battle.getParticipation().getOrDefault(unit, Battle.Participation.NONE);
+        List<String> parts = new ArrayList<>();
+        if (p.fired()) parts.add("a tiré");
+        if (p.damaged()) parts.add(formatExperience(p.damageTaken()) + " dégâts encaissés");
+        if (p.dodged()) parts.add("a esquivé");
+        if (p.destroyedTarget()) parts.add("a détruit une cible");
+        return parts.isEmpty() ? " — aucune action" : " — " + String.join(", ", parts);
     }
 
     private static List<CasualtyInfo> filteredDetails(List<CasualtyInfo> details, Collection<Long> playerIds) {

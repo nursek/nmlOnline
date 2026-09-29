@@ -4,7 +4,6 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import {
   AdminMovementOrder,
-  MovementResolutionResult,
   MovementStatusFilter,
   PageResult,
   Player,
@@ -58,20 +57,12 @@ export class AdminService {
   private readonly _importing = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _successMessage = signal<string | null>(null);
-  private readonly _advancingTurn = signal(false);
   private readonly _currentTurn = signal<number | null>(null);
-  private readonly _previewing = signal(false);
-  private readonly _resolving = signal(false);
-  private readonly _resolutionReport = signal<MovementResolutionResult | null>(null);
 
   readonly importing = this._importing.asReadonly();
   readonly error = this._error.asReadonly();
   readonly successMessage = this._successMessage.asReadonly();
-  readonly advancingTurn = this._advancingTurn.asReadonly();
   readonly currentTurn = this._currentTurn.asReadonly();
-  readonly previewing = this._previewing.asReadonly();
-  readonly resolving = this._resolving.asReadonly();
-  readonly resolutionReport = this._resolutionReport.asReadonly();
 
   reloadPlayers(): void {
     this.playersRef.reload();
@@ -93,76 +84,6 @@ export class AdminService {
     } catch (error) {
       this._error.set(httpErrorMessage(error, 'Erreur lors de la récupération du tour courant'));
     }
-  }
-
-  /** Termine le tour courant : résout les mouvements PENDING puis incrémente. */
-  async advanceTurn(): Promise<void> {
-    this._advancingTurn.set(true);
-    this._error.set(null);
-    this._successMessage.set(null);
-    try {
-      const res = await firstValueFrom(this.api.adminAdvanceTurn());
-      this._currentTurn.set(res.currentTurn);
-      const captures = res.capturedSectors?.length ?? 0;
-      this._successMessage.set(
-        captures > 0
-          ? `Tour ${res.currentTurn} en cours — mouvements résolus, ${captures} secteur(s) capturé(s).`
-          : `Tour ${res.currentTurn} en cours — mouvements résolus.`,
-      );
-      this.reloadPlayers();
-      this.reloadOrders();
-      this.reloadExchanges();
-    } catch (error) {
-      this._error.set(httpErrorMessage(error, 'Erreur lors du passage au tour suivant'));
-    } finally {
-      this._advancingTurn.set(false);
-    }
-  }
-
-  /** Aperçu (dry-run) des conflits : ne mute pas l'état, ordres laissés PENDING. */
-  async previewMovements(): Promise<void> {
-    this._previewing.set(true);
-    this._error.set(null);
-    this._successMessage.set(null);
-    this._resolutionReport.set(null);
-    try {
-      const report = await firstValueFrom(this.api.adminPreviewMovements());
-      this._resolutionReport.set(report);
-      this._successMessage.set(
-        report.hasConflicts
-          ? `Aperçu : ${report.conflicts.length} conflit(s) potentiel(s) détecté(s).`
-          : 'Aperçu : aucun conflit potentiel.',
-      );
-    } catch (error) {
-      this._error.set(httpErrorMessage(error, "Erreur lors de l'aperçu des mouvements"));
-    } finally {
-      this._previewing.set(false);
-    }
-  }
-
-  /** Applique la résolution : déplace les entités, marque les ordres, persiste. */
-  async resolveMovements(): Promise<void> {
-    this._resolving.set(true);
-    this._error.set(null);
-    this._successMessage.set(null);
-    this._resolutionReport.set(null);
-    try {
-      const report = await firstValueFrom(this.api.adminResolveMovements());
-      this._resolutionReport.set(report);
-      this._successMessage.set(
-        `Mouvements résolus : ${report.resolved.length} ok, ` +
-          `${report.blocked.length} bloqué(s), ${report.conflicts.length} conflit(s).`,
-      );
-      this.reloadOrders();
-    } catch (error) {
-      this._error.set(httpErrorMessage(error, 'Erreur lors de la résolution des mouvements'));
-    } finally {
-      this._resolving.set(false);
-    }
-  }
-
-  clearResolutionReport(): void {
-    this._resolutionReport.set(null);
   }
 
   async importPlayer(file: File, password?: string): Promise<Player> {

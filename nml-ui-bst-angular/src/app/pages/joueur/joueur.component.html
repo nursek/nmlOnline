@@ -252,6 +252,16 @@
                                     >+{{ stack.equipment.evasionBonus }} % ESQ</mat-chip
                                   >
                                 }
+                                @if ((stack.equipment.vehicleBonus ?? 0) > 0) {
+                                  <mat-chip class="bonus-chip vehicle"
+                                    >+{{ stack.equipment.vehicleBonus }} % VS
+                                    {{
+                                      stack.equipment.vehicleBonusTarget === 'AERIAL'
+                                        ? 'aériens'
+                                        : 'terrestres'
+                                    }}</mat-chip
+                                  >
+                                }
                               </div>
                               <span class="stack-cost">{{ stackCost(stack) }}</span>
                             </mat-card-content>

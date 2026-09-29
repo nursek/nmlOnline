@@ -97,7 +97,7 @@ export class ReglesComponent {
       nom: 'Esquive',
       sigle: 'Esq',
       css: 'esq',
-      role: "Pourcentage de chance (1 à 100) d'annuler une attaque. Une esquive réussie consomme tout de même des points à l'attaquant (Def + Arm de la cible).",
+      role: "Pourcentage de chance (1 à 100) d'annuler une attaque : l'attaquant perd son tir. Les véhicules n'ont pas d'esquive.",
     },
   ];
 
@@ -163,8 +163,10 @@ export class ReglesComponent {
     { nom: unitClassLabel('SNIPER'), effet: 'Aucun effet de combat implémenté.', actif: false },
     {
       nom: unitClassLabel('PILOTE_DESTRUCTEUR'),
-      effet: 'Aucun effet de combat implémenté.',
-      actif: false,
+      effet:
+        "Priorité de ciblage : tire d'abord sur les véhicules ennemis. Obligatoire pour piloter un véhicule avec une unité ; " +
+        "les armes anti-véhicules (Gauss Cannon, Heavy Gauss Cannon, Enmitic Annihilator) doublent les dégâts contre leur catégorie de cible.",
+      actif: true,
     },
     {
       nom: unitClassLabel('ELEMENTAIRE'),

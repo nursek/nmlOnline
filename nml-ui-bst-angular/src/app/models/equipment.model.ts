@@ -7,6 +7,8 @@ export interface Equipment {
   pdcBonus: number;
   armBonus: number;
   evasionBonus: number;
+  vehicleBonus?: number;
+  vehicleBonusTarget?: string | null;
   compatibleClass: UnitClass[];
   category: string;
 }

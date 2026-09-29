@@ -228,19 +228,42 @@ class VehicleTest {
         }
 
         @Test
-        @DisplayName("Résistance : Tank 50%, autres 0%")
-        void shouldPinResistancePercent() {
-            assertEquals(0.5, new Vehicle(VehicleType.TANK, 1L).getResistancePercent());
-            assertEquals(0.0, new Vehicle(VehicleType.VTT_LEGER, 1L).getResistancePercent());
+        @DisplayName("Résistance combat : Tank 50 % en PdF/PdC, nulle en ATK et pour les autres types")
+        void shouldApplyResistanceInCombat() {
+            Vehicle tank = new Vehicle(VehicleType.TANK, 1L);
+            assertEquals(0.5, tank.getDamageReduction("PDF"));
+            assertEquals(0.5, tank.getDamageReduction("PDC"));
+            assertEquals(0.0, tank.getDamageReduction("ATK"));
+            assertEquals(0.0, new Vehicle(VehicleType.VTT_LEGER, 1L).getDamageReduction("PDF"));
         }
 
         @Test
-        @DisplayName("Seul l'avion de transport ne participe pas au combat au sol")
-        void shouldPinGroundCombatParticipation() {
-            // règle définie mais non enforcée dans Battle.
-            assertFalse(new Vehicle(VehicleType.AVION_TRANSPORT, 1L).participatesInGroundCombat());
-            assertTrue(new Vehicle(VehicleType.TANK, 1L).participatesInGroundCombat());
-            assertTrue(new Vehicle(VehicleType.TOURELLE, 1L).participatesInGroundCombat());
+        @DisplayName("Chance de toucher : 75 % contre l'aérien, 50 % au sol")
+        void shouldApplyAerialHitChance() {
+            assertEquals(0.75, new Vehicle(VehicleType.HELICOPTERE, 1L).getAerialHitChance());
+            assertEquals(0.75, new Vehicle(VehicleType.AVION_TRANSPORT, 1L).getAerialHitChance());
+            assertEquals(0.5, new Vehicle(VehicleType.TANK, 1L).getAerialHitChance());
+        }
+
+        @Test
+        @DisplayName("Réparation de fin de tour : +points plafonnés à la défense de base, jamais une épave")
+        void shouldRegenerateDefenseUpToBase() {
+            Vehicle vehicle = new Vehicle(VehicleType.TANK, 1L);
+            vehicle.setDefense(100);
+
+            vehicle.regenerateDefense(Vehicle.DEFENSE_REGEN_PER_TURN);
+            assertEquals(150.0, vehicle.getDefense());
+
+            vehicle.regenerateDefense(Vehicle.DEFENSE_REGEN_PER_TURN);
+            assertEquals(200.0, vehicle.getDefense());
+
+            vehicle.regenerateDefense(Vehicle.DEFENSE_REGEN_PER_TURN);
+            assertEquals(250.0, vehicle.getDefense(), "Plafonné à la défense de base");
+
+            vehicle.setDestroyed(true);
+            vehicle.setDefense(100);
+            vehicle.regenerateDefense(Vehicle.DEFENSE_REGEN_PER_TURN);
+            assertEquals(100.0, vehicle.getDefense(), "Une épave ne répare pas");
         }
 
         @Test

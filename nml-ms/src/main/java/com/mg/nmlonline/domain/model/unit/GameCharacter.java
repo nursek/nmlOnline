@@ -91,6 +91,11 @@ public class GameCharacter extends CombatEntity {
     }
 
     @Override
+    public double getAerialHitChance() {
+        return 0.65;
+    }
+
+    @Override
     public String getDisplayName() {
         return name;
     }

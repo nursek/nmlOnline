@@ -7,11 +7,11 @@ import {
   Player,
   MovementOrder,
   MovementResolutionResult,
-  SectorCapture,
   TurnResolutionState,
   TurnFinalizeResult,
   ResolvedBattle,
   ScenarioSummary,
+  CombatScenarioInfo,
   Unit,
   VehicleTypeInfo,
   BuyEquipmentItem,
@@ -119,15 +119,8 @@ export class ApiService {
     return this.http.get<{ currentTurn: number }>(`${this.baseUrl}/admin/turn/current`);
   }
 
-  adminAdvanceTurn(): Observable<{ currentTurn: number; capturedSectors: SectorCapture[] }> {
-    return this.http.post<{ currentTurn: number; capturedSectors: SectorCapture[] }>(
-      `${this.baseUrl}/admin/turn/next`,
-      {},
-    );
-  }
-
   // Aperçu (dry-run) de la résolution des mouvements du tour courant :
-  // calcule les conflits potentiels sans persister (ordres laissés PENDING).Q
+  // calcule les conflits potentiels sans persister (ordres laissés PENDING).
   adminPreviewMovements(): Observable<MovementResolutionResult> {
     return this.http.post<MovementResolutionResult>(
       `${this.baseUrl}/admin/turn/movements/preview`,
@@ -135,18 +128,9 @@ export class ApiService {
     );
   }
 
-  // Applique la résolution des mouvements du tour courant : déplace les
-  // entités, marque les ordres RESOLVED/BLOCKED, persiste. Renvoie le compte-rendu.
-  adminResolveMovements(): Observable<MovementResolutionResult> {
-    return this.http.post<MovementResolutionResult>(
-      `${this.baseUrl}/admin/turn/movements/resolve`,
-      {},
-    );
-  }
-
   // Résolution pas-à-pas par hop : l'admin démarre la session, avance hop par
   // hop, résout manuellement chaque bataille du hop courant, puis finalise
-  // (incrémente le tour). Verrouille /turn/next pendant la session.
+  // (incrémente le tour). Verrouille les autres résolutions pendant la session.
   adminStartResolution(): Observable<TurnResolutionState> {
     return this.http.post<TurnResolutionState>(`${this.baseUrl}/admin/turn/resolve/start`, {});
   }
@@ -195,11 +179,26 @@ export class ApiService {
     return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/seed-standoff-scenario`, {});
   }
 
+  adminGetCombatScenarios(): Observable<CombatScenarioInfo[]> {
+    return this.http.get<CombatScenarioInfo[]>(`${this.baseUrl}/admin/dev/combat-scenarios`);
+  }
+
+  adminSeedCombatScenario(code: string): Observable<ScenarioSummary> {
+    return this.http.post<ScenarioSummary>(
+      `${this.baseUrl}/admin/dev/seed-combat-scenario/${encodeURIComponent(code)}`,
+      {},
+    );
+  }
+
   adminSeedExchangeScenario(): Observable<ExchangeScenarioSummary> {
     return this.http.post<ExchangeScenarioSummary>(
       `${this.baseUrl}/admin/dev/seed-exchange-scenario`,
       {},
     );
+  }
+
+  adminNavigateToTurn(turn: number): Observable<{ currentTurn: number }> {
+    return this.http.post<{ currentTurn: number }>(`${this.baseUrl}/admin/dev/turn/${turn}`, {});
   }
 
   getVehicleTypes(): Observable<VehicleTypeInfo[]> {

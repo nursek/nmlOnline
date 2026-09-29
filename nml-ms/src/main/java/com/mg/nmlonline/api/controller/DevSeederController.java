@@ -1,17 +1,21 @@
 package com.mg.nmlonline.api.controller;
 
+import com.mg.nmlonline.api.dto.CombatScenarioDto;
 import com.mg.nmlonline.api.dto.ExchangeScenarioSummaryDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.domain.service.ExchangeScenarioSeeder;
 import com.mg.nmlonline.domain.service.TurnResolutionScenarioSeeder;
+import com.mg.nmlonline.domain.service.TurnService;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 /** Dev uniquement ; le GET sert de probe de disponibilité pour l'UI admin. */
@@ -23,11 +27,14 @@ public class DevSeederController {
 
     private final TurnResolutionScenarioSeeder scenarioSeeder;
     private final ExchangeScenarioSeeder exchangeScenarioSeeder;
+    private final TurnService turnService;
 
     public DevSeederController(TurnResolutionScenarioSeeder scenarioSeeder,
-                               ExchangeScenarioSeeder exchangeScenarioSeeder) {
+                               ExchangeScenarioSeeder exchangeScenarioSeeder,
+                               TurnService turnService) {
         this.scenarioSeeder = scenarioSeeder;
         this.exchangeScenarioSeeder = exchangeScenarioSeeder;
+        this.turnService = turnService;
     }
 
     @GetMapping("/seed-resolution-scenario")
@@ -47,8 +54,26 @@ public class DevSeederController {
         return ResponseEntity.ok(scenarioSeeder.seedStandoffScenario());
     }
 
+    /** Catalogue des scénarios de combat rejouables (arènes neutres dédiées). */
+    @GetMapping("/combat-scenarios")
+    public List<CombatScenarioDto> listCombatScenarios() {
+        return scenarioSeeder.listCombatScenarios();
+    }
+
+    /** Sème un scénario de combat par code : arène purgée puis peuplée, un hop à résoudre. */
+    @PostMapping("/seed-combat-scenario/{code}")
+    public ResponseEntity<ScenarioSummaryDto> seedCombatScenario(@PathVariable("code") String code) {
+        return ResponseEntity.ok(scenarioSeeder.seedCombatScenario(code));
+    }
+
     @PostMapping("/seed-exchange-scenario")
     public ResponseEntity<ExchangeScenarioSummaryDto> seedExchangeScenario() {
         return ResponseEntity.ok(exchangeScenarioSeeder.seedExchangeScenario());
+    }
+
+    /** Navigation manuelle du compteur de tour, sans résolution des mouvements. */
+    @PostMapping("/turn/{turn}")
+    public Map<String, Object> navigateToTurn(@PathVariable("turn") int turn) {
+        return Map.of("currentTurn", turnService.setCurrentTurn(turn));
     }
 }

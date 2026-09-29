@@ -52,6 +52,17 @@ class TurnServiceTest {
     }
 
     @Test
+    @DisplayName("setCurrentTurn fixe le tour persisté et refuse les valeurs invalides")
+    void setCurrentTurnPublishesPersistsAndRejectsInvalid() {
+        assertThrows(IllegalArgumentException.class, () -> turnService.setCurrentTurn(0));
+
+        int target = turnService.getCurrentTurn() + 7;
+        assertEquals(target, turnService.setCurrentTurn(target));
+        turnService.invalidateTurnCache();
+        assertEquals(target, turnService.getCurrentTurn(), "La valeur doit être persistée en base");
+    }
+
+    @Test
     @DisplayName("advanceTurn rejette un 2e appel concurrent (garde anti double-clic)")
     void advanceTurnRejectsConcurrentCall() throws Exception {
         int initialTurn = turnService.getCurrentTurn();

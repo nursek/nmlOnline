@@ -64,11 +64,11 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 - **Admin** : CRUD global sous `/api/admin/**` + `@PreAuthorize("hasRole('ADMIN')")`.
 - `Sector.ownerId` = source unique de propriété. `Board.sectorsList` = seule source persistée ;
   `BoardDto.sectors` (map) est reconstruite dans `BoardMapper`. `@JsonIgnore` côté many.
-- Cascade JPA : lire [`docs/jpa-pitfalls.md`](docs/jpa-pitfalls.md) avant tout
-  `@OneToMany(mappedBy=…, orphanRemoval=true)` dont l'enfant porte une FK NOT NULL.
-- **Tour** : `TurnService.advanceTurn()` et `TurnResolutionOrchestrator` mutent tous deux
-  `Board.currentTurn` — les deux doivent publier/invalider `TurnService.cachedTurn`
-  (`publishTurn` avant commit, purge sur rollback).
+- Cascade JPA : pas d'`orphanRemoval=true` sur une `@OneToMany` dont l'enfant porte une FK
+  NOT NULL — préférer `@OnDelete(CASCADE)` + FK `ON DELETE CASCADE` (V5, V6).
+- **Tour** : `TurnService.advanceTurn()`, `TurnService.setCurrentTurn()` (navigation dev) et
+  `TurnResolutionOrchestrator` mutent `Board.currentTurn` — les trois doivent publier/invalider
+  `TurnService.cachedTurn` (`publishTurn` avant commit, purge sur rollback).
   Session de l'orchestrateur en mémoire, JVM unique, perdue au redémarrage.
 - **`BoardService.saveBoard` fusionne par numéro, ne vide jamais `sectorsList`** : supprimer
   un secteur reste une opération explicite (vider la liste cascade-delete secteurs + armées).

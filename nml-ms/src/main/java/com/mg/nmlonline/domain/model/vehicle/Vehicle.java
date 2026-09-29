@@ -22,6 +22,8 @@ import java.util.List;
 @NoArgsConstructor
 public class Vehicle extends CombatEntity {
 
+    public static final double DEFENSE_REGEN_PER_TURN = 50;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "vehicle_type")
     private VehicleType vehicleType;
@@ -149,8 +151,22 @@ public class Vehicle extends CombatEntity {
         return vehicleType != null ? vehicleType.getResistance() / 100.0 : 0;
     }
 
-    public boolean participatesInGroundCombat() {
-        return vehicleType != VehicleType.AVION_TRANSPORT;
+    @Override
+    public double getDamageReduction(String damageType) {
+        return switch (damageType) {
+            case "PDF", "PDC" -> getResistancePercent();
+            default -> 0.0;
+        };
+    }
+
+    @Override
+    public double getAerialHitChance() {
+        return isAerial() ? 0.75 : 0.5;
+    }
+
+    public void regenerateDefense(double points) {
+        if (isDestroyed() || defense >= getBaseDefense()) return;
+        this.defense = Math.min(defense + points, getBaseDefense());
     }
 
     public boolean isOperational() {

@@ -1,0 +1,136 @@
+<section class="dev-scenarios-page">
+  <header class="page-header">
+    <div class="title">
+      <mat-icon>science</mat-icon>
+      <h1>Scénarios de tests</h1>
+    </div>
+    <p class="subtitle">
+      Réservé à l'environnement de développement : seeds idempotents et rejouables.
+    </p>
+  </header>
+
+  @if (!available() && !loading()) {
+    <p class="unavailable">
+      <mat-icon>block</mat-icon>
+      Indisponible hors environnement de développement.
+    </p>
+  }
+
+  @if (available()) {
+    @if (error()) {
+      <div class="error-banner" role="alert">⚠ {{ error() }}</div>
+    }
+
+    <div class="dev-scenario-panel">
+      <div class="dev-scenario-info">
+        <mat-icon>science</mat-icon>
+        <div class="dev-scenario-text">
+          <strong>Scénarios de test (dev)</strong>
+          <span>
+            2 hops : lurio (secteur 41) → secteur 32 (cegorach), route [41, 13, 32]. Impasse :
+            cegorach défend 32, imotekh (43) et lurio (41) y arrivent au même hop. Les scénarios de
+            combat utilisent des arènes neutres dédiées, purgées à chaque seed. Re-jouables à la
+            demande.
+          </span>
+        </div>
+      </div>
+      <button
+        mat-flat-button
+        color="accent"
+        (click)="onSeedScenario()"
+        [disabled]="seeding()"
+        matTooltip="Sème le scénario pour le tour courant (idempotent)"
+      >
+        @if (seeding()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>play_circle</mat-icon>
+        }
+        Seeder le scénario 2 hops
+      </button>
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="onSeedStandoffScenario()"
+        [disabled]="seeding()"
+        matTooltip="Cegorach défend 32, imotekh et lurio y arrivent au même hop"
+      >
+        @if (seeding()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>groups</mat-icon>
+        }
+        Seeder l'impasse 3 camps
+      </button>
+      <mat-form-field appearance="outline" class="combat-scenario-select" subscriptSizing="dynamic">
+        <mat-label>Scénario de combat</mat-label>
+        <mat-select
+          [value]="selectedCombatScenario()"
+          (valueChange)="selectedCombatScenario.set($event)"
+        >
+          @for (scenario of combatScenarios(); track scenario.code) {
+            <mat-option [value]="scenario.code">{{ scenario.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="onSeedCombatScenario()"
+        [disabled]="seeding() || !selectedScenarioInfo()"
+        matTooltip="Purge l'arène dédiée du scénario puis la peuple (1 hop à résoudre)"
+      >
+        @if (seeding()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>swords</mat-icon>
+        }
+        Seeder le scénario de combat
+      </button>
+      <button
+        mat-stroked-button
+        color="primary"
+        (click)="onSeedExchangeScenario()"
+        [disabled]="seeding()"
+        matTooltip="Offre en attente lurio → cegorach et échange accepté imotekh → nursek"
+      >
+        @if (seeding()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>swap_horiz</mat-icon>
+        }
+        Seeder un échange
+      </button>
+    </div>
+
+    @if (selectedScenarioInfo(); as scenario) {
+      <div class="combat-scenario-details">
+        <div class="combat-scenario-head">
+          <mat-icon>fact_check</mat-icon>
+          <strong>{{ scenario.label }}</strong>
+          <span class="arena"
+            >Arène {{ scenario.arenaSector }} · départ {{ scenario.stagingSector }}</span
+          >
+        </div>
+        <p>{{ scenario.description }}</p>
+        <ul>
+          @for (observation of scenario.observations; track $index) {
+            <li>{{ observation }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (seedReport()) {
+      <div class="seed-report">
+        <mat-icon>check_circle</mat-icon>
+        <span>
+          {{ seedReport()?.message }}
+          @if (seedReport()?.route?.length) {
+            · Route {{ seedReport()?.route }} · Tour {{ seedReport()?.turn }}
+          }
+        </span>
+      </div>
+    }
+  }
+</section>

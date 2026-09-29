@@ -39,6 +39,14 @@ public class Equipment {
     @Column(name = "evasion_bonus", nullable = false)
     private double evasionBonus;
 
+    // Bonus de dégâts contre les véhicules (100 = dégâts doublés), appliqué au type d'arme qui porte le bonus.
+    @Column(name = "vehicle_bonus", nullable = false)
+    private double vehicleBonus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_bonus_target")
+    private VehicleBonusTarget vehicleBonusTarget;
+
     @ElementCollection(targetClass = UnitClass.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "EQUIPMENT_COMPATIBLE_CLASSES", joinColumns = @JoinColumn(name = "equipment_id"))
     @Enumerated(EnumType.STRING)
@@ -70,11 +78,22 @@ public class Equipment {
         if (pdcBonus != 0) stats.append(formatPercent(pdcBonus)).append("Pdc").append(" ; ");
         if (armBonus != 0) stats.append(formatPercent(armBonus)).append("Arm").append(" ; ");
         if (evasionBonus != 0) stats.append(formatPercent(evasionBonus)).append("Esquive").append(" ; ");
+        if (vehicleBonus != 0) {
+            stats.append(formatPercent(vehicleBonus)).append("Vs ")
+                    .append(vehicleTargetLabel())
+                    .append(" ; ");
+        }
         if (!stats.isEmpty()) {
             stats.setLength(stats.length() - 3);
             return name + " (" + stats + ").";
         }
         return name;
+    }
+
+    private String vehicleTargetLabel() {
+        if (vehicleBonusTarget == VehicleBonusTarget.AERIAL) return "aériens";
+        if (vehicleBonusTarget == VehicleBonusTarget.GROUND) return "véhicules terrestres";
+        return "véhicules";
     }
 
     private String formatPercent(double value) {

@@ -1,27 +1,16 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { httpResource } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
-import {
-  ExchangeScenarioSummary,
-  ResolvedBattle,
-  ScenarioSummary,
-  TurnFinalizeResult,
-  TurnResolutionState,
-} from '../models';
+import { ResolvedBattle, TurnFinalizeResult, TurnResolutionState } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
-import { environment } from '../../environments/environment';
 
 /**
- * État de la session de résolution pas-à-pas par hop (admin).
- *
- * <p>Pure signals + {@link ApiService} — pas de NgRx. Les lectures viennent d'un
- * signal `_state` rafraîchi après chaque mutation (POST/DELETE) via
- * {@code firstValueFrom}. {@code busy} désactive les boutons d'action pendant
- * une opération en cours.</p>
+ * État de la page « Gestion du tour » : tour courant (navigation dev incluse) et
+ * session de résolution pas-à-pas par hop. En prod, `navigateToTurn` renvoie 404
+ * (endpoint `@Profile("dev")`).
  */
 @Injectable({ providedIn: 'root' })
-export class TurnResolutionService {
+export class TurnManagementService {
   private readonly api = inject(ApiService);
 
   private readonly _state = signal<TurnResolutionState | null>(null);
@@ -30,6 +19,8 @@ export class TurnResolutionService {
   private readonly _error = signal<string | null>(null);
   private readonly _lastReport = signal<ResolvedBattle | null>(null);
   private readonly _finalizeResult = signal<TurnFinalizeResult | null>(null);
+  private readonly _currentTurn = signal<number | null>(null);
+  private readonly _navigating = signal(false);
 
   readonly state = this._state.asReadonly();
   readonly loading = this._loading.asReadonly();
@@ -37,21 +28,10 @@ export class TurnResolutionService {
   readonly error = this._error.asReadonly();
   readonly lastReport = this._lastReport.asReadonly();
   readonly finalizeResult = this._finalizeResult.asReadonly();
+  readonly currentTurn = this._currentTurn.asReadonly();
+  readonly navigating = this._navigating.asReadonly();
 
   readonly active = computed(() => this._state()?.active ?? false);
-
-  // Probe : GET /admin/dev/seed-resolution-scenario. En prod le contrôleur
-  // @Profile("dev") n'existe pas → 404 → httpResource renvoie undefined.
-  private readonly devScenarioRef = httpResource<{
-    available: boolean;
-  }>(() => ({
-    url: `${environment.apiBaseUrl}/admin/dev/seed-resolution-scenario`,
-  }));
-  readonly devScenarioAvailable = computed(() => this.devScenarioRef.value()?.available ?? false);
-  private readonly _seeding = signal(false);
-  private readonly _seedReport = signal<ScenarioSummary | ExchangeScenarioSummary | null>(null);
-  readonly seeding = this._seeding.asReadonly();
-  readonly seedReport = this._seedReport.asReadonly();
 
   async loadState(): Promise<void> {
     this._loading.set(true);
@@ -62,6 +42,29 @@ export class TurnResolutionService {
       this._error.set(httpErrorMessage(error, 'Erreur lors du chargement de la session'));
     } finally {
       this._loading.set(false);
+    }
+  }
+
+  async loadCurrentTurn(): Promise<void> {
+    try {
+      const res = await firstValueFrom(this.api.adminGetCurrentTurn());
+      this._currentTurn.set(res.currentTurn);
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, 'Erreur lors de la récupération du tour courant'));
+    }
+  }
+
+  async navigateToTurn(turn: number): Promise<void> {
+    this._navigating.set(true);
+    this._error.set(null);
+    try {
+      const res = await firstValueFrom(this.api.adminNavigateToTurn(turn));
+      this._currentTurn.set(res.currentTurn);
+      await this.loadState();
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, 'Erreur lors de la navigation vers le tour'));
+    } finally {
+      this._navigating.set(false);
     }
   }
 
@@ -99,6 +102,7 @@ export class TurnResolutionService {
     try {
       const result = await firstValueFrom(this.api.adminFinalizeResolution());
       this._finalizeResult.set(result);
+      this._currentTurn.set(result.newTurn);
       this._lastReport.set(null);
       await this.loadState();
     } catch (error) {
@@ -132,55 +136,6 @@ export class TurnResolutionService {
 
   clearError(): void {
     this._error.set(null);
-  }
-
-  async seedDevScenario(): Promise<void> {
-    this._seeding.set(true);
-    this._error.set(null);
-    this._seedReport.set(null);
-    try {
-      const report = await firstValueFrom(this.api.adminSeedDevScenario());
-      this._seedReport.set(report);
-      // Un nouveau tour/scénario : on rafraîchit l'état de la session.
-      await this.loadState();
-    } catch (error) {
-      this._error.set(httpErrorMessage(error, 'Erreur lors du seeding du scénario'));
-    } finally {
-      this._seeding.set(false);
-    }
-  }
-
-  async seedStandoffScenario(): Promise<void> {
-    this._seeding.set(true);
-    this._error.set(null);
-    this._seedReport.set(null);
-    try {
-      const report = await firstValueFrom(this.api.adminSeedStandoffScenario());
-      this._seedReport.set(report);
-      await this.loadState();
-    } catch (error) {
-      this._error.set(httpErrorMessage(error, "Erreur lors du seeding de l'impasse"));
-    } finally {
-      this._seeding.set(false);
-    }
-  }
-
-  async seedExchangeScenario(): Promise<void> {
-    this._seeding.set(true);
-    this._error.set(null);
-    this._seedReport.set(null);
-    try {
-      const report = await firstValueFrom(this.api.adminSeedExchangeScenario());
-      this._seedReport.set(report);
-    } catch (error) {
-      this._error.set(httpErrorMessage(error, "Erreur lors du seeding de l'échange"));
-    } finally {
-      this._seeding.set(false);
-    }
-  }
-
-  clearSeedReport(): void {
-    this._seedReport.set(null);
   }
 
   private async mutate(

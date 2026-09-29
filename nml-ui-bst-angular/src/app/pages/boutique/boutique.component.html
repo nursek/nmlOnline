@@ -454,6 +454,12 @@
                   @if (equipment.evasionBonus > 0) {
                     <mat-chip class="bonus esq">+{{ equipment.evasionBonus }} % ESQ</mat-chip>
                   }
+                  @if ((equipment.vehicleBonus ?? 0) > 0) {
+                    <mat-chip class="bonus vehicle"
+                      >+{{ equipment.vehicleBonus }} % VS
+                      {{ vehicleTargetLabel(equipment.vehicleBonusTarget) }}</mat-chip
+                    >
+                  }
                 </div>
 
                 <div class="compatible-classes">

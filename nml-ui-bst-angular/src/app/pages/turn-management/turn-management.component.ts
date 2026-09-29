@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, effect, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  effect,
+  signal,
+} from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,23 +15,18 @@ import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
-import { TurnResolutionService } from '../../services/turn-resolution.service';
+import { TurnManagementService } from '../../services/turn-management.service';
+import { DevScenarioService } from '../../services/dev-scenario.service';
 import { ApiService } from '../../services/api.service';
 import { PendingCapture, ResolvedBattle } from '../../models';
 import { CombatLogDialogComponent } from './combat-log-dialog.component';
 
-/**
- * Page admin dédiée à la résolution de fin de tour pas-à-pas, hop par hop.
- *
- * <p>Flux : Démarrer → [Hop suivant → résoudre chaque bataille] × N → Finaliser.
- * L'état (hop courant, conflits en attente, batailles résolues) vient du
- * {@link TurnResolutionService}. Les confirmations destructives/finales passent
- * par {@link ConfirmDialogComponent}.</p>
- */
 @Component({
-  selector: 'app-turn-resolution',
+  selector: 'app-turn-management',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatButtonModule,
@@ -35,35 +37,49 @@ import { CombatLogDialogComponent } from './combat-log-dialog.component';
     MatCardModule,
     MatTooltipModule,
     MatDividerModule,
+    MatFormFieldModule,
+    MatInputModule,
     MatDialogModule,
   ],
-  templateUrl: './turn-resolution.component.html',
-  styleUrls: ['./turn-resolution.component.scss'],
+  templateUrl: './turn-management.component.html',
+  styleUrls: ['./turn-management.component.scss'],
 })
-export class TurnResolutionComponent {
-  private readonly resolution = inject(TurnResolutionService);
+export class TurnManagementComponent {
+  private readonly turnManagement = inject(TurnManagementService);
+  private readonly devScenarios = inject(DevScenarioService);
   private readonly api = inject(ApiService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
   readonly pendingCaptures = signal<PendingCapture[]>([]);
+  readonly targetTurn = signal<number | null>(null);
 
-  readonly state = this.resolution.state;
-  readonly busy = this.resolution.busy;
-  readonly loading = this.resolution.loading;
-  readonly error = this.resolution.error;
-  readonly lastReport = this.resolution.lastReport;
-  readonly finalizeResult = this.resolution.finalizeResult;
-  readonly active = this.resolution.active;
-  readonly devScenarioAvailable = this.resolution.devScenarioAvailable;
-  readonly seeding = this.resolution.seeding;
-  readonly seedReport = this.resolution.seedReport;
+  readonly state = this.turnManagement.state;
+  readonly busy = this.turnManagement.busy;
+  readonly loading = this.turnManagement.loading;
+  readonly error = this.turnManagement.error;
+  readonly lastReport = this.turnManagement.lastReport;
+  readonly finalizeResult = this.turnManagement.finalizeResult;
+  readonly active = this.turnManagement.active;
+  readonly currentTurn = this.turnManagement.currentTurn;
+  readonly navigating = this.turnManagement.navigating;
+  readonly devScenarioAvailable = this.devScenarios.available;
+
+  readonly currentTurnLabel = computed(() => {
+    const t = this.currentTurn();
+    return t === null || t === undefined ? '—' : `Tour ${t}`;
+  });
+
+  readonly canNavigate = computed(() => {
+    const t = this.targetTurn();
+    return t !== null && t >= 1 && !this.active() && !this.busy() && !this.navigating();
+  });
 
   constructor() {
-    void this.resolution.loadState();
+    void this.turnManagement.loadState();
+    void this.turnManagement.loadCurrentTurn();
     void this.loadPendingCaptures();
 
-    // Feedback snackbar sur le dernier rapport de bataille / finalisation.
     effect(() => {
       const report = this.lastReport();
       if (report) {
@@ -77,7 +93,7 @@ export class TurnResolutionComponent {
           msg = `Secteur ${report.sectorNumber}: ${report.defenderCasualties} pertes déf., ${report.attackerInjured} blessé(s) attaquant`;
         }
         this.snackBar.open(msg, 'OK', { duration: 4000, panelClass: 'toast-info' });
-        this.resolution.clearLastReport();
+        this.turnManagement.clearLastReport();
       }
     });
     effect(() => {
@@ -87,35 +103,23 @@ export class TurnResolutionComponent {
           duration: 5000,
           panelClass: 'toast-success',
         });
-        this.resolution.clearFinalizeResult();
+        this.turnManagement.clearFinalizeResult();
       }
-    });
-    effect(() => {
-      const seed = this.seedReport();
-      if (!seed) return;
-      const msg =
-        'standoff' in seed
-          ? seed.standoff
-            ? `Impasse prête — ${seed.defender.name} défend le secteur ${seed.orders?.at(0)?.route.at(-1) ?? '?'}`
-            : `Scénario prêt — ${seed.attacker?.name} → secteur ${seed.route?.at(-1)} (${seed.defender.name})`
-          : seed.message;
-      this.snackBar.open(msg, 'OK', { duration: 6000, panelClass: 'toast-success' });
-      this.resolution.clearSeedReport();
     });
   }
 
   onStart(): void {
-    void this.resolution.startSession().catch(() => {
+    void this.turnManagement.startSession().catch(() => {
       /* le service positionne déjà le signal d'erreur */
     });
   }
 
   onAdvanceHop(): void {
-    void this.resolution.advanceHop().catch(() => {});
+    void this.turnManagement.advanceHop().catch(() => {});
   }
 
   onResolveBattle(conflictId: number): void {
-    void this.resolution.resolveBattle(conflictId).catch(() => {});
+    void this.turnManagement.resolveBattle(conflictId).catch(() => {});
   }
 
   onShowDetail(report: ResolvedBattle): void {
@@ -136,7 +140,7 @@ export class TurnResolutionComponent {
       .afterClosed()
       .subscribe((confirmed: boolean) => {
         if (confirmed) {
-          void this.resolution.finalizeResolution().catch(() => {});
+          void this.turnManagement.finalizeResolution().catch(() => {});
         }
       });
   }
@@ -155,27 +159,22 @@ export class TurnResolutionComponent {
       .afterClosed()
       .subscribe((confirmed: boolean) => {
         if (confirmed) {
-          void this.resolution.abort().catch(() => {});
+          void this.turnManagement.abort().catch(() => {});
         }
       });
   }
 
-  onSeedScenario(): void {
-    void this.resolution.seedDevScenario().catch(() => {
-      /* service positionne déjà le signal d'erreur */
-    });
+  onTargetTurnChange(value: string): void {
+    const parsed = Number.parseInt(value, 10);
+    this.targetTurn.set(Number.isNaN(parsed) ? null : parsed);
   }
 
-  onSeedStandoffScenario(): void {
-    void this.resolution.seedStandoffScenario().catch(() => {
-      /* service positionne déjà le signal d'erreur */
-    });
-  }
-
-  onSeedExchangeScenario(): void {
-    void this.resolution.seedExchangeScenario().catch(() => {
-      /* service positionne déjà le signal d'erreur */
-    });
+  onNavigateToTurn(): void {
+    const turn = this.targetTurn();
+    if (turn === null || turn < 1) {
+      return;
+    }
+    void this.turnManagement.navigateToTurn(turn).catch(() => {});
   }
 
   async loadPendingCaptures(): Promise<void> {
@@ -186,7 +185,11 @@ export class TurnResolutionComponent {
     }
   }
 
-  async onResolvePendingCapture(pending: PendingCapture, playerId: number, playerName: string): Promise<void> {
+  async onResolvePendingCapture(
+    pending: PendingCapture,
+    playerId: number,
+    playerName: string,
+  ): Promise<void> {
     try {
       await firstValueFrom(this.api.adminResolvePendingCapture(pending.id, playerId));
       this.snackBar.open(`Secteur ${pending.sectorNumber} attribué à ${playerName}`, 'OK', {

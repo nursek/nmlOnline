@@ -2,6 +2,8 @@ package com.mg.nmlonline.domain.model.unit;
 
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
+import com.mg.nmlonline.domain.model.equipment.VehicleBonusTarget;
+import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -358,6 +360,41 @@ public class Unit extends CombatEntity {
                 .mapToDouble(c -> c.getDamageReduction(damageType))
                 .max()
                 .orElse(0.0);
+    }
+
+    @Override
+    public double getAerialHitChance() {
+        if (hasAntiAerialWeapon()) {
+            return 0.75;
+        }
+        return switch (type) {
+            case LARBIN -> 0.10;
+            case VOYOU -> 0.25;
+            case MALFRAT -> 0.40;
+            case BRUTE -> 0.65;
+            default -> 0.50;
+        };
+    }
+
+    /** Bonus de dégâts (%) du meilleur équipement à feu compatible contre ce véhicule (tirs PdF uniquement). */
+    public double getVehicleDamageBonus(Vehicle target, String damageType) {
+        if (target == null || !"PDF".equals(damageType)) return 0;
+        VehicleBonusTarget scope = target.isAerial() ? VehicleBonusTarget.AERIAL : VehicleBonusTarget.GROUND;
+        return getEquipmentsForCalculation().stream()
+                .filter(this::isEquipmentCompatible)
+                .filter(equipment -> equipment.getCategory() == EquipmentCategory.FIREARM)
+                .filter(equipment -> equipment.getVehicleBonusTarget() == scope)
+                .mapToDouble(Equipment::getVehicleBonus)
+                .max()
+                .orElse(0);
+    }
+
+    private boolean hasAntiAerialWeapon() {
+        return getEquipmentsForCalculation().stream()
+                .filter(this::isEquipmentCompatible)
+                .filter(equipment -> equipment.getCategory() == EquipmentCategory.FIREARM)
+                .anyMatch(equipment -> equipment.getVehicleBonus() > 0
+                        && equipment.getVehicleBonusTarget() == VehicleBonusTarget.AERIAL);
     }
 
     @Override
