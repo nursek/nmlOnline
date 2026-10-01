@@ -113,6 +113,14 @@ public class PlayerActionService {
         save(PlayerAction.placeVehicle(playerId, turnService.getCurrentTurn(), vehicleId, boardId, sectorNumber));
     }
 
+    public void recordBuyUnit(Long playerId, Long unitId, String unitType, double cost, double startingMoneySpent) {
+        save(PlayerAction.buyUnit(playerId, turnService.getCurrentTurn(), unitId, unitType, cost, startingMoneySpent));
+    }
+
+    public void recordPlaceUnit(Long playerId, Long unitId, Long boardId, int sectorNumber) {
+        save(PlayerAction.placeUnit(playerId, turnService.getCurrentTurn(), unitId, boardId, sectorNumber));
+    }
+
     public void recordMoveBuilding(Long playerId, Long buildingId, Long boardId, int fromSectorNumber,
                                    int toSectorNumber, Integer prevLastMovedTurn, Boolean prevHasMoved) {
         save(PlayerAction.moveBuilding(playerId, turnService.getCurrentTurn(), buildingId, boardId,
@@ -250,6 +258,8 @@ public class PlayerActionService {
             case UNEQUIP_UNIT -> undoUnequipUnit(action, player);
             case BUY_VEHICLE -> undoBuyVehicle(action, player);
             case PLACE_VEHICLE -> undoPlaceVehicle(action);
+            case BUY_UNIT -> undoBuyUnit(action, player);
+            case PLACE_UNIT -> undoPlaceUnit(action);
             case MOVE_BUILDING -> undoMoveBuilding(action);
             case SET_VEHICLE_CREW -> undoSetVehicleCrew(action);
             case HARVEST_MONEY -> undoHarvestMoney(action, player);
@@ -335,6 +345,36 @@ public class PlayerActionService {
         vehicleCrewService.applyCrew(vehicle, null, List.of());
         vehicle.setSector(null);
         vehicleRepository.save(vehicle);
+    }
+
+    private void undoBuyUnit(PlayerAction action, Player player) {
+        Unit unit = unitRepository.findById(action.getUnitId())
+                .orElseThrow(() -> new PlayerActionUndoException("Unité introuvable."));
+        if (unit.getSector() != null) {
+            throw new PlayerActionUndoException("L'unité est déployée : retirez-la avant d'annuler l'achat.");
+        }
+        if (!unit.getEquipments().isEmpty()) {
+            throw new PlayerActionUndoException("L'unité porte un équipement : déséquipez-la d'abord.");
+        }
+        double cost = action.getMoney() != null ? action.getMoney() : 0;
+        em.remove(unit);
+        player.refundMoney(cost, action.getStartingMoneySpent());
+    }
+
+    private void undoPlaceUnit(PlayerAction action) {
+        Unit unit = unitRepository.findById(action.getUnitId())
+                .orElseThrow(() -> new PlayerActionUndoException("Unité introuvable."));
+        int turn = turnService.getCurrentTurn();
+        if (!movementOrderRepository.findPendingEntityIds(turn, List.of(unit.getId())).isEmpty()) {
+            throw new PlayerActionUndoException("L'unité a un ordre à pied en attente : annulez-le d'abord.");
+        }
+        // Sortir l'unité de Sector.army : une collection managée avec cascade ré-persiste l'entité supprimée.
+        Sector sector = unit.getSector();
+        if (sector != null) {
+            sector.removeUnit(unit);
+        }
+        unit.setSector(null);
+        unitRepository.save(unit);
     }
 
     private void undoMoveBuilding(PlayerAction action) {

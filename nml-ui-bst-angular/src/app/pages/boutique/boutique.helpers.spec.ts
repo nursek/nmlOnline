@@ -1,11 +1,16 @@
-import { Equipment, VehicleTypeInfo } from '../../models';
+import { Equipment, UnitCartItem, UnitClass, VehicleTypeInfo } from '../../models';
 import {
+  clampUnitQuantity,
   compareEquipments,
   equipmentBonusSummary,
   equipmentClassLabel,
   equipmentSummary,
   sortEquipments,
   sortVehiclesByCost,
+  unitCartQuantityForType,
+  unitClassBonusSummary,
+  unitPendingQuantityForType,
+  unitQuotaRemaining,
   vehicleSummary,
 } from './boutique.helpers';
 
@@ -51,6 +56,7 @@ function vt(name: string, cost: number, basePdf: number, baseDefense: number): V
     resistance: 0,
     firesInTransit: false,
     aerial: false,
+    availableFromTurn: 4,
   };
 }
 
@@ -142,5 +148,104 @@ describe('boutique.helpers — résumés compacts', () => {
     expect(equipmentClassLabel(eq('X', 1, 'FIREARM', 'PILOTE_DESTRUCTEUR'))).toBe(
       'Pilote destructeur',
     );
+  });
+
+  describe('bonus de classe des unités', () => {
+    const uc = (name: string, overrides: Partial<UnitClass> = {}): UnitClass => ({
+      name,
+      code: name.charAt(0),
+      criticalChance: null,
+      criticalMultiplier: null,
+      damageReductionPdf: null,
+      damageReductionPdc: null,
+      maxMovementHops: 1,
+      ...overrides,
+    });
+
+    it('dérive les effets des champs du DTO, cumulés dans l’ordre', () => {
+      expect(unitClassBonusSummary(uc('LEGER', { maxMovementHops: 2 }))).toBe(
+        'Peut parcourir 2 secteurs par tour.',
+      );
+      expect(
+        unitClassBonusSummary(uc('MASTODONTE', { damageReductionPdf: 0.25, damageReductionPdc: 0.25 })),
+      ).toBe('Réduit de 25 % les dégâts PdF et PdC reçus.');
+      expect(unitClassBonusSummary(uc('TIREUR', { criticalChance: 0.1, criticalMultiplier: 1.5 }))).toBe(
+        'Critique : 10 % de chances, dégâts ×1,5.',
+      );
+      expect(
+        unitClassBonusSummary(uc('HYBRIDE', { maxMovementHops: 2, damageReductionPdf: 0.25 })),
+      ).toBe('Peut parcourir 2 secteurs par tour. Réduit de 25 % les dégâts PdF et PdC reçus.');
+    });
+
+    it('texte dédié pour PILOTE_DESTRUCTEUR, sinon « Aucun effet de combat. »', () => {
+      expect(unitClassBonusSummary(uc('PILOTE_DESTRUCTEUR'))).toBe(
+        'Tire en priorité sur les véhicules ; obligatoire pour piloter un véhicule avec une unité.',
+      );
+      expect(unitClassBonusSummary(uc('ELEMENTAIRE'))).toBe('Aucun effet de combat.');
+    });
+  });
+
+  describe('quota du panier unités', () => {
+    const unitLine = (typeName: string, className: string, quantity: number): UnitCartItem => ({
+      unitType: {
+        name: typeName,
+        cost: 400,
+        baseAttack: 10,
+        baseDefense: 10,
+        availableFromTurn: 2,
+        maxPerTurn: 20,
+        purchasedThisTurn: 0,
+        availableNow: true,
+      },
+      unitClass: {
+        name: className,
+        code: className.charAt(0),
+        criticalChance: null,
+        criticalMultiplier: null,
+        damageReductionPdf: null,
+        damageReductionPdc: null,
+        maxMovementHops: 1,
+      },
+      quantity,
+    });
+
+    it('cumule le panier par type, toutes classes confondues', () => {
+      const cart = [
+        unitLine('LARBIN', 'LEGER', 3),
+        unitLine('LARBIN', 'ELEMENTAIRE', 2),
+        unitLine('VOYOU', 'LEGER', 4),
+      ];
+      expect(unitCartQuantityForType(cart, 'LARBIN')).toBe(5);
+      expect(unitCartQuantityForType(cart, 'VOYOU')).toBe(4);
+      expect(unitCartQuantityForType(cart, 'MALFRAT')).toBe(0);
+    });
+
+    it('borne la quantité au quota restant et bloque à zéro', () => {
+      expect(clampUnitQuantity(50, 8)).toBe(8);
+      expect(clampUnitQuantity(3, 8)).toBe(3);
+      expect(clampUnitQuantity(0, 8)).toBe(1);
+      expect(clampUnitQuantity(3, 0)).toBe(0);
+      expect(clampUnitQuantity(3, -1)).toBe(0);
+    });
+
+    it('déduit du quota les achats du tour et le panier déjà rempli', () => {
+      expect(unitQuotaRemaining(20, 18, 2)).toBe(0);
+      expect(unitQuotaRemaining(20, 10, 2)).toBe(8);
+      expect(unitQuotaRemaining(20, 0, 25)).toBe(0);
+      expect(clampUnitQuantity(5, unitQuotaRemaining(20, 18, 2))).toBe(0);
+      expect(clampUnitQuantity(5, unitQuotaRemaining(20, 10, 2))).toBe(5);
+    });
+
+    it('somme les saisies par type sans mélanger les classes ni les préfixes', () => {
+      const pending = {
+        'LARBIN#LEGER': 10,
+        'LARBIN#SNIPER': 10,
+        'LARBIN2#LEGER': 3,
+        'VOYOU#LEGER': 4,
+      };
+      expect(unitPendingQuantityForType(pending, 'LARBIN')).toBe(20);
+      expect(unitPendingQuantityForType(pending, 'LARBIN2')).toBe(3);
+      expect(unitPendingQuantityForType(pending, 'MALFRAT')).toBe(0);
+    });
   });
 });

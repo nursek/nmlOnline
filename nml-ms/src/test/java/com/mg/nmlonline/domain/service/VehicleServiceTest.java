@@ -104,8 +104,21 @@ class VehicleServiceTest {
         }
 
         @Test
+        @DisplayName("Véhicule indisponible avant son tour d'ouverture est rejeté (unitaire et lot)")
+        void shouldRejectBeforeAvailabilityTurn() {
+            when(turnService.getCurrentTurn()).thenReturn(7);
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+
+            assertThrows(IllegalStateException.class,
+                    () -> vehicleService.buyVehicle(10L, "TANK", 1));
+            assertThrows(IllegalStateException.class,
+                    () -> vehicleService.buyVehiclesBatch(10L, List.of(item("TANK", 1))));
+        }
+
+        @Test
         @DisplayName("Joueur introuvable est rejeté")
         void shouldRejectUnknownPlayer() {
+            when(turnService.getCurrentTurn()).thenReturn(12);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.empty());
 
             assertThrows(RuntimeException.class,
@@ -116,6 +129,7 @@ class VehicleServiceTest {
         @DisplayName("Fonds insuffisants lèvent InsufficientFundsException")
         void shouldThrowWhenInsufficientFunds() {
             player.getStats().setMoney(5000.0);
+            when(turnService.getCurrentTurn()).thenReturn(12);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
 
             assertThrows(InsufficientFundsException.class,
@@ -125,6 +139,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Achat réussi crée les véhicules et débite le coût")
         void shouldCreateVehiclesAndDebitCost() {
+            when(turnService.getCurrentTurn()).thenReturn(12);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -142,6 +157,7 @@ class VehicleServiceTest {
         void shouldPinSequentialDebitBehavior() {
             // En test unitaire (pas de tx), l'argent reste débité après l'exception ; en prod le rollback @Transactional annule tout.
             player.getStats().setMoney(9000.0);
+            when(turnService.getCurrentTurn()).thenReturn(12);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -169,6 +185,7 @@ class VehicleServiceTest {
         @DisplayName("Coût total validé AVANT tout débit")
         void shouldValidateTotalCostBeforeAnyDebit() {
             player.getStats().setMoney(9000.0);
+            when(turnService.getCurrentTurn()).thenReturn(12);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
 
             assertThrows(InsufficientFundsException.class,
@@ -196,6 +213,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Lot réussi crée tous les véhicules")
         void shouldCreateAllVehiclesInBatch() {
+            when(turnService.getCurrentTurn()).thenReturn(12);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 

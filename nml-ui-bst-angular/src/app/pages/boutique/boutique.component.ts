@@ -19,15 +19,20 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Equipment, EquipmentStack, PlayerResource, VehicleTypeInfo } from '../../models';
-import { ShopService } from '../../services/shop.service';
+import { Equipment, EquipmentStack, PlayerResource, UnitCartItem, UnitCatalogEntry, UnitClass, VehicleTypeInfo } from '../../models';
+import { ShopService, unitCartKey } from '../../services/shop.service';
 import { PlayerService } from '../../services/player.service';
 import {
+  clampUnitQuantity,
   compareEquipments,
   equipmentBonusSummary,
   equipmentClassLabel,
   equipmentSummary,
   sortVehiclesByCost,
+  unitCartQuantityForType,
+  unitClassBonusSummary,
+  unitPendingQuantityForType,
+  unitQuotaRemaining,
   vehicleSummary,
 } from './boutique.helpers';
 import { equipmentCategoryLabel, unitClassLabel, vehicleTargetLabel } from '../../core/labels';
@@ -67,6 +72,7 @@ export class BoutiqueComponent {
   readonly allEquipments = this.shop.equipments;
   readonly cart = this.shop.cart;
   readonly vehicleCart = this.shop.vehicleCart;
+  readonly unitCart = this.shop.unitCart;
   readonly sellCart = this.shop.sellCart;
   readonly error = this.shop.error;
   readonly loading = this.shop.equipmentsLoading;
@@ -75,10 +81,20 @@ export class BoutiqueComponent {
   readonly totalPrice = this.shop.cartTotalPrice;
   readonly vehicleCartTotalItems = this.shop.vehicleCartTotalItems;
   readonly vehicleCartTotalPrice = this.shop.vehicleCartTotalPrice;
+  readonly unitCartTotalItems = this.shop.unitCartTotalItems;
+  readonly unitCartTotalPrice = this.shop.unitCartTotalPrice;
   readonly sellCartTotalValue = this.shop.sellCartTotalValue;
   readonly vehicleTypes = this.shop.vehicleTypes;
+  readonly unitCatalog = this.shop.unitCatalog;
+  readonly unitTypes = computed(() => this.shop.unitCatalog().entries);
+  readonly unitClasses = computed(() => this.shop.unitCatalog().classes);
+
+  readonly unitGroups = computed(() =>
+    this.unitTypes().map((entry) => ({ entry, classes: this.unitClasses() })),
+  );
 
   readonly player = this.playerService.player;
+  readonly currentTurn = this.playerService.currentTurn;
 
   readonly tab = input<string>('equipements');
   readonly selectedTabIndex = linkedSignal(() => this.tabIndex(this.tab()));
@@ -87,8 +103,10 @@ export class BoutiqueComponent {
     switch (tab) {
       case 'vehicules':
         return 1;
-      case 'revente':
+      case 'unites':
         return 2;
+      case 'revente':
+        return 3;
       default:
         return 0;
     }
@@ -100,6 +118,7 @@ export class BoutiqueComponent {
   readonly selectedCategory = signal<string>('all');
   readonly selectedBonusFilter = signal<string>('all');
   readonly vehicleQuantities = signal<Record<string, number>>({});
+  readonly unitQuantities = signal<Record<string, number>>({});
   readonly resourceSellQuantities = signal<Record<number, number>>({});
 
   // Images boutique : track des vignettes introuvables (fallback icône).
@@ -166,7 +185,9 @@ export class BoutiqueComponent {
     return groups;
   });
 
-  readonly totalCartBadge = computed(() => this.totalItems() + this.vehicleCartTotalItems());
+  readonly totalCartBadge = computed(
+    () => this.totalItems() + this.vehicleCartTotalItems() + this.unitCartTotalItems(),
+  );
 
   // Normalized cart lines for the shared `cartItem` template.
   readonly equipmentCartLines = computed(() =>
@@ -194,6 +215,9 @@ export class BoutiqueComponent {
   readonly canAffordVehicleCart = computed(
     () => (this.player()?.stats?.money ?? 0) >= this.vehicleCartTotalPrice(),
   );
+  readonly canAffordUnitCart = computed(
+    () => (this.player()?.stats?.money ?? 0) >= this.unitCartTotalPrice(),
+  );
 
   readonly hasActiveFilters = computed(
     () =>
@@ -216,6 +240,8 @@ export class BoutiqueComponent {
   constructor() {
     // Ensure the player profile is loaded for the money display / sell tab.
     void this.playerService.loadCurrent();
+    void this.playerService.loadCurrentTurn();
+    this.shop.refreshUnitCatalog();
   }
 
   private openSuccessDialog(data: PurchaseSuccessData): void {
@@ -336,6 +362,135 @@ export class BoutiqueComponent {
     return (this.player()?.stats?.money ?? 0) >= vehicleCost * qty;
   }
 
+  /** Tour inconnu = on laisse acheter, le backend reste juge. */
+  vehicleAvailable(vt: VehicleTypeInfo): boolean {
+    const turn = this.currentTurn();
+    return turn == null || turn >= vt.availableFromTurn;
+  }
+
+  unitRemaining(entry: UnitCatalogEntry): number {
+    return unitQuotaRemaining(
+      entry.maxPerTurn,
+      entry.purchasedThisTurn,
+      unitCartQuantityForType(this.unitCart(), entry.name) +
+        unitPendingQuantityForType(this.unitQuantities(), entry.name),
+    );
+  }
+
+  /** Quota consommé (achats + panier + saisies en cours) : la preview se met à jour en direct. */
+  unitQuotaUsed(entry: UnitCatalogEntry): number {
+    return entry.maxPerTurn - this.unitRemaining(entry);
+  }
+
+  private unitQuantityKey(entry: UnitCatalogEntry, uc: UnitClass): string {
+    return unitCartKey(entry.name, uc.name);
+  }
+
+  private getUnitQuantity(key: string): number {
+    return this.unitQuantities()[key] ?? 1;
+  }
+
+  /** Plafond de la carte : `unitRemaining` inclut déjà sa propre saisie comptée, on la ré-ajoute. */
+  unitQuantityLimit(entry: UnitCatalogEntry, uc: UnitClass): number {
+    return (
+      this.unitRemaining(entry) + (this.unitQuantities()[this.unitQuantityKey(entry, uc)] ?? 0)
+    );
+  }
+
+  /** Quantité réellement ajoutable : reflète le clamp quand le panier consomme déjà le quota. */
+  unitQuantityToAdd(entry: UnitCatalogEntry, uc: UnitClass): number {
+    return clampUnitQuantity(
+      this.getUnitQuantity(this.unitQuantityKey(entry, uc)),
+      this.unitQuantityLimit(entry, uc),
+    );
+  }
+
+  setUnitQuantity(entry: UnitCatalogEntry, uc: UnitClass, qty: number): void {
+    const clamped = clampUnitQuantity(qty, this.unitQuantityLimit(entry, uc));
+    if (clamped <= 0) return;
+    this.unitQuantities.update((prev) => ({
+      ...prev,
+      [this.unitQuantityKey(entry, uc)]: clamped,
+    }));
+  }
+
+  onUnitQuantityInput(entry: UnitCatalogEntry, uc: UnitClass, event: Event): void {
+    const value = (event.target as HTMLInputElement).valueAsNumber;
+    if (Number.isNaN(value)) return;
+    this.setUnitQuantity(entry, uc, value);
+  }
+
+  normalizeUnitQuantity(entry: UnitCatalogEntry, uc: UnitClass, event: Event): void {
+    (event.target as HTMLInputElement).value = String(this.unitQuantityToAdd(entry, uc));
+  }
+
+  canAddUnit(entry: UnitCatalogEntry, uc: UnitClass): boolean {
+    return entry.availableNow && this.unitQuantityToAdd(entry, uc) > 0;
+  }
+
+  addUnitToCart(entry: UnitCatalogEntry, unitClass: UnitClass): void {
+    const qty = this.unitQuantityToAdd(entry, unitClass);
+    if (qty <= 0) return;
+    this.shop.addUnitToCart(entry, unitClass, qty);
+    // La saisie repasse à 1 : sinon le quota compterait la ligne deux fois (saisie + panier).
+    this.unitQuantities.update((prev) => {
+      const next = { ...prev };
+      delete next[this.unitQuantityKey(entry, unitClass)];
+      return next;
+    });
+  }
+
+  unitCartLineQuantity(key: string): number {
+    return (
+      this.unitCart().find((i) => unitCartKey(i.unitType.name, i.unitClass.name) === key)?.quantity ??
+      0
+    );
+  }
+
+  decrementUnitCartQuantity(key: string): void {
+    const current = this.unitCartLineQuantity(key);
+    if (current > 1) {
+      this.shop.updateUnitCartItemQuantity(key, current - 1);
+    } else {
+      this.shop.removeUnitFromCart(key);
+    }
+  }
+
+  incrementUnitCartLine(item: UnitCartItem): void {
+    const entry = this.unitTypes().find((e) => e.name === item.unitType.name);
+    if (!entry || this.unitRemaining(entry) <= 0) return;
+    const key = unitCartKey(item.unitType.name, item.unitClass.name);
+    this.shop.updateUnitCartItemQuantity(key, this.unitCartLineQuantity(key) + 1);
+  }
+
+  canIncrementUnitCartLine(item: UnitCartItem): boolean {
+    const entry = this.unitTypes().find((e) => e.name === item.unitType.name);
+    return entry != null && this.unitRemaining(entry) > 0;
+  }
+
+  removeUnitFromCart(key: string): void {
+    this.shop.removeUnitFromCart(key);
+  }
+
+  clearUnitCart(): void {
+    this.shop.clearUnitCart();
+  }
+
+  async checkoutUnits(): Promise<void> {
+    const snapshot = [...this.unitCart()];
+    await this.runCheckout(
+      snapshot.length,
+      () => this.shop.checkoutUnits(),
+      () => ({
+        title: 'Unités recrutées !',
+        lines: snapshot.map(
+          (item) => `${item.quantity} × ${item.unitType.name} (${this.unitClassLabel(item.unitClass.name)})`,
+        ),
+        totalCost: snapshot.reduce((s, i) => s + i.unitType.cost * i.quantity, 0),
+      }),
+    );
+  }
+
   getSellQty(resource: PlayerResource): number {
     return resource.id != null ? (this.resourceSellQuantities()[resource.id] ?? 1) : 1;
   }
@@ -410,10 +565,12 @@ export class BoutiqueComponent {
   equipmentCategoryLabel = equipmentCategoryLabel;
   unitClassLabel = unitClassLabel;
   vehicleTargetLabel = vehicleTargetLabel;
+  unitCartKey = unitCartKey;
   equipmentSummary = equipmentSummary;
   equipmentBonusSummary = equipmentBonusSummary;
   equipmentClassLabel = equipmentClassLabel;
   vehicleSummary = vehicleSummary;
+  unitClassBonusSummary = unitClassBonusSummary;
   saleMultiplier = saleMultiplier;
   saleValue = saleValue;
 
@@ -426,6 +583,35 @@ export class BoutiqueComponent {
   // fichier ; slugify remplacerait '_' par '-' et casserait l'URL.
   vehicleImageUrl(vt: VehicleTypeInfo): string {
     return `assets/shop/vehicles/${vt.name.toLowerCase()}.png`;
+  }
+
+  private faction(): string {
+    return this.player()?.name?.toLowerCase() ?? '';
+  }
+
+  private unitClassImageUrl(entry: UnitCatalogEntry, unitClass: UnitClass): string {
+    const faction = this.faction();
+    if (!faction) return '';
+    return `assets/${faction}/units/${entry.name.toLowerCase()}/${unitClass.name.toLowerCase()}.png`;
+  }
+
+  private unitPortraitUrl(entry: UnitCatalogEntry): string {
+    const faction = this.faction();
+    if (!faction) return '';
+    return `assets/${faction}/units/${entry.name.toLowerCase()}/portrait.png`;
+  }
+
+  /** Vignette par classe ; repli sur le portrait du type puis sur l'icône (cf. `onUnitImgError`). */
+  unitImageUrl(entry: UnitCatalogEntry, unitClass: UnitClass): string {
+    if (!this.hasImage(`unit:${entry.name}:${unitClass.name}`)) {
+      return this.unitClassImageUrl(entry, unitClass);
+    }
+    return this.hasImage(`unit:${entry.name}`) ? '' : this.unitPortraitUrl(entry);
+  }
+
+  onUnitImgError(entry: UnitCatalogEntry, unitClass: UnitClass): void {
+    const classKey = `unit:${entry.name}:${unitClass.name}`;
+    this.onImgError(this.hasImage(classKey) ? classKey : `unit:${entry.name}`);
   }
 
   resourceImageUrl(resource: PlayerResource): string {

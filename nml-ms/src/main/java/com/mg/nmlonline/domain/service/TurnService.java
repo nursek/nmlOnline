@@ -26,6 +26,7 @@ public class TurnService {
     private final GameCharacterService characterService;
     private final HarvestAutoCollector harvestAutoCollector;
     private final VehicleMaintenanceService vehicleMaintenanceService;
+    private final ReserveUnitPlacer reserveUnitPlacer;
 
     // Cache du tour (évite un N+1), publié avant commit et purgé sur rollback.
     private volatile Integer cachedTurn;
@@ -33,13 +34,15 @@ public class TurnService {
     public TurnService(BoardRepository boardRepository, MovementService movementService,
                        TurnLock turnLock, GameCharacterService characterService,
                        HarvestAutoCollector harvestAutoCollector,
-                       VehicleMaintenanceService vehicleMaintenanceService) {
+                       VehicleMaintenanceService vehicleMaintenanceService,
+                       ReserveUnitPlacer reserveUnitPlacer) {
         this.boardRepository = boardRepository;
         this.movementService = movementService;
         this.turnLock = turnLock;
         this.characterService = characterService;
         this.harvestAutoCollector = harvestAutoCollector;
         this.vehicleMaintenanceService = vehicleMaintenanceService;
+        this.reserveUnitPlacer = reserveUnitPlacer;
     }
 
     /** Retourne 1 si aucun plateau n'existe encore. */
@@ -110,6 +113,9 @@ public class TurnService {
 
             // Avant les captures : le revenu du tour revient à son propriétaire pendant le tour.
             harvestAutoCollector.collectRemainingMoney(board, turnEnding);
+
+            // Les recrues non déployées rejoignent le QG et participent à la résolution du tour.
+            reserveUnitPlacer.placeAllAtHeadquarters();
 
             // Résolution des mouvements du tour qui se termine, AVANT l'incrément.
             MovementResolutionResult result = movementService.resolveAllMovements(turnEnding, board);
