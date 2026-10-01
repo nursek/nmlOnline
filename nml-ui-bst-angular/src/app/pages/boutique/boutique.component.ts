@@ -19,9 +19,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { Equipment, EquipmentStack, PlayerResource, UnitCartItem, UnitCatalogEntry, VehicleTypeInfo } from '../../models';
+import { Equipment, EquipmentStack, PlayerResource, UnitCartItem, UnitCatalogEntry, UnitClass, VehicleTypeInfo } from '../../models';
 import { ShopService, unitCartKey } from '../../services/shop.service';
 import { PlayerService } from '../../services/player.service';
 import {
@@ -32,6 +30,8 @@ import {
   equipmentSummary,
   sortVehiclesByCost,
   unitCartQuantityForType,
+  unitClassBonusSummary,
+  unitPendingQuantityForType,
   unitQuotaRemaining,
   vehicleSummary,
 } from './boutique.helpers';
@@ -60,8 +60,6 @@ import {
     MatTabsModule,
     MatTooltipModule,
     MatDialogModule,
-    MatFormFieldModule,
-    MatSelectModule,
   ],
   templateUrl: './boutique.component.html',
   styleUrls: ['./boutique.component.scss'],
@@ -91,6 +89,10 @@ export class BoutiqueComponent {
   readonly unitTypes = computed(() => this.shop.unitCatalog().entries);
   readonly unitClasses = computed(() => this.shop.unitCatalog().classes);
 
+  readonly unitGroups = computed(() =>
+    this.unitTypes().map((entry) => ({ entry, classes: this.unitClasses() })),
+  );
+
   readonly player = this.playerService.player;
   readonly currentTurn = this.playerService.currentTurn;
 
@@ -117,7 +119,6 @@ export class BoutiqueComponent {
   readonly selectedBonusFilter = signal<string>('all');
   readonly vehicleQuantities = signal<Record<string, number>>({});
   readonly unitQuantities = signal<Record<string, number>>({});
-  readonly unitClassChoices = signal<Record<string, string>>({});
   readonly resourceSellQuantities = signal<Record<number, number>>({});
 
   // Images boutique : track des vignettes introuvables (fallback icône).
@@ -371,55 +372,72 @@ export class BoutiqueComponent {
     return unitQuotaRemaining(
       entry.maxPerTurn,
       entry.purchasedThisTurn,
-      unitCartQuantityForType(this.unitCart(), entry.name),
+      unitCartQuantityForType(this.unitCart(), entry.name) +
+        unitPendingQuantityForType(this.unitQuantities(), entry.name),
     );
   }
 
-  /** Quota consommé (achats + panier) : affiché pour rester cohérent avec « Limite atteinte ». */
+  /** Quota consommé (achats + panier + saisies en cours) : la preview se met à jour en direct. */
   unitQuotaUsed(entry: UnitCatalogEntry): number {
     return entry.maxPerTurn - this.unitRemaining(entry);
   }
 
-  private defaultUnitClass(): string {
-    const classes = this.unitClasses();
-    return classes.find((c) => c.name === 'ELEMENTAIRE')?.name ?? classes[0]?.name ?? '';
+  private unitQuantityKey(entry: UnitCatalogEntry, uc: UnitClass): string {
+    return unitCartKey(entry.name, uc.name);
   }
 
-  unitClassChoice(entry: UnitCatalogEntry): string {
-    return this.unitClassChoices()[entry.name] ?? this.defaultUnitClass();
+  private getUnitQuantity(key: string): number {
+    return this.unitQuantities()[key] ?? 1;
   }
 
-  setUnitClass(entryName: string, className: string): void {
-    this.unitClassChoices.update((prev) => ({ ...prev, [entryName]: className }));
-  }
-
-  getUnitQuantity(entryName: string): number {
-    return this.unitQuantities()[entryName] ?? 1;
+  /** Plafond de la carte : `unitRemaining` inclut déjà sa propre saisie comptée, on la ré-ajoute. */
+  unitQuantityLimit(entry: UnitCatalogEntry, uc: UnitClass): number {
+    return (
+      this.unitRemaining(entry) + (this.unitQuantities()[this.unitQuantityKey(entry, uc)] ?? 0)
+    );
   }
 
   /** Quantité réellement ajoutable : reflète le clamp quand le panier consomme déjà le quota. */
-  unitQuantityToAdd(entry: UnitCatalogEntry): number {
-    return clampUnitQuantity(this.getUnitQuantity(entry.name), this.unitRemaining(entry));
+  unitQuantityToAdd(entry: UnitCatalogEntry, uc: UnitClass): number {
+    return clampUnitQuantity(
+      this.getUnitQuantity(this.unitQuantityKey(entry, uc)),
+      this.unitQuantityLimit(entry, uc),
+    );
   }
 
-  setUnitQuantity(entry: UnitCatalogEntry, qty: number): void {
-    const clamped = clampUnitQuantity(qty, this.unitRemaining(entry));
+  setUnitQuantity(entry: UnitCatalogEntry, uc: UnitClass, qty: number): void {
+    const clamped = clampUnitQuantity(qty, this.unitQuantityLimit(entry, uc));
+    if (clamped <= 0) return;
     this.unitQuantities.update((prev) => ({
       ...prev,
-      [entry.name]: Math.max(1, clamped),
+      [this.unitQuantityKey(entry, uc)]: clamped,
     }));
   }
 
-  canAddUnit(entry: UnitCatalogEntry): boolean {
-    return entry.availableNow && this.unitRemaining(entry) > 0;
+  onUnitQuantityInput(entry: UnitCatalogEntry, uc: UnitClass, event: Event): void {
+    const value = (event.target as HTMLInputElement).valueAsNumber;
+    if (Number.isNaN(value)) return;
+    this.setUnitQuantity(entry, uc, value);
   }
 
-  addUnitToCart(entry: UnitCatalogEntry): void {
-    const unitClass = this.unitClasses().find((c) => c.name === this.unitClassChoice(entry));
-    if (!unitClass) return;
-    const qty = this.unitQuantityToAdd(entry);
+  normalizeUnitQuantity(entry: UnitCatalogEntry, uc: UnitClass, event: Event): void {
+    (event.target as HTMLInputElement).value = String(this.unitQuantityToAdd(entry, uc));
+  }
+
+  canAddUnit(entry: UnitCatalogEntry, uc: UnitClass): boolean {
+    return entry.availableNow && this.unitQuantityToAdd(entry, uc) > 0;
+  }
+
+  addUnitToCart(entry: UnitCatalogEntry, unitClass: UnitClass): void {
+    const qty = this.unitQuantityToAdd(entry, unitClass);
     if (qty <= 0) return;
     this.shop.addUnitToCart(entry, unitClass, qty);
+    // La saisie repasse à 1 : sinon le quota compterait la ligne deux fois (saisie + panier).
+    this.unitQuantities.update((prev) => {
+      const next = { ...prev };
+      delete next[this.unitQuantityKey(entry, unitClass)];
+      return next;
+    });
   }
 
   unitCartLineQuantity(key: string): number {
@@ -552,6 +570,7 @@ export class BoutiqueComponent {
   equipmentBonusSummary = equipmentBonusSummary;
   equipmentClassLabel = equipmentClassLabel;
   vehicleSummary = vehicleSummary;
+  unitClassBonusSummary = unitClassBonusSummary;
   saleMultiplier = saleMultiplier;
   saleValue = saleValue;
 
@@ -566,8 +585,33 @@ export class BoutiqueComponent {
     return `assets/shop/vehicles/${vt.name.toLowerCase()}.png`;
   }
 
-  unitImageUrl(entry: UnitCatalogEntry): string {
-    return `assets/shop/units/${entry.name.toLowerCase()}.png`;
+  private faction(): string {
+    return this.player()?.name?.toLowerCase() ?? '';
+  }
+
+  private unitClassImageUrl(entry: UnitCatalogEntry, unitClass: UnitClass): string {
+    const faction = this.faction();
+    if (!faction) return '';
+    return `assets/${faction}/units/${entry.name.toLowerCase()}/${unitClass.name.toLowerCase()}.png`;
+  }
+
+  private unitPortraitUrl(entry: UnitCatalogEntry): string {
+    const faction = this.faction();
+    if (!faction) return '';
+    return `assets/${faction}/units/${entry.name.toLowerCase()}/portrait.png`;
+  }
+
+  /** Vignette par classe ; repli sur le portrait du type puis sur l'icône (cf. `onUnitImgError`). */
+  unitImageUrl(entry: UnitCatalogEntry, unitClass: UnitClass): string {
+    if (!this.hasImage(`unit:${entry.name}:${unitClass.name}`)) {
+      return this.unitClassImageUrl(entry, unitClass);
+    }
+    return this.hasImage(`unit:${entry.name}`) ? '' : this.unitPortraitUrl(entry);
+  }
+
+  onUnitImgError(entry: UnitCatalogEntry, unitClass: UnitClass): void {
+    const classKey = `unit:${entry.name}:${unitClass.name}`;
+    this.onImgError(this.hasImage(classKey) ? classKey : `unit:${entry.name}`);
   }
 
   resourceImageUrl(resource: PlayerResource): string {
