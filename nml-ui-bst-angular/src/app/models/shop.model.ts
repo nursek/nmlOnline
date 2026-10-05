@@ -1,5 +1,6 @@
 import type { Equipment } from './equipment.model';
 import type { PlayerResource, ResourceSaleResponse } from './player.model';
+import type { UnitCatalogEntry, UnitClass } from './unit.model';
 import type { VehicleTypeInfo } from './vehicle.model';
 
 export interface CartItem {
@@ -24,6 +25,18 @@ export interface SellCartItem {
 
 export interface BuyVehicleBatchItem {
   vehicleType: string;
+  quantity: number;
+}
+
+export interface UnitCartItem {
+  unitType: UnitCatalogEntry;
+  unitClass: UnitClass;
+  quantity: number;
+}
+
+export interface BuyUnitBatchItem {
+  unitType: string;
+  unitClass: string;
   quantity: number;
 }
 

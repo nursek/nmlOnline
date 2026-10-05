@@ -46,6 +46,7 @@ public class MovementAdminService {
     private final PlatformTransactionManager txManager;
     private final TurnLock turnLock;
     private final HarvestAutoCollector harvestAutoCollector;
+    private final ReserveUnitPlacer reserveUnitPlacer;
 
     public MovementAdminService(MovementService movementService,
                                 MovementMapper movementMapper,
@@ -54,7 +55,8 @@ public class MovementAdminService {
                                 PlayerRepository playerRepository,
                                 PlatformTransactionManager txManager,
                                 TurnLock turnLock,
-                                HarvestAutoCollector harvestAutoCollector) {
+                                HarvestAutoCollector harvestAutoCollector,
+                                ReserveUnitPlacer reserveUnitPlacer) {
         this.movementService = movementService;
         this.movementMapper = movementMapper;
         this.orderRepository = orderRepository;
@@ -63,6 +65,7 @@ public class MovementAdminService {
         this.txManager = txManager;
         this.turnLock = turnLock;
         this.harvestAutoCollector = harvestAutoCollector;
+        this.reserveUnitPlacer = reserveUnitPlacer;
     }
 
     @Transactional(readOnly = true)
@@ -83,6 +86,8 @@ public class MovementAdminService {
         TransactionStatus status = txManager.getTransaction(def);
         try {
             Board board = loadBoard();
+            // Même placement qu'à l'application : l'aperçu doit refléter la défense réelle du QG.
+            reserveUnitPlacer.placeAllAtHeadquarters();
             MovementResolutionResult result = movementService.resolveAllMovements(turn, board);
             Function<Long, String> names = resolveNames(collectPlayerIds(result));
             // Construire le DTO AVANT le rollback : après, les entités seraient détachées.
@@ -101,6 +106,8 @@ public class MovementAdminService {
             Board board = loadBoard();
             // Revenus figés avant les mouvements : le claim par tour empêche un second versement à /turn/next.
             harvestAutoCollector.collectRemainingMoney(board, turn, HarvestAutoCollector.ownersBySector(board));
+            // Les recrues non déployées rejoignent le QG avant la résolution, comme à /turn/next.
+            reserveUnitPlacer.placeAllAtHeadquarters();
             MovementResolutionResult result = movementService.resolveAllMovements(turn, board);
             Function<Long, String> names = resolveNames(collectPlayerIds(result));
             return movementMapper.toResolutionDto(result, turn, names);

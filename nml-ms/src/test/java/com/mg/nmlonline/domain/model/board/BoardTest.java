@@ -102,6 +102,27 @@ class BoardTest {
     }
 
     @Nested
+    @DisplayName("URL de l'overlay SVG")
+    class SvgOverlayUrlTests {
+
+        @Test
+        @DisplayName("Refuse un hôte externe déguisé en chemin")
+        void shouldRejectExternalSvgOverlayUrl() {
+            assertThrows(IllegalArgumentException.class, () -> board.setSvgOverlayUrl("/\\evil.example/x.svg"));
+            assertThrows(IllegalArgumentException.class, () -> board.setSvgOverlayUrl("//evil.example/x.svg"));
+            assertThrows(IllegalArgumentException.class, () -> board.setSvgOverlayUrl("https://evil.example/x.svg"));
+        }
+
+        @Test
+        @DisplayName("Accepte un chemin same-origin")
+        void shouldAcceptSameOriginPath() {
+            board.setSvgOverlayUrl("/assets/maps/main-map-overlay.svg");
+
+            assertEquals("/assets/maps/main-map-overlay.svg", board.getSvgOverlayUrl());
+        }
+    }
+
+    @Nested
     @DisplayName("Gestion des propriétaires")
     class OwnerManagementTests {
 

@@ -137,6 +137,75 @@
         <mat-divider></mat-divider>
       }
 
+      @if (unitCart().length > 0) {
+        <div class="cart-section-title">
+          <mat-icon>groups</mat-icon>
+          Unités
+        </div>
+        <div class="cart-items">
+          @for (item of unitCart(); track unitCartKey(item.unitType.name, item.unitClass.name)) {
+            <div class="cart-item">
+              <div class="item-header">
+                <h4>{{ item.unitType.name }} — {{ unitClassLabel(item.unitClass.name) }}</h4>
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="removeUnitFromCart(unitCartKey(item.unitType.name, item.unitClass.name))"
+                  [attr.aria-label]="'Supprimer ' + item.unitType.name"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+              <p class="item-price">
+                {{ item.unitType.cost }} ₡ × {{ item.quantity }} =
+                {{ item.unitType.cost * item.quantity }} ₡
+              </p>
+              <div class="quantity-controls">
+                <button
+                  mat-icon-button
+                  [disabled]="item.quantity <= 1"
+                  (click)="decrementUnitCartQuantity(unitCartKey(item.unitType.name, item.unitClass.name))"
+                  [attr.aria-label]="'Réduire la quantité de ' + item.unitType.name"
+                >
+                  <mat-icon>remove</mat-icon>
+                </button>
+                <span class="quantity">{{ item.quantity }}</span>
+                <button
+                  mat-icon-button
+                  [disabled]="!canIncrementUnitCartLine(item)"
+                  (click)="incrementUnitCartLine(item)"
+                  [attr.aria-label]="'Augmenter la quantité de ' + item.unitType.name"
+                >
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="cart-subtotal">
+          <span>Sous-total :</span>
+          <span class="total-value">{{ unitCartTotalPrice() }} ₡</span>
+        </div>
+        <button
+          mat-raised-button
+          [color]="canAffordUnitCart() ? 'primary' : 'warn'"
+          [disabled]="!canAffordUnitCart() || purchaseLoading()"
+          class="checkout-btn"
+          (click)="checkoutUnits()"
+        >
+          <mat-icon [class.hidden-spinner]="purchaseLoading()" matButtonIcon>groups</mat-icon>
+          @if (purchaseLoading()) {
+            <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+          } @else {
+            <span>{{ canAffordUnitCart() ? 'Commander unités' : 'Fonds insuffisants' }}</span>
+          }
+        </button>
+        <button mat-stroked-button color="warn" class="clear-btn" (click)="clearUnitCart()">
+          Vider
+        </button>
+        <mat-divider></mat-divider>
+      }
+
       @if (sellCart().length > 0) {
         <div class="cart-section-title sell-section">
           <mat-icon>sell</mat-icon>
@@ -542,7 +611,7 @@
                 @for (vt of sortedVehicleTypes(); track vt.name) {
                   <mat-card
                     class="equipment-card hover-lift"
-                    [class.disabled-card]="!canAffordVehicle(vt.cost)"
+                    [class.disabled-card]="!canAffordVehicle(vt.cost) || !vehicleAvailable(vt)"
                   >
                     <mat-card-content>
                       <div class="shop-thumb-wrapper">
@@ -556,6 +625,12 @@
                         } @else {
                           <div class="shop-thumb-fallback">
                             <mat-icon>image_not_supported</mat-icon>
+                          </div>
+                        }
+                        @if (!vehicleAvailable(vt)) {
+                          <div class="lock-overlay">
+                            <mat-icon>lock</mat-icon>
+                            <span>Disponible au tour {{ vt.availableFromTurn }}</span>
                           </div>
                         }
                       </div>
@@ -632,13 +707,15 @@
                         <button
                           mat-raised-button
                           color="primary"
-                          [disabled]="!canAffordVehicle(vt.cost, getVehicleQuantity(vt.name))"
+                          [disabled]="!canAffordVehicle(vt.cost, getVehicleQuantity(vt.name)) || !vehicleAvailable(vt)"
                           [matTooltip]="
-                            !canAffordVehicle(vt.cost, getVehicleQuantity(vt.name))
-                              ? 'Fonds insuffisants (' +
-                                vt.cost * getVehicleQuantity(vt.name) +
-                                ' ₡)'
-                              : 'Ajouter au panier'
+                            !vehicleAvailable(vt)
+                              ? 'Disponible au tour ' + vt.availableFromTurn
+                              : !canAffordVehicle(vt.cost, getVehicleQuantity(vt.name))
+                                ? 'Fonds insuffisants (' +
+                                  vt.cost * getVehicleQuantity(vt.name) +
+                                  ' ₡)'
+                                : 'Ajouter au panier'
                           "
                           (click)="addVehicleToCart(vt)"
                           class="add-btn"
@@ -656,6 +733,158 @@
                   </mat-card>
                 }
               </div>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="Unités">
+            <div class="vehicles-section">
+              @if (error(); as unitError) {
+                <div class="error-alert" role="alert">
+                  <mat-icon>error</mat-icon>
+                  {{ unitError }}
+                </div>
+              }
+
+              @for (group of unitGroups(); track group.entry.name) {
+                <h3 class="class-section-title">{{ group.entry.name }}</h3>
+                <div class="equipment-grid">
+                  @for (uc of group.classes; track uc.name) {
+                    <mat-card
+                      class="equipment-card hover-lift"
+                      [class.disabled-card]="!canAddUnit(group.entry, uc)"
+                    >
+                      <mat-card-content>
+                        <div class="shop-thumb-wrapper">
+                          @if (unitImageUrl(group.entry, uc); as unitImg) {
+                            <img
+                              [src]="unitImg"
+                              (error)="onUnitImgError(group.entry, uc)"
+                              alt="{{ group.entry.name }} — {{ unitClassLabel(uc.name) }}"
+                              class="shop-thumb"
+                            />
+                          } @else {
+                            <div class="shop-thumb-fallback">
+                              <mat-icon>groups</mat-icon>
+                            </div>
+                          }
+                          @if (!group.entry.availableNow) {
+                            <div class="lock-overlay">
+                              <mat-icon>lock</mat-icon>
+                              <span>Disponible au tour {{ group.entry.availableFromTurn }}</span>
+                            </div>
+                          }
+                        </div>
+                        <div class="equipment-header">
+                          <h3>{{ group.entry.name }} — {{ unitClassLabel(uc.name) }}</h3>
+                          <mat-chip
+                            [color]="canAddUnit(group.entry, uc) ? 'warn' : 'accent'"
+                            highlighted
+                          >
+                            {{ group.entry.cost | number }} ₡
+                          </mat-chip>
+                        </div>
+
+                        <p class="summary">{{ unitClassBonusSummary(uc) }}</p>
+
+                        <div class="bonus-chips">
+                          <mat-chip class="bonus pdf">{{ group.entry.baseAttack }} ATK</mat-chip>
+                          <mat-chip class="bonus arm">{{ group.entry.baseDefense }} DEF</mat-chip>
+                        </div>
+
+                        <div class="vehicle-stats">
+                          @if (group.entry.availableNow) {
+                            <span class="stat-item">
+                              <mat-icon>shopping_bag</mat-icon>
+                              Quota&nbsp;: {{ unitQuotaUsed(group.entry) }}/{{
+                                group.entry.maxPerTurn
+                              }}
+                            </span>
+                            @if (unitRemaining(group.entry) === 0) {
+                              <span class="stat-item stat-highlight">
+                                <mat-icon>block</mat-icon>
+                                Limite atteinte
+                              </span>
+                            }
+                          }
+                        </div>
+
+                        <div class="card-actions">
+                          <div class="quantity-controls">
+                            <button
+                              mat-icon-button
+                              (click)="
+                                setUnitQuantity(
+                                  group.entry,
+                                  uc,
+                                  unitQuantityToAdd(group.entry, uc) - 1
+                                )
+                              "
+                              [disabled]="unitQuantityToAdd(group.entry, uc) <= 1"
+                              [attr.aria-label]="'Réduire la quantité de ' + group.entry.name"
+                            >
+                              <mat-icon>remove</mat-icon>
+                            </button>
+                            <input
+                              class="quantity-input"
+                              type="number"
+                              min="1"
+                              [max]="unitQuantityLimit(group.entry, uc)"
+                              [value]="unitQuantityToAdd(group.entry, uc)"
+                              (input)="onUnitQuantityInput(group.entry, uc, $event)"
+                              (blur)="normalizeUnitQuantity(group.entry, uc, $event)"
+                              [attr.aria-label]="'Quantité de ' + group.entry.name"
+                            />
+                            <button
+                              mat-icon-button
+                              (click)="
+                                setUnitQuantity(
+                                  group.entry,
+                                  uc,
+                                  unitQuantityToAdd(group.entry, uc) + 1
+                                )
+                              "
+                              [disabled]="
+                                unitQuantityToAdd(group.entry, uc) >=
+                                unitQuantityLimit(group.entry, uc)
+                              "
+                              [attr.aria-label]="'Augmenter la quantité de ' + group.entry.name"
+                            >
+                              <mat-icon>add</mat-icon>
+                            </button>
+                          </div>
+                          <button
+                            mat-raised-button
+                            color="primary"
+                            [disabled]="!canAddUnit(group.entry, uc)"
+                            [matTooltip]="
+                              !group.entry.availableNow
+                                ? 'Disponible au tour ' + group.entry.availableFromTurn
+                                : unitRemaining(group.entry) === 0
+                                  ? 'Limite atteinte ce tour'
+                                  : 'Ajouter au panier'
+                            "
+                            (click)="addUnitToCart(group.entry, uc)"
+                            class="add-btn"
+                          >
+                            <mat-icon>add_shopping_cart</mat-icon>
+                            Panier ({{
+                              group.entry.cost * unitQuantityToAdd(group.entry, uc)
+                            }}&nbsp;₡)
+                          </button>
+                          @if (unitCartLineQuantity(unitCartKey(group.entry.name, uc.name)) > 0) {
+                            <span class="in-cart-badge"
+                              >{{
+                                unitCartLineQuantity(unitCartKey(group.entry.name, uc.name))
+                              }}
+                              dans le panier</span
+                            >
+                          }
+                        </div>
+                      </mat-card-content>
+                    </mat-card>
+                  }
+                </div>
+              }
             </div>
           </mat-tab>
 

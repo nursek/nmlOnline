@@ -35,9 +35,14 @@ interface SectorWithPlayer extends Sector {
   playerColor?: string;
 }
 
-// Accepte uniquement les chemins relatifs same-origin ("/assets/...", pas "//host" ni "https://...").
-function isSameOriginAssetUrl(url: string): boolean {
-  return url.startsWith('/') && !url.startsWith('//');
+// Same-origin uniquement : `/\evil.example/x` et `//evil.example/x` se résolvent hors origine.
+export function isSameOriginAssetUrl(url: string): boolean {
+  if (!url.startsWith('/')) return false;
+  try {
+    return new URL(url, window.location.origin).origin === window.location.origin;
+  } catch {
+    return false;
+  }
 }
 
 @Component({

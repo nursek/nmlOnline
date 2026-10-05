@@ -85,6 +85,29 @@ describe('sanitizeSvg', () => {
     expect(out).toContain('path6');
   });
 
+  it('retire les éléments HTML clobberés (form/input name=attributes)', () => {
+    const payload =
+      `<svg xmlns="${SVG_NS}"><path id="path8" d="M0 0"/></svg>` +
+      `<form onmouseover="window.__xss=1"><input name="attributes" type="submit" ` +
+      `style="position:fixed;inset:0"></form>`;
+    const out = sanitizeSvg(payload);
+
+    expect(out.toLowerCase()).not.toContain('onmouseover');
+    expect(out.toLowerCase()).not.toContain('<form');
+    expect(out.toLowerCase()).not.toContain('<input');
+    expect(out).toContain('path8');
+  });
+
+  it('retire un schéma masqué par un caractère de contrôle C0', () => {
+    const out = sanitizeSvg(
+      `<svg xmlns="${SVG_NS}"><image href="&#1;javascript:alert(1)"/>` +
+        `<path id="path9" d="M0 0"/></svg>`,
+    );
+
+    expect(out.toLowerCase()).not.toContain('javascript:');
+    expect(out).toContain('path9');
+  });
+
   it('rejette un contenu sans racine <svg>', () => {
     expect(sanitizeSvg('<div>hello</div>')).toBe('');
     expect(sanitizeSvg('<div><style><![CDATA[</style><a href="x">y</a>]]></style></div>')).toBe('');

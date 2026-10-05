@@ -47,6 +47,7 @@ public class TurnResolutionOrchestrator {
     private final GameCharacterService characterService;
     private final HarvestAutoCollector harvestAutoCollector;
     private final VehicleMaintenanceService vehicleMaintenanceService;
+    private final ReserveUnitPlacer reserveUnitPlacer;
 
     private volatile Session session;
 
@@ -60,7 +61,8 @@ public class TurnResolutionOrchestrator {
                                       TurnService turnService,
                                       GameCharacterService characterService,
                                       HarvestAutoCollector harvestAutoCollector,
-                                      VehicleMaintenanceService vehicleMaintenanceService) {
+                                      VehicleMaintenanceService vehicleMaintenanceService,
+                                      ReserveUnitPlacer reserveUnitPlacer) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
@@ -71,6 +73,7 @@ public class TurnResolutionOrchestrator {
         this.characterService = characterService;
         this.harvestAutoCollector = harvestAutoCollector;
         this.vehicleMaintenanceService = vehicleMaintenanceService;
+        this.reserveUnitPlacer = reserveUnitPlacer;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -81,6 +84,7 @@ public class TurnResolutionOrchestrator {
         try {
             Board board = loadBoard();
             int turnEnding = board.getCurrentTurn();
+            reserveUnitPlacer.placeAllAtHeadquarters();
             MovementService.ResolutionContext ctx = movementService.prepareResolution(turnEnding, board);
             Session s = new Session(ctx, turnEnding, HarvestAutoCollector.ownersBySector(board));
             // Conflits de rupture/trahison détectés dès la préparation (ex-alliés co-localisés).

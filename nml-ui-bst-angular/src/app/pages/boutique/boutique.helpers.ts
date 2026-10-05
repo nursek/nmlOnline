@@ -1,4 +1,4 @@
-import type { Equipment, VehicleTypeInfo } from '../../models';
+import type { Equipment, UnitCartItem, UnitClass, VehicleTypeInfo } from '../../models';
 import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER, vehicleTargetLabel } from '../../core/labels';
 
 const CATEGORY_ORDER: Readonly<Record<string, number>> = {
@@ -34,9 +34,12 @@ export function sortVehiclesByCost(items: VehicleTypeInfo[]): VehicleTypeInfo[] 
 // ponytail: tous les appelants filtrent déjà `> 0` (chips + résumé), donc pas
 // de branche négative ici — si on veut afficher des malus, retirer les gardes
 // des appelants et reintroduire le signe conditionnel.
+function formatNumber(value: number): string {
+  return value === Math.floor(value) ? String(value) : value.toFixed(1);
+}
+
 function formatPercent(value: number): string {
-  const n = value === Math.floor(value) ? String(value) : value.toFixed(1);
-  return `+${n} %`;
+  return `+${formatNumber(value)} %`;
 }
 
 export function equipmentBonusSummary(eq: Equipment): string {
@@ -69,4 +72,58 @@ export function vehicleSummary(vt: VehicleTypeInfo): string {
 
 export function equipmentClassLabel(eq: Equipment): string {
   return unitClassLabel(eq.compatibleClass?.[0]?.name);
+}
+
+/** PILOTE_DESTRUCTEUR n'a pas d'effet exposé par UnitClassDto : seul texte en dur. */
+export function unitClassBonusSummary(uc: UnitClass): string {
+  const parts: string[] = [];
+  if (uc.maxMovementHops > 1) {
+    parts.push(`Peut parcourir ${uc.maxMovementHops} secteurs par tour`);
+  }
+  const reduction = Math.max(uc.damageReductionPdf ?? 0, uc.damageReductionPdc ?? 0);
+  if (reduction > 0) {
+    parts.push(`Réduit de ${formatNumber(reduction * 100)} % les dégâts PdF et PdC reçus`);
+  }
+  if ((uc.criticalChance ?? 0) > 0) {
+    const chance = formatNumber((uc.criticalChance ?? 0) * 100);
+    const multiplier = formatNumber(uc.criticalMultiplier ?? 1).replace('.', ',');
+    parts.push(`Critique : ${chance} % de chances, dégâts ×${multiplier}`);
+  }
+  if (uc.name === 'PILOTE_DESTRUCTEUR') {
+    parts.push(
+      'Tire en priorité sur les véhicules ; obligatoire pour piloter un véhicule avec une unité',
+    );
+  }
+  return parts.length > 0 ? `${parts.join('. ')}.` : 'Aucun effet de combat.';
+}
+
+/** Le quota est par type, toutes classes confondues : le panier déjà rempli le consomme. */
+export function unitCartQuantityForType(cart: UnitCartItem[], typeName: string): number {
+  return cart
+    .filter((line) => line.unitType.name === typeName)
+    .reduce((sum, line) => sum + line.quantity, 0);
+}
+
+/** Saisies pas encore au panier, clés `type#classe` (cf. `unitCartKey`) : preview du quota. */
+export function unitPendingQuantityForType(
+  quantities: Record<string, number>,
+  typeName: string,
+): number {
+  return Object.entries(quantities)
+    .filter(([key]) => key.startsWith(`${typeName}#`))
+    .reduce((sum, [, quantity]) => sum + quantity, 0);
+}
+
+export function unitQuotaRemaining(
+  maxPerTurn: number,
+  purchasedThisTurn: number,
+  inCart: number,
+): number {
+  return Math.max(0, maxPerTurn - purchasedThisTurn - inCart);
+}
+
+/** Quantité proposée bornée au quota restant ; 0 = quota épuisé, l'appelant n'ajoute rien. */
+export function clampUnitQuantity(requested: number, remaining: number): number {
+  if (remaining <= 0) return 0;
+  return Math.max(1, Math.min(Math.trunc(requested) || 1, remaining));
 }
