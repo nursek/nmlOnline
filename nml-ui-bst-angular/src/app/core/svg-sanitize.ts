@@ -1,3 +1,5 @@
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
 const FORBIDDEN_ELEMENTS = new Set([
   'script',
   'foreignobject',
@@ -25,6 +27,9 @@ const FORBIDDEN_ELEMENTS = new Set([
 
 const DANGEROUS_SCHEME = /^(javascript|vbscript|data):/;
 
+// C0/espaces ignorés par le parseur d'URL en tête de valeur : « \u0001javascript: » exécute.
+const OBFUSCATING_CHARS = /[\s\p{Cc}]/gu;
+
 /**
  * Neutralise les éléments et attributs actifs d'un SVG avant injection en innerHTML.
  * Parsing via <template> : on inspecte le markup que produira innerHTML (un parseur XML
@@ -48,21 +53,23 @@ function sanitizeOnce(text: string): string {
   template.innerHTML = text;
 
   const root = template.content.firstElementChild;
-  if (!root || root.localName.toLowerCase() !== 'svg') {
+  if (!root || root.namespaceURI !== SVG_NS || root.localName.toLowerCase() !== 'svg') {
     return '';
   }
 
   template.content.querySelectorAll('*').forEach((el) => {
     const tag = (el.localName || el.tagName).toLowerCase();
-    if (FORBIDDEN_ELEMENTS.has(tag)) {
-      el.remove();
+    // Allowlist de namespace : un <form>/<input> HTML clobberait `el.attributes` et échappait aux contrôles.
+    if (el.namespaceURI !== SVG_NS || FORBIDDEN_ELEMENTS.has(tag)) {
+      Element.prototype.remove.call(el);
       return;
     }
-    for (const attr of Array.from(el.attributes)) {
-      const name = attr.name.toLowerCase();
-      const value = attr.value.replace(/\s/g, '').toLowerCase();
-      if (name.startsWith('on') || DANGEROUS_SCHEME.test(value)) {
-        el.removeAttribute(attr.name);
+    for (const name of Element.prototype.getAttributeNames.call(el)) {
+      const value = (Element.prototype.getAttribute.call(el, name) ?? '')
+        .replace(OBFUSCATING_CHARS, '')
+        .toLowerCase();
+      if (name.toLowerCase().startsWith('on') || DANGEROUS_SCHEME.test(value)) {
+        Element.prototype.removeAttribute.call(el, name);
       }
     }
   });

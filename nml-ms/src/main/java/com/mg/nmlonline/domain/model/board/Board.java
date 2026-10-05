@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 @Entity
@@ -44,14 +46,22 @@ public class Board {
     public void setSvgOverlayUrl(String svgOverlayUrl) {
         if (svgOverlayUrl != null && !isSameOriginPath(svgOverlayUrl)) {
             throw new IllegalArgumentException(
-                    "svgOverlayUrl doit être un chemin relatif same-origin (commençant par '/' mais pas par '//') : "
-                            + svgOverlayUrl);
+                    "svgOverlayUrl doit être un chemin same-origin sans hôte ni schéma : " + svgOverlayUrl);
         }
         this.svgOverlayUrl = svgOverlayUrl;
     }
 
     private static boolean isSameOriginPath(String url) {
-        return url.startsWith("/") && !url.startsWith("//");
+        if (!url.startsWith("/") || url.startsWith("//")) {
+            return false;
+        }
+        // `/\evil.example/x` se résout hors origine dans le navigateur ; URI le rejette (backslash illégal).
+        try {
+            URI uri = new URI(url);
+            return !uri.isAbsolute() && uri.getRawAuthority() == null;
+        } catch (URISyntaxException e) {
+            return false;
+        }
     }
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
