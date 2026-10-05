@@ -129,6 +129,7 @@
 }
 
 .shop-thumb-wrapper {
+  position: relative;
   width: 100%;
   margin-bottom: 10px;
 }
@@ -748,7 +749,45 @@ mat-sidenav {
 }
 
 .disabled-card {
-  opacity: 0.6;
+  mat-card-content > :not(.shop-thumb-wrapper),
+  .shop-thumb-wrapper > :not(.lock-overlay) {
+    opacity: 0.6;
+  }
+}
+
+.lock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(44, 40, 31, 0.35);
+  border-radius: var(--r-xs);
+  pointer-events: none;
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: var(--accent-deep);
+    filter: drop-shadow(0 0 2px rgba(255, 245, 219, 0.95))
+      drop-shadow(0 0 5px rgba(255, 245, 219, 0.7));
+  }
+
+  span {
+    padding: 5px 14px;
+    background: var(--sun);
+    color: var(--ink);
+    border-radius: var(--r-sm);
+    box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.15);
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
 }
 
 .vehicle-stats {

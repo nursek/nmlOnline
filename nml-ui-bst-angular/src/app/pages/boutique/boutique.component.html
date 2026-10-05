@@ -627,6 +627,12 @@
                             <mat-icon>image_not_supported</mat-icon>
                           </div>
                         }
+                        @if (!vehicleAvailable(vt)) {
+                          <div class="lock-overlay">
+                            <mat-icon>lock</mat-icon>
+                            <span>Disponible au tour {{ vt.availableFromTurn }}</span>
+                          </div>
+                        }
                       </div>
                       <div class="equipment-header">
                         <h3>{{ vt.displayName }}</h3>
@@ -675,12 +681,6 @@
                           <span class="stat-item stat-highlight">
                             <mat-icon>flight</mat-icon>
                             Aérien
-                          </span>
-                        }
-                        @if (!vehicleAvailable(vt)) {
-                          <span class="stat-item stat-highlight">
-                            <mat-icon>lock_clock</mat-icon>
-                            Disponible au tour {{ vt.availableFromTurn }}
                           </span>
                         }
                       </div>
@@ -767,6 +767,12 @@
                               <mat-icon>groups</mat-icon>
                             </div>
                           }
+                          @if (!group.entry.availableNow) {
+                            <div class="lock-overlay">
+                              <mat-icon>lock</mat-icon>
+                              <span>Disponible au tour {{ group.entry.availableFromTurn }}</span>
+                            </div>
+                          }
                         </div>
                         <div class="equipment-header">
                           <h3>{{ group.entry.name }} — {{ unitClassLabel(uc.name) }}</h3>
@@ -786,12 +792,7 @@
                         </div>
 
                         <div class="vehicle-stats">
-                          @if (!group.entry.availableNow) {
-                            <span class="stat-item stat-highlight">
-                              <mat-icon>lock_clock</mat-icon>
-                              Disponible au tour {{ group.entry.availableFromTurn }}
-                            </span>
-                          } @else {
+                          @if (group.entry.availableNow) {
                             <span class="stat-item">
                               <mat-icon>shopping_bag</mat-icon>
                               Quota&nbsp;: {{ unitQuotaUsed(group.entry) }}/{{
