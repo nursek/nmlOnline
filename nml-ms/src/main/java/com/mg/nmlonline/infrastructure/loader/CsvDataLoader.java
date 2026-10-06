@@ -148,11 +148,7 @@ public class CsvDataLoader implements CommandLineRunner {
         log.info("Successfully loaded compatibilities for {} equipments from CSV", applied);
     }
 
-    /**
-     * Un fichier par race (`equipment_translations_<race>.csv`, lignes `name,displayName`) ; libellé ou
-     * fichier absent = repli nom anglais. Rejoué à chaque boot : c'est la source des libellés, mais seuls
-     * les équipements listés sont mis à jour — les équipements créés par l'admin gardent leurs traductions.
-     */
+    /** Rejouée à chaque boot : seuls les équipements listés sont mis à jour, les autres gardent leurs libellés. */
     private void loadTranslations() {
         Map<String, Map<PlayerRace, String>> translations = new HashMap<>();
         for (PlayerRace race : PlayerRace.values()) {

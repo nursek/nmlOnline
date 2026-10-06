@@ -457,7 +457,6 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 | POST | `/api/buildings/{id}/move` | Bearer+Owner | Move building to another sector |
 | GET | `/api/admin/players?page=0&size=20` | Admin | List all players (paginated) |
 | POST | `/api/admin/players/import` | Admin | Import player from JSON |
-| PUT | `/api/admin/players/{id}/race` | Admin | Set player race (`ORKS`, `NECRONS` or null) |
 | GET | `/actuator/health` | Public | Health check |
 | GET | `/swagger-ui.html` | Public | API documentation |
 

@@ -6,7 +6,6 @@ import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
-import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.mapper.PlayerMapper;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -72,23 +70,6 @@ public class PlayerService {
     @Transactional
     public Player save(Player player) {
         return playerRepository.save(player);
-    }
-
-    /** Race d'un joueur existant (null ou vide = aucune, repli sur les noms anglais). */
-    @Transactional
-    public PlayerDto updateRace(Long id, String race) {
-        Player player = playerRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable avec l'ID " + id));
-        if (race == null || race.isBlank()) {
-            player.setRace(null);
-        } else {
-            try {
-                player.setRace(PlayerRace.valueOf(race.trim().toUpperCase(Locale.ROOT)));
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Race inconnue : " + race);
-            }
-        }
-        return playerMapper.toDto(playerRepository.save(player));
     }
 
     /** Achat atomique : valide tous les items (existence, quantité, fonds) avant d'appliquer. */

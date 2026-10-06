@@ -102,8 +102,11 @@ public class EquipmentMapper {
             if (race == null) {
                 throw new IllegalArgumentException("Race inconnue pour la traduction : null");
             }
+            if (label == null || label.isBlank()) {
+                throw new IllegalArgumentException("Libellé vide pour la traduction : " + race);
+            }
             try {
-                displayNames.put(PlayerRace.valueOf(race.trim().toUpperCase(Locale.ROOT)), label);
+                displayNames.put(PlayerRace.valueOf(race.trim().toUpperCase(Locale.ROOT)), label.trim());
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Race inconnue pour la traduction : " + race);
             }

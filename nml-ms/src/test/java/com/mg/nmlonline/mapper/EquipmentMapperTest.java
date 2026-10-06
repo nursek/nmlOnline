@@ -7,6 +7,7 @@ import com.mg.nmlonline.domain.model.player.PlayerRace;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,5 +45,12 @@ class EquipmentMapperTest {
         EquipmentDto unknown = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null, "FIREARM",
                 Map.of("SOUS_MARIN", "Truc"));
         assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(unknown));
+
+        Map<String, String> badLabels = new HashMap<>();
+        badLabels.put("ORKS", null);
+        badLabels.put("NECRONS", " ");
+        EquipmentDto badLabel = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null, "FIREARM",
+                badLabels);
+        assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(badLabel));
     }
 }

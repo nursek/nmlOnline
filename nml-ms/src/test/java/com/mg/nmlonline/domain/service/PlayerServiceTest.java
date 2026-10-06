@@ -1,15 +1,12 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.BuyEquipmentItemDto;
-import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.player.Player;
-import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
-import com.mg.nmlonline.mapper.PlayerMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,9 +39,6 @@ class PlayerServiceTest {
 
     @Mock
     PlayerActionService playerActionService;
-
-    @Mock
-    PlayerMapper playerMapper;
 
     @InjectMocks
     PlayerService playerService;
@@ -160,22 +154,6 @@ class PlayerServiceTest {
         assertEquals(2, player.getEquipments().size());
         assertEquals(1300.0, player.getStats().getTotalEquipmentValue());
         verify(playerRepository).save(player);
-    }
-
-    @Test
-    @DisplayName("updateRace : race connue (casse ignorée), vide efface, race inconnue rejetée")
-    void shouldUpdateRace() {
-        when(playerRepository.findById(1L)).thenReturn(Optional.of(player));
-        when(playerRepository.save(player)).thenReturn(player);
-        when(playerMapper.toDto(player)).thenReturn(new PlayerDto());
-
-        playerService.updateRace(1L, "necrons");
-        assertEquals(PlayerRace.NECRONS, player.getRace());
-
-        playerService.updateRace(1L, " ");
-        assertNull(player.getRace());
-
-        assertThrows(IllegalArgumentException.class, () -> playerService.updateRace(1L, "SOUS_MARIN"));
     }
 
     @Test

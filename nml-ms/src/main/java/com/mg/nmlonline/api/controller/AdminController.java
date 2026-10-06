@@ -5,7 +5,6 @@ import com.mg.nmlonline.api.dto.ExchangeOfferDto;
 import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
 import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
-import com.mg.nmlonline.api.dto.PlayerRaceRequestDto;
 import com.mg.nmlonline.api.dto.RankingCommentRequestDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
@@ -114,13 +113,6 @@ public class AdminController {
             @Valid @RequestBody RankingCommentRequestDto request) {
         rankingService.updateRankingComment(id, request.getComment());
         return ResponseEntity.ok(Map.of("message", "Commentaire enregistré"));
-    }
-
-    @PutMapping("/players/{id}/race")
-    public ResponseEntity<PlayerDto> updateRace(
-            @PathVariable Long id,
-            @RequestBody PlayerRaceRequestDto request) {
-        return ResponseEntity.ok(playerService.updateRace(id, request.getRace()));
     }
 
     /**
