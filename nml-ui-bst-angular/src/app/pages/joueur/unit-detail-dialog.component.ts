@@ -19,6 +19,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Unit, Equipment } from '../../models';
+import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
 import { PlayerService } from '../../services/player.service';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { MovementStateService } from '../../services/movement-state.service';
@@ -160,13 +161,17 @@ export class UnitDetailDialogComponent {
     this.movementState.orders().filter((o) => (o.entityIds ?? []).includes(this.unit()?.id ?? -1)),
   );
 
+  equipmentLabel(eq: Equipment): string {
+    return equipmentLabelFor(eq, this.player()?.race);
+  }
+
   async unequip(eq: Equipment): Promise<void> {
     if (this.busy()) return;
     this.busy.set(true);
     try {
       const updated = await this.playerService.removeUnitEquipment(this.unit().id, eq.name);
       if (updated) {
-        this.snackBar.open(`${eq.name} retiré`, 'OK', { duration: 2500 });
+        this.snackBar.open(`${this.equipmentLabel(eq)} retiré`, 'OK', { duration: 2500 });
       }
     } finally {
       this.busy.set(false);

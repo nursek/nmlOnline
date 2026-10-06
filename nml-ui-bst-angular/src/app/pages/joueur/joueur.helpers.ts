@@ -9,6 +9,7 @@ import type {
   Vehicle,
 } from '../../models';
 import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER } from '../../core/labels';
+import { equipmentLabel } from '../../core/equipment-label';
 import { statLine, StatToken } from '../../core/stats';
 
 // Totaux recalculés côté client : les PlayerStats/SectorStats en base ne sont
@@ -273,8 +274,8 @@ export function unitClassCodes(u: Unit): string {
 }
 
 /** Ex. « Pistolet, Gilet » ou « Aucun équipement ». */
-export function unitEquipmentLabel(u: Unit): string {
-  const names = [...(u.equipments ?? [])].map((e) => e.name).sort();
+export function unitEquipmentLabel(u: Unit, race?: string | null): string {
+  const names = [...(u.equipments ?? [])].map((e) => equipmentLabel(e, race)).sort();
   return names.length > 0 ? names.join(', ') : 'Aucun équipement';
 }
 

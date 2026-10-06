@@ -149,6 +149,7 @@ public class BoardImportService {
             Equipment eq = existingEquipment.get();
             // compatibleClasses est LAZY : initialiser maintenant car l'Equipment est mis en cache et réutilisé hors session.
             Hibernate.initialize(eq.getCompatibleClasses());
+            Hibernate.initialize(eq.getDisplayNames());
             equipmentCache.put(equipmentName, eq);
             return eq;
         }

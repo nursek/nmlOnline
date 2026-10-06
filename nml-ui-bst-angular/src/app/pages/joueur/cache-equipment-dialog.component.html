@@ -14,7 +14,7 @@
     <div class="equipment-list">
       @for (stack of stacks(); track stack.equipment.name) {
         <div class="equipment-row">
-          <span class="equipment-name">{{ stack.equipment.name }}</span>
+          <span class="equipment-name">{{ equipmentLabel(stack.equipment) }}</span>
           <span class="equipment-qty">{{ stack.available }}/{{ stack.quantity }}</span>
           <button
             mat-icon-button

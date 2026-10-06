@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PlayerActionMapper {
 
-    public PlayerActionDto toDto(PlayerAction action) {
+    public PlayerActionDto toDto(PlayerAction action, String equipmentLabel) {
         if (action == null) return null;
 
         PlayerActionDto dto = new PlayerActionDto();
@@ -24,16 +24,17 @@ public class PlayerActionMapper {
         dto.setBuildingId(action.getBuildingId());
         dto.setFromSectorNumber(action.getFromSectorNumber());
         dto.setToSectorNumber(action.getToSectorNumber());
-        dto.setLabel(label(action));
+        dto.setLabel(label(action, equipmentLabel));
         return dto;
     }
 
-    private String label(PlayerAction action) {
+    private String label(PlayerAction action, String equipmentLabel) {
+        String equipment = equipmentLabel != null ? equipmentLabel : action.getEquipmentName();
         return switch (action.getType()) {
-            case BUY_EQUIPMENT -> "Achat de " + action.getQuantity() + " × " + action.getEquipmentName();
+            case BUY_EQUIPMENT -> "Achat de " + action.getQuantity() + " × " + equipment;
             case SELL_RESOURCE -> "Vente de " + action.getQuantity() + " × " + action.getResourceName();
-            case EQUIP_UNIT -> "Équipement « " + action.getEquipmentName() + " » sur l'unité #" + action.getUnitId();
-            case UNEQUIP_UNIT -> "Retrait de « " + action.getEquipmentName() + " » de l'unité #" + action.getUnitId();
+            case EQUIP_UNIT -> "Équipement « " + equipment + " » sur l'unité #" + action.getUnitId();
+            case UNEQUIP_UNIT -> "Retrait de « " + equipment + " » de l'unité #" + action.getUnitId();
             case BUY_VEHICLE -> "Achat d'un véhicule";
             case PLACE_VEHICLE -> "Placement d'un véhicule sur le secteur " + action.getToSectorNumber();
             case BUY_UNIT -> "Achat d'un " + action.getUnitType();

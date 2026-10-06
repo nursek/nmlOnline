@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Equipment } from '../../models';
+import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
 import { PlayerService } from '../../services/player.service';
 
 export interface UnitSlotPickerData {
@@ -109,13 +110,17 @@ export class UnitSlotPickerComponent {
     return 'Indisponible';
   }
 
+  equipmentLabel(eq: Equipment): string {
+    return equipmentLabelFor(eq, this.player()?.race);
+  }
+
   async equip(eq: Equipment): Promise<void> {
     if (this.busy()) return;
     this.busy.set(true);
     try {
       const updated = await this.playerService.assignUnitEquipment(this.data.unitId, eq.name);
       if (updated) {
-        this.snackBar.open(`${eq.name} équipé`, 'OK', { duration: 2500 });
+        this.snackBar.open(`${this.equipmentLabel(eq)} équipé`, 'OK', { duration: 2500 });
         this.dialogRef.close(true);
       }
     } finally {

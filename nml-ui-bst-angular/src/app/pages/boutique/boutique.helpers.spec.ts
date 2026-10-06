@@ -5,6 +5,7 @@ import {
   equipmentBonusSummary,
   equipmentClassLabel,
   equipmentSummary,
+  matchesEquipmentSearch,
   sortEquipments,
   sortVehiclesByCost,
   unitCartQuantityForType,
@@ -100,6 +101,24 @@ describe('boutique.helpers — tri par défaut', () => {
     expect(compareEquipments(a, b)).toBeLessThan(0);
     expect(compareEquipments(b, a)).toBeGreaterThan(0);
     expect(compareEquipments(a, a)).toBe(0);
+  });
+});
+
+describe('boutique.helpers — recherche', () => {
+  const gauss = eq('Gauss Blaster', 850, 'FIREARM', 'LEGER', {
+    displayNames: { ORKS: 'Shoota Dakka-Dakka', NECRONS: 'Éclateur gauss' },
+  });
+
+  it("ne matche que le libellé de la race du joueur", () => {
+    expect(matchesEquipmentSearch(gauss, 'éclateur', 'NECRONS')).toBe(true);
+    expect(matchesEquipmentSearch(gauss, 'shoota', 'NECRONS')).toBe(false);
+    expect(matchesEquipmentSearch(gauss, 'shoota', 'ORKS')).toBe(true);
+  });
+
+  it('matche toujours le nom technique et replie dessus sans race', () => {
+    expect(matchesEquipmentSearch(gauss, 'gauss', 'NECRONS')).toBe(true);
+    expect(matchesEquipmentSearch(gauss, 'gauss', null)).toBe(true);
+    expect(matchesEquipmentSearch(gauss, 'shoota', null)).toBe(false);
   });
 });
 

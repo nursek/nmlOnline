@@ -136,6 +136,7 @@ public class AdminService {
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("name", player.getName());
+        result.put("race", player.getRace() != null ? player.getRace().name() : null);
         result.put("money", player.getStats().getMoney());
 
         List<Map<String, Object>> resources = new ArrayList<>();

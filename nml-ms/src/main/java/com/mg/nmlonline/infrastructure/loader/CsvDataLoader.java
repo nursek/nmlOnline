@@ -3,6 +3,7 @@ package com.mg.nmlonline.infrastructure.loader;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.VehicleBonusTarget;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
@@ -35,6 +36,7 @@ public class CsvDataLoader implements CommandLineRunner {
         loadResources();
         loadEquipments();
         loadCompatibilities();
+        loadTranslations();
     }
 
     /** Lit un CSV classpath (header ignoré), ignore les lignes vides et celles mappées à null. */
@@ -144,5 +146,42 @@ public class CsvDataLoader implements CommandLineRunner {
         }
 
         log.info("Successfully loaded compatibilities for {} equipments from CSV", applied);
+    }
+
+    /**
+     * Un fichier par race (`equipment_translations_<race>.csv`, lignes `name,displayName`) ; libellé ou
+     * fichier absent = repli nom anglais. Rejoué à chaque boot : c'est la source des libellés, mais seuls
+     * les équipements listés sont mis à jour — les équipements créés par l'admin gardent leurs traductions.
+     */
+    private void loadTranslations() {
+        Map<String, Map<PlayerRace, String>> translations = new HashMap<>();
+        for (PlayerRace race : PlayerRace.values()) {
+            String path = "/equipment_translations_" + race.name().toLowerCase(Locale.ROOT) + ".csv";
+            if (getClass().getResource(path) == null) {
+                log.warn("Traductions ignorées : fichier '{}' absent", path);
+                continue;
+            }
+            load(path, parts -> {
+                if (parts.length >= 2 && !parts[1].isBlank()) {
+                    translations.computeIfAbsent(parts[0], k -> new EnumMap<>(PlayerRace.class))
+                            .put(race, parts[1].trim());
+                }
+                return null;
+            });
+        }
+
+        int applied = 0;
+        for (Map.Entry<String, Map<PlayerRace, String>> entry : translations.entrySet()) {
+            Equipment equipment = equipmentRepository.findByName(entry.getKey()).orElse(null);
+            if (equipment == null) {
+                log.warn("Traduction ignorée : équipement '{}' absent du catalogue", entry.getKey());
+                continue;
+            }
+            equipment.setDisplayNames(entry.getValue());
+            equipmentRepository.save(equipment);
+            applied++;
+        }
+
+        log.info("Successfully loaded translations for {} equipments from CSV", applied);
     }
 }

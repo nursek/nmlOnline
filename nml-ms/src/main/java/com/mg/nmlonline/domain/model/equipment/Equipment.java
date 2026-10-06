@@ -1,12 +1,16 @@
 package com.mg.nmlonline.domain.model.equipment;
 
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Entity
@@ -56,6 +60,15 @@ public class Equipment {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EquipmentCategory category;
+
+    /** Libellé affiché par race ; le nom anglais reste la clé technique (achat, compat, images). */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "EQUIPMENT_TRANSLATIONS", joinColumns = @JoinColumn(name = "equipment_id"))
+    @MapKeyEnumerated(EnumType.STRING)
+    @MapKeyColumn(name = "race")
+    @Column(name = "display_name", nullable = false)
+    @BatchSize(size = 50)
+    private Map<PlayerRace, String> displayNames = new HashMap<>();
 
     public Equipment(String name, int cost, double pdfBonus, double pdcBonus,
                      double armBonus, double evasionBonus, Set<UnitClass> compatibleClasses,

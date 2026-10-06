@@ -5,10 +5,14 @@ import com.mg.nmlonline.api.dto.UnitClassDto;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.VehicleBonusTarget;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,7 +38,8 @@ public class EquipmentMapper {
                 domain.getVehicleBonus(),
                 domain.getVehicleBonusTarget() != null ? domain.getVehicleBonusTarget().name() : null,
                 compatibleClassDtos,
-                category
+                category,
+                toDisplayNameDtos(domain.getDisplayNames())
         );
     }
 
@@ -75,7 +80,35 @@ public class EquipmentMapper {
                         "Cible anti-véhicule invalide : " + dto.getVehicleBonusTarget());
             }
         }
+        equipment.setDisplayNames(toDisplayNames(dto.getDisplayNames()));
         return equipment;
+    }
+
+    private Map<String, String> toDisplayNameDtos(Map<PlayerRace, String> displayNames) {
+        if (displayNames == null || displayNames.isEmpty()) {
+            return new HashMap<>();
+        }
+        Map<String, String> dtos = new HashMap<>();
+        displayNames.forEach((race, label) -> dtos.put(race.name(), label));
+        return dtos;
+    }
+
+    private Map<PlayerRace, String> toDisplayNames(Map<String, String> dtos) {
+        if (dtos == null || dtos.isEmpty()) {
+            return new HashMap<>();
+        }
+        Map<PlayerRace, String> displayNames = new HashMap<>();
+        dtos.forEach((race, label) -> {
+            if (race == null) {
+                throw new IllegalArgumentException("Race inconnue pour la traduction : null");
+            }
+            try {
+                displayNames.put(PlayerRace.valueOf(race.trim().toUpperCase(Locale.ROOT)), label);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Race inconnue pour la traduction : " + race);
+            }
+        });
+        return displayNames;
     }
 
     private Set<UnitClassDto> toUnitClassDto(Set<UnitClass> classes) {

@@ -40,6 +40,8 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 - Jamais de `JWT_SECRET` / `JWT_PEPPER` / identifiants DB dans le dépôt — variables
   d'environnement uniquement. Pas de console H2, pas de `@CrossOrigin` (CORS dans `CorsConfig`).
 - **JWT** : access token = claim `type=access`, refresh = `type=refresh` ; ne jamais accepter l'un pour l'autre.
+- **Races** : ajouter une race = valeur `PlayerRace` + CHECK Flyway sur `equipment_translations.race`
+  + `equipment_translations_<race>.csv` ; les vignettes vont dans `assets/shop/equipment/<race>/`.
 - **Verrous** : joueur (`findByUserIdForUpdate`) puis véhicule (`findByIdForUpdate`) — la FK
   `player_actions.player_id` pose un KEY SHARE sur `players` ; l'ordre inverse deadlock.
 - **Lecture** : jamais l'état privé d'autrui — `PlayerDto` complet = propriétaire/admin,
