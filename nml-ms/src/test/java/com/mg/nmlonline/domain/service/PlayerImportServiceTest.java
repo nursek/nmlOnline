@@ -4,6 +4,7 @@ import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
@@ -153,6 +154,18 @@ class PlayerImportServiceTest {
 
         verify(vehicleRepository, times(0)).save(any(Vehicle.class));
         assertEquals(0.0, player.getStats().getTotalVehiclesValue());
+    }
+
+    @Test
+    @DisplayName("importPlayer : race connue conservée (casse ignorée), race inconnue ignorée")
+    void shouldParseRaceFromDto() {
+        PlayerDTO dto = new PlayerDTO();
+        dto.name = "ork";
+        dto.race = "orks";
+        assertEquals(PlayerRace.ORKS, service.importPlayer(dto).getRace());
+
+        dto.race = "SOUS_MARIN";
+        assertNull(service.importPlayer(dto).getRace());
     }
 
     private VehicleDTO vehicleDto(VehicleType type, int quantity, Integer sectorNumber) {

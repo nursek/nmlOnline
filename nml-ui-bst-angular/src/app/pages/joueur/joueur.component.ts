@@ -4,7 +4,6 @@ import {
   computed,
   DestroyRef,
   inject,
-  signal,
 } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
@@ -34,7 +33,8 @@ import { PlayerActionsService } from '../../services/player-actions.service';
 import { MovementStateService } from '../../services/movement-state.service';
 import { ExchangeService } from '../../services/exchange.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
-import { slugify } from '../../core/slug';
+import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
+import { EquipmentImageService } from '../../core/equipment-image.service';
 import {
   PlacementModalComponent,
   PlacementDialogData,
@@ -120,6 +120,7 @@ import { unitClassLabel } from '../../core/labels';
 })
 export class JoueurComponent {
   private readonly playerService = inject(PlayerService);
+  private readonly equipmentImages = inject(EquipmentImageService);
   private readonly playerActionsService = inject(PlayerActionsService);
   private readonly movementState = inject(MovementStateService);
   private readonly exchangeService = inject(ExchangeService);
@@ -266,8 +267,8 @@ export class JoueurComponent {
     return unitClassCodes(u);
   }
 
-  equipmentLabel(u: Unit): string {
-    return unitEquipmentLabel(u);
+  unitEquipLabel(u: Unit): string {
+    return unitEquipmentLabel(u, this.player()?.race);
   }
 
   actionIcon(type: PlayerAction['type']): string {
@@ -307,18 +308,16 @@ export class JoueurComponent {
   stackCost = equipmentStackCost;
   unitClassLabel = unitClassLabel;
 
-  private readonly brokenImages = signal(new Set<string>());
+  equipmentLabel(equipment: Equipment): string {
+    return equipmentLabelFor(equipment, this.player()?.race);
+  }
 
   equipmentImageUrl(equipment: Equipment): string {
-    return `assets/shop/equipment/${slugify(equipment.name)}.png`;
+    return this.equipmentImages.url(equipment);
   }
 
-  hasImage(key: string): boolean {
-    return !this.brokenImages().has(key);
-  }
-
-  onImgError(key: string): void {
-    this.brokenImages.update((set) => new Set(set).add(key));
+  onEquipmentImgError(equipment: Equipment): void {
+    this.equipmentImages.onError(equipment);
   }
 
   openPlacementModal(vehicle: Vehicle): void {

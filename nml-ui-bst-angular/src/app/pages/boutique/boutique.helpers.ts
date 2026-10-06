@@ -1,5 +1,6 @@
 import type { Equipment, UnitCartItem, UnitClass, VehicleTypeInfo } from '../../models';
 import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER, vehicleTargetLabel } from '../../core/labels';
+import { equipmentLabel } from '../../core/equipment-label';
 
 const CATEGORY_ORDER: Readonly<Record<string, number>> = {
   MELEE: 0,
@@ -25,6 +26,14 @@ export function compareEquipments(a: Equipment, b: Equipment): number {
 
 export function sortEquipments(items: Equipment[]): Equipment[] {
   return [...items].sort(compareEquipments);
+}
+
+export function matchesEquipmentSearch(
+  equipment: Equipment,
+  search: string,
+  race?: string | null,
+): boolean {
+  return equipmentLabel(equipment, race).toLowerCase().includes(search);
 }
 
 export function sortVehiclesByCost(items: VehicleTypeInfo[]): VehicleTypeInfo[] {
@@ -55,9 +64,9 @@ export function equipmentBonusSummary(eq: Equipment): string {
 }
 
 /** « Flensing Claw (Arme de corps-à-corps) : +20 % Pdc. 100 ₡. » */
-export function equipmentSummary(eq: Equipment): string {
+export function equipmentSummary(eq: Equipment, label: string = eq.name): string {
   const bonuses = equipmentBonusSummary(eq);
-  const core = `${eq.name} (${equipmentCategoryLabel(eq.category)})`;
+  const core = `${label} (${equipmentCategoryLabel(eq.category)})`;
   const tail = bonuses ? ` : ${bonuses}.` : '.';
   return `${core}${tail} ${eq.cost} ₡.`;
 }

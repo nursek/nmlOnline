@@ -488,11 +488,11 @@
             <mat-card class="equipment-card hover-lift">
               <mat-card-content>
                 <div class="shop-thumb-wrapper">
-                  @if (equipmentImageUrl(equipment) && hasImage('eq:' + equipment.name)) {
+                  @if (equipmentImageUrl(equipment); as imageUrl) {
                     <img
-                      [src]="equipmentImageUrl(equipment)"
-                      (error)="onImgError('eq:' + equipment.name)"
-                      alt="{{ equipment.name }}"
+                      [src]="imageUrl"
+                      (error)="onEquipmentImgError(equipment)"
+                      alt="{{ equipmentLabel(equipment) }}"
                       class="shop-thumb"
                     />
                   } @else {
@@ -502,13 +502,13 @@
                   }
                 </div>
                 <div class="equipment-header">
-                  <h3>{{ equipment.name }}</h3>
+                  <h3>{{ equipmentLabel(equipment) }}</h3>
                   <mat-chip color="warn" highlighted>{{ equipment.cost }} ₡</mat-chip>
                 </div>
                 <span class="category">{{ equipmentCategoryLabel(equipment.category) }}</span>
 
                 <!-- Résumé compact : « Nom (Catégorie FR) : +20 % Pdc. 100 ₡. » -->
-                <p class="summary">{{ equipmentSummary(equipment) }}</p>
+                <p class="summary">{{ equipmentSummary(equipment, equipmentLabel(equipment)) }}</p>
 
                 <div class="bonus-chips">
                   @if (equipment.pdfBonus > 0) {
@@ -568,7 +568,7 @@
                         mat-mini-fab
                         color="warn"
                         (click)="removeFromCart(equipment.name)"
-                        [attr.aria-label]="'Retirer ' + equipment.name + ' du panier'"
+                        [attr.aria-label]="'Retirer ' + equipmentLabel(equipment) + ' du panier'"
                       >
                         <mat-icon>delete</mat-icon>
                       </button>
@@ -577,7 +577,7 @@
                           mat-icon-button
                           color="primary"
                           (click)="decrementCartQuantity(equipment.name)"
-                          [attr.aria-label]="'Réduire la quantité de ' + equipment.name"
+                          [attr.aria-label]="'Réduire la quantité de ' + equipmentLabel(equipment)"
                         >
                           <mat-icon>remove</mat-icon>
                         </button>
@@ -586,7 +586,7 @@
                           mat-icon-button
                           color="primary"
                           (click)="addToCart(equipment)"
-                          [attr.aria-label]="'Augmenter la quantité de ' + equipment.name"
+                          [attr.aria-label]="'Augmenter la quantité de ' + equipmentLabel(equipment)"
                         >
                           <mat-icon>add</mat-icon>
                         </button>

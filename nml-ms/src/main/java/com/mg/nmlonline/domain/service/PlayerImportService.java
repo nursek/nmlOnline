@@ -11,6 +11,7 @@ import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -71,6 +73,13 @@ public class PlayerImportService {
         Player player = new Player(dto.name);
         player.getStats().setMoney(dto.money);
         player.initializeStartingMoney();
+        if (dto.race != null && !dto.race.isBlank()) {
+            try {
+                player.setRace(PlayerRace.valueOf(dto.race.trim().toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException e) {
+                logger.warn("Race inconnue '{}' pour le joueur {}, ignorée", dto.race, dto.name);
+            }
+        }
         return player;
     }
 
@@ -206,6 +215,7 @@ public class PlayerImportService {
         if (existingEquipment.isPresent()) {
             Equipment eq = existingEquipment.get();
             Hibernate.initialize(eq.getCompatibleClasses());
+            Hibernate.initialize(eq.getDisplayNames());
             equipmentCache.put(equipmentName, eq);
             return eq;
         }
@@ -300,6 +310,7 @@ public class PlayerImportService {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class PlayerDTO {
         public String name;
+        public String race;
         public List<EquipmentDTO> equipments;
         public List<ResourceDTO> resources;
         public List<VehicleDTO> vehicles;

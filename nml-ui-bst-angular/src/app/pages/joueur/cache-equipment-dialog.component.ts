@@ -8,7 +8,8 @@ import {
 } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import type { EquipmentStack } from '../../models';
+import type { Equipment, EquipmentStack } from '../../models';
+import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
 import { PlayerService } from '../../services/player.service';
 import {
   DiscardEquipmentDialogComponent,
@@ -34,9 +35,13 @@ export class CacheEquipmentDialogComponent {
 
   readonly stacks = computed(() =>
     [...(this.playerService.player()?.equipments ?? [])].sort((a, b) =>
-      a.equipment.name.localeCompare(b.equipment.name),
+      this.equipmentLabel(a.equipment).localeCompare(this.equipmentLabel(b.equipment)),
     ),
   );
+
+  equipmentLabel(equipment: Equipment): string {
+    return equipmentLabelFor(equipment, this.playerService.player()?.race);
+  }
   readonly total = computed(() =>
     this.stacks().reduce((sum, stack) => sum + (stack.quantity ?? 0), 0),
   );

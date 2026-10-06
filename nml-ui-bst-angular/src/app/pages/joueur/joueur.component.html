@@ -246,11 +246,11 @@
                             <mat-card-content>
                               <div class="equipment-top">
                                 <div class="eq-thumb-wrapper">
-                                  @if (hasImage('eq:' + stack.equipment.name)) {
+                                  @if (equipmentImageUrl(stack.equipment); as imageUrl) {
                                     <img
-                                      [src]="equipmentImageUrl(stack.equipment)"
-                                      (error)="onImgError('eq:' + stack.equipment.name)"
-                                      alt="{{ stack.equipment.name }}"
+                                      [src]="imageUrl"
+                                      (error)="onEquipmentImgError(stack.equipment)"
+                                      alt="{{ equipmentLabel(stack.equipment) }}"
                                       class="eq-thumb"
                                     />
                                   } @else {
@@ -260,7 +260,7 @@
                                   }
                                 </div>
                                 <div class="equipment-info">
-                                  <h5>{{ stack.equipment.name }}</h5>
+                                  <h5>{{ equipmentLabel(stack.equipment) }}</h5>
                                   <span class="quantity" matTooltip="Disponible / total possédé">
                                     {{ stack.available }}/{{ stack.quantity }}
                                   </span>
@@ -529,7 +529,7 @@
                             @if (u.isInjured) {
                               <span class="badge badge-danger">Blessé</span>
                             }
-                            <span class="unit-equip">{{ equipmentLabel(u) }}</span>
+                            <span class="unit-equip">{{ unitEquipLabel(u) }}</span>
                             <span class="force-stats">
                               @for (s of unitStats(u); track s.label) {
                                 {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}

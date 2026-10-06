@@ -19,7 +19,15 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Equipment, EquipmentStack, PlayerResource, UnitCartItem, UnitCatalogEntry, UnitClass, VehicleTypeInfo } from '../../models';
+import {
+  Equipment,
+  EquipmentStack,
+  PlayerResource,
+  UnitCartItem,
+  UnitCatalogEntry,
+  UnitClass,
+  VehicleTypeInfo,
+} from '../../models';
 import { ShopService, unitCartKey } from '../../services/shop.service';
 import { PlayerService } from '../../services/player.service';
 import {
@@ -28,6 +36,7 @@ import {
   equipmentBonusSummary,
   equipmentClassLabel,
   equipmentSummary,
+  matchesEquipmentSearch,
   sortVehiclesByCost,
   unitCartQuantityForType,
   unitClassBonusSummary,
@@ -36,6 +45,8 @@ import {
   vehicleSummary,
 } from './boutique.helpers';
 import { equipmentCategoryLabel, unitClassLabel, vehicleTargetLabel } from '../../core/labels';
+import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
+import { EquipmentImageService } from '../../core/equipment-image.service';
 import { slugify } from '../../core/slug';
 import { saleMultiplier, saleValue } from '../../core/sale-multiplier';
 import {
@@ -67,6 +78,7 @@ import {
 export class BoutiqueComponent {
   private readonly shop = inject(ShopService);
   private readonly playerService = inject(PlayerService);
+  private readonly equipmentImages = inject(EquipmentImageService);
   private readonly dialog = inject(MatDialog);
 
   readonly allEquipments = this.shop.equipments;
@@ -138,7 +150,9 @@ export class BoutiqueComponent {
     let filtered = [...this.allEquipments()];
 
     const search = this.searchTerm().toLowerCase().trim();
-    if (search) filtered = filtered.filter((eq) => eq.name.toLowerCase().includes(search));
+    if (search) {
+      filtered = filtered.filter((eq) => matchesEquipmentSearch(eq, search, this.player()?.race));
+    }
 
     const category = this.selectedCategory();
     if (category !== 'all') filtered = filtered.filter((eq) => eq.category === category);
@@ -194,7 +208,7 @@ export class BoutiqueComponent {
     this.cart().map((i) => ({
       kind: 'eq',
       key: i.equipment.name,
-      name: i.equipment.name,
+      name: this.equipmentLabel(i.equipment),
       cost: i.equipment.cost,
       qty: i.quantity,
       vehicleType: null,
@@ -309,7 +323,7 @@ export class BoutiqueComponent {
       () => this.shop.checkoutEquipments(),
       () => ({
         title: 'Équipements achetés !',
-        lines: snapshot.map((item) => `${item.quantity} × ${item.equipment.name}`),
+        lines: snapshot.map((item) => `${item.quantity} × ${this.equipmentLabel(item.equipment)}`),
         totalCost: snapshot.reduce((s, i) => s + i.equipment.cost * i.quantity, 0),
       }),
     );
@@ -442,8 +456,8 @@ export class BoutiqueComponent {
 
   unitCartLineQuantity(key: string): number {
     return (
-      this.unitCart().find((i) => unitCartKey(i.unitType.name, i.unitClass.name) === key)?.quantity ??
-      0
+      this.unitCart().find((i) => unitCartKey(i.unitType.name, i.unitClass.name) === key)
+        ?.quantity ?? 0
     );
   }
 
@@ -484,7 +498,8 @@ export class BoutiqueComponent {
       () => ({
         title: 'Unités recrutées !',
         lines: snapshot.map(
-          (item) => `${item.quantity} × ${item.unitType.name} (${this.unitClassLabel(item.unitClass.name)})`,
+          (item) =>
+            `${item.quantity} × ${item.unitType.name} (${this.unitClassLabel(item.unitClass.name)})`,
         ),
         totalCost: snapshot.reduce((s, i) => s + i.unitType.cost * i.quantity, 0),
       }),
@@ -574,8 +589,16 @@ export class BoutiqueComponent {
   saleMultiplier = saleMultiplier;
   saleValue = saleValue;
 
+  equipmentLabel(equipment: Equipment): string {
+    return equipmentLabelFor(equipment, this.player()?.race);
+  }
+
   equipmentImageUrl(equipment: Equipment): string {
-    return `assets/shop/equipment/${slugify(equipment.name)}.png`;
+    return this.equipmentImages.url(equipment);
+  }
+
+  onEquipmentImgError(equipment: Equipment): void {
+    this.equipmentImages.onError(equipment);
   }
 
   // ponytail: toLowerCase() et non slugify() — vt.name est le nom de l'énum

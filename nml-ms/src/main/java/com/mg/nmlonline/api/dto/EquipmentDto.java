@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
 import java.util.Set;
 
 @Data
@@ -20,4 +21,5 @@ public class EquipmentDto {
     private String vehicleBonusTarget;
     private Set<UnitClassDto> compatibleClass;
     private String category;
+    private Map<String, String> displayNames;
 }

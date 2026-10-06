@@ -38,6 +38,7 @@ public class PlayerMapper {
         PlayerDto dto = new PlayerDto();
         dto.setId(player.getId());
         dto.setName(player.getName());
+        dto.setRace(player.getRace() != null ? player.getRace().name() : null);
 
         if (player.getStats() != null) {
             PlayerStatsDto statsDto = getPlayerStatsDto(player);
@@ -103,6 +104,7 @@ public class PlayerMapper {
         PlayerDto dto = new PlayerDto();
         dto.setId(player.getId());
         dto.setName(player.getName());
+        dto.setRace(player.getRace() != null ? player.getRace().name() : null);
 
         int sectorCount = 0;
         if (board != null && player.getId() != null) {

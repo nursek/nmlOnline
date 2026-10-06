@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import type { EquipmentStack } from '../../models';
+import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
 import { PlayerService } from '../../services/player.service';
 
 export interface DiscardEquipmentDialogData {
@@ -29,6 +30,10 @@ export class DiscardEquipmentDialogComponent {
   readonly maxQuantity = computed(() => Math.max(1, this.data.stack.available));
   readonly quantity = signal(Math.max(1, this.data.stack.available));
   readonly saving = signal(false);
+
+  equipmentLabel(): string {
+    return equipmentLabelFor(this.data.stack.equipment, this.playerService.player()?.race);
+  }
 
   decrease(): void {
     this.setQuantity(this.quantity() - 1);

@@ -12,11 +12,13 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
+import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerActionRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
@@ -31,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +50,7 @@ public class PlayerActionService {
 
     private final PlayerActionRepository actionRepository;
     private final PlayerRepository playerRepository;
+    private final EquipmentRepository equipmentRepository;
     private final UnitRepository unitRepository;
     private final VehicleRepository vehicleRepository;
     private final BuildingRepository buildingRepository;
@@ -61,6 +65,7 @@ public class PlayerActionService {
 
     public PlayerActionService(PlayerActionRepository actionRepository,
                                PlayerRepository playerRepository,
+                               EquipmentRepository equipmentRepository,
                                UnitRepository unitRepository,
                                VehicleRepository vehicleRepository,
                                BuildingRepository buildingRepository,
@@ -74,6 +79,7 @@ public class PlayerActionService {
                                EntityManager em) {
         this.actionRepository = actionRepository;
         this.playerRepository = playerRepository;
+        this.equipmentRepository = equipmentRepository;
         this.unitRepository = unitRepository;
         this.vehicleRepository = vehicleRepository;
         this.buildingRepository = buildingRepository;
@@ -193,13 +199,13 @@ public class PlayerActionService {
         }
         actionRepository.saveAll(recorded);
         playerRepository.save(locked);
-        return mapActive(locked.getId(), turn);
+        return mapActive(locked, turn);
     }
 
     @Transactional(readOnly = true)
     public List<PlayerActionDto> getCurrentTurnActions(Long userId) {
         Player player = requirePlayerByUserId(userId);
-        return mapActive(player.getId(), turnService.getCurrentTurn());
+        return mapActive(player, turnService.getCurrentTurn());
     }
 
     public void deleteForPlayer(Long playerId) {
@@ -236,7 +242,7 @@ public class PlayerActionService {
         }
 
         playerRepository.save(locked);
-        return mapActive(locked.getId(), turn);
+        return mapActive(locked, turn);
     }
 
     public List<PlayerActionDto> undoAll(Long userId) {
@@ -475,11 +481,23 @@ public class PlayerActionService {
         actionRepository.save(action);
     }
 
-    private List<PlayerActionDto> mapActive(Long playerId, int turn) {
+    private List<PlayerActionDto> mapActive(Player player, int turn) {
+        PlayerRace race = player.getRace();
+        Map<String, String> equipmentLabels = new HashMap<>();
         return actionRepository
-                .findByPlayerIdAndTurnAndStatusOrderByIdAsc(playerId, turn, PlayerActionStatus.ACTIVE)
+                .findByPlayerIdAndTurnAndStatusOrderByIdAsc(player.getId(), turn, PlayerActionStatus.ACTIVE)
                 .stream()
-                .map(actionMapper::toDto)
+                .map(action -> actionMapper.toDto(action, equipmentLabel(action, race, equipmentLabels)))
                 .toList();
+    }
+
+    private String equipmentLabel(PlayerAction action, PlayerRace race, Map<String, String> cache) {
+        if (race == null || action.getEquipmentName() == null) {
+            return null;
+        }
+        return cache.computeIfAbsent(action.getEquipmentName(), name ->
+                equipmentRepository.findByName(name)
+                        .map(equipment -> equipment.getDisplayNames().get(race))
+                        .orElse(null));
     }
 }

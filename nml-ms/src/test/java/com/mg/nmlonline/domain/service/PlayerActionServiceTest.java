@@ -14,6 +14,7 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
@@ -461,6 +462,32 @@ class PlayerActionServiceTest {
                 "Le pilote reste dans le secteur");
         assertTrue(sector.getArmy().stream().anyMatch(u -> u.getId().equals(passager.getId())),
                 "Le passager reste dans le secteur");
+    }
+
+    @Test
+    @DisplayName("Les libellés d'action suivent la race du joueur, repli sur le nom technique sans race")
+    void actionLabelsFollowPlayerRace() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        fund(player);
+        player.setRace(PlayerRace.NECRONS);
+        playerRepository.save(player);
+        entityManager.flush();
+
+        Equipment eq = equipmentService.findByName("Gauss Blaster").orElseThrow();
+        BuyEquipmentItemDto item = new BuyEquipmentItemDto();
+        item.setName(eq.getName());
+        item.setQuantity(1);
+        playerService.buyEquipments(player.getId(), List.of(item));
+
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        assertEquals("Achat de 1 × Éclateur gauss", actions.getFirst().getLabel());
+
+        player.setRace(null);
+        playerRepository.save(player);
+        entityManager.flush();
+
+        List<PlayerActionDto> english = playerActionService.getCurrentTurnActions(player.getUserId());
+        assertEquals("Achat de 1 × Gauss Blaster", english.getFirst().getLabel());
     }
 
     private Unit addUnit(Sector sector, Player player, UnitClass... classes) {
