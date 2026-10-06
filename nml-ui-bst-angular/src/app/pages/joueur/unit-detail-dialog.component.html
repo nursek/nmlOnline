@@ -92,10 +92,12 @@
         </section>
 
         <div class="udd-portrait">
-          @if (portraitUrl() && !imgError()) {
+          @if (imgError() ? null : portrait(); as img) {
             <img
-              [src]="portraitUrl()"
+              [src]="img.src"
+              [srcset]="img.srcset"
               (error)="onImgError()"
+              decoding="async"
               alt="Portrait {{ unit().type.name }}"
             />
           } @else {

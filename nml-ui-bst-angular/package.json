@@ -3,9 +3,14 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "prestart": "node scripts/optimize-images.mjs",
     "start": "ng serve",
+    "prebuild": "node scripts/optimize-images.mjs",
     "build": "ng build",
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "prewatch": "node scripts/optimize-images.mjs",
     "watch": "ng build --watch --configuration development",
+    "pretest": "node --test scripts/optimize-images.test.mjs",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -53,6 +58,7 @@
     "jest-environment-jsdom": "^30.2.0",
     "jest-preset-angular": "^17.0.0",
     "prettier": "^3.4.2",
+    "sharp": "^0.35.5",
     "ts-node": "^10.9.2",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.20.0"

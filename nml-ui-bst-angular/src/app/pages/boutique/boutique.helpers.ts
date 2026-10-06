@@ -1,4 +1,10 @@
-import type { Equipment, UnitCartItem, UnitClass, VehicleTypeInfo } from '../../models';
+import type {
+  Equipment,
+  UnitCartItem,
+  UnitCatalogEntry,
+  UnitClass,
+  VehicleTypeInfo,
+} from '../../models';
 import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER, vehicleTargetLabel } from '../../core/labels';
 import { equipmentLabel } from '../../core/equipment-label';
 
@@ -135,4 +141,19 @@ export function unitQuotaRemaining(
 export function clampUnitQuantity(requested: number, remaining: number): number {
   if (remaining <= 0) return 0;
   return Math.max(1, Math.min(Math.trunc(requested) || 1, remaining));
+}
+
+/** Vignette par classe ; repli sur le portrait du type puis sur l'icône ('' → cf. `onUnitImgError`). */
+export function unitImageUrl(
+  entry: Pick<UnitCatalogEntry, 'name'>,
+  unitClass: Pick<UnitClass, 'name'>,
+  faction: string,
+  broken: ReadonlySet<string>,
+): string {
+  if (!faction) return '';
+  const base = `assets/${faction}/units/${entry.name.toLowerCase()}`;
+  if (!broken.has(`unit:${entry.name}:${unitClass.name}`)) {
+    return `${base}/${unitClass.name.toLowerCase()}.png`;
+  }
+  return broken.has(`unit:${entry.name}`) ? '' : `${base}/portrait.png`;
 }

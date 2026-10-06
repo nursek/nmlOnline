@@ -4,6 +4,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { GameCharacter } from '../../models';
 import { characterStats } from '../../core/stats';
+import { optimizedImage } from '../../core/optimized-image';
+import type { OptimizedImage } from '../../core/optimized-image';
 
 /** Cadre doré du personnage : illustration + nom + stats. `size="lg"` pour le pop-up Capacités. */
 @Component({
@@ -25,8 +27,10 @@ export class CharacterPortraitComponent {
 
   // playerName et non character.name : le dossier d'assets porte le nom du compte
   // (nursek) alors que le personnage peut s'appeler autrement (Ratcatcher).
-  readonly portraitUrl = computed(() =>
-    this.playerName() ? `assets/${this.playerName().toLowerCase()}/characters/portrait.png` : '',
+  readonly portrait = computed<OptimizedImage | null>(() =>
+    this.playerName()
+      ? optimizedImage(`assets/${this.playerName().toLowerCase()}/characters/portrait.png`)
+      : null,
   );
 
   readonly stats = computed(() => characterStats(this.character()));

@@ -488,12 +488,15 @@
             <mat-card class="equipment-card hover-lift">
               <mat-card-content>
                 <div class="shop-thumb-wrapper">
-                  @if (equipmentImageUrl(equipment); as imageUrl) {
+                  @if (equipmentImage(equipment); as img) {
                     <img
-                      [src]="imageUrl"
+                      [src]="img.src"
+                      [srcset]="img.srcset"
                       (error)="onEquipmentImgError(equipment)"
                       alt="{{ equipmentLabel(equipment) }}"
                       class="shop-thumb"
+                      loading="lazy"
+                      decoding="async"
                     />
                   } @else {
                     <div class="shop-thumb-fallback">
@@ -615,12 +618,15 @@
                   >
                     <mat-card-content>
                       <div class="shop-thumb-wrapper">
-                        @if (vehicleImageUrl(vt) && hasImage('veh:' + vt.name)) {
+                        @if (vehicleImage(vt); as img) {
                           <img
-                            [src]="vehicleImageUrl(vt)"
+                            [src]="img.src"
+                            [srcset]="img.srcset"
                             (error)="onImgError('veh:' + vt.name)"
                             alt="{{ vt.displayName }}"
                             class="shop-thumb"
+                            loading="lazy"
+                            decoding="async"
                           />
                         } @else {
                           <div class="shop-thumb-fallback">
@@ -755,12 +761,15 @@
                     >
                       <mat-card-content>
                         <div class="shop-thumb-wrapper">
-                          @if (unitImageUrl(group.entry, uc); as unitImg) {
+                          @if (unitImage(group.entry, uc); as img) {
                             <img
-                              [src]="unitImg"
+                              [src]="img.src"
+                              [srcset]="img.srcset"
                               (error)="onUnitImgError(group.entry, uc)"
                               alt="{{ group.entry.name }} — {{ unitClassLabel(uc.name) }}"
                               class="shop-thumb"
+                              loading="lazy"
+                              decoding="async"
                             />
                           } @else {
                             <div class="shop-thumb-fallback">
@@ -902,12 +911,15 @@
                     <mat-card class="equipment-card hover-lift">
                       <mat-card-content>
                         <div class="shop-thumb-wrapper">
-                          @if (resourceImageUrl(resource) && hasImage('res:' + resource.name)) {
+                          @if (resourceImage(resource); as img) {
                             <img
-                              [src]="resourceImageUrl(resource)"
+                              [src]="img.src"
+                              [srcset]="img.srcset"
                               (error)="onImgError('res:' + resource.name)"
                               alt="{{ resource.name }}"
                               class="shop-thumb"
+                              loading="lazy"
+                              decoding="async"
                             />
                           } @else {
                             <div class="shop-thumb-fallback">

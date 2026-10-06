@@ -40,6 +40,7 @@ import {
   sortVehiclesByCost,
   unitCartQuantityForType,
   unitClassBonusSummary,
+  unitImageUrl,
   unitPendingQuantityForType,
   unitQuotaRemaining,
   vehicleSummary,
@@ -47,6 +48,8 @@ import {
 import { equipmentCategoryLabel, unitClassLabel, vehicleTargetLabel } from '../../core/labels';
 import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
 import { EquipmentImageService } from '../../core/equipment-image.service';
+import { optimizedImage } from '../../core/optimized-image';
+import type { OptimizedImage } from '../../core/optimized-image';
 import { slugify } from '../../core/slug';
 import { saleMultiplier, saleValue } from '../../core/sale-multiplier';
 import {
@@ -593,8 +596,8 @@ export class BoutiqueComponent {
     return equipmentLabelFor(equipment, this.player()?.race);
   }
 
-  equipmentImageUrl(equipment: Equipment): string {
-    return this.equipmentImages.url(equipment);
+  equipmentImage(equipment: Equipment): OptimizedImage | null {
+    return this.equipmentImages.image(equipment);
   }
 
   onEquipmentImgError(equipment: Equipment): void {
@@ -604,32 +607,20 @@ export class BoutiqueComponent {
   // ponytail: toLowerCase() et non slugify() — vt.name est le nom de l'énum
   // Java (ex. VTT_LEGER) dont les '_' doivent être conservés dans le nom de
   // fichier ; slugify remplacerait '_' par '-' et casserait l'URL.
-  vehicleImageUrl(vt: VehicleTypeInfo): string {
-    return `assets/shop/vehicles/${vt.name.toLowerCase()}.png`;
+  vehicleImage(vt: VehicleTypeInfo): OptimizedImage | null {
+    return this.hasImage(`veh:${vt.name}`)
+      ? optimizedImage(`assets/shop/vehicles/${vt.name.toLowerCase()}.png`)
+      : null;
   }
 
   private faction(): string {
     return this.player()?.name?.toLowerCase() ?? '';
   }
 
-  private unitClassImageUrl(entry: UnitCatalogEntry, unitClass: UnitClass): string {
-    const faction = this.faction();
-    if (!faction) return '';
-    return `assets/${faction}/units/${entry.name.toLowerCase()}/${unitClass.name.toLowerCase()}.png`;
-  }
-
-  private unitPortraitUrl(entry: UnitCatalogEntry): string {
-    const faction = this.faction();
-    if (!faction) return '';
-    return `assets/${faction}/units/${entry.name.toLowerCase()}/portrait.png`;
-  }
-
   /** Vignette par classe ; repli sur le portrait du type puis sur l'icône (cf. `onUnitImgError`). */
-  unitImageUrl(entry: UnitCatalogEntry, unitClass: UnitClass): string {
-    if (!this.hasImage(`unit:${entry.name}:${unitClass.name}`)) {
-      return this.unitClassImageUrl(entry, unitClass);
-    }
-    return this.hasImage(`unit:${entry.name}`) ? '' : this.unitPortraitUrl(entry);
+  unitImage(entry: UnitCatalogEntry, unitClass: UnitClass): OptimizedImage | null {
+    const original = unitImageUrl(entry, unitClass, this.faction(), this._brokenImages());
+    return original ? optimizedImage(original) : null;
   }
 
   onUnitImgError(entry: UnitCatalogEntry, unitClass: UnitClass): void {
@@ -637,8 +628,10 @@ export class BoutiqueComponent {
     this.onImgError(this.hasImage(classKey) ? classKey : `unit:${entry.name}`);
   }
 
-  resourceImageUrl(resource: PlayerResource): string {
-    return `assets/shop/resources/${slugify(resource.name)}.png`;
+  resourceImage(resource: PlayerResource): OptimizedImage | null {
+    return this.hasImage(`res:${resource.name}`)
+      ? optimizedImage(`assets/shop/resources/${slugify(resource.name)}.png`)
+      : null;
   }
 
   hasImage(key: string): boolean {

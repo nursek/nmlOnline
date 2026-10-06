@@ -23,5 +23,9 @@ Thumbs.db
 ### Node ###
 node_modules/
 
+### Images optimisées (générées par scripts/optimize-images.mjs) ###
+nml-ui-bst-angular/src/assets/_opt/
+nml-ui-bst-angular/.image-pipeline.json
+
 ### Logs ###
 *.log

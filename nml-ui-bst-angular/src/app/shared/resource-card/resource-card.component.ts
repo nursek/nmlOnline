@@ -6,6 +6,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import type { PlayerResource } from '../../models';
 import { slugify } from '../../core/slug';
 import { saleValue } from '../../core/sale-multiplier';
+import { optimizedImage } from '../../core/optimized-image';
+import type { OptimizedImage } from '../../core/optimized-image';
 
 @Component({
   selector: 'app-resource-card',
@@ -20,7 +22,9 @@ export class ResourceCardComponent {
 
   readonly imgError = signal(false);
 
-  readonly imageUrl = computed(() => `assets/shop/resources/${slugify(this.resource().name)}.png`);
+  readonly image = computed<OptimizedImage>(() =>
+    optimizedImage(`assets/shop/resources/${slugify(this.resource().name)}.png`),
+  );
 
   readonly totalValue = computed(() =>
     saleValue(this.resource().baseValue ?? 0, this.resource().quantity),

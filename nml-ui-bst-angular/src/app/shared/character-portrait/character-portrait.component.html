@@ -10,8 +10,14 @@
   (keydown.space)="onActivate(); $event.preventDefault()"
 >
   <div class="cp-portrait">
-    @if (portraitUrl() && !imgError()) {
-      <img [src]="portraitUrl()" (error)="onImgError()" alt="Portrait {{ character().name }}" />
+    @if (imgError() ? null : portrait(); as img) {
+      <img
+        [src]="img.src"
+        [srcset]="img.srcset"
+        (error)="onImgError()"
+        decoding="async"
+        alt="Portrait {{ character().name }}"
+      />
     } @else {
       <div class="cp-fallback">
         <mat-icon>image_not_supported</mat-icon>

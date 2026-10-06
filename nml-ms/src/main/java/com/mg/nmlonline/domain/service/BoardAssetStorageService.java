@@ -7,9 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,6 +30,9 @@ public class BoardAssetStorageService {
             "(?i)(<\\s*script|<!\\s*entity|<\\s*foreignObject|<\\s*iframe|<\\s*object|<\\s*embed"
                     + "|javascript\\s*:|(\\s|\"|'|<|/)on[a-z]+\\s*=)");
 
+    private static final byte[] PNG_MAGIC = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
+    private static final byte[] JPEG_MAGIC = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
+
     private final Path storageDir;
     private final String urlPrefix;
 
@@ -42,12 +47,11 @@ public class BoardAssetStorageService {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Image de la carte absente ou vide.");
         }
-        String contentType = file.getContentType();
-        if (contentType == null || !(contentType.equals("image/png") || contentType.equals("image/jpeg"))) {
-            throw new IllegalArgumentException("Format d'image non supporté : " + contentType
-                    + " (attendu : image/png ou image/jpeg).");
+        // Le Content-Type client est déclaratif : on décide sur les magic bytes.
+        String ext = detectImageExtension(file);
+        if (ext == null) {
+            throw new IllegalArgumentException("Format d'image non supporté (attendu : PNG ou JPEG).");
         }
-        String ext = contentType.equals("image/png") ? ".png" : ".jpg";
         String filename = UUID.randomUUID() + ext;
         write(file, filename);
         return urlPrefix + filename;
@@ -73,6 +77,21 @@ public class BoardAssetStorageService {
         String filename = UUID.randomUUID() + "-overlay.svg";
         write(file, filename);
         return new StoredSvg(urlPrefix + filename, sectorCount);
+    }
+
+    private static String detectImageExtension(MultipartFile file) throws IOException {
+        byte[] header;
+        try (InputStream in = file.getInputStream()) {
+            header = in.readNBytes(PNG_MAGIC.length);
+        }
+        if (Arrays.equals(header, PNG_MAGIC)) {
+            return ".png";
+        }
+        if (header.length >= JPEG_MAGIC.length
+                && header[0] == JPEG_MAGIC[0] && header[1] == JPEG_MAGIC[1] && header[2] == JPEG_MAGIC[2]) {
+            return ".jpg";
+        }
+        return null;
     }
 
     private void write(MultipartFile file, String filename) throws IOException {
