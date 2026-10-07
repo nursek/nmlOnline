@@ -35,7 +35,10 @@ describe('CharacterPortraitComponent', () => {
   it("construit l'URL de l'illustration depuis le nom du compte, pas celui du personnage", () => {
     const img = fixtureWith(true).nativeElement.querySelector('img') as HTMLImageElement;
 
-    expect(img.getAttribute('src')).toBe('assets/nursek/characters/portrait.png');
+    expect(img.getAttribute('src')).toBe('/assets/_opt/nursek/characters/portrait.320.webp');
+    expect(img.getAttribute('srcset')).toContain(
+      '/assets/_opt/nursek/characters/portrait.640.webp 2x',
+    );
   });
 
   it("bascule sur le secours quand l'illustration est introuvable", () => {

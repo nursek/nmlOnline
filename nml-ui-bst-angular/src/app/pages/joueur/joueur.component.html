@@ -246,12 +246,15 @@
                             <mat-card-content>
                               <div class="equipment-top">
                                 <div class="eq-thumb-wrapper">
-                                  @if (equipmentImageUrl(stack.equipment); as imageUrl) {
+                                  @if (equipmentImage(stack.equipment); as img) {
                                     <img
-                                      [src]="imageUrl"
+                                      [src]="img.src"
+                                      [srcset]="img.srcset"
                                       (error)="onEquipmentImgError(stack.equipment)"
                                       alt="{{ equipmentLabel(stack.equipment) }}"
                                       class="eq-thumb"
+                                      loading="lazy"
+                                      decoding="async"
                                     />
                                   } @else {
                                     <div class="eq-thumb-fallback">

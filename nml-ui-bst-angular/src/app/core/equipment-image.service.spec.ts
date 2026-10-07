@@ -15,22 +15,22 @@ describe('EquipmentImageService', () => {
   });
 
   it('préfixe le dossier de la race puis replie sur le fichier commun', () => {
-    expect(service.url({ name: 'Gauss Blaster' })).toBe(
-      'assets/shop/equipment/necrons/gauss-blaster.png',
+    expect(service.image({ name: 'Gauss Blaster' })?.src).toBe(
+      '/assets/_opt/shop/equipment/necrons/gauss-blaster.320.webp',
     );
 
     service.onError({ name: 'Gauss Blaster' });
 
-    expect(service.url({ name: 'Gauss Blaster' })).toBe(
-      'assets/shop/equipment/gauss-blaster.png',
+    expect(service.image({ name: 'Gauss Blaster' })?.src).toBe(
+      '/assets/_opt/shop/equipment/gauss-blaster.320.webp',
     );
   });
 
   it("ne masque pas les autres vignettes quand une image de la race manque", () => {
     service.onError({ name: 'Voltaic Staff' });
 
-    expect(service.url({ name: 'Gauss Blaster' })).toBe(
-      'assets/shop/equipment/necrons/gauss-blaster.png',
+    expect(service.image({ name: 'Gauss Blaster' })?.src).toBe(
+      '/assets/_opt/shop/equipment/necrons/gauss-blaster.320.webp',
     );
   });
 });

@@ -81,7 +81,14 @@
             [style.--map-overlay-offset-x.px]="overlayOffsetX"
           >
             @if (mapImageUrl(); as url) {
-              <img [src]="url" alt="Carte du monde NML Online" class="map-background" #mapImg />
+              <img
+                [src]="url"
+                alt="Carte du monde NML Online"
+                class="map-background"
+                fetchpriority="high"
+                decoding="async"
+                #mapImg
+              />
             }
             <div
               #svgContainer

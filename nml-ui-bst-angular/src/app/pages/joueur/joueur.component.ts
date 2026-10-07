@@ -35,6 +35,7 @@ import { ExchangeService } from '../../services/exchange.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
 import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
 import { EquipmentImageService } from '../../core/equipment-image.service';
+import type { OptimizedImage } from '../../core/optimized-image';
 import {
   PlacementModalComponent,
   PlacementDialogData,
@@ -312,8 +313,8 @@ export class JoueurComponent {
     return equipmentLabelFor(equipment, this.player()?.race);
   }
 
-  equipmentImageUrl(equipment: Equipment): string {
-    return this.equipmentImages.url(equipment);
+  equipmentImage(equipment: Equipment): OptimizedImage | null {
+    return this.equipmentImages.image(equipment);
   }
 
   onEquipmentImgError(equipment: Equipment): void {

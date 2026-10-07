@@ -20,6 +20,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Unit, Equipment } from '../../models';
 import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
+import { optimizedImage } from '../../core/optimized-image';
+import type { OptimizedImage } from '../../core/optimized-image';
 import { PlayerService } from '../../services/player.service';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { MovementStateService } from '../../services/movement-state.service';
@@ -74,7 +76,7 @@ export class UnitDetailDialogComponent {
   readonly allSectors = this.activeBoard.sectors;
 
   constructor() {
-    // imgError doit se reset dès que portraitUrl se recalcule (ex: unité évolue
+    // imgError doit se reset dès que l'URL du portrait change (ex: unité évolue
     // et change de type → nouvelle URL potentiellement valide). Sans cela, un
     // 1er échec d'image verrouillerait le fallback même après recompute valide.
     effect(() => {
@@ -98,12 +100,16 @@ export class UnitDetailDialogComponent {
     return live ?? snapshot;
   });
 
-  readonly portraitUrl = computed<string>(() => {
+  readonly portraitUrl = computed(() => {
     const p = this.player();
     const u = this.unit();
     if (!p?.name || !u?.type.name) return '';
     return `assets/${p.name.toLowerCase()}/units/${u.type.name.toLowerCase()}/portrait.png`;
   });
+
+  readonly portrait = computed<OptimizedImage | null>(() =>
+    this.portraitUrl() ? optimizedImage(this.portraitUrl()) : null,
+  );
 
   readonly maxHops = computed<number>(() => unitMaxHops(this.unit()));
 

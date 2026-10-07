@@ -327,6 +327,7 @@ docker build -t nml-online/backend:latest .
 docker run -d \
   --name nml-backend \
   -p 8080:8080 \
+  -v nml-boards:/app/static/boards \
   -e JWT_SECRET="your-32+-char-production-secret" \
   -e JWT_PEPPER="your-16+-char-production-pepper" \
   -e DATABASE_URL="jdbc:postgresql://host.docker.internal:5432/nmlonline" \
@@ -337,6 +338,10 @@ docker run -d \
   -e APP_CORS_ALLOWED_ORIGINS="https://nml.yourdomain.com" \
   nml-online/backend:latest
 ```
+
+> Mount `nml-boards` on `/app/static/boards` (not `/app/static/`): board images uploaded by the
+> admin are runtime data, and mounting a volume over the whole directory would hide the bundled
+> Angular build. Without this volume, uploads are lost when the container is replaced.
 
 ### Serve the frontend
 
@@ -353,6 +358,53 @@ Copy the build output to either:
 - `/app/static/` inside the Docker container (no rebuild — mount a volume)
 
 The backend serves static files from both `classpath:/static/` and `file:/app/static/`.
+
+---
+
+## Image pipeline
+
+Original images live in `nml-ui-bst-angular/src/assets/` and are the source of truth (committed).
+Derivatives are generated at build time by `scripts/optimize-images.mjs` (Node + sharp, a dev
+dependency) into `src/assets/_opt/` — gitignored, never committed, fully regenerable:
+
+- two WebP variants per raster image (320 px and 640 px wide, quality 80, no upscaling);
+- `maps/` is excluded: the board map is displayed full width and its PNG is already smaller
+  than the full-resolution WebP;
+- `.image-pipeline.json` (gitignored) stores the source SHA-1 and encoder versions, so unchanged
+  images are skipped and any encoder/`PIPELINE_VERSION` change forces a full regeneration;
+- orphaned derivatives (renamed/removed sources) are deleted.
+
+`npm start` and `npm run build` run it automatically via `prestart`/`prebuild`. Manual use:
+
+```bash
+cd nml-ui-bst-angular
+npm run optimize:images                 # generate missing/stale derivatives
+npm run optimize:images -- --dry-run    # report what would be generated, write nothing
+npm run optimize:images -- --force      # regenerate everything
+npm run optimize:images -- --verbose    # log each generated file
+```
+
+Components reference derivatives through `optimizedImage()` (`src/app/core/optimized-image.ts`),
+which rewrites `assets/...` to `/assets/_opt/....320.webp` and builds the `srcset`. New or updated
+images only require committing the original; run `npm run optimize:images` (or restart `ng serve`)
+to see them while the dev server is running.
+
+### Caching
+
+`StaticResourceCacheConfig` sets the cache policy for the two image trees:
+
+- `/assets/**` (stable derivative URLs): `Cache-Control: no-cache` — the browser revalidates with
+  `Last-Modified`, so an updated image is never served stale;
+- `/boards/**` (admin uploads, versioned by UUID): `public, max-age=31536000, immutable`.
+
+If `/assets/**` traffic ever becomes significant, fingerprint the derivative filenames (content
+hash) and switch that tree to `immutable` too.
+
+### Board uploads
+
+`POST /api/admin/boards/assets` accepts PNG and JPEG, validated by magic bytes (the declared
+`Content-Type` and the original filename are ignored), up to 10 MB per file. SVG overlays keep
+their own validation and CSP sandbox.
 
 ---
 

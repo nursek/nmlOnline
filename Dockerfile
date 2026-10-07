@@ -40,8 +40,8 @@ COPY --from=backend-build --chown=nmlonline:nmlonline /app-ms/nml-ms/target/nml-
 
 COPY --from=frontend-build --chown=nmlonline:nmlonline /app-ui/dist/nml-ui-copilot-angular/browser /app/static
 
-# Logback écrit /app/logs/combat.log ; le volume nommé hérite de ce propriétaire.
-RUN mkdir -p /app/logs && chown nmlonline:nmlonline /app/logs
+# Logback écrit /app/logs ; les volumes nommés héritent du propriétaire si le dossier existe dans l'image.
+RUN mkdir -p /app/logs /app/static/boards && chown nmlonline:nmlonline /app/logs /app/static/boards
 
 USER nmlonline:nmlonline
 

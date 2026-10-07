@@ -1,7 +1,14 @@
 <div class="resource-card">
   <div class="rc-thumb">
     @if (!imgError()) {
-      <img [src]="imageUrl()" (error)="onImgError()" [alt]="resource().name" />
+      <img
+        [src]="image().src"
+        [srcset]="image().srcset"
+        (error)="onImgError()"
+        loading="lazy"
+        decoding="async"
+        [alt]="resource().name"
+      />
     } @else {
       <mat-icon>inventory_2</mat-icon>
     }

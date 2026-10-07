@@ -10,6 +10,7 @@ import {
   sortVehiclesByCost,
   unitCartQuantityForType,
   unitClassBonusSummary,
+  unitImageUrl,
   unitPendingQuantityForType,
   unitQuotaRemaining,
   vehicleSummary,
@@ -265,6 +266,31 @@ describe('boutique.helpers — résumés compacts', () => {
       expect(unitPendingQuantityForType(pending, 'LARBIN')).toBe(20);
       expect(unitPendingQuantityForType(pending, 'LARBIN2')).toBe(3);
       expect(unitPendingQuantityForType(pending, 'MALFRAT')).toBe(0);
+    });
+  });
+
+  describe('unitImageUrl', () => {
+    const entry = { name: 'Larbin' };
+    const unitClass = { name: 'LEGER' };
+
+    it("sert la vignette de classe tant qu'elle est valide", () => {
+      expect(unitImageUrl(entry, unitClass, 'necrons', new Set())).toBe(
+        'assets/necrons/units/larbin/leger.png',
+      );
+    });
+
+    it('replie sur le portrait du type quand la classe est cassée, puis sur rien', () => {
+      const classBroken = new Set(['unit:Larbin:LEGER']);
+      expect(unitImageUrl(entry, unitClass, 'necrons', classBroken)).toBe(
+        'assets/necrons/units/larbin/portrait.png',
+      );
+
+      const allBroken = new Set(['unit:Larbin:LEGER', 'unit:Larbin']);
+      expect(unitImageUrl(entry, unitClass, 'necrons', allBroken)).toBe('');
+    });
+
+    it('ne construit rien sans faction', () => {
+      expect(unitImageUrl(entry, unitClass, '', new Set())).toBe('');
     });
   });
 });
