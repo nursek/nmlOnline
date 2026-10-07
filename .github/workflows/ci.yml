@@ -54,22 +54,22 @@ jobs:
         with:
           node-version: '26'
           cache: npm
-          cache-dependency-path: nml-ui-bst-angular/package-lock.json
+          cache-dependency-path: nml-ui/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./nml-ui-bst-angular
+        working-directory: ./nml-ui
         run: npm ci
 
       - name: Lint
-        working-directory: ./nml-ui-bst-angular
+        working-directory: ./nml-ui
         run: npm run lint
 
       - name: Test
-        working-directory: ./nml-ui-bst-angular
+        working-directory: ./nml-ui
         run: npm test -- --ci --coverage
 
       - name: Production build
-        working-directory: ./nml-ui-bst-angular
+        working-directory: ./nml-ui
         run: npm run build
 
       - name: Upload coverage report
@@ -77,5 +77,5 @@ jobs:
         if: always()
         with:
           name: frontend-coverage
-          path: ./nml-ui-bst-angular/coverage
+          path: ./nml-ui/coverage
           retention-days: 7

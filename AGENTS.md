@@ -8,7 +8,7 @@ Fast lane. Détails dans [README.md](README.md).
 # nml-ms/ (Spring Boot 3.5.6 / Java 21)
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"   # JWT_SECRET + JWT_PEPPER requis
 .\mvnw.cmd clean test                                          # PostgreSQL 14 embarqué (Zonky), sans config
-# nml-ui-bst-angular/ (Angular 22)
+# nml-ui/ (Angular 22)
 npm start / npm test / npm run lint / npm run format / npm run build
 ```
 
@@ -52,7 +52,7 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 - **Commentaires** : zéro par défaut — relire les lignes `+` de `git diff -U0` avant de rendre
   la main (voir « Commentaires »). Un `catch` vide ne survit que justifié en une ligne.
 - **Règles du jeu** : elles vivent dans la page Règles
-  (`nml-ui-bst-angular/src/app/pages/regles/`). Toute modification structurelle du gameplay
+  (`nml-ui/src/app/pages/regles/`). Toute modification structurelle du gameplay
   (tour, combat, capture, alliance, échange, visibilité…) doit vérifier que cette page est
   toujours correcte et la mettre à jour **dans le même commit**.
 

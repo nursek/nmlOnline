@@ -3,10 +3,10 @@ FROM node:24-alpine AS frontend-build
 WORKDIR /app-ui
 
 # Install dependencies first for layer caching
-COPY nml-ui-bst-angular/package*.json ./
+COPY nml-ui/package*.json ./
 RUN npm ci
 
-COPY nml-ui-bst-angular/ .
+COPY nml-ui/ .
 RUN npm run build -- --configuration production
 
 FROM maven:3.9-eclipse-temurin-21 AS backend-build

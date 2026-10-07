@@ -15,12 +15,12 @@ target/
 build/
 
 # Frontend
-nml-ui-bst-angular/node_modules/
-nml-ui-bst-angular/dist/
-nml-ui-bst-angular/.angular/
-nml-ui-bst-angular/coverage/
-nml-ui-bst-angular/src/assets/_opt/
-nml-ui-bst-angular/.image-pipeline.json
+nml-ui/node_modules/
+nml-ui/dist/
+nml-ui/.angular/
+nml-ui/coverage/
+nml-ui/src/assets/_opt/
+nml-ui/.image-pipeline.json
 
 # Documentation (not needed inside the image)
 *.md

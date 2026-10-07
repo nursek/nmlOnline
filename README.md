@@ -33,7 +33,7 @@ nmlOnline/
 │   ├── Dockerfile              # Multi-stage container build
 │   └── pom.xml                 # Maven build
 │
-├── nml-ui-bst-angular/         # Angular 22 frontend
+├── nml-ui/         # Angular 22 frontend
 │   ├── src/app/                # Application source
 │   │   ├── pages/              # Route pages (login, carte, joueur, boutique, admin…)
 │   │   ├── services/           # HTTP, token & signal-based state services
@@ -112,7 +112,7 @@ Swagger UI: **http://localhost:8080/swagger-ui.html**
 ### 2. Frontend
 
 ```bash
-cd ../nml-ui-bst-angular
+cd ../nml-ui
 npm install
 npm start      # runs on http://localhost:4200, proxies /api → localhost:8080
 ```
@@ -348,7 +348,7 @@ docker run -d \
 When using the root `Dockerfile`, the frontend is already included. If you prefer to mount it separately:
 
 ```bash
-cd nml-ui-bst-angular
+cd nml-ui
 npm run build
 # Output: dist/nml-ui-copilot-angular/browser/
 ```
@@ -363,7 +363,7 @@ The backend serves static files from both `classpath:/static/` and `file:/app/st
 
 ## Image pipeline
 
-Original images live in `nml-ui-bst-angular/src/assets/` and are the source of truth (committed).
+Original images live in `nml-ui/src/assets/` and are the source of truth (committed).
 Derivatives are generated at build time by `scripts/optimize-images.mjs` (Node + sharp, a dev
 dependency) into `src/assets/_opt/` — gitignored, never committed, fully regenerable:
 
@@ -377,7 +377,7 @@ dependency) into `src/assets/_opt/` — gitignored, never committed, fully regen
 `npm start` and `npm run build` run it automatically via `prestart`/`prebuild`. Manual use:
 
 ```bash
-cd nml-ui-bst-angular
+cd nml-ui
 npm run optimize:images                 # generate missing/stale derivatives
 npm run optimize:images -- --dry-run    # report what would be generated, write nothing
 npm run optimize:images -- --force      # regenerate everything
@@ -553,7 +553,7 @@ startup is paid once per JVM, so extra tests on an existing Spring context are n
 ### Frontend
 
 ```bash
-cd nml-ui-bst-angular
+cd nml-ui
 
 # Unit tests (Jest)
 npm test
@@ -627,7 +627,7 @@ src/main/java/com/mg/nmlonline/
 └── NmlOnlineApplication.java
 ```
 
-### Frontend (`nml-ui-bst-angular/`)
+### Frontend (`nml-ui/`)
 
 ```
 src/app/
@@ -695,7 +695,7 @@ src/app/
 3. Format on save is recommended
 
 ```bash
-cd nml-ui-bst-angular
+cd nml-ui
 npm run format   # format all files
 npm run lint      # check for errors
 ```

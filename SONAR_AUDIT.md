@@ -1,7 +1,7 @@
 # Rapport d'analyse Sonar — nmlOnline
 
 Date : 2026-09-13
-Périmètre : `nml-ms` (157 fichiers Java main, 43 tests), `nml-ui-bst-angular/src` (89 TS, 18 HTML, 19 SCSS),
+Périmètre : `nml-ms` (157 fichiers Java main, 43 tests), `nml-ui/src` (89 TS, 18 HTML, 19 SCSS),
 migrations SQL, Dockerfile, workflows, `tools/`.
 Analyse : statique manuelle, revue ciblée sur les règles `Sonar way` (sonar-java, SonarJS/TS, Web, Docker, GitHub Actions).
 
@@ -67,7 +67,7 @@ Total brut : ~80 findings actionnables après déduplication, sur ~110 relevés.
 
 ### 3. `typescript:S6268` — `bypassSecurityTrustHtml` sur le SVG admin (Blocker hotspot, à valider)
 
-- `nml-ui-bst-angular/src/app/pages/carte/carte.component.ts:112`
+- `nml-ui/src/app/pages/carte/carte.component.ts:112`
   ```ts
   return sanitized ? this.sanitizer.bypassSecurityTrustHtml(sanitized) : null;
   ```
@@ -130,7 +130,7 @@ Total brut : ~80 findings actionnables après déduplication, sur ~110 relevés.
 
 ### 10. `typescript:S2589` — Condition toujours fausse (Major, vérifié)
 
-- `nml-ui-bst-angular/src/app/pages/admin/admin.component.ts:90`
+- `nml-ui/src/app/pages/admin/admin.component.ts:90`
   ```ts
   return t === null || t === undefined ? '—' : `Tour ${t}`;
   ```
@@ -257,8 +257,8 @@ Refactor structurel à étaler ; `PlayerImportService` en tête.
 
 - `nml-ms/pom.xml:88-93` : pilote **H2 en scope `runtime`** → embarqué dans le jar de prod alors que la prod est
   PostgreSQL. Remonter en `test` (ou `provided`).
-- `nml-ui-bst-angular/package.json:9` : `jest --passWithNoTests` → la CI passe avec zéro test exécuté.
-- `nml-ui-bst-angular/eslint.config.mjs:40-79` : règles Angular/TS surchargées en `'warn'` → `ng lint` ne peut pas
+- `nml-ui/package.json:9` : `jest --passWithNoTests` → la CI passe avec zéro test exécuté.
+- `nml-ui/eslint.config.mjs:40-79` : règles Angular/TS surchargées en `'warn'` → `ng lint` ne peut pas
   échouer sur ces règles.
 - `db/migration/V1__baseline.sql:17` : `SET row_security = off;` (artefact pg_dump).
   `V1__baseline.sql:143-151` : table `credentials` avec `username`/`password`/`role` nullables, sans `UNIQUE`.

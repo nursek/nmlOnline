@@ -79,7 +79,7 @@ N'ajoutez **PAS** de `fill`, `stroke`, ou `style` aux éléments path. Le systè
 ### 1. Placer les fichiers
 
 ```
-nml-ui-bst-angular/src/assets/maps/
+nml-ui/src/assets/maps/
 ├── ma-carte.jpg          # Image de fond
 ├── ma-carte-overlay.svg  # SVG des zones
 └── README.md
@@ -142,7 +142,7 @@ node svg-neighbor-detector.js --threshold 30
 
 | Option | Description | Défaut |
 |--------|-------------|--------|
-| `--svg` | Chemin vers le SVG | `../nml-ui-bst-angular/src/assets/maps/main-map-overlay.svg` |
+| `--svg` | Chemin vers le SVG | `../nml-ui/src/assets/maps/main-map-overlay.svg` |
 | `--threshold` | Distance max (px) entre voisins | `30` |
 | `--output` | Fichier JSON de sortie | `neighbors-output.json` |
 

@@ -5,7 +5,7 @@
  * automatiquement les voisins en fonction de la proximité des formes.
  *
  * Usage: node svg-neighbor-detector.js [options]
- *   --svg <path>       Chemin vers le fichier SVG (défaut: ../nml-ui-bst-angular/src/assets/maps/main-map-overlay.svg)
+ *   --svg <path>       Chemin vers le fichier SVG (défaut: ../nml-ui/src/assets/maps/main-map-overlay.svg)
  *   --threshold <px>   Distance max pour considérer deux secteurs comme voisins (défaut: 17)
  *   --output <path>    Fichier de sortie JSON (défaut: neighbors-output.json)
  *   --samples <n>      Nombre de points échantillonnés par path pour calcul de distance (défaut: 10000)
@@ -16,7 +16,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const DEFAULT_CONFIG = {
-  svgPath: '../nml-ui-bst-angular/src/assets/maps/main-map-overlay.svg',
+  svgPath: '../nml-ui/src/assets/maps/main-map-overlay.svg',
   threshold: 17,
   outputPath: 'neighbors-output.json',
   samples: 10000,
