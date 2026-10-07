@@ -143,7 +143,6 @@ export function clampUnitQuantity(requested: number, remaining: number): number 
   return Math.max(1, Math.min(Math.trunc(requested) || 1, remaining));
 }
 
-/** Vignette par classe ; repli sur le portrait du type puis sur l'icône ('' → cf. `onUnitImgError`). */
 export function unitImageUrl(
   entry: Pick<UnitCatalogEntry, 'name'>,
   unitClass: Pick<UnitClass, 'name'>,

@@ -13,9 +13,13 @@ const TINY_PNG = Buffer.from(
 
 function runScript(scriptPath, args = []) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [scriptPath, ...args], { stdio: 'ignore' });
+    const child = spawn(process.execPath, [scriptPath, ...args], {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    let stdout = '';
+    child.stdout.on('data', (chunk) => (stdout += chunk));
     child.on('error', reject);
-    child.on('exit', (code) => resolve(code));
+    child.on('close', (code) => resolve({ code, stdout }));
   });
 }
 
@@ -68,16 +72,19 @@ test('main() génère, saute, régénère un dérivé manquant et supprime les o
     const script = join(root, 'scripts', 'optimize-images.mjs');
     const outputDir = join(root, 'src', 'assets', '_opt');
 
-    assert.equal(await runScript(script), 0);
+    assert.equal((await runScript(script)).code, 0);
     assert.deepEqual((await readdir(outputDir)).sort(), ['tiny.320.webp', 'tiny.640.webp']);
     assert.ok((await stat(join(root, '.image-pipeline.json'))).size > 0);
 
     await rm(join(outputDir, 'tiny.320.webp'));
-    assert.equal(await runScript(script), 0);
+    const dryRun = await runScript(script, ['--dry-run']);
+    assert.equal(dryRun.code, 0);
+    assert.match(dryRun.stdout, /1 à générer/);
+    assert.equal((await runScript(script)).code, 0);
     await stat(join(outputDir, 'tiny.320.webp'));
 
     await writeFile(join(outputDir, 'orphan.320.webp'), 'x');
-    assert.equal(await runScript(script), 0);
+    assert.equal((await runScript(script)).code, 0);
     await assert.rejects(stat(join(outputDir, 'orphan.320.webp')));
   } finally {
     await rm(root, { recursive: true, force: true });

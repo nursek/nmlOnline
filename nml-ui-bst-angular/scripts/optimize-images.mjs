@@ -109,19 +109,18 @@ export async function main() {
 
   for (const source of sources) {
     const relativePath = relative(sourceDir, source).split('\\').join('/');
+    const outputs = outputsFor(relativePath);
+    // Avant readFile : une lecture ratée ne doit pas faire passer les dérivés valides pour orphelins.
+    for (const output of outputs) expected.add(output);
     try {
       const bytes = await readFile(source);
       const sha1 = createHash('sha1').update(bytes).digest('hex');
-      const outputs = outputsFor(relativePath);
-      for (const output of outputs) expected.add(output);
 
       const previousEntry = previous.entries?.[relativePath];
       if (isUnchanged(previousEntry, sha1, outputs, { force, encoderChanged })) {
-        const present =
-          dryRun ||
-          (await Promise.all(outputs.map((output) => exists(join(outputDir, output))))).every(
-            Boolean,
-          );
+        const present = (
+          await Promise.all(outputs.map((output) => exists(join(outputDir, output))))
+        ).every(Boolean);
         if (present) {
           entries[relativePath] = previousEntry;
           upToDate++;

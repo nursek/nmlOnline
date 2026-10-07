@@ -379,7 +379,7 @@ dependency) into `src/assets/_opt/` — gitignored, never committed, fully regen
 ```bash
 cd nml-ui-bst-angular
 npm run optimize:images                 # generate missing/stale derivatives
-npm run optimize:images -- --dry-run    # list what would be generated, write nothing
+npm run optimize:images -- --dry-run    # report what would be generated, write nothing
 npm run optimize:images -- --force      # regenerate everything
 npm run optimize:images -- --verbose    # log each generated file
 ```

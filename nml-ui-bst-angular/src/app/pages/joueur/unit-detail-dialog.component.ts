@@ -76,11 +76,11 @@ export class UnitDetailDialogComponent {
   readonly allSectors = this.activeBoard.sectors;
 
   constructor() {
-    // imgError doit se reset dès que portrait se recalcule (ex: unité évolue
+    // imgError doit se reset dès que l'URL du portrait change (ex: unité évolue
     // et change de type → nouvelle URL potentiellement valide). Sans cela, un
     // 1er échec d'image verrouillerait le fallback même après recompute valide.
     effect(() => {
-      this.portrait();
+      this.portraitUrl();
       this.imgError.set(false);
     });
     void this.movementState.loadOrders();
@@ -100,12 +100,16 @@ export class UnitDetailDialogComponent {
     return live ?? snapshot;
   });
 
-  readonly portrait = computed<OptimizedImage | null>(() => {
+  readonly portraitUrl = computed(() => {
     const p = this.player();
     const u = this.unit();
-    if (!p?.name || !u?.type.name) return null;
-    return optimizedImage(`assets/${p.name.toLowerCase()}/units/${u.type.name.toLowerCase()}/portrait.png`);
+    if (!p?.name || !u?.type.name) return '';
+    return `assets/${p.name.toLowerCase()}/units/${u.type.name.toLowerCase()}/portrait.png`;
   });
+
+  readonly portrait = computed<OptimizedImage | null>(() =>
+    this.portraitUrl() ? optimizedImage(this.portraitUrl()) : null,
+  );
 
   readonly maxHops = computed<number>(() => unitMaxHops(this.unit()));
 
