@@ -39,7 +39,7 @@ export class AuthService {
     if (this._initialized()) return;
     this._loading.set(true);
 
-    if (!this.tokenService.hasStoredToken()) {
+    if (!this.tokenService.hasStoredToken() && !this.tokenService.isRemembered()) {
       this._markInitializedUnauthenticated();
       return;
     }
@@ -68,6 +68,7 @@ export class AuthService {
     this._error.set(null);
     try {
       const response = await firstValueFrom(this.api.login(credentials));
+      this.tokenService.setRememberMe(credentials.rememberMe);
       this.tokenService.setAccessToken(response.token);
       this.tokenService.setUser({
         id: response.id,

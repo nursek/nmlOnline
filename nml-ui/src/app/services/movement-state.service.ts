@@ -1,6 +1,7 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
+import { AuthService } from './auth.service';
 import { MovementOrder } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 
@@ -11,6 +12,7 @@ import { httpErrorMessage } from '../core/http-error.interceptor';
 @Injectable({ providedIn: 'root' })
 export class MovementStateService {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
 
   private readonly _orders = signal<MovementOrder[]>([]);
   private readonly _loading = signal(false);
@@ -27,6 +29,14 @@ export class MovementStateService {
   readonly pendingVehicleIds = computed<ReadonlySet<number>>(
     () => new Set(this._orders().flatMap((o) => (o.vehicleId != null ? [o.vehicleId] : []))),
   );
+
+  constructor() {
+    effect(() => {
+      if (this.auth.initialized() && !this.auth.user()) {
+        this.clear();
+      }
+    });
+  }
 
   pendingForUnit(unitId: number): MovementOrder[] {
     return this._orders().filter((o) => o.entityIds?.includes(unitId));

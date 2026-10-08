@@ -8,6 +8,7 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.BattleReportRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -97,12 +98,16 @@ public class BattleReportService {
         persist(dto, participants.stream().map(Player::getId).toList());
     }
 
+    private static final int MAX_REPORTS_PER_PLAYER = 100;
+
     @Transactional(readOnly = true)
     public List<BattleReportDto> getReportsForUser(Long userId) {
         Player player = playerRepository.findByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId));
         List<BattleReportDto> reports = new ArrayList<>();
-        for (BattleReport report : reportRepository.findByParticipantId(player.getId())) {
+        List<BattleReport> page = reportRepository.findByParticipantId(
+                player.getId(), PageRequest.of(0, MAX_REPORTS_PER_PLAYER));
+        for (BattleReport report : page) {
             reports.add(readPayload(report));
         }
         return reports;

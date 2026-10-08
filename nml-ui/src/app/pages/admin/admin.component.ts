@@ -68,6 +68,7 @@ export class AdminComponent {
   private readonly dialog = inject(MatDialog);
 
   readonly players = this.admin.players;
+  readonly playersTruncated = this.admin.playersTruncated;
   readonly loading = this.admin.loading;
   readonly importing = this.admin.importing;
   readonly successMessage = this.admin.successMessage;

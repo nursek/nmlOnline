@@ -16,7 +16,7 @@ import java.util.List;
 @Service
 public class ResourceService {
 
-    private static final double[] SALE_MULTIPLIERS = {1.0, 3.0, 6.0, 9.0, 13.0, 19.5, 24.5, 33.0, 45.0};
+    static final double[] SALE_MULTIPLIERS = {1.0, 3.0, 6.0, 9.0, 13.0, 19.5, 24.5, 33.0, 45.0};
 
     private final ResourceRepository resourceRepository;
     private final PlayerResourceRepository playerResourceRepository;

@@ -181,6 +181,9 @@
       @if (searchQuery()) {
         <span class="filter-info">(filtrés)</span>
       }
+      @if (playersTruncated()) {
+        <span class="filter-info">(liste partielle — 50 premiers)</span>
+      }
     </div>
   }
 

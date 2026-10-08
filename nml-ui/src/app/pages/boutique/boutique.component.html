@@ -441,6 +441,9 @@
               <span class="results-count"
                 >{{ filteredEquipments().length }} équipement(s) trouvé(s)</span
               >
+              @if (equipmentsTruncated()) {
+                <span class="filters-active">Catalogue partiel — 100 premiers</span>
+              }
               @if (hasActiveFilters()) {
                 <span class="filters-active">
                   <mat-icon>filter_list</mat-icon>

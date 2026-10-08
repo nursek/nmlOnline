@@ -1,6 +1,7 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
+import { AuthService } from './auth.service';
 import { PlayerService } from './player.service';
 import { CreateExchangeOfferPayload, ExchangeOffer } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
@@ -8,6 +9,7 @@ import { httpErrorMessage } from '../core/http-error.interceptor';
 @Injectable({ providedIn: 'root' })
 export class ExchangeService {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly playerService = inject(PlayerService);
 
   private readonly _offers = signal<ExchangeOffer[]>([]);
@@ -35,6 +37,19 @@ export class ExchangeService {
   readonly pendingSentCount = computed(
     () => this.sent().filter((offer) => offer.status === 'PENDING').length,
   );
+
+  constructor() {
+    effect(() => {
+      if (this.auth.initialized() && !this.auth.user()) {
+        this.reset();
+      }
+    });
+  }
+
+  reset(): void {
+    this._offers.set([]);
+    this._error.set(null);
+  }
 
   async loadOffers(): Promise<void> {
     this._loading.set(true);

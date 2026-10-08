@@ -68,7 +68,25 @@ export class TokenService {
   clearAuth(): void {
     this.removeAccessToken();
     this.removeUser();
+    this.removeRememberMe();
     this.resetRefreshState();
+  }
+
+  /** Drapeau non secret : autorise une tentative de refresh cookie au prochain démarrage. */
+  setRememberMe(remember: boolean): void {
+    if (remember) {
+      localStorage.setItem('rememberMe', '1');
+    } else {
+      localStorage.removeItem('rememberMe');
+    }
+  }
+
+  isRemembered(): boolean {
+    return localStorage.getItem('rememberMe') === '1';
+  }
+
+  removeRememberMe(): void {
+    localStorage.removeItem('rememberMe');
   }
 
   private resetRefreshState(): void {

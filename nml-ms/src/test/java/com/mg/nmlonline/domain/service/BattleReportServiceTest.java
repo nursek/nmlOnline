@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -67,7 +68,7 @@ class BattleReportServiceTest {
         assertTrue(saved.getPayload().contains("VOYOU"), "Le payload JSON est sérialisé");
 
         when(playerRepository.findByUserId(99L)).thenReturn(Optional.of(defender));
-        when(reportRepository.findByParticipantId(2L)).thenReturn(List.of(saved));
+        when(reportRepository.findByParticipantId(eq(2L), any(Pageable.class))).thenReturn(List.of(saved));
 
         List<BattleReportDto> reports = service.getReportsForUser(99L);
 
@@ -116,7 +117,7 @@ class BattleReportServiceTest {
         assertEquals(Set.of(1L, 2L, 3L), saved.getParticipantIds());
 
         when(playerRepository.findByUserId(99L)).thenReturn(Optional.of(deuxieme));
-        when(reportRepository.findByParticipantId(2L)).thenReturn(List.of(saved));
+        when(reportRepository.findByParticipantId(eq(2L), any(Pageable.class))).thenReturn(List.of(saved));
 
         BattleReportDto dto = service.getReportsForUser(99L).getFirst();
 

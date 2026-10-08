@@ -77,12 +77,15 @@ public class BuildingService {
     }
 
     public boolean reconstructHeadquartersSameLocation(Long playerId) {
+        Player player = playerRepository.findByIdForUpdate(playerId).orElse(null);
+        if (player == null) return false;
+
+        // QG relu après le verrou joueur : un double appel concurrent ne paie pas deux fois.
         Optional<Headquarters> hqOpt = getHeadquarters(playerId);
         if (hqOpt.isEmpty()) return false;
 
         Headquarters hq = hqOpt.get();
-        Player player = playerRepository.findByIdForUpdate(playerId).orElse(null);
-        if (player == null) return false;
+        if (hq.isOperational()) return false;
 
         double cost = HQ_RECONSTRUCTION_SAME_LOCATION_COST;
         if (player.getStats().getMoney() < cost) {

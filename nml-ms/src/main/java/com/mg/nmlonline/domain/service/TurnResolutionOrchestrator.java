@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -48,6 +49,8 @@ public class TurnResolutionOrchestrator {
     private final HarvestAutoCollector harvestAutoCollector;
     private final VehicleMaintenanceService vehicleMaintenanceService;
     private final ReserveUnitPlacer reserveUnitPlacer;
+
+    private static final long SESSION_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
 
     private volatile Session session;
 
@@ -77,7 +80,12 @@ public class TurnResolutionOrchestrator {
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
-    public TurnResolutionStateDto startSession() {
+    public synchronized TurnResolutionStateDto startSession() {
+        // Session abandonnée (onglet fermé) : on la libère au bout de 2 h pour ne pas figer le jeu.
+        if (session != null && System.currentTimeMillis() - session.startedAt > SESSION_TIMEOUT_MS) {
+            turnLock.release();
+            session = null;
+        }
         if (!turnLock.tryAcquire()) {
             throw new IllegalStateException("Une résolution de fin de tour est déjà en cours");
         }
@@ -100,7 +108,7 @@ public class TurnResolutionOrchestrator {
     }
 
     /** Avance d'un hop et expose les conflits à l'admin. Refusé si des batailles du hop courant sont en attente. */
-    public TurnResolutionStateDto advanceHop() {
+    public synchronized TurnResolutionStateDto advanceHop() {
         Session s = requireSession();
         if (!s.pendingConflicts.isEmpty()) {
             throw new IllegalStateException("Résolvez les batailles du hop courant avant de passer au suivant");
@@ -120,7 +128,7 @@ public class TurnResolutionOrchestrator {
     }
 
     /** Résout le conflit : duel classique à 2 camps (1 ou 2 alliés), impasse à 3+ (un seul appel pour tout le cercle). */
-    public ResolvedBattleDto resolveBattle(int conflictId) {
+    public synchronized ResolvedBattleDto resolveBattle(int conflictId) {
         Session s = requireSession();
         PendingConflict pc = s.pendingConflicts.stream()
                 .filter(p -> p.id == conflictId)
@@ -170,7 +178,7 @@ public class TurnResolutionOrchestrator {
     }
 
     /** Finalise le tour (ordres RESOLVED + incrémentation), libère le verrou. Nécessite tous hops + batailles résolus. */
-    public TurnFinalizeResultDto finalizeTurn() {
+    public synchronized TurnFinalizeResultDto finalizeTurn() {
         Session s = requireSession();
         if (!s.pendingConflicts.isEmpty()) {
             throw new IllegalStateException("Résolvez toutes les batailles avant de finaliser");
@@ -212,7 +220,7 @@ public class TurnResolutionOrchestrator {
     }
 
     /** Abandon soft : libère le verrou sans rollback des entités déplacées ni des combats résolus. */
-    public void abort() {
+    public synchronized void abort() {
         Session s = this.session;
         if (s == null) {
             return;
@@ -222,7 +230,7 @@ public class TurnResolutionOrchestrator {
     }
 
     @Transactional(readOnly = true)
-    public TurnResolutionStateDto getState() {
+    public synchronized TurnResolutionStateDto getState() {
         Session s = this.session;
         if (s == null) {
             TurnResolutionStateDto dto = new TurnResolutionStateDto();
@@ -387,6 +395,7 @@ public class TurnResolutionOrchestrator {
         final MovementService.ResolutionContext ctx;
         final int turnEnding;
         final Map<Integer, Long> sectorOwners;
+        final long startedAt = System.currentTimeMillis();
         final List<PendingConflict> pendingConflicts = new ArrayList<>();
         final List<ResolvedBattle> resolvedConflicts = new ArrayList<>();
         int conflictIdSeq = 0;

@@ -285,6 +285,9 @@
             <div>
               <span class="stat-value">{{ players().length }}</span>
               <span class="stat-label">Joueurs en vie</span>
+              @if (playersTruncated()) {
+                <span class="stat-label">(liste partielle — 50 premiers)</span>
+              }
             </div>
           </div>
           <div class="global-stat">

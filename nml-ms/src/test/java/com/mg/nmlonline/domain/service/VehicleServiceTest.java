@@ -53,6 +53,9 @@ class VehicleServiceTest {
     TurnService turnService;
 
     @Mock
+    TurnLock turnLock;
+
+    @Mock
     VehicleCrewService vehicleCrewService;
 
     @Mock
@@ -237,9 +240,9 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Véhicule d'un autre joueur est rejeté")
         void shouldRejectVehicleOwnedByAnotherPlayer() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             Vehicle foreign = new Vehicle(VehicleType.TANK, 99L);
-            when(vehicleRepository.findById(5L)).thenReturn(Optional.of(foreign));
+            when(vehicleRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(foreign));
 
             assertThrows(SecurityException.class,
                     () -> vehicleService.placeVehicle(5L, 100L, 3, 10L));
@@ -248,8 +251,8 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Secteur introuvable est rejeté")
         void shouldRejectUnknownSector() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
-            when(vehicleRepository.findById(5L)).thenReturn(Optional.of(ownedVehicle()));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(vehicleRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(ownedVehicle()));
             when(sectorRepository.findByBoard_IdAndNumber(100L, 3)).thenReturn(Optional.empty());
 
             assertThrows(RuntimeException.class,
@@ -259,8 +262,8 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Secteur non possédé est rejeté")
         void shouldRejectSectorNotOwned() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
-            when(vehicleRepository.findById(5L)).thenReturn(Optional.of(ownedVehicle()));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(vehicleRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(ownedVehicle()));
             Sector sector = new Sector(3, "Secteur 3");
             sector.setOwnerId(99L);
             when(sectorRepository.findByBoard_IdAndNumber(100L, 3)).thenReturn(Optional.of(sector));
@@ -272,10 +275,10 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Véhicule déjà déployé est rejeté")
         void shouldRejectAlreadyDeployedVehicle() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             Vehicle vehicle = ownedVehicle();
             vehicle.setSector(new Sector(1, "Secteur 1"));
-            when(vehicleRepository.findById(5L)).thenReturn(Optional.of(vehicle));
+            when(vehicleRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(vehicle));
 
             assertThrows(IllegalStateException.class,
                     () -> vehicleService.placeVehicle(5L, 100L, 3, 10L));
@@ -284,9 +287,9 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Placement réussi sur secteur possédé")
         void shouldPlaceVehicleOnOwnedSector() {
-            when(playerRepository.findByUserId(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             Vehicle vehicle = ownedVehicle();
-            when(vehicleRepository.findById(5L)).thenReturn(Optional.of(vehicle));
+            when(vehicleRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(vehicle));
             Sector sector = new Sector(3, "Secteur 3");
             sector.setOwnerId(1L);
             when(sectorRepository.findByBoard_IdAndNumber(100L, 3)).thenReturn(Optional.of(sector));

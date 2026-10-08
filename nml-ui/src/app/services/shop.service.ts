@@ -61,6 +61,10 @@ export class ShopService {
   );
 
   readonly equipments = computed(() => this.equipmentsRef.value()?.content ?? []);
+  readonly equipmentsTruncated = computed(() => {
+    const page = this.equipmentsRef.value();
+    return !!page && page.content.length < (page.totalElements ?? page.content.length);
+  });
   readonly equipmentsLoading = computed(
     () => this._error() === null && this.equipmentsRef.isLoading(),
   );
@@ -122,6 +126,16 @@ export class ShopService {
     });
     effect(() => {
       this.cartStorage.saveUnitCart(this._unitCart());
+    });
+    // Session terminée : le panier du compte précédent ne doit pas être payé par le suivant.
+    effect(() => {
+      if (this.auth.initialized() && !this.auth.user()) {
+        this._cart.set([]);
+        this._vehicleCart.set([]);
+        this._unitCart.set([]);
+        this._sellCart.set([]);
+        this._error.set(null);
+      }
     });
   }
 
