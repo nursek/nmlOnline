@@ -20,7 +20,9 @@
         <p class="subtitle">Ordres de déplacement en attente pour le tour courant</p>
       </div>
       <div class="header-actions">
-        <span class="count-pill">{{ orders().length }} en attente</span>
+        <span class="count-pill">{{ orders().length }} ordre(s)</span>
+        <span class="count-pill">{{ entityCount() }} entité(s)</span>
+        <span class="count-pill">Puissance {{ globalPower() | number: '1.0-1' }}</span>
         <button mat-icon-button (click)="refresh()" matTooltip="Rafraîchir" [disabled]="busy()">
           <mat-icon>refresh</mat-icon>
         </button>
@@ -37,48 +39,123 @@
         </mat-card-content>
       </mat-card>
     } @else {
-      <div class="orders-list">
-        @for (o of orders(); track o.id) {
-          <mat-card class="card order-card">
-            <mat-card-content>
-              <div class="order-row">
-                <div class="order-route">
-                  <span class="order-seg">Secteur {{ o.fromSectorNumber }}</span>
+      <mat-accordion multi class="orders-list">
+        @for (g of groups(); track g.toSectorNumber) {
+          <mat-expansion-panel class="order-panel">
+            <mat-expansion-panel-header>
+              <mat-panel-title class="panel-title">
+                <mat-icon>place</mat-icon>
+                Ordre vers Secteur {{ g.toSectorNumber }}
+              </mat-panel-title>
+              <mat-panel-description class="panel-desc">
+                <span>{{ g.orders.length }} ordre(s)</span>
+                <span>{{ g.units.length }} unité(s)</span>
+                <span>{{ g.characters.length }} personnage(s)</span>
+                <span>{{ g.vehicles.length }} véhicule(s)</span>
+                <span class="panel-power">Puissance {{ g.power | number: '1.0-1' }}</span>
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+
+            <div class="group-total">
+              <span class="group-total-label">Total vers le secteur {{ g.toSectorNumber }}</span>
+              <span class="group-total-stats">
+                @for (s of totalsStats(g.totals); track s.label) {
+                  {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                }
+              </span>
+            </div>
+
+            @for (d of g.orders; track d.order.id) {
+              <div class="order-block">
+                <div class="order-head">
+                  <span class="order-seg">Secteur {{ d.order.fromSectorNumber }}</span>
                   <mat-icon class="order-arrow">arrow_forward</mat-icon>
-                  <span class="order-seg order-seg-to">Secteur {{ o.toSectorNumber }}</span>
-                </div>
-                <div class="order-route-full" matTooltip="Route complète">
-                  @for (s of o.route; track $index) {
-                    <span>{{ s }}</span>
-                    @if (!$last) {
-                      <mat-icon>chevron_right</mat-icon>
+                  <span class="order-seg order-seg-to">Secteur {{ d.order.toSectorNumber }}</span>
+                  <span class="order-route-full" matTooltip="Route complète">
+                    @for (s of d.order.route; track $index) {
+                      <span>{{ s }}</span>
+                      @if (!$last) {
+                        <mat-icon>chevron_right</mat-icon>
+                      }
                     }
+                  </span>
+                  <span class="order-power">Puissance {{ d.power | number: '1.0-1' }}</span>
+                  <span class="status-badge status-{{ d.order.status }}">{{ d.order.status }}</span>
+                  @if (d.order.statusMessage) {
+                    <span class="status-msg">{{ d.order.statusMessage }}</span>
+                  }
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    [disabled]="busy()"
+                    (click)="cancelOrder(d.order.id)"
+                    matTooltip="Annuler l'ordre"
+                  >
+                    <mat-icon>cancel</mat-icon>
+                  </button>
+                </div>
+
+                <div class="entity-lines">
+                  @if (d.character; as character) {
+                    <div class="entity-line character">
+                      <mat-icon class="entity-icon">face</mat-icon>
+                      <span class="entity-name">{{ character.name }}</span>
+                      <span class="entity-stats">
+                        @for (s of characterStats(character); track s.label) {
+                          {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                        }
+                      </span>
+                    </div>
+                  }
+
+                  @for (v of d.vehicles; track v.id) {
+                    <div class="entity-line">
+                      <mat-icon class="entity-icon">local_shipping</mat-icon>
+                      <span class="entity-name">{{ v.displayName }}</span>
+                      @if (v.pilotName) {
+                        <span class="badge">Pilote : {{ v.pilotName }}</span>
+                      }
+                      <span class="entity-stats">
+                        @for (s of vehicleStats(v); track s.label) {
+                          {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                        }
+                      </span>
+                    </div>
+                  }
+
+                  @for (u of d.units; track u.id) {
+                    <div class="entity-line">
+                      @if (unitClassCodes(u); as codes) {
+                        <span class="class-codes">({{ codes }})</span>
+                      }
+                      <mat-icon class="entity-icon">directions_walk</mat-icon>
+                      <span class="entity-name">{{ u.type.name }} n°{{ u.number }}</span>
+                      <span class="unit-exp">{{ u.experience | exp }} Exp</span>
+                      @if (u.isInjured) {
+                        <span class="badge badge-danger">Blessé</span>
+                      }
+                      <span class="unit-equip">{{ unitEquipLabel(u) }}</span>
+                      <span class="entity-stats">
+                        @for (s of unitStats(u); track s.label) {
+                          {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                        }
+                      </span>
+                    </div>
+                  }
+
+                  @for (id of d.unknownIds; track id) {
+                    <div class="entity-line unknown">
+                      <mat-icon class="entity-icon">help</mat-icon>
+                      <span class="entity-name">Entité #{{ id }}</span>
+                      <span class="unit-equip">détails indisponibles</span>
+                    </div>
                   }
                 </div>
-                <div class="order-status">
-                  <span class="status-badge status-{{ o.status }}">{{ o.status }}</span>
-                  @if (o.statusMessage) {
-                    <span class="status-msg">{{ o.statusMessage }}</span>
-                  }
-                </div>
-                <div class="order-entities" matTooltip="Entités concernées">
-                  <mat-icon>groups</mat-icon>
-                  <span>{{ o.entityIds.length }}</span>
-                </div>
-                <button
-                  mat-icon-button
-                  color="warn"
-                  [disabled]="busy()"
-                  (click)="cancelOrder(o.id)"
-                  matTooltip="Annuler l'ordre"
-                >
-                  <mat-icon>cancel</mat-icon>
-                </button>
               </div>
-            </mat-card-content>
-          </mat-card>
+            }
+          </mat-expansion-panel>
         }
-      </div>
+      </mat-accordion>
     }
   </div>
 }

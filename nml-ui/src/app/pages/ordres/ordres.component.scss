@@ -29,6 +29,7 @@
   align-items: center;
   gap: 16px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
 
   .header-icon {
     @include shared.avatar;
@@ -49,6 +50,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
 
     .count-pill {
       font-size: 0.8rem;
@@ -68,111 +70,226 @@
 }
 
 .orders-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: block;
 }
 
-.order-card {
-  @include shared.card;
+.order-panel {
+  margin-bottom: 12px;
+  border-radius: var(--r-sm);
 
-  .order-row {
+  .panel-title {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 8px;
+    font-weight: 700;
+
+    mat-icon {
+      color: shared.$primary-color;
+    }
+  }
+
+  .panel-desc {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
     flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.8rem;
 
-    .order-route {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-
-      .order-seg {
-        background: var(--paper);
-        border: 1.5px solid var(--ink);
-        border-radius: var(--r-xs);
-        padding: 4px 12px;
-        font-size: 0.9rem;
-      }
-      .order-seg-to {
-        background: var(--accent-tint);
-        border-color: var(--accent-line);
-        color: var(--accent-ink);
-      }
-      .order-arrow {
-        color: shared.$text-muted;
-      }
+    .panel-power {
+      font-weight: 700;
+      color: shared.$primary-color;
     }
+  }
+}
 
-    .order-route-full {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      font-size: 0.78rem;
-      color: shared.$text-muted;
+.group-total {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-xs);
+  font-size: 0.85rem;
 
-      mat-icon {
-        font-size: 14px;
-        width: 14px;
-        height: 14px;
-      }
+  .group-total-label {
+    font-weight: 700;
+    color: var(--accent-ink);
+  }
+
+  .group-total-stats {
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+}
+
+.order-block {
+  padding: 10px 0;
+  border-top: 1px dashed var(--line-2);
+}
+
+.order-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  .order-seg {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: var(--r-xs);
+    padding: 4px 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .order-seg-to {
+    background: var(--accent-tint);
+    border-color: var(--accent-line);
+    color: var(--accent-ink);
+  }
+  .order-arrow {
+    color: shared.$text-muted;
+  }
+  .order-route-full {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.78rem;
+    color: shared.$text-muted;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
     }
+  }
+  .order-power {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: shared.$primary-color;
+    white-space: nowrap;
+  }
+  .status-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 10px;
+    border-radius: var(--r-xs);
 
-    .order-status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-left: auto;
-
-      .status-badge {
-        font-size: 0.72rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        padding: 2px 10px;
-        border-radius: var(--r-xs);
-
-        &.status-PENDING {
-          background: var(--sun-tint);
-          color: var(--sun-deep);
-          border: 1px solid var(--sun-line);
-        }
-        &.status-RESOLVED {
-          background: var(--forest-tint);
-          color: var(--forest-deep);
-          border: 1px solid var(--forest-line);
-        }
-        &.status-BLOCKED {
-          background: var(--danger-tint);
-          color: var(--danger-deep);
-          border: 1px solid var(--danger-line);
-        }
-        &.status-CANCELLED {
-          background: var(--paper-2);
-          color: var(--ink-3);
-          border: 1.5px solid var(--ink);
-        }
-      }
-      .status-msg {
-        font-size: 0.75rem;
-        color: shared.$text-muted;
-        font-style: italic;
-      }
+    &.status-PENDING {
+      background: var(--sun-tint);
+      color: var(--sun-deep);
+      border: 1px solid var(--sun-line);
     }
+    &.status-RESOLVED {
+      background: var(--forest-tint);
+      color: var(--forest-deep);
+      border: 1px solid var(--forest-line);
+    }
+    &.status-BLOCKED {
+      background: var(--danger-tint);
+      color: var(--danger-deep);
+      border: 1px solid var(--danger-line);
+    }
+    &.status-CANCELLED {
+      background: var(--paper-2);
+      color: var(--ink-3);
+      border: 1.5px solid var(--ink);
+    }
+  }
+  .status-msg {
+    font-size: 0.75rem;
+    color: shared.$text-muted;
+    font-style: italic;
+  }
+}
 
-    .order-entities {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.8rem;
-      color: shared.$text-muted;
+.entity-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
 
-      mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-      }
+.entity-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r-xs);
+  font-size: 0.85rem;
+
+  &.character {
+    background: var(--accent-tint);
+    border-color: var(--accent-line);
+
+    .entity-icon {
+      color: shared.$primary-color;
+    }
+  }
+
+  &.unknown {
+    border-style: dashed;
+    color: shared.$text-muted;
+  }
+
+  .entity-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: shared.$text-muted;
+  }
+
+  .entity-name {
+    font-weight: 600;
+  }
+
+  .entity-stats {
+    margin-left: auto;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .class-codes {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: shared.$primary-color;
+  }
+
+  .unit-exp {
+    font-size: 0.75rem;
+    color: var(--sun-deep);
+  }
+
+  .unit-equip {
+    font-size: 0.75rem;
+    color: shared.$text-muted;
+  }
+
+  .badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 1px 6px;
+    border-radius: var(--r-xs);
+    background: var(--paper-2);
+    border: 1px solid var(--line-2);
+    color: var(--ink-2);
+
+    &.badge-danger {
+      background: var(--danger-tint);
+      border-color: var(--danger-line);
+      color: var(--danger-deep);
     }
   }
 }
