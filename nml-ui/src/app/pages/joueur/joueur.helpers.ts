@@ -279,6 +279,32 @@ export function unitEquipmentLabel(u: Unit, race?: string | null): string {
   return names.length > 0 ? names.join(', ') : 'Aucun équipement';
 }
 
+export function entityTotals(
+  units: Unit[],
+  characters: GameCharacter[],
+  vehicles: Vehicle[],
+): ForcesTotals {
+  let totals = sumUnits(units);
+  for (const character of characters) {
+    totals = addTo(
+      totals,
+      num(character.baseAttack),
+      num(character.basePdf),
+      num(character.basePdc),
+      num(character.baseDefense),
+      num(character.baseArmor),
+    );
+  }
+  for (const v of vehicles) {
+    totals = addTo(totals, 0, num(v.pdf), 0, num(v.defense), 0);
+  }
+  return totals;
+}
+
+export function powerOf(totals: ForcesTotals): number {
+  return (totals.atk + totals.pdf + totals.pdc + totals.def + totals.armor) / 2;
+}
+
 export function sectorForces(sector: Sector, playerId: number | null): SectorForces {
   const units = (sector.army ?? [])
     .filter((u) => isOwned(u.playerId, playerId))
@@ -294,22 +320,9 @@ export function sectorForces(sector: Sector, playerId: number | null): SectorFor
     sector.character && isOwned(sector.character.playerId, playerId) ? sector.character : null;
   const vehicles = (sector.vehicles ?? []).filter((v) => isOwned(v.playerId, playerId));
 
-  let totals = sumUnits(units);
+  let totals = entityTotals(units, character ? [character] : [], vehicles);
   for (const b of buildings) {
     totals = addTo(totals, num(b.attack), 0, 0, num(b.defense), 0);
-  }
-  if (character) {
-    totals = addTo(
-      totals,
-      num(character.baseAttack),
-      num(character.basePdf),
-      num(character.basePdc),
-      num(character.baseDefense),
-      num(character.baseArmor),
-    );
-  }
-  for (const v of vehicles) {
-    totals = addTo(totals, 0, num(v.pdf), 0, num(v.defense), 0);
   }
 
   return {
@@ -371,7 +384,7 @@ export function playerForces(sectors: Sector[], playerId: number | null): Player
     offensive,
     defensive,
     militaryTotal: offensive + defensive,
-    globalPower: (offensive + defensive) / 2,
+    globalPower: powerOf(totals),
   };
 }
 
