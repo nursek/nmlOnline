@@ -15,7 +15,6 @@ A turn-based strategy game where players manage territories, armies, vehicles, a
 - [Authentication Flow](#authentication-flow)
 - [API Endpoints](#api-endpoints)
 - [Testing](#testing)
-- [Game Balance Configuration](#game-balance-configuration)
 - [Project Structure](#project-structure)
 - [Security Notes](#security-notes)
 - [IDE Setup](#ide-setup)
@@ -159,11 +158,6 @@ Open **http://localhost:4200** in your browser.
 | `SERVER_PORT` | `8080` | HTTP port |
 | `APP_COOKIE_SECURE` | `true` (default), `false` (dev) | Set `false` for local HTTP |
 | `APP_CORS_ALLOWED_ORIGINS` | *(empty)* | Comma-separated extra CORS origins |
-| `NML_BALANCE_HEADQUARTERS_RECONSTRUCTION_SAME_LOCATION_COST` | `75000` | HQ rebuild cost (same sector) |
-| `NML_BALANCE_HEADQUARTERS_RECONSTRUCTION_OTHER_LOCATION_COST` | `150000` | HQ rebuild cost (different sector) |
-| `NML_BALANCE_HEADQUARTERS_WEALTH_STORAGE_PERCENTAGE` | `0.25` | Fraction of money protected on HQ capture |
-| `NML_BALANCE_HEADQUARTERS_MOVE_COOLDOWN` | `5` | Turn cooldown after HQ move |
-| `NML_BALANCE_RESOURCE_SALE_MULTIPLIERS` | `1.0,3.0,6.0,...` | Sale price multipliers per quantity tier |
 
 ---
 
@@ -569,25 +563,6 @@ npx ng build
 ```
 
 Jest unit tests on services and guards (NgRx was removed in favor of signal-based services).
-
----
-
-## Game Balance Configuration
-
-Game constants are externalized in `BalanceProperties` and can be overridden without code changes:
-
-```properties
-# application.properties or environment variables
-
-# Headquarters
-nml.balance.headquarters.reconstruction-same-location-cost=75000
-nml.balance.headquarters.reconstruction-other-location-cost=150000
-nml.balance.headquarters.wealth-storage-percentage=0.25
-nml.balance.headquarters.move-cooldown=5
-
-# Resource sale multipliers (index = quantity - 1)
-nml.balance.resource-sale-multipliers=1.0,3.0,6.0,9.0,13.0,19.5,24.5,33.0,45.0
-```
 
 ---
 

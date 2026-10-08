@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -36,6 +37,10 @@ public class UserService {
 
     public User findByUsername(String username) {
         return userRepo.findByUsername(username);
+    }
+
+    public Optional<User> findById(Long userId) {
+        return userRepo.findById(userId);
     }
 
     public boolean checkPassword(String raw, String hashed) {

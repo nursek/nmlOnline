@@ -85,6 +85,7 @@ export class BoutiqueComponent {
   private readonly dialog = inject(MatDialog);
 
   readonly allEquipments = this.shop.equipments;
+  readonly equipmentsTruncated = this.shop.equipmentsTruncated;
   readonly cart = this.shop.cart;
   readonly vehicleCart = this.shop.vehicleCart;
   readonly unitCart = this.shop.unitCart;

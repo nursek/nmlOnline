@@ -1,6 +1,7 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
+import { AuthService } from './auth.service';
 import { PlayerService } from './player.service';
 import { PlayerAction, HarvestChoice } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
@@ -8,6 +9,7 @@ import { httpErrorMessage } from '../core/http-error.interceptor';
 @Injectable({ providedIn: 'root' })
 export class PlayerActionsService {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly playerService = inject(PlayerService);
 
   private readonly _actions = signal<PlayerAction[]>([]);
@@ -18,6 +20,19 @@ export class PlayerActionsService {
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
   readonly hasActions = computed(() => this._actions().length > 0);
+
+  constructor() {
+    effect(() => {
+      if (this.auth.initialized() && !this.auth.user()) {
+        this.reset();
+      }
+    });
+  }
+
+  reset(): void {
+    this._actions.set([]);
+    this._error.set(null);
+  }
 
   async loadActions(): Promise<void> {
     this._loading.set(true);

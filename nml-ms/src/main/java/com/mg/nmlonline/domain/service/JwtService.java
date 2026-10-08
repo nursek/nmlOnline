@@ -86,6 +86,24 @@ public class JwtService {
         }
     }
 
+    /** Id du propriétaire d'un refresh token signé, même si son JTI n'est plus stocké (réutilisation). */
+    public Long extractRefreshUserId(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            if (!"refresh".equals(claims.get("type", String.class))) {
+                return null;
+            }
+            return claims.get("id", Long.class);
+        } catch (JwtException e) {
+            logger.debug("Cannot extract user id from refresh token: {}", e.getMessage());
+            return null;
+        }
+    }
+
     public JwtClaims validateAndExtractClaims(String token) {
         try {
             Claims claims = Jwts.parser()

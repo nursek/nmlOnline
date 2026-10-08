@@ -38,6 +38,7 @@ public class VehicleService {
     private final BoardService boardService;
     private final MovementService movementService;
     private final TurnService turnService;
+    private final TurnLock turnLock;
     private final VehicleCrewService vehicleCrewService;
     private final VehicleMapper vehicleMapper;
     private final MovementMapper movementMapper;
@@ -46,7 +47,7 @@ public class VehicleService {
     public VehicleService(PlayerRepository playerRepository, VehicleRepository vehicleRepository,
                           SectorRepository sectorRepository, MovementOrderRepository movementOrderRepository,
                           BoardService boardService, MovementService movementService, TurnService turnService,
-                          VehicleCrewService vehicleCrewService, VehicleMapper vehicleMapper,
+                          TurnLock turnLock, VehicleCrewService vehicleCrewService, VehicleMapper vehicleMapper,
                           MovementMapper movementMapper, PlayerActionService playerActionService) {
         this.playerRepository = playerRepository;
         this.vehicleRepository = vehicleRepository;
@@ -55,10 +56,18 @@ public class VehicleService {
         this.boardService = boardService;
         this.movementService = movementService;
         this.turnService = turnService;
+        this.turnLock = turnLock;
         this.vehicleCrewService = vehicleCrewService;
         this.vehicleMapper = vehicleMapper;
         this.movementMapper = movementMapper;
         this.playerActionService = playerActionService;
+    }
+
+    private void requireTurnOpen() {
+        if (turnLock.isLocked()) {
+            throw new IllegalStateException(
+                    "La résolution du tour est en cours — réessayez après la fin du tour");
+        }
     }
 
     public List<VehicleType> getAllVehicleTypes() {
@@ -116,8 +125,15 @@ public class VehicleService {
         Player player = playerRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
 
-        List<VehicleType> toCreate = new ArrayList<>();
+        record OrderLine(VehicleType type, int quantity) {
+        }
+        // Aucune expansion avant validation : une quantité arbitraire ne doit pas allouer de listes.
+        List<OrderLine> lines = new ArrayList<>();
+        long totalCost = 0;
         for (BuyVehicleRequestDto item : items) {
+            if (item == null) {
+                throw new IllegalArgumentException("Le panier de véhicules est invalide");
+            }
             if (item.getVehicleType() == null || item.getVehicleType().isBlank()) {
                 throw new IllegalArgumentException("Le type de véhicule est requis");
             }
@@ -131,26 +147,26 @@ public class VehicleService {
                 throw new IllegalArgumentException("Type de véhicule invalide : " + item.getVehicleType());
             }
             requireAvailableAtCurrentTurn(vehicleType);
-            for (int i = 0; i < item.getQuantity(); i++) {
-                toCreate.add(vehicleType);
-            }
+            lines.add(new OrderLine(vehicleType, item.getQuantity()));
+            totalCost += (long) vehicleType.getCost() * item.getQuantity();
         }
 
-        long totalCost = toCreate.stream().mapToLong(VehicleType::getCost).sum();
         if (player.getStats().getMoney() < totalCost) {
             throw new InsufficientFundsException("Fonds insuffisants pour acheter ces véhicules (coût total : " + totalCost + " ₡)");
         }
 
         List<Vehicle> created = new ArrayList<>();
-        for (VehicleType vehicleType : toCreate) {
-            double startingShare = player.startingShareOf(vehicleType.getCost());
-            Vehicle vehicle = player.buyVehicle(vehicleType);
-            if (vehicle == null) {
-                throw new InsufficientFundsException("Fonds insuffisants pour acheter le véhicule " + vehicleType.name());
+        for (OrderLine line : lines) {
+            for (int i = 0; i < line.quantity(); i++) {
+                double startingShare = player.startingShareOf(line.type().getCost());
+                Vehicle vehicle = player.buyVehicle(line.type());
+                if (vehicle == null) {
+                    throw new InsufficientFundsException("Fonds insuffisants pour acheter le véhicule " + line.type().name());
+                }
+                Vehicle saved = vehicleRepository.save(vehicle);
+                created.add(saved);
+                playerActionService.recordBuyVehicle(player.getId(), saved.getId(), line.type().getCost(), startingShare);
             }
-            Vehicle saved = vehicleRepository.save(vehicle);
-            created.add(saved);
-            playerActionService.recordBuyVehicle(player.getId(), saved.getId(), vehicleType.getCost(), startingShare);
         }
         playerRepository.save(player);
         return created;
@@ -164,10 +180,12 @@ public class VehicleService {
 
     @Transactional
     public Vehicle placeVehicle(Long vehicleId, Long boardId, int sectorNumber, Long userId) {
-        Player player = playerRepository.findByUserId(userId)
+        requireTurnOpen();
+        // Même ordre de verrouillage que setCrew : joueur puis véhicule.
+        Player player = playerRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
 
-        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+        Vehicle vehicle = vehicleRepository.findByIdForUpdate(vehicleId)
                 .orElseThrow(() -> new RuntimeException("Véhicule introuvable : " + vehicleId));
 
         if (!player.getId().equals(vehicle.getPlayerId())) {
@@ -247,6 +265,7 @@ public class VehicleService {
 
     @Transactional
     public MovementOrderDto placeVehicleOrderDto(Long userId, Long vehicleId, List<Integer> route) {
+        requireTurnOpen();
         // Même ordre de verrouillage que setCrew : joueur puis véhicule.
         Player player = playerRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));

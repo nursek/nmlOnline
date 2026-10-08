@@ -105,7 +105,10 @@ describe('JoueurComponent — déploiement véhicule', () => {
             placeUnit: jest.fn().mockResolvedValue(null),
           },
         },
-        { provide: AuthService, useValue: { user: () => ({ id: 1, username: 'tester' }) } },
+        {
+          provide: AuthService,
+          useValue: { user: () => ({ id: 1, username: 'tester' }), initialized: () => true },
+        },
         {
           provide: PlayerActionsService,
           useValue: {

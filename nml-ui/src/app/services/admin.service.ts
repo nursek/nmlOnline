@@ -29,6 +29,10 @@ export class AdminService {
   }));
 
   readonly players = computed(() => this.playersRef.value()?.content ?? []);
+  readonly playersTruncated = computed(() => {
+    const page = this.playersRef.value();
+    return !!page && page.content.length < (page.totalElements ?? page.content.length);
+  });
   readonly loading = computed(() => this.playersRef.isLoading());
 
   // Filtre réactif : la resource se recharge à chaque changement de statut.

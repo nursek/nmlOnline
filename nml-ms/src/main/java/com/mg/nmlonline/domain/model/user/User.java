@@ -15,6 +15,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")
     @SequenceGenerator(name = "user_seq", sequenceName = "credentials_id_seq", allocationSize = 50)
     private Long id;
+    @Column(unique = true)
     private String username;
     private String password;
     private String refreshTokenHash;

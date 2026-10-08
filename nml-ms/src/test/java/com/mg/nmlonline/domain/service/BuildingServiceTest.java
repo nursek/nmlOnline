@@ -91,6 +91,20 @@ class BuildingServiceTest {
         }
 
         @Test
+        @DisplayName("QG intact → false, sans débit")
+        void shouldRefuseWhenHeadquartersIsOperational() {
+            Headquarters hq = new Headquarters(1L);
+            stubHeadquarters(hq);
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+
+            boolean result = buildingService.reconstructHeadquartersSameLocation(1L);
+
+            assertFalse(result);
+            assertEquals(100000.0, player.getStats().getMoney());
+            verify(buildingRepository, never()).save(any(Building.class));
+        }
+
+        @Test
         @DisplayName("Fonds insuffisants → false, sans mutation")
         void shouldRefuseWhenInsufficientFunds() {
             Headquarters hq = new Headquarters(1L);
@@ -110,6 +124,7 @@ class BuildingServiceTest {
         @Test
         @DisplayName("QG absent ou joueur introuvable → false")
         void shouldReturnFalseWhenHeadquartersOrPlayerMissing() {
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
             when(buildingRepository.findByPlayerIdAndBuildingType(1L, BuildingType.HEADQUARTERS))
                     .thenReturn(Optional.empty());
 

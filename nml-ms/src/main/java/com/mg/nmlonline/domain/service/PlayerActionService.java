@@ -213,6 +213,11 @@ public class PlayerActionService {
     }
 
     public List<PlayerActionDto> undoFrom(Long userId, Long actionId) {
+        // Le journal reste figé pendant la résolution : annuler modifierait un état déjà combattu.
+        if (turnLock.isLocked()) {
+            throw new PlayerActionUndoException(
+                    "La résolution du tour est en cours — l'annulation est fermée jusqu'au tour suivant");
+        }
         // Verrou d'abord : un FOR UPDATE ne rafraîchit pas une entité déjà managée.
         Player locked = lockPlayerByUserId(userId);
         int turn = turnService.getCurrentTurn();
@@ -348,6 +353,12 @@ public class PlayerActionService {
     private void undoPlaceVehicle(PlayerAction action) {
         Vehicle vehicle = vehicleRepository.findById(action.getVehicleId())
                 .orElseThrow(() -> new PlayerActionUndoException("Véhicule introuvable."));
+        int turn = turnService.getCurrentTurn();
+        if (!movementOrderRepository
+                .findByVehicleIdAndTurnAndStatus(vehicle.getId(), turn, MovementStatus.PENDING).isEmpty()) {
+            throw new PlayerActionUndoException(
+                    "Le véhicule a un ordre de mouvement en attente : annulez-le d'abord.");
+        }
         vehicleCrewService.applyCrew(vehicle, null, List.of());
         vehicle.setSector(null);
         vehicleRepository.save(vehicle);

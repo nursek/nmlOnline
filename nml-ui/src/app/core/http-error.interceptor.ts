@@ -1,12 +1,12 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, throwError, timer } from 'rxjs';
 import { retry, timeout } from 'rxjs/operators';
 import { APP_CONSTANTS } from './constants';
 
 /**
  * Intercepteur HTTP global.
  * - Applique un timeout à toutes les requêtes.
- * - Retente une fois les requêtes idempotentes (GET/HEAD/OPTIONS) en cas d'erreur réseau.
+ * - Retente une fois les requêtes idempotentes (GET/HEAD/OPTIONS) en cas d'erreur réseau (status 0) ou serveur (5xx).
  * Note : la gestion 401/refresh est volontairement laissée à auth.interceptor.
  */
 export const httpErrorInterceptor: HttpInterceptorFn = (
@@ -18,7 +18,17 @@ export const httpErrorInterceptor: HttpInterceptorFn = (
   return next(req).pipe(
     timeout(APP_CONSTANTS.HTTP_TIMEOUT_MS),
     idempotent
-      ? retry({ count: APP_CONSTANTS.HTTP_RETRY_COUNT, delay: APP_CONSTANTS.HTTP_RETRY_DELAY_MS })
+      ? retry({
+          count: APP_CONSTANTS.HTTP_RETRY_COUNT,
+          delay: (error) => {
+            const status = (error as { status?: number })?.status;
+            // Un 4xx ne doit pas être rejoué : seule une erreur réseau (0) ou serveur (5xx) l'est.
+            if (status !== 0 && (status === undefined || status < 500)) {
+              return throwError(() => error);
+            }
+            return timer(APP_CONSTANTS.HTTP_RETRY_DELAY_MS);
+          },
+        })
       : (source) => source,
   );
 };

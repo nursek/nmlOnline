@@ -1,6 +1,7 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
+import { AuthService } from './auth.service';
 import {
   AllianceMe,
   AllianceMessage,
@@ -12,6 +13,7 @@ import { httpErrorMessage } from '../core/http-error.interceptor';
 @Injectable({ providedIn: 'root' })
 export class AllianceStateService {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
 
   private readonly _me = signal<AllianceMe | null>(null);
   private readonly _messages = signal<AllianceMessage[]>([]);
@@ -28,6 +30,21 @@ export class AllianceStateService {
   readonly alliedPlayerIds = computed(
     () => new Set((this._me()?.alliedPlayers ?? []).map((ally) => ally.playerId)),
   );
+
+  constructor() {
+    effect(() => {
+      if (this.auth.initialized() && !this.auth.user()) {
+        this.reset();
+      }
+    });
+  }
+
+  reset(): void {
+    this._me.set(null);
+    this._messages.set([]);
+    this._announcements.set([]);
+    this._error.set(null);
+  }
 
   async loadMe(): Promise<void> {
     this._loading.set(true);

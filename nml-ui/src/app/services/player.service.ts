@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
@@ -35,6 +35,23 @@ export class PlayerService {
   readonly undeployedVehicles = computed(() =>
     this._vehicles().filter((v) => v.sectorNumber === null),
   );
+
+  constructor() {
+    // Session terminée : ne jamais laisser le profil du compte précédent à l'écran.
+    effect(() => {
+      if (this.auth.initialized() && !this.auth.user()) {
+        this.reset();
+      }
+    });
+  }
+
+  reset(): void {
+    this._player.set(null);
+    this._vehicles.set([]);
+    this._reserveUnits.set([]);
+    this._error.set(null);
+    this._currentTurn.set(null);
+  }
 
   async loadCurrent(): Promise<void> {
     const username = this.auth.user()?.username;

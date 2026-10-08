@@ -99,12 +99,16 @@ export class CarteComponent {
 
   readonly loading = computed(() => this.activeBoard.loading() || this.playersRef.isLoading());
   readonly error = computed(() => {
-    const e = this.activeBoard.error() || this.playersRef.error();
+    const e = this.activeBoard.error() || this.playersRef.error() || this.svgTextRef.error();
     return e ? 'Impossible de charger la carte. Vérifiez que le serveur est démarré.' : null;
   });
 
   readonly board = this.activeBoard.board;
   readonly players = computed(() => this.playersRef.value()?.content ?? []);
+  readonly playersTruncated = computed(() => {
+    const page = this.playersRef.value();
+    return !!page && page.content.length < (page.totalElements ?? page.content.length);
+  });
 
   readonly playerColorMap = computed(() => {
     const map = new Map<number, string>();
@@ -137,7 +141,8 @@ export class CarteComponent {
     const sanitized = sanitizeSvg(text);
     return sanitized ? this.sanitizer.bypassSecurityTrustHtml(sanitized) : null;
   });
-  readonly svgLoaded = computed(() => this.svgContent() !== null);
+  // Sans overlay configuré, la carte est utilisable : on n'attend pas un SVG qui n'existe pas.
+  readonly svgLoaded = computed(() => this.svgOverlayUrl() === null || this.svgContent() !== null);
 
   readonly mapImageUrl = computed(() => this.board()?.mapImageUrl || null);
 
