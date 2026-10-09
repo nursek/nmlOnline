@@ -18,6 +18,8 @@ import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import com.mg.nmlonline.mapper.BoardMapper;
 import com.mg.nmlonline.mapper.PlayerMapper;
 import jakarta.persistence.EntityManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,8 @@ import java.util.*;
 
 @Service
 public class AdminService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AdminService.class);
 
     private final PlayerImportService playerImportService;
     private final PlayerService playerService;
@@ -100,6 +104,7 @@ public class AdminService {
 
         playerImportService.clearEquipmentCache();
 
+        logger.info("Import joueur '{}' (id {})", player.getName(), player.getId());
         return player;
     }
 
@@ -248,6 +253,7 @@ public class AdminService {
         if (user != null && !"ADMIN".equals(user.getRole())) {
             userRepository.delete(user);
         }
+        logger.info("Suppression joueur '{}' (id {})", name, playerId);
     }
 
     /** Import board.json. Les URLs fournies override celles du JSON ; upsert par nom via saveBoard. */
@@ -261,7 +267,9 @@ public class AdminService {
             board.setSvgOverlayUrl(svgOverlayUrl);
         }
         String boardName = board.getName() != null ? board.getName() : "Carte Principale";
-        return boardService.saveBoard(board, boardName);
+        Board saved = boardService.saveBoard(board, boardName);
+        logger.info("Import board '{}' (id {})", saved.getName(), saved.getId());
+        return saved;
     }
 
     /** Idem : boardMapper parcourt sectorsList et ses sous-collections (LAZY). */

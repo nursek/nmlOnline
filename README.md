@@ -49,11 +49,11 @@ nmlOnline/
 
 ### Backend stack
 
-- Java 21, Spring Boot 3.5.6, Spring Data JPA, Spring Security
+- Java 21, Spring Boot 3.5.16, Spring Data JPA, Spring Security
 - H2 in-memory (default/dev) or PostgreSQL 14 (test, embedded; production, server)
 - Flyway for schema migrations (test and production PostgreSQL; not default/dev)
 - JWT authentication with HttpOnly refresh-token cookie
-- Lombok, MapStruct, SpringDoc OpenAPI (Swagger)
+- Lombok
 
 ### Frontend stack
 
@@ -105,8 +105,6 @@ Or, on Windows:
 ```
 
 The backend starts on **http://localhost:8080**.
-
-Swagger UI: **http://localhost:8080/swagger-ui.html**
 
 ### 2. Frontend
 
@@ -175,7 +173,7 @@ from the entities, or Flyway from the `.sql` files), and what gets seeded.
 | **Demo board + 5 players** | yes | yes | yes | no |
 | **Accounts created** | none | 6 (5 players + `admin`) | 3 (`testuser1/2`, `testadmin`) | `admin` only |
 | **Refresh cookie `Secure`** | `true` | `false` | `false` | `true` |
-| **Actuator** | defaults | defaults | defaults | `health,info,metrics` |
+| **Actuator** | defaults | defaults | defaults | `health` |
 
 Since the `test` profile runs on a real PostgreSQL built by Flyway, **every integration test already
 is a prod-parity test**: same engine, same schema, same migrations. A field added to an entity
@@ -194,7 +192,6 @@ JWT_SECRET=... JWT_PEPPER=... ./mvnw spring-boot:run
 - Database: H2 in-memory, `ddl-auto=update`, wiped on every restart
 - Imports the demo board and the 7 demo players, and creates a login per player (password = username)
 - Refresh cookie is always `Secure` (works on `localhost`, a secure context)
-- Swagger UI available
 
 ### `dev` — H2 in-memory + seed data
 
@@ -504,7 +501,6 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 | GET | `/api/admin/players?page=0&size=20` | Admin | List all players (paginated) |
 | POST | `/api/admin/players/import` | Admin | Import player from JSON |
 | GET | `/actuator/health` | Public | Health check |
-| GET | `/swagger-ui.html` | Public | API documentation |
 
 ### Combat logs
 
@@ -523,7 +519,7 @@ kept for the current resolution session.
 ```bash
 cd nml-ms
 
-# All 288 backend tests on embedded PostgreSQL + Flyway (no install, no Docker) — ~60 s
+# All 456 backend tests on embedded PostgreSQL + Flyway (no install, no Docker) — ~60 s
 ./mvnw clean test
 
 # Fast iteration while developing
@@ -542,7 +538,7 @@ buys detection before the push: a migration forgotten behind a new entity field 
 here rather than in CI after the push, or worse, at the next production boot. The ~14 s PostgreSQL
 startup is paid once per JVM, so extra tests on an existing Spring context are nearly free.
 
- 288 backend tests across unit tests (domain models, game-logic services with mocked repositories) and integration tests (Spring context, security ownership). Game rules are pinned as characterization tests: economy (purchases, sale multipliers), units (experience thresholds, injury, equipment formulas), buildings (cooldowns, capture, vampirisation), vehicles (pilot rules, balance table), combat (deterministic phases, no-evasion scenarios) and player stats formulas. Behavior suspected to be buggy is pinned with a characterization test rather than fixed.
+ 456 backend tests across unit tests (domain models, game-logic services with mocked repositories) and integration tests (Spring context, security ownership). Game rules are pinned as characterization tests: economy (purchases, sale multipliers), units (experience thresholds, injury, equipment formulas), buildings (cooldowns, capture, vampirisation), vehicles (pilot rules, balance table), combat (deterministic phases, no-evasion scenarios) and player stats formulas. Behavior suspected to be buggy is pinned with a characterization test rather than fixed.
 
 ### Frontend
 
@@ -647,8 +643,8 @@ src/app/
 - **CORS** is centralized in `CorsConfig` — no `@CrossOrigin` annotations on controllers
 - **Ownership checks**: `GameCharacterController` and `BuildingController` verify the authenticated user owns the requested `playerId`
 - **Admin endpoints** (`/api/admin/**`) require the `ADMIN` role
-- **Rate limiting**: Login endpoint limits to 5 attempts per IP+username before blocking for 1 minute
-- **JWT secret validation**: App fails to start if `JWT_SECRET` < 32 chars or `JWT_PEPPER` < 16 chars
+- **Rate limiting**: login/register 5 attempts per IP (1 min block); authenticated mutations capped at 120/min per user
+- **JWT secret validation**: App fails to start if `JWT_SECRET` < 32 chars, `JWT_PEPPER` < 16 chars, or either uses a value published in this repository's history
 - **No H2 console** in any profile (removed from dev and test)
 
 ---

@@ -3,6 +3,7 @@ package com.mg.nmlonline.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -16,16 +17,20 @@ public class CorsConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
-            @Value("${app.cors.allowed-origins:}") String extraOrigins) {
+            @Value("${app.cors.allowed-origins:}") String extraOrigins,
+            Environment environment) {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        List<String> origins = new ArrayList<>(Arrays.asList(
-            "http://localhost:5174",
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "http://localhost:4200",
-            "https://nml.lurio.fr"
-        ));
+        List<String> origins = new ArrayList<>();
+        if (!environment.matchesProfiles("prod")) {
+            origins.addAll(Arrays.asList(
+                "http://localhost:5174",
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "http://localhost:4200"
+            ));
+        }
+        origins.add("https://nml.lurio.fr");
         if (!extraOrigins.isBlank()) {
             origins.addAll(Arrays.asList(extraOrigins.split(",")));
         }
@@ -35,7 +40,9 @@ public class CorsConfig {
             "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
 
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Accept", "Authorization", "Content-Type", "Origin", "X-Requested-With"
+        ));
 
         configuration.setAllowCredentials(true);
 

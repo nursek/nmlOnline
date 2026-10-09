@@ -37,8 +37,8 @@ Total brut : ~80 findings actionnables après déduplication, sur ~110 relevés.
 
 - `nml-ms/src/main/resources/application-test.properties:13-14`
   ```properties
-  jwt.secret=test-secret-key-for-ci-at-least-32-chars-long
-  jwt.pepper=test-pepper-value-for-ci-tests-only
+  jwt.secret=
+  jwt.pepper=
   ```
 - Le fichier est sous `src/main/resources` : les clés sont **embarquées dans le jar de production**. Si le profil
   `test` est activé par erreur en prod, la clé de signature JWT est publique. `JwtSecretValidator` ne vérifie que

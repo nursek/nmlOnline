@@ -18,6 +18,8 @@ public class UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
+    private static final String DUMMY_HASH = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+
     private final UserRepository userRepo;
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
@@ -56,6 +58,11 @@ public class UserService {
      * À supprimer une fois tous les comptes legacy re-hashés.
      */
     public boolean checkAndUpgradePassword(User user, String raw) {
+        if (user == null) {
+            // Utilisateur inconnu : comparer quand même à un hash factice pour un temps de réponse constant (anti-énumération).
+            encoder.matches(applyPepper(raw), DUMMY_HASH);
+            return false;
+        }
         String hashed = user.getPassword();
         if (encoder.matches(applyPepper(raw), hashed)) {
             return true;

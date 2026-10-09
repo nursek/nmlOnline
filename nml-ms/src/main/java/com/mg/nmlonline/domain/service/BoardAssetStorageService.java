@@ -28,7 +28,9 @@ public class BoardAssetStorageService {
     /** Refuse le contenu actif : le SVG est réinjecté en innerHTML côté client (bypassSecurityTrustHtml). */
     private static final Pattern ACTIVE_SVG_CONTENT = Pattern.compile(
             "(?i)(<\\s*script|<!\\s*entity|<\\s*foreignObject|<\\s*iframe|<\\s*object|<\\s*embed"
-                    + "|javascript\\s*:|(\\s|\"|'|<|/)on[a-z]+\\s*=)");
+                    + "|javascript\\s*:|(\\s|\"|'|<|/)on[a-z]+\\s*="
+                    + "|(?:\\s|^)(xlink:)?href\\s*=\\s*(?![\"']?\\s*(#|/boards/|/assets/))"
+                    + "|url\\s*\\(\\s*(?![\"']?\\s*(#|/boards/|/assets/)))");
 
     private static final byte[] PNG_MAGIC = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
     private static final byte[] JPEG_MAGIC = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};

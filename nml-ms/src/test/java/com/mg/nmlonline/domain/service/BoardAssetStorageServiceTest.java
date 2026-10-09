@@ -30,10 +30,22 @@ class BoardAssetStorageServiceTest {
     }
 
     @Test
+    void storeSvgRejectsExternalReferences() {
+        MockMultipartFile evil = new MockMultipartFile("svgOverlay", "evil.svg", "image/svg+xml",
+                ("<svg xmlns=\"http://www.w3.org/2000/svg\">"
+                        + "<image href=\"https://evil.example/pixel.png\"/>"
+                        + "<path id=\"path1\" d=\"M0 0\" style=\"fill:url(https://evil.example/x)\"/></svg>")
+                        .getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IllegalArgumentException.class, () -> service().storeSvg(evil));
+    }
+
+    @Test
     void storeSvgAcceptsCleanContent() throws Exception {
         MockMultipartFile clean = new MockMultipartFile("svgOverlay", "map.svg", "image/svg+xml",
-                ("<svg xmlns=\"http://www.w3.org/2000/svg\">"
-                        + "<path id=\"path1\" d=\"M0 0\"/></svg>").getBytes(StandardCharsets.UTF_8));
+                ("<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">"
+                        + "<path id=\"path1\" d=\"M0 0\" fill=\"url(#grad)\"/>"
+                        + "<use xlink:href=\"#path1\"/></svg>").getBytes(StandardCharsets.UTF_8));
 
         BoardAssetStorageService.StoredSvg stored = service().storeSvg(clean);
 

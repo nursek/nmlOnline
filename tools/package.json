@@ -9,6 +9,9 @@
   "dependencies": {
     "svgdom": "^0.1.19",
     "@svgdotjs/svg.js": "^3.2.4"
+  },
+  "overrides": {
+    "image-size": "^2.0.3"
   }
 }
 

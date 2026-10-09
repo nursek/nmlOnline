@@ -74,8 +74,8 @@ class DemoDataRebootTest {
                         "--spring.datasource.url=" + jdbcUrl,
                         "--spring.datasource.username=postgres",
                         "--spring.datasource.password=",
-                        "--jwt.secret=test-secret-key-for-ci-at-least-32-chars-long",
-                        "--jwt.pepper=test-pepper-value-for-ci-tests-only",
+                        "--jwt.secret=ci-jwt-secret-rotated-2026-not-for-production",
+                        "--jwt.pepper=ci-pepper-rotated-2026",
                         "--app.admin.password=test-admin-password",
                         "--app.import-demo-data=true");
     }

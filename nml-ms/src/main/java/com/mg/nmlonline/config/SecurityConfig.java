@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
@@ -73,7 +74,14 @@ public class SecurityConfig {
         // API stateless JWT (bearer header, pas de session) : CSRF conservé hors /api/**.
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"));
 
-        http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::deny));
+        http.headers(headers -> headers
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
+                        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                                + "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; "
+                                + "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"))
+                .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000)));
 
         http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 

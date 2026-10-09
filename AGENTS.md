@@ -5,7 +5,7 @@ Fast lane. Détails dans [README.md](README.md).
 ## Commandes
 
 ```bash
-# nml-ms/ (Spring Boot 3.5.6 / Java 21)
+# nml-ms/ (Spring Boot 3.5.16 / Java 21)
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"   # JWT_SECRET + JWT_PEPPER requis
 .\mvnw.cmd clean test                                          # PostgreSQL 14 embarqué (Zonky), sans config
 # nml-ui/ (Angular 22)

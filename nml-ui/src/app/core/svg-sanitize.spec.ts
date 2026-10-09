@@ -113,6 +113,22 @@ describe('sanitizeSvg', () => {
     expect(sanitizeSvg('<div><style><![CDATA[</style><a href="x">y</a>]]></style></div>')).toBe('');
   });
 
+  it('retire les références externes (href/url) et conserve les fragments', () => {
+    const out = sanitizeSvg(
+      `<svg xmlns="${SVG_NS}"><image href="https://evil.example/pixel.png"/>` +
+        `<use href="#icon"/>` +
+        `<path id="path10" d="M0 0" fill="url(#grad)" style="stroke:url(https://evil.example/x)"/>` +
+        `<path id="path11" d="M0 0" style="fill:url('#grad2')"/>` +
+        `</svg>`,
+    );
+
+    expect(out).not.toContain('evil.example');
+    expect(out).toContain('#icon');
+    expect(out).toContain('url(#grad)');
+    expect(out).toContain('path10');
+    expect(out).toContain('grad2');
+  });
+
   it('conserve un SVG inoffensif', () => {
     const out = sanitizeSvg(
       `<svg xmlns="${SVG_NS}" viewBox="0 0 10 10"><g fill="#fff">` +
