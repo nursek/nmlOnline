@@ -9,6 +9,7 @@ import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
+import com.mg.nmlonline.domain.model.equipment.VehicleBonusTarget;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
@@ -32,15 +33,15 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Le ONE runnable check du plan combat v2 : phases dédiées (secondaires entre PDF/PDC, QG après ATK,
- * personnage en dernier), infanterie seule blessée, QG destructible (reconstruction 75k si non capturé),
- * personnage non soigné au combat mais régénéré +50 def en fin de tour, capture à la victoire
- * (QG marqué capturé même détruit). Déterministe : aucune évasion, budgets choisis pour épuiser exactement.
+ * Scénarios de bataille de secteur sur PostgreSQL réel : phases dédiées (secondaires entre PDF/PDC, QG après ATK,
+ * personnage en dernier), bâtiments destructibles puis capturés (QG détruit non capturé → reconstruction 75k,
+ * Cache intact vidé vers le vainqueur), véhicules (épave conservée, équipage débarqué), détachement FK des pilotes
+ * (unité ou personnage) avant le DELETE. Déterministe : aucune évasion, budgets choisis pour épuiser exactement.
  */
 @EmbeddedPostgresTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-@DisplayName("CombatService — bataille avec bâtiments et personnages (v2)")
-class CombatServiceBuildingsCharactersBattleTest {
+@DisplayName("CombatService — scénarios bâtiments, personnages et véhicules")
+class CombatServiceScenariosTest {
 
     @Autowired
     private CombatService combatService;
@@ -66,19 +67,27 @@ class CombatServiceBuildingsCharactersBattleTest {
     private static final double CHAR_ATK = 30;
     private static final double CHAR_DEF = 30;
 
-    private record World(Long attackerId, Long defenderId, int sectorNumber,
-                         Long characterId, Long hqId, Long cacheId, Long bankId) {
+    private record HoldingsWorld(Long attackerId, Long defenderId, int sectorNumber,
+                                 Long characterId, Long hqId, Long cacheId, Long bankId) {
+    }
+
+    private record VehicleWorld(Long attackerId, Long defenderId, int sectorNumber, Long vehicleId, Long pilotId) {
+    }
+
+    private record CharacterPilotWorld(Long attackerId, Long defenderId, int sectorNumber,
+                                       Long vehicleId, Long characterId) {
     }
 
     private Sector pickEmptyNeutralSector(Board board) {
         return board.getAllSectors().stream()
                 .filter(s -> s.isNeutral() && s.getArmySize() == 0
-                        && s.getBuildings().isEmpty() && s.getCharacters().isEmpty())
+                        && s.getBuildings().isEmpty() && s.getCharacters().isEmpty()
+                        && s.getVehicles().isEmpty())
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Aucun secteur neutre vide dans le board de démo"));
     }
 
-    private World seedDefenderHolding() {
+    private HoldingsWorld seedDefenderHolding() {
         return new TransactionTemplate(txManager).execute(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             Sector sector = pickEmptyNeutralSector(board);
@@ -118,17 +127,59 @@ class CombatServiceBuildingsCharactersBattleTest {
             }
 
             em.flush();
-            return new World(attacker.getId(), defender.getId(), sector.getNumber(),
+            return new HoldingsWorld(attacker.getId(), defender.getId(), sector.getNumber(),
                     character.getId(), hq.getId(), cache.getId(), bank.getId());
         });
     }
 
-    private CombatService.SectorBattleResult runBattle(World w) {
+    private VehicleWorld seedVehicleBattle() {
         return new TransactionTemplate(txManager).execute(status -> {
-            Player attacker = playerRepository.findById(w.attackerId()).orElseThrow();
-            Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-            return combatService.simulateSectorBattle(List.of(attacker), List.of(defender), board, w.sectorNumber());
+            Sector sector = pickEmptyNeutralSector(board);
+
+            Player attacker = new Player("AttaquantVeh");
+            playerRepository.save(attacker);
+            Player defender = new Player("DefenseurVeh");
+            playerRepository.save(defender);
+            em.flush();
+
+            Equipment gauss = new Equipment("Gauss Cannon (test)", 3400, 80, 0, 0, 0,
+                    Set.of(UnitClass.PILOTE_DESTRUCTEUR), EquipmentCategory.FIREARM);
+            gauss.setVehicleBonus(100);
+            gauss.setVehicleBonusTarget(VehicleBonusTarget.GROUND);
+            em.persist(gauss);
+
+            Unit shooter = new Unit(5.0, UnitClass.PILOTE_DESTRUCTEUR);
+            shooter.setPlayerId(attacker.getId());
+            shooter.addEquipment(gauss);
+            sector.addUnit(shooter);
+
+            Equipment armor = new Equipment("Armure pilote", 100, 0, 0, 200, 0,
+                    Set.of(UnitClass.PILOTE_DESTRUCTEUR), EquipmentCategory.DEFENSIVE);
+            em.persist(armor);
+            Unit pilot = new Unit(8.0, UnitClass.PILOTE_DESTRUCTEUR);
+            pilot.setPlayerId(defender.getId());
+            pilot.addEquipment(armor);
+
+            Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, defender.getId());
+            vehicle.setSector(sector);
+            em.persist(vehicle);
+            sector.getVehicles().add(vehicle);
+            vehicle.assignPilot(pilot);
+            sector.addUnit(pilot);
+
+            em.flush();
+            return new VehicleWorld(attacker.getId(), defender.getId(), sector.getNumber(),
+                    vehicle.getId(), pilot.getId());
+        });
+    }
+
+    private CombatService.SectorBattleResult runBattle(Long attackerId, Long defenderId, int sectorNumber) {
+        return new TransactionTemplate(txManager).execute(status -> {
+            Player attacker = playerRepository.findById(attackerId).orElseThrow();
+            Player defender = playerRepository.findById(defenderId).orElseThrow();
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            return combatService.simulateSectorBattle(List.of(attacker), List.of(defender), board, sectorNumber);
         });
     }
 
@@ -150,9 +201,42 @@ class CombatServiceBuildingsCharactersBattleTest {
     }
 
     @Test
+    @DisplayName("Véhicule détruit : épave conservée, équipage débarqué et vivant, perte de type VEHICLE")
+    void destroyedVehicleLeavesWreckAndDisembarksCrew() {
+        VehicleWorld w = seedVehicleBattle();
+
+        CombatService.SectorBattleResult r = runBattle(w.attackerId(), w.defenderId(), w.sectorNumber());
+
+        assertTrue(r.success());
+        assertEquals(1, r.defenderCasualties().size(), "Seule l'épave est perdue côté défenseur : le pilote survit");
+        assertInstanceOf(Vehicle.class, r.defenderCasualties().getFirst());
+        assertTrue(r.casualtyDetails().stream()
+                .anyMatch(casualty -> "VEHICLE".equals(casualty.category())
+                        && "VTT léger".equals(casualty.label())));
+
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Vehicle vehicle = em.find(Vehicle.class, w.vehicleId());
+            assertNotNull(vehicle, "L'épave reste en base (pas de DELETE)");
+            assertTrue(vehicle.isDestroyed());
+            assertNull(vehicle.getPilot(), "Le pilote est détaché de l'épave");
+            assertEquals(0.0, vehicle.getDefense());
+
+            Sector sector = loadSector(w.sectorNumber());
+            assertTrue(sector.getVehicles().stream()
+                    .anyMatch(v -> v.getId().equals(w.vehicleId())), "L'épave reste dans le secteur");
+
+            Unit pilot = em.find(Unit.class, w.pilotId());
+            assertNotNull(pilot, "Le pilote débarqué survit");
+            assertFalse(pilot.isDestroyed());
+            assertTrue(sector.getUnits().stream().anyMatch(u -> u.getId().equals(w.pilotId())),
+                    "Le pilote reste une unité du secteur");
+        });
+    }
+
+    @Test
     @DisplayName("Pilote unité tué au combat : détaché du véhicule avant le DELETE, la bataille aboutit")
     void unitPilotKilledInBattleIsDetachedFromVehicle() {
-        World w = seedDefenderHolding();
+        HoldingsWorld w = seedDefenderHolding();
         Long vehicleId = new TransactionTemplate(txManager).execute(status -> {
             Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
             Sector sector = loadSector(w.sectorNumber());
@@ -170,7 +254,7 @@ class CombatServiceBuildingsCharactersBattleTest {
         });
         seedAttackerUnits(w.attackerId(), w.sectorNumber(), 8.0, 6);
 
-        CombatService.SectorBattleResult r = runBattle(w);
+        CombatService.SectorBattleResult r = runBattle(w.attackerId(), w.defenderId(), w.sectorNumber());
 
         assertTrue(r.success(), "La suppression du pilote ne doit pas faire échouer la résolution");
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
@@ -181,12 +265,54 @@ class CombatServiceBuildingsCharactersBattleTest {
     }
 
     @Test
+    @DisplayName("Personnage pilote tué : détaché du véhicule avant le DELETE (FK pilot_id)")
+    void characterPilotKilledInBattleIsDetachedFromVehicle() {
+        CharacterPilotWorld w = new TransactionTemplate(txManager).execute(status -> {
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            Sector sector = pickEmptyNeutralSector(board);
+
+            Player attacker = new Player("AttaquantChar");
+            playerRepository.save(attacker);
+            Player defender = new Player("DefenseurChar");
+            playerRepository.save(defender);
+            em.flush();
+
+            GameCharacter character = new GameCharacter("PiloteBtC", 10, 10, 10, 10, 0, 0);
+            character.setPlayerId(defender.getId());
+            character.setSector(sector);
+            em.persist(character);
+
+            Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, defender.getId());
+            vehicle.setSector(sector);
+            sector.getVehicles().add(vehicle);
+            em.persist(vehicle);
+            vehicle.assignPilot(character);
+
+            em.flush();
+            return new CharacterPilotWorld(attacker.getId(), defender.getId(), sector.getNumber(),
+                    vehicle.getId(), character.getId());
+        });
+        seedAttackerUnits(w.attackerId(), w.sectorNumber(), 8.0, 6);
+
+        CombatService.SectorBattleResult r = runBattle(w.attackerId(), w.defenderId(), w.sectorNumber());
+
+        assertTrue(r.success());
+        assertTrue(r.defenderCharacterLost());
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            assertNull(em.find(GameCharacter.class, w.characterId()), "La ligne du personnage est supprimée");
+            Vehicle vehicle = em.find(Vehicle.class, w.vehicleId());
+            assertNotNull(vehicle, "Le véhicule survit au pilote");
+            assertNull(vehicle.getPilot(), "FK pilot_id détachée avant le DELETE du personnage");
+        });
+    }
+
+    @Test
     @DisplayName("Victoire écrasante : unités→Banque→Cache→QG→personnage tombent, QG détruit ET capturé")
     void overwhelmingAttacker_killsEverything_destroyedHeadquartersStillCaptured() {
-        World w = seedDefenderHolding();
+        HoldingsWorld w = seedDefenderHolding();
         seedAttackerUnits(w.attackerId(), w.sectorNumber(), 8.0, 6); // 6 BRUTEs 100/100
 
-        CombatService.SectorBattleResult r = runBattle(w);
+        CombatService.SectorBattleResult r = runBattle(w.attackerId(), w.defenderId(), w.sectorNumber());
 
         assertTrue(r.success());
         assertEquals(w.attackerId(), r.winner().getId());
@@ -235,10 +361,10 @@ class CombatServiceBuildingsCharactersBattleTest {
     @Test
     @DisplayName("Match nul : QG détruit NON capturé (reconstruction 75k), perso survit à def 10 puis tick +50")
     void drawLeavesDestroyedUncapturedHeadquarters_andCharacterRegeneratesAtTurnEnd() {
-        World w = seedDefenderHolding();
+        HoldingsWorld w = seedDefenderHolding();
         seedAttackerUnits(w.attackerId(), w.sectorNumber(), 5.0, 11); // 11 MALFRATs 50/50
 
-        CombatService.SectorBattleResult r = runBattle(w);
+        CombatService.SectorBattleResult r = runBattle(w.attackerId(), w.defenderId(), w.sectorNumber());
 
         assertTrue(r.success());
         assertNull(r.winner(), "Le personnage survit : aucun vainqueur (le secteur tient)");
@@ -291,7 +417,7 @@ class CombatServiceBuildingsCharactersBattleTest {
     @Test
     @DisplayName("Défense bâtiments seule : QG intact régénéré puis capturé, secondaires ripostent")
     void buildingsOnlyDefense_regeneratesHeadquartersAndCapturesItIntact() {
-        World w = seedDefenderHolding();
+        HoldingsWorld w = seedDefenderHolding();
         // Retirer unités et personnage : seuls QG + Cache + Banque tiennent le secteur.
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
@@ -309,7 +435,7 @@ class CombatServiceBuildingsCharactersBattleTest {
         });
         seedAttackerUnits(w.attackerId(), w.sectorNumber(), 8.0, 4); // 4 BRUTEs
 
-        CombatService.SectorBattleResult r = runBattle(w);
+        CombatService.SectorBattleResult r = runBattle(w.attackerId(), w.defenderId(), w.sectorNumber());
 
         assertTrue(r.success());
         assertEquals(w.attackerId(), r.winner().getId(), "Aucun combattant défenseur ⇒ victoire attaquant");
@@ -342,7 +468,7 @@ class CombatServiceBuildingsCharactersBattleTest {
     @Test
     @DisplayName("Cache capturé intact : l'équipement stocké est transféré au vainqueur, pas supprimé")
     void capturingIntactWeaponCacheTransfersItsStoredEquipment() {
-        World w = seedDefenderHolding();
+        HoldingsWorld w = seedDefenderHolding();
         // Ni unité ni personnage, QG hors service : seule la paire Cache/Banque tient le secteur.
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
@@ -363,7 +489,7 @@ class CombatServiceBuildingsCharactersBattleTest {
         });
         seedAttackerUnits(w.attackerId(), w.sectorNumber(), 8.0, 2); // 2 BRUTEs
 
-        CombatService.SectorBattleResult r = runBattle(w);
+        CombatService.SectorBattleResult r = runBattle(w.attackerId(), w.defenderId(), w.sectorNumber());
 
         assertTrue(r.success());
         assertEquals(w.attackerId(), r.winner().getId(), "Aucun combattant défenseur ⇒ victoire attaquant");

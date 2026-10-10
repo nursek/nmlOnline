@@ -110,7 +110,7 @@ public class AllianceService {
             AllianceMeDto.BetrayalBonusDto bonus = new AllianceMeDto.BetrayalBonusDto();
             bonus.setVictimPlayerId(victimId);
             bonus.setVictimName(names.get(victimId));
-            bonus.setBonusPercent(15 + 10.0 * betrayal.durationTurns());
+            bonus.setBonusPercent(betrayal.betrayalBonusPercent());
             dto.getActiveBetrayalBonuses().add(bonus);
         }
         return dto;

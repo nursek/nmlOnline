@@ -5,7 +5,6 @@ import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,10 +38,6 @@ class MovementServiceCancelTest {
 
     private MovementOrder pendingOrder(Long playerId) {
         return MovementOrder.createFootOrder(playerId, 1, List.of(1L), List.of(2, 3));
-    }
-
-    @BeforeEach
-    void seedId() {
     }
 
     @Test

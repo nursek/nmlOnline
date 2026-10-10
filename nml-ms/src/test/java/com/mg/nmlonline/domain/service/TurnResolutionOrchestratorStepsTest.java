@@ -168,6 +168,17 @@ class TurnResolutionOrchestratorStepsTest {
         }
 
         @Test
+        @Transactional
+        @DisplayName("Le verrou bloque advanceTurn et setCurrentTurn pendant une session")
+        void turnLockBlocksManualTurnChanges() {
+            setupBruteVsLarbinOrder();
+            orchestrator.startSession();
+
+            assertThrows(IllegalStateException.class, turnService::advanceTurn);
+            assertThrows(IllegalStateException.class, () -> turnService.setCurrentTurn(2));
+        }
+
+        @Test
         @DisplayName("getState sans session active renvoie active=false")
         void getStateSansSession_renvoieActiveFalse() {
             TurnResolutionStateDto state = orchestrator.getState();

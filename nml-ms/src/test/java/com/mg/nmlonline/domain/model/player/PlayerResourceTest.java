@@ -17,30 +17,6 @@ class PlayerResourceTest {
     }
 
     @Test
-    @DisplayName("Ajout d'une ressource Or")
-    void shouldAddGoldResource() {
-        String resourceName = "Or";
-        int quantity = 1800;
-
-        player.addResource(resourceName, quantity);
-
-        assertEquals(1, player.getResources().size());
-        assertEquals(1800, player.getResourceQuantity("Or"));
-    }
-
-    @Test
-    @DisplayName("Ajout d'une ressource Ivoire")
-    void shouldAddIvoryResource() {
-        String resourceName = "Ivoire";
-        int quantity = 1300;
-
-        player.addResource(resourceName, quantity);
-
-        assertEquals(1, player.getResources().size());
-        assertEquals(1300, player.getResourceQuantity("Ivoire"));
-    }
-
-    @Test
     @DisplayName("Ajout de plusieurs ressources différentes")
     void shouldAddMultipleResources() {
         player.addResource("Or", 1800);

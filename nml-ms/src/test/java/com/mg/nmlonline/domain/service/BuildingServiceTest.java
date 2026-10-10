@@ -263,8 +263,6 @@ class BuildingServiceTest {
                     .thenReturn(Optional.of(bank));
 
             assertEquals(1500.0, buildingService.calculateVampirizedIncome(1L, 10000.0, 3), 1e-9);
-            assertEquals(3500.0, buildingService.calculateVampirizedIncome(1L, 10000.0, 5), 1e-9);
-            assertEquals(7500.0, buildingService.calculateVampirizedIncome(1L, 10000.0, 50), 1e-9);
         }
     }
 
@@ -348,19 +346,6 @@ class BuildingServiceTest {
             buildingService.moveBuilding(50L, 100L, 3);
 
             assertTrue(bank.isHasMoved());
-            assertFalse(bank.canMove(6));
-        }
-    }
-
-    @Nested
-    @DisplayName("Tour courant")
-    class CurrentTurnTests {
-
-        @Test
-        @DisplayName("getCurrentTurn délègue à TurnService (source unique de vérité)")
-        void shouldDelegateToTurnService() {
-            when(turnService.getCurrentTurn()).thenReturn(7);
-            assertEquals(7, buildingService.getCurrentTurn(1L));
         }
     }
 

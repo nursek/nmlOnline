@@ -114,6 +114,21 @@ class AllianceServiceTest {
     }
 
     @Test
+    @DisplayName("Trahison après un tour d'alliance : bonus 25 % (15 + 10 par tour)")
+    void betrayalBonusGrowsWithAllianceDuration() {
+        Player traitor = createPlayer("TraitreLong" + USER_SEQ.get());
+        Player victim = createPlayer("VictimeLong" + USER_SEQ.get());
+        ally(traitor, victim);
+        turnService.advanceTurn();
+
+        Long allianceId = allianceService.getMe(traitor.getUserId()).getAlliances().getFirst().getId();
+        allianceService.betray(traitor.getUserId(), allianceId);
+
+        assertEquals(25, allianceGraph.betrayalBonusPercent(turnService.getCurrentTurn(),
+                traitor.getId(), victim.getId()));
+    }
+
+    @Test
     @DisplayName("Rupture d'un commun accord : fin à l'acceptation, sans bonus de trahison")
     void mutualRuptureEndsAllianceWithoutBonus() {
         Player a = createPlayer("RuptureA" + USER_SEQ.get());

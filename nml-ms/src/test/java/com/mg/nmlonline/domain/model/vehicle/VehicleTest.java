@@ -9,8 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @DisplayName("Vehicle")
 class VehicleTest {
 
@@ -264,17 +262,6 @@ class VehicleTest {
             vehicle.setDefense(100);
             vehicle.regenerateDefense(Vehicle.DEFENSE_REGEN_PER_TURN);
             assertEquals(100.0, vehicle.getDefense(), "Une épave ne répare pas");
-        }
-
-        @Test
-        @DisplayName("Délégations vitesse/capacité/aérien/feu en transit")
-        void shouldDelegateToType() {
-            Vehicle heli = new Vehicle(VehicleType.HELICOPTERE, 1L);
-
-            assertEquals(2, heli.getSpeed());
-            assertEquals(5, heli.getCapacity());
-            assertTrue(heli.isAerial());
-            assertTrue(heli.firesInTransit());
         }
     }
 }

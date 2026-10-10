@@ -91,9 +91,9 @@ Source de vérité = la DB. `boards/board.json` et `players/*.json` sont des fix
 classpath, lues si `app.import-demo-data=true` (défaut dev/test). En prod, l'admin crée
 plateau et joueurs par l'API.
 
-**Import admin = contrat strict** : `BoardImportService`/`PlayerImportService` refusent les
-champs inconnus (`FAIL_ON_UNKNOWN_PROPERTIES`). Faire évoluer ensemble les DTO d'import
-(`BoardDTO`, `PlayerDTO`), l'export admin et les fixtures `boards/*.json`/`players/*.json`,
+**Import admin** : `BoardImportService` refuse les champs inconnus ; les DTO de
+`PlayerImportService` les ignorent (`@JsonIgnoreProperties`). Faire évoluer ensemble les DTO
+d'import (`BoardDTO`, `PlayerDTO`), l'export admin et les fixtures `boards/*.json`/`players/*.json`,
 en gardant l'aller-retour export → import (`AdminExportImportTest`).
 
 ## Frontend

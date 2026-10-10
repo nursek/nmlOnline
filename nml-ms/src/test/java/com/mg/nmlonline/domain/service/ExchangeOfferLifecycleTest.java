@@ -15,11 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EmbeddedPostgresTest
-@DisplayName("ExchangeScenarioSeeder")
-class ExchangeScenarioSeederTest {
+@DisplayName("Échange — expiration persistée et scénario de dev")
+class ExchangeOfferLifecycleTest {
+
+    @Autowired
+    ExchangeOfferService exchangeOfferService;
 
     @Autowired
     ExchangeScenarioSeeder seeder;
@@ -29,6 +33,29 @@ class ExchangeScenarioSeederTest {
 
     @Autowired
     PlayerRepository playerRepository;
+
+    @Autowired
+    TurnService turnService;
+
+    @Test
+    @DisplayName("Accepter une offre expirée l'a marque EXPIRED en base")
+    void expiredOfferIsPersistedWhenAcceptFails() {
+        Player sender = playerRepository.findByName("lurio").orElseThrow();
+        Player receiver = playerRepository.findByName("cegorach").orElseThrow();
+        int turn = turnService.getCurrentTurn();
+        ExchangeOffer offer = new ExchangeOffer(sender.getId(), receiver.getId(), 0.0, turn - 1, turn);
+        exchangeOfferRepository.saveAndFlush(offer);
+
+        try {
+            assertThrows(IllegalStateException.class,
+                    () -> exchangeOfferService.acceptOffer(receiver.getUserId(), offer.getId()));
+            assertEquals(ExchangeOfferStatus.EXPIRED,
+                    exchangeOfferRepository.findById(offer.getId()).orElseThrow().getStatus());
+        } finally {
+            // Offre technique : ne pas polluer les comptages d'offres des autres tests.
+            exchangeOfferRepository.deleteById(offer.getId());
+        }
+    }
 
     @Test
     @Transactional

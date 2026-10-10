@@ -5,7 +5,9 @@ import com.mg.nmlonline.api.dto.AdminMovementOrderDto;
 import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
+import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
+import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,9 @@ class MovementAdminServiceTest {
 
     @Autowired
     private TurnService turnService;
+
+    @Autowired
+    private PlayerRepository playerRepository;
 
     // destination inexistante (99999) pour bloquer l'ordre de façon déterministe.
     @Test
@@ -71,8 +76,9 @@ class MovementAdminServiceTest {
     @DisplayName("getOrdersForTurn enrichit chaque ordre du nom du joueur")
     void getOrdersForTurnResolvesPlayerName() {
         int turn = turnService.getCurrentTurn();
+        Player player = playerRepository.findByName("nursek").orElseThrow();
         MovementOrder order = MovementOrder.createFootOrder(
-                99L, turn, List.of(999L), List.of(2, 99999));
+                player.getId(), turn, List.of(999L), List.of(2, 99999));
         MovementOrder saved = movementOrderRepository.save(order);
         final Long orderId = saved.getId();
 
@@ -84,9 +90,8 @@ class MovementAdminServiceTest {
                     .findFirst()
                     .orElseThrow(() -> new AssertionError("Ordre créé absent de la liste admin"));
 
-            // playerId 99L absent du seed : nom null, champ présent (pas l'ID brut).
-            assertNotNull(mine.getPlayerId());
-            assertEquals(99L, mine.getPlayerId());
+            assertEquals(player.getId(), mine.getPlayerId());
+            assertEquals("nursek", mine.getPlayerName());
         } finally {
             movementOrderRepository.deleteById(orderId);
         }

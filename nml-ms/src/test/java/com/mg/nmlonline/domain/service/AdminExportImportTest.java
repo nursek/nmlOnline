@@ -7,6 +7,7 @@ import com.mg.nmlonline.domain.service.PlayerImportService.PlayerDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
@@ -29,7 +30,17 @@ class AdminExportImportTest {
     private PlayerImportService playerImportService;
 
     @Autowired
+    private BoardImportService boardImportService;
+
+    @Autowired
     private JsonMapper objectMapper;
+
+    @Test
+    @DisplayName("Import board strict : un champ inconnu est refusé")
+    void boardImportRejectsUnknownField() {
+        assertThrows(JacksonException.class,
+                () -> boardImportService.importBoardFromJson("{\"name\":\"Carte\",\"champInconnu\":1}"));
+    }
 
     @Test
     @DisplayName("export produit une section character et buildings, relisible par l'import")

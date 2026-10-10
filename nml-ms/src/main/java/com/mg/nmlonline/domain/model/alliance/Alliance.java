@@ -78,4 +78,9 @@ public class Alliance {
         int end = endedTurn != null ? endedTurn : createdTurn;
         return Math.max(0, end - createdTurn);
     }
+
+    /** Bonus de trahison (15 % + 10 %/tour, sans plafond), partagé par le combat et l'affichage. */
+    public double betrayalBonusPercent() {
+        return 15 + 10.0 * durationTurns();
+    }
 }

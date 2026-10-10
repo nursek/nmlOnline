@@ -1,5 +1,7 @@
 package com.mg.nmlonline;
 
+import com.jayway.jsonpath.JsonPath;
+import com.mg.nmlonline.config.TestDataInitializer;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -70,6 +73,29 @@ class AuthFlowTest {
         mockMvc.perform(post("/api/auth/refresh").cookie(rotated))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(false));
+    }
+
+    @Test
+    @DisplayName("Un access token ne vaut pas comme refresh, un refresh pas comme Bearer")
+    void tokenTypesAreNotInterchangeable() throws Exception {
+        MvcResult login = mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody(TestDataInitializer.USER_1, TestDataInitializer.PASSWORD)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String accessToken = JsonPath.read(login.getResponse().getContentAsString(), "$.token");
+        Cookie refreshCookie = login.getResponse().getCookie("refresh_token");
+        assertNotNull(refreshCookie);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .cookie(new Cookie("refresh_token", accessToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(false));
+
+        mockMvc.perform(get("/api/turn/current")
+                        .header("Authorization", "Bearer " + refreshCookie.getValue()))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

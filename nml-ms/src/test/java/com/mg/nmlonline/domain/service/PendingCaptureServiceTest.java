@@ -14,8 +14,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -65,5 +66,48 @@ class PendingCaptureServiceTest {
 
         assertNull(board.getSector(1).getOwnerId());
         verify(repository).save(any(PendingCapture.class));
+    }
+
+    @Test
+    @DisplayName("resolve attribue le secteur avec la couleur d'un autre secteur du joueur")
+    void resolveAssignsSectorWithPlayerColor() {
+        Board board = boardWithSector();
+        Sector owned = new Sector(2, "Autre secteur");
+        owned.setOwnerAndColor(42L, "#123456");
+        board.addSector(owned);
+        PendingCapture pending = PendingCapture.create(7L, 1, 3, List.of(42L));
+        pending.setId(11L);
+        when(repository.findById(11L)).thenReturn(Optional.of(pending));
+        when(boardRepository.findById(7L)).thenReturn(Optional.of(board));
+
+        service.resolve(11L, 42L);
+
+        assertEquals(42L, board.getSector(1).getOwnerId());
+        assertEquals("#123456", board.getSector(1).getColor(), "La couleur vient d'un autre secteur du joueur");
+        assertTrue(pending.isResolved());
+        verify(boardRepository).save(board);
+        verify(repository).save(pending);
+    }
+
+    @Test
+    @DisplayName("resolve d'une attribution déjà résolue → IllegalStateException")
+    void resolveAlreadyResolvedThrows() {
+        PendingCapture pending = PendingCapture.create(7L, 1, 3, List.of(42L));
+        pending.setResolved(true);
+        when(repository.findById(11L)).thenReturn(Optional.of(pending));
+
+        assertThrows(IllegalStateException.class, () -> service.resolve(11L, 42L));
+    }
+
+    @Test
+    @DisplayName("dismiss marque l'attribution résolue sans toucher au secteur")
+    void dismissMarksResolved() {
+        PendingCapture pending = PendingCapture.create(7L, 1, 3, List.of(42L));
+        when(repository.findById(11L)).thenReturn(Optional.of(pending));
+
+        service.dismiss(11L);
+
+        assertTrue(pending.isResolved());
+        verify(repository).save(pending);
     }
 }

@@ -2,7 +2,6 @@ package com.mg.nmlonline.domain.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Bank;
@@ -63,10 +62,7 @@ public class PlayerImportService {
         this.equipmentRepository = equipmentRepository;
         this.resourceRepository = resourceRepository;
         this.vehicleRepository = vehicleRepository;
-        // L'import admin reste strict sur les champs inconnus, comme l'ancien new ObjectMapper() Jackson 2.
-        this.objectMapper = objectMapper.rebuild()
-                .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .build();
+        this.objectMapper = objectMapper;
     }
 
 

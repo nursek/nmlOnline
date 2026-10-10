@@ -49,7 +49,7 @@ public class AllianceGraph {
         return allianceRepository.findBetrayalsAtTurn(turn).stream()
                 .filter(alliance -> breakerPlayerId.equals(alliance.getEndedByPlayerId()))
                 .filter(alliance -> alliance.involves(breakerPlayerId) && alliance.involves(victimPlayerId))
-                .mapToDouble(alliance -> 15 + 10.0 * alliance.durationTurns())
+                .mapToDouble(Alliance::betrayalBonusPercent)
                 .findFirst()
                 .orElse(0);
     }
