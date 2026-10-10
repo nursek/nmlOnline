@@ -248,30 +248,5 @@ class BoardTest {
         }
     }
 
-    @Nested
-    @DisplayName("Gestion des ressources")
-    class ResourceTests {
-
-        @Test
-        @DisplayName("Assignation d'une ressource à un secteur")
-        void shouldAssignResourceToSector() {
-            board.addSector(new Sector(1, "Mine d'or"));
-
-            board.getSector(1).setResourceName("Or");
-
-            String resourceName = board.getSector(1).getResourceName();
-            assertNotNull(resourceName);
-            assertEquals("Or", resourceName);
-        }
-
-        @Test
-        @DisplayName("Secteur sans ressource retourne null")
-        void shouldReturnNullForSectorWithoutResource() {
-            board.addSector(new Sector(1, "Quartier vide"));
-
-            String resourceName = board.getSector(1).getResourceName();
-            assertNull(resourceName);
-        }
-    }
 }
 

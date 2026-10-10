@@ -1,18 +1,17 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.domain.service.PlayerImportService.PlayerDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,7 +26,21 @@ class AdminExportImportTest {
     @Autowired
     private PlayerRepository playerRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private PlayerImportService playerImportService;
+
+    @Autowired
+    private BoardImportService boardImportService;
+
+    @Autowired
+    private JsonMapper objectMapper;
+
+    @Test
+    @DisplayName("Import board strict : un champ inconnu est refusé")
+    void boardImportRejectsUnknownField() {
+        assertThrows(JacksonException.class,
+                () -> boardImportService.importBoardFromJson("{\"name\":\"Carte\",\"champInconnu\":1}"));
+    }
 
     @Test
     @DisplayName("export produit une section character et buildings, relisible par l'import")
@@ -70,7 +83,7 @@ class AdminExportImportTest {
         }
 
         String json = objectMapper.writeValueAsString(exported);
-        PlayerDTO dto = new ObjectMapper().readValue(json, PlayerDTO.class);
+        PlayerDTO dto = playerImportService.parse(json);
         assertEquals("nursek", dto.name);
         assertNotNull(dto.character, "L'import doit retrouver la section character");
         @SuppressWarnings("unchecked")

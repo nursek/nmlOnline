@@ -1,6 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.mg.nmlonline.api.dto.BattleReportDto;
 import com.mg.nmlonline.domain.model.battle.BattleReport;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -37,7 +37,7 @@ class BattleReportServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new BattleReportService(reportRepository, playerRepository, new ObjectMapper());
+        service = new BattleReportService(reportRepository, playerRepository, JsonMapper.builder().build());
     }
 
     @Test

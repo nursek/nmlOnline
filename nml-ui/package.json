@@ -11,7 +11,7 @@
     "prewatch": "node scripts/optimize-images.mjs",
     "watch": "ng build --watch --configuration development",
     "pretest": "node --test scripts/optimize-images.test.mjs",
-    "test": "jest --passWithNoTests",
+    "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "ng lint",

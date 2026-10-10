@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -53,7 +53,7 @@ class TurnResolutionOrchestratorStepsTest {
     @Autowired
     private EntityManager em;
 
-    @SpyBean
+    @MockitoSpyBean
     private MovementService movementService;
 
     @Autowired
@@ -165,6 +165,17 @@ class TurnResolutionOrchestratorStepsTest {
 
             assertThrows(IllegalStateException.class, orchestrator::startSession,
                     "Un 2e start doit lever IllegalStateException (→ 409)");
+        }
+
+        @Test
+        @Transactional
+        @DisplayName("Le verrou bloque advanceTurn et setCurrentTurn pendant une session")
+        void turnLockBlocksManualTurnChanges() {
+            setupBruteVsLarbinOrder();
+            orchestrator.startSession();
+
+            assertThrows(IllegalStateException.class, turnService::advanceTurn);
+            assertThrows(IllegalStateException.class, () -> turnService.setCurrentTurn(2));
         }
 
         @Test

@@ -81,9 +81,15 @@ public class JwtService {
             }
             return claims.get("jti", String.class);
         } catch (JwtException e) {
-            logger.debug("Cannot extract JTI from token: {}", e.getMessage());
+            logger.debug("Cannot extract JTI from token: {}", e.getClass().getSimpleName());
             return null;
         }
+    }
+
+    /** Gson (sérialiseur de jjwt-gson) rend les entiers en Double, que Claims ne convertit pas en Long. */
+    private static Long claimAsLong(Claims claims, String name) {
+        Number value = claims.get(name, Number.class);
+        return value == null ? null : value.longValue();
     }
 
     /** Id du propriétaire d'un refresh token signé, même si son JTI n'est plus stocké (réutilisation). */
@@ -97,9 +103,9 @@ public class JwtService {
             if (!"refresh".equals(claims.get("type", String.class))) {
                 return null;
             }
-            return claims.get("id", Long.class);
+            return claimAsLong(claims, "id");
         } catch (JwtException e) {
-            logger.debug("Cannot extract user id from refresh token: {}", e.getMessage());
+            logger.debug("Cannot extract user id from refresh token: {}", e.getClass().getSimpleName());
             return null;
         }
     }
@@ -118,7 +124,7 @@ public class JwtService {
                 return null;
             }
 
-            Long userId = claims.get("id", Long.class);
+            Long userId = claimAsLong(claims, "id");
             String username = claims.getSubject();
             String role = claims.get("role", String.class);
 
@@ -130,16 +136,16 @@ public class JwtService {
             return new JwtClaims(userId, username, role != null ? role : "USER");
 
         } catch (ExpiredJwtException e) {
-            logger.debug("Token expired: {}", e.getMessage());
+            logger.debug("Token expired");
             throw e;
         } catch (SignatureException e) {
-            logger.warn("Invalid JWT signature: {}", e.getMessage());
+            logger.warn("Invalid JWT signature");
             throw e;
         } catch (MalformedJwtException e) {
-            logger.warn("Malformed JWT: {}", e.getMessage());
+            logger.warn("Malformed JWT");
             throw e;
         } catch (Exception e) {
-            logger.warn("JWT validation error: {}", e.getMessage());
+            logger.warn("JWT validation error: {}", e.getClass().getSimpleName());
             throw new JwtException("Invalid token", e);
         }
     }

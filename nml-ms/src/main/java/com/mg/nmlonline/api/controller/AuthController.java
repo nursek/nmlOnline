@@ -65,6 +65,13 @@ public class AuthController {
             return size() > MAX_ATTEMPT_ENTRIES;
         }
     });
+    // Compteur dédié aux inscriptions : 5 échecs de login ne doivent pas bloquer les créations de compte (et inversement).
+    private final Map<String, Attempt> registerAttempts = Collections.synchronizedMap(new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Attempt> eldest) {
+            return size() > MAX_ATTEMPT_ENTRIES;
+        }
+    });
     private final Map<String, RefreshThrottle> refreshThrottles = Collections.synchronizedMap(new LinkedHashMap<>() {
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, RefreshThrottle> eldest) {
@@ -122,10 +129,11 @@ public class AuthController {
         }
 
         User user = userService.findByUsername(req.getUsername());
-        boolean valid = user != null && userService.checkAndUpgradePassword(user, req.getPassword());
+        boolean valid = userService.checkAndUpgradePassword(user, req.getPassword());
 
         if (valid) {
             att.count.set(0);
+            logger.info("Login réussi : '{}' ip {}", logSafe(req.getUsername()), clientIp);
             // Purge la grace period : un token de l'ancienne session ne doit pas être rejoué.
             refreshThrottles.remove(clientIp);
             String accessToken = jwtService.generateToken(user, ACCESS_TOKEN_EXPIRATION);
@@ -139,11 +147,13 @@ public class AuthController {
             addRefreshCookie(response, refresh.token(), refreshTokenMaxAge);
             return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername(), user.getRole()));
         } else {
+            logger.warn("Échec de login : '{}' ip {}", logSafe(req.getUsername()), clientIp);
             int currentCount = att.count.incrementAndGet();
             att.lastAttempt.set(now);
             if (currentCount >= MAX_ATTEMPTS) {
                 att.blockedUntil.set(now + BLOCK_TIME_MS);
                 att.count.set(0);
+                logger.warn("Blocage temporaire du compte '{}' ip {}", logSafe(req.getUsername()), clientIp);
             }
             int ipCount = ipAtt.count.incrementAndGet();
             ipAtt.lastAttempt.set(now);
@@ -200,6 +210,7 @@ public class AuthController {
             // Token signé mais plus stocké : réutilisation (vol probable) → on révoque la session active.
             Long ownerId = jwtService.extractRefreshUserId(refreshToken);
             if (ownerId != null) {
+                logger.warn("Refresh token réutilisé : session révoquée (userId {})", ownerId);
                 userService.findById(ownerId).ifPresent(userService::resetRefreshToken);
             }
             return ResponseEntity.ok(Map.of("valid", false));
@@ -245,8 +256,10 @@ public class AuthController {
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req, HttpServletRequest request) {
         long now = System.currentTimeMillis();
         cleanupStaleEntries(now);
-        Attempt ipAtt = ipAttempts.computeIfAbsent(request.getRemoteAddr(), k -> new Attempt());
+        String clientIp = request.getRemoteAddr();
+        Attempt ipAtt = registerAttempts.computeIfAbsent(clientIp, k -> new Attempt());
         if (ipAtt.blockedUntil.get() > now) {
+            logger.warn("Blocage temporaire des inscriptions ip {}", clientIp);
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                     "Trop de créations de compte, réessayez plus tard");
         }
@@ -270,6 +283,7 @@ public class AuthController {
             // Deux inscriptions simultanées du même nom : la contrainte unique a gagné la course.
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Utilisateur déjà existant");
         }
+        logger.info("Inscription : '{}' ip {}", logSafe(req.getUsername()), clientIp);
         return ResponseEntity.ok(Map.of("message", "Utilisateur créé"));
     }
 
@@ -296,7 +310,7 @@ public class AuthController {
         cookie.setPath("/api/auth");
         cookie.setMaxAge(maxAge);
         cookie.setSecure(cookieSecure);
-        cookie.setAttribute("SameSite", "Lax");
+        cookie.setAttribute("SameSite", "Strict");
         response.addCookie(cookie);
     }
     private String hash(String value) {
@@ -322,7 +336,15 @@ public class AuthController {
                 now - e.getValue().lastAttempt.get() > BLOCK_TIME_MS * 2
                         && e.getValue().blockedUntil.get() < now);
 
+        registerAttempts.entrySet().removeIf(e ->
+                now - e.getValue().lastAttempt.get() > BLOCK_TIME_MS * 2
+                        && e.getValue().blockedUntil.get() < now);
+
         refreshThrottles.entrySet().removeIf(e ->
                 now - e.getValue().lastRefresh > CLEANUP_INTERVAL_MS);
+    }
+
+    private static String logSafe(String value) {
+        return value == null ? "" : value.replaceAll("[\\r\\n\\t]", "_");
     }
 }

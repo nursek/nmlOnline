@@ -2,6 +2,8 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.Unit;
+import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,8 +16,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import static org.mockito.Mockito.*;
 
 /** Caractérise saveBoard : un re-import neutre ne doit JAMAIS réinitialiser owner_id (bug prod : getSectorsList().clear() → cascade DELETE). */
@@ -36,6 +36,7 @@ class BoardServiceSaveBoardTest {
         existing.setName("Carte Principale");
         Sector ownedSector = new Sector(13, "Quartier Lurio");
         ownedSector.setOwnerAndColor(42L, "#ff0000");
+        ownedSector.addUnit(new Unit(5.0, UnitClass.TIREUR));
         existing.addSector(ownedSector);
 
         Board incoming = new Board();
@@ -52,6 +53,7 @@ class BoardServiceSaveBoardTest {
         Sector s = existing.getSector(13);
         assertEquals(42L, s.getOwnerId(), "owner_id préservé — c'était le bug prod");
         assertEquals("#ff0000", s.getColor(), "couleur préservée");
+        assertEquals(1, s.getArmySize(), "armée préservée — la cascade supprimait les unités");
         verify(boardRepository, never()).delete(any());
         verify(boardRepository).save(existing);
     }
@@ -92,5 +94,20 @@ class BoardServiceSaveBoardTest {
 
         assertSame(incoming, result);
         assertEquals("Carte Principale", incoming.getName());
+    }
+
+    @Test
+    @DisplayName("premier import d'un DTO porteur d'id → id ignoré, la séquence décide")
+    void firstImportIgnoresIncomingId() {
+        Board incoming = new Board();
+        incoming.setId(99L);
+        incoming.addSector(new Sector(1, "Secteur 1"));
+
+        when(boardRepository.findByName("Carte Principale")).thenReturn(Optional.empty());
+        when(boardRepository.save(incoming)).thenReturn(incoming);
+
+        boardService.saveBoard(incoming, "Carte Principale");
+
+        assertNull(incoming.getId(), "un board créé ne doit jamais réutiliser un id fourni");
     }
 }

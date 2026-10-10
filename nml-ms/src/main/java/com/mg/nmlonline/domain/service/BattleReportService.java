@@ -1,7 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.mg.nmlonline.api.dto.BattleReportDto;
 import com.mg.nmlonline.domain.model.battle.BattleReport;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -168,16 +168,16 @@ public class BattleReportService {
     private String writePayload(BattleReportDto dto) {
         try {
             return objectMapper.writeValueAsString(dto);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Sérialisation du rapport de combat impossible", e);
-        }
+            } catch (JacksonException e) {
+                throw new IllegalStateException("Sérialisation du rapport de combat impossible", e);
+            }
     }
 
     private BattleReportDto readPayload(BattleReport report) {
         try {
             return objectMapper.readValue(report.getPayload(), BattleReportDto.class);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Rapport de combat " + report.getId() + " illisible", e);
-        }
+            } catch (JacksonException e) {
+                throw new IllegalStateException("Rapport de combat " + report.getId() + " illisible", e);
+            }
     }
 }

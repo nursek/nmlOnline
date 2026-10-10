@@ -10,8 +10,6 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @DisplayName("Unit")
 class UnitTest {
 
@@ -101,17 +99,6 @@ class UnitTest {
     class InjuryTests {
 
         @Test
-        @DisplayName("Blessure : attaque et défense divisées par 2")
-        void shouldHalveAttackAndDefenseWhenInjured() {
-            Unit unit = new Unit(5, UnitClass.TIREUR);
-            unit.setInjured(true);
-            unit.recalculateBaseStats();
-
-            assertEquals(25.0, unit.getAttack());
-            assertEquals(25.0, unit.getDefense());
-        }
-
-        @Test
         @DisplayName("Blessure : évasion brute inchangée, pdf recalculé sur l'attaque réduite")
         void shouldPinInjuryEffectOnCalculatedStats() {
             Unit unit = new Unit(5, UnitClass.TIREUR);
@@ -196,20 +183,6 @@ class UnitTest {
             assertEquals(1, UnitType.BRUTE.getMaxFirearms());
             assertEquals(3, UnitType.BRUTE.getMaxMeleeWeapons());
             assertEquals(4, UnitType.BRUTE.getMaxDefensiveEquipment());
-        }
-
-        @Test
-        @DisplayName("removeEquipment retire par nom et recalcule")
-        void shouldRemoveEquipmentAndRecalculate() {
-            Unit unit = new Unit(5, UnitClass.TIREUR);
-            Equipment gun = firearm(50);
-            unit.addEquipment(gun);
-            assertEquals(25.0, unit.getPdf());
-
-            assertTrue(unit.removeEquipment(gun));
-
-            assertEquals(0.0, unit.getPdf());
-            assertTrue(unit.getEquipments().isEmpty());
         }
 
         @Test

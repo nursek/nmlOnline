@@ -27,6 +27,10 @@ const FORBIDDEN_ELEMENTS = new Set([
 
 const DANGEROUS_SCHEME = /^(javascript|vbscript|data):/;
 
+// Seules les références internes (fragment ou assets servis par l'app) évitent le beacon externe.
+const LOCAL_REF = /^(#|\/boards\/|\/assets\/)/;
+const EXTERNAL_URL = /url\s*\(\s*(?!['"]?\s*(#|\/boards\/|\/assets\/))/;
+
 // C0/espaces ignorés par le parseur d'URL en tête de valeur : « \u0001javascript: » exécute.
 const OBFUSCATING_CHARS = /[\s\p{Cc}]/gu;
 
@@ -68,7 +72,16 @@ function sanitizeOnce(text: string): string {
       const value = (Element.prototype.getAttribute.call(el, name) ?? '')
         .replace(OBFUSCATING_CHARS, '')
         .toLowerCase();
-      if (name.toLowerCase().startsWith('on') || DANGEROUS_SCHEME.test(value)) {
+      const lowerName = name.toLowerCase();
+      if (lowerName.startsWith('on') || DANGEROUS_SCHEME.test(value)) {
+        Element.prototype.removeAttribute.call(el, name);
+        continue;
+      }
+      if ((lowerName === 'href' || lowerName === 'xlink:href') && !LOCAL_REF.test(value)) {
+        Element.prototype.removeAttribute.call(el, name);
+        continue;
+      }
+      if (EXTERNAL_URL.test(value)) {
         Element.prototype.removeAttribute.call(el, name);
       }
     }

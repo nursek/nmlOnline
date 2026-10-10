@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
+import com.mg.nmlonline.api.dto.BuyUnitRequestDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
@@ -50,6 +51,9 @@ class UnitServiceTest {
 
     @Autowired
     private BuildingService buildingService;
+
+    @Autowired
+    private TurnService turnService;
 
     @Autowired
     private EntityManager entityManager;
@@ -196,6 +200,53 @@ class UnitServiceTest {
 
         assertEquals(0, unit.getEquipments().size());
         assertEquals(2, availableOf(melee.getName()));
+    }
+
+    @Test
+    @DisplayName("placeUnit d'une unité d'un autre joueur → SecurityException")
+    void shouldRefusePlacingForeignUnit() {
+        Player owner = playerOfTestUser(TestDataInitializer.USER_1);
+        Player other = playerOfTestUser(TestDataInitializer.USER_2);
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        Sector sector = findNeutralSector(board, 7);
+        Unit unit = newUnit(other.getId(), UnitType.LARBIN, Set.of(UnitClass.ELEMENTAIRE));
+        entityManager.persist(unit);
+        entityManager.flush();
+
+        assertThrows(SecurityException.class,
+                () -> unitService.placeUnit(owner.getUserId(), unit.getId(), board.getId(), sector.getNumber()),
+                "Placer l'unité d'un autre joueur doit lever SecurityException");
+    }
+
+    @Test
+    @DisplayName("buyUnits : entrée invalide → IllegalArgumentException")
+    void shouldRejectInvalidBuyUnitsInput() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> unitService.buyUnits(player.getUserId(), List.of()));
+
+        BuyUnitRequestDto blankType = new BuyUnitRequestDto();
+        blankType.setUnitType(" ");
+        blankType.setUnitClass(UnitClass.ELEMENTAIRE.name());
+        assertThrows(IllegalArgumentException.class,
+                () -> unitService.buyUnits(player.getUserId(), List.of(blankType)));
+
+        // LARBIN n'est achetable qu'à partir du tour 2 : on force un tour éligible puis on restaure.
+        int originalTurn = turnService.getCurrentTurn();
+        try {
+            turnService.setCurrentTurn(Math.max(2, originalTurn));
+
+            BuyUnitRequestDto zeroQuantity = new BuyUnitRequestDto();
+            zeroQuantity.setUnitType(UnitType.LARBIN.name());
+            zeroQuantity.setUnitClass(UnitClass.ELEMENTAIRE.name());
+            zeroQuantity.setQuantity(0);
+            assertThrows(IllegalArgumentException.class,
+                    () -> unitService.buyUnits(player.getUserId(), List.of(zeroQuantity)));
+        } finally {
+            turnService.setCurrentTurn(originalTurn);
+            turnService.invalidateTurnCache();
+        }
     }
 
     /** Résout le joueur par nom d'utilisateur : les ids générés dépendent de la séquence, pas d'une constante. */

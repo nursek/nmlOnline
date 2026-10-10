@@ -94,7 +94,7 @@ public class VehicleService {
         try {
             vehicleType = VehicleType.valueOf(vehicleTypeName);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Type de véhicule invalide : " + vehicleTypeName);
+            throw new IllegalArgumentException("Type de véhicule invalide : " + vehicleTypeName, e);
         }
         requireAvailableAtCurrentTurn(vehicleType);
 

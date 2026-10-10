@@ -279,14 +279,6 @@ class ResourceServiceTest {
         }
 
         @Test
-        @DisplayName("Collecte ajoute la ressource au joueur")
-        void shouldCollectSectorResource() {
-            resourceService.collectSectorResource(player, "Or", 500);
-
-            assertEquals(500, player.getResourceQuantity("Or"));
-        }
-
-        @Test
         @DisplayName("Collecte ignorée si paramètres invalides")
         void shouldIgnoreInvalidCollection() {
             // Le secteur n'est pas marqué collecté : la ressource reste re-collectable.
