@@ -1,6 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
@@ -26,13 +26,17 @@ public class BoardImportService {
 
     private static final Logger logger = LoggerFactory.getLogger(BoardImportService.class);
 
-    private final ObjectMapper objectMapper = JsonMapper.builder().build();
+    private final JsonMapper objectMapper;
     private final EquipmentRepository equipmentRepository;
 
     private final Map<String, Equipment> equipmentCache = new HashMap<>();
 
-    public BoardImportService(EquipmentRepository equipmentRepository) {
+    public BoardImportService(EquipmentRepository equipmentRepository, JsonMapper objectMapper) {
         this.equipmentRepository = equipmentRepository;
+        // L'import admin reste strict sur les champs inconnus, comme l'ancien new ObjectMapper() Jackson 2.
+        this.objectMapper = objectMapper.rebuild()
+                .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     }
 
     /** Session readOnly ouverte pour Hibernate.initialize sur les Equipment (self-invocation de getEquipmentByName). */
@@ -141,6 +145,9 @@ public class BoardImportService {
 
     /** Lookup cache/BDD (Equipment pré-chargés via CSV, jamais créés ici). */
     private Equipment getEquipmentByName(String equipmentName) {
+        if (equipmentName == null || equipmentName.isBlank()) {
+            return null;
+        }
         if (equipmentCache.containsKey(equipmentName)) {
             return equipmentCache.get(equipmentName);
         }

@@ -93,4 +93,19 @@ class BoardServiceSaveBoardTest {
         assertSame(incoming, result);
         assertEquals("Carte Principale", incoming.getName());
     }
+
+    @Test
+    @DisplayName("premier import d'un DTO porteur d'id → id ignoré, la séquence décide")
+    void firstImportIgnoresIncomingId() {
+        Board incoming = new Board();
+        incoming.setId(99L);
+        incoming.addSector(new Sector(1, "Secteur 1"));
+
+        when(boardRepository.findByName("Carte Principale")).thenReturn(Optional.empty());
+        when(boardRepository.save(incoming)).thenReturn(incoming);
+
+        boardService.saveBoard(incoming, "Carte Principale");
+
+        assertNull(incoming.getId(), "un board créé ne doit jamais réutiliser un id fourni");
+    }
 }

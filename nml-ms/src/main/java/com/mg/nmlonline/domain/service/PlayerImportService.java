@@ -2,7 +2,7 @@ package com.mg.nmlonline.domain.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Bank;
@@ -44,7 +44,7 @@ public class PlayerImportService {
 
     private static final Logger logger = LoggerFactory.getLogger(PlayerImportService.class);
 
-    private final ObjectMapper objectMapper = JsonMapper.builder().build();
+    private final JsonMapper objectMapper;
     private final PlayerStatsService playerStatsService;
     private final EquipmentRepository equipmentRepository;
     private final ResourceRepository resourceRepository;
@@ -57,11 +57,16 @@ public class PlayerImportService {
     public PlayerImportService(PlayerStatsService playerStatsService,
                                EquipmentRepository equipmentRepository,
                                ResourceRepository resourceRepository,
-                               VehicleRepository vehicleRepository) {
+                               VehicleRepository vehicleRepository,
+                               JsonMapper objectMapper) {
         this.playerStatsService = playerStatsService;
         this.equipmentRepository = equipmentRepository;
         this.resourceRepository = resourceRepository;
         this.vehicleRepository = vehicleRepository;
+        // L'import admin reste strict sur les champs inconnus, comme l'ancien new ObjectMapper() Jackson 2.
+        this.objectMapper = objectMapper.rebuild()
+                .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     }
 
 
@@ -203,6 +208,9 @@ public class PlayerImportService {
      * hors session (self-invocation → @Transactional ignoré, seule la tx d'import couvre).
      */
     public Equipment getEquipmentByName(String equipmentName) {
+        if (equipmentName == null || equipmentName.isBlank()) {
+            return null;
+        }
         if (equipmentCache.containsKey(equipmentName)) {
             return equipmentCache.get(equipmentName);
         }
@@ -242,6 +250,9 @@ public class PlayerImportService {
     private void importResources(Player player, List<ResourceDTO> resources) {
         if (resources == null) return;
         for (ResourceDTO resourceDto : resources) {
+            if (resourceDto == null || resourceDto.name == null || resourceDto.name.isBlank()) {
+                continue;
+            }
             Optional<Resource> resourceOpt = resourceRepository.findByName(resourceDto.name);
             if (resourceOpt.isPresent()) {
                 Resource resource = resourceOpt.get();

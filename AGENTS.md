@@ -8,8 +8,11 @@ Fast lane. Détails dans [README.md](README.md).
 # nml-ms/ (Spring Boot 4.1.1 / Java 25)
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"   # JWT_SECRET + JWT_PEPPER requis
 .\mvnw.cmd clean test                                          # PostgreSQL 14 embarqué (Zonky), sans config
+# Avant de rendre la main : mvnw clean test + npm test + npm run lint.
+# clean test exige le repo complet : SaleMultipliersParityTest lit ../nml-ui/src/app/core/sale-multiplier.ts.
 # nml-ui/ (Angular 22)
-npm start / npm test / npm run lint / npm run format / npm run build
+npm start / npm test / npm run lint / npm run format
+npm run build                              # prod (Docker) ; ng build = dev
 ```
 
 ## Commentaires
@@ -63,6 +66,9 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 
 - **Ownership** : jamais de `playerId` du body/params — `request.getAttribute("userId")`,
   vérifié dans le service (`SecurityException` → 403).
+- `infrastructure/repository` est `@NullMarked` : Spring Data valide les arguments au runtime,
+  un `null` sur une méthode de repository lève `IllegalArgumentException` (400) — filtrer
+  les entrées (noms d'import, chemins JSON) avant l'appel.
 - **Admin** : CRUD global sous `/api/admin/**` + `@PreAuthorize("hasRole('ADMIN')")`.
 - `Sector.ownerId` = source unique de propriété. `Board.sectorsList` = seule source persistée ;
   `BoardDto.sectors` (map) est reconstruite dans `BoardMapper`. `@JsonIgnore` côté many.
@@ -84,6 +90,11 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 Source de vérité = la DB. `boards/board.json` et `players/*.json` sont des fixtures de démo
 classpath, lues si `app.import-demo-data=true` (défaut dev/test). En prod, l'admin crée
 plateau et joueurs par l'API.
+
+**Import admin = contrat strict** : `BoardImportService`/`PlayerImportService` refusent les
+champs inconnus (`FAIL_ON_UNKNOWN_PROPERTIES`). Faire évoluer ensemble les DTO d'import
+(`BoardDTO`, `PlayerDTO`), l'export admin et les fixtures `boards/*.json`/`players/*.json`,
+en gardant l'aller-retour export → import (`AdminExportImportTest`).
 
 ## Frontend
 

@@ -90,8 +90,6 @@ public class TestDataInitializer {
     }
 
     private void createInitialBuildings(Player player) {
-        // recharge pour cohérence de la relation bidirectionnelle.
         buildingService.createInitialBuildings(player);
-        playerRepository.save(player);
     }
 }

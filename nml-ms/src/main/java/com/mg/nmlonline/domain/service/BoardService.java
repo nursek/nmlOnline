@@ -84,6 +84,8 @@ public class BoardService {
 
             return boardRepository.save(existingBoard);
         } else {
+            // Un plateau créé prend toujours un id de séquence, même si le DTO en portait un.
+            board.setId(null);
             board.setName(boardName);
             return boardRepository.save(board);
         }

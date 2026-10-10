@@ -10,6 +10,7 @@ import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
+import tools.jackson.databind.json.JsonMapper;
 import com.mg.nmlonline.domain.service.PlayerImportService.CharacterDTO;
 import com.mg.nmlonline.domain.service.PlayerImportService.PlayerDTO;
 import com.mg.nmlonline.domain.service.PlayerImportService.VehicleDTO;
@@ -38,7 +39,8 @@ class PlayerImportServiceTest {
                 mock(PlayerStatsService.class),
                 mock(EquipmentRepository.class),
                 mock(ResourceRepository.class),
-                vehicleRepository
+                vehicleRepository,
+                JsonMapper.builder().build()
         );
     }
 
