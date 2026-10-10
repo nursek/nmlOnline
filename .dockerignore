@@ -35,8 +35,3 @@ Thumbs.db
 
 # Logs
 *.log
-logs/
-
-# Local audit/tooling artifacts
-security-assessment/
-.opencode/

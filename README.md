@@ -1,6 +1,6 @@
 # NML Online
 
-A turn-based strategy game where players manage territories, armies, vehicles, and resources on an interactive map. Built with **Spring Boot 3.5 / Java 21** on the backend and **Angular 22** on the frontend.
+A turn-based strategy game where players manage territories, armies, vehicles, and resources on an interactive map. Built with **Spring Boot 4.1 / Java 21** on the backend and **Angular 22** on the frontend.
 
 ## Table of Contents
 
@@ -49,7 +49,7 @@ nmlOnline/
 
 ### Backend stack
 
-- Java 21, Spring Boot 3.5.16, Spring Data JPA, Spring Security
+- Java 21, Spring Boot 4.1.1, Spring Data JPA, Spring Security
 - H2 in-memory (default/dev) or PostgreSQL 14 (test, embedded; production, server)
 - Flyway for schema migrations (test and production PostgreSQL; not default/dev)
 - JWT authentication with HttpOnly refresh-token cookie

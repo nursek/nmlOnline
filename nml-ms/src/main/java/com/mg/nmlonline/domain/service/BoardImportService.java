@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -25,7 +26,7 @@ public class BoardImportService {
 
     private static final Logger logger = LoggerFactory.getLogger(BoardImportService.class);
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder().build();
     private final EquipmentRepository equipmentRepository;
 
     private final Map<String, Equipment> equipmentCache = new HashMap<>();

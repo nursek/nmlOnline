@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -53,7 +53,7 @@ class TurnResolutionOrchestratorStepsTest {
     @Autowired
     private EntityManager em;
 
-    @SpyBean
+    @MockitoSpyBean
     private MovementService movementService;
 
     @Autowired

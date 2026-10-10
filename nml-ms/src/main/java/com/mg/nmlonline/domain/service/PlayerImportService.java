@@ -2,7 +2,8 @@ package com.mg.nmlonline.domain.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
@@ -43,7 +44,7 @@ public class PlayerImportService {
 
     private static final Logger logger = LoggerFactory.getLogger(PlayerImportService.class);
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder().build();
     private final PlayerStatsService playerStatsService;
     private final EquipmentRepository equipmentRepository;
     private final ResourceRepository resourceRepository;
