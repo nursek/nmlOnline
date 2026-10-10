@@ -9,7 +9,7 @@ RUN npm ci
 COPY nml-ui/ .
 RUN npm run build -- --configuration production
 
-FROM maven:3.9-eclipse-temurin-21@sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320 AS backend-build
+FROM maven:3.9-eclipse-temurin-25@sha256:93b8a14ea2f412782e4e842651273b4d903e35cc496284f178fbbe2d67d00976 AS backend-build
 
 WORKDIR /app-ms
 
@@ -22,7 +22,7 @@ COPY nml-ms/ ./nml-ms/
 WORKDIR /app-ms/nml-ms
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:21-jre-alpine@sha256:51ab5e3302e7141ce665ca3ea85e8b5cd648eafbc3c0c90dd79d6537684e4555
+FROM eclipse-temurin:25-jre-alpine@sha256:3c0a9084927a221ccd1d007fcaf614465672c0af37aaa834c5184483afe56d61
 
 LABEL org.opencontainers.image.title="NML Online"
 LABEL org.opencontainers.image.description="NML Online - Turn-based strategy game"

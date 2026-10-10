@@ -1,6 +1,6 @@
 # NML Online
 
-A turn-based strategy game where players manage territories, armies, vehicles, and resources on an interactive map. Built with **Spring Boot 4.1 / Java 21** on the backend and **Angular 22** on the frontend.
+A turn-based strategy game where players manage territories, armies, vehicles, and resources on an interactive map. Built with **Spring Boot 4.1 / Java 25** on the backend and **Angular 22** on the frontend.
 
 ## Table of Contents
 
@@ -26,7 +26,7 @@ A turn-based strategy game where players manage territories, armies, vehicles, a
 ```
 nmlOnline/
 ├── nml-ms/                    # Spring Boot backend
-│   ├── src/main/java/          # Java 21 source
+│   ├── src/main/java/          # Java 25 source
 │   ├── src/main/resources/     # Configuration, Flyway migrations (db/migration)
 │   ├── src/test/               # Integration & unit tests
 │   ├── Dockerfile              # Multi-stage container build
@@ -49,7 +49,7 @@ nmlOnline/
 
 ### Backend stack
 
-- Java 21, Spring Boot 4.1.1, Spring Data JPA, Spring Security
+- Java 25, Spring Boot 4.1.1, Spring Data JPA, Spring Security
 - H2 in-memory (default/dev) or PostgreSQL 14 (test, embedded; production, server)
 - Flyway for schema migrations (test and production PostgreSQL; not default/dev)
 - JWT authentication with HttpOnly refresh-token cookie
@@ -68,7 +68,7 @@ nmlOnline/
 
 ### Prerequisites
 
-- **JDK 21+** (tested with JDK 25)
+- **JDK 25**
 - **Maven 3.9+** (or use the included `mvnw` wrapper)
 - **Node.js 20+** and **npm 10+**
 - **Git**
@@ -655,7 +655,7 @@ src/app/
 
 1. Install the **Lombok** plugin (`Settings → Plugins`)
 2. Enable annotation processing: `Settings → Build → Compiler → Annotation Processors → Enable`
-3. Set project SDK to JDK 21+
+3. Set project SDK to JDK 25
 4. Set file encoding to UTF-8: `Settings → Editor → File Encodings → UTF-8`
 5. Backend formatting: 4-space indent, UTF-8
 

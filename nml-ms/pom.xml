@@ -28,7 +28,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <spring.boot.version>4.1.1</spring.boot.version>
         <lombok.version>1.18.48</lombok.version>
     </properties>
@@ -156,7 +156,7 @@
                             <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
-                    <release>21</release>
+                    <release>${java.version}</release>
                     <parameters>true</parameters>
                     <compilerArgs>
                         <arg>-encoding</arg>
