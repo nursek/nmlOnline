@@ -5,6 +5,8 @@
  */
 export const SALE_MULTIPLIERS = [1.0, 3.0, 6.0, 9.0, 13.0, 19.5, 24.5, 33.0, 45.0] as const;
 
+export const SALE_MAX_QUANTITY = SALE_MULTIPLIERS.length;
+
 export function saleMultiplier(quantity: number): number {
   if (quantity <= 0) return 0;
   if (quantity >= SALE_MULTIPLIERS.length) return SALE_MULTIPLIERS[SALE_MULTIPLIERS.length - 1];

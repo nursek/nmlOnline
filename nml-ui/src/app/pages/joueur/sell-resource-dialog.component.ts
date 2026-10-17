@@ -13,7 +13,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import type { PlayerResource } from '../../models';
 import { ShopService } from '../../services/shop.service';
-import { saleMultiplier, saleValue } from '../../core/sale-multiplier';
+import { SALE_MAX_QUANTITY, saleMultiplier, saleValue } from '../../core/sale-multiplier';
 import {
   PurchaseSuccessDialogComponent,
   PurchaseSuccessData,
@@ -46,8 +46,10 @@ export class SellResourceDialogComponent {
 
   readonly busy = this.shop.purchaseLoading;
 
-  readonly maxQuantity = computed(() => Math.max(1, this.data.resource.quantity));
-  readonly quantity = signal(Math.max(1, this.data.resource.quantity));
+  readonly maxQuantity = computed(() =>
+    Math.min(Math.max(1, this.data.resource.quantity), SALE_MAX_QUANTITY),
+  );
+  readonly quantity = signal(this.maxQuantity());
   readonly multiplier = computed(() => saleMultiplier(this.quantity()));
   readonly totalValue = computed(() =>
     saleValue(this.data.resource.baseValue ?? 0, this.quantity()),

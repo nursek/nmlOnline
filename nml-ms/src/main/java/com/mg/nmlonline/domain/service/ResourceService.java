@@ -80,6 +80,11 @@ public class ResourceService {
 
     @Transactional
     public SaleResult sellResource(Long resourceId, int quantity, Long userId) {
+        if (quantity < 1 || quantity > SALE_MULTIPLIERS.length) {
+            throw new IllegalArgumentException(
+                    "La quantité à vendre doit être comprise entre 1 et " + SALE_MULTIPLIERS.length);
+        }
+
         Player player = playerRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new RuntimeException("Joueur introuvable : " + userId));
 

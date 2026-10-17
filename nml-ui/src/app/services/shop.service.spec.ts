@@ -220,6 +220,15 @@ describe('ShopService (carts + signals)', () => {
     expect(shop.sellCart()[0].quantity).toBe(5);
   });
 
+  it('caps sell-cart quantity at 9 units per sale', () => {
+    const shop = getShop();
+    const resource = { id: 8, name: 'Or', quantity: 20, baseValue: 2 };
+    shop.addToSellCart(resource, 12);
+    expect(shop.sellCart()[0].quantity).toBe(9);
+    shop.updateSellCartItemQuantity(8, 15);
+    expect(shop.sellCart()[0].quantity).toBe(9);
+  });
+
   it('computes the total sale value of the sell cart (with multiplier)', () => {
     const shop = getShop();
     const resource = { id: 7, name: 'Bois', quantity: 5, baseValue: 2 };

@@ -189,18 +189,14 @@ class ResourceServiceTest {
         }
 
         @Test
-        @DisplayName("Vendre une quantité nulle est un no-op silencieux")
-        void shouldPinZeroQuantitySaleAsNoOp() {
-            PlayerResource pr = ownedResource("Or", 5);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
-            when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
-            when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 1700.0)));
-
-            ResourceService.SaleResult result = resourceService.sellResource(7L, 0, 10L);
-
-            assertEquals(0.0, result.saleValue());
-            assertEquals(5, pr.getQuantity());
-            assertEquals(1000.0, player.getStats().getMoney());
+        @DisplayName("Quantité hors bornes [1, 9] est rejetée avant tout accès base")
+        void shouldRejectQuantityOutsideOneToNine() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> resourceService.sellResource(7L, 0, 10L));
+            assertThrows(IllegalArgumentException.class,
+                    () -> resourceService.sellResource(7L, 10, 10L));
+            assertThrows(IllegalArgumentException.class,
+                    () -> resourceService.sellResource(7L, -1, 10L));
         }
     }
 

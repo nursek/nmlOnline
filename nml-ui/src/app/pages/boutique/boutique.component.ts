@@ -51,7 +51,7 @@ import { EquipmentImageService } from '../../core/equipment-image.service';
 import { optimizedImage } from '../../core/optimized-image';
 import type { OptimizedImage } from '../../core/optimized-image';
 import { slugify } from '../../core/slug';
-import { saleMultiplier, saleValue } from '../../core/sale-multiplier';
+import { SALE_MAX_QUANTITY, saleMultiplier, saleValue } from '../../core/sale-multiplier';
 import {
   PurchaseSuccessDialogComponent,
   PurchaseSuccessData,
@@ -514,10 +514,14 @@ export class BoutiqueComponent {
     return resource.id != null ? (this.resourceSellQuantities()[resource.id] ?? 1) : 1;
   }
 
+  sellQtyMax(resource: PlayerResource): number {
+    return Math.min(resource.quantity, SALE_MAX_QUANTITY);
+  }
+
   setSellQty(resource: PlayerResource, qty: number): void {
     if (resource.id == null) return;
     const id = resource.id;
-    const clamped = Math.max(1, Math.min(qty, resource.quantity));
+    const clamped = Math.max(1, Math.min(qty, this.sellQtyMax(resource)));
     this.resourceSellQuantities.update((prev) => ({ ...prev, [id]: clamped }));
   }
 

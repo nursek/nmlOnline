@@ -962,7 +962,7 @@
                             <span class="quantity-display">{{ getSellQty(resource) }}</span>
                             <button
                               mat-icon-button
-                              [disabled]="getSellQty(resource) >= resource.quantity"
+                              [disabled]="getSellQty(resource) >= sellQtyMax(resource)"
                               (click)="setSellQty(resource, getSellQty(resource) + 1)"
                               [attr.aria-label]="'Augmenter la quantité de ' + resource.name"
                             >
