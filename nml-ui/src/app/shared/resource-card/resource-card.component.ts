@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import type { PlayerResource } from '../../models';
 import { slugify } from '../../core/slug';
-import { saleValue } from '../../core/sale-multiplier';
+import { SALE_MAX_QUANTITY, saleValue } from '../../core/sale-multiplier';
 import { optimizedImage } from '../../core/optimized-image';
 import type { OptimizedImage } from '../../core/optimized-image';
 
@@ -20,6 +20,7 @@ export class ResourceCardComponent {
   readonly resource = input.required<PlayerResource>();
   readonly sell = output<void>();
 
+  readonly saleMax = SALE_MAX_QUANTITY;
   readonly imgError = signal(false);
 
   readonly image = computed<OptimizedImage>(() =>
@@ -27,7 +28,7 @@ export class ResourceCardComponent {
   );
 
   readonly totalValue = computed(() =>
-    saleValue(this.resource().baseValue ?? 0, this.resource().quantity),
+    saleValue(this.resource().baseValue ?? 0, Math.min(this.resource().quantity, this.saleMax)),
   );
 
   onImgError(): void {

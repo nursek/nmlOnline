@@ -379,7 +379,8 @@ export class ShopService {
   /** Vend immédiatement une ressource, sans passer par le panier de vente. */
   sellResource(playerResourceId: number, quantity: number): Promise<number> {
     return this.sellBatch(
-      [{ playerResourceId, quantity: Math.min(safeQty(quantity), SALE_MAX_QUANTITY) }],
+      // safeQty min 0 : une quantité invalide part telle quelle (400), pas vendue 1 unité.
+      [{ playerResourceId, quantity: Math.min(safeQty(quantity, 0), SALE_MAX_QUANTITY) }],
       'Erreur lors de la vente de la ressource',
     );
   }

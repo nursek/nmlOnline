@@ -245,6 +245,16 @@ describe('ShopService (carts + signals)', () => {
     expect(shop.sellCart()).toHaveLength(0);
   });
 
+  it('does not turn an invalid quantity into a one-unit sale', () => {
+    const shop = getShop();
+    const http = TestBed.inject(HttpTestingController);
+
+    void shop.sellResource(7, 0);
+    const req = http.expectOne('/api/players/resources/sell-batch');
+    expect(req.request.body).toEqual({ items: [{ playerResourceId: 7, quantity: 0 }] });
+    req.flush({ message: 'ok', totalValue: 0, sales: [] });
+  });
+
   it('sells a single resource immediately and reloads the player', async () => {
     const shop = getShop();
     const http = TestBed.inject(HttpTestingController);
