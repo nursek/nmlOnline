@@ -20,7 +20,9 @@
       <span class="rc-qty">×{{ resource().quantity }}</span>
     </div>
     <span class="rc-unit">{{ resource().baseValue ?? '?' }} ₡/unité</span>
-    <span class="rc-total">Valeur estimée : {{ totalValue() | number: '1.0-0' }} ₡</span>
+    <span class="rc-total"
+      >Valeur d'une vente (max {{ saleMax }}) : {{ totalValue() | number: '1.0-0' }} ₡</span
+    >
   </div>
 
   <div class="rc-actions">

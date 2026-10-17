@@ -5,7 +5,17 @@ import { ApiService } from './api.service';
 import { CartStorageService } from './cart-storage.service';
 import { PlayerService } from './player.service';
 import { AuthService } from './auth.service';
-import { Equipment, PageResult, PlayerResource, Unit, UnitCatalog, UnitCatalogEntry, UnitClass, Vehicle, VehicleTypeInfo } from '../models';
+import {
+  Equipment,
+  PageResult,
+  PlayerResource,
+  Unit,
+  UnitCatalog,
+  UnitCatalogEntry,
+  UnitClass,
+  Vehicle,
+  VehicleTypeInfo,
+} from '../models';
 import {
   CartItem,
   SellCartItem,
@@ -14,7 +24,7 @@ import {
   VehicleCartItem,
 } from '../models/shop.model';
 import { httpErrorMessage } from '../core/http-error.interceptor';
-import { saleValue } from '../core/sale-multiplier';
+import { SALE_MAX_QUANTITY, saleValue } from '../core/sale-multiplier';
 import { environment } from '../../environments/environment';
 
 /**
@@ -72,7 +82,9 @@ export class ShopService {
   readonly vehicleTypesLoading = computed(
     () => this._error() === null && this.vehicleTypesRef.isLoading(),
   );
-  readonly unitCatalog = computed(() => this.unitCatalogRef.value() ?? { classes: [], entries: [] });
+  readonly unitCatalog = computed(
+    () => this.unitCatalogRef.value() ?? { classes: [], entries: [] },
+  );
   readonly unitCatalogLoading = computed(
     () => this._error() === null && this.unitCatalogRef.isLoading(),
   );
@@ -202,7 +214,9 @@ export class ShopService {
     this._unitCart.update((cart) => {
       const idx = cart.findIndex((i) => unitCartKey(i.unitType.name, i.unitClass.name) === key);
       if (idx >= 0) {
-        return cart.map((item, i) => (i === idx ? { ...item, quantity: item.quantity + qty } : item));
+        return cart.map((item, i) =>
+          i === idx ? { ...item, quantity: item.quantity + qty } : item,
+        );
       }
       return [...cart, { unitType, unitClass, quantity: qty }];
     });
@@ -236,16 +250,15 @@ export class ShopService {
 
   addToSellCart(resource: PlayerResource, quantity: number): void {
     const qty = safeQty(quantity);
+    const limit = Math.min(resource.quantity, SALE_MAX_QUANTITY);
     this._sellCart.update((cart) => {
       const idx = cart.findIndex((i) => i.resource.id === resource.id);
       if (idx >= 0) {
         return cart.map((item, i) =>
-          i === idx
-            ? { ...item, quantity: Math.min(item.quantity + qty, item.resource.quantity) }
-            : item,
+          i === idx ? { ...item, quantity: Math.min(item.quantity + qty, limit) } : item,
         );
       }
-      return [...cart, { resource, quantity: Math.min(qty, resource.quantity) }];
+      return [...cart, { resource, quantity: Math.min(qty, limit) }];
     });
   }
 
@@ -260,7 +273,7 @@ export class ShopService {
         ? cart.filter((i) => i.resource.id !== resourceId)
         : cart.map((i) =>
             i.resource.id === resourceId
-              ? { ...i, quantity: Math.min(qty, i.resource.quantity) }
+              ? { ...i, quantity: Math.min(qty, i.resource.quantity, SALE_MAX_QUANTITY) }
               : i,
           ),
     );
@@ -366,7 +379,8 @@ export class ShopService {
   /** Vend immédiatement une ressource, sans passer par le panier de vente. */
   sellResource(playerResourceId: number, quantity: number): Promise<number> {
     return this.sellBatch(
-      [{ playerResourceId, quantity }],
+      // safeQty min 0 : une quantité invalide part telle quelle (400), pas vendue 1 unité.
+      [{ playerResourceId, quantity: Math.min(safeQty(quantity, 0), SALE_MAX_QUANTITY) }],
       'Erreur lors de la vente de la ressource',
     );
   }

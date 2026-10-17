@@ -220,6 +220,15 @@ describe('ShopService (carts + signals)', () => {
     expect(shop.sellCart()[0].quantity).toBe(5);
   });
 
+  it('caps sell-cart quantity at 9 units per sale', () => {
+    const shop = getShop();
+    const resource = { id: 8, name: 'Or', quantity: 20, baseValue: 2 };
+    shop.addToSellCart(resource, 12);
+    expect(shop.sellCart()[0].quantity).toBe(9);
+    shop.updateSellCartItemQuantity(8, 15);
+    expect(shop.sellCart()[0].quantity).toBe(9);
+  });
+
   it('computes the total sale value of the sell cart (with multiplier)', () => {
     const shop = getShop();
     const resource = { id: 7, name: 'Bois', quantity: 5, baseValue: 2 };
@@ -234,6 +243,16 @@ describe('ShopService (carts + signals)', () => {
     shop.addToSellCart(resource, 4);
     shop.removeFromSellCart(7);
     expect(shop.sellCart()).toHaveLength(0);
+  });
+
+  it('does not turn an invalid quantity into a one-unit sale', () => {
+    const shop = getShop();
+    const http = TestBed.inject(HttpTestingController);
+
+    void shop.sellResource(7, 0);
+    const req = http.expectOne('/api/players/resources/sell-batch');
+    expect(req.request.body).toEqual({ items: [{ playerResourceId: 7, quantity: 0 }] });
+    req.flush({ message: 'ok', totalValue: 0, sales: [] });
   });
 
   it('sells a single resource immediately and reloads the player', async () => {

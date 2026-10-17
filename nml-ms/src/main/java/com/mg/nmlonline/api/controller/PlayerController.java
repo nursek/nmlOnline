@@ -46,10 +46,6 @@ public class PlayerController {
 
     @PostMapping("/resources/{playerResourceId}/sell")
     public ResponseEntity<ResourceSaleResponseDto> sellResource(@PathVariable Long playerResourceId, @RequestParam("quantity") int quantity, HttpServletRequest request) {
-        if (quantity <= 0) {
-            return ResponseEntity.badRequest()
-                    .body(new ResourceSaleResponseDto("Quantity must be greater than 0", 0, null, 0));
-        }
         Long authenticatedUserId = (Long) request.getAttribute("userId");
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401)
