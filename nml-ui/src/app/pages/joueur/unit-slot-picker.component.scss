@@ -41,11 +41,11 @@
 
     &.usp-ok {
       background: var(--forest-tint);
-      border: 1px solid var(--forest-line);
+      border: 1.5px solid var(--forest-line);
     }
     &.usp-na {
       background: var(--paper);
-      border: 1px solid var(--line-2);
+      border: 1.5px solid var(--line-2);
       opacity: 0.6;
     }
 

@@ -13,7 +13,7 @@
   justify-content: space-between;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--line-2);
+  border-bottom: 2.5px solid var(--line-2);
   flex-wrap: wrap;
   gap: 16px;
 
@@ -60,7 +60,7 @@
 .admin-panel {
   padding: 16px;
   margin-bottom: 16px;
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-sm);
   background: var(--surface);
 
@@ -107,7 +107,7 @@
       padding: 8px 10px;
       border-radius: var(--r-xs);
       background: var(--paper);
-      border: 1px solid var(--line-2);
+      border: 1.5px solid var(--line-2);
 
       .order-main {
         display: flex;
@@ -319,7 +319,7 @@
     padding: 8px 12px;
     background: var(--paper);
     border-radius: var(--r-sm);
-    border: 1px solid var(--line-2);
+    border: 1.5px solid var(--line-2);
 
     .stat-label {
       font-size: 0.7rem;
@@ -352,7 +352,7 @@
     gap: 4px;
     padding: 4px 10px;
     background: var(--paper-2);
-    border: 1px solid var(--line-2);
+    border: 1.5px solid var(--line-2);
     border-radius: var(--r-md);
     font-size: 0.8rem;
     color: var(--ink);
@@ -376,7 +376,7 @@
 
 .sector-block {
   background: var(--paper);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-sm);
   padding: 12px;
   margin-bottom: 8px;
@@ -419,7 +419,7 @@
     padding: 4px 8px;
     background: var(--surface);
     border-radius: var(--r-xs);
-    border: 1px solid var(--line-2);
+    border: 1.5px solid var(--line-2);
     font-size: 0.8rem;
 
     .unit-type {

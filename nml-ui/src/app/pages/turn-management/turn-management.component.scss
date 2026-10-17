@@ -15,7 +15,7 @@
   flex-wrap: wrap;
   padding: 0.75rem 1rem;
   margin-bottom: 1.25rem;
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-sm);
   background: var(--surface);
 
@@ -71,7 +71,7 @@
   position: relative;
   margin-bottom: 1.5rem;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--line-2);
+  border-bottom: 2.5px solid var(--line-2);
 
   &::after {
     content: '';
@@ -114,7 +114,7 @@
   flex-wrap: wrap;
   padding: 0.75rem 1rem;
   background: var(--paper-2);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-sm);
   margin-bottom: 1.25rem;
   font-size: 0.95rem;
@@ -236,7 +236,7 @@
   flex-wrap: wrap;
   padding: 0.7rem 0.9rem;
   background: var(--surface);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-sm);
 
   .conflict-where {
@@ -301,7 +301,7 @@
 
   .player {
     padding: 0.15rem 0.5rem;
-    border: 1px solid var(--sun-line);
+    border: 1.5px solid var(--sun-line);
     background: color-mix(in srgb, var(--rust) 8%, transparent);
     border-radius: var(--r-xs);
     font-size: 0.85rem;

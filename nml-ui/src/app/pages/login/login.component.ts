@@ -8,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../services/auth.service';
 import { SigilComponent } from '../../shared/sigil/sigil.component';
+import { ThemeToggleComponent } from '../../shared/theme-toggle/theme-toggle.component';
 
 @Component({
   selector: 'app-login',
@@ -21,6 +22,7 @@ import { SigilComponent } from '../../shared/sigil/sigil.component';
     MatProgressSpinnerModule,
     MatIconModule,
     SigilComponent,
+    ThemeToggleComponent,
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],

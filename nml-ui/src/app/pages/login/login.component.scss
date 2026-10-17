@@ -10,15 +10,30 @@
   overflow: hidden;
   background-color: var(--void);
   background-image:
-    radial-gradient(circle at 14% 18%, rgba(217, 154, 31, 0.14), transparent 34rem),
-    radial-gradient(circle at 86% 82%, rgba(95, 211, 154, 0.08), transparent 30rem),
-    linear-gradient(rgba(230, 222, 203, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(230, 222, 203, 0.03) 1px, transparent 1px);
+    radial-gradient(
+      circle at 14% 18%,
+      color-mix(in srgb, var(--accent) 14%, transparent),
+      transparent 34rem
+    ),
+    radial-gradient(
+      circle at 86% 82%,
+      color-mix(in srgb, var(--teal) 8%, transparent),
+      transparent 30rem
+    ),
+    linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
   background-size:
     auto,
     auto,
     32px 32px,
     32px 32px;
+}
+
+.theme-corner {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 1;
 }
 
 .login-page::before {
@@ -27,10 +42,9 @@
   inset: 0;
   pointer-events: none;
   opacity: 0.5;
-  mix-blend-mode: screen;
   background-image: repeating-linear-gradient(
     0deg,
-    rgba(230, 222, 203, 0.035) 0 1px,
+    color-mix(in srgb, var(--ink) 4%, transparent) 0 1px,
     transparent 1px 4px
   );
 }
@@ -40,7 +54,7 @@
   position: absolute;
   inset: 18px;
   pointer-events: none;
-  border: 1px solid var(--line-strong);
+  border: 2px solid var(--line-strong);
   background:
     linear-gradient(var(--accent), var(--accent)) left top / 18px 2px no-repeat,
     linear-gradient(var(--accent), var(--accent)) left top / 2px 18px no-repeat,
@@ -72,10 +86,10 @@
 .login-card {
   position: relative;
   padding: 36px 32px 32px;
-  border: 1px solid var(--line-strong);
+  border: 1.5px solid var(--line-strong);
   border-radius: var(--r-md);
   background-image:
-    linear-gradient(180deg, rgba(230, 222, 203, 0.045), transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--ink) 5%, transparent), transparent 42%),
     linear-gradient(180deg, var(--surface-2), var(--surface));
   box-shadow:
     var(--shadow-pop),
@@ -90,7 +104,7 @@
   right: 0;
   height: 3px;
   opacity: 0.75;
-  background: repeating-linear-gradient(-45deg, var(--accent) 0 8px, #0b0e10 8px 16px);
+  background: repeating-linear-gradient(-45deg, var(--accent) 0 8px, var(--paper) 8px 16px);
 }
 
 .console-lights {

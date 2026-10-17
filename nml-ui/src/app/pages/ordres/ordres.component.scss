@@ -21,7 +21,7 @@
   color: var(--danger);
   padding: 16px;
   border-radius: var(--r-sm);
-  border: 1px solid var(--danger-line);
+  border: 1.5px solid var(--danger-line);
 }
 
 .page-header {
@@ -57,7 +57,7 @@
       font-weight: 600;
       color: shared.$primary-color;
       background: var(--accent-tint);
-      border: 1px solid var(--accent-line);
+      border: 1.5px solid var(--accent-line);
       border-radius: var(--r-xs);
       padding: 4px 12px;
     }
@@ -111,7 +111,7 @@
   padding: 10px 12px;
   margin-bottom: 8px;
   background: var(--accent-tint);
-  border: 1px solid var(--accent-line);
+  border: 1.5px solid var(--accent-line);
   border-radius: var(--r-xs);
   font-size: 0.85rem;
 
@@ -139,7 +139,7 @@
 
   .order-seg {
     background: var(--paper);
-    border: 1px solid var(--line-2);
+    border: 1.5px solid var(--line-2);
     border-radius: var(--r-xs);
     padding: 4px 12px;
     font-size: 0.9rem;
@@ -183,22 +183,22 @@
     &.status-PENDING {
       background: var(--sun-tint);
       color: var(--sun);
-      border: 1px solid var(--sun-line);
+      border: 1.5px solid var(--sun-line);
     }
     &.status-RESOLVED {
       background: var(--forest-tint);
       color: var(--forest);
-      border: 1px solid var(--forest-line);
+      border: 1.5px solid var(--forest-line);
     }
     &.status-BLOCKED {
       background: var(--danger-tint);
       color: var(--danger);
-      border: 1px solid var(--danger-line);
+      border: 1.5px solid var(--danger-line);
     }
     &.status-CANCELLED {
       background: var(--paper-2);
       color: var(--ink-3);
-      border: 1px solid var(--line-2);
+      border: 1.5px solid var(--line-2);
     }
   }
   .status-msg {
@@ -222,7 +222,7 @@
   gap: 8px;
   padding: 6px 10px;
   background: var(--surface);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-xs);
   font-size: 0.85rem;
 
@@ -283,7 +283,7 @@
     padding: 1px 6px;
     border-radius: var(--r-xs);
     background: var(--paper-2);
-    border: 1px solid var(--line-2);
+    border: 1.5px solid var(--line-2);
     color: var(--ink-2);
 
     &.badge-danger {

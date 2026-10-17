@@ -34,7 +34,7 @@
   align-self: start;
   padding: 16px;
   background: var(--surface);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-md);
 
   .toc-head {
@@ -174,7 +174,7 @@
 
 .callout {
   background: var(--paper);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
 
   mat-icon {
     color: shared.$primary-color;
@@ -267,7 +267,7 @@
   padding: 20px;
   border-radius: var(--r-sm);
   text-align: center;
-  border: 1px solid;
+  border: 1.5px solid;
 
   &.gold {
     background: color-mix(in srgb, var(--sun) 10%, transparent);

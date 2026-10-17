@@ -99,6 +99,105 @@ $nml-alert: (
   ),
 );
 
+$nml-vermillion: (
+  50: #f8dacc,
+  100: #f3bfaa,
+  200: #ec9b7e,
+  300: #e57752,
+  400: #db592f,
+  500: #c03e1d,
+  600: #aa3519,
+  700: #90321a,
+  800: #742814,
+  900: #581f0e,
+  A100: #ffc6b3,
+  A200: #ffa081,
+  A400: #ff6639,
+  A700: #ff4815,
+  contrast: (
+    50: #17150f,
+    100: #17150f,
+    200: #17150f,
+    300: #17150f,
+    400: #fff5db,
+    500: #fff5db,
+    600: #fff5db,
+    700: #fff5db,
+    800: #fff5db,
+    900: #fff5db,
+    A100: #17150f,
+    A200: #17150f,
+    A400: #17150f,
+    A700: #fff5db,
+  ),
+);
+
+$nml-ochre: (
+  50: #f8e9c8,
+  100: #f3d9a7,
+  200: #ecc681,
+  300: #e4b35b,
+  400: #dca03e,
+  500: #e59826,
+  600: #b3761c,
+  700: #915c12,
+  800: #734b0d,
+  900: #5a3a0b,
+  A100: #fce8bb,
+  A200: #f5cf7e,
+  A400: #edaf45,
+  A700: #c78c24,
+  contrast: (
+    50: #17150f,
+    100: #17150f,
+    200: #17150f,
+    300: #17150f,
+    400: #17150f,
+    500: #17150f,
+    600: #17150f,
+    700: #fff5db,
+    800: #fff5db,
+    900: #fff5db,
+    A100: #17150f,
+    A200: #17150f,
+    A400: #17150f,
+    A700: #17150f,
+  ),
+);
+
+$nml-crimson: (
+  50: #f4d3c8,
+  100: #ebb7a6,
+  200: #dc8d76,
+  300: #cb6348,
+  400: #b04c32,
+  500: #9d2e19,
+  600: #872614,
+  700: #792312,
+  800: #641c0f,
+  900: #4a150e,
+  A100: #ffc5b6,
+  A200: #ff977b,
+  A400: #ff5b37,
+  A700: #ee3c16,
+  contrast: (
+    50: #17150f,
+    100: #17150f,
+    200: #17150f,
+    300: #17150f,
+    400: #fff5db,
+    500: #fff5db,
+    600: #fff5db,
+    700: #fff5db,
+    800: #fff5db,
+    900: #fff5db,
+    A100: #17150f,
+    A200: #17150f,
+    A400: #17150f,
+    A700: #fff5db,
+  ),
+);
+
 $theme: mat.m2-define-dark-theme(
   (
     color: (
@@ -116,8 +215,28 @@ $theme: mat.m2-define-dark-theme(
 
 @include mat.all-component-themes($theme);
 
+$light-theme: mat.m2-define-light-theme(
+  (
+    color: (
+      primary: mat.m2-define-palette($nml-vermillion, 600, 300, 800),
+      accent: mat.m2-define-palette($nml-ochre, 500, 300, 700),
+      warn: mat.m2-define-palette($nml-crimson, 600, 300, 800),
+    ),
+    typography:
+      mat.m2-define-typography-config(
+        $font-family: 'Archivo, "Segoe UI", sans-serif',
+      ),
+    density: -1,
+  )
+);
+
+html[data-theme='light'] {
+  @include mat.all-component-colors($light-theme);
+}
+
 :root {
   --void: #060809;
+  --on-deep: #e6decb;
   --paper: #0b0e10;
   --paper-2: #0f1315;
   --paper-3: #161b1e;
@@ -175,19 +294,100 @@ $theme: mat.m2-define-dark-theme(
   --font-sans: 'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Consolas', 'Courier New', monospace;
 
-  --r-xs: 1px;
-  --r-sm: 2px;
-  --r-md: 4px;
-  --r-pill: 2px;
+  --r-xs: 2px;
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-pill: 999px;
 
   --nav-h: 64px;
 
-  --shadow-hard: 0 1px 0 rgba(230, 222, 203, 0.04) inset, 0 10px 24px rgba(0, 0, 0, 0.45);
-  --shadow-hard-ink: 0 0 0 1px var(--line-strong), 0 0 16px rgba(217, 154, 31, 0.12);
-  --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.6);
+  --shadow-hard: 4px 4px 0 rgba(230, 222, 203, 0.07);
+  --shadow-hard-ink: 4px 4px 0 var(--ink);
+  --shadow-pop: 8px 8px 0 rgba(230, 222, 203, 0.08);
   --glow-amber: 0 0 0 1px rgba(217, 154, 31, 0.35), 0 0 18px rgba(217, 154, 31, 0.18);
   --glow-green: 0 0 12px rgba(95, 211, 154, 0.3);
-  --cut-corner: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  --bg-grid: rgba(230, 222, 203, 0.024);
+  --bg-glow-a: rgba(217, 154, 31, 0.09);
+  --bg-glow-b: rgba(95, 211, 154, 0.05);
+  --bg-top: #0d1113;
+}
+
+// Thème clair = palette d'origine (2bc5e82) ; les jetons vifs gardent leur rôle de fond à texte clair.
+html[data-theme='light'] {
+  --void: #fff5db;
+  --on-deep: #fff5db;
+  --paper: #efe0c1;
+  --paper-2: #e7d5ad;
+  --paper-3: #ddc798;
+  --surface: #fff5db;
+  --surface-2: #fdf1d8;
+  --surface-3: #e7d5ad;
+
+  --ink: #17150f;
+  --ink-2: #2c281f;
+  --ink-3: #3b3529;
+  --muted: #5d5645;
+  --line: #c5af81;
+  --line-2: #b09d6d;
+  --line-strong: #7c6a47;
+
+  --accent: #c03e1d;
+  --accent-deep: #90321a;
+  --accent-ink: #742814;
+  --accent-tint: #f3d0ba;
+  --accent-line: #e4b498;
+
+  --teal: #0b5557;
+  --teal-deep: #08393c;
+  --teal-tint: #c6ded9;
+  --teal-line: #98c6c2;
+
+  --sun: #734b0d;
+  --sun-deep: #581f0e;
+  --sun-tint: #efd6a8;
+  --sun-line: #7c6a47;
+
+  --cobalt: #264079;
+  --cobalt-deep: #192d5a;
+  --cobalt-tint: #c7d3e9;
+
+  --plum: #832e53;
+  --plum-deep: #672341;
+  --plum-tint: #ebc9d9;
+
+  --forest: #205737;
+  --forest-deep: #163f27;
+  --forest-tint: #cee3c4;
+  --forest-line: #aed0ae;
+
+  --danger: #9d2e19;
+  --danger-deep: #792312;
+  --danger-tint: #f2cbbd;
+  --danger-line: #dead95;
+
+  --rust: #8a4a2b;
+  --rust-deep: #581f0e;
+  --rust-tint: #e9d3b4;
+
+  --shadow-hard: 4px 4px 0 rgba(23, 21, 15, 0.14);
+  --shadow-hard-ink: 4px 4px 0 var(--ink);
+  --shadow-pop: 8px 8px 0 rgba(23, 21, 15, 0.22);
+  --glow-amber: 0 0 0 1px rgba(192, 62, 29, 0.35), 0 0 18px rgba(192, 62, 29, 0.14);
+  --glow-green: 0 0 12px rgba(32, 87, 55, 0.25);
+  --bg-grid: rgba(23, 21, 15, 0.05);
+  --bg-glow-a: rgba(192, 62, 29, 0.07);
+  --bg-glow-b: rgba(32, 87, 55, 0.05);
+  --bg-top: #f7ecd4;
+
+  .mat-mdc-table {
+    .mat-mdc-header-row {
+      background: var(--ink);
+    }
+
+    .mat-mdc-header-cell {
+      color: var(--paper);
+    }
+  }
 }
 
 * {
@@ -208,11 +408,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--paper);
   background-image:
-    linear-gradient(rgba(230, 222, 203, 0.024) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(230, 222, 203, 0.024) 1px, transparent 1px),
-    radial-gradient(circle at 12% 0%, rgba(217, 154, 31, 0.09), transparent 30rem),
-    radial-gradient(circle at 88% 100%, rgba(95, 211, 154, 0.05), transparent 28rem),
-    linear-gradient(180deg, #0d1113 0%, var(--paper) 42%, var(--void) 100%);
+    linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px),
+    radial-gradient(circle at 12% 0%, var(--bg-glow-a), transparent 30rem),
+    radial-gradient(circle at 88% 100%, var(--bg-glow-b), transparent 28rem),
+    linear-gradient(180deg, var(--bg-top) 0%, var(--paper) 42%, var(--void) 100%);
   background-size:
     32px 32px,
     32px 32px,
@@ -233,6 +433,11 @@ body::after {
   opacity: 0.035;
   mix-blend-mode: screen;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+html[data-theme='light'] body::after {
+  mix-blend-mode: multiply;
+  opacity: 0.05;
 }
 
 ::selection {
@@ -310,6 +515,12 @@ textarea:focus-visible,
   box-shadow: var(--glow-amber);
 }
 
+// Le contour du champ suffit : pas de second anneau sur l'input.
+.mat-mdc-form-field :focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -369,7 +580,7 @@ textarea:focus-visible,
     border-color 0.18s ease;
 
   &:hover {
-    transform: translateY(-1px);
+    transform: translate(-2px, -2px);
     box-shadow: var(--shadow-hard-ink);
     border-color: var(--line-strong);
   }
@@ -386,7 +597,7 @@ textarea:focus-visible,
   --mdc-outlined-card-container-color: var(--surface);
   --mdc-outlined-card-outline-color: var(--line-2);
   --mdc-outlined-card-container-shape: var(--r-md);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   background-image:
     linear-gradient(180deg, rgba(230, 222, 203, 0.035), transparent 38%),
     linear-gradient(180deg, var(--surface-2), var(--surface));
@@ -431,19 +642,18 @@ textarea:focus-visible,
   --mdc-unelevated-button-container-color: var(--accent);
   --mdc-unelevated-button-label-text-color: var(--void);
   --mdc-unelevated-button-container-elevation: none;
-  border: 1px solid var(--accent-line);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-hard);
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: var(--glow-amber);
+    transform: translate(-1px, -1px);
+    box-shadow: var(--shadow-hard-ink);
   }
 
   &:active:not(:disabled) {
-    transform: translateY(0);
+    transform: translate(2px, 2px);
     box-shadow: none;
   }
 }
@@ -457,7 +667,7 @@ textarea:focus-visible,
   --mdc-unelevated-button-label-text-color: var(--ink);
   --mdc-protected-button-container-elevation: none;
   --mdc-unelevated-button-container-elevation: none;
-  border: 1px solid var(--danger-line);
+  box-shadow: var(--shadow-hard);
 }
 
 .mat-mdc-button-base .mat-icon,
@@ -468,7 +678,7 @@ textarea:focus-visible,
 
 .mat-mdc-outlined-button,
 .mat-mdc-stroked-button {
-  border-width: 1px !important;
+  border-width: 1.5px !important;
 }
 
 .mat-mdc-icon-button {
@@ -480,13 +690,13 @@ textarea:focus-visible,
 }
 
 .mat-mdc-chip {
-  --mdc-chip-elevated-container-color: var(--surface-2);
-  --mdc-chip-elevated-selected-container-color: var(--accent-tint);
-  --mdc-chip-label-text-color: var(--ink);
-  --mdc-chip-selected-label-text-color: var(--accent-ink);
-  --mdc-chip-outline-color: var(--line-2);
-  --mdc-chip-outline-width: 1px;
-  --mdc-chip-container-shape-radius: var(--r-sm);
+  --mat-chip-elevated-container-color: var(--surface-2);
+  --mat-chip-elevated-selected-container-color: var(--accent-tint);
+  --mat-chip-label-text-color: var(--ink);
+  --mat-chip-selected-label-text-color: var(--accent-ink);
+  --mat-chip-outline-color: var(--line-2);
+  --mat-chip-outline-width: 1.5px;
+  --mat-chip-container-shape-radius: var(--r-sm);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 500;
@@ -503,14 +713,13 @@ textarea:focus-visible,
 }
 
 .mat-mdc-chip-option {
-  --mdc-chip-flat-container-color: var(--surface-2);
   background-color: var(--surface-2);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
 }
 
 .mat-mdc-chip-option.mat-mdc-chip-selected {
-  --mdc-chip-label-text-color: var(--void);
-  --mdc-chip-selected-label-text-color: var(--void);
+  --mat-chip-label-text-color: var(--void);
+  --mat-chip-selected-label-text-color: var(--void);
   background-color: var(--accent);
   border-color: var(--accent-line);
 }
@@ -530,17 +739,16 @@ textarea:focus-visible,
 }
 
 .mat-mdc-form-field {
-  --mdc-outlined-text-field-container-shape: var(--r-sm);
-  --mdc-outlined-text-field-outline-color: var(--line-2);
-  --mdc-outlined-text-field-outline-width: 1px;
-  --mdc-outlined-text-field-hover-outline-color: var(--line-strong);
-  --mdc-outlined-text-field-focus-outline-color: var(--accent);
-  --mdc-outlined-text-field-focus-outline-width: 2px;
-  --mdc-outlined-text-field-container-color: var(--surface-2);
-  --mdc-outlined-text-field-input-text-color: var(--ink);
-  --mdc-outlined-text-field-label-text-color: var(--muted);
-  --mdc-outlined-text-field-focus-label-text-color: var(--accent-ink);
-  --mdc-outlined-text-field-caret-color: var(--accent);
+  --mat-form-field-outlined-container-shape: var(--r-sm);
+  --mat-form-field-outlined-outline-color: var(--line-2);
+  --mat-form-field-outlined-outline-width: 1.5px;
+  --mat-form-field-outlined-hover-outline-color: var(--line-strong);
+  --mat-form-field-outlined-focus-outline-color: var(--accent);
+  --mat-form-field-outlined-focus-outline-width: 2px;
+  --mat-form-field-outlined-input-text-color: var(--ink);
+  --mat-form-field-outlined-label-text-color: var(--muted);
+  --mat-form-field-outlined-focus-label-text-color: var(--accent-ink);
+  --mat-form-field-outlined-caret-color: var(--accent);
   font-family: var(--font-sans);
 }
 
@@ -559,7 +767,7 @@ textarea:focus-visible,
   --mat-dialog-supporting-text-color: var(--ink-2);
 
   .mat-mdc-dialog-surface {
-    border: 1px solid var(--line-strong);
+    border: 1.5px solid var(--line-strong);
     box-shadow: var(--shadow-pop);
   }
 }
@@ -576,7 +784,7 @@ textarea:focus-visible,
   --mat-menu-container-color: var(--surface-2);
   --mat-menu-container-shape: var(--r-sm);
   --mat-menu-item-label-text-color: var(--ink);
-  border: 1px solid var(--line-strong);
+  border: 1.5px solid var(--line-strong);
   box-shadow: var(--shadow-pop);
 }
 
@@ -633,7 +841,7 @@ textarea:focus-visible,
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--accent-ink);
-    border-bottom: 1px solid var(--line-strong);
+    border-bottom: none;
   }
 
   .mat-mdc-row:hover {
@@ -659,7 +867,7 @@ textarea:focus-visible,
   --mat-expansion-header-text-color: var(--ink);
   --mat-expansion-header-description-color: var(--muted);
   --mat-expansion-header-indicator-color: var(--accent);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   box-shadow: none;
   margin-bottom: 10px;
 }
@@ -700,27 +908,26 @@ textarea:focus-visible,
 }
 
 .mat-mdc-checkbox {
-  --mdc-checkbox-unselected-outline-color: var(--line-2);
-  --mdc-checkbox-unselected-hover-outline-color: var(--line-strong);
-  --mdc-checkbox-label-text-color: var(--ink-2);
-  --mdc-checkbox-selected-icon-color: var(--accent);
-  --mdc-checkbox-selected-hover-icon-color: var(--accent-ink);
-  --mdc-checkbox-selected-focus-icon-color: var(--accent-ink);
-  --mdc-checkbox-selected-pressed-icon-color: var(--accent);
-  --mdc-checkbox-selected-checkmark-color: var(--void);
+  --mat-checkbox-unselected-icon-color: var(--line-2);
+  --mat-checkbox-unselected-hover-icon-color: var(--line-strong);
+  --mat-checkbox-label-text-color: var(--ink-2);
+  --mat-checkbox-selected-icon-color: var(--accent);
+  --mat-checkbox-selected-hover-icon-color: var(--accent-ink);
+  --mat-checkbox-selected-focus-icon-color: var(--accent-ink);
+  --mat-checkbox-selected-checkmark-color: var(--void);
 }
 
 .mat-mdc-radio-button {
-  --mdc-radio-unselected-icon-color: var(--line-2);
-  --mdc-radio-selected-icon-color: var(--accent);
-  --mdc-radio-label-text-color: var(--ink-2);
+  --mat-radio-unselected-icon-color: var(--line-2);
+  --mat-radio-selected-icon-color: var(--accent);
+  --mat-radio-label-text-color: var(--ink-2);
 }
 
 .mat-mdc-slide-toggle {
-  --mdc-switch-selected-handle-color: var(--void);
-  --mdc-switch-selected-track-color: var(--accent);
-  --mdc-switch-unselected-track-color: var(--line-2);
-  --mdc-switch-unselected-handle-color: var(--ink-2);
+  --mat-slide-toggle-selected-handle-color: var(--void);
+  --mat-slide-toggle-selected-track-color: var(--accent);
+  --mat-slide-toggle-unselected-track-color: var(--line-2);
+  --mat-slide-toggle-unselected-handle-color: var(--ink-2);
 }
 
 .mat-mdc-list-item {

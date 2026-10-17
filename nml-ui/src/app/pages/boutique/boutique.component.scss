@@ -51,7 +51,7 @@
 .money-display {
   padding: 8px 16px;
   background: color-mix(in srgb, var(--sun) 12%, transparent);
-  border: 1px solid var(--sun-line);
+  border: 1.5px solid var(--sun-line);
   border-radius: var(--r-sm);
   font-family: var(--font-mono);
 
@@ -123,8 +123,8 @@
   }
 
   mat-chip {
-    --mdc-chip-elevated-container-color: var(--danger-deep);
-    --mdc-chip-label-text-color: var(--ink);
+    --mat-chip-elevated-container-color: var(--danger-deep);
+    --mat-chip-label-text-color: var(--on-deep);
     font-family: var(--font-mono);
   }
 }
@@ -142,7 +142,7 @@
   object-fit: cover;
   border-radius: var(--r-xs);
   background: var(--void);
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--line);
 }
 
 .shop-thumb-fallback {
@@ -153,7 +153,7 @@
   height: 120px;
   border-radius: var(--r-xs);
   background: var(--void);
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--line);
   // ponytail: var(--muted) ne passe pas WCAG sur ce fond sombre.
   color: var(--ink-3);
 
@@ -189,19 +189,23 @@
     min-height: 24px !important;
     &.pdf {
       background: var(--danger-deep) !important;
-      color: var(--ink) !important;
+      color: var(--on-deep) !important;
+      --mat-chip-label-text-color: var(--on-deep);
     }
     &.pdc {
       background: var(--teal) !important;
       color: var(--void) !important;
+      --mat-chip-label-text-color: var(--void);
     }
     &.arm {
       background: var(--forest) !important;
       color: var(--void) !important;
+      --mat-chip-label-text-color: var(--void);
     }
     &.esq {
       background: var(--sun) !important;
       color: var(--void) !important;
+      --mat-chip-label-text-color: var(--void);
     }
   }
 }
@@ -317,14 +321,6 @@
   }
 }
 
-.cart-container {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 0;
-}
-
 mat-sidenav {
   width: 400px;
   max-width: 100vw;
@@ -353,7 +349,7 @@ mat-sidenav {
 .cart-item {
   padding: 12px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--line);
   border-radius: var(--r-sm);
   margin-bottom: 12px;
   .item-header {
@@ -382,22 +378,6 @@ mat-sidenav {
   }
 }
 
-.cart-total {
-  padding: 16px 0;
-  .total-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    &:first-child {
-      font-size: 1.1rem;
-    }
-    .total-value {
-      font-weight: 700;
-      color: var(--sun);
-    }
-  }
-}
-
 .checkout-btn {
   width: 100%;
   margin-bottom: 8px;
@@ -421,7 +401,7 @@ mat-sidenav {
   display: flex;
   align-items: center;
   background: var(--surface);
-  border: 1px solid var(--line-strong);
+  border: 1.5px solid var(--line-strong);
   border-radius: var(--r-md);
   padding: 12px 16px;
   transition: all 0.3s ease;
@@ -493,7 +473,7 @@ mat-sidenav {
         top: 4px;
         right: 4px;
         background: var(--danger-deep);
-        color: var(--ink);
+        color: var(--on-deep);
         font-size: 0.65rem;
         font-weight: 700;
         width: 16px;
@@ -517,7 +497,7 @@ mat-sidenav {
     grid-template-rows 0.3s ease-out,
     opacity 0.3s ease-out;
   background: var(--paper-2);
-  border: 1px solid var(--line-strong);
+  border: 1.5px solid var(--line-strong);
   border-top: none;
   border-radius: 0 0 var(--r-md) var(--r-md);
   margin-top: -2px;
@@ -568,7 +548,7 @@ mat-sidenav {
     .custom-chip {
       cursor: pointer;
       transition: all 0.3s ease;
-      border: 1px solid var(--line-strong);
+      border: 1.5px solid var(--line-strong);
       background: var(--surface);
       color: shared.$text-muted;
       font-weight: 500;
@@ -608,7 +588,7 @@ mat-sidenav {
           }
           &.active {
             background: var(--danger-deep);
-            color: var(--ink);
+            color: var(--on-deep);
           }
         }
         &.pdc {
@@ -703,7 +683,7 @@ mat-sidenav {
   padding: 16px 20px;
   background: var(--surface);
   border-radius: var(--r-md);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   .results-count {
     font-size: 0.95rem;
     font-weight: 600;
@@ -787,7 +767,7 @@ mat-sidenav {
   span {
     padding: 5px 14px;
     background: var(--sun);
-    color: var(--ink);
+    color: var(--void);
     border-radius: var(--r-sm);
     box-shadow: var(--shadow-hard);
     font-weight: 700;

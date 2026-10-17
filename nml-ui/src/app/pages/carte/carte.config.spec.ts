@@ -1,4 +1,4 @@
-import { contrastColor, haloColor, DARK_TEXT, LIGHT_TEXT } from './carte.config';
+import { contrastColor, haloColor, DARK_TEXT, LIGHT_TEXT, MAP_THEME } from './carte.config';
 
 describe('contrastColor', () => {
   it('pose un texte sombre sur une couleur claire et clair sur une couleur sombre', () => {
@@ -18,5 +18,12 @@ describe('haloColor', () => {
   it('prend toujours la couleur opposée au texte', () => {
     expect(haloColor('#e8bb45')).toBe(LIGHT_TEXT);
     expect(haloColor('#192d5a')).toBe(DARK_TEXT);
+  });
+});
+
+describe('MAP_THEME', () => {
+  it('expose des couleurs sur 6 chiffres, concaténables avec un canal alpha', () => {
+    const colors = [...MAP_THEME.playerPalette, MAP_THEME.neutralColor];
+    expect(colors.filter((c) => !/^#[0-9a-f]{6}$/i.test(c))).toEqual([]);
   });
 });

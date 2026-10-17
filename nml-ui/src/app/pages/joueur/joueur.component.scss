@@ -177,7 +177,7 @@
   padding: 2px 8px;
   font-size: 0.8rem;
   background: var(--paper-2);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-xs);
 }
 
@@ -315,19 +315,23 @@
   padding: 0 6px !important;
   &.pdf {
     background: var(--danger-deep) !important;
-    color: var(--ink) !important;
+    color: var(--on-deep) !important;
+    --mat-chip-label-text-color: var(--on-deep);
   }
   &.pdc {
     background: var(--teal) !important;
     color: var(--void) !important;
+    --mat-chip-label-text-color: var(--void);
   }
   &.arm {
     background: var(--forest) !important;
     color: var(--void) !important;
+    --mat-chip-label-text-color: var(--void);
   }
   &.esq {
     background: var(--sun) !important;
     color: var(--void) !important;
+    --mat-chip-label-text-color: var(--void);
   }
 }
 
@@ -422,7 +426,7 @@
   gap: 8px;
   padding: 8px 12px;
   background: var(--surface);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-xs);
 }
 
@@ -497,7 +501,7 @@
 .power-item {
   padding: 16px;
   background: var(--paper);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-sm);
 }
 
@@ -546,7 +550,7 @@
     gap: 12px;
     padding: 10px 12px;
     background: var(--surface);
-    border: 1px solid var(--line-2);
+    border: 1.5px solid var(--line-2);
     border-radius: var(--r-xs);
   }
 
@@ -578,7 +582,7 @@
   gap: 12px;
   padding: 16px;
   background: var(--surface);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-left: 4px solid shared.$primary-color;
   border-radius: var(--r-sm);
   transition:

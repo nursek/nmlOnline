@@ -42,7 +42,7 @@ export const MAP_THEME = {
   ],
 
   // Couleur unique des secteurs neutres (fond, hachures, label, légende).
-  neutralColor: '#7a6845',
+  neutralColor: '#6e7885',
 
   // Motif de hachures des secteurs neutres (injecté en <defs> au chargement).
   neutralPattern: {
@@ -50,7 +50,7 @@ export const MAP_THEME = {
     height: 8,
     rotateDeg: 45,
     stripeWidth: 1,
-    background: '#211c16',
+    background: '#4e565f',
   },
 
   // Canal alpha hex (sur 2 chiffres) appliqué à la couleur propriétaire.

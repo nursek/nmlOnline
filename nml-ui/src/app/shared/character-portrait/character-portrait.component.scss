@@ -12,7 +12,7 @@
   background:
     linear-gradient(180deg, rgba(230, 222, 203, 0.04), transparent),
     var(--surface-2);
-  border: 1px solid var(--line-strong);
+  border: 1.5px solid var(--line-strong);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-hard);
   transition:
@@ -44,7 +44,7 @@
   height: 140px;
   overflow: hidden;
   background: var(--void);
-  border: 1px solid var(--line-2);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-sm);
 
   img {

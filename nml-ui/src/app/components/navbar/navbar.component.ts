@@ -19,6 +19,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 import { DevScenarioService } from '../../services/dev-scenario.service';
 import { SigilComponent } from '../../shared/sigil/sigil.component';
+import { ThemeToggleComponent } from '../../shared/theme-toggle/theme-toggle.component';
 
 interface NavLink {
   path: string;
@@ -59,6 +60,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
     MatChipsModule,
     MatListModule,
     SigilComponent,
+    ThemeToggleComponent,
   ],
   template: `
     @if (isAuthenticated()) {
@@ -104,6 +106,8 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
 
           <!-- User info -->
           <div class="user-section">
+            <app-theme-toggle />
+
             @if (user(); as user) {
               @if (user.username) {
                 <mat-chip-set>
@@ -176,21 +180,20 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         z-index: 1001;
         height: var(--nav-h);
         background:
-          linear-gradient(180deg, rgba(230, 222, 203, 0.045), transparent 55%),
-          linear-gradient(180deg, #171d20, #0b0f11);
-        border-bottom: 1px solid var(--line-strong);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+          linear-gradient(180deg, color-mix(in srgb, var(--ink) 4%, transparent), transparent 55%),
+          linear-gradient(180deg, var(--surface-2), var(--paper));
+        border-bottom: 3px solid var(--line-strong);
+        box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
       }
 
       .navbar::after {
         content: '';
         position: absolute;
         left: 0;
-        bottom: -1px;
+        bottom: -3px;
         width: 140px;
-        height: 2px;
+        height: 3px;
         background: var(--accent);
-        box-shadow: var(--glow-amber);
       }
 
       .navbar-content {
@@ -222,7 +225,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
           var(--surface-3);
         border: 1px solid var(--line-strong);
         border-radius: var(--r-sm);
-        clip-path: var(--cut-corner);
+        transform: rotate(-3deg);
         box-shadow: var(--glow-amber);
       }
 
@@ -280,10 +283,11 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
       }
 
       .user-chip {
-        --mdc-chip-elevated-container-color: var(--accent-tint);
-        --mdc-chip-label-text-color: var(--accent-ink);
-        --mdc-chip-outline-color: var(--accent-line);
-        --mdc-chip-elevated-selected-container-color: var(--accent-tint);
+        // Material pose ses jetons « highlighted » en (0,3,0) : !important requis.
+        --mat-chip-elevated-container-color: var(--accent-tint) !important;
+        --mat-chip-label-text-color: var(--accent-ink) !important;
+        --mat-chip-outline-color: var(--accent-line) !important;
+        --mat-chip-elevated-selected-container-color: var(--accent-tint) !important;
       }
 
       .mobile-drawer-backdrop {
@@ -307,7 +311,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         height: calc(100dvh - var(--nav-h));
         background: var(--paper-2);
         z-index: 1000;
-        border-right: 1px solid var(--line-strong);
+        border-right: 3px solid var(--line-strong);
         box-shadow: var(--shadow-pop);
         animation: slideIn 0.25s ease;
         overflow-y: auto;
