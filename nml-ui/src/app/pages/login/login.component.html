@@ -1,10 +1,16 @@
 <div class="login-page">
+  <app-sigil class="watermark" [size]="520" />
   <div class="login-container">
     <mat-card class="login-card">
+      <div class="console-lights" aria-hidden="true">
+        <span class="led led--green"></span>
+        <span class="led led--amber"></span>
+        <span class="led led--red"></span>
+      </div>
       <mat-card-content>
         <div class="header">
           <div class="avatar">
-            <mat-icon>shield</mat-icon>
+            <app-sigil [size]="52" />
           </div>
           <h1 class="title">NML Online</h1>
           <p class="subtitle">Connectez-vous pour conquérir des territoires</p>

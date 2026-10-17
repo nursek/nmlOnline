@@ -23,20 +23,26 @@
 
     <mat-tab-group
       animationDuration="200ms"
+      mat-stretch-tabs="false"
       class="joueur-tabs"
       (selectedTabChange)="onTabChange($event)"
     >
       <mat-tab label="Aperçu">
         <div class="stats-row">
           @for (stat of mainStats(); track stat.label) {
-            <mat-card class="stat-card hover-lift" [style.border-top]="'4px solid ' + stat.color">
+            <mat-card class="stat-card hover-lift" [style.border-top]="'2px solid ' + stat.color">
               <mat-card-content>
                 <div class="stat-content">
                   <div>
                     <p class="stat-label">{{ stat.label }}</p>
                     <h3 class="stat-value">{{ stat.value }}</h3>
                   </div>
-                  <div class="stat-icon" [style.background-color]="stat.color + '20'">
+                  <div
+                    class="stat-icon"
+                    [style.background-color]="
+                      'color-mix(in srgb, ' + stat.color + ' 16%, transparent)'
+                    "
+                  >
                     <mat-icon [style.color]="stat.color">{{ stat.icon }}</mat-icon>
                   </div>
                 </div>

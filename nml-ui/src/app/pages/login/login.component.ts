@@ -7,6 +7,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../services/auth.service';
+import { SigilComponent } from '../../shared/sigil/sigil.component';
 
 @Component({
   selector: 'app-login',
@@ -19,6 +20,7 @@ import { AuthService } from '../../services/auth.service';
     MatCheckboxModule,
     MatProgressSpinnerModule,
     MatIconModule,
+    SigilComponent,
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],

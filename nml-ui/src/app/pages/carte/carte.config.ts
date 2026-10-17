@@ -1,23 +1,48 @@
+export const DARK_TEXT = '#060809';
+export const LIGHT_TEXT = '#e6decb';
+
+function relativeLuminance(hex: string): number {
+  const clean = hex.replace('#', '');
+  const full = clean.length === 3 ? [...clean].map((c) => c + c).join('') : clean;
+  const channel = (offset: number) => {
+    const value = parseInt(full.slice(offset, offset + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
+}
+
+// Contraste du texte posé sur une couleur de secteur (meilleure des deux options, seuil calculé).
+export function contrastColor(hex: string): string {
+  const luminance = relativeLuminance(hex);
+  const contrastWithDark = (luminance + 0.05) / (relativeLuminance(DARK_TEXT) + 0.05);
+  const contrastWithLight = (relativeLuminance(LIGHT_TEXT) + 0.05) / (luminance + 0.05);
+  return contrastWithDark >= contrastWithLight ? DARK_TEXT : LIGHT_TEXT;
+}
+
+export function haloColor(hex: string): string {
+  return contrastColor(hex) === DARK_TEXT ? LIGHT_TEXT : DARK_TEXT;
+}
+
 export const MAP_THEME = {
   // Palette affectée par index sur les joueurs triés par id (stable au refresh,
   // contrairement à l'ordre d'insertion précédent).
   playerPalette: [
-    '#c03e1d',
-    '#264079',
-    '#205737',
-    '#e59826',
-    '#832e53',
-    '#0b5557',
-    '#a56d38',
-    '#581f0e',
-    '#192d5a',
-    '#5a6723',
-    '#b53d6d',
-    '#3b3529',
+    '#e8bb45',
+    '#6f93c9',
+    '#6fae6a',
+    '#d96a3a',
+    '#b47ccb',
+    '#4fc3c9',
+    '#d4a86a',
+    '#ef6a57',
+    '#8f9ad6',
+    '#9fbf4a',
+    '#e07ab0',
+    '#8d8f96',
   ],
 
   // Couleur unique des secteurs neutres (fond, hachures, label, légende).
-  neutralColor: '#7c6a47',
+  neutralColor: '#7a6845',
 
   // Motif de hachures des secteurs neutres (injecté en <defs> au chargement).
   neutralPattern: {
@@ -25,14 +50,14 @@ export const MAP_THEME = {
     height: 8,
     rotateDeg: 45,
     stripeWidth: 1,
-    background: '#fff5db',
+    background: '#211c16',
   },
 
   // Canal alpha hex (sur 2 chiffres) appliqué à la couleur propriétaire.
   fill: {
-    normalAlpha: '66', // ~40%
-    hoverAlpha: 'B3', // ~70%
-    dimmedOpacity: 0.25,
+    normalAlpha: '80', // ~50%
+    hoverAlpha: 'C0', // ~75%
+    dimmedOpacity: 0.22,
   },
 
   // Épaisseur de contour (unités utilisateur ; non-scaling-stroke garde le net).
@@ -47,7 +72,7 @@ export const MAP_THEME = {
     // des limites géométriques du path (effet « halo crisp » hors bordures).
     overflowRadius: 0,
     // Rayon du drop-shadow (glow flou autour). 0 = désactivé.
-    glowRadius: 0,
+    glowRadius: 4,
   },
 
   overlay: {
@@ -59,9 +84,8 @@ export const MAP_THEME = {
   label: {
     fontPx: 20,
     weight: 800,
-    strokeColor: '#17150f', // halo du chiffre (lisible sur tout fond)
+    strokeColor: '#060809', // halo du chiffre (lisible sur tout fond)
     strokeWidthPx: 4,
     contrastOnSelect: true,
-    selectedStroke: '#fff5db',
   },
 } as const;

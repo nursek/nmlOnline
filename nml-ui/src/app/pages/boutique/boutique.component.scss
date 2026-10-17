@@ -17,25 +17,11 @@
 }
 
 .page-header {
-  position: relative;
-  display: flex;
+  @include shared.page-header;
   justify-content: space-between;
-  align-items: center;
   flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 32px;
-  padding-bottom: 16px;
-  border-bottom: 2.5px solid var(--ink);
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -2.5px;
-    width: 64px;
-    height: 10px;
-    background: var(--accent);
-  }
 }
 
 .header-left {
@@ -64,9 +50,10 @@
 
 .money-display {
   padding: 8px 16px;
-  background: rgba(195,124,28, 0.1);
-  border: 1px solid var(--sun-deep);
+  background: color-mix(in srgb, var(--sun) 12%, transparent);
+  border: 1px solid var(--sun-line);
   border-radius: var(--r-sm);
+  font-family: var(--font-mono);
 
   .money-label {
     font-size: 0.75rem;
@@ -76,7 +63,7 @@
   .money-value {
     margin-left: 8px;
     font-weight: 700;
-    color: var(--sun-deep);
+    color: var(--sun);
   }
 }
 
@@ -97,7 +84,7 @@
   font-size: 1.1rem;
   font-weight: 600;
   color: shared.$text-muted;
-  border-bottom: 1px solid rgba(93,86,69, 0.2);
+  border-bottom: 1px solid color-mix(in srgb, var(--muted) 20%, transparent);
   padding-bottom: 6px;
 
   &:first-child {
@@ -108,6 +95,14 @@
 .equipment-card {
   border-radius: var(--r-md);
   height: 100%;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: var(--line-strong);
+    box-shadow: var(--glow-amber);
+  }
 
   mat-card-content {
     display: flex;
@@ -126,6 +121,12 @@
     margin: 0;
     font-weight: 600;
   }
+
+  mat-chip {
+    --mdc-chip-elevated-container-color: var(--danger-deep);
+    --mdc-chip-label-text-color: var(--ink);
+    font-family: var(--font-mono);
+  }
 }
 
 .shop-thumb-wrapper {
@@ -140,7 +141,8 @@
   height: 120px;
   object-fit: cover;
   border-radius: var(--r-xs);
-  background: var(--ink);
+  background: var(--void);
+  border: 1px solid var(--line);
 }
 
 .shop-thumb-fallback {
@@ -150,10 +152,10 @@
   width: 100%;
   height: 120px;
   border-radius: var(--r-xs);
-  background: var(--ink);
-  // ponytail: shared.$text-muted (var(--muted)) ne passe pas WCAG sur ce fond sombre
-  // (var(--ink) ~3.1:1) — même contournement que carte.component.scss.
-  color: var(--line-2);
+  background: var(--void);
+  border: 1px solid var(--line);
+  // ponytail: var(--muted) ne passe pas WCAG sur ce fond sombre.
+  color: var(--ink-3);
 
   mat-icon {
     font-size: 40px;
@@ -171,7 +173,7 @@
 
 .summary {
   font-size: 0.82rem;
-  color: black;
+  color: var(--ink-2);
   margin: 0 0 12px;
   line-height: 1.4;
 }
@@ -187,19 +189,19 @@
     min-height: 24px !important;
     &.pdf {
       background: var(--danger-deep) !important;
-      color: white !important;
+      color: var(--ink) !important;
     }
     &.pdc {
       background: var(--teal) !important;
-      color: white !important;
+      color: var(--void) !important;
     }
     &.arm {
-      background: var(--forest-deep) !important;
-      color: white !important;
+      background: var(--forest) !important;
+      color: var(--void) !important;
     }
     &.esq {
-      background: var(--sun-deep) !important;
-      color: white !important;
+      background: var(--sun) !important;
+      color: var(--void) !important;
     }
   }
 }
@@ -256,7 +258,7 @@
     font-size: 1rem;
     color: inherit;
     background: var(--surface);
-    border: 1px solid rgba(93, 86, 69, 0.3);
+    border: 1px solid color-mix(in srgb, var(--muted) 30%, transparent);
     border-radius: var(--r-sm);
     appearance: textfield;
 
@@ -294,7 +296,7 @@
   background: var(--surface);
   border-radius: var(--r-sm);
   padding: 4px;
-  box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.1);
+  box-shadow: var(--shadow-hard);
   .qty-value {
     min-width: 32px;
     text-align: center;
@@ -350,7 +352,8 @@ mat-sidenav {
 
 .cart-item {
   padding: 12px;
-  background: var(--paper);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
   margin-bottom: 12px;
   .item-header {
@@ -390,7 +393,7 @@ mat-sidenav {
     }
     .total-value {
       font-weight: 700;
-      color: var(--sun-deep);
+      color: var(--sun);
     }
   }
 }
@@ -418,14 +421,14 @@ mat-sidenav {
   display: flex;
   align-items: center;
   background: var(--surface);
-  border: 2px solid var(--ink);
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
   padding: 12px 16px;
   transition: all 0.3s ease;
-  box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.04);
+  box-shadow: var(--shadow-hard);
   &:focus-within {
     border-color: shared.$primary-color;
-    box-shadow: 3px 3px 0 rgba(192,62,29, 0.15);
+    box-shadow: var(--glow-amber);
   }
   .search-icon {
     color: shared.$primary-color;
@@ -474,13 +477,13 @@ mat-sidenav {
       background: var(--paper-2);
     }
     &.clear-btn:hover {
-      color: var(--danger-deep);
+      color: var(--danger);
       background: var(--danger-tint);
     }
     &.filter-toggle-btn {
       &.active {
-        background: var(--ink);
-        color: var(--paper);
+        background: var(--accent);
+        color: var(--void);
         &:hover {
           background: var(--accent-ink);
         }
@@ -490,7 +493,7 @@ mat-sidenav {
         top: 4px;
         right: 4px;
         background: var(--danger-deep);
-        color: white;
+        color: var(--ink);
         font-size: 0.65rem;
         font-weight: 700;
         width: 16px;
@@ -499,7 +502,7 @@ mat-sidenav {
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 2px solid white;
+        border: 2px solid var(--surface-3);
       }
     }
   }
@@ -514,11 +517,11 @@ mat-sidenav {
     grid-template-rows 0.3s ease-out,
     opacity 0.3s ease-out;
   background: var(--paper-2);
-  border: 2px solid var(--ink);
+  border: 1px solid var(--line-strong);
   border-top: none;
   border-radius: 0 0 var(--r-md) var(--r-md);
   margin-top: -2px;
-  box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.06);
+  box-shadow: var(--shadow-hard);
 
   .filters-content {
     min-height: 0;
@@ -565,7 +568,7 @@ mat-sidenav {
     .custom-chip {
       cursor: pointer;
       transition: all 0.3s ease;
-      border: 2px solid var(--ink);
+      border: 1px solid var(--line-strong);
       background: var(--surface);
       color: shared.$text-muted;
       font-weight: 500;
@@ -574,7 +577,7 @@ mat-sidenav {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.04);
+      box-shadow: var(--shadow-hard);
       font-size: 0.875rem;
       outline: none;
       mat-icon {
@@ -584,27 +587,28 @@ mat-sidenav {
       }
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 3px 3px 0 rgba(192,62,29, 0.15);
+        box-shadow: var(--glow-amber);
         border-color: shared.$primary-color;
       }
       &.active {
-        background: var(--ink);
-        color: var(--paper);
-        border-color: var(--ink);
-        box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.25);
+        background: var(--accent);
+        color: var(--void);
+        border-color: var(--accent-line);
+        box-shadow: var(--glow-amber);
         transform: translateY(-2px);
       }
       &.bonus-chip {
         &.pdf {
           &:not(.active) {
             border-color: var(--danger-line);
-            color: var(--danger-deep);
+            color: var(--danger);
             &:hover {
               background: var(--danger-tint);
             }
           }
           &.active {
-            background: var(--danger);
+            background: var(--danger-deep);
+            color: var(--ink);
           }
         }
         &.pdc {
@@ -622,37 +626,40 @@ mat-sidenav {
         &.arm {
           &:not(.active) {
             border-color: var(--forest-line);
-            color: var(--forest-deep);
+            color: var(--forest);
             &:hover {
               background: var(--forest-tint);
             }
           }
           &.active {
             background: var(--forest);
+            color: var(--void);
           }
         }
         &.esq {
           &:not(.active) {
             border-color: var(--sun-line);
-            color: var(--sun-deep);
+            color: var(--sun);
             &:hover {
               background: var(--sun-tint);
             }
           }
           &.active {
-            background: var(--sun-deep);
+            background: var(--sun);
+            color: var(--void);
           }
         }
         &.all {
           &:not(.active) {
             border-color: var(--plum-tint);
-            color: var(--accent-deep);
+            color: var(--accent);
             &:hover {
               background: var(--plum-tint);
             }
           }
           &.active {
             background: var(--plum);
+            color: var(--void);
           }
         }
       }
@@ -667,7 +674,7 @@ mat-sidenav {
 }
 
 .reset-filters-btn {
-  color: var(--danger-deep);
+  color: var(--danger);
   border: 2px solid var(--danger-line);
   border-radius: var(--r-sm);
   padding: 8px 20px;
@@ -682,9 +689,9 @@ mat-sidenav {
   }
   &:hover {
     background: var(--danger-tint);
-    border-color: var(--danger-deep);
+    border-color: var(--danger);
     transform: translateY(-2px);
-    box-shadow: 3px 3px 0 rgba(157,46,25, 0.15);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--danger) 30%, transparent);
   }
 }
 
@@ -696,7 +703,7 @@ mat-sidenav {
   padding: 16px 20px;
   background: var(--surface);
   border-radius: var(--r-md);
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--line-2);
   .results-count {
     font-size: 0.95rem;
     font-weight: 600;
@@ -764,7 +771,7 @@ mat-sidenav {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(44, 40, 31, 0.35);
+  background: color-mix(in srgb, var(--void) 60%, transparent);
   border-radius: var(--r-xs);
   pointer-events: none;
 
@@ -772,9 +779,9 @@ mat-sidenav {
     font-size: 40px;
     width: 40px;
     height: 40px;
-    color: var(--accent-deep);
-    filter: drop-shadow(0 0 2px rgba(255, 245, 219, 0.95))
-      drop-shadow(0 0 5px rgba(255, 245, 219, 0.7));
+    color: var(--accent);
+    filter: drop-shadow(0 0 2px color-mix(in srgb, var(--ink) 95%, transparent))
+      drop-shadow(0 0 5px color-mix(in srgb, var(--ink) 70%, transparent));
   }
 
   span {
@@ -782,7 +789,7 @@ mat-sidenav {
     background: var(--sun);
     color: var(--ink);
     border-radius: var(--r-sm);
-    box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.15);
+    box-shadow: var(--shadow-hard);
     font-weight: 700;
     font-size: 0.8rem;
     text-transform: uppercase;
@@ -834,7 +841,7 @@ mat-sidenav {
   }
 
   &.sell-section {
-    color: var(--forest-deep);
+    color: var(--forest);
   }
 }
 
@@ -846,12 +853,12 @@ mat-sidenav {
   font-weight: 600;
 
   .total-value {
-    color: var(--sun-deep);
+    color: var(--sun);
     font-weight: 700;
   }
 
   &.sell-total .sell-value {
-    color: var(--forest-deep);
+    color: var(--forest);
   }
 }
 
@@ -869,13 +876,13 @@ mat-sidenav {
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: var(--sun-deep);
+    color: var(--sun);
   }
 }
 
 .in-cart-badge {
   font-size: 0.78rem;
-  color: var(--accent-deep);
+  color: var(--accent);
   font-weight: 600;
   background: var(--accent-tint);
   border-radius: var(--r-xs);
@@ -889,7 +896,7 @@ mat-sidenav {
   align-items: center;
   gap: 4px;
   font-size: 0.78rem;
-  color: var(--forest-deep);
+  color: var(--forest);
   font-weight: 600;
   background: var(--forest-tint);
   border-radius: var(--r-xs);
@@ -905,7 +912,7 @@ mat-sidenav {
 }
 
 .sell-price {
-  color: var(--forest-deep) !important;
+  color: var(--forest) !important;
 }
 
 .resource-value-info {
@@ -920,7 +927,7 @@ mat-sidenav {
     font-size: 16px;
     width: 16px;
     height: 16px;
-    color: var(--sun-deep);
+    color: var(--sun);
   }
 }
 

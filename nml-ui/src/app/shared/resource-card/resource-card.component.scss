@@ -6,15 +6,16 @@
   gap: 12px;
   padding: 16px;
   background: var(--surface);
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--line-2);
   border-radius: var(--r-sm);
   transition:
     transform 0.2s,
     box-shadow 0.2s;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.08);
+    transform: translateY(-1px);
+    border-color: var(--line-strong);
+    box-shadow: var(--glow-amber);
   }
 }
 
@@ -24,7 +25,8 @@
   justify-content: center;
   height: 84px;
   overflow: hidden;
-  background: var(--paper-2);
+  background: var(--void);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
 
   img {
@@ -76,7 +78,7 @@
   .rc-total {
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--forest-deep);
+    color: var(--forest);
   }
 }
 

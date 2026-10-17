@@ -45,7 +45,7 @@
     }
     &.usp-na {
       background: var(--paper);
-      border: 1.5px solid var(--ink);
+      border: 1px solid var(--line-2);
       opacity: 0.6;
     }
 
@@ -76,15 +76,15 @@
         }
         &.pdc {
           background: var(--teal-tint);
-          color: var(--teal-deep);
+          color: var(--teal);
         }
         &.arm {
           background: var(--forest-tint);
-          color: var(--forest-deep);
+          color: var(--forest);
         }
         &.esq {
           background: var(--sun-tint);
-          color: var(--sun-deep);
+          color: var(--sun);
         }
       }
       .usp-cat {

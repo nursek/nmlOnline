@@ -1,3 +1,5 @@
+@use '../../../styles/shared' as shared;
+
 :host {
   display: block;
   max-width: 960px;
@@ -13,7 +15,7 @@
   flex-wrap: wrap;
   padding: 0.75rem 1rem;
   margin-bottom: 1.25rem;
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--line-2);
   border-radius: var(--r-sm);
   background: var(--surface);
 
@@ -35,15 +37,15 @@
 
     .turn-value {
       font-weight: 600;
-      color: var(--sun-deep);
+      color: var(--sun);
     }
 
     .session-badge {
       margin-left: 0.4rem;
       padding: 0.1rem 0.5rem;
       border-radius: var(--r-xs);
-      background: rgba(38, 64, 121, 0.15);
-      color: var(--cobalt-deep);
+      background: color-mix(in srgb, var(--cobalt) 15%, transparent);
+      color: var(--cobalt);
       font-size: 0.75rem;
       font-weight: 600;
     }
@@ -69,25 +71,26 @@
   position: relative;
   margin-bottom: 1.5rem;
   padding-bottom: 16px;
-  border-bottom: 2.5px solid var(--ink);
+  border-bottom: 1px solid var(--line-2);
 
   &::after {
     content: '';
     position: absolute;
     left: 0;
-    bottom: -2.5px;
-    width: 64px;
-    height: 10px;
+    bottom: -1px;
+    width: 72px;
+    height: 2px;
     background: var(--accent);
+    box-shadow: var(--glow-amber);
   }
 
   .title {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
 
     mat-icon {
-      color: var(--accent);
+      @include shared.header-icon-plate(44px, 24px);
     }
 
     h1 {
@@ -111,7 +114,7 @@
   flex-wrap: wrap;
   padding: 0.75rem 1rem;
   background: var(--paper-2);
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--line-2);
   border-radius: var(--r-sm);
   margin-bottom: 1.25rem;
   font-size: 0.95rem;
@@ -134,7 +137,7 @@
 
   .done-badge {
     margin-left: auto;
-    background: rgba(40,104,67, 0.15);
+    background: color-mix(in srgb, var(--forest) 15%, transparent);
     color: var(--ink);
     padding: 0.2rem 0.6rem;
     border-radius: var(--r-xs);
@@ -148,8 +151,8 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.9rem;
-  background: rgba(192,62,29, 0.1);
-  border: 1px solid rgba(192,62,29, 0.25);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   border-radius: var(--r-sm);
   margin-bottom: 1rem;
   font-size: 0.9rem;
@@ -196,7 +199,7 @@
   }
 
   .count-badge {
-    background: rgba(157,46,25, 0.15);
+    background: color-mix(in srgb, var(--danger) 15%, transparent);
     color: var(--ink);
     padding: 0.1rem 0.5rem;
     border-radius: var(--r-xs);
@@ -213,8 +216,8 @@
 .error-banner {
   margin: 0 0 1rem;
   padding: 0.6rem 0.9rem;
-  background: rgba(157,46,25, 0.1);
-  border: 1px solid rgba(157,46,25, 0.35);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
   border-radius: var(--r-sm);
   color: var(--ink);
   font-size: 0.9rem;
@@ -233,7 +236,7 @@
   flex-wrap: wrap;
   padding: 0.7rem 0.9rem;
   background: var(--surface);
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--line-2);
   border-radius: var(--r-sm);
 
   .conflict-where {
@@ -282,7 +285,7 @@
 }
 
 .standoff-badge {
-  background: rgba(195,75,28, 0.15);
+  background: color-mix(in srgb, var(--rust) 15%, transparent);
   color: var(--accent-ink);
   padding: 0.1rem 0.5rem;
   border-radius: var(--r-xs);
@@ -299,7 +302,7 @@
   .player {
     padding: 0.15rem 0.5rem;
     border: 1px solid var(--sun-line);
-    background: rgba(195,75,28, 0.08);
+    background: color-mix(in srgb, var(--rust) 8%, transparent);
     border-radius: var(--r-xs);
     font-size: 0.85rem;
     color: var(--accent-ink);
@@ -321,7 +324,7 @@
   .camp {
     padding: 0.15rem 0.5rem;
     border-radius: var(--r-xs);
-    background: rgba(93,86,69, 0.15);
+    background: color-mix(in srgb, var(--muted) 15%, transparent);
     font-size: 0.8rem;
   }
 
@@ -358,7 +361,7 @@
   }
 
   .counts {
-    color: var(--sun-deep);
+    color: var(--sun);
   }
 
   .counts.no-op {
@@ -398,12 +401,12 @@ button[disabled] mat-spinner {
 
 ::ng-deep .toast-success {
   background: var(--forest) !important;
-  color: var(--surface) !important;
+  color: var(--void) !important;
 }
 
 ::ng-deep .toast-info {
   background: var(--ink-3) !important;
-  color: var(--surface) !important;
+  color: var(--void) !important;
 }
 
 .pending-captures {

@@ -13,7 +13,7 @@
   justify-content: space-between;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 2.5px solid var(--ink);
+  border-bottom: 1px solid var(--line-2);
   flex-wrap: wrap;
   gap: 16px;
 
@@ -21,10 +21,11 @@
     content: '';
     position: absolute;
     left: 0;
-    bottom: -2.5px;
-    width: 64px;
-    height: 10px;
+    bottom: -1px;
+    width: 72px;
+    height: 2px;
     background: var(--danger);
+    box-shadow: var(--glow-amber);
   }
 
   .header-left {
@@ -35,7 +36,11 @@
 
   .admin-avatar {
     @include shared.avatar(56px, 32px);
-    background: var(--danger);
+    border-color: var(--danger-line);
+
+    mat-icon {
+      color: var(--danger);
+    }
   }
 
   .admin-title {
@@ -55,7 +60,7 @@
 .admin-panel {
   padding: 16px;
   margin-bottom: 16px;
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--line-2);
   border-radius: var(--r-sm);
   background: var(--surface);
 
@@ -102,7 +107,7 @@
       padding: 8px 10px;
       border-radius: var(--r-xs);
       background: var(--paper);
-      border: 1.5px solid var(--ink);
+      border: 1px solid var(--line-2);
 
       .order-main {
         display: flex;
@@ -126,7 +131,7 @@
 
         .order-route {
           font-weight: 600;
-          color: var(--sun-deep);
+          color: var(--sun);
 
           .order-route-detail {
             margin-left: 6px;
@@ -161,19 +166,19 @@
       }
 
       .status-badge.status-pending {
-        background: rgba(38, 64, 121, 0.18);
-        color: var(--cobalt-deep);
+        background: color-mix(in srgb, var(--cobalt) 18%, transparent);
+        color: var(--cobalt);
       }
       .status-badge.status-resolved {
-        background: rgba(40, 104, 67, 0.18);
-        color: var(--forest-deep);
+        background: color-mix(in srgb, var(--forest) 18%, transparent);
+        color: var(--forest);
       }
       .status-badge.status-blocked {
         background: var(--danger-tint);
-        color: var(--danger-deep);
+        color: var(--danger);
       }
       .status-badge.status-cancelled {
-        background: rgba(93, 86, 69, 0.18);
+        background: color-mix(in srgb, var(--muted) 18%, transparent);
         color: var(--ink-3);
       }
     }
@@ -181,7 +186,7 @@
     .order-message {
       padding: 4px 10px 6px;
       margin-top: -2px;
-      color: var(--danger-deep);
+      color: var(--danger);
       font-size: 11px;
     }
   }
@@ -264,16 +269,16 @@
     }
 
     &.money {
-      color: var(--sun-deep);
+      color: var(--sun);
     }
     &.sectors {
-      color: var(--accent-deep);
+      color: var(--accent);
     }
     &.army {
       color: var(--danger);
     }
     &.equipment {
-      color: var(--forest-deep);
+      color: var(--forest);
     }
   }
 }
@@ -314,7 +319,7 @@
     padding: 8px 12px;
     background: var(--paper);
     border-radius: var(--r-sm);
-    border: 1.5px solid var(--ink);
+    border: 1px solid var(--line-2);
 
     .stat-label {
       font-size: 0.7rem;
@@ -329,7 +334,7 @@
       color: var(--ink);
 
       &.money {
-        color: var(--sun-deep);
+        color: var(--sun);
       }
       @include shared.stat-colors;
     }
@@ -347,7 +352,7 @@
     gap: 4px;
     padding: 4px 10px;
     background: var(--paper-2);
-    border: 1.5px solid var(--ink);
+    border: 1px solid var(--line-2);
     border-radius: var(--r-md);
     font-size: 0.8rem;
     color: var(--ink);
@@ -371,7 +376,7 @@
 
 .sector-block {
   background: var(--paper);
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--line-2);
   border-radius: var(--r-sm);
   padding: 12px;
   margin-bottom: 8px;
@@ -414,7 +419,7 @@
     padding: 4px 8px;
     background: var(--surface);
     border-radius: var(--r-xs);
-    border: 1.5px solid var(--ink);
+    border: 1px solid var(--line-2);
     font-size: 0.8rem;
 
     .unit-type {

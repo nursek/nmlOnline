@@ -30,11 +30,11 @@
 
 .toc {
   position: sticky;
-  top: 72px;
+  top: calc(var(--nav-h) + 8px);
   align-self: start;
   padding: 16px;
   background: var(--surface);
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--line-2);
   border-radius: var(--r-md);
 
   .toc-head {
@@ -93,7 +93,7 @@
 }
 
 .rule-panel {
-  scroll-margin-top: 72px;
+  scroll-margin-top: calc(var(--nav-h) + 12px);
   margin-bottom: 12px;
 
   mat-panel-title {
@@ -112,8 +112,8 @@
   margin-left: auto;
   padding: 2px 8px;
   border-radius: var(--r-sm);
-  background: rgba(195,124,28, 0.15);
-  color: var(--sun-deep);
+  background: color-mix(in srgb, var(--sun) 15%, transparent);
+  color: var(--sun);
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -174,7 +174,7 @@
 
 .callout {
   background: var(--paper);
-  border: 1.5px solid var(--ink);
+  border: 1px solid var(--line-2);
 
   mat-icon {
     color: shared.$primary-color;
@@ -182,11 +182,11 @@
 }
 
 .draft {
-  background: rgba(195,124,28, 0.08);
-  border: 1px solid rgba(156,92,16, 0.35);
+  background: color-mix(in srgb, var(--sun) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sun-deep) 35%, transparent);
 
   mat-icon {
-    color: var(--sun-deep);
+    color: var(--sun);
   }
 }
 
@@ -247,8 +247,8 @@
 }
 
 .tag-actif {
-  background: rgba(40,104,67, 0.15);
-  color: var(--forest-deep);
+  background: color-mix(in srgb, var(--forest) 15%, transparent);
+  color: var(--forest);
 }
 
 .tag-inactif {
@@ -270,18 +270,18 @@
   border: 1px solid;
 
   &.gold {
-    background: rgba(195,124,28, 0.1);
-    border-color: var(--sun-deep);
+    background: color-mix(in srgb, var(--sun) 10%, transparent);
+    border-color: var(--sun);
   }
 
   &.silver {
-    background: rgba(93,86,69, 0.1);
+    background: color-mix(in srgb, var(--muted) 10%, transparent);
     border-color: var(--muted);
   }
 
   &.bronze {
-    background: rgba(195,75,28, 0.1);
-    border-color: var(--accent-deep);
+    background: color-mix(in srgb, var(--rust) 10%, transparent);
+    border-color: var(--accent);
   }
 
   .emoji {

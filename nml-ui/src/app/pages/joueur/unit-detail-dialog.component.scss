@@ -275,7 +275,7 @@ $stat-colors: (
       font-size: 0.9rem;
 
       .udd-injured {
-        color: var(--danger-deep);
+        color: var(--danger);
         display: inline-flex;
         align-items: center;
         gap: 4px;
@@ -334,7 +334,7 @@ $stat-colors: (
       border-radius: var(--r-xs);
       background: var(--sun-tint);
       border: 1px solid var(--sun-line);
-      color: var(--sun-deep);
+      color: var(--sun);
       font-size: 0.85rem;
     }
     .udd-label {
@@ -362,7 +362,7 @@ $stat-colors: (
       border: 1px solid var(--sun-tint);
       border-radius: var(--r-xs);
       font-size: 0.82rem;
-      color: var(--sun-deep);
+      color: var(--sun);
     }
   }
 

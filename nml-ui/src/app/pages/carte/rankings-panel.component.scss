@@ -58,7 +58,8 @@
   gap: 10px;
   padding: 10px 12px;
   border-radius: var(--r-sm);
-  background: var(--paper);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
 
   & + .ranking-row {
     margin-top: 8px;
@@ -80,17 +81,17 @@
 
   &.rank-1 {
     background: linear-gradient(135deg, var(--sun-line), var(--sun));
-    color: var(--ink);
+    color: var(--void);
   }
 
   &.rank-2 {
-    background: linear-gradient(135deg, var(--paper-2), var(--line-2));
+    background: linear-gradient(135deg, var(--line-2), var(--surface-3));
     color: var(--ink);
   }
 
   &.rank-3 {
-    background: linear-gradient(135deg, var(--sun), var(--accent-deep));
-    color: var(--ink);
+    background: linear-gradient(135deg, var(--sun), var(--rust));
+    color: var(--void);
   }
 }
 
@@ -100,6 +101,7 @@
   height: 12px;
   margin-top: 5px;
   border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
 }
 
 .entry-body {
@@ -127,7 +129,7 @@
   overflow: hidden;
   font-size: 0.85rem;
   font-style: italic;
-  color: var(--sun-deep);
+  color: var(--sun);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -170,9 +172,9 @@
     min-width: 0;
     min-height: 34px;
     padding: 6px 8px;
-    border: 1.5px solid var(--ink-2);
+    border: 1px solid var(--line-2);
     border-radius: var(--r-xs);
-    background: var(--surface);
+    background: var(--surface-2);
     font: inherit;
     font-size: 0.85rem;
     line-height: 1.4;
