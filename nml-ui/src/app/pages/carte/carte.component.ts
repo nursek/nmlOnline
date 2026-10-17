@@ -27,7 +27,7 @@ import { environment } from '../../../environments/environment';
 import { sanitizeSvg } from '../../core/svg-sanitize';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
-import { MAP_THEME } from './carte.config';
+import { contrastColor, haloColor, MAP_THEME } from './carte.config';
 import { RankingsPanelComponent } from './rankings-panel.component';
 
 interface SectorWithPlayer extends Sector {
@@ -479,9 +479,8 @@ export class CarteComponent {
    * recalculée à chaque changement de filtre/sélection (en phase avec
    * updateAllPathColors). Le halo noir par défaut est porté par le CSS. Sur
    * sélection, le fond devient opaque : on recolore le chiffre via
-   * getContrastColor pour garantir la lisibilité (configuré par
-   * MAP_THEME.label.contrastOnSelect) et on inverse le halo — blanc si le
-   * texte est gris foncé, gris si le texte est blanc (cf carte.config.ts).
+   * getContrastColor pour garantir la lisibilité (MAP_THEME.label.contrastOnSelect)
+   * et on pose le halo opposé via getHaloColor.
    */
   private updateSectorLabelColors(container: HTMLElement): void {
     const labels = container.querySelectorAll('text.sector-label');
@@ -495,7 +494,7 @@ export class CarteComponent {
       const txt = label as SVGTextElement;
       if (lbl.contrastOnSelect && selectedNum === num) {
         txt.style.fill = this.getContrastColor();
-        txt.style.stroke = lbl.selectedStroke;
+        txt.style.stroke = this.getHaloColor();
       } else {
         txt.style.fill = color;
         // Rend la main au halo par défaut porté par la CSS var.
@@ -583,7 +582,16 @@ export class CarteComponent {
   }
 
   getContrastColor(): string {
-    return '#17150F';
+    return contrastColor(this.selectedSectorColor());
+  }
+
+  getHaloColor(): string {
+    return haloColor(this.selectedSectorColor());
+  }
+
+  private selectedSectorColor(): string {
+    const sector = this.selectedSector();
+    return sector ? this.getSectorColor(sector) : MAP_THEME.neutralColor;
   }
 
   selectSector(sector: SectorWithPlayer): void {

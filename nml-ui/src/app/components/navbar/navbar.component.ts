@@ -18,6 +18,8 @@ import { map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 import { DevScenarioService } from '../../services/dev-scenario.service';
+import { SigilComponent } from '../../shared/sigil/sigil.component';
+import { ThemeToggleComponent } from '../../shared/theme-toggle/theme-toggle.component';
 
 interface NavLink {
   path: string;
@@ -57,6 +59,8 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
     MatIconModule,
     MatChipsModule,
     MatListModule,
+    SigilComponent,
+    ThemeToggleComponent,
   ],
   template: `
     @if (isAuthenticated()) {
@@ -64,7 +68,9 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         <div class="navbar-content">
           <!-- Logo -->
           <a routerLink="/" class="logo-link">
-            <mat-icon class="logo-icon">shield</mat-icon>
+            <span class="logo-badge">
+              <app-sigil [size]="26" />
+            </span>
             <span class="logo-text">NML Online</span>
           </a>
 
@@ -100,10 +106,12 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
 
           <!-- User info -->
           <div class="user-section">
+            <app-theme-toggle />
+
             @if (user(); as user) {
               @if (user.username) {
                 <mat-chip-set>
-                  <mat-chip highlighted>
+                  <mat-chip class="user-chip" highlighted>
                     <mat-icon matChipAvatar>person</mat-icon>
                     {{ user.username }}
                   </mat-chip>
@@ -161,7 +169,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
 
       :host.visible {
         display: block;
-        height: 56px; /* Reserve space for fixed navbar */
+        height: var(--nav-h); /* Reserve space for fixed navbar */
       }
 
       .navbar {
@@ -170,9 +178,12 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         left: 0;
         right: 0;
         z-index: 1001;
-        background: var(--paper-2);
-        border-bottom: 3px solid var(--ink);
-        box-shadow: 0 6px 0 rgba(23, 21, 15, 0.06);
+        height: var(--nav-h);
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--ink) 4%, transparent), transparent 55%),
+          linear-gradient(180deg, var(--surface-2), var(--paper));
+        border-bottom: 3px solid var(--line-strong);
+        box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
       }
 
       .navbar::after {
@@ -202,52 +213,62 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         gap: 10px;
       }
 
-      .logo-icon {
-        font-size: 20px;
-        width: 34px;
-        height: 34px;
-        line-height: 34px;
-        text-align: center;
-        color: var(--surface);
-        background: var(--accent);
-        border: 1.5px solid var(--ink);
+      .logo-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        color: var(--accent);
+        background:
+          linear-gradient(180deg, rgba(230, 222, 203, 0.06), transparent),
+          var(--surface-3);
+        border: 1px solid var(--line-strong);
         border-radius: var(--r-sm);
         transform: rotate(-3deg);
+        box-shadow: var(--glow-amber);
       }
 
       .logo-text {
         font-family: var(--font-display);
-        font-size: 1.3rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
         color: var(--ink);
       }
 
       .nav-links {
         display: flex;
-        gap: 4px;
-        margin-left: 18px;
+        gap: 2px;
+        margin-left: 12px;
       }
 
       .nav-links a {
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.09em;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--ink-2);
+        border-radius: var(--r-sm);
 
         &:hover {
-          background: rgba(23, 21, 15, 0.08);
+          background: color-mix(in srgb, var(--ink) 8%, transparent);
           color: var(--ink);
         }
 
         &.active {
-          background: var(--line-2);
-          color: var(--ink);
+          background: var(--accent-tint);
+          color: var(--accent-ink);
+          box-shadow: inset 0 -2px 0 var(--accent);
         }
 
         mat-icon {
           margin-right: 6px;
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
         }
       }
 
@@ -258,7 +279,15 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
       .user-section {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
+      }
+
+      .user-chip {
+        // Material pose ses jetons « highlighted » en (0,3,0) : !important requis.
+        --mat-chip-elevated-container-color: var(--accent-tint) !important;
+        --mat-chip-label-text-color: var(--accent-ink) !important;
+        --mat-chip-outline-color: var(--accent-line) !important;
+        --mat-chip-elevated-selected-container-color: var(--accent-tint) !important;
       }
 
       .mobile-drawer-backdrop {
@@ -267,7 +296,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(23, 21, 15, 0.55);
+        background: rgba(0, 0, 0, 0.7);
         z-index: 999;
         animation: fadeIn 0.2s ease;
         touch-action: none;
@@ -275,15 +304,15 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
 
       .mobile-drawer {
         position: fixed;
-        top: 56px;
+        top: var(--nav-h);
         left: 0;
         width: 280px;
         max-width: 80vw;
-        height: calc(100dvh - 56px);
-        background: var(--paper);
+        height: calc(100dvh - var(--nav-h));
+        background: var(--paper-2);
         z-index: 1000;
-        border-top: 3px solid var(--ink);
-        box-shadow: 6px 0 0 rgba(23, 21, 15, 0.18);
+        border-right: 3px solid var(--line-strong);
+        box-shadow: var(--shadow-pop);
         animation: slideIn 0.25s ease;
         overflow-y: auto;
         overscroll-behavior: contain;
@@ -294,10 +323,11 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         }
 
         a {
+          font-family: var(--font-mono);
           color: var(--ink-2);
-          font-size: 0.82rem;
+          font-size: 0.78rem;
           font-weight: 600;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.08em;
           text-transform: uppercase;
 
           mat-icon {
@@ -305,12 +335,12 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
           }
 
           &:hover {
-            background: rgba(23, 21, 15, 0.06);
+            background: color-mix(in srgb, var(--ink) 6%, transparent);
           }
 
           &.active {
-            background: var(--line-2);
-            color: var(--ink);
+            background: var(--accent-tint);
+            color: var(--accent-ink);
 
             mat-icon {
               color: var(--accent-ink);

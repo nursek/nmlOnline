@@ -47,7 +47,7 @@ h3 {
   align-items: center;
   gap: 4px;
   padding: 2px 4px 2px 12px;
-  border: 1px solid var(--accent-line);
+  border: 1.5px solid var(--accent-line);
   border-radius: var(--r-md);
   background: var(--accent-tint);
   color: var(--accent-ink);
@@ -67,7 +67,7 @@ h3 {
 }
 
 .offer-card {
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-sm);
   padding: 8px 12px;
   margin-bottom: 8px;
@@ -118,19 +118,19 @@ h3 {
 
 .status--PENDING {
   background: var(--sun-tint);
-  color: var(--sun-deep);
+  color: var(--sun);
 }
 
 .status--ACCEPTED {
   background: var(--forest-tint);
-  color: var(--forest-deep);
+  color: var(--forest);
 }
 
 .status--DECLINED,
 .status--CANCELLED,
 .status--EXPIRED {
   background: var(--danger-tint);
-  color: var(--danger-deep);
+  color: var(--danger);
 }
 
 .empty-line {

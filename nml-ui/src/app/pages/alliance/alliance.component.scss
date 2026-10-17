@@ -37,7 +37,7 @@
   @include shared.error-alert;
   background: var(--sun-tint);
   border-color: var(--sun-line);
-  color: var(--sun-deep);
+  color: var(--sun);
   margin: 0 0 1rem;
 }
 
@@ -69,7 +69,7 @@
 .card {
   margin-bottom: 1rem;
   padding: 1rem 1.1rem;
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-sm);
   background: var(--surface);
 
@@ -113,7 +113,7 @@
   border: 1.5px solid var(--line);
 
   &.selected {
-    border-color: var(--ink);
+    border-color: var(--line-strong);
     background: var(--paper);
   }
 

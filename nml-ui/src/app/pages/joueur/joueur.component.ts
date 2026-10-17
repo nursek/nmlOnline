@@ -246,13 +246,13 @@ export class JoueurComponent {
         label: 'Argent',
         value: `${p.stats.money.toFixed(0)} ₡`,
         icon: 'attach_money',
-        color: 'var(--sun-deep)',
+        color: 'var(--sun)',
       },
       {
         label: 'Revenus',
         value: `${this.income().toFixed(0)} ₡/tour`,
         icon: 'trending_up',
-        color: 'var(--forest-deep)',
+        color: 'var(--forest)',
       },
       {
         label: 'Puissance globale',

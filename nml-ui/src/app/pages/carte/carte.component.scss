@@ -115,11 +115,12 @@
   color: inherit;
   &:hover {
     opacity: 1;
-    background: var(--paper-2);
+    background: var(--surface-2);
   }
   &.active {
     opacity: 1;
     background: var(--accent-tint);
+    box-shadow: inset 2px 0 0 var(--accent);
   }
   &.neutral {
     cursor: pointer;
@@ -154,10 +155,12 @@
 }
 
 .map-container {
-  background: var(--paper-2);
+  background: var(--void);
+  border: 1.5px solid var(--line-strong);
   border-radius: var(--r-md);
   padding: 8px;
   overflow: auto;
+  box-shadow: var(--shadow-hard);
 }
 
 .sector-header {
@@ -186,7 +189,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     border-radius: var(--r-xs);
-    background: rgba(45, 106, 79, 0.16);
+    background: color-mix(in srgb, var(--forest) 16%, transparent);
     color: var(--forest);
   }
 }
@@ -230,13 +233,13 @@
   .value {
     font-weight: 600;
     &.gold {
-      color: var(--sun-deep);
+      color: var(--sun);
     }
     &.red {
       color: var(--danger);
     }
     &.green {
-      color: var(--forest-deep);
+      color: var(--forest);
     }
     &.blue {
       color: var(--cobalt);
@@ -287,7 +290,7 @@
   font-size: 0.75rem !important;
   &:hover {
     background: shared.$primary-color !important;
-    color: white !important;
+    color: var(--void) !important;
   }
 }
 
@@ -307,7 +310,8 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: var(--paper);
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
   border-radius: var(--r-sm);
   mat-icon {
     font-size: 32px;
@@ -338,7 +342,39 @@
   max-width: 100%;
   border-radius: var(--r-sm);
   overflow: hidden;
-  background: var(--paper-2);
+  background: var(--void);
+}
+
+.svg-map-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--accent), var(--accent)) left top / 16px 2px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) left top / 2px 16px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) right top / 16px 2px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) right top / 2px 16px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) left bottom / 16px 2px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) left bottom / 2px 16px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) right bottom / 16px 2px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) right bottom / 2px 16px no-repeat;
+}
+
+.svg-map-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.45;
+  mix-blend-mode: screen;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(230, 222, 203, 0.05) 0 1px,
+    transparent 1px 4px
+  );
 }
 
 .svg-loading {
@@ -349,7 +385,7 @@
   min-height: 320px;
   gap: 16px;
   color: var(--muted);
-  background: var(--paper-2);
+  background: var(--void);
   border-radius: var(--r-sm);
 
   p {
@@ -361,7 +397,7 @@
   display: block;
   width: 100%;
   height: auto;
-  filter: sepia(0.3) saturate(0.9) brightness(1.01);
+  filter: saturate(0.8) contrast(1.06) brightness(0.92);
 }
 
 @media (max-width: 768px) {
@@ -422,13 +458,13 @@
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(23, 21, 15, 0.95);
-  color: white;
+  background: color-mix(in srgb, var(--surface-3) 95%, transparent);
+  color: var(--ink);
   padding: 8px 16px;
   border-radius: var(--r-sm);
   font-size: 0.9rem;
   font-weight: 600;
-  box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.3);
+  box-shadow: var(--shadow-hard);
   pointer-events: none;
   z-index: 100;
   white-space: nowrap;

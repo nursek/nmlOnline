@@ -90,7 +90,7 @@ $text-secondary: var(--muted);
     padding: 1px 6px;
     border-radius: var(--r-sm);
     background: var(--danger-tint);
-    color: var(--danger-deep);
+    color: var(--danger);
     font-size: 0.7rem;
     font-weight: 600;
   }
@@ -170,11 +170,11 @@ $text-secondary: var(--muted);
 
   &.gmd-kind-enemy {
     background: var(--danger-tint);
-    color: var(--danger-deep);
+    color: var(--danger);
   }
 
   &.gmd-kind-unknown {
     background: var(--sun-tint);
-    color: var(--sun-deep);
+    color: var(--sun);
   }
 }

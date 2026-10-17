@@ -23,8 +23,9 @@
   --section-accent: #{shared.$primary-color};
 
   margin-bottom: 28px;
-  border-top: 5px solid var(--section-accent);
-  background: color-mix(in srgb, var(--section-accent) 4%, var(--surface));
+  border-top: 2px solid var(--section-accent);
+  background: color-mix(in srgb, var(--section-accent) 5%, var(--surface));
+  box-shadow: inset 0 8px 16px -14px var(--section-accent);
 }
 
 .card--troops {
@@ -37,7 +38,7 @@
   --section-accent: var(--plum);
 }
 .card--equipment {
-  --section-accent: var(--sun-deep);
+  --section-accent: var(--sun);
 }
 .card--resources {
   --section-accent: var(--forest);
@@ -46,7 +47,7 @@
   --section-accent: var(--danger);
 }
 .card--powers {
-  --section-accent: var(--sun-deep);
+  --section-accent: var(--sun);
 }
 .error-alert {
   @include shared.error-alert;
@@ -176,7 +177,7 @@
   padding: 2px 8px;
   font-size: 0.8rem;
   background: var(--paper-2);
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-xs);
 }
 
@@ -216,7 +217,7 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: shared.$text-muted;
-  border-bottom: 1px solid rgba(93,86,69, 0.2);
+  border-bottom: 1px solid color-mix(in srgb, var(--muted) 20%, transparent);
   padding-bottom: 4px;
 
   &:first-child {
@@ -237,7 +238,7 @@
   &:hover {
     border-color: shared.$primary-color;
     transform: translateY(-2px);
-    box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.1);
+    box-shadow: var(--shadow-hard);
   }
 
   mat-card-content {
@@ -264,7 +265,7 @@
   height: 48px;
   object-fit: cover;
   border-radius: var(--r-xs);
-  background: var(--ink);
+  background: var(--surface-3);
 }
 
 .eq-thumb-fallback {
@@ -314,19 +315,23 @@
   padding: 0 6px !important;
   &.pdf {
     background: var(--danger-deep) !important;
-    color: white !important;
+    color: var(--on-deep) !important;
+    --mat-chip-label-text-color: var(--on-deep);
   }
   &.pdc {
     background: var(--teal) !important;
-    color: white !important;
+    color: var(--void) !important;
+    --mat-chip-label-text-color: var(--void);
   }
   &.arm {
-    background: var(--forest-deep) !important;
-    color: white !important;
+    background: var(--forest) !important;
+    color: var(--void) !important;
+    --mat-chip-label-text-color: var(--void);
   }
   &.esq {
-    background: var(--sun-deep) !important;
-    color: white !important;
+    background: var(--sun) !important;
+    color: var(--void) !important;
+    --mat-chip-label-text-color: var(--void);
   }
 }
 
@@ -341,11 +346,11 @@
   @include shared.tag;
   &.badge-danger {
     background: var(--danger-tint);
-    color: var(--danger-deep);
+    color: var(--danger);
   }
   &.badge-warning {
     background: var(--sun-tint);
-    color: var(--sun-deep);
+    color: var(--sun);
   }
 }
 
@@ -421,7 +426,7 @@
   gap: 8px;
   padding: 8px 12px;
   background: var(--surface);
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-xs);
 }
 
@@ -496,7 +501,7 @@
 .power-item {
   padding: 16px;
   background: var(--paper);
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--line-2);
   border-radius: var(--r-sm);
 }
 
@@ -545,7 +550,7 @@
     gap: 12px;
     padding: 10px 12px;
     background: var(--surface);
-    border: 1.5px solid var(--ink);
+    border: 1.5px solid var(--line-2);
     border-radius: var(--r-xs);
   }
 
@@ -577,7 +582,7 @@
   gap: 12px;
   padding: 16px;
   background: var(--surface);
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--line-2);
   border-left: 4px solid shared.$primary-color;
   border-radius: var(--r-sm);
   transition:
@@ -586,7 +591,7 @@
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 3px 3px 0 rgba(23, 21, 15, 0.08);
+    box-shadow: var(--shadow-hard);
   }
 }
 
