@@ -38,6 +38,8 @@ export class DevScenariosComponent {
   readonly loading = this.scenarios.loading;
   readonly seeding = this.scenarios.seeding;
   readonly seedReport = this.scenarios.seedReport;
+  readonly demoReport = this.scenarios.demoReport;
+  readonly demoAvailable = this.scenarios.demoAvailable;
   readonly error = this.scenarios.error;
   readonly combatScenarios = this.scenarios.combatScenarios;
   readonly selectedCombatScenario = signal('MIXED_5050');
@@ -68,6 +70,10 @@ export class DevScenariosComponent {
     void this.scenarios.seedDevScenario().catch(() => {
       /* le service positionne déjà le signal d'erreur */
     });
+  }
+
+  onPlayDemoTurns(): void {
+    void this.scenarios.playDemoTurns().catch(() => {});
   }
 
   onSeedStandoffScenario(): void {

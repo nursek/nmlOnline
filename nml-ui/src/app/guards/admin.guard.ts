@@ -13,5 +13,5 @@ export const adminGuard: CanActivateFn = async (_route, state): Promise<boolean 
     return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
   }
   if (auth.isAdmin()) return true;
-  return router.createUrlTree(['/carte']);
+  return router.createUrlTree(['/accueil']);
 };

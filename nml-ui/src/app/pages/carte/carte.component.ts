@@ -9,7 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { SlicePipe } from '@angular/common';
+import { SlicePipe, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -21,14 +21,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { PageResult, Player, Sector } from '../../models';
-import { environment } from '../../../environments/environment';
+import { Player, Sector } from '../../models';
 import { sanitizeSvg } from '../../core/svg-sanitize';
+import { characterStats } from '../../core/stats';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
+import { PlayerDirectoryService } from '../../services/player-directory.service';
 import { contrastColor, haloColor, MAP_THEME } from './carte.config';
-import { RankingsPanelComponent } from './rankings-panel.component';
 
 interface SectorWithPlayer extends Sector {
   playerName?: string | null;
@@ -50,14 +49,13 @@ export function isSameOriginAssetUrl(url: string): boolean {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     SlicePipe,
+    DecimalPipe,
     MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,
     MatChipsModule,
     MatDividerModule,
     MatButtonModule,
-    MatTooltipModule,
-    RankingsPanelComponent,
   ],
   templateUrl: './carte.component.html',
   styleUrls: ['./carte.component.scss'],
@@ -69,9 +67,7 @@ export class CarteComponent {
   // Les libellés vivent dans le viewBox SVG : sans grossissement, ils deviennent
   // illisibles quand la carte est réduite à la largeur d'un téléphone.
   private readonly narrowViewport = toSignal(
-    this.breakpointObserver
-      .observe([Breakpoints.XSmall])
-      .pipe(map((result) => result.matches)),
+    this.breakpointObserver.observe([Breakpoints.XSmall]).pipe(map((result) => result.matches)),
     { initialValue: false },
   );
 
@@ -89,40 +85,22 @@ export class CarteComponent {
   readonly overlayOffsetX = MAP_THEME.overlay.offsetX;
 
   private readonly activeBoard = inject(ActiveBoardService);
+  private readonly playerDirectory = inject(PlayerDirectoryService);
   private readonly allianceState = inject(AllianceStateService);
-  private readonly playersRef = httpResource<PageResult<Player>>(() => ({
-    url: `${environment.apiBaseUrl}/players`,
-    params: { page: '0', size: '50' },
-  }));
 
   readonly alliedPlayerIds = this.allianceState.alliedPlayerIds;
+  readonly characterStats = characterStats;
 
-  readonly loading = computed(() => this.activeBoard.loading() || this.playersRef.isLoading());
+  readonly loading = computed(() => this.activeBoard.loading() || this.playerDirectory.loading());
   readonly error = computed(() => {
-    const e = this.activeBoard.error() || this.playersRef.error() || this.svgTextRef.error();
+    const e = this.activeBoard.error() || this.playerDirectory.error() || this.svgTextRef.error();
     return e ? 'Impossible de charger la carte. Vérifiez que le serveur est démarré.' : null;
   });
 
   readonly board = this.activeBoard.board;
-  readonly players = computed(() => this.playersRef.value()?.content ?? []);
-  readonly playersTruncated = computed(() => {
-    const page = this.playersRef.value();
-    return !!page && page.content.length < (page.totalElements ?? page.content.length);
-  });
+  readonly players = this.playerDirectory.players;
 
-  readonly playerColorMap = computed(() => {
-    const map = new Map<number, string>();
-    // Indexation par id trié : la couleur d'un joueur ne dépend plus de
-    // l'ordre d'insertion renvoyé par l'API, donc reste stable au refresh.
-    const sorted = [...this.players()]
-      .filter((p) => p.id != null)
-      .sort((a, b) => (a.id as number) - (b.id as number));
-    const palette = MAP_THEME.playerPalette;
-    sorted.forEach((player, index) => {
-      map.set(player.id as number, palette[index % palette.length]);
-    });
-    return map;
-  });
+  readonly playerColorMap = this.playerDirectory.colorMap;
 
   private readonly svgOverlayUrl = computed(() => this.board()?.svgOverlayUrl || null);
   private readonly svgTextRef = httpResource.text(() => this.svgOverlayUrl() ?? undefined);
@@ -196,10 +174,6 @@ export class CarteComponent {
 
   readonly neutralSectorsCount = computed(
     () => Object.values(this.board()?.sectors ?? {}).filter((s) => !s.ownerId).length,
-  );
-
-  readonly conqueredSectorsCount = computed(
-    () => Object.values(this.board()?.sectors ?? {}).filter((s) => s.ownerId).length,
   );
 
   private readonly eventCleanupFns: (() => void)[] = [];
@@ -573,6 +547,10 @@ export class CarteComponent {
     return this.playerColorMap().get(playerId) || MAP_THEME.neutralColor;
   }
 
+  isPlayerShown(player: Player): boolean {
+    return player.id != null && this.selectedPlayerIds().has(player.id);
+  }
+
   getSectorColor(sector: Sector | SectorWithPlayer): string {
     return this.getPlayerColor(sector.ownerId);
   }
@@ -630,15 +608,6 @@ export class CarteComponent {
 
   getSectorByNumber(number: number): SectorWithPlayer | undefined {
     return this.sectorsMap().get(number);
-  }
-
-  getInitials(name: string): string {
-    return name
-      .split(' ')
-      .map((word) => word[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
   }
 
   getHoveredSectorName(): string {

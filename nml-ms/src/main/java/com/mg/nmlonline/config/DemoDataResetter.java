@@ -16,8 +16,8 @@ import java.util.List;
 
 @Component
 @Order(0)
-// H2 (mem, vierge à chaque boot) ne supporte pas le TRUNCATE multi-table : réservé à la prod persistante.
-@Profile("prod")
+// En dev, la base H2 peut survivre à un redémarrage devtools : le ré-import sur une base existante laisse des fixtures à moitié importées.
+@Profile({"dev", "prod"})
 @RequiredArgsConstructor
 public class DemoDataResetter implements CommandLineRunner {
 

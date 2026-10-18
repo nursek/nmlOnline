@@ -22,48 +22,46 @@
       </div>
     </div>
 
-    <div class="map-layout">
-      <mat-card class="legend-card">
-        <mat-card-content>
-          <div class="section-header">
-            <mat-icon color="primary">people</mat-icon>
-            <h2>Joueurs</h2>
-          </div>
-          @for (player of players(); track player.id) {
-            <button
-              class="legend-item"
-              [class.active]="player.id !== null && selectedPlayerIds().has(player.id)"
-              (click)="togglePlayerFilter(player)"
-              type="button"
-            >
-              <div class="legend-color" [style.background-color]="getPlayerColor(player.id)"></div>
-              <div class="legend-info">
-                <span class="legend-name">{{ player.name }}</span>
-                <span class="legend-count">{{ player.sectorCount ?? 0 }} secteur(s)</span>
-              </div>
-            </button>
-          }
+    <div class="filter-bar" role="group" aria-label="Filtres d'affichage des secteurs">
+      <span class="filter-label">
+        <mat-icon>people</mat-icon>
+        Joueurs
+      </span>
+      <div class="filter-chips">
+        @for (player of players(); track player.id) {
           <button
-            class="legend-item neutral"
-            [class.active]="showNeutral()"
-            (click)="toggleNeutralFilter()"
             type="button"
+            class="filter-chip"
+            [class.off]="!isPlayerShown(player)"
+            [attr.aria-pressed]="isPlayerShown(player)"
+            (click)="togglePlayerFilter(player)"
           >
-            <div class="legend-color" [style.background-color]="neutralColor"></div>
-            <div class="legend-info">
-              <span class="legend-name">Neutre</span>
-              <span class="legend-count">{{ neutralSectorsCount() }} secteur(s)</span>
-            </div>
+            <span class="dot" [style.background-color]="getPlayerColor(player.id)"></span>
+            {{ player.name }}
+            <span class="count">{{ player.sectorCount ?? 0 }}</span>
           </button>
-          @if (selectedPlayerIds().size < players().length || !showNeutral()) {
-            <button mat-stroked-button color="primary" class="clear-filter" (click)="clearFilter()">
-              <mat-icon>clear</mat-icon>
-              Tout afficher
-            </button>
-          }
-        </mat-card-content>
-      </mat-card>
+        }
+        <button
+          type="button"
+          class="filter-chip"
+          [class.off]="!showNeutral()"
+          [attr.aria-pressed]="showNeutral()"
+          (click)="toggleNeutralFilter()"
+        >
+          <span class="dot" [style.background-color]="neutralColor"></span>
+          Neutre
+          <span class="count">{{ neutralSectorsCount() }}</span>
+        </button>
+      </div>
+      @if (selectedPlayerIds().size < players().length || !showNeutral()) {
+        <button mat-stroked-button color="primary" class="clear-filter" (click)="clearFilter()">
+          <mat-icon>visibility</mat-icon>
+          Tout afficher
+        </button>
+      }
+    </div>
 
+    <div class="map-layout">
       <div class="map-container">
         @if (svgLoaded()) {
           <div
@@ -155,10 +153,14 @@
                   <mat-icon>military_tech</mat-icon>
                   Armée
                 </h3>
-                @if (sector.character) {
-                  <div class="stat-row">
-                    <span>Personnage</span>
-                    <span class="value">{{ sector.character.name }}</span>
+                @if (sector.character; as character) {
+                  <div class="entity-line">
+                    <span class="entity-name">{{ character.name }}</span>
+                    <span class="entity-stats">
+                      @for (s of characterStats(character); track s.label) {
+                        {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                      }
+                    </span>
                   </div>
                 }
                 @if (sector.army.length) {
@@ -172,12 +174,34 @@
                     <span>Véhicules</span>
                     <span class="value">{{ sector.vehicles!.length }}</span>
                   </div>
+                  <ul class="entity-list">
+                    @for (vehicle of sector.vehicles!; track vehicle.id) {
+                      <li>
+                        <mat-icon>directions_car</mat-icon>
+                        {{ vehicle.displayName }}
+                        @if (vehicle.hasPilot) {
+                          <span class="entity-tag">piloté</span>
+                        }
+                      </li>
+                    }
+                  </ul>
                 }
                 @if (sector.buildings?.length) {
                   <div class="stat-row">
-                    <span>Batiments</span>
+                    <span>Bâtiments</span>
                     <span class="value">{{ sector.buildings!.length }}</span>
                   </div>
+                  <ul class="entity-list">
+                    @for (building of sector.buildings!; track building.id) {
+                      <li>
+                        <mat-icon>apartment</mat-icon>
+                        {{ building.displayName }}
+                        @if (building.isDestroyed) {
+                          <span class="entity-tag danger">détruit</span>
+                        }
+                      </li>
+                    }
+                  </ul>
                 }
               </div>
 
@@ -264,49 +288,5 @@
         </mat-card>
       }
     </div>
-
-    <mat-card class="stats-card">
-      <mat-card-content>
-        <div class="section-header">
-          <mat-icon color="primary">analytics</mat-icon>
-          <h2>Statistiques globales</h2>
-        </div>
-        <div class="global-stats">
-          <div class="global-stat">
-            <mat-icon>place</mat-icon>
-            <div>
-              <span class="stat-value">{{ allSectors().length }}</span>
-              <span class="stat-label">Secteurs</span>
-            </div>
-          </div>
-          <div class="global-stat">
-            <mat-icon>people</mat-icon>
-            <div>
-              <span class="stat-value">{{ players().length }}</span>
-              <span class="stat-label">Joueurs en vie</span>
-              @if (playersTruncated()) {
-                <span class="stat-label">(liste partielle — 50 premiers)</span>
-              }
-            </div>
-          </div>
-          <div class="global-stat">
-            <mat-icon>flag</mat-icon>
-            <div>
-              <span class="stat-value">{{ conqueredSectorsCount() }}</span>
-              <span class="stat-label">Conquis</span>
-            </div>
-          </div>
-          <div class="global-stat">
-            <mat-icon>landscape</mat-icon>
-            <div>
-              <span class="stat-value">{{ neutralSectorsCount() }}</span>
-              <span class="stat-label">Neutres</span>
-            </div>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <app-rankings-panel [playerColors]="playerColorMap()" />
   </div>
 }

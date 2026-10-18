@@ -28,6 +28,7 @@ interface NavLink {
 }
 
 const BASE_MENU_ITEMS: NavLink[] = [
+  { path: '/accueil', label: 'Accueil', icon: 'home' },
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/joueur', label: 'Mon Joueur', icon: 'person' },
   { path: '/ordres', label: 'Mes ordres', icon: 'list_alt' },
@@ -37,6 +38,7 @@ const BASE_MENU_ITEMS: NavLink[] = [
 ];
 
 const ADMIN_MENU_ITEMS: NavLink[] = [
+  { path: '/accueil', label: 'Accueil', icon: 'home' },
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' },
   { path: '/admin/tour', label: 'Gestion du tour', icon: 'event_repeat' },
@@ -221,8 +223,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         height: 38px;
         color: var(--accent);
         background:
-          linear-gradient(180deg, rgba(230, 222, 203, 0.06), transparent),
-          var(--surface-3);
+          linear-gradient(180deg, rgba(230, 222, 203, 0.06), transparent), var(--surface-3);
         border: 1px solid var(--line-strong);
         border-radius: var(--r-sm);
         transform: rotate(-3deg);

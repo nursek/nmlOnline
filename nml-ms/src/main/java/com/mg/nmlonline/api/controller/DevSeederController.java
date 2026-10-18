@@ -3,6 +3,7 @@ package com.mg.nmlonline.api.controller;
 import com.mg.nmlonline.api.dto.CombatScenarioDto;
 import com.mg.nmlonline.api.dto.ExchangeScenarioSummaryDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
+import com.mg.nmlonline.domain.service.DemoTurnsSeeder;
 import com.mg.nmlonline.domain.service.ExchangeScenarioSeeder;
 import com.mg.nmlonline.domain.service.TurnResolutionScenarioSeeder;
 import com.mg.nmlonline.domain.service.TurnService;
@@ -27,13 +28,16 @@ public class DevSeederController {
 
     private final TurnResolutionScenarioSeeder scenarioSeeder;
     private final ExchangeScenarioSeeder exchangeScenarioSeeder;
+    private final DemoTurnsSeeder demoTurnsSeeder;
     private final TurnService turnService;
 
     public DevSeederController(TurnResolutionScenarioSeeder scenarioSeeder,
                                ExchangeScenarioSeeder exchangeScenarioSeeder,
+                               DemoTurnsSeeder demoTurnsSeeder,
                                TurnService turnService) {
         this.scenarioSeeder = scenarioSeeder;
         this.exchangeScenarioSeeder = exchangeScenarioSeeder;
+        this.demoTurnsSeeder = demoTurnsSeeder;
         this.turnService = turnService;
     }
 
@@ -75,5 +79,11 @@ public class DevSeederController {
     @PostMapping("/turn/{turn}")
     public Map<String, Object> navigateToTurn(@PathVariable("turn") int turn) {
         return Map.of("currentTurn", turnService.setCurrentTurn(turn));
+    }
+
+    /** Dev-only, jouée une seule fois : refuse une partie déjà entamée. */
+    @PostMapping("/play-demo-turns")
+    public ResponseEntity<ScenarioSummaryDto> playDemoTurns() {
+        return ResponseEntity.ok(demoTurnsSeeder.playDemoTurns());
     }
 }

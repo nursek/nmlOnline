@@ -40,6 +40,12 @@ export const routes: Routes = [
     canActivate: [authGuard, adminGuard],
   },
   {
+    path: 'accueil',
+    loadComponent: () =>
+      import('./pages/accueil/accueil.component').then((m) => m.AccueilComponent),
+    canActivate: [authGuard],
+  },
+  {
     path: 'carte',
     loadComponent: () => import('./pages/carte/carte.component').then((m) => m.CarteComponent),
     canActivate: [authGuard],
@@ -73,7 +79,7 @@ export const routes: Routes = [
   },
   {
     path: '',
-    redirectTo: 'carte',
+    redirectTo: 'accueil',
     pathMatch: 'full',
   },
   {

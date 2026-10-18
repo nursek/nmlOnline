@@ -125,6 +125,21 @@
   mat-icon {
     color: var(--forest);
   }
+
+  &.partial {
+    background: color-mix(in srgb, var(--sun) 12%, transparent);
+    border-color: color-mix(in srgb, var(--sun) 40%, transparent);
+
+    mat-icon {
+      color: var(--sun);
+    }
+  }
+
+  .issue {
+    display: block;
+    font-style: normal;
+    color: var(--sun);
+  }
 }
 
 .combat-scenario-select {
