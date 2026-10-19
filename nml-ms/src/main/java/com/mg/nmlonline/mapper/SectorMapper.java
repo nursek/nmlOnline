@@ -98,7 +98,7 @@ public class SectorMapper {
                 .anyMatch(character -> playerId.equals(character.getPlayerId()) && !character.isDestroyed());
     }
 
-    /** Vue d'un secteur : détail complet si autorisé, sinon nom/propriétaire/ressource/voisins + présence de défenseurs. */
+    /** Vue d'un secteur : détail complet si autorisé, sinon nom/propriétaire/ressource/voisins. */
     public SectorDto toPublicDto(Sector sector, Visibility visibility) {
         if (sector == null) {
             return null;
@@ -125,13 +125,7 @@ public class SectorMapper {
         dto.setNeighbors(new ArrayList<>(sector.getNeighbors()));
         dto.setX(sector.getX());
         dto.setY(sector.getY());
-        dto.setHasDefenders(hasDefenders(sector));
         return dto;
-    }
-
-    private boolean hasDefenders(Sector sector) {
-        return sector.getUnits().stream().anyMatch(unit -> !unit.isDestroyed())
-                || sector.getCharacters().stream().anyMatch(character -> !character.isDestroyed());
     }
 
     public SectorDto toDto(Sector sector) {

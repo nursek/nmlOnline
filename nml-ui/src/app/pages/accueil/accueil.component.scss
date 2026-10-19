@@ -24,10 +24,6 @@
   @include shared.gradient-title;
 }
 
-.subtitle {
-  @include shared.subtitle;
-}
-
 .stats-card,
 .announcements-card {
   @include shared.card;

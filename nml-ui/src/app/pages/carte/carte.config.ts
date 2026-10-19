@@ -70,7 +70,6 @@ export const MAP_THEME = {
   fill: {
     normalAlpha: '80', // ~50%
     hoverAlpha: 'C0', // ~75%
-    dimmedOpacity: 0.22,
   },
 
   // Épaisseur de contour (unités utilisateur ; non-scaling-stroke garde le net).
@@ -101,4 +100,23 @@ export const MAP_THEME = {
     strokeWidthPx: 4,
     contrastOnSelect: true,
   },
+
+  // Calques togglables : bordures ennemies en magenta.
+  overlays: {
+    frontStroke: '#ff2d9d',
+    frontWidth: 6,
+    // Marge du masque autour de mes contours : doit dépasser l'interstice entre polygones voisins.
+    frontMaskWidth: 20,
+  },
+
+  // Calque « Ressources » (et sa légende) : une teinte par ressource.
+  resourceColors: {
+    Cigares: '#d4a86a',
+    Alcool: '#6f93c9',
+    Antiquités: '#b47ccb',
+    Ivoire: '#e6decb',
+    Uranium: '#9fbf4a',
+    Or: '#e8bb45',
+    Joyaux: '#4fc3c9',
+  } as Record<string, string>,
 } as const;

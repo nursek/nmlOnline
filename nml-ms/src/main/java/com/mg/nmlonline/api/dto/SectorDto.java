@@ -23,7 +23,4 @@ public class SectorDto {
 
     private Integer x;
     private Integer y;
-
-    /** Vue restreinte : présence de défenseurs vivants, sans composition. null = secteur détaillé. */
-    private Boolean hasDefenders;
 }

@@ -64,7 +64,7 @@ import { BankPanelComponent } from './bank-panel.component';
 import { WeaponCachePanelComponent } from './weapon-cache-panel.component';
 import { HeadquartersPanelComponent } from './headquarters-panel.component';
 import { HarvestPanelComponent } from './harvest-panel.component';
-import { movableEntities } from './movement.helpers';
+import { movableEntities } from '../../core/movement.helpers';
 import { CharacterPanelComponent } from './character-panel.component';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { AllianceComponent } from '../alliance/alliance.component';
