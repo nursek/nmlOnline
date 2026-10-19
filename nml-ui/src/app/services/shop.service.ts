@@ -71,10 +71,6 @@ export class ShopService {
   );
 
   readonly equipments = computed(() => this.equipmentsRef.value()?.content ?? []);
-  readonly equipmentsTruncated = computed(() => {
-    const page = this.equipmentsRef.value();
-    return !!page && page.content.length < (page.totalElements ?? page.content.length);
-  });
   readonly equipmentsLoading = computed(
     () => this._error() === null && this.equipmentsRef.isLoading(),
   );
@@ -151,13 +147,16 @@ export class ShopService {
     });
   }
 
-  addToCart(equipment: Equipment): void {
+  addToCart(equipment: Equipment, quantity: number = 1): void {
+    const qty = safeQty(quantity);
     this._cart.update((cart) => {
       const idx = cart.findIndex((i) => i.equipment.name === equipment.name);
       if (idx >= 0) {
-        return cart.map((item, i) => (i === idx ? { ...item, quantity: item.quantity + 1 } : item));
+        return cart.map((item, i) =>
+          i === idx ? { ...item, quantity: item.quantity + qty } : item,
+        );
       }
-      return [...cart, { equipment, quantity: 1 }];
+      return [...cart, { equipment, quantity: qty }];
     });
   }
 

@@ -11,7 +11,6 @@ import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatButtonModule } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -33,9 +32,9 @@ import { PlayerService } from '../../services/player.service';
 import {
   clampUnitQuantity,
   compareEquipments,
-  equipmentBonusSummary,
   equipmentClassLabel,
   equipmentSummary,
+  groupEquipmentsByClass,
   matchesEquipmentSearch,
   sortVehiclesByCost,
   unitCartQuantityForType,
@@ -45,8 +44,11 @@ import {
   unitQuotaRemaining,
   vehicleSummary,
 } from './boutique.helpers';
-import { equipmentCategoryLabel, unitClassLabel, vehicleTargetLabel } from '../../core/labels';
-import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
+import { UNIT_CLASS_ORDER, unitClassLabel } from '../../core/labels';
+import {
+  equipmentLabel as equipmentLabelFor,
+  equipmentDescription as equipmentDescriptionFor,
+} from '../../core/equipment-label';
 import { EquipmentImageService } from '../../core/equipment-image.service';
 import { optimizedImage } from '../../core/optimized-image';
 import type { OptimizedImage } from '../../core/optimized-image';
@@ -57,6 +59,9 @@ import {
   PurchaseSuccessData,
 } from '../../shared/purchase-success-dialog/purchase-success-dialog.component';
 
+// Classe en cours de suppression côté backend : le shop la masque jusque-là.
+const HIDDEN_UNIT_CLASSES: ReadonlySet<string> = new Set(['ELEMENTAIRE']);
+
 @Component({
   selector: 'app-boutique',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -66,7 +71,6 @@ import {
     MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,
-    MatChipsModule,
     MatButtonModule,
     MatBadgeModule,
     MatSidenavModule,
@@ -85,7 +89,6 @@ export class BoutiqueComponent {
   private readonly dialog = inject(MatDialog);
 
   readonly allEquipments = this.shop.equipments;
-  readonly equipmentsTruncated = this.shop.equipmentsTruncated;
   readonly cart = this.shop.cart;
   readonly vehicleCart = this.shop.vehicleCart;
   readonly unitCart = this.shop.unitCart;
@@ -103,11 +106,15 @@ export class BoutiqueComponent {
   readonly vehicleTypes = this.shop.vehicleTypes;
   readonly unitCatalog = this.shop.unitCatalog;
   readonly unitTypes = computed(() => this.shop.unitCatalog().entries);
-  readonly unitClasses = computed(() => this.shop.unitCatalog().classes);
-
-  readonly unitGroups = computed(() =>
-    this.unitTypes().map((entry) => ({ entry, classes: this.unitClasses() })),
+  readonly unitClasses = computed(() =>
+    this.shop.unitCatalog().classes.filter((uc) => !HIDDEN_UNIT_CLASSES.has(uc.name)),
   );
+
+  /** Une entrée d'unité à la fois : ses classes de recrutement. */
+  readonly selectedUnitEntry = computed(() => {
+    const entries = this.unitTypes();
+    return entries.find((entry) => entry.name === this.selectedUnitType()) ?? entries[0];
+  });
 
   readonly player = this.playerService.player;
   readonly currentTurn = this.playerService.currentTurn;
@@ -129,26 +136,18 @@ export class BoutiqueComponent {
   }
 
   readonly showCart = signal(false);
-  readonly showFilters = signal(false);
+  readonly searchOpen = signal(false);
   readonly searchTerm = signal('');
-  readonly selectedCategory = signal<string>('all');
-  readonly selectedBonusFilter = signal<string>('all');
+  // Sélection par défaut : la 1re classe du catalogue (le filtrage par classe est la navigation).
+  readonly selectedClassFilter = linkedSignal(() => this.equipmentClasses()[0]?.key ?? 'all');
+  readonly selectedUnitType = linkedSignal(() => this.unitTypes()[0]?.name ?? '');
   readonly vehicleQuantities = signal<Record<string, number>>({});
   readonly unitQuantities = signal<Record<string, number>>({});
+  readonly equipmentQuantities = signal<Record<string, number>>({});
   readonly resourceSellQuantities = signal<Record<number, number>>({});
 
   // Images boutique : track des vignettes introuvables (fallback icône).
   private readonly _brokenImages = signal<ReadonlySet<string>>(new Set());
-
-  readonly categories = computed(() => {
-    const cats = new Set<string>();
-    this.allEquipments().forEach((eq) => {
-      if (eq.category) cats.add(eq.category);
-    });
-    return Array.from(cats)
-      .sort((a, b) => a.localeCompare(b))
-      .map((key) => ({ key, label: equipmentCategoryLabel(key) }));
-  });
 
   readonly filteredEquipments = computed(() => {
     let filtered = [...this.allEquipments()];
@@ -156,51 +155,53 @@ export class BoutiqueComponent {
     const search = this.searchTerm().toLowerCase().trim();
     if (search) {
       filtered = filtered.filter((eq) => matchesEquipmentSearch(eq, search, this.player()?.race));
+    } else {
+      const unitClass = this.selectedClassFilter();
+      filtered = filtered.filter((eq) =>
+        eq.compatibleClass?.some((compatible) => compatible.name === unitClass),
+      );
     }
 
-    const category = this.selectedCategory();
-    if (category !== 'all') filtered = filtered.filter((eq) => eq.category === category);
+    // Un équipement dont toutes les classes sont masquées sort du catalogue du shop.
+    filtered = filtered.filter((eq) => {
+      const classes = eq.compatibleClass ?? [];
+      return classes.length === 0 || classes.some((c) => !HIDDEN_UNIT_CLASSES.has(c.name));
+    });
 
-    const bonus = this.selectedBonusFilter();
-    if (bonus !== 'all') {
-      filtered = filtered.filter((eq) => {
-        switch (bonus) {
-          case 'PDF':
-            return eq.pdfBonus > 0;
-          case 'PDC':
-            return eq.pdcBonus > 0;
-          case 'ARM':
-            return eq.armBonus > 0;
-          case 'ESQ':
-            return eq.evasionBonus > 0;
-          default:
-            return true;
-        }
-      });
-    }
     return filtered.sort(compareEquipments);
   });
 
   readonly sortedVehicleTypes = computed(() => sortVehiclesByCost(this.vehicleTypes()));
 
-  /**
-   * Équipements groupés par 1re classe compatible (ordre hérité du tri :
-   * Léger → Mastodonte → Tireur → Sniper → Pilote destructeur → Élémentaire).
-   * Utilisé pour les titres de section en vue par défaut (sans filtre).
-   */
-  readonly groupedEquipments = computed(() => {
-    const items = this.filteredEquipments();
-    const groups: { classKey: string; classLabel: string; items: Equipment[] }[] = [];
-    const idx = new Map<string, number>();
-    for (const eq of items) {
-      const key = eq.compatibleClass?.[0]?.name ?? 'AUCUNE';
-      if (!idx.has(key)) {
-        idx.set(key, groups.length);
-        groups.push({ classKey: key, classLabel: unitClassLabel(key), items: [] });
-      }
-      groups[idx.get(key)!].items.push(eq);
+  readonly vehicleGroups = computed(() => {
+    const groups = new Map<number, VehicleTypeInfo[]>();
+    for (const vt of this.sortedVehicleTypes()) {
+      const bucket = groups.get(vt.availableFromTurn);
+      if (bucket) bucket.push(vt);
+      else groups.set(vt.availableFromTurn, [vt]);
     }
-    return groups;
+    return [...groups.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([turn, items]) => ({ turn, items }));
+  });
+
+  // L'ordre dans chaque section vient de `compareEquipments` (classe puis coût), pas d'un tri local.
+  readonly equipmentGroups = computed(() => groupEquipmentsByClass(this.filteredEquipments()));
+
+  readonly equipmentClasses = computed(() => {
+    const keys = new Set<string>();
+    for (const eq of this.allEquipments()) {
+      for (const compatible of eq.compatibleClass ?? []) {
+        if (!HIDDEN_UNIT_CLASSES.has(compatible.name)) keys.add(compatible.name);
+      }
+    }
+    return [...keys]
+      .sort(
+        (a, b) =>
+          (UNIT_CLASS_ORDER[a] ?? Number.MAX_SAFE_INTEGER) -
+          (UNIT_CLASS_ORDER[b] ?? Number.MAX_SAFE_INTEGER),
+      )
+      .map((key) => ({ key, label: unitClassLabel(key) }));
   });
 
   readonly totalCartBadge = computed(
@@ -237,23 +238,8 @@ export class BoutiqueComponent {
     () => (this.player()?.stats?.money ?? 0) >= this.unitCartTotalPrice(),
   );
 
-  readonly hasActiveFilters = computed(
-    () =>
-      this.searchTerm() !== '' ||
-      this.selectedCategory() !== 'all' ||
-      this.selectedBonusFilter() !== 'all',
-  );
-
-  readonly hasAdvancedFilters = computed(
-    () => this.selectedCategory() !== 'all' || this.selectedBonusFilter() !== 'all',
-  );
-
-  readonly getActiveFiltersCount = computed(() => {
-    let count = 0;
-    if (this.selectedCategory() !== 'all') count++;
-    if (this.selectedBonusFilter() !== 'all') count++;
-    return count;
-  });
+  /** Recherche en cours : les résultats balaient tout le catalogue, d'où les en-têtes de classe. */
+  readonly showClassTitles = computed(() => this.searchTerm().trim() !== '');
 
   constructor() {
     // Ensure the player profile is loaded for the money display / sell tab.
@@ -284,8 +270,26 @@ export class BoutiqueComponent {
     this.showCart.update((v) => !v);
   }
 
-  addToCart(equipment: Equipment): void {
-    this.shop.addToCart(equipment);
+  getEquipmentQuantity(equipmentName: string): number {
+    return this.equipmentQuantities()[equipmentName] ?? 1;
+  }
+
+  setEquipmentQuantity(equipmentName: string, quantity: number): void {
+    this.equipmentQuantities.update((prev) => ({
+      ...prev,
+      [equipmentName]: Math.max(1, quantity),
+    }));
+  }
+
+  addEquipmentToCart(equipment: Equipment): void {
+    const qty = this.getEquipmentQuantity(equipment.name);
+    this.shop.addToCart(equipment, qty);
+    // La saisie repasse à 1 : sinon la quantité s'accumule à chaque clic.
+    this.equipmentQuantities.update((prev) => {
+      const next = { ...prev };
+      delete next[equipment.name];
+      return next;
+    });
   }
 
   removeFromCart(name: string): void {
@@ -294,15 +298,6 @@ export class BoutiqueComponent {
 
   updateQuantity(name: string, quantity: number): void {
     this.shop.updateCartItemQuantity(name, quantity);
-  }
-
-  decrementCartQuantity(name: string): void {
-    const currentQty = this.getCartQuantity(name);
-    if (currentQty > 1) {
-      this.shop.updateCartItemQuantity(name, currentQty - 1);
-    } else {
-      this.shop.removeFromCart(name);
-    }
   }
 
   clearCart(): void {
@@ -568,29 +563,35 @@ export class BoutiqueComponent {
     this.searchTerm.set('');
   }
 
-  toggleFilters(): void {
-    this.showFilters.update((v) => !v);
+  toggleSearch(): void {
+    this.searchOpen.update((v) => !v);
+    if (!this.searchOpen()) this.searchTerm.set('');
   }
 
-  selectCategory(category: string): void {
-    this.selectedCategory.set(category);
+  selectClassFilter(unitClass: string): void {
+    this.selectedClassFilter.set(unitClass);
+    this.searchTerm.set('');
   }
 
-  selectBonusFilter(bonus: string): void {
-    this.selectedBonusFilter.set(bonus);
+  selectAdjacentClass(step: number): void {
+    const classes = this.equipmentClasses();
+    if (classes.length === 0) return;
+    const index = classes.findIndex((c) => c.key === this.selectedClassFilter());
+    const next = (index + step + classes.length) % classes.length;
+    this.selectClassFilter(classes[next].key);
   }
 
-  clearAdvancedFilters(): void {
-    this.selectedCategory.set('all');
-    this.selectedBonusFilter.set('all');
+  selectAdjacentUnitType(step: number): void {
+    const entries = this.unitTypes();
+    if (entries.length === 0) return;
+    const index = entries.findIndex((e) => e.name === this.selectedUnitType());
+    const next = (index + step + entries.length) % entries.length;
+    this.selectedUnitType.set(entries[next].name);
   }
 
-  equipmentCategoryLabel = equipmentCategoryLabel;
   unitClassLabel = unitClassLabel;
-  vehicleTargetLabel = vehicleTargetLabel;
   unitCartKey = unitCartKey;
   equipmentSummary = equipmentSummary;
-  equipmentBonusSummary = equipmentBonusSummary;
   equipmentClassLabel = equipmentClassLabel;
   vehicleSummary = vehicleSummary;
   unitClassBonusSummary = unitClassBonusSummary;
@@ -599,6 +600,18 @@ export class BoutiqueComponent {
 
   equipmentLabel(equipment: Equipment): string {
     return equipmentLabelFor(equipment, this.player()?.race);
+  }
+
+  equipmentDescription(equipment: Equipment): string {
+    return equipmentDescriptionFor(equipment, this.player()?.race);
+  }
+
+  /** État d'un palier de déblocage ; tour inconnu = disponible (le backend reste juge). */
+  vehicleTurnStatus(turn: number): string {
+    const current = this.currentTurn();
+    if (current == null || current >= turn) return 'Disponible';
+    const remaining = turn - current;
+    return `Dans ${remaining} tour${remaining > 1 ? 's' : ''}`;
   }
 
   equipmentImage(equipment: Equipment): OptimizedImage | null {

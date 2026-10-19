@@ -3,10 +3,16 @@ import { slugify } from './slug';
 export interface LocalizedEquipment {
   name: string;
   displayNames?: Record<string, string> | null;
+  displayDescriptions?: Record<string, string> | null;
 }
 
 export function equipmentLabel(equipment: LocalizedEquipment, race?: string | null): string {
   return (race ? equipment.displayNames?.[race] : undefined) ?? equipment.name;
+}
+
+/** Description d'ambiance par race ; vide si le CSV de la race n'en fournit pas. */
+export function equipmentDescription(equipment: LocalizedEquipment, race?: string | null): string {
+  return (race ? equipment.displayDescriptions?.[race] : undefined) ?? '';
 }
 
 /** Vignette de la race d'abord, repli sur le fichier commun. */

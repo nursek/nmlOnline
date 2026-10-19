@@ -380,6 +380,19 @@ which rewrites `assets/...` to `/assets/_opt/....320.webp` and builds the `srcse
 images only require committing the original; run `npm run optimize:images` (or restart `ng serve`)
 to see them while the dev server is running.
 
+### Shop thumbnails
+
+Shop cards (`.shop-tile` in `boutique.component.scss`) are horizontal: a square 160×160 px frame
+(`.tile-thumb`) on the left, name/price/description/tags/actions on the right. The frame is plain
+white in both themes — the illustrations are drawn on white — and carries a map-style vignette
+(accent corner brackets + faint scanlines) as `::before`/`::after`. The image uses `object-fit:
+contain` on a `width/height: 100%` img, so it is never cropped; a source that is not square shows that
+white as bands around it. Export PNGs on a ~1:1 canvas with the illustration centred and at least
+640 px wide — derivatives stop at 640 px, and narrower sources are upscaled by the browser. File names
+come from `slugify(equipment.name)` (first column of the race CSV), looked up in
+`assets/shop/equipment/<race>/` first, then in the shared folder; unit and vehicle portraits use the
+same square framing (`assets/<player>/units/<type>/<class>.png`, `assets/shop/vehicles/*.png`).
+
 ### Caching
 
 `StaticResourceCacheConfig` sets the cache policy for the two image trees:

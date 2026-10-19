@@ -33,9 +33,14 @@ class EquipmentTranslationLoaderTest {
         Equipment gaussBlaster = equipmentRepository.findByName("Gauss Blaster").orElseThrow();
         assertEquals("Shoota Dakka-Dakka", gaussBlaster.getDisplayNames().get(PlayerRace.ORKS));
         assertEquals("Éclateur gauss", gaussBlaster.getDisplayNames().get(PlayerRace.NECRONS));
+        assertEquals("L'éclateur gauss arrache la matière atome par atome à chaque salve.",
+                gaussBlaster.getDisplayDescriptions().get(PlayerRace.NECRONS));
+        assertEquals(1, gaussBlaster.getDisplayDescriptions().size());
 
         Equipment thermalCuttingBeam = equipmentRepository.findByName("Thermal Cutting Beam").orElseThrow();
         assertEquals("Rayon de découpe thermique", thermalCuttingBeam.getDisplayNames().get(PlayerRace.NECRONS));
+        assertEquals("Le faisceau fond l'armure avant de trancher ce qu'elle protège.",
+                thermalCuttingBeam.getDisplayDescriptions().get(PlayerRace.NECRONS));
 
         Equipment phylactery = equipmentRepository.findByName("Phylactery").orElseThrow();
         assertEquals("Guenilles renforcées", phylactery.getDisplayNames().get(PlayerRace.ORKS));
@@ -48,12 +53,15 @@ class EquipmentTranslationLoaderTest {
         Equipment admin = new Equipment("Arme Admin", 100, 0, 0, 0, 0,
                 Set.of(), EquipmentCategory.FIREARM);
         admin.setDisplayNames(new HashMap<>(Map.of(PlayerRace.NECRONS, "Libellé Admin")));
+        admin.setDisplayDescriptions(new HashMap<>(Map.of(PlayerRace.NECRONS, "Description Admin")));
         equipmentRepository.save(admin);
 
         csvDataLoader.run();
 
         assertEquals("Libellé Admin", equipmentRepository.findByName("Arme Admin").orElseThrow()
                 .getDisplayNames().get(PlayerRace.NECRONS));
+        assertEquals("Description Admin", equipmentRepository.findByName("Arme Admin").orElseThrow()
+                .getDisplayDescriptions().get(PlayerRace.NECRONS));
         assertEquals("Éclateur gauss", equipmentRepository.findByName("Gauss Blaster").orElseThrow()
                 .getDisplayNames().get(PlayerRace.NECRONS));
     }

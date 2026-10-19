@@ -3,6 +3,7 @@ import type { UnitClass } from './unit.model';
 export interface Equipment {
   name: string;
   displayNames?: Record<string, string> | null;
+  displayDescriptions?: Record<string, string> | null;
   cost: number;
   pdfBonus: number;
   pdcBonus: number;
