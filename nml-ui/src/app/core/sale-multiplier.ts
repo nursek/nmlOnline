@@ -16,3 +16,9 @@ export function saleMultiplier(quantity: number): number {
 export function saleValue(baseValue: number, quantity: number): number {
   return baseValue * saleMultiplier(quantity);
 }
+
+export function saleLabel(quantity: number, max: number): string {
+  const sold = Math.min(quantity, max);
+  const label = `Vente de ${sold} ${sold === 1 ? 'ressource' : 'ressources'}`;
+  return quantity > max ? `${label} (max ${max})` : label;
+}

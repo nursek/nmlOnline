@@ -159,15 +159,16 @@
   font-size: 0.875rem;
 }
 
-// Troupes disponibles — flux inline : chaque ligne « N TYPE (x Exp) » en puce.
-.troops-inline {
+.troops-inline,
+.vehicles-inline {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 6px 8px;
 }
 
-.troop-chip {
+.troop-chip,
+.vehicle-chip {
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
@@ -178,7 +179,8 @@
   border-radius: var(--r-xs);
 }
 
-.troop-count {
+.troop-count,
+.vehicle-count {
   font-weight: 600;
 }
 
@@ -188,11 +190,8 @@
   white-space: nowrap;
 }
 
-// Véhicules déployés (ligne de synthèse)
-.deployed-line {
-  font-size: 0.875rem;
-  color: shared.$text-muted;
-  margin: 0 0 16px;
+.reserve-hint {
+  margin-top: 16px;
 }
 
 .details-grid {
@@ -280,6 +279,35 @@
     font-size: 20px;
     width: 20px;
     height: 20px;
+  }
+}
+
+.vehicle-thumb,
+.vehicle-thumb-fallback {
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-xs);
+}
+
+.vehicle-thumb {
+  display: block;
+  object-fit: contain;
+  background: #fff;
+}
+
+.vehicle-thumb-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper-2);
+  color: shared.$text-muted;
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
   }
 }
 
@@ -443,6 +471,16 @@
   width: 18px;
   height: 18px;
   color: shared.$text-muted;
+}
+
+.force-thumb {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  object-fit: contain;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-xs);
+  background: #fff;
 }
 
 .force-name {

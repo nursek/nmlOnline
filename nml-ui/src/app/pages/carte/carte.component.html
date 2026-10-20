@@ -391,7 +391,19 @@
                       (click)="startPlacement('vehicle', vehicle.id, vehicle.displayName)"
                       title="Déployer sur un de vos secteurs"
                     >
-                      <mat-icon>directions_car</mat-icon>
+                      @if (vehicleImage(vehicle.vehicleType); as img) {
+                        <img
+                          [src]="img.src"
+                          [srcset]="img.srcset"
+                          (error)="onVehicleImgError(vehicle.vehicleType)"
+                          alt=""
+                          class="reserve-thumb"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      } @else {
+                        <mat-icon>directions_car</mat-icon>
+                      }
                       {{ vehicle.displayName }}
                     </button>
                   }

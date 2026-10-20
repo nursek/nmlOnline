@@ -59,6 +59,42 @@ export interface ReserveGroup {
   defense: number;
 }
 
+export interface ReserveVehicleGroup {
+  key: string;
+  vehicle: Vehicle;
+  count: number;
+  vehicleIds: number[];
+}
+
+export interface VehicleSummary {
+  vehicleType: string;
+  displayName: string;
+  count: number;
+}
+
+/** Véhicules en réserve groupés par type ; le déploiement reste unitaire côté composant. */
+export function reserveVehicleGroups(vehicles: Vehicle[]): ReserveVehicleGroup[] {
+  const byType = new Map<string, ReserveVehicleGroup>();
+  for (const vehicle of vehicles) {
+    if (vehicle.id == null || vehicle.isDestroyed) continue;
+    const entry = byType.get(vehicle.vehicleType);
+    if (entry) {
+      entry.count++;
+      entry.vehicleIds.push(vehicle.id);
+    } else {
+      byType.set(vehicle.vehicleType, {
+        key: vehicle.vehicleType,
+        vehicle,
+        count: 1,
+        vehicleIds: [vehicle.id],
+      });
+    }
+  }
+  return Array.from(byType.values()).sort(
+    (a, b) => b.count - a.count || a.vehicle.displayName.localeCompare(b.vehicle.displayName),
+  );
+}
+
 /** Recrues non déployées groupées par type + classe (le placement reste unité par unité côté API). */
 export function reserveGroups(units: Unit[]): ReserveGroup[] {
   const byKey = new Map<string, ReserveGroup>();
@@ -318,7 +354,9 @@ export function sectorForces(sector: Sector, playerId: number | null): SectorFor
   const buildings = (sector.buildings ?? []).filter((b) => isOwned(b.playerId, playerId));
   const character =
     sector.character && isOwned(sector.character.playerId, playerId) ? sector.character : null;
-  const vehicles = (sector.vehicles ?? []).filter((v) => isOwned(v.playerId, playerId));
+  const vehicles = (sector.vehicles ?? []).filter(
+    (v) => isOwned(v.playerId, playerId) && !v.isDestroyed,
+  );
 
   let totals = entityTotals(units, character ? [character] : [], vehicles);
   for (const b of buildings) {
@@ -407,6 +445,29 @@ export function troopSummaries(sectors: Sector[], playerId: number | null): Troo
     if (a.experience !== b.experience) return b.experience - a.experience;
     return a.type.localeCompare(b.type);
   });
+}
+
+export function vehicleSummaries(sectors: Sector[], playerId: number | null): VehicleSummary[] {
+  const byType = new Map<string, VehicleSummary>();
+  for (const s of sectors) {
+    for (const v of s.vehicles ?? []) {
+      if (!isOwned(v.playerId, playerId) || v.isDestroyed) continue;
+      const entry = byType.get(v.vehicleType);
+      if (entry) {
+        entry.count++;
+      } else {
+        byType.set(v.vehicleType, {
+          vehicleType: v.vehicleType,
+          displayName: v.displayName,
+          count: 1,
+        });
+      }
+    }
+  }
+
+  return Array.from(byType.values()).sort(
+    (a, b) => b.count - a.count || a.displayName.localeCompare(b.displayName),
+  );
 }
 
 /** Classes dans l'ordre du catalogue (« Sans classe » en fin), catégories comme la boutique. */

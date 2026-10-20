@@ -4,31 +4,31 @@
   "money": 30000,
   "resources": [
     {
-      "name": "Cigares",
+      "name": "Caisse d'armes",
       "quantity": 9
     },
     {
-      "name": "Alcool",
+      "name": "Prométhéum",
       "quantity": 9
     },
     {
-      "name": "Antiquités",
+      "name": "Plastacier",
       "quantity": 9
     },
     {
-      "name": "Ivoire",
+      "name": "Adamentium",
       "quantity": 9
     },
     {
-      "name": "Uranium",
+      "name": "Conteneur blindé",
       "quantity": 9
     },
     {
-      "name": "Or",
+      "name": "Auramite",
       "quantity": 9
     },
     {
-      "name": "Joyaux",
+      "name": "Noctilithe",
       "quantity": 9
     }
   ],

@@ -89,8 +89,8 @@ class SectorHarvestTest {
                 PlayerActionType.HARVEST_MONEY, List.of(1)), "Aucune récolte au tour 1");
 
         Board board = turnTwoBoard();
-        Sector moneySector = ownedSector(board, player, 1, 100.0, "Or");
-        Sector resourceSector = ownedSector(board, player, 2, 200.0, "Ivoire");
+        Sector moneySector = ownedSector(board, player, 1, 100.0, "Auramite");
+        Sector resourceSector = ownedSector(board, player, 2, 200.0, "Adamentium");
 
         assertThrows(SecurityException.class, () -> playerActionService.harvest(player.getUserId(),
                 PlayerActionType.HARVEST_MONEY, List.of(3)), "Secteur non possédé");
@@ -102,8 +102,8 @@ class SectorHarvestTest {
 
         assertEquals(2, actions.size());
         assertEquals(moneyBefore + 100.0, player.getStats().getMoney(), 0.001);
-        assertEquals(1, player.getResourceQuantity("Ivoire"));
-        assertEquals(0, player.getResourceQuantity("Or"));
+        assertEquals(1, player.getResourceQuantity("Adamentium"));
+        assertEquals(0, player.getResourceQuantity("Auramite"));
 
         assertThrows(IllegalStateException.class, () -> playerActionService.harvest(player.getUserId(),
                 PlayerActionType.HARVEST_RESOURCE, List.of(moneySector.getNumber())));
@@ -114,18 +114,18 @@ class SectorHarvestTest {
     void undoSellRefusedOnceResourceTransferred() {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
         Board board = turnTwoBoard();
-        Sector sector = ownedSector(board, player, 4, 100.0, "Or");
+        Sector sector = ownedSector(board, player, 4, 100.0, "Auramite");
 
         playerActionService.harvest(player.getUserId(), PlayerActionType.HARVEST_RESOURCE, List.of(4));
-        assertEquals(1, player.getResourceQuantity("Or"));
+        assertEquals(1, player.getResourceQuantity("Auramite"));
 
         Long actionId = playerActionService.getCurrentTurnActions(player.getUserId()).getFirst().getId();
         playerActionService.undoFrom(player.getUserId(), actionId);
-        assertEquals(0, player.getResourceQuantity("Or"));
+        assertEquals(0, player.getResourceQuantity("Auramite"));
 
         playerActionService.harvest(player.getUserId(), PlayerActionType.HARVEST_RESOURCE, List.of(4));
         Player receiver = playerOfTestUser(TestDataInitializer.USER_2);
-        assertTrue(resourceService.transferResource(player, receiver, "Or", 1));
+        assertTrue(resourceService.transferResource(player, receiver, "Auramite", 1));
 
         Long secondActionId = playerActionService.getCurrentTurnActions(player.getUserId()).getFirst().getId();
         assertThrows(PlayerActionUndoException.class,
@@ -138,8 +138,8 @@ class SectorHarvestTest {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
         double moneyBefore = player.getStats().getMoney();
         Board board = turnTwoBoard();
-        ownedSector(board, player, 5, 100.0, "Or");
-        Sector resourceSector = ownedSector(board, player, 6, 200.0, "Ivoire");
+        ownedSector(board, player, 5, 100.0, "Auramite");
+        Sector resourceSector = ownedSector(board, player, 6, 200.0, "Adamentium");
 
         playerActionService.harvest(player.getUserId(), PlayerActionType.HARVEST_RESOURCE,
                 List.of(resourceSector.getNumber()));
@@ -158,7 +158,7 @@ class SectorHarvestTest {
         Player owner = playerOfTestUser(TestDataInitializer.USER_1);
         Player winner = playerOfTestUser(TestDataInitializer.USER_2);
         Board board = turnTwoBoard();
-        Sector sector = ownedSector(board, owner, 7, 100.0, "Or");
+        Sector sector = ownedSector(board, owner, 7, 100.0, "Auramite");
         Map<Integer, Long> startOwners = Map.of(sector.getNumber(), owner.getId());
         double ownerBefore = owner.getStats().getMoney();
         double winnerBefore = winner.getStats().getMoney();
@@ -177,7 +177,7 @@ class SectorHarvestTest {
     void adminResolveMovementsClaimsRevenueOnce() {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
         Board board = turnTwoBoard();
-        ownedSector(board, player, 9, 100.0, "Or");
+        ownedSector(board, player, 9, 100.0, "Auramite");
         double before = player.getStats().getMoney();
 
         movementAdminService.resolveMovements(2);
@@ -194,7 +194,7 @@ class SectorHarvestTest {
     void undoHarvestRefusedOnceRevenueClaimed() {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
         Board board = turnTwoBoard();
-        ownedSector(board, player, 11, 100.0, "Or");
+        ownedSector(board, player, 11, 100.0, "Auramite");
 
         playerActionService.harvest(player.getUserId(), PlayerActionType.HARVEST_MONEY, List.of(11));
         double afterHarvest = player.getStats().getMoney();
@@ -212,7 +212,7 @@ class SectorHarvestTest {
     void undoHarvestMoneyRefusedOnceSpent() {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
         Board board = turnTwoBoard();
-        ownedSector(board, player, 10, 100.0, "Or");
+        ownedSector(board, player, 10, 100.0, "Auramite");
 
         playerActionService.harvest(player.getUserId(), PlayerActionType.HARVEST_MONEY, List.of(10));
         Long actionId = playerActionService.getCurrentTurnActions(player.getUserId()).getFirst().getId();
@@ -228,7 +228,7 @@ class SectorHarvestTest {
     void harvestClosedAfterRevenueClaimed() {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
         Board board = turnTwoBoard();
-        ownedSector(board, player, 3, 100.0, "Or");
+        ownedSector(board, player, 3, 100.0, "Auramite");
 
         movementAdminService.resolveMovements(2);
 
@@ -242,7 +242,7 @@ class SectorHarvestTest {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
         double before = player.getStats().getMoney();
         Board board = turnTwoBoard();
-        ownedSector(board, player, 5, 100.0, "Or");
+        ownedSector(board, player, 5, 100.0, "Auramite");
 
         TurnService.TurnAdvanceResult result = turnService.advanceTurnAndReport();
 
@@ -280,7 +280,7 @@ class SectorHarvestTest {
     void harvestClosedWhileResolving() {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
         Board board = turnTwoBoard();
-        ownedSector(board, player, 8, 100.0, "Or");
+        ownedSector(board, player, 8, 100.0, "Auramite");
 
         turnLock.tryAcquire();
         try {

@@ -237,6 +237,15 @@
   }
 }
 
+.reserve-thumb {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  object-fit: contain;
+  border-radius: var(--r-xs);
+  background: #fff;
+}
+
 .cancel-place {
   width: 100%;
   margin-top: 8px;

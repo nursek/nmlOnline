@@ -20,7 +20,11 @@ describe('HarvestPanelComponent — récolte en lot', () => {
 
   it('« Tout en ressource » ignore les secteurs sans ressource', () => {
     const fixture = TestBed.createComponent(HarvestPanelComponent);
-    fixture.componentRef.setInput('states', [state(1, 'Or'), state(2, null), state(3, 'Ivoire')]);
+    fixture.componentRef.setInput('states', [
+      state(1, 'Auramite'),
+      state(2, null),
+      state(3, 'Adamentium'),
+    ]);
     const emitted: number[][] = [];
     fixture.componentInstance.harvest.subscribe((event) => emitted.push(event.sectorNumbers));
 

@@ -45,6 +45,9 @@ public class CombatService {
     private AllianceGraph allianceGraph;
 
     @Autowired
+    private GameStatisticsService gameStatisticsService;
+
+    @Autowired
     private EntityManager em;
 
     public Optional<Sector> findSectorWithArmy(Player player, Board board) {
@@ -382,15 +385,31 @@ public class CombatService {
 
         for (Vehicle vehicle : new ArrayList<>(sector.getVehicles())) {
             if (isCasualty(vehicle, beforeIds, survivorIds)) {
-                // Épave conservée dans le secteur (pas de DELETE) : équipage débarqué, stats à zéro.
                 vehicle.disembarkAll();
-                vehicle.setDestroyed(true);
-                vehicle.recalculateBaseStats();
+                Player owner = playersById.get(vehicle.getPlayerId());
+                if (owner != null) {
+                    owner.loseVehicle(vehicle.getVehicleType());
+                }
+                em.remove(vehicle);
+                sector.getVehicles().remove(vehicle);
                 casualties.add(vehicle);
             }
         }
 
+        recordCasualties(casualties);
         return casualties;
+    }
+
+    private void recordCasualties(List<CombatEntity> casualties) {
+        for (CombatEntity casualty : casualties) {
+            if (casualty instanceof Unit unit) {
+                gameStatisticsService.recordUnitKill(unit.getType());
+            } else if (casualty instanceof GameCharacter) {
+                gameStatisticsService.recordCharacterKill();
+            } else if (casualty instanceof Vehicle vehicle) {
+                gameStatisticsService.recordVehicleKill(vehicle.getVehicleType());
+            }
+        }
     }
 
     /** Capture les bâtiments des joueurs perdants ; le QG est capturé même détruit (arbitrage MJ). */

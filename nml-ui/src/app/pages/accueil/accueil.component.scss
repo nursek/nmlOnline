@@ -70,6 +70,75 @@
   }
 }
 
+.casualty-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.casualty-group {
+  padding: 16px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+
+  h3 {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: shared.$text-muted;
+  }
+}
+
+.casualty-total {
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.casualty-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.casualty-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+
+  strong {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.casualty-big {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.casualty-loading {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+.casualty-error {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  color: shared.$text-muted;
+  font-size: 0.85rem;
+}
+
 .announcements-card {
   .announcement {
     display: flex;

@@ -169,41 +169,65 @@
               <mat-icon>local_shipping</mat-icon>
               <h2>Véhicules disponibles</h2>
             </div>
-            <p class="section-subtitle">Véhicules en réserve à déployer sur vos secteurs</p>
+            <p class="section-subtitle">Vos véhicules, tous secteurs confondus</p>
 
-            @if (deployedVehicleCount() === 0 && undeployedVehicles().length === 0) {
-              <p class="no-forces">Aucun véhicule.</p>
+            @if (vehicleSummaries().length === 0 && reserveVehicleGroups().length === 0) {
+              <div class="empty-state">
+                <mat-icon>local_shipping</mat-icon>
+                <p>Aucun véhicule pour le moment. Visitez la boutique !</p>
+              </div>
             } @else {
-              @if (deployedVehicleCount() > 0) {
-                <p class="deployed-line">
-                  {{ deployedVehicleCount() }} véhicule(s) déployé(s) — détail dans « Forces en
-                  présence ».
-                </p>
+              @if (vehicleSummaries().length > 0) {
+                <div class="vehicles-inline">
+                  @for (vehicle of vehicleSummaries(); track vehicle.vehicleType) {
+                    <span class="vehicle-chip">
+                      <span class="vehicle-count"
+                        >{{ vehicle.count }} {{ vehicle.displayName }}</span
+                      >
+                    </span>
+                  }
+                </div>
               }
-              @if (undeployedVehicles().length > 0) {
+
+              @if (reserveVehicleGroups().length > 0) {
+                <p class="section-subtitle reserve-hint">
+                  Véhicules en réserve — à déployer sur vos secteurs.
+                </p>
                 <div class="details-grid">
-                  @for (vehicle of undeployedVehicles(); track vehicle.id) {
+                  @for (group of reserveVehicleGroups(); track group.key) {
                     <div class="reserve-card">
                       <div class="reserve-info">
-                        <mat-icon class="reserve-icon">directions_car</mat-icon>
+                        @if (vehicleImage(group.vehicle.vehicleType); as img) {
+                          <img
+                            [src]="img.src"
+                            [srcset]="img.srcset"
+                            (error)="onVehicleImgError(group.vehicle.vehicleType)"
+                            alt=""
+                            class="vehicle-thumb"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        } @else {
+                          <div class="vehicle-thumb-fallback">
+                            <mat-icon>image_not_supported</mat-icon>
+                          </div>
+                        }
                         <div>
-                          <h4>{{ vehicle.displayName }}</h4>
-                          @if (vehicle.vehicleType) {
-                            <span class="badge">{{ vehicle.vehicleType }}</span>
-                          }
+                          <h4>{{ group.count }} × {{ group.vehicle.displayName }}</h4>
                           <span class="value-label">
-                            @for (s of vehicleStats(vehicle); track s.label) {
+                            @for (s of vehicleStats(group.vehicle); track s.label) {
                               {{ s.separator }}{{ s.value | number: '1.0-0' }} {{ s.label }}
                             }
                           </span>
-                          <span class="value-label">Capacité : {{ vehicle.capacity }}</span>
+                          <span class="value-label">Capacité : {{ group.vehicle.capacity }}</span>
                         </div>
                       </div>
                       <button
                         mat-stroked-button
                         color="primary"
                         [disabled]="vehiclesLoading()"
-                        (click)="openPlacementModal(vehicle)"
+                        matTooltip="Déployer un véhicule de ce type"
+                        (click)="openVehiclePlacementModal(group)"
                         class="deploy-btn"
                       >
                         <mat-icon>place</mat-icon>
@@ -466,9 +490,19 @@
 
                         @for (v of sf.vehicles; track v.id) {
                           <div class="force-line">
-                            <mat-icon class="force-icon">{{
-                              v.isDestroyed ? 'car_crash' : 'local_shipping'
-                            }}</mat-icon>
+                            @if (vehicleImage(v.vehicleType); as img) {
+                              <img
+                                [src]="img.src"
+                                [srcset]="img.srcset"
+                                (error)="onVehicleImgError(v.vehicleType)"
+                                alt=""
+                                class="force-thumb"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            } @else {
+                              <mat-icon class="force-icon">local_shipping</mat-icon>
+                            }
                             <span class="force-name">{{
                               vehicleDisplay().labels.get(v.id!) ?? v.displayName
                             }}</span>
@@ -482,15 +516,12 @@
                                 >{{ v.passengerIds.length }}/{{ v.capacity }} passagers</span
                               >
                             }
-                            @if (v.isDestroyed) {
-                              <span class="badge badge-danger">Détruit</span>
-                            }
                             <span class="force-stats">
                               @for (s of vehicleStats(v); track s.label) {
                                 {{ s.separator }}{{ s.value | number: '1.0-0' }} {{ s.label }}
                               }
                             </span>
-                            @if (!v.isDestroyed && v.id !== null) {
+                            @if (v.id !== null) {
                               <button
                                 mat-icon-button
                                 class="force-action"

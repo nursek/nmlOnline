@@ -45,13 +45,13 @@ class ResourceSaleRollbackTest {
 
         Long playerId = tx.execute(status -> {
             Player player = playerRepository.findByUserId(userId).orElseThrow();
-            player.addResource("Or", 5);
+            player.addResource("Auramite", 5);
             return playerRepository.save(player).getId();
         });
 
         PlayerResource or = tx.execute(status -> playerRepository.findById(playerId).orElseThrow()
                 .getResources().stream()
-                .filter(r -> "Or".equals(r.getResourceName()))
+                .filter(r -> "Auramite".equals(r.getResourceName()))
                 .findFirst().orElseThrow());
         double moneyBefore = tx.execute(status -> playerRepository.findById(playerId).orElseThrow()
                 .getStats().getMoney());
@@ -73,14 +73,14 @@ class ResourceSaleRollbackTest {
                 assertEquals(moneyBefore, reloaded.getStats().getMoney(), 0.001,
                         "La vente valide ne doit pas être créditée si la seconde échoue");
                 int stockAfter = reloaded.getResources().stream()
-                        .filter(r -> "Or".equals(r.getResourceName()))
+                        .filter(r -> "Auramite".equals(r.getResourceName()))
                         .mapToInt(PlayerResource::getQuantity)
                         .findFirst().orElse(0);
                 assertEquals(stockBefore, stockAfter, "Le stock vendu doit être rendu par le rollback");
             });
         } finally {
             tx.executeWithoutResult(status -> playerRepository.findById(playerId).orElseThrow()
-                    .removeResource("Or", 5));
+                    .removeResource("Auramite", 5));
         }
     }
 }

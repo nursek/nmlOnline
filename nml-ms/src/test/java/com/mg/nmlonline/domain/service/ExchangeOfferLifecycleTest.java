@@ -76,7 +76,7 @@ class ExchangeOfferLifecycleTest {
         assertEquals(1000.0, accepted.getMoney());
 
         Player receiver = playerRepository.findByName("nursek").orElseThrow();
-        assertTrue(receiver.getResourceQuantity("Or") >= 2, "Les ressources acceptées sont transférées");
+        assertTrue(receiver.getResourceQuantity("Auramite") >= 2, "Les ressources acceptées sont transférées");
 
         long offersAfterFirst = exchangeOfferRepository.count();
 

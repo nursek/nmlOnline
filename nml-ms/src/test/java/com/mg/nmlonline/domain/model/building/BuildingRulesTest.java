@@ -164,7 +164,7 @@ class BuildingRulesTest {
         void shouldEmptyBankOnTransfer() {
             Bank bank = new Bank(1L);
             bank.setStoredMoney(5000.0);
-            bank.getStoredResources().add(new PlayerResource("Or", 100));
+            bank.getStoredResources().add(new PlayerResource("Auramite", 100));
 
             assertEquals(5000.0, bank.transferMoney());
             assertEquals(1, bank.transferResources().size());
