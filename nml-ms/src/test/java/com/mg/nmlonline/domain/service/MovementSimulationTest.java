@@ -85,13 +85,13 @@ class MovementSimulationTest {
         secteur2.setOwnerId(JOUEUR_B);
         secteur4.setOwnerId(JOUEUR_C);
 
-        Unit uniteA = new Unit(5.0, UnitClass.ELEMENTAIRE);
+        Unit uniteA = new Unit(5.0, UnitClass.TIREUR);
         uniteA.setId(UNITE_A_ID);
         uniteA.setPlayerId(JOUEUR_A);
         uniteA.setSector(secteur1);
         secteur1.getArmy().add(uniteA);
 
-        Unit uniteB = new Unit(5.0, UnitClass.ELEMENTAIRE);
+        Unit uniteB = new Unit(5.0, UnitClass.TIREUR);
         uniteB.setId(UNITE_B_ID);
         uniteB.setPlayerId(JOUEUR_B);
         uniteB.setSector(secteur2);
@@ -114,7 +114,7 @@ class MovementSimulationTest {
         secteur4.getArmy().add(pilote);
         vehiculeC.assignPilot(pilote);
 
-        Unit passager = new Unit(5.0, UnitClass.ELEMENTAIRE);
+        Unit passager = new Unit(5.0, UnitClass.TIREUR);
         passager.setId(PASSAGER_C_ID);
         passager.setPlayerId(JOUEUR_C);
         passager.setSector(secteur4);

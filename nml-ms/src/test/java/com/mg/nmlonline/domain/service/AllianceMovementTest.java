@@ -73,7 +73,7 @@ class AllianceMovementTest {
     }
 
     private void addUnit(Sector sector, Long playerId, long id) {
-        Unit unit = new Unit(5.0, UnitClass.ELEMENTAIRE);
+        Unit unit = new Unit(5.0, UnitClass.TIREUR);
         unit.setId(id);
         unit.setPlayerId(playerId);
         unit.setSector(sector);

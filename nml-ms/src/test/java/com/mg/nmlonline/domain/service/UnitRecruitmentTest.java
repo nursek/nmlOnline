@@ -124,13 +124,13 @@ class UnitRecruitmentTest {
         setTurn(board, 2);
 
         assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(),
-                List.of(item("LARBIN", "ELEMENTAIRE", 21))));
+                List.of(item("LARBIN", "LEGER", 21))));
 
         setTurn(board, 5);
         assertEquals(30, unitService.buyUnitsDto(player.getUserId(),
-                List.of(item("LARBIN", "ELEMENTAIRE", 30))).size());
+                List.of(item("LARBIN", "LEGER", 30))).size());
         assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(),
-                List.of(item("LARBIN", "ELEMENTAIRE", 1))));
+                List.of(item("LARBIN", "LEGER", 1))));
     }
 
     @Test

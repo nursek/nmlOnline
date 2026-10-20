@@ -65,7 +65,7 @@ function vt(name: string, cost: number, basePdf: number, baseDefense: number): V
 }
 
 describe('boutique.helpers — tri par défaut', () => {
-  it('trie par classe (léger→élémentaire) puis catégorie (mêlée→arme à feu→défensif) puis prix', () => {
+  it('trie par classe (ordre du catalogue) puis catégorie (mêlée→arme à feu→défensif) puis prix', () => {
     const items = [
       eq('Enmitic Disintegrator Pistol', 400, 'FIREARM', 'LEGER'),
       eq('Flensing Claw', 100, 'MELEE', 'LEGER'),
@@ -74,7 +74,6 @@ describe('boutique.helpers — tri par défaut', () => {
       eq('Hyperphase Glaive', 450, 'MELEE', 'MASTODONTE'),
       eq('Hyperphase Thresher', 300, 'MELEE', 'SNIPER'),
       eq('Gauss Cannon', 3400, 'FIREARM', 'PILOTE_DESTRUCTEUR'),
-      eq('Warscythe', 1000, 'MELEE', 'ELEMENTAIRE'),
     ];
     const sorted = sortEquipments(items);
     expect(sorted.map((i) => i.name)).toEqual([
@@ -85,7 +84,6 @@ describe('boutique.helpers — tri par défaut', () => {
       'Hyperphase Glaive',
       'Hyperphase Thresher',
       'Gauss Cannon',
-      'Warscythe',
     ]);
   });
 
@@ -241,7 +239,7 @@ describe('boutique.helpers — résumés compacts', () => {
       expect(unitClassBonusSummary(uc('PILOTE_DESTRUCTEUR'))).toBe(
         'Tire en priorité sur les véhicules ; obligatoire pour piloter un véhicule avec une unité.',
       );
-      expect(unitClassBonusSummary(uc('ELEMENTAIRE'))).toBe('Aucun effet de combat.');
+      expect(unitClassBonusSummary(uc('SNIPER'))).toBe('Aucun effet de combat.');
     });
   });
 
@@ -272,7 +270,7 @@ describe('boutique.helpers — résumés compacts', () => {
     it('cumule le panier par type, toutes classes confondues', () => {
       const cart = [
         unitLine('LARBIN', 'LEGER', 3),
-        unitLine('LARBIN', 'ELEMENTAIRE', 2),
+        unitLine('LARBIN', 'TIREUR', 2),
         unitLine('VOYOU', 'LEGER', 4),
       ];
       expect(unitCartQuantityForType(cart, 'LARBIN')).toBe(5);

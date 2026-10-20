@@ -113,7 +113,7 @@ class UnitServiceTest {
         Player other = playerOfTestUser(TestDataInitializer.USER_2);
         Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
         Sector sector = findNeutralSector(board, 4);
-        Unit unit = newUnit(other.getId(), UnitType.LARBIN, Set.of(UnitClass.ELEMENTAIRE));
+        Unit unit = newUnit(other.getId(), UnitType.LARBIN, Set.of(UnitClass.LEGER));
         sector.addUnit(unit);
         entityManager.persist(unit);
         entityManager.flush();
@@ -209,7 +209,7 @@ class UnitServiceTest {
         Player other = playerOfTestUser(TestDataInitializer.USER_2);
         Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
         Sector sector = findNeutralSector(board, 7);
-        Unit unit = newUnit(other.getId(), UnitType.LARBIN, Set.of(UnitClass.ELEMENTAIRE));
+        Unit unit = newUnit(other.getId(), UnitType.LARBIN, Set.of(UnitClass.LEGER));
         entityManager.persist(unit);
         entityManager.flush();
 
@@ -228,7 +228,7 @@ class UnitServiceTest {
 
         BuyUnitRequestDto blankType = new BuyUnitRequestDto();
         blankType.setUnitType(" ");
-        blankType.setUnitClass(UnitClass.ELEMENTAIRE.name());
+        blankType.setUnitClass(UnitClass.LEGER.name());
         assertThrows(IllegalArgumentException.class,
                 () -> unitService.buyUnits(player.getUserId(), List.of(blankType)));
 
@@ -239,7 +239,7 @@ class UnitServiceTest {
 
             BuyUnitRequestDto zeroQuantity = new BuyUnitRequestDto();
             zeroQuantity.setUnitType(UnitType.LARBIN.name());
-            zeroQuantity.setUnitClass(UnitClass.ELEMENTAIRE.name());
+            zeroQuantity.setUnitClass(UnitClass.LEGER.name());
             zeroQuantity.setQuantity(0);
             assertThrows(IllegalArgumentException.class,
                     () -> unitService.buyUnits(player.getUserId(), List.of(zeroQuantity)));

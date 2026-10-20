@@ -409,7 +409,7 @@ export function troopSummaries(sectors: Sector[], playerId: number | null): Troo
   });
 }
 
-/** Classes dans l'ordre Léger → Élémentaire (« Sans classe » en fin), catégories comme la boutique. */
+/** Classes dans l'ordre du catalogue (« Sans classe » en fin), catégories comme la boutique. */
 export function equipmentByClass(stacks: EquipmentStack[]): EquipmentClassGroup[] {
   const byClass = new Map<string, EquipmentStack[]>();
   for (const stack of stacks) {

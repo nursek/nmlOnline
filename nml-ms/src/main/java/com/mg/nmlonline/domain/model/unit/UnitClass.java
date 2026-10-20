@@ -12,8 +12,6 @@ public enum UnitClass {
         }
     },
 
-    ELEMENTAIRE("E") {},
-
     TIREUR("T") {
         @Override
         public double getCriticalChance() {

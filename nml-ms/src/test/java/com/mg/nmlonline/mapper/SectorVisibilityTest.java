@@ -24,7 +24,7 @@ class SectorVisibilityTest {
     }
 
     private void addUnit(Sector sector, Long playerId) {
-        Unit unit = new Unit(5.0, UnitClass.ELEMENTAIRE);
+        Unit unit = new Unit(5.0, UnitClass.TIREUR);
         unit.setPlayerId(playerId);
         unit.setSector(sector);
         sector.getArmy().add(unit);
