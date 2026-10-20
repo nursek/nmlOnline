@@ -32,5 +32,5 @@ export const noAuthGuard: CanActivateFn = async (): Promise<boolean | UrlTree> =
   await waitForInitialization(auth);
 
   if (!auth.isAuthenticated()) return true;
-  return router.createUrlTree(['/carte']);
+  return router.createUrlTree(['/accueil']);
 };

@@ -21,8 +21,6 @@ export interface Sector {
   neighbors: number[];
   x: number | null;
   y: number | null;
-  /** Vue restreinte : présence de défenseurs sans composition (null = secteur détaillé). */
-  hasDefenders?: boolean | null;
 }
 
 export interface SectorStats {

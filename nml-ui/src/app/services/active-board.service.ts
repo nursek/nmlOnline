@@ -21,4 +21,8 @@ export class ActiveBoardService {
   readonly sectors = computed(() => Object.values(this.board()?.sectors ?? {}));
   readonly loading = computed(() => this.boardsRef.isLoading());
   readonly error = computed(() => this.boardsRef.error());
+
+  reload(): void {
+    this.boardsRef.reload();
+  }
 }

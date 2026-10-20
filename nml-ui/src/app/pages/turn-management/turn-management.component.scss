@@ -68,43 +68,7 @@
 }
 
 .page-header {
-  position: relative;
-  margin-bottom: 1.5rem;
-  padding-bottom: 16px;
-  border-bottom: 2.5px solid var(--line-2);
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -1px;
-    width: 72px;
-    height: 2px;
-    background: var(--accent);
-    box-shadow: var(--glow-amber);
-  }
-
-  .title {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-
-    mat-icon {
-      @include shared.header-icon-plate(44px, 24px);
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
-  }
-
-  .subtitle {
-    margin: 0.5rem 0 0;
-    color: var(--muted);
-    font-size: 0.9rem;
-  }
+  @include shared.compact-page-header;
 }
 
 .session-summary {

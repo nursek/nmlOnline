@@ -1,0 +1,93 @@
+@if (loading()) {
+  <div class="loading-container" role="status" aria-label="Chargement de l'accueil">
+    <mat-spinner diameter="60"></mat-spinner>
+    <p>Chargement de la partie...</p>
+  </div>
+} @else {
+  <div class="container fade-in">
+    <div class="page-header">
+      <div class="avatar">
+        <mat-icon>home</mat-icon>
+      </div>
+      <h1 class="title">Accueil</h1>
+    </div>
+
+    @if (boardError()) {
+      <div class="error-alert" role="alert">
+        <mat-icon>error</mat-icon>
+        Impossible de charger les données de la partie. Vérifiez que le serveur est démarré.
+      </div>
+    }
+
+    <mat-card class="stats-card">
+      <mat-card-content>
+        <div class="section-header">
+          <mat-icon color="primary">analytics</mat-icon>
+          <h2>Statistiques globales</h2>
+        </div>
+        <div class="global-stats">
+          <div class="global-stat">
+            <mat-icon>event_repeat</mat-icon>
+            <div>
+              <span class="stat-value">{{ turn() ?? '—' }}</span>
+              <span class="stat-label">Tour en cours</span>
+            </div>
+          </div>
+          <div class="global-stat">
+            <mat-icon>place</mat-icon>
+            <div>
+              <span class="stat-value">{{ totalSectors() }}</span>
+              <span class="stat-label">Secteurs</span>
+            </div>
+          </div>
+          <div class="global-stat">
+            <mat-icon>flag</mat-icon>
+            <div>
+              <span class="stat-value">{{ conqueredSectors() }}</span>
+              <span class="stat-label">Conquis</span>
+            </div>
+          </div>
+          <div class="global-stat">
+            <mat-icon>landscape</mat-icon>
+            <div>
+              <span class="stat-value">{{ neutralSectors() }}</span>
+              <span class="stat-label">Neutres</span>
+            </div>
+          </div>
+          <div class="global-stat">
+            <mat-icon>people</mat-icon>
+            <div>
+              <span class="stat-value">{{ players().length }}</span>
+              <span class="stat-label">Joueurs en vie</span>
+              @if (playersTruncated()) {
+                <span class="stat-label">(liste partielle — 50 premiers)</span>
+              }
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    @if (announcements().length) {
+      <mat-card class="announcements-card">
+        <mat-card-content>
+          <div class="section-header">
+            <mat-icon color="primary">campaign</mat-icon>
+            <h2>Nouvelles publiques</h2>
+          </div>
+          @for (announcement of announcements(); track announcement.id) {
+            <div class="announcement" [class.betrayal]="announcement.type === 'BETRAYAL'">
+              <mat-icon>
+                {{ announcement.type === 'BETRAYAL' ? 'local_fire_department' : 'handshake' }}
+              </mat-icon>
+              <span class="label">{{ announcementLabel(announcement) }}</span>
+              <span class="turn">tour {{ announcement.turnCreated }}</span>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <app-rankings-panel [playerColors]="playerColors()" />
+  </div>
+}

@@ -604,6 +604,7 @@ src/main/java/com/mg/nmlonline/
 src/app/
 ├── pages/
 │   ├── login/            # Login form (NonNullableFormBuilder, signals)
+│   ├── accueil/          # Home: global stats, announcements, rankings
 │   ├── carte/            # Interactive SVG map (afterNextRender, signals)
 │   ├── joueur/           # Player profile + units
 │   ├── boutique/         # Equipment & vehicle shop (takeUntilDestroyed)

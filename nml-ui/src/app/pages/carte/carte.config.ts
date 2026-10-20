@@ -1,3 +1,5 @@
+import type { Player } from '../../models';
+
 export const DARK_TEXT = '#060809';
 export const LIGHT_TEXT = '#e6decb';
 
@@ -23,9 +25,20 @@ export function haloColor(hex: string): string {
   return contrastColor(hex) === DARK_TEXT ? LIGHT_TEXT : DARK_TEXT;
 }
 
+// Couleur stable au refresh : indexation par id trié, indépendante de l'ordre d'insertion de l'API.
+export function assignPlayerColors(players: readonly Player[]): ReadonlyMap<number, string> {
+  const map = new Map<number, string>();
+  const sorted = [...players]
+    .filter((p) => p.id != null)
+    .sort((a, b) => (a.id as number) - (b.id as number));
+  const palette = MAP_THEME.playerPalette;
+  sorted.forEach((player, index) => {
+    map.set(player.id as number, palette[index % palette.length]);
+  });
+  return map;
+}
+
 export const MAP_THEME = {
-  // Palette affectée par index sur les joueurs triés par id (stable au refresh,
-  // contrairement à l'ordre d'insertion précédent).
   playerPalette: [
     '#e8bb45',
     '#6f93c9',
@@ -57,7 +70,6 @@ export const MAP_THEME = {
   fill: {
     normalAlpha: '80', // ~50%
     hoverAlpha: 'C0', // ~75%
-    dimmedOpacity: 0.22,
   },
 
   // Épaisseur de contour (unités utilisateur ; non-scaling-stroke garde le net).
@@ -88,4 +100,23 @@ export const MAP_THEME = {
     strokeWidthPx: 4,
     contrastOnSelect: true,
   },
+
+  // Calques togglables : bordures ennemies en magenta.
+  overlays: {
+    frontStroke: '#ff2d9d',
+    frontWidth: 6,
+    // Marge du masque autour de mes contours : doit dépasser l'interstice entre polygones voisins.
+    frontMaskWidth: 20,
+  },
+
+  // Calque « Ressources » (et sa légende) : une teinte par ressource.
+  resourceColors: {
+    Cigares: '#d4a86a',
+    Alcool: '#6f93c9',
+    Antiquités: '#b47ccb',
+    Ivoire: '#e6decb',
+    Uranium: '#9fbf4a',
+    Or: '#e8bb45',
+    Joyaux: '#4fc3c9',
+  } as Record<string, string>,
 } as const;

@@ -10,13 +10,10 @@
   @include shared.page-header;
 }
 .avatar {
-  @include shared.avatar(80px, 48px);
+  @include shared.avatar;
 }
 .title {
   @include shared.gradient-title;
-}
-.subtitle {
-  @include shared.subtitle;
 }
 .card {
   @include shared.card;

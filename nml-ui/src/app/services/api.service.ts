@@ -199,6 +199,10 @@ export class ApiService {
     );
   }
 
+  adminPlayDemoTurns(): Observable<ScenarioSummary> {
+    return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/play-demo-turns`, {});
+  }
+
   adminNavigateToTurn(turn: number): Observable<{ currentTurn: number }> {
     return this.http.post<{ currentTurn: number }>(`${this.baseUrl}/admin/dev/turn/${turn}`, {});
   }
@@ -400,9 +404,13 @@ export class ApiService {
   }
 
   adminResolvePendingCapture(pendingId: number, playerId: number): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/admin/pending-captures/${pendingId}/resolve`, null, {
-      params: { playerId },
-    });
+    return this.http.post<void>(
+      `${this.baseUrl}/admin/pending-captures/${pendingId}/resolve`,
+      null,
+      {
+        params: { playerId },
+      },
+    );
   }
 
   adminDismissPendingCapture(pendingId: number): Observable<void> {

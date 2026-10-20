@@ -16,54 +16,63 @@
       <div class="avatar">
         <mat-icon>map</mat-icon>
       </div>
-      <div>
-        <h1 class="title">Carte du Monde</h1>
-        <p class="subtitle">Cliquez sur un secteur pour voir les détails</p>
-      </div>
+      <h1 class="title">Carte du Monde</h1>
+    </div>
+
+    <div class="legend-bar" aria-label="Légende de la carte et calques">
+      @if (isOverlay('resources')) {
+        @for (resource of resourceLegend; track resource.name) {
+          <span class="legend-item">
+            <span class="legend-dot" [style.background-color]="resource.color"></span>
+            <span class="legend-name">{{ resource.name }}</span>
+          </span>
+        }
+      } @else {
+        @for (player of players(); track player.id) {
+          <span class="legend-item">
+            <span class="legend-dot" [style.background-color]="getPlayerColor(player.id)"></span>
+            <span class="legend-name">{{ player.name }}</span>
+            <span class="legend-count">{{ player.sectorCount ?? 0 }}</span>
+          </span>
+        }
+        <span class="legend-item">
+          <span class="legend-dot" [style.background-color]="neutralColor"></span>
+          <span class="legend-name">Neutre</span>
+          <span class="legend-count">{{ neutralSectorsCount() }}</span>
+        </span>
+      }
+
+      <span class="legend-toggles">
+        <button
+          type="button"
+          class="overlay-toggle"
+          [class.active]="isOverlay('front')"
+          [attr.aria-pressed]="isOverlay('front')"
+          (click)="toggleOverlay('front')"
+          title="Bordures avec les secteurs ennemis (jamais les neutres)"
+        >
+          <mat-icon>shield</mat-icon>
+          Frontières
+        </button>
+        <button
+          type="button"
+          class="overlay-toggle"
+          [class.active]="isOverlay('resources')"
+          [attr.aria-pressed]="isOverlay('resources')"
+          (click)="toggleOverlay('resources')"
+          title="Colorer les secteurs par type de ressource"
+        >
+          <mat-icon>diamond</mat-icon>
+          Ressources
+        </button>
+      </span>
+
+      @if (isOverlay('front') && !frontSectors().enemies.length) {
+        <span class="legend-note">Aucune frontière ennemie</span>
+      }
     </div>
 
     <div class="map-layout">
-      <mat-card class="legend-card">
-        <mat-card-content>
-          <div class="section-header">
-            <mat-icon color="primary">people</mat-icon>
-            <h2>Joueurs</h2>
-          </div>
-          @for (player of players(); track player.id) {
-            <button
-              class="legend-item"
-              [class.active]="player.id !== null && selectedPlayerIds().has(player.id)"
-              (click)="togglePlayerFilter(player)"
-              type="button"
-            >
-              <div class="legend-color" [style.background-color]="getPlayerColor(player.id)"></div>
-              <div class="legend-info">
-                <span class="legend-name">{{ player.name }}</span>
-                <span class="legend-count">{{ player.sectorCount ?? 0 }} secteur(s)</span>
-              </div>
-            </button>
-          }
-          <button
-            class="legend-item neutral"
-            [class.active]="showNeutral()"
-            (click)="toggleNeutralFilter()"
-            type="button"
-          >
-            <div class="legend-color" [style.background-color]="neutralColor"></div>
-            <div class="legend-info">
-              <span class="legend-name">Neutre</span>
-              <span class="legend-count">{{ neutralSectorsCount() }} secteur(s)</span>
-            </div>
-          </button>
-          @if (selectedPlayerIds().size < players().length || !showNeutral()) {
-            <button mat-stroked-button color="primary" class="clear-filter" (click)="clearFilter()">
-              <mat-icon>clear</mat-icon>
-              Tout afficher
-            </button>
-          }
-        </mat-card-content>
-      </mat-card>
-
       <div class="map-container">
         @if (svgLoaded()) {
           <div
@@ -111,18 +120,15 @@
         }
       </div>
 
-      @if (selectedSector(); as sector) {
-        <mat-card class="details-card">
-          <mat-card-content>
-            <div class="sector-header" [style.border-color]="getSectorColor(selectedSector()!)">
-              <div
-                class="sector-color"
-                [style.background-color]="getSectorColor(selectedSector()!)"
-              ></div>
+      <mat-card class="details-card">
+        <mat-card-content>
+          @if (selectedSector(); as sector) {
+            <div class="sector-header" [style.border-color]="getSectorColor(sector)">
+              <div class="sector-color" [style.background-color]="getSectorColor(sector)"></div>
               <div>
-                <h2>{{ selectedSector()!.name }}</h2>
-                <span class="sector-id">Secteur n°{{ selectedSector()!.number }}</span>
-                @if (isAllyOwner(selectedSector()!.ownerId)) {
+                <h2>{{ sector.name }}</h2>
+                <span class="sector-id">Secteur n°{{ sector.number }}</span>
+                @if (isAllyOwner(sector.ownerId)) {
                   <span class="ally-badge">Allié</span>
                 }
               </div>
@@ -132,7 +138,7 @@
 
             <div class="detail-section">
               <h3><mat-icon>person</mat-icon> Propriétaire</h3>
-              <p class="owner-name">{{ selectedSector()!.playerName || 'Territoire neutre' }}</p>
+              <p class="owner-name">{{ sector.playerName || 'Territoire neutre' }}</p>
             </div>
 
             @if (sector.army) {
@@ -140,12 +146,12 @@
                 <h3><mat-icon>attach_money</mat-icon> Économie</h3>
                 <div class="stat-row">
                   <span>Revenus</span>
-                  <span class="value gold">{{ selectedSector()!.income || 0 }} ₡/tour</span>
+                  <span class="value gold">{{ sector.income || 0 }} ₡/tour</span>
                 </div>
-                @if (selectedSector()!.resource) {
+                @if (sector.resource) {
                   <div class="stat-row">
                     <span>Ressource</span>
-                    <span class="value">{{ selectedSector()!.resource }}</span>
+                    <span class="value">{{ sector.resource }}</span>
                   </div>
                 }
               </div>
@@ -155,10 +161,14 @@
                   <mat-icon>military_tech</mat-icon>
                   Armée
                 </h3>
-                @if (sector.character) {
-                  <div class="stat-row">
-                    <span>Personnage</span>
-                    <span class="value">{{ sector.character.name }}</span>
+                @if (sector.character; as character) {
+                  <div class="entity-line">
+                    <span class="entity-name">{{ character.name }}</span>
+                    <span class="entity-stats">
+                      @for (s of characterStats(character); track s.label) {
+                        {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+                      }
+                    </span>
                   </div>
                 }
                 @if (sector.army.length) {
@@ -172,12 +182,34 @@
                     <span>Véhicules</span>
                     <span class="value">{{ sector.vehicles!.length }}</span>
                   </div>
+                  <ul class="entity-list">
+                    @for (vehicle of sector.vehicles!; track vehicle.id) {
+                      <li>
+                        <mat-icon>directions_car</mat-icon>
+                        {{ vehicle.displayName }}
+                        @if (vehicle.hasPilot) {
+                          <span class="entity-tag">piloté</span>
+                        }
+                      </li>
+                    }
+                  </ul>
                 }
                 @if (sector.buildings?.length) {
                   <div class="stat-row">
-                    <span>Batiments</span>
+                    <span>Bâtiments</span>
                     <span class="value">{{ sector.buildings!.length }}</span>
                   </div>
+                  <ul class="entity-list">
+                    @for (building of sector.buildings!; track building.id) {
+                      <li>
+                        <mat-icon>apartment</mat-icon>
+                        {{ building.displayName }}
+                        @if (building.isDestroyed) {
+                          <span class="entity-tag danger">détruit</span>
+                        }
+                      </li>
+                    }
+                  </ul>
                 }
               </div>
 
@@ -212,11 +244,7 @@
               <div class="detail-section restricted">
                 <h3><mat-icon>visibility_off</mat-icon> Informations restreintes</h3>
                 <p class="owner-name">
-                  {{
-                    sector.hasDefenders
-                      ? 'Défenseurs présents — composition inconnue'
-                      : 'Aucun défenseur détecté'
-                  }}
+                  Détail militaire masqué — seul le propriétaire ou un allié présent le voit.
                 </p>
                 @if (sector.resource) {
                   <div class="stat-row">
@@ -228,9 +256,9 @@
             }
 
             <div class="detail-section">
-              <h3><mat-icon>share</mat-icon> Voisins ({{ selectedSector()!.neighbors.length }})</h3>
+              <h3><mat-icon>share</mat-icon> Voisins ({{ sector.neighbors.length }})</h3>
               <div class="neighbors-list">
-                @for (neighborNum of selectedSector()!.neighbors; track neighborNum) {
+                @for (neighborNum of sector.neighbors; track neighborNum) {
                   @if (getSectorByNumber(neighborNum); as neighbor) {
                     <mat-chip
                       (click)="selectSector(neighbor)"
@@ -255,58 +283,140 @@
               color="warn"
               class="close-btn"
               (click)="selectedSector.set(null)"
-              aria-label="Fermer les détails du secteur"
+              aria-label="Revenir à la vue du monde"
             >
-              <mat-icon>close</mat-icon>
-              Fermer
+              <mat-icon>arrow_back</mat-icon>
+              Retour au monde
             </button>
-          </mat-card-content>
-        </mat-card>
-      }
+          } @else {
+            <div class="world-header">
+              <mat-icon>public</mat-icon>
+              <div>
+                <h2>{{ board()?.name ?? 'Monde' }}</h2>
+                <span class="sector-id">
+                  {{ worldSectorCount() }} secteurs · {{ neutralSectorsCount() }} neutres
+                </span>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h3><mat-icon>bolt</mat-icon> Actions rapides</h3>
+              <div class="quick-actions">
+                @if (isAdmin()) {
+                  <a mat-stroked-button routerLink="/admin/tour">
+                    <mat-icon>event_repeat</mat-icon>
+                    Gestion du tour
+                  </a>
+                  <a mat-stroked-button routerLink="/admin/conflits">
+                    <mat-icon>gavel</mat-icon>
+                    Conflits
+                  </a>
+                  <a mat-stroked-button routerLink="/admin">
+                    <mat-icon>admin_panel_settings</mat-icon>
+                    Console admin
+                  </a>
+                } @else {
+                  <button
+                    mat-flat-button
+                    color="primary"
+                    class="wide"
+                    (click)="harvestResources()"
+                    [disabled]="harvesting() || !harvestSectors().length"
+                    title="Récolte 1 ressource sur chacun de vos secteurs (au lieu de leur revenu en argent, versé automatiquement sinon)"
+                  >
+                    <mat-icon>agriculture</mat-icon>
+                    Tout récolter en ressources ({{ harvestSectors().length }})
+                  </button>
+                  <a mat-stroked-button routerLink="/ordres">
+                    <mat-icon>list_alt</mat-icon>
+                    Mes ordres
+                  </a>
+                  <a mat-stroked-button routerLink="/rapports">
+                    <mat-icon>history</mat-icon>
+                    Rapports
+                  </a>
+                  <a mat-stroked-button routerLink="/boutique">
+                    <mat-icon>shopping_bag</mat-icon>
+                    Boutique
+                  </a>
+                  <a mat-stroked-button routerLink="/joueur">
+                    <mat-icon>person</mat-icon>
+                    Mon joueur
+                  </a>
+                }
+              </div>
+            </div>
+
+            @if (placing(); as placement) {
+              <div class="detail-section">
+                <h3><mat-icon>inventory_2</mat-icon> Déploiement</h3>
+                <p class="panel-hint">
+                  <mat-icon>ads_click</mat-icon>
+                  Cliquez un de vos secteurs pour déployer {{ placement.label }}.
+                </p>
+                <button
+                  mat-stroked-button
+                  color="warn"
+                  class="cancel-place"
+                  (click)="cancelPlacement()"
+                >
+                  <mat-icon>close</mat-icon>
+                  Annuler
+                </button>
+              </div>
+            } @else if (!isAdmin() && (reserveUnits().length || undeployedVehicles().length)) {
+              <div class="detail-section">
+                <h3>
+                  <mat-icon>inventory_2</mat-icon>
+                  Réserves ({{ reserveUnits().length + undeployedVehicles().length }})
+                </h3>
+                <div class="reserve-list">
+                  @for (unit of reserveUnits(); track unit.id) {
+                    <button
+                      type="button"
+                      class="reserve-item"
+                      (click)="
+                        startPlacement('unit', unit.id, unit.type.name + ' n°' + unit.number)
+                      "
+                      title="Déployer sur un de vos secteurs"
+                    >
+                      <mat-icon>groups</mat-icon>
+                      {{ unit.type.name }} n°{{ unit.number }}
+                    </button>
+                  }
+                  @for (vehicle of undeployedVehicles(); track vehicle.id) {
+                    <button
+                      type="button"
+                      class="reserve-item"
+                      (click)="startPlacement('vehicle', vehicle.id, vehicle.displayName)"
+                      title="Déployer sur un de vos secteurs"
+                    >
+                      <mat-icon>directions_car</mat-icon>
+                      {{ vehicle.displayName }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (myPlayer(); as me) {
+              <div class="detail-section">
+                <h3><mat-icon>flag</mat-icon> Votre empire</h3>
+                <div class="legend-row">
+                  <span class="legend-dot" [style.background-color]="getPlayerColor(me.id)"></span>
+                  <span class="legend-name">{{ me.name }}</span>
+                  <span class="legend-count">{{ me.sectorCount ?? 0 }} secteur(s)</span>
+                </div>
+              </div>
+            }
+
+            <p class="panel-hint">
+              <mat-icon>ads_click</mat-icon>
+              Cliquez sur un secteur pour voir ses détails.
+            </p>
+          }
+        </mat-card-content>
+      </mat-card>
     </div>
-
-    <mat-card class="stats-card">
-      <mat-card-content>
-        <div class="section-header">
-          <mat-icon color="primary">analytics</mat-icon>
-          <h2>Statistiques globales</h2>
-        </div>
-        <div class="global-stats">
-          <div class="global-stat">
-            <mat-icon>place</mat-icon>
-            <div>
-              <span class="stat-value">{{ allSectors().length }}</span>
-              <span class="stat-label">Secteurs</span>
-            </div>
-          </div>
-          <div class="global-stat">
-            <mat-icon>people</mat-icon>
-            <div>
-              <span class="stat-value">{{ players().length }}</span>
-              <span class="stat-label">Joueurs en vie</span>
-              @if (playersTruncated()) {
-                <span class="stat-label">(liste partielle — 50 premiers)</span>
-              }
-            </div>
-          </div>
-          <div class="global-stat">
-            <mat-icon>flag</mat-icon>
-            <div>
-              <span class="stat-value">{{ conqueredSectorsCount() }}</span>
-              <span class="stat-label">Conquis</span>
-            </div>
-          </div>
-          <div class="global-stat">
-            <mat-icon>landscape</mat-icon>
-            <div>
-              <span class="stat-value">{{ neutralSectorsCount() }}</span>
-              <span class="stat-label">Neutres</span>
-            </div>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <app-rankings-panel [playerColors]="playerColorMap()" />
   </div>
 }

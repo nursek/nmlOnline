@@ -15,10 +15,7 @@
       <div class="avatar">
         <mat-icon>person</mat-icon>
       </div>
-      <div>
-        <h1 class="title">{{ player.name }}</h1>
-        <p class="subtitle">Commandant en chef</p>
-      </div>
+      <h1 class="title">{{ player.name }}</h1>
     </div>
 
     <mat-tab-group
@@ -646,8 +643,8 @@
               <mat-icon>history</mat-icon>
               <p>Aucune action enregistrée ce tour.</p>
               <p class="empty-hint">
-                L'historique des récoltes, des achats et des équipements modifiés sera journalisé ici.
-                Les ordres de déplacement se consultent sur la page « Mes ordres ».
+                L'historique des récoltes, des achats et des équipements modifiés sera journalisé
+                ici. Les ordres de déplacement se consultent sur la page « Mes ordres ».
               </p>
             </div>
           } @else {
@@ -665,8 +662,11 @@
                     <span class="action-label">{{ action.label }}</span>
                     @if (action.money) {
                       <span class="action-money"
-                        >{{ action.type === 'SELL_RESOURCE' || action.type === 'HARVEST_MONEY' ? '+'
-                        : '-' }}{{ action.money | number: '1.0-0' }} ₡</span
+                        >{{
+                          action.type === 'SELL_RESOURCE' || action.type === 'HARVEST_MONEY'
+                            ? '+'
+                            : '-'
+                        }}{{ action.money | number: '1.0-0' }} ₡</span
                       >
                     }
                   </div>

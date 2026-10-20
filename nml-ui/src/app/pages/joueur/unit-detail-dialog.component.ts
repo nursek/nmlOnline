@@ -27,7 +27,7 @@ import { ActiveBoardService } from '../../services/active-board.service';
 import { MovementStateService } from '../../services/movement-state.service';
 import { UnitSlotPickerComponent, UnitSlotPickerData } from './unit-slot-picker.component';
 import { ExpPipe } from '../../shared/exp.pipe';
-import { findRoute, reachableTargets, unitMaxHops } from './movement.helpers';
+import { findRoute, reachableTargets, unitMaxHops } from '../../core/movement.helpers';
 
 export interface UnitDetailDialogData {
   /** Snapshot initial — l'unité live est re-résolue depuis PlayerService.player(). */

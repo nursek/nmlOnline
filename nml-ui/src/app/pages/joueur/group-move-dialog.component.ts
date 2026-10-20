@@ -18,7 +18,7 @@ import {
   sectorKind,
   SectorKind,
   unitMaxHops,
-} from './movement.helpers';
+} from '../../core/movement.helpers';
 
 export interface GroupMoveDialogData {
   sector: Sector;

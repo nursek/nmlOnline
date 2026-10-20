@@ -1,0 +1,104 @@
+@use '../../../styles/shared' as shared;
+
+.loading-container {
+  @include shared.loading-container;
+  flex-direction: column;
+  gap: 16px;
+  color: shared.$text-muted;
+}
+
+.container {
+  @include shared.page-container;
+  max-width: 1200px;
+}
+
+.page-header {
+  @include shared.page-header;
+}
+
+.avatar {
+  @include shared.avatar;
+}
+
+.title {
+  @include shared.gradient-title;
+}
+
+.stats-card,
+.announcements-card {
+  @include shared.card;
+}
+
+.section-header {
+  @include shared.section-header;
+  margin-bottom: 16px;
+
+  h2 {
+    font-size: 1.1rem;
+  }
+}
+
+.global-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.global-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: shared.$primary-color;
+  }
+  .stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .stat-label {
+    font-size: 0.8rem;
+    color: shared.$text-muted;
+  }
+}
+
+.announcements-card {
+  .announcement {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px dashed var(--line-2);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    mat-icon {
+      color: var(--forest);
+    }
+
+    &.betrayal mat-icon {
+      color: var(--accent);
+    }
+
+    .turn {
+      margin-left: auto;
+      color: shared.$text-muted;
+      font-size: 0.8rem;
+    }
+  }
+}
+
+.error-alert {
+  @include shared.error-alert;
+  margin-bottom: 24px;
+}

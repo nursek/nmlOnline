@@ -5,14 +5,14 @@ import {
   computed,
   ElementRef,
   inject,
-  linkedSignal,
   signal,
   viewChild,
 } from '@angular/core';
-import { SlicePipe } from '@angular/common';
+import { SlicePipe, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { RouterLink } from '@angular/router';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map } from 'rxjs/operators';
 import { MatCardModule } from '@angular/material/card';
@@ -21,14 +21,28 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { PageResult, Player, Sector } from '../../models';
-import { environment } from '../../../environments/environment';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Player, Sector } from '../../models';
 import { sanitizeSvg } from '../../core/svg-sanitize';
+import { characterStats } from '../../core/stats';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
+import { AuthService } from '../../services/auth.service';
+import { PlayerActionsService } from '../../services/player-actions.service';
+import { PlayerDirectoryService } from '../../services/player-directory.service';
+import { PlayerService } from '../../services/player.service';
 import { contrastColor, haloColor, MAP_THEME } from './carte.config';
-import { RankingsPanelComponent } from './rankings-panel.component';
+import { frontBorders } from './carte.helpers';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+type OverlayKey = 'front' | 'resources';
+
+interface Placement {
+  kind: 'unit' | 'vehicle';
+  id: number;
+  label: string;
+}
 
 interface SectorWithPlayer extends Sector {
   playerName?: string | null;
@@ -50,14 +64,15 @@ export function isSameOriginAssetUrl(url: string): boolean {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     SlicePipe,
+    DecimalPipe,
+    RouterLink,
     MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,
     MatChipsModule,
     MatDividerModule,
     MatButtonModule,
-    MatTooltipModule,
-    RankingsPanelComponent,
+    MatSnackBarModule,
   ],
   templateUrl: './carte.component.html',
   styleUrls: ['./carte.component.scss'],
@@ -65,13 +80,12 @@ export function isSameOriginAssetUrl(url: string): boolean {
 export class CarteComponent {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly breakpointObserver = inject(BreakpointObserver);
+  private readonly snackBar = inject(MatSnackBar);
 
   // Les libellés vivent dans le viewBox SVG : sans grossissement, ils deviennent
   // illisibles quand la carte est réduite à la largeur d'un téléphone.
   private readonly narrowViewport = toSignal(
-    this.breakpointObserver
-      .observe([Breakpoints.XSmall])
-      .pipe(map((result) => result.matches)),
+    this.breakpointObserver.observe([Breakpoints.XSmall]).pipe(map((result) => result.matches)),
     { initialValue: false },
   );
 
@@ -89,39 +103,37 @@ export class CarteComponent {
   readonly overlayOffsetX = MAP_THEME.overlay.offsetX;
 
   private readonly activeBoard = inject(ActiveBoardService);
+  private readonly playerDirectory = inject(PlayerDirectoryService);
   private readonly allianceState = inject(AllianceStateService);
-  private readonly playersRef = httpResource<PageResult<Player>>(() => ({
-    url: `${environment.apiBaseUrl}/players`,
-    params: { page: '0', size: '50' },
+  private readonly auth = inject(AuthService);
+  private readonly playerActions = inject(PlayerActionsService);
+  private readonly playerService = inject(PlayerService);
+
+  readonly isAdmin = this.auth.isAdmin;
+  readonly reserveUnits = this.playerService.reserveUnits;
+  readonly undeployedVehicles = this.playerService.undeployedVehicles;
+  readonly overlays = signal<ReadonlySet<OverlayKey>>(new Set());
+  readonly placing = signal<Placement | null>(null);
+  readonly resourceLegend = Object.entries(MAP_THEME.resourceColors).map(([name, color]) => ({
+    name,
+    color,
   }));
 
   readonly alliedPlayerIds = this.allianceState.alliedPlayerIds;
+  readonly characterStats = characterStats;
 
-  readonly loading = computed(() => this.activeBoard.loading() || this.playersRef.isLoading());
+  readonly loading = computed(() => this.activeBoard.loading() || this.playerDirectory.loading());
   readonly error = computed(() => {
-    const e = this.activeBoard.error() || this.playersRef.error() || this.svgTextRef.error();
+    const e = this.activeBoard.error() || this.playerDirectory.error() || this.svgTextRef.error();
     return e ? 'Impossible de charger la carte. Vérifiez que le serveur est démarré.' : null;
   });
 
   readonly board = this.activeBoard.board;
-  readonly players = computed(() => this.playersRef.value()?.content ?? []);
-  readonly playersTruncated = computed(() => {
-    const page = this.playersRef.value();
-    return !!page && page.content.length < (page.totalElements ?? page.content.length);
-  });
-
-  readonly playerColorMap = computed(() => {
-    const map = new Map<number, string>();
-    // Indexation par id trié : la couleur d'un joueur ne dépend plus de
-    // l'ordre d'insertion renvoyé par l'API, donc reste stable au refresh.
-    const sorted = [...this.players()]
-      .filter((p) => p.id != null)
-      .sort((a, b) => (a.id as number) - (b.id as number));
-    const palette = MAP_THEME.playerPalette;
-    sorted.forEach((player, index) => {
-      map.set(player.id as number, palette[index % palette.length]);
-    });
-    return map;
+  readonly players = this.playerDirectory.players;
+  readonly playerColorMap = this.playerDirectory.colorMap;
+  readonly myPlayer = computed(() => {
+    const username = this.auth.user()?.username;
+    return username ? (this.players().find((player) => player.name === username) ?? null) : null;
   });
 
   private readonly svgOverlayUrl = computed(() => this.board()?.svgOverlayUrl || null);
@@ -147,12 +159,6 @@ export class CarteComponent {
   readonly mapImageUrl = computed(() => this.board()?.mapImageUrl || null);
 
   readonly selectedSector = signal<SectorWithPlayer | null>(null);
-  readonly selectedPlayerIds = linkedSignal<Player[], Set<number>>({
-    source: this.players,
-    computation: (players) =>
-      new Set(players.map((p) => p.id).filter((id): id is number => id != null)),
-  });
-  readonly showNeutral = signal(true);
   readonly hoveredSectorNumber = signal<number | null>(null);
 
   private readonly svgContainer = viewChild<ElementRef<HTMLDivElement>>('svgContainer');
@@ -163,17 +169,6 @@ export class CarteComponent {
       if (p.id != null) map.set(p.id, p);
     });
     return map;
-  });
-
-  readonly allSectors = computed(() => {
-    const b = this.board();
-    if (!b) return [];
-    const playersById = this.playerMap();
-    return Object.values(b.sectors).map((sector) => ({
-      ...sector,
-      playerName: sector.ownerId != null ? (playersById.get(sector.ownerId)?.name ?? null) : null,
-      playerColor: this.getPlayerColor(sector.ownerId),
-    })) as SectorWithPlayer[];
   });
 
   readonly sectorsMap = computed(() => {
@@ -194,18 +189,38 @@ export class CarteComponent {
     return map;
   });
 
+  readonly worldSectorCount = computed(() => Object.values(this.board()?.sectors ?? {}).length);
+
   readonly neutralSectorsCount = computed(
     () => Object.values(this.board()?.sectors ?? {}).filter((s) => !s.ownerId).length,
   );
 
-  readonly conqueredSectorsCount = computed(
-    () => Object.values(this.board()?.sectors ?? {}).filter((s) => s.ownerId).length,
+  readonly harvesting = signal(false);
+  readonly harvestSectors = computed(() => {
+    const me = this.myPlayer();
+    if (!me?.id) return [];
+    return Object.values(this.board()?.sectors ?? {})
+      .filter((sector) => sector.ownerId === me.id && sector.resource && sector.number !== null)
+      .map((sector) => sector.number as number);
+  });
+
+  /** Bordures à dessiner : mes secteurs et les secteurs ennemis (jamais neutres) qu'ils touchent. */
+  readonly frontSectors = computed(() =>
+    frontBorders(
+      Object.values(this.board()?.sectors ?? {}),
+      this.myPlayer()?.id ?? null,
+      this.alliedPlayerIds(),
+    ),
   );
 
   private readonly eventCleanupFns: (() => void)[] = [];
 
   constructor() {
     void this.allianceState.loadMe();
+    if (!this.isAdmin()) {
+      void this.playerService.loadReserveUnits();
+      void this.playerService.loadVehicles();
+    }
     // Attach SVG listeners once whenever a fresh SVG is rendered. Cleanup drops
     // them before re-attaching on the next SVG.
     afterRenderEffect((onCleanup) => {
@@ -221,18 +236,18 @@ export class CarteComponent {
       });
     });
 
-    // Repaint path styles whenever the SVG or any interactive signal changes.
+    // Repeindre les tracés quand le SVG, la sélection, les alliances ou un calque changent.
     afterRenderEffect(() => {
       if (!this.svgLoaded()) return;
       const container = this.svgContainer()?.nativeElement;
       if (!container) return;
-      // Tracking these signals re-runs this effect on each filter change.
       void this.selectedSector();
-      void this.selectedPlayerIds();
-      void this.showNeutral();
       void this.alliedPlayerIds();
+      void this.overlays();
+      void this.frontSectors();
       this.updateAllPathColors(container);
       this.updateSectorLabelColors(container);
+      this.updateOverlays(container);
     });
   }
 
@@ -506,21 +521,19 @@ export class CarteComponent {
   private updatePathStyle(path: SVGElement, sectorNumber: number): void {
     const sector = this.sectorsMap().get(sectorNumber);
     const color = sector ? this.getSectorColor(sector) : MAP_THEME.neutralColor;
-    const isNeutral = sector?.ownerId == null;
+    const showResources = this.isOverlay('resources');
+    const isNeutral = showResources ? !sector?.resource : sector?.ownerId == null;
     const selected = this.selectedSector();
     const isSelected = selected?.number === sectorNumber;
-
-    const isDimmed =
-      (sector?.ownerId != null && !this.selectedPlayerIds().has(sector.ownerId)) ||
-      (sector?.ownerId == null && !this.showNeutral());
 
     path.style.fill = isNeutral ? 'url(#neutral-stripes)' : color + MAP_THEME.fill.normalAlpha;
     path.style.stroke = color;
     path.style.strokeWidth = String(MAP_THEME.stroke.normal);
-    path.style.strokeDasharray = this.isAllyOwner(sector?.ownerId ?? null) ? '7 4' : '';
+    path.style.strokeDasharray =
+      !showResources && this.isAllyOwner(sector?.ownerId ?? null) ? '7 4' : '';
     path.style.cursor = 'pointer';
     path.style.transition = 'all 0.2s ease';
-    path.style.opacity = isDimmed ? String(MAP_THEME.fill.dimmedOpacity) : '1';
+    path.style.opacity = '1';
     path.style.filter = 'none';
 
     if (isSelected) {
@@ -546,7 +559,79 @@ export class CarteComponent {
     });
   }
 
+  /** Calques DOM au-dessus des tracés (sous les labels) : frontières ennemies. */
+  private updateOverlays(container: HTMLElement): void {
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+    svg.querySelector('#front-borders-mask')?.remove();
+    let group = svg.querySelector<SVGGElement>('#map-overlays');
+    if (!group) {
+      group = document.createElementNS(SVG_NS, 'g');
+      group.setAttribute('id', 'map-overlays');
+      group.setAttribute('pointer-events', 'none');
+      svg.insertBefore(group, svg.querySelector('#sector-labels'));
+    }
+    group.replaceChildren();
+
+    const overlays = this.overlays();
+    if (!overlays.size) return;
+
+    const paths = new Map<number, SVGElement>();
+    svg.querySelectorAll<SVGElement>('path[id^="path"], polygon[id^="path"]').forEach((path) => {
+      const number = parseInt((path.getAttribute('id') ?? '').replace('path', ''), 10);
+      if (!Number.isNaN(number)) paths.set(number, path);
+    });
+    const cloneOf = (number: number): SVGElement | null => {
+      const source = paths.get(number);
+      if (!source) return null;
+      const clone = source.cloneNode() as SVGElement;
+      clone.removeAttribute('id');
+      clone.style.filter = 'none';
+      clone.style.opacity = '1';
+      clone.style.strokeDasharray = '';
+      // Le CSS des tracés force pointer-events: all ; un calque ne doit jamais capter le clic.
+      clone.style.pointerEvents = 'none';
+      return clone;
+    };
+
+    if (overlays.has('front')) {
+      const { mine, enemies } = this.frontSectors();
+      const defs = svg.querySelector('defs');
+      if (defs && mine.length && enemies.length) {
+        // Masque élargi (contour blanc) : les polygones ne se touchent pas, un simple clip laissait le trait vide.
+        const mask = document.createElementNS(SVG_NS, 'mask');
+        mask.setAttribute('id', 'front-borders-mask');
+        mask.setAttribute('maskUnits', 'userSpaceOnUse');
+        mine.forEach((number) => {
+          const source = paths.get(number);
+          if (!source) return;
+          const area = document.createElementNS(SVG_NS, 'path');
+          area.setAttribute('d', source.getAttribute('d') ?? '');
+          area.style.fill = '#fff';
+          area.style.stroke = '#fff';
+          area.style.strokeWidth = String(MAP_THEME.overlays.frontMaskWidth);
+          area.style.vectorEffect = 'non-scaling-stroke';
+          mask.appendChild(area);
+        });
+        defs.appendChild(mask);
+        enemies.forEach((number) => {
+          const clone = cloneOf(number);
+          if (!clone) return;
+          clone.style.fill = 'none';
+          clone.style.stroke = MAP_THEME.overlays.frontStroke;
+          clone.style.strokeWidth = String(MAP_THEME.overlays.frontWidth);
+          clone.setAttribute('mask', 'url(#front-borders-mask)');
+          group.appendChild(clone);
+        });
+      }
+    }
+  }
+
   private onSectorClick(sectorNumber: number): void {
+    if (this.placing()) {
+      void this.deployReserve(sectorNumber);
+      return;
+    }
     const sector = this.sectorsMap().get(sectorNumber);
     if (sector) {
       this.selectSector(sector);
@@ -574,6 +659,9 @@ export class CarteComponent {
   }
 
   getSectorColor(sector: Sector | SectorWithPlayer): string {
+    if (this.isOverlay('resources')) {
+      return (sector.resource && MAP_THEME.resourceColors[sector.resource]) || MAP_THEME.neutralColor;
+    }
     return this.getPlayerColor(sector.ownerId);
   }
 
@@ -605,40 +693,92 @@ export class CarteComponent {
     }
   }
 
-  togglePlayerFilter(player: Player): void {
-    if (player.id == null) return;
-    const next = new Set(this.selectedPlayerIds());
-    if (next.has(player.id)) next.delete(player.id);
-    else next.add(player.id);
-    this.selectedPlayerIds.set(next);
+  isOverlay(overlay: OverlayKey): boolean {
+    return this.overlays().has(overlay);
   }
 
-  toggleNeutralFilter(): void {
-    this.showNeutral.update((v) => !v);
+  toggleOverlay(overlay: OverlayKey): void {
+    this.overlays.update((current) => {
+      const next = new Set(current);
+      if (next.has(overlay)) next.delete(overlay);
+      else next.add(overlay);
+      return next;
+    });
   }
 
-  clearFilter(): void {
-    this.selectedPlayerIds.set(
-      new Set(
-        this.players()
-          .map((p) => p.id)
-          .filter((id): id is number => id != null),
-      ),
-    );
-    this.showNeutral.set(true);
+  startPlacement(kind: 'unit' | 'vehicle', id: number | null, label: string): void {
+    if (id == null) return;
+    this.placing.set({ kind, id, label });
+  }
+
+  cancelPlacement(): void {
+    this.placing.set(null);
+  }
+
+  async deployReserve(sectorNumber: number): Promise<void> {
+    const placement = this.placing();
+    const board = this.board();
+    const me = this.myPlayer();
+    if (!placement || !board?.id || !me?.id) return;
+    if (this.sectorsMap().get(sectorNumber)?.ownerId !== me.id) {
+      this.snackBar.open('Choisissez un secteur que vous possédez.', 'OK', { duration: 3000 });
+      return;
+    }
+    const placed =
+      placement.kind === 'unit'
+        ? await this.playerService.placeUnit(placement.id, board.id, sectorNumber)
+        : await this.playerService.placeVehicle(placement.id, board.id, sectorNumber);
+    if (!placed) {
+      this.snackBar.open(this.playerService.error() ?? 'Déploiement impossible', 'OK', {
+        duration: 4000,
+      });
+      return;
+    }
+    this.snackBar.open(`${placement.label} déployé en secteur ${sectorNumber}.`, 'OK', {
+      duration: 3000,
+    });
+    this.placing.set(null);
+    this.activeBoard.reload();
+  }
+
+  async harvestResources(): Promise<void> {
+    if (this.harvesting() || !this.harvestSectors().length) return;
+    this.harvesting.set(true);
+    try {
+      // Le backend refuse un secteur déjà récolté : on lit le journal pour ne renvoyer que le reste.
+      await this.playerActions.loadActions();
+      const harvested = new Set(
+        this.playerActions
+          .actions()
+          .filter((action) => action.type === 'HARVEST_MONEY' || action.type === 'HARVEST_RESOURCE')
+          .map((action) => action.fromSectorNumber)
+          .filter((number): number is number => number != null),
+      );
+      const sectors = this.harvestSectors().filter((number) => !harvested.has(number));
+      if (!sectors.length) {
+        this.snackBar.open('Tous vos secteurs sont déjà récoltés ce tour.', 'OK', {
+          duration: 3500,
+        });
+        return;
+      }
+      const ok = await this.playerActions.harvest('HARVEST_RESOURCE', sectors);
+      this.snackBar.open(
+        ok
+          ? `${sectors.length} secteur(s) récolté(s) en ressources.`
+          : (this.playerActions.error() ?? 'Récolte impossible'),
+        'OK',
+        { duration: 4000 },
+      );
+      if (ok) {
+        this.activeBoard.reload();
+      }
+    } finally {
+      this.harvesting.set(false);
+    }
   }
 
   getSectorByNumber(number: number): SectorWithPlayer | undefined {
     return this.sectorsMap().get(number);
-  }
-
-  getInitials(name: string): string {
-    return name
-      .split(' ')
-      .map((word) => word[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
   }
 
   getHoveredSectorName(): string {

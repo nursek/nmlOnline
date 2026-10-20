@@ -1,4 +1,4 @@
-import type { GameCharacter, Sector, Unit, Vehicle } from '../../models';
+import type { GameCharacter, Sector, Unit, Vehicle } from '../models';
 
 export type SectorKind = 'own' | 'neutral' | 'enemy' | 'ally' | 'unknown';
 

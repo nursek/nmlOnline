@@ -17,10 +17,6 @@
   @include shared.gradient-title;
 }
 
-.subtitle {
-  @include shared.subtitle;
-}
-
 .rules-layout {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);

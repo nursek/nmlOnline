@@ -11,8 +11,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
   border-bottom: 2.5px solid var(--line-2);
   flex-wrap: wrap;
   gap: 16px;
@@ -35,7 +35,7 @@
   }
 
   .admin-avatar {
-    @include shared.avatar(56px, 32px);
+    @include shared.avatar;
     border-color: var(--danger-line);
 
     mat-icon {
@@ -45,11 +45,6 @@
 
   .admin-title {
     @include shared.gradient-title;
-  }
-
-  .admin-subtitle {
-    @include shared.subtitle;
-    margin: 0;
   }
 }
 
@@ -72,17 +67,17 @@
     gap: 12px;
     margin-bottom: 12px;
 
-      .panel-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 600;
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
 
-        mat-icon {
-          color: shared.$primary-color;
-        }
+      mat-icon {
+        color: shared.$primary-color;
       }
     }
+  }
 
   .status-chips {
     margin-bottom: 12px;
