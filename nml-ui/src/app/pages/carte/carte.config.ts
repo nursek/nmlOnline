@@ -111,12 +111,12 @@ export const MAP_THEME = {
 
   // Calque « Ressources » (et sa légende) : une teinte par ressource.
   resourceColors: {
-    Cigares: '#d4a86a',
-    Alcool: '#6f93c9',
-    Antiquités: '#b47ccb',
-    Ivoire: '#e6decb',
-    Uranium: '#9fbf4a',
-    Or: '#e8bb45',
-    Joyaux: '#4fc3c9',
+    "Caisse d'armes": '#d4a86a',
+    Prométhéum: '#6f93c9',
+    Plastacier: '#b47ccb',
+    Adamentium: '#e6decb',
+    'Conteneur blindé': '#9fbf4a',
+    Auramite: '#e8bb45',
+    Noctilithe: '#4fc3c9',
   } as Record<string, string>,
 } as const;

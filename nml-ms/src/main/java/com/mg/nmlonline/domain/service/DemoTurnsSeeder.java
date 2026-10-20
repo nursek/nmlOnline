@@ -49,7 +49,8 @@ public class DemoTurnsSeeder {
     private static final int MIN_SALE_QUANTITY = 5;
 
     /** Secteurs dont la ressource est encaissée à la récolte ; les autres versent leur revenu automatiquement. */
-    private static final Set<String> HARVEST_RESOURCES = Set.of("Joyaux", "Or", "Uranium", "Ivoire");
+    private static final Set<String> HARVEST_RESOURCES =
+            Set.of("Noctilithe", "Auramite", "Conteneur blindé", "Adamentium");
 
     /** Équipements visés, du plus fort au plus faible ; le premier compatible avec l'unité est équipé. */
     private static final List<String> GEAR = List.of(

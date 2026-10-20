@@ -175,7 +175,7 @@ class BuildingServiceTest {
         @DisplayName("Succès : 75 % de la fortune du propriétaire et les ressources transférés, vampirisation activée")
         void shouldTransferMoneyAndResourcesToCapturer() {
             Bank bank = new Bank(1L);
-            bank.getStoredResources().add(new PlayerResource("Or", 100));
+            bank.getStoredResources().add(new PlayerResource("Auramite", 100));
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(bank));
             Player owner = new Player("Proprietaire");
             owner.setId(1L);

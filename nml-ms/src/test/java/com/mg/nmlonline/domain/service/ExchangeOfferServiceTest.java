@@ -113,14 +113,14 @@ class ExchangeOfferServiceTest {
             when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
-            when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 10.0)));
+            when(resourceRepository.findByName("Auramite")).thenReturn(Optional.of(new Resource("Auramite", 10.0)));
             when(turnService.getCurrentTurn()).thenReturn(4);
             when(exchangeOfferRepository.save(any(ExchangeOffer.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
             ExchangeOfferDto dto = exchangeOfferService.createOffer(11L,
                     new CreateExchangeOfferRequestDto(2L, 250.0,
-                            List.of(new ExchangeOfferItemDto("Or", 5))));
+                            List.of(new ExchangeOfferItemDto("Auramite", 5))));
 
             assertEquals(ExchangeOfferStatus.PENDING, dto.status());
             assertEquals(4, dto.createdTurn());
@@ -178,8 +178,8 @@ class ExchangeOfferServiceTest {
         @DisplayName("Transfert atomique argent + ressources, offre ACCEPTED")
         void shouldTransferMoneyAndResourcesOnAccept() {
             ExchangeOffer offer = offerOf(200.0, 1, 2);
-            offer.getResources().add(new ExchangeOfferResource("Or", 10));
-            sender.addResource("Or", 50);
+            offer.getResources().add(new ExchangeOfferResource("Auramite", 10));
+            sender.addResource("Auramite", 50);
             when(exchangeOfferRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(offer));
             when(turnService.getCurrentTurn()).thenReturn(1);
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
@@ -190,7 +190,7 @@ class ExchangeOfferServiceTest {
             assertEquals(ExchangeOfferStatus.ACCEPTED, dto.status());
             assertEquals(800.0, sender.getStats().getMoney());
             assertEquals(200.0, receiver.getStats().getMoney());
-            verify(resourceService).transferResource(sender, receiver, "Or", 10);
+            verify(resourceService).transferResource(sender, receiver, "Auramite", 10);
             verify(exchangeOfferRepository).save(offer);
         }
 

@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Scénarios de bataille de secteur sur PostgreSQL réel : phases dédiées (secondaires entre PDF/PDC, QG après ATK,
  * personnage en dernier), bâtiments destructibles puis capturés (QG détruit non capturé → reconstruction 75k,
- * Cache intact vidé vers le vainqueur), véhicules (épave conservée, équipage débarqué), détachement FK des pilotes
+ * Cache intact vidé vers le vainqueur), véhicules (supprimés à la destruction, équipage débarqué), détachement FK des pilotes
  * (unité ou personnage) avant le DELETE. Déterministe : aucune évasion, budgets choisis pour épuiser exactement.
  */
 @EmbeddedPostgresTest
@@ -45,6 +45,9 @@ class CombatServiceScenariosTest {
 
     @Autowired
     private CombatService combatService;
+
+    @Autowired
+    private GameStatisticsService gameStatisticsService;
 
     @Autowired
     private PlayerRepository playerRepository;
@@ -201,29 +204,24 @@ class CombatServiceScenariosTest {
     }
 
     @Test
-    @DisplayName("Véhicule détruit : épave conservée, équipage débarqué et vivant, perte de type VEHICLE")
-    void destroyedVehicleLeavesWreckAndDisembarksCrew() {
+    @DisplayName("Véhicule détruit : supprimé du secteur, équipage débarqué et vivant, perte de type VEHICLE")
+    void destroyedVehicleIsDeletedAndDisembarksCrew() {
         VehicleWorld w = seedVehicleBattle();
 
         CombatService.SectorBattleResult r = runBattle(w.attackerId(), w.defenderId(), w.sectorNumber());
 
         assertTrue(r.success());
-        assertEquals(1, r.defenderCasualties().size(), "Seule l'épave est perdue côté défenseur : le pilote survit");
+        assertEquals(1, r.defenderCasualties().size(), "Seul le véhicule est perdu côté défenseur : le pilote survit");
         assertInstanceOf(Vehicle.class, r.defenderCasualties().getFirst());
         assertTrue(r.casualtyDetails().stream()
                 .anyMatch(casualty -> "VEHICLE".equals(casualty.category())
                         && "VTT léger".equals(casualty.label())));
 
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
-            Vehicle vehicle = em.find(Vehicle.class, w.vehicleId());
-            assertNotNull(vehicle, "L'épave reste en base (pas de DELETE)");
-            assertTrue(vehicle.isDestroyed());
-            assertNull(vehicle.getPilot(), "Le pilote est détaché de l'épave");
-            assertEquals(0.0, vehicle.getDefense());
+            assertNull(em.find(Vehicle.class, w.vehicleId()), "Le véhicule détruit est supprimé de la base");
 
             Sector sector = loadSector(w.sectorNumber());
-            assertTrue(sector.getVehicles().stream()
-                    .anyMatch(v -> v.getId().equals(w.vehicleId())), "L'épave reste dans le secteur");
+            assertTrue(sector.getVehicles().isEmpty(), "Le véhicule détruit ne reste pas dans le secteur");
 
             Unit pilot = em.find(Unit.class, w.pilotId());
             assertNotNull(pilot, "Le pilote débarqué survit");
@@ -231,6 +229,10 @@ class CombatServiceScenariosTest {
             assertTrue(sector.getUnits().stream().anyMatch(u -> u.getId().equals(w.pilotId())),
                     "Le pilote reste une unité du secteur");
         });
+
+        var statistics = gameStatisticsService.getStatistics();
+        assertTrue(statistics.getVehicles().stream()
+                .anyMatch(entry -> "VTT_LEGER".equals(entry.getKey()) && entry.getCount() == 1));
     }
 
     @Test
@@ -259,8 +261,8 @@ class CombatServiceScenariosTest {
         assertTrue(r.success(), "La suppression du pilote ne doit pas faire échouer la résolution");
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Vehicle vehicle = em.find(Vehicle.class, vehicleId);
-            assertNotNull(vehicle, "Le véhicule survit au pilote");
-            assertNull(vehicle.getPilot(), "Le pilote tué est détaché du véhicule");
+            assertTrue(vehicle == null || vehicle.getPilot() == null,
+                    "Le véhicule détruit est supprimé, sinon le pilote tué est détaché");
         });
     }
 
@@ -301,8 +303,8 @@ class CombatServiceScenariosTest {
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             assertNull(em.find(GameCharacter.class, w.characterId()), "La ligne du personnage est supprimée");
             Vehicle vehicle = em.find(Vehicle.class, w.vehicleId());
-            assertNotNull(vehicle, "Le véhicule survit au pilote");
-            assertNull(vehicle.getPilot(), "FK pilot_id détachée avant le DELETE du personnage");
+            assertTrue(vehicle == null || vehicle.getPilot() == null,
+                    "Le véhicule détruit est supprimé, sinon la FK pilot_id est détachée");
         });
     }
 
