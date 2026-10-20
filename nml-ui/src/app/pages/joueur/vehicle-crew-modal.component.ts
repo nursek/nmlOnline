@@ -5,6 +5,7 @@ import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/materia
 import { MatIconModule } from '@angular/material/icon';
 import { MatRadioModule } from '@angular/material/radio';
 import { Sector, Vehicle } from '../../models';
+import { VehicleImageService } from '../../core/vehicle-image.service';
 import { passengerCandidates, pilotCandidates } from './vehicle-crew.helpers';
 
 export interface VehicleCrewDialogData {
@@ -29,6 +30,21 @@ export interface VehicleCrewDialogResult {
     </h2>
 
     <mat-dialog-content>
+      <div class="vehicle-hero">
+        @if (vehicleImage(); as img) {
+          <img
+            [src]="img.src"
+            [srcset]="img.srcset"
+            (error)="onImgError()"
+            [alt]="data.vehicle.displayName"
+            loading="lazy"
+            decoding="async"
+          />
+        } @else {
+          <mat-icon>image_not_supported</mat-icon>
+        }
+      </div>
+
       <p class="hint">
         Pilote : personnage ou unité classe P. Passagers : {{ passengerIds().size }}/{{
           data.vehicle.capacity
@@ -79,6 +95,30 @@ export interface VehicleCrewDialogResult {
         vertical-align: middle;
         margin-right: 8px;
       }
+      .vehicle-hero {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 160px;
+        margin-bottom: 16px;
+        overflow: hidden;
+        border: 1.5px solid var(--line);
+        border-radius: var(--r-sm);
+        background: #fff;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+
+        mat-icon {
+          width: 48px;
+          height: 48px;
+          font-size: 48px;
+          color: #a9a396;
+        }
+      }
       .hint {
         color: var(--muted);
         font-size: 0.85rem;
@@ -114,6 +154,9 @@ export interface VehicleCrewDialogResult {
 export class VehicleCrewModalComponent {
   readonly dialogRef = inject(MatDialogRef<VehicleCrewModalComponent>);
   readonly data: VehicleCrewDialogData = inject(MAT_DIALOG_DATA);
+  private readonly vehicleImages = inject(VehicleImageService);
+
+  readonly vehicleImage = computed(() => this.vehicleImages.image(this.data.vehicle.vehicleType));
 
   readonly pilotId = signal<number | null>(this.data.vehicle.pilotId ?? null);
   readonly passengerIds = signal<ReadonlySet<number>>(
@@ -165,6 +208,10 @@ export class VehicleCrewModalComponent {
       pilotId: this.pilotId(),
       passengerIds: [...this.passengerIds()],
     } satisfies VehicleCrewDialogResult);
+  }
+
+  onImgError(): void {
+    this.vehicleImages.onError(this.data.vehicle.vehicleType);
   }
 
   cancel(): void {

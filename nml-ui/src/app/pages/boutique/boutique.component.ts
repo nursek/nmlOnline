@@ -50,6 +50,7 @@ import {
   equipmentDescription as equipmentDescriptionFor,
 } from '../../core/equipment-label';
 import { EquipmentImageService } from '../../core/equipment-image.service';
+import { VehicleImageService } from '../../core/vehicle-image.service';
 import { optimizedImage } from '../../core/optimized-image';
 import type { OptimizedImage } from '../../core/optimized-image';
 import { slugify } from '../../core/slug';
@@ -83,6 +84,7 @@ export class BoutiqueComponent {
   private readonly shop = inject(ShopService);
   private readonly playerService = inject(PlayerService);
   private readonly equipmentImages = inject(EquipmentImageService);
+  private readonly vehicleImages = inject(VehicleImageService);
   private readonly dialog = inject(MatDialog);
 
   readonly allEquipments = this.shop.equipments;
@@ -611,13 +613,12 @@ export class BoutiqueComponent {
     this.equipmentImages.onError(equipment);
   }
 
-  // ponytail: toLowerCase() et non slugify() — vt.name est le nom de l'énum
-  // Java (ex. VTT_LEGER) dont les '_' doivent être conservés dans le nom de
-  // fichier ; slugify remplacerait '_' par '-' et casserait l'URL.
   vehicleImage(vt: VehicleTypeInfo): OptimizedImage | null {
-    return this.hasImage(`veh:${vt.name}`)
-      ? optimizedImage(`assets/shop/vehicles/${vt.name.toLowerCase()}.png`)
-      : null;
+    return this.vehicleImages.image(vt.name);
+  }
+
+  onVehicleImgError(vt: VehicleTypeInfo): void {
+    this.vehicleImages.onError(vt.name);
   }
 
   private faction(): string {

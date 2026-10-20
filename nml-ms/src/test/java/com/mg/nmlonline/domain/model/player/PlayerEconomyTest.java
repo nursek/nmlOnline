@@ -133,6 +133,18 @@ class PlayerEconomyTest {
             assertNull(player.buyVehicle(null));
             assertEquals(1000.0, player.getStats().getMoney());
         }
+
+        @Test
+        @DisplayName("Perte d'un véhicule : valeur et puissance économique décrémentées")
+        void shouldDecrementVehiclesValueOnLoss() {
+            player.getStats().setMoney(10000.0);
+            player.buyVehicle(VehicleType.VTT_LEGER);
+
+            player.loseVehicle(VehicleType.VTT_LEGER);
+
+            assertEquals(0.0, player.getStats().getTotalVehiclesValue());
+            assertEquals(6000.0, player.getStats().getTotalEconomyPower());
+        }
     }
 
     @Nested

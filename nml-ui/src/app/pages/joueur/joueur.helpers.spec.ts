@@ -6,12 +6,14 @@ import {
   incomeTotal,
   playerForces,
   reserveGroups,
+  reserveVehicleGroups,
   sectorForces,
   sectorHarvestStates,
   troopSummaries,
   unitClassCodes,
   unitEquipmentLabel,
   vehicleLabels,
+  vehicleSummaries,
 } from './joueur.helpers';
 import type {
   Building,
@@ -122,7 +124,7 @@ function building(id: number, playerId: number, opts: Partial<Building> = {}): B
   };
 }
 
-function vehicle(id: number, playerId: number): Vehicle {
+function vehicle(id: number, playerId: number, opts: Partial<Vehicle> = {}): Vehicle {
   return {
     id,
     playerId,
@@ -140,6 +142,7 @@ function vehicle(id: number, playerId: number): Vehicle {
     passengerIds: [],
     sectorNumber: 1,
     boardId: 1,
+    ...opts,
   };
 }
 
@@ -235,13 +238,55 @@ describe('joueur.helpers', () => {
     });
   });
 
+  describe('vehicleSummaries', () => {
+    it('compte les véhicules déployés par type, sans les ennemis ni les épaves', () => {
+      const sectors = [
+        sector(1, me, {
+          vehicles: [
+            vehicle(1, me),
+            vehicle(2, me),
+            vehicle(3, me, { vehicleType: 'HELICOPTERE', displayName: 'Hélicoptère de combat' }),
+            vehicle(4, enemy),
+            vehicle(5, me, { isDestroyed: true }),
+          ],
+        }),
+        sector(2, me, {
+          vehicles: [
+            vehicle(6, me, { vehicleType: 'HELICOPTERE', displayName: 'Hélicoptère de combat' }),
+          ],
+        }),
+      ];
+
+      expect(vehicleSummaries(sectors, me)).toEqual([
+        { vehicleType: 'HELICOPTERE', displayName: 'Hélicoptère de combat', count: 2 },
+        { vehicleType: 'TANK', displayName: 'Tank de combat', count: 2 },
+      ]);
+    });
+  });
+
+  describe('reserveVehicleGroups', () => {
+    it('groupe les véhicules en réserve par type et conserve les ids', () => {
+      const groups = reserveVehicleGroups([
+        vehicle(1, me),
+        vehicle(2, me),
+        vehicle(3, me, { vehicleType: 'HELICOPTERE', displayName: 'Hélicoptère de combat' }),
+        vehicle(4, me, { isDestroyed: true }),
+      ]);
+
+      expect(groups.map((g) => [g.key, g.count, g.vehicleIds])).toEqual([
+        ['TANK', 2, [1, 2]],
+        ['HELICOPTERE', 1, [3]],
+      ]);
+    });
+  });
+
   describe('sectorForces', () => {
     it('ne compte que les entités du joueur, avec Def et Arm distincts', () => {
       const s = sector(1, me, {
         army: [unit(1, 1, me, { armor: 5 }), unit(2, 2, enemy)],
         buildings: [building(10, me), building(11, enemy)],
         character: character(me),
-        vehicles: [vehicle(20, me)],
+        vehicles: [vehicle(20, me), vehicle(21, me, { isDestroyed: true })],
       });
 
       const sf = sectorForces(s, me);
@@ -424,9 +469,9 @@ describe('joueur.helpers', () => {
     it('marque les secteurs récoltés (argent ou ressource) et ignore les autres actions', () => {
       const states = sectorHarvestStates(
         [
-          sector(1, me, { income: 100, resource: 'Or' }),
-          sector(2, me, { income: 200, resource: 'Ivoire' }),
-          sector(3, me, { income: 300, resource: 'Cigares' }),
+          sector(1, me, { income: 100, resource: 'Auramite' }),
+          sector(2, me, { income: 200, resource: 'Adamentium' }),
+          sector(3, me, { income: 300, resource: "Caisse d'armes" }),
         ],
         [
           harvestAction(10, 'HARVEST_MONEY', 1),
@@ -437,7 +482,7 @@ describe('joueur.helpers', () => {
 
       expect(states.map((state) => state.choice)).toEqual(['MONEY', null, 'RESOURCE']);
       expect(states[0].money).toBe(100);
-      expect(states[2].resource).toBe('Cigares');
+      expect(states[2].resource).toBe("Caisse d'armes");
       expect(states[0].action?.id).toBe(10);
     });
   });

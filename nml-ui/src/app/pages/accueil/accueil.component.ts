@@ -3,7 +3,7 @@ import { httpResource } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Announcement } from '../../models';
+import { Announcement, GameStatistics } from '../../models';
 import { environment } from '../../../environments/environment';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
@@ -23,6 +23,9 @@ export class AccueilComponent {
   private readonly allianceState = inject(AllianceStateService);
 
   private readonly turnRef = httpResource<number>(() => `${environment.apiBaseUrl}/turn/current`);
+  private readonly statisticsRef = httpResource<GameStatistics>(
+    () => `${environment.apiBaseUrl}/statistics`,
+  );
 
   readonly loading = computed(() => this.activeBoard.loading() || this.playerDirectory.loading());
   readonly boardError = this.activeBoard.error;
@@ -31,6 +34,16 @@ export class AccueilComponent {
   readonly playersTruncated = this.playerDirectory.truncated;
   readonly playerColors = this.playerDirectory.colorMap;
   readonly announcements = this.allianceState.announcements;
+  readonly statistics = computed(() =>
+    this.statisticsRef.hasValue() ? this.statisticsRef.value() : null,
+  );
+  readonly statisticsError = computed(() => this.statisticsRef.error() !== undefined);
+  readonly unitDeaths = computed(
+    () => this.statistics()?.units.reduce((total, entry) => total + entry.count, 0) ?? 0,
+  );
+  readonly vehicleDeaths = computed(
+    () => this.statistics()?.vehicles.reduce((total, entry) => total + entry.count, 0) ?? 0,
+  );
 
   readonly totalSectors = computed(
     () => Object.values(this.activeBoard.board()?.sectors ?? {}).length,

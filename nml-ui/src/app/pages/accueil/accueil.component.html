@@ -68,6 +68,60 @@
       </mat-card-content>
     </mat-card>
 
+    <mat-card class="stats-card">
+      <mat-card-content>
+        <div class="section-header">
+          <mat-icon color="primary">dangerous</mat-icon>
+          <h2>Pertes au combat</h2>
+        </div>
+
+        @if (statistics(); as stats) {
+          <div class="casualty-groups">
+            <section class="casualty-group">
+              <h3>
+                Unités mortes
+                <span class="casualty-total">{{ unitDeaths() }}</span>
+              </h3>
+              <div class="casualty-rows">
+                @for (entry of stats.units; track entry.key) {
+                  <div class="casualty-row">
+                    <span>{{ entry.label }}</span>
+                    <strong>{{ entry.count }}</strong>
+                  </div>
+                }
+              </div>
+            </section>
+
+            <section class="casualty-group">
+              <h3>Personnages tués</h3>
+              <span class="casualty-big">{{ stats.characters }}</span>
+            </section>
+
+            <section class="casualty-group">
+              <h3>
+                Véhicules détruits
+                <span class="casualty-total">{{ vehicleDeaths() }}</span>
+              </h3>
+              <div class="casualty-rows">
+                @for (entry of stats.vehicles; track entry.key) {
+                  <div class="casualty-row">
+                    <span>{{ entry.label }}</span>
+                    <strong>{{ entry.count }}</strong>
+                  </div>
+                }
+              </div>
+            </section>
+          </div>
+        } @else if (statisticsError()) {
+          <p class="casualty-error">Statistiques indisponibles.</p>
+        } @else {
+          <div class="casualty-loading">
+            <mat-spinner diameter="28"></mat-spinner>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+
     @if (announcements().length) {
       <mat-card class="announcements-card">
         <mat-card-content>

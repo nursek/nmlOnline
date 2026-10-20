@@ -207,7 +207,7 @@ class PlayerActionServiceTest {
     void undoSellResourceRestoresMoneyAndStock() {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
         player.getStats().setMoney(100000.0);
-        player.addResource("Or", 5);
+        player.addResource("Auramite", 5);
         playerRepository.save(player);
         entityManager.flush();
 
@@ -221,7 +221,7 @@ class PlayerActionServiceTest {
         playerActionService.undoFrom(player.getUserId(), actions.getFirst().getId());
 
         Player reloaded = playerRepository.findById(player.getId()).orElseThrow();
-        assertEquals(5, reloaded.getResourceQuantity("Or"));
+        assertEquals(5, reloaded.getResourceQuantity("Auramite"));
         assertEquals(100000.0, reloaded.getStats().getMoney(), 0.001);
         assertTrue(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty());
     }

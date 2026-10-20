@@ -35,6 +35,7 @@ import { ExchangeService } from '../../services/exchange.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
 import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
 import { EquipmentImageService } from '../../core/equipment-image.service';
+import { VehicleImageService } from '../../core/vehicle-image.service';
 import type { OptimizedImage } from '../../core/optimized-image';
 import {
   PlacementModalComponent,
@@ -79,7 +80,9 @@ import {
   incomeTotal,
   playerForces,
   ReserveGroup,
+  ReserveVehicleGroup,
   reserveGroups,
+  reserveVehicleGroups,
   SectorForces,
   sectorHarvestStates,
   totalsStats,
@@ -89,6 +92,7 @@ import {
   unitStats,
   vehicleLabels,
   vehicleStats,
+  vehicleSummaries,
 } from './joueur.helpers';
 import { characterStats } from '../../core/stats';
 import { unitClassLabel } from '../../core/labels';
@@ -122,6 +126,7 @@ import { unitClassLabel } from '../../core/labels';
 export class JoueurComponent {
   private readonly playerService = inject(PlayerService);
   private readonly equipmentImages = inject(EquipmentImageService);
+  private readonly vehicleImages = inject(VehicleImageService);
   private readonly playerActionsService = inject(PlayerActionsService);
   private readonly movementState = inject(MovementStateService);
   private readonly exchangeService = inject(ExchangeService);
@@ -139,6 +144,7 @@ export class JoueurComponent {
   readonly reserveUnits = this.playerService.reserveUnits;
   readonly reserveUnitsLoading = this.playerService.reserveUnitsLoading;
   readonly reserveGroups = computed(() => reserveGroups(this.reserveUnits()));
+  readonly reserveVehicleGroups = computed(() => reserveVehicleGroups(this.undeployedVehicles()));
   readonly currentTurn = this.playerService.currentTurn;
   readonly actions = this.playerActionsService.actions;
   readonly actionsLoading = this.playerActionsService.loading;
@@ -195,6 +201,9 @@ export class JoueurComponent {
   readonly troopSummaries = computed(() =>
     troopSummaries(this.conqueredSectors(), this.player()?.id ?? null),
   );
+  readonly vehicleSummaries = computed(() =>
+    vehicleSummaries(this.conqueredSectors(), this.player()?.id ?? null),
+  );
   readonly forces = computed(() =>
     playerForces(this.conqueredSectors(), this.player()?.id ?? null),
   );
@@ -234,9 +243,6 @@ export class JoueurComponent {
     const p = this.player();
     return p ? economyBreakdown(p, this.income()) : null;
   });
-  readonly deployedVehicleCount = computed(() =>
-    this.forces().sectors.reduce((n, sf) => n + sf.vehicles.length, 0),
-  );
 
   readonly mainStats = computed(() => {
     const p = this.player();
@@ -321,10 +327,18 @@ export class JoueurComponent {
     this.equipmentImages.onError(equipment);
   }
 
-  openPlacementModal(vehicle: Vehicle): void {
+  vehicleImage(vehicleType: string): OptimizedImage | null {
+    return this.vehicleImages.image(vehicleType);
+  }
+
+  onVehicleImgError(vehicleType: string): void {
+    this.vehicleImages.onError(vehicleType);
+  }
+
+  openVehiclePlacementModal(group: ReserveVehicleGroup): void {
     const ownedSectors: Sector[] = this.player()?.sectors ?? [];
     const dialogData: PlacementDialogData = {
-      title: `Déployer ${vehicle.displayName}`,
+      title: `Déployer ${group.vehicle.displayName}`,
       ownedSectors,
     };
     const dialogRef = this.dialog.open(PlacementModalComponent, {
@@ -336,10 +350,20 @@ export class JoueurComponent {
       .afterClosed()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((sector: Sector | null) => {
-        if (sector && vehicle.id != null && sector.boardId != null && sector.number != null) {
-          void this.playerService.placeVehicle(vehicle.id, sector.boardId, sector.number);
-        }
+        if (!sector || sector.boardId == null || sector.number == null) return;
+        void this.placeReserveVehicle(group, sector.boardId, sector.number);
       });
+  }
+
+  private async placeReserveVehicle(
+    group: ReserveVehicleGroup,
+    boardId: number,
+    sectorNumber: number,
+  ): Promise<void> {
+    const vehicleId = group.vehicleIds[0];
+    if (vehicleId == null) return;
+    const placed = await this.playerService.placeVehicle(vehicleId, boardId, sectorNumber);
+    if (placed) void this.playerActionsService.loadActions();
   }
 
   openUnitPlacementModal(group: ReserveGroup): void {

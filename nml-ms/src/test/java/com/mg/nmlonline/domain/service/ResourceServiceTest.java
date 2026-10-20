@@ -62,7 +62,7 @@ class ResourceServiceTest {
     class SaleMultiplierTests {
 
         private void stubGoldPrice() {
-            when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 1700.0)));
+            when(resourceRepository.findByName("Auramite")).thenReturn(Optional.of(new Resource("Auramite", 1700.0)));
         }
 
         @Test
@@ -70,11 +70,11 @@ class ResourceServiceTest {
         void shouldPinMultiplierTable() {
             stubGoldPrice();
 
-            assertEquals(1700.0, resourceService.calculateSaleValue("Or", 1));
-            assertEquals(5100.0, resourceService.calculateSaleValue("Or", 2));
-            assertEquals(22100.0, resourceService.calculateSaleValue("Or", 5));
-            assertEquals(56100.0, resourceService.calculateSaleValue("Or", 8));
-            assertEquals(76500.0, resourceService.calculateSaleValue("Or", 9));
+            assertEquals(1700.0, resourceService.calculateSaleValue("Auramite", 1));
+            assertEquals(5100.0, resourceService.calculateSaleValue("Auramite", 2));
+            assertEquals(22100.0, resourceService.calculateSaleValue("Auramite", 5));
+            assertEquals(56100.0, resourceService.calculateSaleValue("Auramite", 8));
+            assertEquals(76500.0, resourceService.calculateSaleValue("Auramite", 9));
         }
 
         @Test
@@ -82,8 +82,8 @@ class ResourceServiceTest {
         void shouldCapMultiplierAboveNine() {
             stubGoldPrice();
 
-            assertEquals(76500.0, resourceService.calculateSaleValue("Or", 10));
-            assertEquals(76500.0, resourceService.calculateSaleValue("Or", 1000));
+            assertEquals(76500.0, resourceService.calculateSaleValue("Auramite", 10));
+            assertEquals(76500.0, resourceService.calculateSaleValue("Auramite", 1000));
         }
 
         @Test
@@ -91,8 +91,8 @@ class ResourceServiceTest {
         void shouldReturnZeroForNonPositiveQuantity() {
             stubGoldPrice();
 
-            assertEquals(0.0, resourceService.calculateSaleValue("Or", 0));
-            assertEquals(0.0, resourceService.calculateSaleValue("Or", -5));
+            assertEquals(0.0, resourceService.calculateSaleValue("Auramite", 0));
+            assertEquals(0.0, resourceService.calculateSaleValue("Auramite", -5));
         }
 
         @Test
@@ -133,7 +133,7 @@ class ResourceServiceTest {
         void shouldRejectResourceOwnedByAnotherPlayer() {
             Player other = new Player("Other");
             other.setId(2L);
-            PlayerResource pr = new PlayerResource("Or", 5);
+            PlayerResource pr = new PlayerResource("Auramite", 5);
             pr.setPlayer(other);
 
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
@@ -147,7 +147,7 @@ class ResourceServiceTest {
         @DisplayName("Quantité insuffisante est rejetée")
         void shouldRejectInsufficientQuantity() {
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
-            when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(ownedResource("Or", 5)));
+            when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(ownedResource("Auramite", 5)));
 
             assertThrows(IllegalArgumentException.class,
                     () -> resourceService.sellResource(7L, 6, 10L));
@@ -156,14 +156,14 @@ class ResourceServiceTest {
         @Test
         @DisplayName("Vente partielle crédite le prix exact et conserve le stack")
         void shouldSellPartialQuantity() {
-            PlayerResource pr = ownedResource("Or", 5);
+            PlayerResource pr = ownedResource("Auramite", 5);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
-            when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 1700.0)));
+            when(resourceRepository.findByName("Auramite")).thenReturn(Optional.of(new Resource("Auramite", 1700.0)));
 
             ResourceService.SaleResult result = resourceService.sellResource(7L, 2, 10L);
 
-            assertEquals("Or", result.resourceName());
+            assertEquals("Auramite", result.resourceName());
             assertEquals(2, result.quantitySold());
             assertEquals(5100.0, result.saleValue());
             assertEquals(6100.0, player.getStats().getMoney());
@@ -176,10 +176,10 @@ class ResourceServiceTest {
         @Test
         @DisplayName("Vente totale supprime le stack")
         void shouldDeleteStackWhenQuantityReachesZero() {
-            PlayerResource pr = ownedResource("Or", 5);
+            PlayerResource pr = ownedResource("Auramite", 5);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
-            when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 1700.0)));
+            when(resourceRepository.findByName("Auramite")).thenReturn(Optional.of(new Resource("Auramite", 1700.0)));
 
             ResourceService.SaleResult result = resourceService.sellResource(7L, 5, 10L);
 
@@ -216,13 +216,13 @@ class ResourceServiceTest {
         @Test
         @DisplayName("Lot de deux ventes crédite les deux montants")
         void shouldSellBatch() {
-            PlayerResource gold = ownedResource("Or", 5);
-            PlayerResource ivory = ownedResource("Ivoire", 3);
+            PlayerResource gold = ownedResource("Auramite", 5);
+            PlayerResource ivory = ownedResource("Adamentium", 3);
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(gold));
             when(playerResourceRepository.findById(8L)).thenReturn(Optional.of(ivory));
-            when(resourceRepository.findByName("Or")).thenReturn(Optional.of(new Resource("Or", 1700.0)));
-            when(resourceRepository.findByName("Ivoire")).thenReturn(Optional.of(new Resource("Ivoire", 1100.0)));
+            when(resourceRepository.findByName("Auramite")).thenReturn(Optional.of(new Resource("Auramite", 1700.0)));
+            when(resourceRepository.findByName("Adamentium")).thenReturn(Optional.of(new Resource("Adamentium", 1100.0)));
 
             SellResourceBatchItemDto first = new SellResourceBatchItemDto();
             first.setPlayerResourceId(7L);
@@ -247,42 +247,42 @@ class ResourceServiceTest {
         @DisplayName("Transfert réussi déplace la quantité")
         void shouldTransferResource() {
             Player from = new Player("From");
-            from.addResource("Or", 10);
+            from.addResource("Auramite", 10);
             Player to = new Player("To");
 
-            boolean result = resourceService.transferResource(from, to, "Or", 4);
+            boolean result = resourceService.transferResource(from, to, "Auramite", 4);
 
             assertTrue(result);
-            assertEquals(6, from.getResourceQuantity("Or"));
-            assertEquals(4, to.getResourceQuantity("Or"));
+            assertEquals(6, from.getResourceQuantity("Auramite"));
+            assertEquals(4, to.getResourceQuantity("Auramite"));
         }
 
         @Test
         @DisplayName("Transfert refusé si source insuffisante ou paramètres invalides")
         void shouldRefuseInvalidTransfer() {
             Player from = new Player("From");
-            from.addResource("Or", 3);
+            from.addResource("Auramite", 3);
             Player to = new Player("To");
 
-            assertFalse(resourceService.transferResource(from, to, "Or", 4));
-            assertFalse(resourceService.transferResource(from, to, "Or", 0));
+            assertFalse(resourceService.transferResource(from, to, "Auramite", 4));
+            assertFalse(resourceService.transferResource(from, to, "Auramite", 0));
             assertFalse(resourceService.transferResource(from, to, null, 1));
-            assertFalse(resourceService.transferResource(null, to, "Or", 1));
-            assertFalse(resourceService.transferResource(from, null, "Or", 1));
+            assertFalse(resourceService.transferResource(null, to, "Auramite", 1));
+            assertFalse(resourceService.transferResource(from, null, "Auramite", 1));
 
-            assertEquals(3, from.getResourceQuantity("Or"));
-            assertEquals(0, to.getResourceQuantity("Or"));
+            assertEquals(3, from.getResourceQuantity("Auramite"));
+            assertEquals(0, to.getResourceQuantity("Auramite"));
         }
 
         @Test
         @DisplayName("Collecte ignorée si paramètres invalides")
         void shouldIgnoreInvalidCollection() {
             // Le secteur n'est pas marqué collecté : la ressource reste re-collectable.
-            resourceService.collectSectorResource(null, "Or", 500);
+            resourceService.collectSectorResource(null, "Auramite", 500);
             resourceService.collectSectorResource(player, null, 500);
-            resourceService.collectSectorResource(player, "Or", 0);
+            resourceService.collectSectorResource(player, "Auramite", 0);
 
-            assertEquals(0, player.getResourceQuantity("Or"));
+            assertEquals(0, player.getResourceQuantity("Auramite"));
         }
     }
 }

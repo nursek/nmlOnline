@@ -25,6 +25,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Player, Sector } from '../../models';
 import { sanitizeSvg } from '../../core/svg-sanitize';
 import { characterStats } from '../../core/stats';
+import { VehicleImageService } from '../../core/vehicle-image.service';
+import type { OptimizedImage } from '../../core/optimized-image';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
 import { AuthService } from '../../services/auth.service';
@@ -108,6 +110,7 @@ export class CarteComponent {
   private readonly auth = inject(AuthService);
   private readonly playerActions = inject(PlayerActionsService);
   private readonly playerService = inject(PlayerService);
+  private readonly vehicleImages = inject(VehicleImageService);
 
   readonly isAdmin = this.auth.isAdmin;
   readonly reserveUnits = this.playerService.reserveUnits;
@@ -709,6 +712,14 @@ export class CarteComponent {
   startPlacement(kind: 'unit' | 'vehicle', id: number | null, label: string): void {
     if (id == null) return;
     this.placing.set({ kind, id, label });
+  }
+
+  vehicleImage(vehicleType: string): OptimizedImage | null {
+    return this.vehicleImages.image(vehicleType);
+  }
+
+  onVehicleImgError(vehicleType: string): void {
+    this.vehicleImages.onError(vehicleType);
   }
 
   cancelPlacement(): void {

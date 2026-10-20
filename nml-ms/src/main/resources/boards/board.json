@@ -12,7 +12,7 @@
         16,
         3
       ],
-      "resource": "Alcool"
+      "resource": "Prométhéum"
     },
     {
       "number": 2,
@@ -25,7 +25,7 @@
         17,
         19
       ],
-      "resource": "Uranium"
+      "resource": "Conteneur blindé"
     },
     {
       "number": 3,
@@ -37,7 +37,7 @@
         4,
         7
       ],
-      "resource": "Antiquités"
+      "resource": "Plastacier"
     },
     {
       "number": 4,
@@ -50,7 +50,7 @@
         15,
         22
       ],
-      "resource": "Uranium"
+      "resource": "Conteneur blindé"
     },
     {
       "number": 5,
@@ -61,7 +61,7 @@
         4,
         15
       ],
-      "resource": "Alcool"
+      "resource": "Prométhéum"
     },
     {
       "number": 7,
@@ -72,7 +72,7 @@
         3,
         9
       ],
-      "resource": "Alcool"
+      "resource": "Prométhéum"
     },
     {
       "number": 9,
@@ -84,7 +84,7 @@
         14,
         18
       ],
-      "resource": "Antiquités"
+      "resource": "Plastacier"
     },
     {
       "number": 10,
@@ -94,7 +94,7 @@
       "neighbors": [
         11
       ],
-      "resource": "Cigares"
+      "resource": "Caisse d'armes"
     },
     {
       "number": 11,
@@ -106,7 +106,7 @@
         10,
         17
       ],
-      "resource": "Antiquités"
+      "resource": "Plastacier"
     },
     {
       "number": 14,
@@ -118,7 +118,7 @@
         16,
         18
       ],
-      "resource": "Antiquités"
+      "resource": "Plastacier"
     },
     {
       "number": 15,
@@ -131,7 +131,7 @@
         5,
         22
       ],
-      "resource": "Uranium"
+      "resource": "Conteneur blindé"
     },
     {
       "number": 16,
@@ -143,7 +143,7 @@
         14,
         1
       ],
-      "resource": "Antiquités"
+      "resource": "Plastacier"
     },
     {
       "number": 17,
@@ -156,7 +156,7 @@
         19,
         28
       ],
-      "resource": "Uranium"
+      "resource": "Conteneur blindé"
     },
     {
       "number": 18,
@@ -167,7 +167,7 @@
         9,
         14
       ],
-      "resource": "Alcool"
+      "resource": "Prométhéum"
     },
     {
       "number": 19,
@@ -179,7 +179,7 @@
         17,
         24
       ],
-      "resource": "Ivoire"
+      "resource": "Adamentium"
     },
     {
       "number": 21,
@@ -192,7 +192,7 @@
         25,
         16
       ],
-      "resource": "Uranium"
+      "resource": "Conteneur blindé"
     },
     {
       "number": 22,
@@ -206,7 +206,7 @@
         15,
         4
       ],
-      "resource": "Or"
+      "resource": "Auramite"
     },
     {
       "number": 24,
@@ -218,7 +218,7 @@
         22,
         19
       ],
-      "resource": "Ivoire"
+      "resource": "Adamentium"
     },
     {
       "number": 25,
@@ -231,7 +231,7 @@
         26,
         21
       ],
-      "resource": "Uranium"
+      "resource": "Conteneur blindé"
     },
     {
       "number": 26,
@@ -243,7 +243,7 @@
         25,
         22
       ],
-      "resource": "Ivoire"
+      "resource": "Adamentium"
     },
     {
       "number": 27,
@@ -254,7 +254,7 @@
         36,
         21
       ],
-      "resource": "Alcool"
+      "resource": "Prométhéum"
     },
     {
       "number": 28,
@@ -265,7 +265,7 @@
         17,
         38
       ],
-      "resource": "Alcool"
+      "resource": "Prométhéum"
     },
     {
       "number": 34,
@@ -277,7 +277,7 @@
         26,
         39
       ],
-      "resource": "Ivoire"
+      "resource": "Adamentium"
     },
     {
       "number": 35,
@@ -289,7 +289,7 @@
         40,
         22
       ],
-      "resource": "Ivoire"
+      "resource": "Adamentium"
     },
     {
       "number": 36,
@@ -301,7 +301,7 @@
         27,
         21
       ],
-      "resource": "Antiquités"
+      "resource": "Plastacier"
     },
     {
       "number": 38,
@@ -312,7 +312,7 @@
         28,
         43
       ],
-      "resource": "Alcool"
+      "resource": "Prométhéum"
     },
     {
       "number": 39,
@@ -324,7 +324,7 @@
         34,
         25
       ],
-      "resource": "Ivoire"
+      "resource": "Adamentium"
     },
     {
       "number": 40,
@@ -337,7 +337,7 @@
         30,
         31
       ],
-      "resource": "Uranium"
+      "resource": "Conteneur blindé"
     },
     {
       "number": 41,
@@ -348,7 +348,7 @@
         32,
         13
       ],
-      "resource": "Alcool"
+      "resource": "Prométhéum"
     },
     {
       "number": 42,
@@ -363,7 +363,7 @@
         31,
         12
       ],
-      "resource": "Joyaux"
+      "resource": "Noctilithe"
     },
     {
       "number": 43,
@@ -378,7 +378,7 @@
         24,
         13
       ],
-      "resource": "Joyaux"
+      "resource": "Noctilithe"
     },
     {
       "number": 29,
@@ -390,7 +390,7 @@
         23,
         6
       ],
-      "resource": "Antiquités"
+      "resource": "Plastacier"
     },
     {
       "number": 30,
@@ -403,7 +403,7 @@
         31,
         20
       ],
-      "resource": "Or"
+      "resource": "Auramite"
     },
     {
       "number": 31,
@@ -417,7 +417,7 @@
         20,
         12
       ],
-      "resource": "Or"
+      "resource": "Auramite"
     },
     {
       "number": 32,
@@ -429,7 +429,7 @@
         43,
         13
       ],
-      "resource": "Ivoire"
+      "resource": "Adamentium"
     },
     {
       "number": 23,
@@ -441,7 +441,7 @@
         8,
         6
       ],
-      "resource": "Ivoire"
+      "resource": "Adamentium"
     },
     {
       "number": 20,
@@ -454,7 +454,7 @@
         30,
         12
       ],
-      "resource": "Uranium"
+      "resource": "Conteneur blindé"
     },
     {
       "number": 13,
@@ -467,7 +467,7 @@
         32,
         33
       ],
-      "resource": "Uranium"
+      "resource": "Conteneur blindé"
     },
     {
       "number": 12,
@@ -479,7 +479,7 @@
         31,
         20
       ],
-      "resource": "Ivoire"
+      "resource": "Adamentium"
     },
     {
       "number": 33,
@@ -491,7 +491,7 @@
         20,
         13
       ],
-      "resource": "Ivoire"
+      "resource": "Adamentium"
     },
     {
       "number": 37,
@@ -502,7 +502,7 @@
         42,
         8
       ],
-      "resource": "Alcool"
+      "resource": "Prométhéum"
     },
     {
       "number": 8,
@@ -514,7 +514,7 @@
         37,
         6
       ],
-      "resource": "Antiquités"
+      "resource": "Plastacier"
     },
     {
       "number": 6,
@@ -526,7 +526,7 @@
         23,
         8
       ],
-      "resource": "Antiquités"
+      "resource": "Plastacier"
     }
   ]
 }

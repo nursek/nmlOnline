@@ -4,15 +4,15 @@
   "money": 20000,
   "resources": [
     {
-      "name": "Cigares",
+      "name": "Caisse d'armes",
       "quantity": 10
     },
     {
-      "name": "Alcool",
+      "name": "Prométhéum",
       "quantity": 5
     },
     {
-      "name": "Ivoire",
+      "name": "Adamentium",
       "quantity": 3
     }
   ],
