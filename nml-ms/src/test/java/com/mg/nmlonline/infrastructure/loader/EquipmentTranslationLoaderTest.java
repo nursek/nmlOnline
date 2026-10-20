@@ -37,10 +37,10 @@ class EquipmentTranslationLoaderTest {
                 gaussBlaster.getDisplayDescriptions().get(PlayerRace.NECRONS));
         assertEquals(1, gaussBlaster.getDisplayDescriptions().size());
 
-        Equipment thermalCuttingBeam = equipmentRepository.findByName("Thermal Cutting Beam").orElseThrow();
-        assertEquals("Rayon de découpe thermique", thermalCuttingBeam.getDisplayNames().get(PlayerRace.NECRONS));
-        assertEquals("Le faisceau fond l'armure avant de trancher ce qu'elle protège.",
-                thermalCuttingBeam.getDisplayDescriptions().get(PlayerRace.NECRONS));
+        Equipment nightmareShroud = equipmentRepository.findByName("Nightmare Shroud").orElseThrow();
+        assertEquals("Linceul de cauchemars", nightmareShroud.getDisplayNames().get(PlayerRace.NECRONS));
+        assertEquals("Un linceul vivant qui nourrit les cauchemars de l'adversaire.",
+                nightmareShroud.getDisplayDescriptions().get(PlayerRace.NECRONS));
 
         Equipment phylactery = equipmentRepository.findByName("Phylactery").orElseThrow();
         assertEquals("Guenilles renforcées", phylactery.getDisplayNames().get(PlayerRace.ORKS));

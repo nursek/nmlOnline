@@ -16,7 +16,6 @@ export const UNIT_CLASS_LABELS: Readonly<Record<string, string>> = {
   TIREUR: 'Tireur',
   SNIPER: 'Sniper',
   PILOTE_DESTRUCTEUR: 'Pilote destructeur',
-  ELEMENTAIRE: 'Élémentaire',
 };
 
 export const UNIT_CLASS_ORDER: Readonly<Record<string, number>> = {
@@ -25,7 +24,6 @@ export const UNIT_CLASS_ORDER: Readonly<Record<string, number>> = {
   TIREUR: 2,
   SNIPER: 3,
   PILOTE_DESTRUCTEUR: 4,
-  ELEMENTAIRE: 5,
 };
 
 export function equipmentCategoryLabel(category: string | null | undefined): string {

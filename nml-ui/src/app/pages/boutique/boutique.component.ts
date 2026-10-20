@@ -59,9 +59,6 @@ import {
   PurchaseSuccessData,
 } from '../../shared/purchase-success-dialog/purchase-success-dialog.component';
 
-// Classe en cours de suppression côté backend : le shop la masque jusque-là.
-const HIDDEN_UNIT_CLASSES: ReadonlySet<string> = new Set(['ELEMENTAIRE']);
-
 @Component({
   selector: 'app-boutique',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,9 +103,7 @@ export class BoutiqueComponent {
   readonly vehicleTypes = this.shop.vehicleTypes;
   readonly unitCatalog = this.shop.unitCatalog;
   readonly unitTypes = computed(() => this.shop.unitCatalog().entries);
-  readonly unitClasses = computed(() =>
-    this.shop.unitCatalog().classes.filter((uc) => !HIDDEN_UNIT_CLASSES.has(uc.name)),
-  );
+  readonly unitClasses = computed(() => this.shop.unitCatalog().classes);
 
   /** Une entrée d'unité à la fois : ses classes de recrutement. */
   readonly selectedUnitEntry = computed(() => {
@@ -162,12 +157,6 @@ export class BoutiqueComponent {
       );
     }
 
-    // Un équipement dont toutes les classes sont masquées sort du catalogue du shop.
-    filtered = filtered.filter((eq) => {
-      const classes = eq.compatibleClass ?? [];
-      return classes.length === 0 || classes.some((c) => !HIDDEN_UNIT_CLASSES.has(c.name));
-    });
-
     return filtered.sort(compareEquipments);
   });
 
@@ -192,7 +181,7 @@ export class BoutiqueComponent {
     const keys = new Set<string>();
     for (const eq of this.allEquipments()) {
       for (const compatible of eq.compatibleClass ?? []) {
-        if (!HIDDEN_UNIT_CLASSES.has(compatible.name)) keys.add(compatible.name);
+        keys.add(compatible.name);
       }
     }
     return [...keys]

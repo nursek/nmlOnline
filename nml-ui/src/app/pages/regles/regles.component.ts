@@ -181,11 +181,6 @@ export class ReglesComponent {
         "les armes anti-véhicules (Gauss Cannon, Heavy Gauss Cannon, Enmitic Annihilator) doublent les dégâts contre leur catégorie de cible.",
       actif: true,
     },
-    {
-      nom: unitClassLabel('ELEMENTAIRE'),
-      effet: 'Aucun effet de combat implémenté.',
-      actif: false,
-    },
   ];
 
   readonly recrues: readonly RecrueUnite[] = [

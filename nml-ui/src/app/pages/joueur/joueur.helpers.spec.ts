@@ -319,7 +319,7 @@ describe('joueur.helpers', () => {
   });
 
   describe('equipmentByClass', () => {
-    it('groupe par classe (ordre Léger → Élémentaire) puis par catégorie, coût croissant', () => {
+    it('groupe par classe (ordre du catalogue) puis par catégorie, coût croissant', () => {
       const groups = equipmentByClass([
         stack('Gilet pare-balles', 'DEFENSIVE', { compatibleClass: ['LEGER'] }),
         stack('Pistolet cascade', 'FIREARM', { compatibleClass: ['SNIPER'] }),
@@ -519,9 +519,9 @@ describe('joueur.helpers', () => {
 
   describe('reserveGroups', () => {
     it('groupe par type + classe et conserve les ids à déployer', () => {
-      const elementaire = {
-        name: 'ELEMENTAIRE',
-        code: 'E',
+      const tireur = {
+        name: 'TIREUR',
+        code: 'T',
         criticalChance: null,
         criticalMultiplier: null,
         damageReductionPdf: null,
@@ -531,10 +531,10 @@ describe('joueur.helpers', () => {
       const groups = reserveGroups([
         unit(1, 0, me, { attack: 10, defense: 10 }),
         unit(2, 0, me, { attack: 10, defense: 10 }),
-        unit(3, 0, me, { classes: [elementaire], attack: 12, defense: 14 }),
+        unit(3, 0, me, { classes: [tireur], attack: 12, defense: 14 }),
       ]);
 
-      expect(groups.map((g) => g.key)).toEqual(['LARBIN#LEGER', 'LARBIN#ELEMENTAIRE']);
+      expect(groups.map((g) => g.key)).toEqual(['LARBIN#LEGER', 'LARBIN#TIREUR']);
       expect(groups[0]).toMatchObject({ count: 2, unitIds: [1, 2], attack: 10, defense: 10 });
       expect(groups[1]).toMatchObject({ count: 1, unitIds: [3], attack: 12, defense: 14 });
     });

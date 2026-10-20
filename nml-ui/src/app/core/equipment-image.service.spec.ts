@@ -27,7 +27,7 @@ describe('EquipmentImageService', () => {
   });
 
   it("ne masque pas les autres vignettes quand une image de la race manque", () => {
-    service.onError({ name: 'Voltaic Staff' });
+    service.onError({ name: 'Arme inconnue' });
 
     expect(service.image({ name: 'Gauss Blaster' })?.src).toBe(
       '/assets/_opt/shop/equipment/necrons/gauss-blaster.320.webp',

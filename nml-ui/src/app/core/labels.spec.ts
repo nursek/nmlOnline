@@ -10,7 +10,7 @@ describe('labels (libellés FR)', () => {
   it("traduit les classes d'unité connues", () => {
     expect(unitClassLabel('PILOTE_DESTRUCTEUR')).toBe('Pilote destructeur');
     expect(unitClassLabel('LEGER')).toBe('Léger');
-    expect(unitClassLabel('ELEMENTAIRE')).toBe('Élémentaire');
+    expect(unitClassLabel('SNIPER')).toBe('Sniper');
   });
 
   it('replie sur la valeur brute pour une clé inconnue', () => {
