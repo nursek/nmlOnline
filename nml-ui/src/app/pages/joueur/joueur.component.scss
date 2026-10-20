@@ -260,7 +260,8 @@
   display: block;
   width: 48px;
   height: 48px;
-  object-fit: cover;
+  // contain : bandes du fond plutôt que de rogner l'illustration.
+  object-fit: contain;
   border-radius: var(--r-xs);
   background: var(--surface-3);
 }

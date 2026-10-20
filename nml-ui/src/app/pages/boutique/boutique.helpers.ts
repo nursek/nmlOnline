@@ -5,7 +5,12 @@ import type {
   UnitClass,
   VehicleTypeInfo,
 } from '../../models';
-import { equipmentCategoryLabel, unitClassLabel, UNIT_CLASS_ORDER, vehicleTargetLabel } from '../../core/labels';
+import {
+  equipmentCategoryLabel,
+  unitClassLabel,
+  UNIT_CLASS_ORDER,
+  vehicleTargetLabel,
+} from '../../core/labels';
 import { equipmentLabel } from '../../core/equipment-label';
 
 const CATEGORY_ORDER: Readonly<Record<string, number>> = {
@@ -13,6 +18,64 @@ const CATEGORY_ORDER: Readonly<Record<string, number>> = {
   FIREARM: 1,
   DEFENSIVE: 2,
 };
+
+export interface EquipmentCategoryGroup {
+  key: string;
+  label: string;
+  icon: string;
+  items: Equipment[];
+}
+
+export const EQUIPMENT_CATEGORY_GROUPS: readonly Omit<EquipmentCategoryGroup, 'items'>[] = [
+  { key: 'MELEE', label: equipmentCategoryLabel('MELEE'), icon: 'sports_mma' },
+  { key: 'FIREARM', label: equipmentCategoryLabel('FIREARM'), icon: 'gps_fixed' },
+  { key: 'DEFENSIVE', label: equipmentCategoryLabel('DEFENSIVE'), icon: 'shield' },
+];
+
+export interface EquipmentClassGroup {
+  key: string;
+  label: string;
+  count: number;
+  categories: EquipmentCategoryGroup[];
+}
+
+/** Sections par classe compatible ; l'ordre vient du tri amont (classe puis catégorie puis coût). */
+export function groupEquipmentsByClass(items: Equipment[]): EquipmentClassGroup[] {
+  const buckets = new Map<string, Equipment[]>();
+  for (const item of items) {
+    const key = item.compatibleClass?.[0]?.name ?? 'AUCUNE';
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(item);
+    else buckets.set(key, [item]);
+  }
+  return [...buckets].map(([key, bucket]) => ({
+    key,
+    label: unitClassLabel(key),
+    count: bucket.length,
+    categories: groupEquipmentsByCategory(bucket),
+  }));
+}
+
+/** Sections dans l'ordre mêlée → tir → défensif ; une catégorie inconnue finit en dernier. */
+export function groupEquipmentsByCategory(items: Equipment[]): EquipmentCategoryGroup[] {
+  const buckets = new Map<string, Equipment[]>();
+  for (const item of items) {
+    const bucket = buckets.get(item.category);
+    if (bucket) bucket.push(item);
+    else buckets.set(item.category, [item]);
+  }
+  const groups: EquipmentCategoryGroup[] = [];
+  for (const group of EQUIPMENT_CATEGORY_GROUPS) {
+    const bucket = buckets.get(group.key);
+    if (bucket) groups.push({ ...group, items: bucket });
+  }
+  for (const [key, bucket] of buckets) {
+    if (!EQUIPMENT_CATEGORY_GROUPS.some((group) => group.key === key)) {
+      groups.push({ key, label: equipmentCategoryLabel(key), icon: 'inventory_2', items: bucket });
+    }
+  }
+  return groups;
+}
 
 const classRank = (eq: Equipment): number => {
   const first = eq.compatibleClass?.[0]?.name;
@@ -64,7 +127,9 @@ export function equipmentBonusSummary(eq: Equipment): string {
   if (eq.armBonus > 0) parts.push(`${formatPercent(eq.armBonus)} Arm`);
   if (eq.evasionBonus > 0) parts.push(`${formatPercent(eq.evasionBonus)} Esquive`);
   if ((eq.vehicleBonus ?? 0) > 0) {
-    parts.push(`${formatPercent(eq.vehicleBonus ?? 0)} vs ${vehicleTargetLabel(eq.vehicleBonusTarget)}`);
+    parts.push(
+      `${formatPercent(eq.vehicleBonus ?? 0)} vs ${vehicleTargetLabel(eq.vehicleBonusTarget)}`,
+    );
   }
   return parts.join(' ; ');
 }

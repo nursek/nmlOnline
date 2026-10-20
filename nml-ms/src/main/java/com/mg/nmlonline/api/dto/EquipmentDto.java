@@ -22,4 +22,5 @@ public class EquipmentDto {
     private Set<UnitClassDto> compatibleClass;
     private String category;
     private Map<String, String> displayNames;
+    private Map<String, String> displayDescriptions;
 }

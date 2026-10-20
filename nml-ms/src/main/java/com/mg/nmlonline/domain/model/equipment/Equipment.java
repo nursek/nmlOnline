@@ -70,6 +70,15 @@ public class Equipment {
     @BatchSize(size = 50)
     private Map<PlayerRace, String> displayNames = new HashMap<>();
 
+    /** Courte description d'ambiance par race, affichée dans la boutique. */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "EQUIPMENT_DESCRIPTIONS", joinColumns = @JoinColumn(name = "equipment_id"))
+    @MapKeyEnumerated(EnumType.STRING)
+    @MapKeyColumn(name = "race")
+    @Column(name = "description", nullable = false, length = 600)
+    @BatchSize(size = 50)
+    private Map<PlayerRace, String> displayDescriptions = new HashMap<>();
+
     public Equipment(String name, int cost, double pdfBonus, double pdcBonus,
                      double armBonus, double evasionBonus, Set<UnitClass> compatibleClasses,
                      EquipmentCategory category) {

@@ -36,13 +36,13 @@ class MapperTest {
         @Test
         @DisplayName("Un bonus négatif ou une cible inconnue est rejeté, une valeur valide est conservée")
         void rejectsNegativeBonusAndUnknownTarget() {
-            EquipmentDto negative = new EquipmentDto("Arme", 100, 0, 0, 0, 0, -50, "GROUND", null, "FIREARM", null);
+            EquipmentDto negative = new EquipmentDto("Arme", 100, 0, 0, 0, 0, -50, "GROUND", null, "FIREARM", null, null);
             assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(negative));
 
-            EquipmentDto unknownTarget = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 100, "SOUS_MARIN", null, "FIREARM", null);
+            EquipmentDto unknownTarget = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 100, "SOUS_MARIN", null, "FIREARM", null, null);
             assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(unknownTarget));
 
-            EquipmentDto valid = new EquipmentDto("Arme", 100, 50, 0, 0, 0, 100, "AERIAL", null, "FIREARM", null);
+            EquipmentDto valid = new EquipmentDto("Arme", 100, 50, 0, 0, 0, 100, "AERIAL", null, "FIREARM", null, null);
             Equipment equipment = mapper.toDomain(valid);
             assertEquals(100, equipment.getVehicleBonus());
             assertEquals(VehicleBonusTarget.AERIAL, equipment.getVehicleBonusTarget());
@@ -52,21 +52,36 @@ class MapperTest {
         @DisplayName("Les libellés par race font l'aller-retour, casse ignorée, race inconnue rejetée")
         void mapsDisplayNamesByRace() {
             EquipmentDto dto = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null, "FIREARM",
-                    Map.of("orks", "Truc"));
+                    Map.of("orks", "Truc"), null);
             Equipment equipment = mapper.toDomain(dto);
             assertEquals("Truc", equipment.getDisplayNames().get(PlayerRace.ORKS));
             assertEquals("Truc", mapper.toDto(equipment).getDisplayNames().get("ORKS"));
 
             EquipmentDto unknown = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null, "FIREARM",
-                    Map.of("SOUS_MARIN", "Truc"));
+                    Map.of("SOUS_MARIN", "Truc"), null);
             assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(unknown));
 
             Map<String, String> badLabels = new HashMap<>();
             badLabels.put("ORKS", null);
             badLabels.put("NECRONS", " ");
             EquipmentDto badLabel = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null, "FIREARM",
-                    badLabels);
+                    badLabels, null);
             assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(badLabel));
+        }
+
+        @Test
+        @DisplayName("Les descriptions par race font l'aller-retour et ignorent les entrées vides")
+        void mapsDescriptionsByRace() {
+            Map<String, String> descriptions = new HashMap<>();
+            descriptions.put("necrons", "Une lame née du vide.");
+            descriptions.put("ORKS", " ");
+            EquipmentDto dto = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null, "FIREARM",
+                    null, descriptions);
+            Equipment equipment = mapper.toDomain(dto);
+            assertEquals("Une lame née du vide.", equipment.getDisplayDescriptions().get(PlayerRace.NECRONS));
+            assertEquals(1, equipment.getDisplayDescriptions().size());
+            assertEquals("Une lame née du vide.",
+                    mapper.toDto(equipment).getDisplayDescriptions().get("NECRONS"));
         }
     }
 

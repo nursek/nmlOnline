@@ -41,6 +41,11 @@ public class CsvDataLoader implements CommandLineRunner {
 
     /** Lit un CSV classpath (header ignoré), ignore les lignes vides et celles mappées à null. */
     private <T> List<T> load(String path, Function<String[], T> mapper) {
+        return load(path, 0, mapper);
+    }
+
+    /** `splitLimit` = 0 garde le comportement historique ; 3 laisse les virgules dans la 3ᵉ colonne. */
+    private <T> List<T> load(String path, int splitLimit, Function<String[], T> mapper) {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(Objects.requireNonNull(
                         getClass().getResourceAsStream(path)), StandardCharsets.UTF_8))) {
@@ -53,7 +58,7 @@ public class CsvDataLoader implements CommandLineRunner {
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
                 if (!line.isEmpty()) {
-                    T item = mapper.apply(line.split(","));
+                    T item = mapper.apply(line.split(",", splitLimit));
                     if (item != null) {
                         result.add(item);
                     }
@@ -151,16 +156,21 @@ public class CsvDataLoader implements CommandLineRunner {
     /** Rejouée à chaque boot : seuls les équipements listés sont mis à jour, les autres gardent leurs libellés. */
     private void loadTranslations() {
         Map<String, Map<PlayerRace, String>> translations = new HashMap<>();
+        Map<String, Map<PlayerRace, String>> descriptions = new HashMap<>();
         for (PlayerRace race : PlayerRace.values()) {
             String path = "/equipment_translations_" + race.name().toLowerCase(Locale.ROOT) + ".csv";
             if (getClass().getResource(path) == null) {
                 log.warn("Traductions ignorées : fichier '{}' absent", path);
                 continue;
             }
-            load(path, parts -> {
+            load(path, 3, parts -> {
                 if (parts.length >= 2 && !parts[1].isBlank()) {
                     translations.computeIfAbsent(parts[0], k -> new EnumMap<>(PlayerRace.class))
                             .put(race, parts[1].trim());
+                }
+                if (parts.length >= 3 && !parts[2].isBlank()) {
+                    descriptions.computeIfAbsent(parts[0], k -> new EnumMap<>(PlayerRace.class))
+                            .put(race, parts[2].trim());
                 }
                 return null;
             });
@@ -174,6 +184,10 @@ public class CsvDataLoader implements CommandLineRunner {
                 continue;
             }
             equipment.setDisplayNames(entry.getValue());
+            Map<PlayerRace, String> equipmentDescriptions = descriptions.get(entry.getKey());
+            if (equipmentDescriptions != null) {
+                equipment.setDisplayDescriptions(equipmentDescriptions);
+            }
             equipmentRepository.save(equipment);
             applied++;
         }

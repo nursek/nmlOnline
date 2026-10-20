@@ -164,7 +164,9 @@
                 <button
                   mat-icon-button
                   [disabled]="item.quantity <= 1"
-                  (click)="decrementUnitCartQuantity(unitCartKey(item.unitType.name, item.unitClass.name))"
+                  (click)="
+                    decrementUnitCartQuantity(unitCartKey(item.unitType.name, item.unitClass.name))
+                  "
                   [attr.aria-label]="'Réduire la quantité de ' + item.unitType.name"
                 >
                   <mat-icon>remove</mat-icon>
@@ -276,10 +278,7 @@
             <div class="avatar">
               <mat-icon>shopping_bag</mat-icon>
             </div>
-            <div>
-              <h1 class="title">Boutique</h1>
-              <p class="subtitle">Équipez vos troupes pour la victoire</p>
-            </div>
+            <h1 class="title">Boutique</h1>
           </div>
 
           <div class="header-right">
@@ -307,26 +306,31 @@
           </div>
         }
 
-        <mat-tab-group
-          animationDuration="200ms"
-          mat-stretch-tabs="false"
-          [selectedIndex]="selectedTabIndex()"
-          (selectedIndexChange)="selectedTabIndex.set($event)"
-        >
-          <mat-tab label="Équipements">
-            <div class="search-bar-container">
-              <div class="search-wrapper">
-                <mat-icon class="search-icon">search</mat-icon>
-                <input
-                  type="text"
-                  class="search-input"
-                  [value]="searchTerm()"
-                  (input)="searchTerm.set($any($event.target).value)"
-                  placeholder="Rechercher un équipement..."
-                  aria-label="Rechercher un équipement"
-                />
+        <div class="tabs-wrap">
+          @if (selectedTabIndex() === 0) {
+            <button
+              class="tab-search"
+              [class.active]="searchOpen()"
+              (click)="toggleSearch()"
+              aria-label="Rechercher un équipement"
+              [attr.aria-expanded]="searchOpen()"
+            >
+              <mat-icon>search</mat-icon>
+            </button>
 
-                <div class="search-actions">
+            @if (searchOpen()) {
+              <div class="search-overlay">
+                <div class="search-wrapper">
+                  <mat-icon class="search-icon">search</mat-icon>
+                  <input
+                    type="text"
+                    class="search-input"
+                    [value]="searchTerm()"
+                    (input)="searchTerm.set($any($event.target).value)"
+                    (keydown.escape)="toggleSearch()"
+                    placeholder="Rechercher un équipement..."
+                    aria-label="Rechercher un équipement"
+                  />
                   @if (searchTerm()) {
                     <button
                       class="action-btn clear-btn"
@@ -336,664 +340,586 @@
                       <mat-icon>close</mat-icon>
                     </button>
                   }
-
-                  <button
-                    class="action-btn filter-toggle-btn"
-                    [class.active]="showFilters()"
-                    (click)="toggleFilters()"
-                    aria-label="Filtres avancés"
-                    [attr.aria-expanded]="showFilters()"
-                  >
-                    <mat-icon>tune</mat-icon>
-                    @if (hasAdvancedFilters()) {
-                      <span class="filter-badge">{{ getActiveFiltersCount() }}</span>
-                    }
-                  </button>
                 </div>
+                <span class="results-count">
+                  {{ filteredEquipments().length }} équipement(s) trouvé(s)
+                </span>
+              </div>
+            }
+          }
+
+          <mat-tab-group
+            animationDuration="200ms"
+            mat-stretch-tabs="false"
+            [selectedIndex]="selectedTabIndex()"
+            (selectedIndexChange)="selectedTabIndex.set($event)"
+          >
+            <mat-tab label="Équipements">
+              <div class="class-bar">
+                <button
+                  class="class-arrow"
+                  (click)="selectAdjacentClass(-1)"
+                  aria-label="Classe précédente"
+                >
+                  <mat-icon>chevron_left</mat-icon>
+                </button>
+                @for (unitClass of equipmentClasses(); track unitClass.key) {
+                  <button
+                    class="custom-chip"
+                    [class.active]="selectedClassFilter() === unitClass.key"
+                    (click)="selectClassFilter(unitClass.key)"
+                  >
+                    {{ unitClass.label }}
+                  </button>
+                }
+                <button
+                  class="class-arrow"
+                  (click)="selectAdjacentClass(1)"
+                  aria-label="Classe suivante"
+                >
+                  <mat-icon>chevron_right</mat-icon>
+                </button>
               </div>
 
-              <div class="filters-panel" [class.open]="showFilters()">
-                <div class="filters-content">
-                  <div class="filters-chips-container">
-                    <span class="filter-label">
-                      <mat-icon>category</mat-icon>
-                      Catégories
-                    </span>
-                    <div class="chips-wrapper">
-                      <button
-                        class="custom-chip"
-                        [class.active]="selectedCategory() === 'all'"
-                        (click)="selectCategory('all')"
-                      >
-                        Toutes
-                      </button>
-                      @for (category of categories(); track category.key) {
-                        <button
-                          class="custom-chip"
-                          [class.active]="selectedCategory() === category.key"
-                          (click)="selectCategory(category.key)"
-                        >
-                          {{ category.label }}
-                        </button>
+              @if (filteredEquipments().length === 0) {
+                <div class="no-results">
+                  <mat-icon>inventory_2</mat-icon>
+                  <h3>Aucun équipement trouvé</h3>
+                  <p>Essayez de modifier vos critères de recherche</p>
+                </div>
+              }
+
+              @for (group of equipmentGroups(); track group.key) {
+                @if (showClassTitles()) {
+                  <h3 class="cat-title class-head">
+                    <mat-icon>groups</mat-icon>
+                    <span>Classe {{ group.label }}</span>
+                    <span class="cat-count">{{ group.count }}</span>
+                  </h3>
+                }
+
+                @for (category of group.categories; track category.key) {
+                  <section class="cat-section" [attr.data-cat]="category.key.toLowerCase()">
+                    <h4 class="cat-title">
+                      <mat-icon>{{ category.icon }}</mat-icon>
+                      <span>{{ category.label }}</span>
+                      <span class="cat-count">{{ category.items.length }}</span>
+                    </h4>
+
+                    <div class="tile-grid">
+                      @for (equipment of category.items; track equipment.name) {
+                        <ng-container
+                          [ngTemplateOutlet]="equipmentCard"
+                          [ngTemplateOutletContext]="{ $implicit: equipment }"
+                        />
                       }
                     </div>
-                  </div>
-
-                  <mat-divider></mat-divider>
-
-                  <div class="filters-chips-container">
-                    <span class="filter-label">
-                      <mat-icon>military_tech</mat-icon>
-                      Types de bonus
-                    </span>
-                    <div class="chips-wrapper">
-                      <button
-                        class="custom-chip bonus-chip all"
-                        [class.active]="selectedBonusFilter() === 'all'"
-                        (click)="selectBonusFilter('all')"
-                      >
-                        <mat-icon>star</mat-icon>
-                        Tous
-                      </button>
-                      <button
-                        class="custom-chip bonus-chip pdf"
-                        [class.active]="selectedBonusFilter() === 'PDF'"
-                        (click)="selectBonusFilter('PDF')"
-                      >
-                        PDF
-                      </button>
-                      <button
-                        class="custom-chip bonus-chip pdc"
-                        [class.active]="selectedBonusFilter() === 'PDC'"
-                        (click)="selectBonusFilter('PDC')"
-                      >
-                        PDC
-                      </button>
-                      <button
-                        class="custom-chip bonus-chip arm"
-                        [class.active]="selectedBonusFilter() === 'ARM'"
-                        (click)="selectBonusFilter('ARM')"
-                      >
-                        ARM
-                      </button>
-                      <button
-                        class="custom-chip bonus-chip esq"
-                        [class.active]="selectedBonusFilter() === 'ESQ'"
-                        (click)="selectBonusFilter('ESQ')"
-                      >
-                        ESQ
-                      </button>
-                    </div>
-                  </div>
-
-                  @if (hasAdvancedFilters()) {
-                    <div class="filter-actions">
-                      <button mat-button class="reset-filters-btn" (click)="clearAdvancedFilters()">
-                        <mat-icon>filter_alt_off</mat-icon>
-                        Réinitialiser les filtres
-                      </button>
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
-
-            <div class="results-header">
-              <span class="results-count"
-                >{{ filteredEquipments().length }} équipement(s) trouvé(s)</span
-              >
-              @if (equipmentsTruncated()) {
-                <span class="filters-active">Catalogue partiel — 100 premiers</span>
-              }
-              @if (hasActiveFilters()) {
-                <span class="filters-active">
-                  <mat-icon>filter_list</mat-icon>
-                  Filtres actifs
-                </span>
-              }
-            </div>
-
-            @if (filteredEquipments().length === 0) {
-              <div class="no-results">
-                <mat-icon>inventory_2</mat-icon>
-                <h3>Aucun équipement trouvé</h3>
-                <p>Essayez de modifier vos critères de recherche</p>
-              </div>
-            }
-
-            @if (!hasActiveFilters()) {
-              <!-- Vue par défaut : groupée par classe -->
-              @for (group of groupedEquipments(); track group.classKey) {
-                <h3 class="class-section-title">Classe {{ group.classLabel }}</h3>
-                <div class="equipment-grid">
-                  @for (equipment of group.items; track equipment.name) {
-                    <ng-container
-                      [ngTemplateOutlet]="equipmentCard"
-                      [ngTemplateOutletContext]="{ $implicit: equipment }"
-                    />
-                  }
-                </div>
-              }
-            } @else {
-              <!-- Vue filtrée : grille plate -->
-              <div class="equipment-grid">
-                @for (equipment of filteredEquipments(); track equipment.name) {
-                  <ng-container
-                    [ngTemplateOutlet]="equipmentCard"
-                    [ngTemplateOutletContext]="{ $implicit: equipment }"
-                  />
+                  </section>
                 }
-              </div>
-            }
-          </mat-tab>
+              }
+            </mat-tab>
 
-          <!-- Template réutilisable d'une carte équipement -->
-          <ng-template #equipmentCard let-equipment>
-            <mat-card class="equipment-card hover-lift">
-              <mat-card-content>
-                <div class="shop-thumb-wrapper">
+            <ng-template #equipmentCard let-equipment>
+              <mat-card
+                class="shop-tile"
+                [matTooltip]="equipmentSummary(equipment, equipmentLabel(equipment))"
+              >
+                <div class="tile-thumb">
                   @if (equipmentImage(equipment); as img) {
                     <img
                       [src]="img.src"
                       [srcset]="img.srcset"
                       (error)="onEquipmentImgError(equipment)"
-                      alt="{{ equipmentLabel(equipment) }}"
-                      class="shop-thumb"
+                      alt=""
+                      class="tile-img"
                       loading="lazy"
                       decoding="async"
                     />
                   } @else {
-                    <div class="shop-thumb-fallback">
-                      <mat-icon>image_not_supported</mat-icon>
-                    </div>
+                    <mat-icon class="tile-icon">image_not_supported</mat-icon>
                   }
-                </div>
-                <div class="equipment-header">
-                  <h3>{{ equipmentLabel(equipment) }}</h3>
-                  <mat-chip color="warn" highlighted>{{ equipment.cost }} ₡</mat-chip>
-                </div>
-                <span class="category">{{ equipmentCategoryLabel(equipment.category) }}</span>
-
-                <!-- Résumé compact : « Nom (Catégorie FR) : +20 % Pdc. 100 ₡. » -->
-                <p class="summary">{{ equipmentSummary(equipment, equipmentLabel(equipment)) }}</p>
-
-                <div class="bonus-chips">
-                  @if (equipment.pdfBonus > 0) {
-                    <mat-chip class="bonus pdf">+{{ equipment.pdfBonus }} % PDF</mat-chip>
-                  }
-                  @if (equipment.pdcBonus > 0) {
-                    <mat-chip class="bonus pdc">+{{ equipment.pdcBonus }} % PDC</mat-chip>
-                  }
-                  @if (equipment.armBonus > 0) {
-                    <mat-chip class="bonus arm">+{{ equipment.armBonus }} % ARM</mat-chip>
-                  }
-                  @if (equipment.evasionBonus > 0) {
-                    <mat-chip class="bonus esq">+{{ equipment.evasionBonus }} % ESQ</mat-chip>
-                  }
-                  @if ((equipment.vehicleBonus ?? 0) > 0) {
-                    <mat-chip class="bonus vehicle"
-                      >+{{ equipment.vehicleBonus }} % VS
-                      {{ vehicleTargetLabel(equipment.vehicleBonusTarget) }}</mat-chip
-                    >
-                  }
-                </div>
-
-                <div class="compatible-classes">
-                  <span class="label">Compatible avec:</span>
-                  <div class="class-chips">
-                    @if (equipment.compatibleClass && equipment.compatibleClass.length > 0) {
-                      @for (unitClass of equipment.compatibleClass; track unitClass.code) {
-                        <mat-chip>{{ unitClassLabel(unitClass.name) }}</mat-chip>
-                      }
-                    } @else {
-                      <span class="none">Aucune</span>
+                  <span class="class-badge">{{ equipmentClassLabel(equipment) }}</span>
+                  <div class="tile-badges">
+                    @if (getOwnedQuantity(equipment.name) > 0) {
+                      <span
+                        class="corner-badge owned"
+                        [matTooltip]="'Vous en possédez ' + getOwnedQuantity(equipment.name)"
+                        >×{{ getOwnedQuantity(equipment.name) }}</span
+                      >
+                    }
+                    @if (getCartQuantity(equipment.name) > 0) {
+                      <span class="corner-badge in-cart"
+                        >panier ×{{ getCartQuantity(equipment.name) }}</span
+                      >
                     }
                   </div>
                 </div>
 
-                <!-- Quantité possédée (toujours présent pour garder l'alignement) -->
-                <p class="owned">
-                  @if (getOwnedQuantity(equipment.name) > 0) {
-                    Vous en possédez: <strong>{{ getOwnedQuantity(equipment.name) }}</strong>
-                  }
-                </p>
+                <mat-card-content>
+                  <div class="tile-head">
+                    <span class="tile-name">{{ equipmentLabel(equipment) }}</span>
+                    <span class="tile-cost">{{ equipment.cost }} ₡</span>
+                  </div>
 
-                <div class="card-actions">
-                  @if (getCartQuantity(equipment.name) === 0) {
+                  @if (equipmentDescription(equipment); as description) {
+                    <p class="tile-desc">{{ description }}</p>
+                  }
+
+                  <div class="tile-meta">
+                    @if (equipment.pdfBonus > 0) {
+                      <span class="stat-tag pdf">+{{ equipment.pdfBonus }} PDF</span>
+                    }
+                    @if (equipment.pdcBonus > 0) {
+                      <span class="stat-tag pdc">+{{ equipment.pdcBonus }} PDC</span>
+                    }
+                    @if (equipment.armBonus > 0) {
+                      <span class="stat-tag arm">+{{ equipment.armBonus }} ARM</span>
+                    }
+                    @if (equipment.evasionBonus > 0) {
+                      <span class="stat-tag esq">+{{ equipment.evasionBonus }} ESQ</span>
+                    }
+                    @if ((equipment.vehicleBonus ?? 0) > 0) {
+                      <span class="stat-tag vehicle"
+                        >+{{ equipment.vehicleBonus }} VS
+                        {{
+                          equipment.vehicleBonusTarget === 'AERIAL' ? 'aériens' : 'terrestres'
+                        }}</span
+                      >
+                    }
+                  </div>
+
+                  <div class="tile-actions-row">
+                    <div class="qty-stepper">
+                      <button
+                        class="tile-btn"
+                        [disabled]="getEquipmentQuantity(equipment.name) <= 1"
+                        (click)="
+                          setEquipmentQuantity(
+                            equipment.name,
+                            getEquipmentQuantity(equipment.name) - 1
+                          )
+                        "
+                        [attr.aria-label]="'Réduire la quantité de ' + equipmentLabel(equipment)"
+                      >
+                        <mat-icon>remove</mat-icon>
+                      </button>
+                      <span class="qty-value">{{ getEquipmentQuantity(equipment.name) }}</span>
+                      <button
+                        class="tile-btn"
+                        (click)="
+                          setEquipmentQuantity(
+                            equipment.name,
+                            getEquipmentQuantity(equipment.name) + 1
+                          )
+                        "
+                        [attr.aria-label]="'Augmenter la quantité de ' + equipmentLabel(equipment)"
+                      >
+                        <mat-icon>add</mat-icon>
+                      </button>
+                    </div>
                     <button
                       mat-raised-button
                       color="primary"
-                      class="add-btn"
-                      (click)="addToCart(equipment)"
+                      class="tile-add-btn"
+                      (click)="addEquipmentToCart(equipment)"
+                      [matTooltip]="
+                        'Ajouter ' + getEquipmentQuantity(equipment.name) + ' au panier'
+                      "
                     >
                       <mat-icon>add_shopping_cart</mat-icon>
-                      Ajouter au panier
+                      {{ equipment.cost * getEquipmentQuantity(equipment.name) | number }} ₡
                     </button>
-                  } @else {
-                    <div class="cart-controls">
-                      <button
-                        mat-mini-fab
-                        color="warn"
-                        (click)="removeFromCart(equipment.name)"
-                        [attr.aria-label]="'Retirer ' + equipmentLabel(equipment) + ' du panier'"
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            </ng-template>
+
+            <mat-tab label="Véhicules">
+              <div class="vehicles-section">
+                @if (error(); as vehicleError) {
+                  <div class="error-alert" role="alert">
+                    <mat-icon>error</mat-icon>
+                    {{ vehicleError }}
+                  </div>
+                }
+
+                @for (group of vehicleGroups(); track group.turn) {
+                  <section class="cat-section">
+                    <h3 class="cat-title">
+                      <mat-icon>lock_clock</mat-icon>
+                      <span>Tour {{ group.turn }}</span>
+                      <span
+                        class="cat-count"
+                        [class.highlight]="vehicleTurnStatus(group.turn) === 'Disponible'"
                       >
-                        <mat-icon>delete</mat-icon>
-                      </button>
-                      <div class="quantity-stepper">
-                        <button
-                          mat-icon-button
-                          color="primary"
-                          (click)="decrementCartQuantity(equipment.name)"
-                          [attr.aria-label]="'Réduire la quantité de ' + equipmentLabel(equipment)"
-                        >
-                          <mat-icon>remove</mat-icon>
-                        </button>
-                        <span class="qty-value">{{ getCartQuantity(equipment.name) }}</span>
-                        <button
-                          mat-icon-button
-                          color="primary"
-                          (click)="addToCart(equipment)"
-                          [attr.aria-label]="'Augmenter la quantité de ' + equipmentLabel(equipment)"
-                        >
-                          <mat-icon>add</mat-icon>
-                        </button>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </mat-card-content>
-            </mat-card>
-          </ng-template>
+                        {{ vehicleTurnStatus(group.turn) }}
+                      </span>
+                    </h3>
 
-          <mat-tab label="Véhicules">
-            <div class="vehicles-section">
-              @if (error(); as vehicleError) {
-                <div class="error-alert" role="alert">
-                  <mat-icon>error</mat-icon>
-                  {{ vehicleError }}
-                </div>
-              }
-
-              <div class="equipment-grid">
-                @for (vt of sortedVehicleTypes(); track vt.name) {
-                  <mat-card
-                    class="equipment-card hover-lift"
-                    [class.disabled-card]="!canAffordVehicle(vt.cost) || !vehicleAvailable(vt)"
-                  >
-                    <mat-card-content>
-                      <div class="shop-thumb-wrapper">
-                        @if (vehicleImage(vt); as img) {
-                          <img
-                            [src]="img.src"
-                            [srcset]="img.srcset"
-                            (error)="onImgError('veh:' + vt.name)"
-                            alt="{{ vt.displayName }}"
-                            class="shop-thumb"
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        } @else {
-                          <div class="shop-thumb-fallback">
-                            <mat-icon>image_not_supported</mat-icon>
-                          </div>
-                        }
-                        @if (!vehicleAvailable(vt)) {
-                          <div class="lock-overlay">
-                            <mat-icon>lock</mat-icon>
-                            <span>Disponible au tour {{ vt.availableFromTurn }}</span>
-                          </div>
-                        }
-                      </div>
-                      <div class="equipment-header">
-                        <h3>{{ vt.displayName }}</h3>
-                        <mat-chip
-                          [color]="canAffordVehicle(vt.cost) ? 'warn' : 'accent'"
-                          highlighted
-                        >
-                          {{ vt.cost | number }} ₡
-                        </mat-chip>
-                      </div>
-
-                      <!-- Résumé compact : « VTT léger (Véhicule) : 50 Def. 4 000 ₡. » -->
-                      <p class="summary">{{ vehicleSummary(vt) }}</p>
-
-                      <div class="bonus-chips">
-                        @if (vt.basePdf > 0) {
-                          <mat-chip class="bonus pdf">{{ vt.basePdf }} PDF</mat-chip>
-                        }
-                        <mat-chip class="bonus arm">{{ vt.baseDefense }} DEF</mat-chip>
-                      </div>
-
-                      <div class="vehicle-stats">
-                        <span class="stat-item">
-                          <mat-icon>speed</mat-icon>
-                          Vitesse&nbsp;: {{ vt.speed }}
-                        </span>
-                        @if (vt.capacity > 0) {
-                          <span class="stat-item">
-                            <mat-icon>groups</mat-icon>
-                            Capacité&nbsp;: {{ vt.capacity }}
-                          </span>
-                        }
-                        @if (vt.resistance > 0) {
-                          <span class="stat-item">
-                            <mat-icon>shield</mat-icon>
-                            Résistance&nbsp;: {{ vt.resistance }}&nbsp;%
-                          </span>
-                        }
-                        @if (vt.firesInTransit) {
-                          <span class="stat-item stat-highlight">
-                            <mat-icon>local_fire_department</mat-icon>
-                            Tir en transit
-                          </span>
-                        }
-                        @if (vt.aerial) {
-                          <span class="stat-item stat-highlight">
-                            <mat-icon>flight</mat-icon>
-                            Aérien
-                          </span>
-                        }
-                      </div>
-
-                      <div class="card-actions">
-                        <div class="quantity-controls">
-                          <button
-                            mat-icon-button
-                            (click)="setVehicleQuantity(vt.name, getVehicleQuantity(vt.name) - 1)"
-                            [disabled]="getVehicleQuantity(vt.name) <= 1"
-                            [attr.aria-label]="'Réduire la quantité de ' + vt.displayName"
-                          >
-                            <mat-icon>remove</mat-icon>
-                          </button>
-                          <span class="quantity-display">{{ getVehicleQuantity(vt.name) }}</span>
-                          <button
-                            mat-icon-button
-                            (click)="setVehicleQuantity(vt.name, getVehicleQuantity(vt.name) + 1)"
-                            [attr.aria-label]="'Augmenter la quantité de ' + vt.displayName"
-                          >
-                            <mat-icon>add</mat-icon>
-                          </button>
-                        </div>
-                        <button
-                          mat-raised-button
-                          color="primary"
-                          [disabled]="!canAffordVehicle(vt.cost, getVehicleQuantity(vt.name)) || !vehicleAvailable(vt)"
-                          [matTooltip]="
-                            !vehicleAvailable(vt)
-                              ? 'Disponible au tour ' + vt.availableFromTurn
-                              : !canAffordVehicle(vt.cost, getVehicleQuantity(vt.name))
-                                ? 'Fonds insuffisants (' +
-                                  vt.cost * getVehicleQuantity(vt.name) +
-                                  ' ₡)'
-                                : 'Ajouter au panier'
+                    <div class="tile-grid">
+                      @for (vt of group.items; track vt.name) {
+                        <mat-card
+                          class="shop-tile"
+                          [class.disabled-card]="
+                            !canAffordVehicle(vt.cost) || !vehicleAvailable(vt)
                           "
-                          (click)="addVehicleToCart(vt)"
-                          class="add-btn"
+                          [matTooltip]="vehicleSummary(vt)"
                         >
-                          <mat-icon>add_shopping_cart</mat-icon>
-                          Panier ({{ vt.cost * getVehicleQuantity(vt.name) }}&nbsp;₡)
-                        </button>
-                        @if (getVehicleCartQuantity(vt.name) > 0) {
-                          <span class="in-cart-badge"
-                            >{{ getVehicleCartQuantity(vt.name) }} dans le panier</span
-                          >
-                        }
-                      </div>
-                    </mat-card-content>
-                  </mat-card>
+                          <div class="tile-thumb">
+                            @if (vehicleImage(vt); as img) {
+                              <img
+                                [src]="img.src"
+                                [srcset]="img.srcset"
+                                (error)="onImgError('veh:' + vt.name)"
+                                alt=""
+                                class="tile-img"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            } @else {
+                              <mat-icon class="tile-icon">image_not_supported</mat-icon>
+                            }
+                            @if (vt.aerial) {
+                              <span class="class-badge">Aérien</span>
+                            }
+                            @if (!vehicleAvailable(vt)) {
+                              <div class="lock-overlay">
+                                <mat-icon>lock</mat-icon>
+                                <span>Tour {{ vt.availableFromTurn }}</span>
+                              </div>
+                            }
+                          </div>
+
+                          <mat-card-content>
+                            <div class="tile-head">
+                              <span class="tile-name">{{ vt.displayName }}</span>
+                              <span
+                                class="tile-cost"
+                                [class.insufficient]="!canAffordVehicle(vt.cost)"
+                              >
+                                {{ vt.cost | number }} ₡
+                              </span>
+                            </div>
+
+                            <div class="tile-meta">
+                              @if (vt.basePdf > 0) {
+                                <span class="stat-tag pdf">{{ vt.basePdf }} PDF</span>
+                              }
+                              <span class="stat-tag arm">{{ vt.baseDefense }} DEF</span>
+                              <span class="stat-tag">Vitesse {{ vt.speed }}</span>
+                              @if (vt.capacity > 0) {
+                                <span class="stat-tag">Capacité {{ vt.capacity }}</span>
+                              }
+                              @if (vt.resistance > 0) {
+                                <span class="stat-tag">Résistance {{ vt.resistance }} %</span>
+                              }
+                              @if (vt.firesInTransit) {
+                                <span class="stat-tag highlight">Tir en transit</span>
+                              }
+                              @if (vt.aerial) {
+                                <span class="stat-tag highlight">Aérien</span>
+                              }
+                              @if (getVehicleCartQuantity(vt.name) > 0) {
+                                <span class="cart-tag"
+                                  >panier ×{{ getVehicleCartQuantity(vt.name) }}</span
+                                >
+                              }
+                            </div>
+
+                            <div class="tile-actions-row">
+                              <div class="qty-stepper">
+                                <button
+                                  class="tile-btn"
+                                  (click)="
+                                    setVehicleQuantity(vt.name, getVehicleQuantity(vt.name) - 1)
+                                  "
+                                  [disabled]="getVehicleQuantity(vt.name) <= 1"
+                                  [attr.aria-label]="'Réduire la quantité de ' + vt.displayName"
+                                >
+                                  <mat-icon>remove</mat-icon>
+                                </button>
+                                <span class="qty-value">{{ getVehicleQuantity(vt.name) }}</span>
+                                <button
+                                  class="tile-btn"
+                                  (click)="
+                                    setVehicleQuantity(vt.name, getVehicleQuantity(vt.name) + 1)
+                                  "
+                                  [attr.aria-label]="'Augmenter la quantité de ' + vt.displayName"
+                                >
+                                  <mat-icon>add</mat-icon>
+                                </button>
+                              </div>
+                              <button
+                                mat-raised-button
+                                color="primary"
+                                class="tile-add-btn"
+                                [disabled]="
+                                  !canAffordVehicle(vt.cost, getVehicleQuantity(vt.name)) ||
+                                  !vehicleAvailable(vt)
+                                "
+                                [matTooltip]="
+                                  !vehicleAvailable(vt)
+                                    ? 'Disponible au tour ' + vt.availableFromTurn
+                                    : !canAffordVehicle(vt.cost, getVehicleQuantity(vt.name))
+                                      ? 'Fonds insuffisants (' +
+                                        vt.cost * getVehicleQuantity(vt.name) +
+                                        ' ₡)'
+                                      : 'Ajouter au panier'
+                                "
+                                (click)="addVehicleToCart(vt)"
+                              >
+                                <mat-icon>add_shopping_cart</mat-icon>
+                                {{ vt.cost * getVehicleQuantity(vt.name) | number }} ₡
+                              </button>
+                            </div>
+                          </mat-card-content>
+                        </mat-card>
+                      }
+                    </div>
+                  </section>
                 }
               </div>
-            </div>
-          </mat-tab>
+            </mat-tab>
 
-          <mat-tab label="Unités">
-            <div class="vehicles-section">
-              @if (error(); as unitError) {
-                <div class="error-alert" role="alert">
-                  <mat-icon>error</mat-icon>
-                  {{ unitError }}
-                </div>
-              }
+            <mat-tab label="Unités">
+              <div class="vehicles-section">
+                @if (error(); as unitError) {
+                  <div class="error-alert" role="alert">
+                    <mat-icon>error</mat-icon>
+                    {{ unitError }}
+                  </div>
+                }
 
-              @for (group of unitGroups(); track group.entry.name) {
-                <h3 class="class-section-title">{{ group.entry.name }}</h3>
-                <div class="equipment-grid">
-                  @for (uc of group.classes; track uc.name) {
-                    <mat-card
-                      class="equipment-card hover-lift"
-                      [class.disabled-card]="!canAddUnit(group.entry, uc)"
+                @if (selectedUnitEntry(); as entry) {
+                  <div class="class-bar">
+                    <button
+                      class="class-arrow"
+                      (click)="selectAdjacentUnitType(-1)"
+                      aria-label="Type d'unité précédent"
                     >
-                      <mat-card-content>
-                        <div class="shop-thumb-wrapper">
-                          @if (unitImage(group.entry, uc); as img) {
+                      <mat-icon>chevron_left</mat-icon>
+                    </button>
+                    @for (unitType of unitTypes(); track unitType.name) {
+                      <button
+                        class="custom-chip"
+                        [class.active]="selectedUnitType() === unitType.name"
+                        (click)="selectedUnitType.set(unitType.name)"
+                      >
+                        {{ unitType.name }}
+                      </button>
+                    }
+                    <button
+                      class="class-arrow"
+                      (click)="selectAdjacentUnitType(1)"
+                      aria-label="Type d'unité suivant"
+                    >
+                      <mat-icon>chevron_right</mat-icon>
+                    </button>
+                  </div>
+
+                  <div class="tile-grid">
+                    @for (uc of unitClasses(); track uc.name) {
+                      <mat-card
+                        class="shop-tile"
+                        [class.disabled-card]="!canAddUnit(entry, uc)"
+                        [matTooltip]="unitClassBonusSummary(uc)"
+                      >
+                        <div class="tile-thumb">
+                          @if (unitImage(entry, uc); as img) {
                             <img
                               [src]="img.src"
                               [srcset]="img.srcset"
-                              (error)="onUnitImgError(group.entry, uc)"
-                              alt="{{ group.entry.name }} — {{ unitClassLabel(uc.name) }}"
-                              class="shop-thumb"
+                              (error)="onUnitImgError(entry, uc)"
+                              alt=""
+                              class="tile-img"
                               loading="lazy"
                               decoding="async"
                             />
                           } @else {
-                            <div class="shop-thumb-fallback">
-                              <mat-icon>groups</mat-icon>
-                            </div>
+                            <mat-icon class="tile-icon">groups</mat-icon>
                           }
-                          @if (!group.entry.availableNow) {
+                          <span class="class-badge">{{ unitClassLabel(uc.name) }}</span>
+                          @if (!entry.availableNow) {
                             <div class="lock-overlay">
                               <mat-icon>lock</mat-icon>
-                              <span>Disponible au tour {{ group.entry.availableFromTurn }}</span>
+                              <span>Tour {{ entry.availableFromTurn }}</span>
                             </div>
                           }
                         </div>
-                        <div class="equipment-header">
-                          <h3>{{ group.entry.name }} — {{ unitClassLabel(uc.name) }}</h3>
-                          <mat-chip
-                            [color]="canAddUnit(group.entry, uc) ? 'warn' : 'accent'"
-                            highlighted
-                          >
-                            {{ group.entry.cost | number }} ₡
-                          </mat-chip>
-                        </div>
 
-                        <p class="summary">{{ unitClassBonusSummary(uc) }}</p>
+                        <mat-card-content>
+                          <div class="tile-head">
+                            <span class="tile-name">{{ entry.name }}</span>
+                            <span class="tile-cost">{{ entry.cost | number }} ₡</span>
+                          </div>
 
-                        <div class="bonus-chips">
-                          <mat-chip class="bonus pdf">{{ group.entry.baseAttack }} ATK</mat-chip>
-                          <mat-chip class="bonus arm">{{ group.entry.baseDefense }} DEF</mat-chip>
-                        </div>
-
-                        <div class="vehicle-stats">
-                          @if (group.entry.availableNow) {
-                            <span class="stat-item">
-                              <mat-icon>shopping_bag</mat-icon>
-                              Quota&nbsp;: {{ unitQuotaUsed(group.entry) }}/{{
-                                group.entry.maxPerTurn
-                              }}
-                            </span>
-                            @if (unitRemaining(group.entry) === 0) {
-                              <span class="stat-item stat-highlight">
-                                <mat-icon>block</mat-icon>
-                                Limite atteinte
+                          <div class="tile-meta">
+                            <span class="stat-tag pdf">{{ entry.baseAttack }} ATK</span>
+                            <span class="stat-tag arm">{{ entry.baseDefense }} DEF</span>
+                            @if (entry.availableNow) {
+                              <span class="stat-tag" [class.highlight]="unitRemaining(entry) === 0">
+                                Quota {{ unitQuotaUsed(entry) }}/{{ entry.maxPerTurn }}
                               </span>
                             }
-                          }
-                        </div>
+                            @if (unitCartLineQuantity(unitCartKey(entry.name, uc.name)) > 0) {
+                              <span class="cart-tag"
+                                >panier ×{{
+                                  unitCartLineQuantity(unitCartKey(entry.name, uc.name))
+                                }}</span
+                              >
+                            }
+                          </div>
 
-                        <div class="card-actions">
-                          <div class="quantity-controls">
+                          <div class="tile-actions-row">
+                            <div class="qty-stepper">
+                              <button
+                                class="tile-btn"
+                                (click)="
+                                  setUnitQuantity(entry, uc, unitQuantityToAdd(entry, uc) - 1)
+                                "
+                                [disabled]="unitQuantityToAdd(entry, uc) <= 1"
+                                [attr.aria-label]="'Réduire la quantité de ' + entry.name"
+                              >
+                                <mat-icon>remove</mat-icon>
+                              </button>
+                              <input
+                                class="qty-input"
+                                type="number"
+                                min="1"
+                                [max]="unitQuantityLimit(entry, uc)"
+                                [value]="unitQuantityToAdd(entry, uc)"
+                                (input)="onUnitQuantityInput(entry, uc, $event)"
+                                (blur)="normalizeUnitQuantity(entry, uc, $event)"
+                                [attr.aria-label]="'Quantité de ' + entry.name"
+                              />
+                              <button
+                                class="tile-btn"
+                                (click)="
+                                  setUnitQuantity(entry, uc, unitQuantityToAdd(entry, uc) + 1)
+                                "
+                                [disabled]="
+                                  unitQuantityToAdd(entry, uc) >= unitQuantityLimit(entry, uc)
+                                "
+                                [attr.aria-label]="'Augmenter la quantité de ' + entry.name"
+                              >
+                                <mat-icon>add</mat-icon>
+                              </button>
+                            </div>
                             <button
-                              mat-icon-button
-                              (click)="
-                                setUnitQuantity(
-                                  group.entry,
-                                  uc,
-                                  unitQuantityToAdd(group.entry, uc) - 1
-                                )
+                              mat-raised-button
+                              color="primary"
+                              class="tile-add-btn"
+                              [disabled]="!canAddUnit(entry, uc)"
+                              [matTooltip]="
+                                !entry.availableNow
+                                  ? 'Disponible au tour ' + entry.availableFromTurn
+                                  : unitRemaining(entry) === 0
+                                    ? 'Limite atteinte ce tour'
+                                    : 'Ajouter au panier'
                               "
-                              [disabled]="unitQuantityToAdd(group.entry, uc) <= 1"
-                              [attr.aria-label]="'Réduire la quantité de ' + group.entry.name"
+                              (click)="addUnitToCart(entry, uc)"
                             >
-                              <mat-icon>remove</mat-icon>
-                            </button>
-                            <input
-                              class="quantity-input"
-                              type="number"
-                              min="1"
-                              [max]="unitQuantityLimit(group.entry, uc)"
-                              [value]="unitQuantityToAdd(group.entry, uc)"
-                              (input)="onUnitQuantityInput(group.entry, uc, $event)"
-                              (blur)="normalizeUnitQuantity(group.entry, uc, $event)"
-                              [attr.aria-label]="'Quantité de ' + group.entry.name"
-                            />
-                            <button
-                              mat-icon-button
-                              (click)="
-                                setUnitQuantity(
-                                  group.entry,
-                                  uc,
-                                  unitQuantityToAdd(group.entry, uc) + 1
-                                )
-                              "
-                              [disabled]="
-                                unitQuantityToAdd(group.entry, uc) >=
-                                unitQuantityLimit(group.entry, uc)
-                              "
-                              [attr.aria-label]="'Augmenter la quantité de ' + group.entry.name"
-                            >
-                              <mat-icon>add</mat-icon>
+                              <mat-icon>add_shopping_cart</mat-icon>
+                              {{ entry.cost * unitQuantityToAdd(entry, uc) }} ₡
                             </button>
                           </div>
-                          <button
-                            mat-raised-button
-                            color="primary"
-                            [disabled]="!canAddUnit(group.entry, uc)"
-                            [matTooltip]="
-                              !group.entry.availableNow
-                                ? 'Disponible au tour ' + group.entry.availableFromTurn
-                                : unitRemaining(group.entry) === 0
-                                  ? 'Limite atteinte ce tour'
-                                  : 'Ajouter au panier'
-                            "
-                            (click)="addUnitToCart(group.entry, uc)"
-                            class="add-btn"
-                          >
-                            <mat-icon>add_shopping_cart</mat-icon>
-                            Panier ({{
-                              group.entry.cost * unitQuantityToAdd(group.entry, uc)
-                            }}&nbsp;₡)
-                          </button>
-                          @if (unitCartLineQuantity(unitCartKey(group.entry.name, uc.name)) > 0) {
-                            <span class="in-cart-badge"
-                              >{{
-                                unitCartLineQuantity(unitCartKey(group.entry.name, uc.name))
-                              }}
-                              dans le panier</span
-                            >
-                          }
-                        </div>
-                      </mat-card-content>
-                    </mat-card>
-                  }
-                </div>
-              }
-            </div>
-          </mat-tab>
+                        </mat-card-content>
+                      </mat-card>
+                    }
+                  </div>
+                }
+              </div>
+            </mat-tab>
 
-          <mat-tab label="Revente">
-            <div class="vehicles-section">
-              @if (!player()?.resources?.length) {
-                <div class="no-results">
-                  <mat-icon>inventory_2</mat-icon>
-                  <h3>Aucune ressource à vendre</h3>
-                  <p>Capturez des secteurs pour collecter des ressources</p>
-                </div>
-              } @else {
-                <div class="resources-grid">
-                  @for (resource of player()!.resources; track resource.id) {
-                    <mat-card class="equipment-card hover-lift">
-                      <mat-card-content>
-                        <div class="shop-thumb-wrapper">
+            <mat-tab label="Revente">
+              <div class="vehicles-section">
+                @if (!player()?.resources?.length) {
+                  <div class="no-results">
+                    <mat-icon>inventory_2</mat-icon>
+                    <h3>Aucune ressource à vendre</h3>
+                    <p>Capturez des secteurs pour collecter des ressources</p>
+                  </div>
+                } @else {
+                  <div class="tile-grid">
+                    @for (resource of player()!.resources; track resource.id) {
+                      <mat-card class="shop-tile">
+                        <div class="tile-thumb">
                           @if (resourceImage(resource); as img) {
                             <img
                               [src]="img.src"
                               [srcset]="img.srcset"
                               (error)="onImgError('res:' + resource.name)"
-                              alt="{{ resource.name }}"
-                              class="shop-thumb"
+                              alt=""
+                              class="tile-img"
                               loading="lazy"
                               decoding="async"
                             />
                           } @else {
-                            <div class="shop-thumb-fallback">
-                              <mat-icon>image_not_supported</mat-icon>
-                            </div>
+                            <mat-icon class="tile-icon">inventory_2</mat-icon>
                           }
                         </div>
-                        <div class="equipment-header">
-                          <h3>{{ resource.name }}</h3>
-                          <mat-chip color="primary" highlighted
-                            >Stock&nbsp;: {{ resource.quantity }}</mat-chip
-                          >
-                        </div>
 
-                        <div class="resource-value-info">
-                          <mat-icon>attach_money</mat-icon>
-                          Valeur de base&nbsp;: {{ resource.baseValue ?? '?' }} ₡/unité
-                        </div>
-
-                        @if (isInSellCart(resource.id!)) {
-                          <div class="in-sell-cart-badge">
-                            <mat-icon>check_circle</mat-icon>
-                            {{ getSellCartQuantity(resource.id!) }} dans le panier de vente
+                        <mat-card-content>
+                          <div class="tile-head">
+                            <span class="tile-name">{{ resource.name }}</span>
+                            <span class="tile-cost">{{ resource.baseValue ?? '?' }} ₡/u</span>
                           </div>
-                        }
 
-                        <div class="card-actions">
-                          <div class="quantity-controls">
+                          <div class="tile-meta">
+                            <span class="stat-tag">Stock {{ resource.quantity }}</span>
+                            @if (isInSellCart(resource.id!)) {
+                              <span class="cart-tag"
+                                >panier ×{{ getSellCartQuantity(resource.id!) }}</span
+                              >
+                            }
+                          </div>
+
+                          <div class="tile-actions-row">
+                            <div class="qty-stepper">
+                              <button
+                                class="tile-btn"
+                                [disabled]="getSellQty(resource) <= 1"
+                                (click)="setSellQty(resource, getSellQty(resource) - 1)"
+                                [attr.aria-label]="'Réduire la quantité de ' + resource.name"
+                              >
+                                <mat-icon>remove</mat-icon>
+                              </button>
+                              <span class="qty-value">{{ getSellQty(resource) }}</span>
+                              <button
+                                class="tile-btn"
+                                [disabled]="getSellQty(resource) >= sellQtyMax(resource)"
+                                (click)="setSellQty(resource, getSellQty(resource) + 1)"
+                                [attr.aria-label]="'Augmenter la quantité de ' + resource.name"
+                              >
+                                <mat-icon>add</mat-icon>
+                              </button>
+                            </div>
                             <button
-                              mat-icon-button
-                              [disabled]="getSellQty(resource) <= 1"
-                              (click)="setSellQty(resource, getSellQty(resource) - 1)"
-                              [attr.aria-label]="'Réduire la quantité de ' + resource.name"
+                              mat-raised-button
+                              color="accent"
+                              class="tile-add-btn"
+                              [matTooltip]="
+                                'Ajouter ' + getSellQty(resource) + ' unité(s) au panier de vente'
+                              "
+                              (click)="addToSellCart(resource)"
                             >
-                              <mat-icon>remove</mat-icon>
-                            </button>
-                            <span class="quantity-display">{{ getSellQty(resource) }}</span>
-                            <button
-                              mat-icon-button
-                              [disabled]="getSellQty(resource) >= sellQtyMax(resource)"
-                              (click)="setSellQty(resource, getSellQty(resource) + 1)"
-                              [attr.aria-label]="'Augmenter la quantité de ' + resource.name"
-                            >
-                              <mat-icon>add</mat-icon>
+                              <mat-icon>sell</mat-icon>
+                              Panier vente (+{{
+                                saleValue(resource.baseValue ?? 0, getSellQty(resource))
+                                  | number: '1.0-0'
+                              }}
+                              ₡)
                             </button>
                           </div>
-                          <button
-                            mat-raised-button
-                            color="accent"
-                            class="add-btn"
-                            [matTooltip]="
-                              'Ajouter ' + getSellQty(resource) + ' unité(s) au panier de vente'
-                            "
-                            (click)="addToSellCart(resource)"
-                          >
-                            <mat-icon>sell</mat-icon>
-                            Panier vente (+{{
-                              saleValue(resource.baseValue ?? 0, getSellQty(resource))
-                                | number: '1.0-0'
-                            }}&nbsp;₡)
-                          </button>
-                        </div>
-                      </mat-card-content>
-                    </mat-card>
-                  }
-                </div>
-              }
-            </div>
-          </mat-tab>
-        </mat-tab-group>
+                        </mat-card-content>
+                      </mat-card>
+                    }
+                  </div>
+                }
+              </div>
+            </mat-tab>
+          </mat-tab-group>
+        </div>
       </div>
     }
   </mat-sidenav-content>

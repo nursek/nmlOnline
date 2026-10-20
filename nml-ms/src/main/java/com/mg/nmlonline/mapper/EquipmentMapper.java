@@ -39,7 +39,8 @@ public class EquipmentMapper {
                 domain.getVehicleBonusTarget() != null ? domain.getVehicleBonusTarget().name() : null,
                 compatibleClassDtos,
                 category,
-                toDisplayNameDtos(domain.getDisplayNames())
+                toDisplayNameDtos(domain.getDisplayNames()),
+                toDisplayNameDtos(domain.getDisplayDescriptions())
         );
     }
 
@@ -81,6 +82,7 @@ public class EquipmentMapper {
             }
         }
         equipment.setDisplayNames(toDisplayNames(dto.getDisplayNames()));
+        equipment.setDisplayDescriptions(toDisplayDescriptions(dto.getDisplayDescriptions()));
         return equipment;
     }
 
@@ -99,19 +101,37 @@ public class EquipmentMapper {
         }
         Map<PlayerRace, String> displayNames = new HashMap<>();
         dtos.forEach((race, label) -> {
-            if (race == null) {
-                throw new IllegalArgumentException("Race inconnue pour la traduction : null");
-            }
             if (label == null || label.isBlank()) {
                 throw new IllegalArgumentException("Libellé vide pour la traduction : " + race);
             }
-            try {
-                displayNames.put(PlayerRace.valueOf(race.trim().toUpperCase(Locale.ROOT)), label.trim());
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Race inconnue pour la traduction : " + race);
-            }
+            displayNames.put(parseRace(race), label.trim());
         });
         return displayNames;
+    }
+
+    /** Descriptions optionnelles : une race sans texte est simplement ignorée (fichier CSV partiel). */
+    private Map<PlayerRace, String> toDisplayDescriptions(Map<String, String> dtos) {
+        if (dtos == null || dtos.isEmpty()) {
+            return new HashMap<>();
+        }
+        Map<PlayerRace, String> descriptions = new HashMap<>();
+        dtos.forEach((race, text) -> {
+            if (race != null && text != null && !text.isBlank()) {
+                descriptions.put(parseRace(race), text.trim());
+            }
+        });
+        return descriptions;
+    }
+
+    private PlayerRace parseRace(String race) {
+        if (race == null) {
+            throw new IllegalArgumentException("Race inconnue pour la traduction : null");
+        }
+        try {
+            return PlayerRace.valueOf(race.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Race inconnue pour la traduction : " + race);
+        }
     }
 
     private Set<UnitClassDto> toUnitClassDto(Set<UnitClass> classes) {

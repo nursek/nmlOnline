@@ -5,6 +5,8 @@ import {
   equipmentBonusSummary,
   equipmentClassLabel,
   equipmentSummary,
+  groupEquipmentsByCategory,
+  groupEquipmentsByClass,
   matchesEquipmentSearch,
   sortEquipments,
   sortVehiclesByCost,
@@ -105,12 +107,48 @@ describe('boutique.helpers — tri par défaut', () => {
   });
 });
 
+describe('boutique.helpers — sections par catégorie', () => {
+  it('ordonne mêlée → armes à feu → défensif et rejette les catégories inconnues en fin', () => {
+    const groups = groupEquipmentsByCategory([
+      eq('Phylactery', 750, 'DEFENSIVE', 'LEGER'),
+      eq('Gauss Blaster', 850, 'FIREARM', 'LEGER'),
+      eq('Relique', 10, 'INCONNUE', 'LEGER'),
+      eq('Flensing Claw', 100, 'MELEE', 'LEGER'),
+      eq('Quantum Shielding', 2000, 'DEFENSIVE', 'TIREUR'),
+    ]);
+
+    expect(groups.map((g) => g.key)).toEqual(['MELEE', 'FIREARM', 'DEFENSIVE', 'INCONNUE']);
+    expect(groups.map((g) => g.items.length)).toEqual([1, 1, 2, 1]);
+    expect(groups[3].label).toBe('INCONNUE');
+  });
+});
+
+describe('boutique.helpers — sections par classe', () => {
+  it('groupe par classe compatible et décline chaque classe par catégorie', () => {
+    const groups = groupEquipmentsByClass([
+      eq('Flensing Claw', 100, 'MELEE', 'LEGER'),
+      eq('Gauss Blaster', 850, 'FIREARM', 'LEGER'),
+      eq('Gauss Flayer', 1500, 'FIREARM', 'TIREUR'),
+      eq('Phase Shifter', 500, 'DEFENSIVE', 'TIREUR'),
+    ]);
+
+    expect(groups.map((g) => g.key)).toEqual(['LEGER', 'TIREUR']);
+    expect(groups.map((g) => g.count)).toEqual([2, 2]);
+    expect(groups[0].label).toBe('Léger');
+    expect(groups[0].categories.map((c) => c.key)).toEqual(['MELEE', 'FIREARM']);
+    expect(groups[1].categories.map((c) => c.items.map((i) => i.name))).toEqual([
+      ['Gauss Flayer'],
+      ['Phase Shifter'],
+    ]);
+  });
+});
+
 describe('boutique.helpers — recherche', () => {
   const gauss = eq('Gauss Blaster', 850, 'FIREARM', 'LEGER', {
     displayNames: { ORKS: 'Shoota Dakka-Dakka', NECRONS: 'Éclateur gauss' },
   });
 
-  it("ne matche que le libellé de la race du joueur", () => {
+  it('ne matche que le libellé de la race du joueur', () => {
     expect(matchesEquipmentSearch(gauss, 'éclateur', 'NECRONS')).toBe(true);
     expect(matchesEquipmentSearch(gauss, 'shoota', 'NECRONS')).toBe(false);
     expect(matchesEquipmentSearch(gauss, 'shoota', 'ORKS')).toBe(true);
@@ -187,11 +225,13 @@ describe('boutique.helpers — résumés compacts', () => {
         'Peut parcourir 2 secteurs par tour.',
       );
       expect(
-        unitClassBonusSummary(uc('MASTODONTE', { damageReductionPdf: 0.25, damageReductionPdc: 0.25 })),
+        unitClassBonusSummary(
+          uc('MASTODONTE', { damageReductionPdf: 0.25, damageReductionPdc: 0.25 }),
+        ),
       ).toBe('Réduit de 25 % les dégâts PdF et PdC reçus.');
-      expect(unitClassBonusSummary(uc('TIREUR', { criticalChance: 0.1, criticalMultiplier: 1.5 }))).toBe(
-        'Critique : 10 % de chances, dégâts ×1,5.',
-      );
+      expect(
+        unitClassBonusSummary(uc('TIREUR', { criticalChance: 0.1, criticalMultiplier: 1.5 })),
+      ).toBe('Critique : 10 % de chances, dégâts ×1,5.');
       expect(
         unitClassBonusSummary(uc('HYBRIDE', { maxMovementHops: 2, damageReductionPdf: 0.25 })),
       ).toBe('Peut parcourir 2 secteurs par tour. Réduit de 25 % les dégâts PdF et PdC reçus.');

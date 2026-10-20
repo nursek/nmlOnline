@@ -1,52 +1,52 @@
-name,displayName
-Enmitic Disintegrator Pistol,Pistolet désintégrateur enmitique
-Gauss Blaster,Éclateur gauss
-Tesla Carbine,Carabine tesla
-Gauss Flayer,Fusil gauss
-Gauss Reaper,Faucheur gauss
-Gauss Destructor,Destructeur gauss
-Particle Caster,Émetteur à particules
-Transdimensional Beamer,Transmetteur transdimensionnel
-Particle Beamer,Diffuseur à particules
-Voltaic Staff,Bâton voltaïque
-Thermal Cutting Beam,Rayon de découpe thermique
-Entropic Lance,Lance entropique
-Eldritch Lance,Lance surnaturelle
-Gauss Cannon,Canon gauss
-Heavy Gauss Cannon,Canon gauss lourd
-Enmitic Annihilator,Annihilateur enmitique
-Synaptic Disintegrator,Désintégrateur synaptique
-Particle Shredder,Broyeur à particules
-Enmitic Exterminator,Exterminateur enmitique
-Flensing Claw,Griffe écorcheuse
-Voidblade,Lame du vide
-Hyperphase Reap-Blade,Lame faucheuse hyperphase
-Hyperphase Sword,Épée hyperphase
-Hyperphase Glaive,Glaive hyperphase
-Hyperphase Harvester,Moissonneuse hyperphase
-Gauntlet of Fire,Gantelet de feu
-Warscythe,Faux de guerre
-Monomolecular Proboscis,Proboscis monomoléculaire
-Rod of Covenant,Sceptre du Pacte
-Staff of Light,Bâton de lumière
-Tachyon Arrow,Flèche tachyonique
-Hyperphase Thresher,Batteuse hyperphase
-Phylactery,Phylactère
-Solar Pulse,Impulsion solaire
-Phase Shifter,Déphaseur
-Sempiternal Weave,Trame sempiternelle
-Quantum Shielding,Bouclier quantique
-Lightning Field,Champ d'éclairs
-Dispersion Shield,Bouclier de dispersion
-Bouclier balistique,Bouclier phasique lourd
-Veil of Darkness,Voile de ténèbres
-Nightmare Shroud,Linceul de cauchemars
-Gloom Prism,Prisme de pénombre
-Chronometron,Chronométron
-Mindshackle Scarabs,Scarabées asservisseurs
-Armure thermique,Armure adaptative nécrodermique
-Protège-dents,Protecteur mandibulaire nécrodermique
-Casque militaire,Casque de métal vivant
-Gilet Kevlar,Gilet de métal vivant
-Treillis de camouflage urbain,Camouflage phasique urbain
-Gilet de camouflage optique,Camouflage à distorsion de phase
+name,displayName,description
+Enmitic Disintegrator Pistol,Pistolet désintégrateur enmitique,Pistolet d'appoint : la foudre enmitique dissout la chair sans un bruit.
+Gauss Blaster,Éclateur gauss,L'éclateur gauss arrache la matière atome par atome à chaque salve.
+Tesla Carbine,Carabine tesla,Ses arcs électriques rebondissent d'une cible à l'autre dans un crépitement bleu.
+Gauss Flayer,Fusil gauss,Le fusil des phalanges : lent à charger mais impossible à arrêter.
+Gauss Reaper,Faucheur gauss,Canon court à double flux taillé pour les assauts à bout portant.
+Gauss Destructor,Destructeur gauss,Une variante lourde qui ouvre des brèches dans les blindages les plus épais.
+Particle Caster,Émetteur à particules,Sa particule verte traverse l'infanterie comme une aiguille traverse le tissu.
+Transdimensional Beamer,Transmetteur transdimensionnel,Projette ses cibles hors de la réalité vers un ailleurs dont nul ne revient.
+Particle Beamer,Diffuseur à particules,Un souffle de particules lourdes qui balaie les rangs entiers.
+Voltaic Staff,Bâton voltaïque,Traversé d'arcs d'énergie : il frappe aussi vite qu'il éclaire.
+Thermal Cutting Beam,Rayon de découpe thermique,Le faisceau fond l'armure avant de trancher ce qu'elle protège.
+Entropic Lance,Lance entropique,La rouille faite arme : tout ce qu'elle touche vieillit jusqu'à s'effacer.
+Eldritch Lance,Lance surnaturelle,Forgée pour les éclaireurs : elle frappe aussi loin qu'elle tranche.
+Gauss Cannon,Canon gauss,Le canon des marcheurs : la réponse nécron aux blindés.
+Heavy Gauss Cannon,Canon gauss lourd,Assez puissant pour arracher les aéronefs au ciel.
+Enmitic Annihilator,Annihilateur enmitique,Une pluie enmitique qui réduit les véhicules à l'état d'épave fumante.
+Synaptic Disintegrator,Désintégrateur synaptique,L'arme des traqueurs : la cible s'effondre avant que le tir ne soit entendu.
+Particle Shredder,Eclateur du Jugement Dernier,Un déluge de particules qui hache le champ de bataille.
+Enmitic Exterminator,Exterminateur enmitique,Sa salve enmitique strie le ciel et abat les silhouettes alignées.
+Flensing Claw,Griffe écorcheuse,Des serres capables de déchiqueter l'armure et l'os.
+Voidblade,Lame du vide,La lame du vide : une entaille dans la réalité plus qu'une épée.
+Hyperphase Reap-Blade,Lame faucheuse hyperphase,Une faux de duel qui fauche les rangs d'un seul geste.
+Hyperphase Sword,Épée hyperphase,L'épée des seigneurs : rapide et d'une précision chirurgicale.
+Hyperphase Glaive,Glaive hyperphase,Une arme d'hast pour les duellistes qui aiment garder la distance.
+Hyperphase Harvester,Faux de guerre,La moissonneuse des phalanges : chaque fauchée ramène le silence.
+Gauntlet of Fire,Gantelet de feu,Le gantelet crépite d'un feu qui ne laisse que des cendres.
+Warscythe,OLD // TO DELETE,
+Monomolecular Proboscis,OLD // TO DELETE,
+Rod of Covenant,Sceptre du Pacte,Le sceptre des juges : la sentence est portée par l'énergie.
+Staff of Light,Bâton de lumière,Il brille comme un soleil miniature et frappe comme la foudre.
+Tachyon Arrow,Flèche tachyonique,Une seule flèche pour une seule cible : le tir ne se rate pas.
+Hyperphase Thresher,Batteuse hyperphase,La batteuse hyperphase déchire ce qu'elle frôle.
+Phylactery,Phylactère,Le phylactère pulse au rythme des blessures de son porteur.
+Solar Pulse,Chronométron,Une impulsion solaire qui aveugle les tireurs adverses.
+Phase Shifter,Déphaseur,Le déphaseur laisse son porteur glisser entre les coups.
+Sempiternal Weave,Trame sempiternelle,Une trame tissée dans l'éternité qui endurcit chair et métal.
+Quantum Shielding,Bouclier quantique,Le bouclier quantique plie la réalité autour de son porteur.
+Lightning Field,Champ d'éclairs,Un champ d'éclairs punit quiconque ose toucher le porteur.
+Dispersion Shield,Bouclier de dispersion,Un bouclier qui disperse l'impact avant qu'il ne se forme.
+Bouclier balistique,Bouclier phasique lourd,Des plaques phasiques qui rient des projectiles ordinaires.
+Veil of Darkness,Voile de ténèbres,Le voile de ténèbres efface le porteur du regard ennemi.
+Nightmare Shroud,Linceul de cauchemars,Un linceul vivant qui nourrit les cauchemars de l'adversaire.
+Gloom Prism,Prisme de pénombre,Le prisme absorbe les pouvoirs psychiques et les renvoie au néant.
+Chronometron,OLD // TO DELETE,
+Mindshackle Scarabs,Scarabées asservisseurs,Des scarabées qui rongent l'esprit avant la volonté.
+Armure thermique,Armure adaptative nécrodermique,Plus qu'une armure : une seconde peau qui s'adapte à la menace.
+Protège-dents,Proboscis monomoléculaire,Un protecteur nerveux qui rend les mandibules aussi dures que le métal.
+Casque militaire,Casque de métal vivant,Le casque de métal vivant lisse les pensées et ferme les esprits.
+Gilet Kevlar,Mécarachnide,Une carapace de mécarachnide tressée pour les soldats nécrons.
+Treillis de camouflage urbain,Camouflage phasique urbain,Un treillis qui brouille la chaleur et dérobe les silhouettes.
+Gilet de camouflage optique,Casque de vision nocturne nécrodermique,Un voile de phase qui fait scintiller puis disparaître le porteur.
