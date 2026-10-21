@@ -236,7 +236,6 @@ export class CarteComponent {
       });
     });
 
-    // Repeindre les tracés quand le SVG, la sélection, les alliances ou un calque changent.
     afterRenderEffect(() => {
       if (!this.svgLoaded()) return;
       const container = this.svgContainer()?.nativeElement;
@@ -598,15 +597,14 @@ export class CarteComponent {
       const { mine, enemies } = this.frontSectors();
       const defs = svg.querySelector('defs');
       if (defs && mine.length && enemies.length) {
-        // Masque élargi (contour blanc) : les polygones ne se touchent pas, un simple clip laissait le trait vide.
+        // Masque élargi (contour blanc) : les secteurs voisins ne se touchent pas, un simple clip laissait le trait vide.
         const mask = document.createElementNS(SVG_NS, 'mask');
         mask.setAttribute('id', 'front-borders-mask');
         mask.setAttribute('maskUnits', 'userSpaceOnUse');
+        // Cloné plutôt que reconstruit : le guide SVG autorise aussi les secteurs en <polygon> (attribut points).
         mine.forEach((number) => {
-          const source = paths.get(number);
-          if (!source) return;
-          const area = document.createElementNS(SVG_NS, 'path');
-          area.setAttribute('d', source.getAttribute('d') ?? '');
+          const area = cloneOf(number);
+          if (!area) return;
           area.style.fill = '#fff';
           area.style.stroke = '#fff';
           area.style.strokeWidth = String(MAP_THEME.overlays.frontMaskWidth);

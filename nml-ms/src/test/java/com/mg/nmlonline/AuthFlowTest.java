@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -58,6 +59,7 @@ class AuthFlowTest {
 
         Cookie refreshCookie = login.getResponse().getCookie("refresh_token");
         assertNotNull(refreshCookie, "Le login doit poser le cookie refresh_token");
+        assertTrue(refreshCookie.getSecure(), "Le cookie refresh doit porter Secure hors exception dev");
 
         MvcResult refreshed = mockMvc.perform(post("/api/auth/refresh").cookie(refreshCookie))
                 .andExpect(status().isOk())

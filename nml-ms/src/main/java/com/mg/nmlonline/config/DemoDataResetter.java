@@ -16,7 +16,7 @@ import java.util.List;
 
 @Component
 @Order(0)
-// En dev, la base H2 peut survivre à un redémarrage devtools : le ré-import sur une base existante laisse des fixtures à moitié importées.
+// Un import rejoué sur une base existante laisse des fixtures à moitié remplacées : le reset garantit une partie vierge, y compris en dev si la base persiste.
 @Profile({"dev", "prod"})
 @RequiredArgsConstructor
 public class DemoDataResetter implements CommandLineRunner {

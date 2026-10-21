@@ -144,7 +144,7 @@ public class AuthController {
             userService.saveRefreshToken(user, refreshTokenHash, refresh.jti(), refresh.expiry());
 
             int refreshTokenMaxAge = (int) (refreshTokenDurationMs / 1000);
-            addRefreshCookie(response, refresh.token(), refreshTokenMaxAge);
+            addRefreshCookie(request, response, refresh.token(), refreshTokenMaxAge);
             return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername(), user.getRole()));
         } else {
             logger.warn("Échec de login : '{}' ip {}", logSafe(req.getUsername()), clientIp);
@@ -186,7 +186,7 @@ public class AuthController {
             if (timeSinceLastRefresh < GRACE_PERIOD_MS) {
                 if (refreshToken.equals(throttle.lastToken) || refreshToken.equals(throttle.previousToken)) {
                     if (throttle.lastResponse != null) {
-                        addRefreshCookie(response, throttle.newToken, throttle.lastCookieMaxAge);
+                        addRefreshCookie(request, response, throttle.newToken, throttle.lastCookieMaxAge);
                         return ResponseEntity.ok(throttle.lastResponse);
                     }
                 }
@@ -229,7 +229,7 @@ public class AuthController {
         String newRefreshTokenHash = hash(newRefresh.token());
         userService.saveRefreshToken(user, newRefreshTokenHash, newRefresh.jti(), newRefresh.expiry());
 
-        addRefreshCookie(response, newRefresh.token(), (int) maxAge);
+        addRefreshCookie(request, response, newRefresh.token(), (int) maxAge);
 
         String accessToken = jwtService.generateToken(user, ACCESS_TOKEN_EXPIRATION);
 
@@ -300,16 +300,19 @@ public class AuthController {
         }
         // Sans purge, la grace period renverrait un access token valide juste après le logout.
         refreshThrottles.remove(request.getRemoteAddr());
-        addRefreshCookie(response, "", 0);
+        addRefreshCookie(request, response, "", 0);
         return ResponseEntity.ok().build();
     }
 
-    private void addRefreshCookie(HttpServletResponse response, String value, int maxAge) {
+    private void addRefreshCookie(HttpServletRequest request, HttpServletResponse response, String value, int maxAge) {
         Cookie cookie = new Cookie("refresh_token", value);
         cookie.setHttpOnly(true);
         cookie.setPath("/api/auth");
         cookie.setMaxAge(maxAge);
-        cookie.setSecure(cookieSecure);
+        // Secure par défaut ; sans lui, seule l'exception dev HTTP du LAN (app.cookie.secure=false) doit passer.
+        if (cookieSecure || request.isSecure()) {
+            cookie.setSecure(true);
+        }
         cookie.setAttribute("SameSite", "Strict");
         response.addCookie(cookie);
     }

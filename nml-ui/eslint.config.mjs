@@ -74,7 +74,7 @@ export default tseslint.config(
       '@angular-eslint/template/prefer-control-flow': 'warn',
       '@angular-eslint/template/no-empty-control-flow': 'warn',
       '@angular-eslint/template/use-track-by-function': 'warn',
-      '@angular-eslint/template/no-call-expression': 'warn',
+      // Signal-first : lire un signal est un appel ; no-call-expression ne le distingue pas d'un calcul coûteux.
       '@angular-eslint/template/prefer-class-binding': 'warn',
     },
   },

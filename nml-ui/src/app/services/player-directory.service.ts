@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 import { assignPlayerColors } from '../pages/carte/carte.config';
 import { AuthService } from './auth.service';
 
-// Annuaire des joueurs partagé par la carte (filtres, noms des propriétaires) et l'accueil (stats, classements) : un seul fetch et une seule palette.
+// Annuaire des joueurs partagé par la carte (légende, noms des propriétaires) et l'accueil (stats, classements) : un seul fetch et une seule palette.
 @Injectable({ providedIn: 'root' })
 export class PlayerDirectoryService {
   private readonly auth = inject(AuthService);

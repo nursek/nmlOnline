@@ -6,7 +6,7 @@ import {
   sectorKind,
   unitMaxHops,
 } from './movement.helpers';
-import type { GameCharacter, Sector, Unit, Vehicle } from '../../models';
+import type { GameCharacter, Sector, Unit, Vehicle } from '../models';
 
 function unit(id: number, playerId: number | null, maxHops: number): Unit {
   return {
