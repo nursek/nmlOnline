@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.api.dto.BuildingDto;
 import com.mg.nmlonline.domain.model.building.*;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
+import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -107,6 +108,8 @@ public class BuildingService {
         Headquarters hq = hqOpt.get();
         hq.onCapture(capturingPlayerId, currentTurn);
         buildingRepository.save(hq);
+        playerRepository.findById(victimPlayerId)
+                .ifPresent(victim -> victim.eliminate(EliminationCause.HEADQUARTERS_CAPTURED, currentTurn));
 
         List<Building> victimBuildings = buildingRepository.findByPlayerIdAndIsDestroyedFalse(victimPlayerId);
         if (!victimBuildings.isEmpty()) {

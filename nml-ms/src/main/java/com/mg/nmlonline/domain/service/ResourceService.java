@@ -109,6 +109,8 @@ public class ResourceService {
         playerResource.removeQuantity(quantity);
 
         if (playerResource.getQuantity() == 0) {
+            // orphanRemoval : retirer de la collection avant le delete, sinon le merge cascade ressuscite la ligne.
+            owner.getResources().remove(playerResource);
             playerResourceRepository.delete(playerResource);
         } else {
             playerResourceRepository.save(playerResource);

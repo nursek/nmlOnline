@@ -4,6 +4,7 @@ import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
 import com.mg.nmlonline.domain.model.building.Headquarters;
+import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
@@ -14,6 +15,7 @@ import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.domain.model.battle.Battle;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
+import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +48,9 @@ public class CombatService {
 
     @Autowired
     private GameStatisticsService gameStatisticsService;
+
+    @Autowired
+    private PlayerRepository playerRepository;
 
     @Autowired
     private EntityManager em;
@@ -109,7 +114,7 @@ public class CombatService {
         attackerCamp.forEach(player -> playersById.put(player.getId(), player));
         defenderCamp.forEach(player -> playersById.put(player.getId(), player));
         Map<Long, Boolean> characterLost = new HashMap<>();
-        casualties.addAll(removeCasualties(sector, beforeIds, survivorIds, playersById, characterLost));
+        casualties.addAll(removeCasualties(sector, beforeIds, survivorIds, playersById, characterLost, turn));
 
         for (CombatEntity entity : attackerFighters) {
             regenerateAfterBattle(entity);
@@ -229,7 +234,7 @@ public class CombatService {
                 .collect(Collectors.toMap(Player::getId, player -> player, (a, b) -> a));
         Map<Long, Boolean> characterLost = new HashMap<>();
         List<CombatEntity> casualties =
-                removeCasualties(sector, beforeIds, survivorIds, playersById, characterLost);
+                removeCasualties(sector, beforeIds, survivorIds, playersById, characterLost, turn);
 
         for (List<CombatEntity> camp : camps) {
             for (CombatEntity entity : camp) {
@@ -341,7 +346,7 @@ public class CombatService {
     /** Retire du secteur les entités engagées absentes des survivants, en gérant les FK et les flags par joueur. */
     private List<CombatEntity> removeCasualties(Sector sector, Set<Long> beforeIds, Set<Long> survivorIds,
                                                 Map<Long, Player> playersById,
-                                                Map<Long, Boolean> characterLost) {
+                                                Map<Long, Boolean> characterLost, int turn) {
         List<CombatEntity> casualties = new ArrayList<>();
 
         for (Unit unit : new ArrayList<>(sector.getUnits())) {
@@ -358,10 +363,12 @@ public class CombatService {
             if (isCasualty(character, beforeIds, survivorIds)) {
                 detachCharacterFromVehicles(character);
                 Player owner = playersById.get(character.getPlayerId());
+                boolean mainCharacter = owner != null && owner.getCharacter() != null
+                        && character.getId().equals(owner.getCharacter().getId());
                 // players.character_id doit passer à NULL avant le DELETE, sinon la FK bloque.
-                if (owner != null && owner.getCharacter() != null
-                        && character.getId().equals(owner.getCharacter().getId())) {
+                if (mainCharacter) {
                     owner.setCharacter(null); // @OneToOne orphanRemoval → DELETE au flush
+                    owner.eliminate(EliminationCause.MAIN_CHARACTER_KILLED, turn);
                 } else {
                     em.remove(character); // personnage non porté par Player.character
                 }
@@ -426,6 +433,8 @@ public class CombatService {
             switch (building.getBuildingType()) {
                 case HEADQUARTERS -> {
                     building.onCapture(winner.getId(), turn);
+                    playerRepository.findById(building.getPlayerId())
+                            .ifPresent(victim -> victim.eliminate(EliminationCause.HEADQUARTERS_CAPTURED, turn));
                     headquartersCaptured = true;
                     capturedBuildings++;
                 }

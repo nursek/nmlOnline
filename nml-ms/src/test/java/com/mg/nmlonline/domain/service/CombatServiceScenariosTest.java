@@ -10,6 +10,7 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.equipment.VehicleBonusTarget;
+import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
@@ -311,6 +312,9 @@ class CombatServiceScenariosTest {
             Vehicle vehicle = em.find(Vehicle.class, w.vehicleId());
             assertTrue(vehicle == null || vehicle.getPilot() == null,
                     "Le véhicule détruit est supprimé, sinon la FK pilot_id est détachée");
+            Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
+            assertFalse(defender.isEliminated(),
+                    "Le personnage pilote n'est pas Player.character : pas d'élimination");
         });
     }
 
@@ -338,6 +342,9 @@ class CombatServiceScenariosTest {
             Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
             assertNull(em.find(GameCharacter.class, w.characterId()), "La ligne du personnage est supprimée");
             assertNull(defender.getCharacter(), "Le joueur perd son personnage (fin de partie arbitrée par le MJ)");
+            assertTrue(defender.isEliminated(), "Personnage principal + QG perdus : joueur éliminé");
+            assertEquals(EliminationCause.MAIN_CHARACTER_KILLED, defender.getEliminationCause(),
+                    "La mort du personnage est enregistrée avant la capture du QG");
 
             Headquarters hq = em.find(Headquarters.class, w.hqId());
             assertNotNull(hq, "Le QG détruit reste en BDD (jamais DELETE)");
@@ -399,6 +406,8 @@ class CombatServiceScenariosTest {
 
             Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
             assertNotNull(defender.getCharacter());
+            assertFalse(defender.isEliminated(),
+                    "QG détruit mais non capturé : aucune élimination");
             // Reconstruction 75 000 : le chemin existant redresse le QG.
             assertTrue(buildingService.reconstructHeadquartersSameLocation(defender.getId()));
         });
@@ -466,6 +475,10 @@ class CombatServiceScenariosTest {
 
             assertTrue(em.find(Bank.class, w.bankId()).isDestroyed());
             assertTrue(em.find(WeaponCache.class, w.cacheId()).isDestroyed());
+
+            Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
+            assertTrue(defender.isEliminated(), "QG capturé ⇒ propriétaire éliminé");
+            assertEquals(EliminationCause.HEADQUARTERS_CAPTURED, defender.getEliminationCause());
 
             Sector sector = loadSector(w.sectorNumber());
             assertEquals(3, sector.getBuildings().size());

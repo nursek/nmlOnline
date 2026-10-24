@@ -126,6 +126,26 @@ export class TurnManagementComponent {
     this.dialog.open(CombatLogDialogComponent, { data: report, width: '720px' });
   }
 
+  eliminationsLabel(report: ResolvedBattle): string {
+    return (report.eliminatedPlayers ?? [])
+      .map(
+        (player) =>
+          `${player.playerName ?? '#' + player.playerId} (${this.causeLabel(player.cause)})`,
+      )
+      .join(', ');
+  }
+
+  private causeLabel(cause: string): string {
+    switch (cause) {
+      case 'HEADQUARTERS_CAPTURED':
+        return 'QG capturé';
+      case 'MAIN_CHARACTER_KILLED':
+        return 'personnage principal tué';
+      default:
+        return cause;
+    }
+  }
+
   onFinalize(): void {
     this.dialog
       .open(ConfirmDialogComponent, {

@@ -35,6 +35,12 @@ export interface BattleLogEntry {
   message: string;
 }
 
+export interface EliminatedPlayer {
+  playerId: number;
+  playerName: string | null;
+  cause: string;
+}
+
 export interface ResolvedBattle {
   sectorNumber: number;
   standoff: boolean;
@@ -55,6 +61,7 @@ export interface ResolvedBattle {
   attackerCharacterLost: boolean;
   defenderCharacterLost: boolean;
   defenderHeadquartersCaptured: boolean;
+  eliminatedPlayers: EliminatedPlayer[] | null;
   battleLog: BattleLogEntry[] | null;
 }
 
@@ -79,5 +86,6 @@ export interface TurnFinalizeResult {
   conflictsResolved: number;
   transitCombats: number;
   capturedSectors: SectorCapture[];
+  eliminatedPlayers: string[] | null;
   message: string | null;
 }

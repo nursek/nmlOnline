@@ -338,6 +338,20 @@
     color: var(--forest);
     font-weight: 600;
   }
+
+  .eliminated-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--danger);
+    font-weight: 600;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
 }
 
 .actions-row {

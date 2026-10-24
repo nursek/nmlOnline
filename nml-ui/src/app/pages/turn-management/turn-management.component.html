@@ -295,6 +295,12 @@
                   Détail
                 </button>
               }
+              @if (b.eliminatedPlayers?.length) {
+                <span class="eliminated-note">
+                  <mat-icon>dangerous</mat-icon>
+                  Éliminé : {{ eliminationsLabel(b) }}
+                </span>
+              }
               @if (b.winnerName) {
                 <span class="winner">Vainqueur : {{ b.winnerName }}</span>
               }

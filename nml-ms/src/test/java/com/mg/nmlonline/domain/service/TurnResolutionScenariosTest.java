@@ -15,6 +15,7 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
+import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.EntityCategory;
@@ -46,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Scénarios de fin de tour sur PostgreSQL réel, orchestrateur + seeder : conflit résolu manuellement,
  * vainqueur d'une bataille intermédiaire, anéantissement mutuel, cascades FK (Phase 2/3), impasse
- * mexicaine 3 camps, scénario Lurio→Cegorach 2 hops, catalogue des 10 arènes de combat et leurs
+ * mexicaine 3 camps, scénario Lurio→Cegorach 2 hops, catalogue des 11 arènes de combat et leurs
  * résolutions de bout en bout. Déterministe (pas d'évasion), un contexte Spring neuf par test.
  */
 @EmbeddedPostgresTest
@@ -521,11 +522,13 @@ class TurnResolutionScenariosTest {
     void listCombatScenarios_exposeLeCatalogue() {
         var scenarios = seeder.listCombatScenarios();
 
-        assertEquals(10, scenarios.size());
+        assertEquals(11, scenarios.size());
         assertTrue(scenarios.stream().anyMatch(s -> "CREW_DISEMBARK".equals(s.getCode())
                 && s.getArenaSector() == 24 && s.getStagingSector() == 19));
         assertTrue(scenarios.stream().anyMatch(s -> "BLDG_CAPTURE".equals(s.getCode())
-                && s.getArenaSector() == 5 && s.getStagingSector() == 4));
+                && s.getArenaSector() == 5 && s.getStagingSector() == 4 && s.isEliminatesPlayer()));
+        assertTrue(scenarios.stream().anyMatch(s -> "MAIN_CHARACTER_ELIMINATION".equals(s.getCode())
+                && s.getArenaSector() == 43 && s.getStagingSector() == 38 && s.isEliminatesPlayer()));
         assertTrue(scenarios.stream().allMatch(s -> !s.getObservations().isEmpty()),
                 "Chaque scénario documente ce qu'il faut vérifier dans le journal");
     }
@@ -588,8 +591,14 @@ class TurnResolutionScenariosTest {
         assertEquals(2, board.getSector(7).getUnits().size(), "Les 2 MALFRATs attendent en 7");
         assertEquals(1, board.getSector(12).getCharacters().size(), "Personnage du scénario de régénération");
         assertEquals(1, board.getSector(31).getUnits().size(), "Le MALFRAT attend en 31");
+        assertEquals(1, board.getSector(43).getCharacters().size(),
+                "Le personnage principal de cegorach est déplacé dans l'arène 43");
+        assertEquals(4, board.getSector(38).getUnits().size(),
+                "Les 4 BRUTEs de lurio attendent en 38");
+        assertTrue(board.getSector(32).getCharacters().isEmpty(),
+                "Cegorach a quitté son secteur 32 pour l'arène");
 
-        assertEquals(10, movementOrderRepository.findPendingByTurn(turnService.getCurrentTurn()).size(),
+        assertEquals(11, movementOrderRepository.findPendingByTurn(turnService.getCurrentTurn()).size(),
                 "Chaque scénario dépose son propre ordre PENDING");
     }
 
@@ -635,6 +644,9 @@ class TurnResolutionScenariosTest {
         assertTrue(report.isSuccess());
         assertEquals(3, report.getCapturedBuildings(), "Banque, Cache et QG capturés");
         assertTrue(report.isDefenderHeadquartersCaptured());
+        assertEquals(arenaOwnerId, report.getEliminatedPlayers().getFirst().getPlayerId(),
+                "Le propriétaire du QG capturé est signalé éliminé");
+        assertEquals("HEADQUARTERS_CAPTURED", report.getEliminatedPlayers().getFirst().getCause());
         assertTrue(report.getBattleLog().stream().anyMatch(entry ->
                         entry.getMessage().contains("3 bâtiment(s) capturé(s) — quartier général capturé")),
                 "Le bilan trace les trois captures");
@@ -651,6 +663,8 @@ class TurnResolutionScenariosTest {
                     .orElseThrow();
             assertTrue(cache.getStoredEquipments().isEmpty(), "Le contenu de la cache rejoint le vainqueur");
             Player arenaOwner = playerRepository.findById(arenaOwnerId).orElseThrow();
+            assertTrue(arenaOwner.isEliminated(), "QG capturé ⇒ propriétaire éliminé");
+            assertEquals(EliminationCause.HEADQUARTERS_CAPTURED, arenaOwner.getEliminationCause());
             assertEquals(arenaOwnerMoneyBefore * 0.75, arenaOwnerMoneyBefore - arenaOwner.getStats().getMoney(),
                     0.001, "75 % de la fortune exposée est transférée au vainqueur");
         });
@@ -680,7 +694,7 @@ class TurnResolutionScenariosTest {
     @Test
     @DisplayName("Scénario personnage : mort du personnage, perte signalée et +1 Exp de bonus")
     void characterKillScenario_losesCharacterAndGrantsExperience() {
-        seeder.seedCombatScenario("CHAR_KILL");
+        ScenarioSummaryDto seed = seeder.seedCombatScenario("CHAR_KILL");
 
         orchestrator.startSession();
         PendingConflictDto conflict = orchestrator.advanceHop().getPendingConflicts().getFirst();
@@ -695,6 +709,68 @@ class TurnResolutionScenariosTest {
                         .anyMatch(entry -> BattleLogEntry.GAIN.equals(entry.getOutcome())
                                 && entry.getMessage().contains("Exp + 2 →")),
                 "Participation (+1) + personnage éliminé (+1)");
+
+        Player arenaPlayer = playerRepository.findById(seed.getDefender().getId()).orElseThrow();
+        assertFalse(arenaPlayer.isEliminated(),
+                "Un personnage secondaire tué n'élimine pas son propriétaire");
+    }
+
+    @Test
+    @DisplayName("Scénario élimination : lurio tue Cegorach, éliminé, son QG et ses biens restent en place")
+    void mainCharacterEliminationScenario_eliminatesCegorach() {
+        ScenarioSummaryDto seed = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION");
+        Long defenderId = seed.getDefender().getId();
+        assertEquals("cegorach", seed.getDefender().getName());
+
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            GameCharacter character = gameCharacterRepository.findByName("Cegorach").orElseThrow();
+            assertEquals(43, character.getSector().getNumber(), "Cegorach combat dans l'arène");
+            assertEquals(0.0, character.getEvasion(), "Esquive neutralisée pour un résultat déterministe");
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            assertEquals(defenderId, board.getSector(32).getOwnerId(), "Son QG reste à cegorach avant le combat");
+        });
+
+        int battleTurn = turnService.getCurrentTurn();
+        orchestrator.startSession();
+        PendingConflictDto conflict = orchestrator.advanceHop().getPendingConflicts().getFirst();
+        assertEquals(43, conflict.getSectorNumber());
+
+        ResolvedBattleDto report = orchestrator.resolveBattle(conflict.getConflictId());
+
+        assertTrue(report.isSuccess());
+        assertTrue(report.isDefenderCharacterLost());
+        assertFalse(report.isDefenderHeadquartersCaptured(), "Aucun QG de cegorach dans l'arène");
+        assertEquals(defenderId, report.getEliminatedPlayers().getFirst().getPlayerId());
+        assertEquals("MAIN_CHARACTER_KILLED", report.getEliminatedPlayers().getFirst().getCause());
+
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Player defender = playerRepository.findById(defenderId).orElseThrow();
+            assertTrue(defender.isEliminated());
+            assertEquals(EliminationCause.MAIN_CHARACTER_KILLED, defender.getEliminationCause());
+            assertEquals(battleTurn, defender.getEliminatedTurn());
+            assertNull(defender.getCharacter(), "Le personnage principal est détaché avant le DELETE");
+            assertNull(gameCharacterRepository.findByName("Cegorach").orElse(null));
+
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            assertEquals(defenderId, board.getSector(32).getOwnerId(), "Son empire reste en place");
+            assertEquals(3, board.getSector(32).getBuildings().size(), "QG + Banque + Cache intacts");
+            assertTrue(board.getSector(32).getBuildings().stream().noneMatch(Building::isCaptured));
+        });
+
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+        assertTrue(fin.getEliminatedPlayers().contains("cegorach"));
+        assertTrue(fin.getMessage().contains("éliminé"));
+
+        ScenarioSummaryDto reseeded = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION");
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Player defender = playerRepository.findById(reseeded.getDefender().getId()).orElseThrow();
+            assertFalse(defender.isEliminated(), "Re-seed : cegorach redevient actif");
+            assertNull(defender.getEliminationCause());
+            GameCharacter character = defender.getCharacter();
+            assertNotNull(character, "Un nouveau personnage principal est rattaché");
+            assertEquals("Cegorach", character.getName());
+            assertEquals(43, character.getSector().getNumber());
+        });
     }
 
     @Test

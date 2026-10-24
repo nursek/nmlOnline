@@ -25,7 +25,15 @@ public class ResolvedBattleDto {
     private boolean attackerCharacterLost;
     private boolean defenderCharacterLost;
     private boolean defenderHeadquartersCaptured;
+    private List<EliminatedPlayerDto> eliminatedPlayers;
     private List<BattleLogEntryDto> battleLog;
+
+    @Data
+    public static class EliminatedPlayerDto {
+        private Long playerId;
+        private String playerName;
+        private String cause;
+    }
 
     @Data
     public static class BattleLogEntryDto {

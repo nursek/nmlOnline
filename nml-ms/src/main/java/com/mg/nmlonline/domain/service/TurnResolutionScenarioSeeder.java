@@ -41,9 +41,11 @@ public class TurnResolutionScenarioSeeder {
 
     private static final int STANDOFF_ATTACKER_FROM = 43;
 
+    private static final String MAIN_CHARACTER_SCENARIO = "MAIN_CHARACTER_ELIMINATION";
+
     private record CombatScenarioDefinition(String code, String label, String description,
                                             List<String> observations, int arenaSector, int stagingSector,
-                                            String defenderName) {
+                                            String defenderName, boolean eliminatesPlayer) {
     }
 
     private static final String ARENA_PLAYER_PREFIX = "arene-";
@@ -55,60 +57,69 @@ public class TurnResolutionScenarioSeeder {
                     List.of("Tirage 50/50 par attaque entre véhicules et unités",
                             "Le VTT sans pilote est une cible passive qui ne tire pas",
                             "Le surplus d'une frappe enchaîne sur la cible suivante"),
-                    21, 36, "cegorach"),
+                    21, 36, "cegorach", false),
             new CombatScenarioDefinition("DESTRUCTOR_VS_TANK", "Pilote destructeur vs Tank",
                     "2 MALFRATs PILOTE_DESTRUCTEUR au Gauss Cannon attaquent un Tank piloté et 2 LARBINs.",
                     List.of("Ciblage prioritaire du Tank malgré les LARBINs exposés",
                             "Gauss Cannon : bonus anti-véhicule ×2 puis résistance du Tank −50 %",
                             "Le Tank endommagé répare 50 défense en fin de tour s'il survit"),
-                    42, 37, "cegorach"),
+                    42, 37, "cegorach", false),
             new CombatScenarioDefinition("CREW_PROTECTED", "Équipage protégé",
                     "3 LARBINs au Gauss Flayer attaquent un VTT blindé piloté avec un passager armé.",
                     List.of("Les tirs de l'équipage sont tracés « (à bord de VTT blindé) »",
                             "Pilote et passager restent intouchables tant que le véhicule vit",
                             "Les attaquants ne touchent que le véhicule en PdF"),
-                    35, 22, "cegorach"),
+                    35, 22, "cegorach", false),
             new CombatScenarioDefinition("CREW_DISEMBARK", "Véhicule détruit, équipage débarqué",
                     "2 MALFRATs PILOTE_DESTRUCTEUR au Gauss Cannon détruisent un VTT léger piloté par un BRUTE.",
                     List.of("Le véhicule explose en PdF, l'équipage débarque et devient ciblable",
                             "Le surplus de la même frappe entame le pilote fraîchement débarqué"),
-                    24, 19, "cegorach"),
+                    24, 19, "cegorach", false),
             new CombatScenarioDefinition("AERIAL_HIT", "Aérien, jets de toucher",
                     "3 LARBINs au Tesla Carbine attaquent un hélicoptère piloté.",
                     List.of("L'aérien n'est ciblable qu'en PdF",
                             "Chaque LARBIN n'a que 10 % de toucher (le jet est affiché)",
                             "L'hélicoptère riposte à 75 % avec 250 PdF"),
-                    18, 14, "cegorach"),
+                    18, 14, "cegorach", false),
             new CombatScenarioDefinition("AERIAL_ANTI_AIR", "Aérien, arme anti-aérienne",
                     "3 BRUTEs PILOTE_DESTRUCTEUR au Heavy Gauss Cannon attaquent un hélicoptère piloté.",
                     List.of("Heavy Gauss Cannon : 75 % de toucher contre l'aérien",
                             "Dégâts doublés contre l'aérien, armure +200 % sur le tireur"),
-                    28, 17, "cegorach"),
-            new CombatScenarioDefinition("BLDG_CAPTURE", "Capture de bâtiments",
-                    "3 VOYOUs MASTODONTE au Bouclier balistique attaquent une Banque, un Cache et un QG sans unité.",
+                    28, 17, "cegorach", false),
+            new CombatScenarioDefinition("BLDG_CAPTURE", "Élimination — QG capturé",
+                    "3 VOYOUs MASTODONTE au Bouclier balistique capturent la Banque, le Cache et le QG du joueur d'arène.",
                     List.of("La Banque et le Cache ripostent en phase Bâtiments secondaires, le QG en phase QG",
-                            "Un camp réduit à ses bâtiments est déclaré perdant",
-                            "Les trois bâtiments, seulement endommagés, sont capturés — QG compris",
-                            "Le secteur bascule à lurio à la résolution"),
-                    5, 4, "arene-batiments"),
+                            "QG capturé ⇒ son propriétaire est éliminé",
+                            "Un QG seulement détruit, non capturé, reste reconstructible",
+                            "Les trois bâtiments capturés, le secteur bascule au vainqueur"),
+                    5, 4, "arene-batiments", true),
             new CombatScenarioDefinition("BLDG_DESTROY", "Bâtiments détruits",
                     "4 BRUTEs MASTODONTE lourdement blindés rasent la Banque, le Cache puis le QG.",
                     List.of("Ordre d'exposition : Banque → Cache → QG, le surplus enchaîne",
                             "Banque et Cache détruites ne sont pas capturées",
                             "Le QG est capturé même détruit (arbitrage MJ)"),
-                    23, 29, "arene-ruines"),
-            new CombatScenarioDefinition("CHAR_KILL", "Personnage éliminé",
-                    "2 MALFRATs tuent le LARBIN d'arène puis son personnage, ciblé en dernier.",
+                    23, 29, "arene-ruines", false),
+            new CombatScenarioDefinition("CHAR_KILL", "Personnage secondaire éliminé",
+                    "2 MALFRATs tuent le LARBIN d'arène puis son personnage secondaire, ciblé en dernier.",
                     List.of("Le LARBIN encaisse avant le personnage (exposition : unités → personnages)",
-                            "Le personnage tire sa PdF en phase PdF puis meurt en phase ATK, avant sa phase Personnages",
+                            "Le personnage secondaire n'est pas le personnage principal : pas d'élimination du joueur",
                             "Personnage perdu : +1 Exp à chaque unité survivante (lignes Expérience du bilan)"),
-                    9, 7, "arene-personnages"),
+                    9, 7, "arene-personnages", false),
+            new CombatScenarioDefinition("MAIN_CHARACTER_ELIMINATION",
+                    "Élimination — Cegorach tué par lurio",
+                    "4 BRUTEs de lurio tuent le personnage principal de cegorach dans l'arène 43, loin de son QG.",
+                    List.of("Cegorach est déplacé dans l'arène 43 : son QG et ses biens en secteur 32 restent intacts",
+                            "Le personnage est lié à Player.character : sa mort élimine cegorach",
+                            "Esquive neutralisée dans l'arène pour garantir la mort",
+                            "Après élimination, ses unités restent sur la carte mais ses actions sont refusées",
+                            "Re-seed : cegorach redevient actif avec un nouveau personnage principal"),
+                    43, 38, "cegorach", true),
             new CombatScenarioDefinition("CHAR_REGEN", "Personnage blessé, régénération",
                     "1 MALFRAT entame le personnage sans le tuer : il riposte en phase Personnages.",
                     List.of("Le personnage ne frappe qu'en phase Personnages, avec son Attaque seule",
                             "Aucun camp anéanti : pas de vainqueur, le secteur reste neutre",
                             "Après finalisation du tour, sa défense remonte de 50 (plafonnée à sa base)"),
-                    12, 31, "arene-colosse"));
+                    12, 31, "arene-colosse", false));
 
     private final BoardRepository boardRepository;
     private final PlayerRepository playerRepository;
@@ -263,6 +274,7 @@ public class TurnResolutionScenarioSeeder {
             dto.setObservations(definition.observations());
             dto.setArenaSector(definition.arenaSector());
             dto.setStagingSector(definition.stagingSector());
+            dto.setEliminatesPlayer(definition.eliminatesPlayer());
             return dto;
         }).toList();
     }
@@ -287,7 +299,13 @@ public class TurnResolutionScenarioSeeder {
 
         Sector arena = requireSector(board, definition.arenaSector(), "arène");
         Sector staging = requireSector(board, definition.stagingSector(), "départ attaquant");
+        GameCharacter mainCharacter = MAIN_CHARACTER_SCENARIO.equals(definition.code())
+                ? detachMainCharacter(defender) : null;
+        resetArenaDefender(defender, arena);
         resetScenarioArena(board, arena, staging);
+        if (MAIN_CHARACTER_SCENARIO.equals(definition.code())) {
+            attachMainCharacter(defender, arena, mainCharacter);
+        }
 
         List<Unit> attackers = new ArrayList<>();
         switch (definition.code()) {
@@ -300,6 +318,8 @@ public class TurnResolutionScenarioSeeder {
             case "BLDG_CAPTURE" -> seedBuildingCapture(arena, staging, lurio, defender, attackers);
             case "BLDG_DESTROY" -> seedBuildingDestroy(arena, staging, lurio, defender, attackers);
             case "CHAR_KILL" -> seedCharacterKill(arena, staging, lurio, defender, attackers);
+            case "MAIN_CHARACTER_ELIMINATION" ->
+                    seedMainCharacterElimination(staging, lurio, attackers);
             case "CHAR_REGEN" -> seedCharacterRegen(arena, staging, lurio, defender, attackers);
             default -> throw new IllegalArgumentException("Scénario inconnu : " + definition.code());
         }
@@ -418,6 +438,38 @@ public class TurnResolutionScenarioSeeder {
         }
     }
 
+    private void seedMainCharacterElimination(Sector staging, Player attacker, List<Unit> attackers) {
+        for (int i = 0; i < 4; i++) {
+            placeAttacker(staging, attackers, combatUnit(attacker, 8.0, UnitClass.TIREUR));
+        }
+    }
+
+    /** Retire le personnage de son secteur avant la purge de l'arène : il est réattaché après. */
+    private GameCharacter detachMainCharacter(Player defender) {
+        GameCharacter character = defender.getCharacter();
+        if (character != null && character.getSector() != null) {
+            character.getSector().getCharacters().remove(character);
+        }
+        return character;
+    }
+
+    /** Arène de test : l'esquive est neutralisée pour rendre la mort du personnage déterministe. */
+    private void attachMainCharacter(Player defender, Sector arena, GameCharacter preserved) {
+        GameCharacter character = preserved;
+        if (character == null) {
+            character = new GameCharacter("Cegorach", 100, 50, 50, 200, 50, 25);
+            character.setPlayerId(defender.getId());
+            entityManager.persist(character);
+            defender.setCharacter(character);
+        }
+        character.setSector(arena);
+        character.setEvasion(0);
+        arena.getCharacters().add(character);
+        defender.setEliminated(false);
+        defender.setEliminationCause(null);
+        defender.setEliminatedTurn(null);
+    }
+
     private void seedCharacterRegen(Sector arena, Sector staging, Player attacker, Player defender,
                                     List<Unit> attackers) {
         arena.addUnit(combatUnit(defender, 0.0, UnitClass.TIREUR));
@@ -433,6 +485,24 @@ public class TurnResolutionScenarioSeeder {
                 .filter(pending -> Objects.equals(pending.getBoardId(), board.getId())
                         && pending.getSectorNumber() == arena.getNumber())
                 .forEach(pendingCaptureRepository::delete);
+        entityManager.flush();
+    }
+
+    /** Les joueurs d'arène sont jetables : re-seed nettoie l'élimination et le personnage principal de l'arène. */
+    private void resetArenaDefender(Player defender, Sector arena) {
+        if (!defender.getName().startsWith(ARENA_PLAYER_PREFIX)) {
+            return;
+        }
+        GameCharacter character = defender.getCharacter();
+        if (character != null && character.getSector() != null
+                && character.getSector().getNumber() == arena.getNumber()) {
+            // Sortir de la collection du secteur évite un double em.remove dans purgeSector.
+            character.getSector().getCharacters().remove(character);
+            defender.setCharacter(null);
+        }
+        defender.setEliminated(false);
+        defender.setEliminationCause(null);
+        defender.setEliminatedTurn(null);
         entityManager.flush();
     }
 

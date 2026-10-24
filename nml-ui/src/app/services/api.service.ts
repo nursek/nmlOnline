@@ -199,6 +199,17 @@ export class ApiService {
     );
   }
 
+  adminSeedAllianceScenario(): Observable<ScenarioSummary> {
+    return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/seed-alliance-scenario`, {});
+  }
+
+  adminSeedResourceSaleScenario(): Observable<ScenarioSummary> {
+    return this.http.post<ScenarioSummary>(
+      `${this.baseUrl}/admin/dev/seed-resource-sale-scenario`,
+      {},
+    );
+  }
+
   adminPlayDemoTurns(): Observable<ScenarioSummary> {
     return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/play-demo-turns`, {});
   }

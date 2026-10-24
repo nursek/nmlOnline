@@ -39,6 +39,10 @@ public class PlayerMapper {
         dto.setId(player.getId());
         dto.setName(player.getName());
         dto.setRace(player.getRace() != null ? player.getRace().name() : null);
+        dto.setEliminated(player.isEliminated());
+        dto.setEliminationCause(player.getEliminationCause() != null
+                ? player.getEliminationCause().name() : null);
+        dto.setEliminatedTurn(player.getEliminatedTurn());
 
         if (player.getStats() != null) {
             PlayerStatsDto statsDto = getPlayerStatsDto(player);
@@ -105,6 +109,10 @@ public class PlayerMapper {
         dto.setId(player.getId());
         dto.setName(player.getName());
         dto.setRace(player.getRace() != null ? player.getRace().name() : null);
+        dto.setEliminated(player.isEliminated());
+        dto.setEliminationCause(player.getEliminationCause() != null
+                ? player.getEliminationCause().name() : null);
+        dto.setEliminatedTurn(player.getEliminatedTurn());
 
         int sectorCount = 0;
         if (board != null && player.getId() != null) {

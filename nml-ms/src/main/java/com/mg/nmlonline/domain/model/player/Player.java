@@ -55,6 +55,16 @@ public class Player {
     @Column(name = "ranking_comment", length = 500)
     private String rankingComment;
 
+    @Column(nullable = false)
+    private boolean eliminated;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "elimination_cause", length = 40)
+    private EliminationCause eliminationCause;
+
+    @Column(name = "eliminated_turn")
+    private Integer eliminatedTurn;
+
     @Embedded
     private PlayerStats stats = new PlayerStats();
 
@@ -81,6 +91,16 @@ public class Player {
 
     public Player(String name) {
         this.name = name;
+    }
+
+    /** Première cause gagnante : QG capturé puis personnage tué dans le même combat reste une seule élimination. */
+    public void eliminate(EliminationCause cause, int turn) {
+        if (eliminated) {
+            return;
+        }
+        eliminated = true;
+        eliminationCause = cause;
+        eliminatedTurn = turn;
     }
 
     public Equipment getEquipmentByString(String name) {

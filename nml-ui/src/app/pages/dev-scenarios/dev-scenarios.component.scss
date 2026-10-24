@@ -2,13 +2,20 @@
 
 :host {
   display: block;
-  max-width: 960px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+  padding: 1.5rem 1rem 4rem;
 }
 
 .page-header {
   @include shared.compact-page-header;
+
+  .subtitle {
+    margin: 0.5rem 0 0;
+    max-width: 70ch;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
 }
 
 .unavailable {
@@ -37,53 +44,186 @@
   font-size: 0.9rem;
 }
 
-.dev-scenario-panel {
+.scenario-section {
+  margin-top: 2rem;
+}
+
+.section-head {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 0.9rem 1rem;
-  background: color-mix(in srgb, var(--forest) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--forest) 30%, transparent);
-  border-radius: var(--r-sm);
+  align-items: flex-start;
+  gap: 0.75rem;
   margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1.5px solid var(--line-2);
 
-  .dev-scenario-info {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    flex: 1;
-    min-width: 240px;
+  > mat-icon {
+    margin-top: 0.15rem;
+    color: var(--accent);
+  }
 
-    mat-icon {
-      color: var(--forest);
-    }
+  h2 {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
 
-    .dev-scenario-text {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-      font-size: 0.85rem;
-      color: var(--forest);
+  p {
+    margin: 0.25rem 0 0;
+    max-width: 80ch;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+}
 
-      strong {
-        font-size: 0.95rem;
-        color: var(--forest);
-      }
+.scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.scenario-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1rem 1.05rem;
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  @include shared.hover-lift;
+
+  &.elimination {
+    border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--danger) 7%, transparent), transparent 55%),
+      var(--surface-2);
+  }
+
+  &.feature-card .card-icon {
+    color: var(--teal);
+  }
+
+  &.tour-card .card-icon {
+    color: var(--sun);
+  }
+
+  &.featured {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  }
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  color: var(--accent);
+
+  mat-icon {
+    font-size: 19px;
+    width: 19px;
+    height: 19px;
+  }
+}
+
+.card-title {
+  min-width: 0;
+  flex: 1;
+
+  h3 {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+}
+
+.card-meta {
+  display: block;
+  margin-top: 0.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+.badge {
+  @include shared.tag(color-mix(in srgb, var(--danger) 14%, transparent), var(--danger));
+  white-space: nowrap;
+}
+
+.card-desc {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.observations,
+.tour-flow {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+
+  li::marker {
+    color: var(--accent);
+  }
+}
+
+.tour-flow {
+  counter-reset: tour-step;
+
+  li {
+    list-style: none;
+    counter-increment: tour-step;
+
+    &::before {
+      content: counter(tour-step) '.';
+      margin-right: 0.35rem;
+      font-family: var(--font-mono);
+      color: var(--accent);
     }
   }
+}
+
+.card-actions {
+  margin-top: auto;
+  padding-top: 0.35rem;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .seed-report {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.9rem;
+  margin-top: 1rem;
+  padding: 0.6rem 0.9rem;
   background: color-mix(in srgb, var(--forest) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--forest) 35%, transparent);
   border-radius: var(--r-sm);
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--ink);
 
   mat-icon {
@@ -106,40 +246,16 @@
   }
 }
 
-.combat-scenario-select {
-  min-width: 260px;
-}
-
-.combat-scenario-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.6rem 0.9rem;
-  background: color-mix(in srgb, var(--forest) 6%, transparent);
-  border: 1px dashed color-mix(in srgb, var(--forest) 35%, transparent);
-  border-radius: var(--r-sm);
-  margin: -0.4rem 0 1rem;
-  font-size: 0.85rem;
-  color: var(--forest);
-
-  .combat-scenario-head {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-
-    .arena {
-      margin-left: auto;
-      color: var(--muted);
-      font-size: 0.78rem;
-    }
+@media (max-width: 640px) {
+  :host {
+    padding-inline: 0.75rem;
   }
 
-  p {
-    margin: 0;
+  .card-head {
+    flex-wrap: wrap;
   }
 
-  ul {
-    margin: 0;
-    padding-left: 1.1rem;
+  .badge {
+    order: -1;
   }
 }

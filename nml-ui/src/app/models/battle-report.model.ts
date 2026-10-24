@@ -15,6 +15,8 @@ export interface BattleReportCamp {
   playerName: string | null;
   eliminated: boolean;
   characterLost: boolean;
+  playerEliminated: boolean;
+  eliminationCause: string | null;
 }
 
 export interface BattleReportCasualty {

@@ -12,4 +12,5 @@ public class CombatScenarioDto {
     private List<String> observations;
     private int arenaSector;
     private int stagingSector;
+    private boolean eliminatesPlayer;
 }

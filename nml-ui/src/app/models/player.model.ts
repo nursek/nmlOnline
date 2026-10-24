@@ -49,4 +49,7 @@ export interface Player {
   sectors: Sector[];
   character: GameCharacter | null;
   buildings: Building[];
+  eliminated?: boolean;
+  eliminationCause?: string | null;
+  eliminatedTurn?: number | null;
 }

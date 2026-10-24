@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  DestroyRef,
-  inject,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -37,10 +31,7 @@ import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label'
 import { EquipmentImageService } from '../../core/equipment-image.service';
 import { VehicleImageService } from '../../core/vehicle-image.service';
 import type { OptimizedImage } from '../../core/optimized-image';
-import {
-  PlacementModalComponent,
-  PlacementDialogData,
-} from './placement-modal.component';
+import { PlacementModalComponent, PlacementDialogData } from './placement-modal.component';
 import {
   BuildingMoveModalComponent,
   BuildingMoveDialogData,
@@ -162,6 +153,16 @@ export class JoueurComponent {
   }
 
   readonly playerCharacter = computed(() => this.player()?.character ?? null);
+  readonly eliminationLabel = computed(() => {
+    switch (this.player()?.eliminationCause) {
+      case 'HEADQUARTERS_CAPTURED':
+        return 'quartier général capturé';
+      case 'MAIN_CHARACTER_KILLED':
+        return 'personnage principal tué au combat';
+      default:
+        return 'éliminé de la partie';
+    }
+  });
   readonly conqueredSectors = computed(() => this.player()?.sectors ?? []);
   readonly buildings = computed(() => this.player()?.buildings ?? []);
   readonly headquarters = computed(
