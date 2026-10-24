@@ -65,6 +65,9 @@ public class Player {
     @Column(name = "eliminated_turn")
     private Integer eliminatedTurn;
 
+    @Column(name = "eliminated_by_player_id")
+    private Long eliminatedByPlayerId;
+
     @Embedded
     private PlayerStats stats = new PlayerStats();
 
@@ -95,12 +98,17 @@ public class Player {
 
     /** Première cause gagnante : QG capturé puis personnage tué dans le même combat reste une seule élimination. */
     public void eliminate(EliminationCause cause, int turn) {
+        eliminate(cause, turn, null);
+    }
+
+    public void eliminate(EliminationCause cause, int turn, Long byPlayerId) {
         if (eliminated) {
             return;
         }
         eliminated = true;
         eliminationCause = cause;
         eliminatedTurn = turn;
+        eliminatedByPlayerId = byPlayerId;
     }
 
     public Equipment getEquipmentByString(String name) {

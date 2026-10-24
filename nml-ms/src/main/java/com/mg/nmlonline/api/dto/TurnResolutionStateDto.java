@@ -12,6 +12,7 @@ public class TurnResolutionStateDto {
     private int maxSteps;
     private List<PendingConflictDto> pendingConflicts;
     private List<ResolvedBattleDto> resolvedConflicts;
+    private List<PendingEliminationDto> pendingEliminations;
     private int transitCombatsCount;
     private boolean canAdvance;
     private boolean canFinalize;

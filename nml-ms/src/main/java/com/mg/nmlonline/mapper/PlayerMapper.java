@@ -43,6 +43,7 @@ public class PlayerMapper {
         dto.setEliminationCause(player.getEliminationCause() != null
                 ? player.getEliminationCause().name() : null);
         dto.setEliminatedTurn(player.getEliminatedTurn());
+        dto.setEliminatedByPlayerId(player.getEliminatedByPlayerId());
 
         if (player.getStats() != null) {
             PlayerStatsDto statsDto = getPlayerStatsDto(player);
@@ -113,6 +114,7 @@ public class PlayerMapper {
         dto.setEliminationCause(player.getEliminationCause() != null
                 ? player.getEliminationCause().name() : null);
         dto.setEliminatedTurn(player.getEliminatedTurn());
+        dto.setEliminatedByPlayerId(player.getEliminatedByPlayerId());
 
         int sectorCount = 0;
         if (board != null && player.getId() != null) {

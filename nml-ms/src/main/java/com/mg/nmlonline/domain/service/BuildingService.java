@@ -109,7 +109,8 @@ public class BuildingService {
         hq.onCapture(capturingPlayerId, currentTurn);
         buildingRepository.save(hq);
         playerRepository.findById(victimPlayerId)
-                .ifPresent(victim -> victim.eliminate(EliminationCause.HEADQUARTERS_CAPTURED, currentTurn));
+                .ifPresent(victim -> victim.eliminate(
+                        EliminationCause.HEADQUARTERS_CAPTURED, currentTurn, capturingPlayerId));
 
         List<Building> victimBuildings = buildingRepository.findByPlayerIdAndIsDestroyedFalse(victimPlayerId);
         if (!victimBuildings.isEmpty()) {

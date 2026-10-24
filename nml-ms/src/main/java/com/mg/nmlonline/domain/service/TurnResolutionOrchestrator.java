@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.PendingConflictDto;
+import com.mg.nmlonline.api.dto.PendingEliminationDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.SectorCaptureDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
@@ -10,6 +11,7 @@ import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
 import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
 import com.mg.nmlonline.domain.model.movement.SectorCapture;
 import com.mg.nmlonline.domain.model.movement.SectorConflict;
+import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +53,7 @@ public class TurnResolutionOrchestrator {
     private final VehicleMaintenanceService vehicleMaintenanceService;
     private final ReserveUnitPlacer reserveUnitPlacer;
     private final UnitRecoveryService unitRecoveryService;
+    private final PlayerEliminationService playerEliminationService;
 
     private static final long SESSION_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
 
@@ -67,7 +71,8 @@ public class TurnResolutionOrchestrator {
                                       HarvestAutoCollector harvestAutoCollector,
                                       VehicleMaintenanceService vehicleMaintenanceService,
                                       ReserveUnitPlacer reserveUnitPlacer,
-                                      UnitRecoveryService unitRecoveryService) {
+                                      UnitRecoveryService unitRecoveryService,
+                                      PlayerEliminationService playerEliminationService) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
@@ -80,6 +85,7 @@ public class TurnResolutionOrchestrator {
         this.vehicleMaintenanceService = vehicleMaintenanceService;
         this.reserveUnitPlacer = reserveUnitPlacer;
         this.unitRecoveryService = unitRecoveryService;
+        this.playerEliminationService = playerEliminationService;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -166,7 +172,53 @@ public class TurnResolutionOrchestrator {
 
         s.resolvedConflicts.add(rb);
         s.pendingConflicts.remove(pc);
+        registerPendingEliminations(s, rb, locked);
         return toBattleDto(rb, resolveNames(rb));
+    }
+
+    /** Une mort de personnage principal est attribuée par le MJ parmi les participants du combat. */
+    private void registerPendingEliminations(Session s, ResolvedBattle rb, Map<Long, Player> locked) {
+        for (var elimination : rb.eliminatedPlayers()) {
+            if (!"MAIN_CHARACTER_KILLED".equals(elimination.cause())) {
+                continue;
+            }
+            Player victim = locked.get(elimination.playerId());
+            if (victim == null || victim.getEliminatedTurn() == null
+                    || victim.getEliminatedTurn() != s.turnEnding) {
+                continue;
+            }
+            if (s.pendingEliminations.containsKey(victim.getId())
+                    || s.eliminationKillers.containsKey(victim.getId())) {
+                continue;
+            }
+            List<Long> participants = rb.participantPlayerIds().stream()
+                    .filter(playerId -> !playerId.equals(victim.getId()))
+                    .distinct()
+                    .toList();
+            if (participants.isEmpty()) {
+                s.eliminationKillers.put(victim.getId(), null);
+            } else {
+                s.pendingEliminations.put(victim.getId(),
+                        new PendingElimination(victim.getId(), participants));
+            }
+        }
+    }
+
+    /** Attribue le tueur d'une élimination par mort de personnage (null = personne). */
+    public synchronized TurnResolutionStateDto resolveElimination(Long victimPlayerId, Long killerPlayerId) {
+        Session s = requireSession();
+        PendingElimination pending = s.pendingEliminations.get(victimPlayerId);
+        if (pending == null) {
+            throw new IllegalArgumentException(
+                    "Aucune élimination en attente pour le joueur " + victimPlayerId);
+        }
+        if (killerPlayerId != null && !pending.participantIds().contains(killerPlayerId)) {
+            throw new IllegalArgumentException(
+                    "Le tueur " + killerPlayerId + " n'a pas participé au combat");
+        }
+        s.eliminationKillers.put(victimPlayerId, killerPlayerId);
+        s.pendingEliminations.remove(victimPlayerId);
+        return toStateDto(s);
     }
 
     /** Lock pessimiste ordonné par id sur tous les combattants : évite le deadlock entre deux résolutions. */
@@ -186,6 +238,9 @@ public class TurnResolutionOrchestrator {
         if (!s.pendingConflicts.isEmpty()) {
             throw new IllegalStateException("Résolvez toutes les batailles avant de finaliser");
         }
+        if (!s.pendingEliminations.isEmpty()) {
+            throw new IllegalStateException("Attribuez les éliminations avant de finaliser");
+        }
         if (s.ctx.getCurrentStep() < s.ctx.getMaxSteps()) {
             throw new IllegalStateException("Effectuez tous les hops avant de finaliser");
         }
@@ -196,6 +251,13 @@ public class TurnResolutionOrchestrator {
             harvestAutoCollector.collectRemainingMoney(board, s.turnEnding, s.sectorOwners);
 
             MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
+            List<Player> eliminated = playerRepository.findByEliminatedTurnOrderByNameAsc(s.turnEnding);
+            for (Player victim : eliminated) {
+                Long killerId = victim.getEliminationCause() == EliminationCause.HEADQUARTERS_CAPTURED
+                        ? victim.getEliminatedByPlayerId()
+                        : s.eliminationKillers.get(victim.getId());
+                playerEliminationService.apply(board, victim, killerId, s.turnEnding);
+            }
             characterService.regenerateAllCharacters();
             vehicleMaintenanceService.repairAllVehicles();
             unitRecoveryService.recoverWoundedUnits(s.turnEnding);
@@ -205,7 +267,6 @@ public class TurnResolutionOrchestrator {
 
             int newTurn = board.getCurrentTurn();
             List<SectorCapture> captures = result.getCaptures();
-            List<Player> eliminated = playerRepository.findByEliminatedTurnOrderByNameAsc(s.turnEnding);
             TurnFinalizeResultDto dto = new TurnFinalizeResultDto();
             dto.setNewTurn(newTurn);
             dto.setTurnEnding(s.turnEnding);
@@ -277,12 +338,34 @@ public class TurnResolutionOrchestrator {
         dto.setResolvedConflicts(s.resolvedConflicts.stream()
                 .map(rb -> toBattleDto(rb, names))
                 .collect(Collectors.toList()));
+        dto.setPendingEliminations(s.pendingEliminations.values().stream()
+                .map(pending -> toPendingEliminationDto(pending, names))
+                .collect(Collectors.toList()));
         dto.setTransitCombatsCount(s.ctx.getTransitCombats().size());
         boolean pendingEmpty = s.pendingConflicts.isEmpty();
         dto.setCanAdvance(s.ctx.getCurrentStep() < s.ctx.getMaxSteps() && pendingEmpty);
         boolean allHopsDone = s.ctx.getCurrentStep() >= s.ctx.getMaxSteps();
-        dto.setCanFinalize(allHopsDone && pendingEmpty);
-        dto.setAllDone(allHopsDone && pendingEmpty);
+        boolean eliminationsResolved = s.pendingEliminations.isEmpty();
+        dto.setCanFinalize(allHopsDone && pendingEmpty && eliminationsResolved);
+        dto.setAllDone(allHopsDone && pendingEmpty && eliminationsResolved);
+        return dto;
+    }
+
+    private PendingEliminationDto toPendingEliminationDto(PendingElimination pending,
+                                                          Function<Long, String> names) {
+        PendingEliminationDto dto = new PendingEliminationDto();
+        dto.setVictimPlayerId(pending.victimPlayerId());
+        dto.setVictimPlayerName(names.apply(pending.victimPlayerId()));
+        dto.setCause("MAIN_CHARACTER_KILLED");
+        dto.setParticipants(pending.participantIds().stream()
+                .map(playerId -> {
+                    PendingEliminationDto.ParticipantDto participant =
+                            new PendingEliminationDto.ParticipantDto();
+                    participant.setPlayerId(playerId);
+                    participant.setPlayerName(names.apply(playerId));
+                    return participant;
+                })
+                .toList());
         return dto;
     }
 
@@ -321,6 +404,10 @@ public class TurnResolutionOrchestrator {
     private Function<Long, String> resolveNamesForSession(Session s) {
         List<Long> ids = new ArrayList<>();
         s.pendingConflicts.forEach(pc -> ids.addAll(pc.participantPlayerIds()));
+        s.pendingEliminations.values().forEach(pending -> {
+            ids.add(pending.victimPlayerId());
+            ids.addAll(pending.participantIds());
+        });
         s.resolvedConflicts.forEach(rb -> ids.addAll(rb.participantPlayerIds()));
         return resolveNamesForIds(ids);
     }
@@ -418,6 +505,8 @@ public class TurnResolutionOrchestrator {
         final long startedAt = System.currentTimeMillis();
         final List<PendingConflict> pendingConflicts = new ArrayList<>();
         final List<ResolvedBattle> resolvedConflicts = new ArrayList<>();
+        final Map<Long, PendingElimination> pendingEliminations = new LinkedHashMap<>();
+        final Map<Long, Long> eliminationKillers = new HashMap<>();
         int conflictIdSeq = 0;
 
         Session(MovementService.ResolutionContext ctx, int turnEnding, Map<Integer, Long> sectorOwners) {
@@ -425,6 +514,9 @@ public class TurnResolutionOrchestrator {
             this.turnEnding = turnEnding;
             this.sectorOwners = sectorOwners;
         }
+    }
+
+    private record PendingElimination(Long victimPlayerId, List<Long> participantIds) {
     }
 
     private static final class PendingConflict {

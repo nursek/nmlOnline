@@ -79,8 +79,14 @@ export class TurnManagementService {
     await this.mutate(() => this.api.adminAdvanceHop(), 'Erreur lors du passage au hop suivant');
   }
 
-  async resolveBattle(conflictId: number): Promise<void> {
-    this._busy.set(true);
+  async resolveElimination(victimPlayerId: number, killerPlayerId: number | null): Promise<void> {
+    await this.mutate(
+      () => this.api.adminResolveElimination(victimPlayerId, killerPlayerId),
+      "Erreur lors de l'attribution de l'élimination",
+    );
+  }
+
+  async resolveBattle(conflictId: number): Promise<void> {    this._busy.set(true);
     this._error.set(null);
     this._lastReport.set(null);
     try {

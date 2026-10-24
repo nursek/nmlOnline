@@ -387,7 +387,8 @@ button[disabled] mat-spinner {
   color: var(--void) !important;
 }
 
-.pending-captures {
+.pending-captures,
+.pending-eliminations {
   margin: 1rem 0;
   padding: 1rem 1.1rem;
   border-radius: var(--r-sm);

@@ -661,20 +661,27 @@
           <ul class="rule-list">
             <li>
               <strong>QG capturé</strong> — le quartier général bascule au vainqueur, y compris
-              lorsqu'il a été détruit pendant la bataille. Son propriétaire est éliminé.
+              lorsqu'il a été détruit pendant la bataille. À la fin du tour, le vainqueur récupère
+              <strong>tous les secteurs</strong> de la victime, y compris ceux qu'elle capture
+              pendant la résolution. Seuls les bâtiments situés <strong>avec le QG</strong> sont
+              capturés ; les autres bâtiments et leurs contenus disparaissent.
             </li>
             <li>
               <strong>Personnage principal tué</strong> — la ligne du personnage est supprimée et
-              son propriétaire est éliminé, même si son QG est intact.
+              son propriétaire est éliminé, même si son QG est intact. Le MJ désigne le tueur parmi
+              les participants du combat (ou « Personne » si personne ne doit récupérer le QG).
+              Le tueur récupère uniquement le <strong>secteur du QG, nu</strong> ; les autres
+              secteurs deviennent neutres et sont vidés.
             </li>
             <li>
               <strong>QG détruit non capturé</strong> — aucune élimination : le joueur peut payer la
               reconstruction sur place et reprendre la partie.
             </li>
             <li>
-              <strong>Après l'élimination</strong> — toutes les actions du joueur sont refusées.
-              Ses unités, secteurs et bâtiments restants demeurent sur la carte et défendent
-              passivement ; ils ne sont pas transférés automatiquement.
+              <strong>Après l'élimination</strong> — toutes ses pages passent en lecture seule et
+              ses actions sont refusées. Ses unités survivantes, véhicules, équipements et butin
+              non récupérés s'évaporent ; ses alliances sont rompues et ses échanges en attente
+              annulés.
             </li>
           </ul>
           <p class="text">
@@ -717,8 +724,8 @@
           <div class="draft">
             <mat-icon>construction</mat-icon>
             <p>
-              Non implémenté : le podium et la condition de fin de partie. Seule l'élimination d'un
-              joueur (QG capturé ou personnage principal tué) est active.
+              Non implémenté : le podium et la condition de fin de partie. Les conséquences de
+              l'élimination d'un joueur (QG capturé ou personnage principal tué) sont actives.
             </p>
           </div>
         </mat-expansion-panel>

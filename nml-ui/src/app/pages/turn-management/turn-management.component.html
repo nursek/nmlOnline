@@ -71,6 +71,42 @@
     </mat-card>
   }
 
+  @if (state()?.pendingEliminations?.length) {
+    <mat-card class="pending-eliminations">
+      <h2>
+        <mat-icon>dangerous</mat-icon>
+        Éliminations à attribuer
+      </h2>
+      @for (pending of state()?.pendingEliminations; track pending.victimPlayerId) {
+        <div class="pending-row">
+          <span class="sector">
+            {{ pending.victimPlayerName ?? '#' + pending.victimPlayerId }} —
+            {{ causeLabel(pending.cause) }}
+          </span>
+          <div class="candidates">
+            @for (participant of pending.participants; track participant.playerId) {
+              <button
+                mat-flat-button
+                color="primary"
+                [disabled]="busy()"
+                (click)="onResolveElimination(pending.victimPlayerId, participant.playerId)"
+              >
+                Attribuer à {{ participant.playerName ?? '#' + participant.playerId }}
+              </button>
+            }
+            <button
+              mat-button
+              [disabled]="busy()"
+              (click)="onResolveElimination(pending.victimPlayerId, null)"
+            >
+              Personne
+            </button>
+          </div>
+        </div>
+      }
+    </mat-card>
+  }
+
   @if (loading()) {
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
   }

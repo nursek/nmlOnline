@@ -52,4 +52,12 @@ export interface Player {
   eliminated?: boolean;
   eliminationCause?: string | null;
   eliminatedTurn?: number | null;
+  eliminatedByPlayerId?: number | null;
+}
+
+export interface PlayerStatus {
+  eliminated: boolean;
+  eliminationCause: string | null;
+  eliminatedTurn: number | null;
+  eliminatedByPlayerId: number | null;
 }

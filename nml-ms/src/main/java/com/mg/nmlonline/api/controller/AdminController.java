@@ -198,6 +198,15 @@ public class AdminController {
     }
 
     /**
+     * Attribue le tueur d'une élimination par mort de personnage ; killerPlayerId absent = personne.
+     */
+    @PostMapping("/turn/resolve/elimination")
+    public TurnResolutionStateDto resolveElimination(@RequestParam Long victimPlayerId,
+                                                     @RequestParam(required = false) Long killerPlayerId) {
+        return turnResolutionOrchestrator.resolveElimination(victimPlayerId, killerPlayerId);
+    }
+
+    /**
      * Finalise : incrémente le tour ; 409 si hops/batailles incomplets ; libère le verrou.
      */
     @PostMapping("/turn/resolve/finalize")

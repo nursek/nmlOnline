@@ -5,6 +5,7 @@ import {
   AuthResponse,
   LoginRequest,
   Player,
+  PlayerStatus,
   MovementOrder,
   MovementResolutionResult,
   TurnResolutionState,
@@ -57,6 +58,10 @@ export class ApiService {
 
   getPlayer(username: string): Observable<Player> {
     return this.http.get<Player>(`${this.baseUrl}/players/${username}`);
+  }
+
+  getMyStatus(): Observable<PlayerStatus> {
+    return this.http.get<PlayerStatus>(`${this.baseUrl}/players/me/status`);
   }
 
   sellResourcesBatch(items: SellResourceBatchItem[]): Observable<ResourceBatchSaleResponse> {
@@ -150,6 +155,22 @@ export class ApiService {
       `${this.baseUrl}/admin/turn/resolve/resolve-battle`,
       {},
       { params: { conflictId } },
+    );
+  }
+
+  adminResolveElimination(
+    victimPlayerId: number,
+    killerPlayerId: number | null,
+  ): Observable<TurnResolutionState> {
+    return this.http.post<TurnResolutionState>(
+      `${this.baseUrl}/admin/turn/resolve/elimination`,
+      {},
+      {
+        params: {
+          victimPlayerId,
+          ...(killerPlayerId !== null ? { killerPlayerId } : {}),
+        },
+      },
     );
   }
 

@@ -41,6 +41,18 @@ export interface EliminatedPlayer {
   cause: string;
 }
 
+export interface PendingEliminationParticipant {
+  playerId: number;
+  playerName: string | null;
+}
+
+export interface PendingElimination {
+  victimPlayerId: number;
+  victimPlayerName: string | null;
+  cause: string;
+  participants: PendingEliminationParticipant[];
+}
+
 export interface ResolvedBattle {
   sectorNumber: number;
   standoff: boolean;
@@ -72,6 +84,7 @@ export interface TurnResolutionState {
   maxSteps: number;
   pendingConflicts: PendingConflict[];
   resolvedConflicts: ResolvedBattle[];
+  pendingEliminations: PendingElimination[];
   transitCombatsCount: number;
   canAdvance: boolean;
   canFinalize: boolean;

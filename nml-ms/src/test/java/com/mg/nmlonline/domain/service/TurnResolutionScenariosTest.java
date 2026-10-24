@@ -665,8 +665,20 @@ class TurnResolutionScenariosTest {
             Player arenaOwner = playerRepository.findById(arenaOwnerId).orElseThrow();
             assertTrue(arenaOwner.isEliminated(), "QG capturé ⇒ propriétaire éliminé");
             assertEquals(EliminationCause.HEADQUARTERS_CAPTURED, arenaOwner.getEliminationCause());
+            assertEquals(lurioId, arenaOwner.getEliminatedByPlayerId(),
+                    "Le tueur est le capturant du QG");
             assertEquals(arenaOwnerMoneyBefore * 0.75, arenaOwnerMoneyBefore - arenaOwner.getStats().getMoney(),
                     0.001, "75 % de la fortune exposée est transférée au vainqueur");
+        });
+
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+        assertTrue(fin.getEliminatedPlayers().contains("arene-batiments"));
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            assertEquals(3, board.getSector(5).getBuildings().size(),
+                    "Les bâtiments avec le QG restent capturés après la finalisation");
+            Player arenaOwner = playerRepository.findById(arenaOwnerId).orElseThrow();
+            assertEquals(0.0, arenaOwner.getStats().getMoney(), "La fortune non récupérée s'évapore");
         });
     }
 
@@ -716,10 +728,11 @@ class TurnResolutionScenariosTest {
     }
 
     @Test
-    @DisplayName("Scénario élimination : lurio tue Cegorach, éliminé, son QG et ses biens restent en place")
+    @DisplayName("Scénario élimination : lurio tue Cegorach ; le MJ attribue, lurio récupère le secteur du QG nu")
     void mainCharacterEliminationScenario_eliminatesCegorach() {
         ScenarioSummaryDto seed = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION");
         Long defenderId = seed.getDefender().getId();
+        Long attackerId = seed.getAttacker().getId();
         assertEquals("cegorach", seed.getDefender().getName());
 
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
@@ -743,23 +756,43 @@ class TurnResolutionScenariosTest {
         assertEquals(defenderId, report.getEliminatedPlayers().getFirst().getPlayerId());
         assertEquals("MAIN_CHARACTER_KILLED", report.getEliminatedPlayers().getFirst().getCause());
 
+        TurnResolutionStateDto pendingState = orchestrator.getState();
+        assertEquals(1, pendingState.getPendingEliminations().size(),
+                "La mort du personnage est attribuée par le MJ");
+        assertEquals(defenderId, pendingState.getPendingEliminations().getFirst().getVictimPlayerId());
+        assertTrue(pendingState.getPendingEliminations().getFirst().getParticipants().stream()
+                .anyMatch(participant -> attackerId.equals(participant.getPlayerId())));
+        assertFalse(pendingState.isCanFinalize(), "Finalisation bloquée tant que le tueur n'est pas choisi");
+        assertThrows(IllegalStateException.class, () -> orchestrator.finalizeTurn());
+
+        TurnResolutionStateDto resolvedState = orchestrator.resolveElimination(defenderId, attackerId);
+        assertTrue(resolvedState.getPendingEliminations().isEmpty());
+
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+        assertTrue(fin.getEliminatedPlayers().contains("cegorach"));
+        assertTrue(fin.getMessage().contains("éliminé"));
+
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Player defender = playerRepository.findById(defenderId).orElseThrow();
             assertTrue(defender.isEliminated());
             assertEquals(EliminationCause.MAIN_CHARACTER_KILLED, defender.getEliminationCause());
             assertEquals(battleTurn, defender.getEliminatedTurn());
+            assertEquals(attackerId, defender.getEliminatedByPlayerId());
             assertNull(defender.getCharacter(), "Le personnage principal est détaché avant le DELETE");
             assertNull(gameCharacterRepository.findByName("Cegorach").orElse(null));
+            assertTrue(defender.getBuildings().isEmpty(), "Tous ses bâtiments s'évaporent");
+            assertTrue(defender.getEquipments().isEmpty(), "Son équipement s'évapore");
+            assertTrue(defender.getResources().isEmpty(), "Son butin s'évapore");
+            assertEquals(0.0, defender.getStats().getMoney());
 
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-            assertEquals(defenderId, board.getSector(32).getOwnerId(), "Son empire reste en place");
-            assertEquals(3, board.getSector(32).getBuildings().size(), "QG + Banque + Cache intacts");
-            assertTrue(board.getSector(32).getBuildings().stream().noneMatch(Building::isCaptured));
+            assertTrue(board.getSectorsByOwner(defenderId).isEmpty(), "Plus aucun secteur à cegorach");
+            assertEquals(attackerId, board.getSector(32).getOwnerId(), "Lurio récupère le secteur du QG");
+            assertTrue(board.getSector(32).getBuildings().isEmpty(), "Le secteur du QG est récupéré nu");
+            assertNull(board.getSector(27).getOwnerId(), "Les autres secteurs deviennent neutres");
+            assertTrue(board.getSector(27).getBuildings().isEmpty());
+            assertTrue(board.getSector(27).getUnits().isEmpty());
         });
-
-        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
-        assertTrue(fin.getEliminatedPlayers().contains("cegorach"));
-        assertTrue(fin.getMessage().contains("éliminé"));
 
         ScenarioSummaryDto reseeded = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION");
         new TransactionTemplate(txManager).executeWithoutResult(status -> {

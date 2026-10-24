@@ -122,6 +122,10 @@ export class TurnManagementComponent {
     void this.turnManagement.resolveBattle(conflictId).catch(() => {});
   }
 
+  onResolveElimination(victimPlayerId: number, killerPlayerId: number | null): void {
+    void this.turnManagement.resolveElimination(victimPlayerId, killerPlayerId).catch(() => {});
+  }
+
   onShowDetail(report: ResolvedBattle): void {
     this.dialog.open(CombatLogDialogComponent, { data: report, width: '720px' });
   }
@@ -135,7 +139,7 @@ export class TurnManagementComponent {
       .join(', ');
   }
 
-  private causeLabel(cause: string): string {
+  causeLabel(cause: string): string {
     switch (cause) {
       case 'HEADQUARTERS_CAPTURED':
         return 'QG capturé';

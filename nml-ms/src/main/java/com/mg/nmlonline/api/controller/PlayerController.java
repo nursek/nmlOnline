@@ -2,6 +2,7 @@ package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.BuyEquipmentItemDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
+import com.mg.nmlonline.api.dto.PlayerStatusDto;
 import com.mg.nmlonline.api.dto.ResourceBatchSaleResponseDto;
 import com.mg.nmlonline.api.dto.ResourceSaleResponseDto;
 import com.mg.nmlonline.api.dto.SellResourceBatchRequestDto;
@@ -34,6 +35,19 @@ public class PlayerController {
     @GetMapping
     public Page<PlayerDto> findAll(Pageable pageable) {
         return playerService.findAllSummaryDto(pageable);
+    }
+
+    @GetMapping("/me/status")
+    public PlayerStatusDto myStatus(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        Player player = playerService.findByUserId(userId);
+        if (player == null) {
+            return new PlayerStatusDto(false, null, null, null);
+        }
+        return new PlayerStatusDto(player.isEliminated(),
+                player.getEliminationCause() != null ? player.getEliminationCause().name() : null,
+                player.getEliminatedTurn(),
+                player.getEliminatedByPlayerId());
     }
 
     @GetMapping("/{name}")

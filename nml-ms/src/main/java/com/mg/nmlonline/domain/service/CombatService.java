@@ -434,7 +434,8 @@ public class CombatService {
                 case HEADQUARTERS -> {
                     building.onCapture(winner.getId(), turn);
                     playerRepository.findById(building.getPlayerId())
-                            .ifPresent(victim -> victim.eliminate(EliminationCause.HEADQUARTERS_CAPTURED, turn));
+                            .ifPresent(victim -> victim.eliminate(
+                                    EliminationCause.HEADQUARTERS_CAPTURED, turn, winner.getId()));
                     headquartersCaptured = true;
                     capturedBuildings++;
                 }
