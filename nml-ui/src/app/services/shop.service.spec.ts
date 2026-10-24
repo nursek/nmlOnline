@@ -25,7 +25,12 @@ describe('ShopService (carts + signals)', () => {
         },
         {
           provide: AuthService,
-          useValue: { user: () => ({ id: 1, username: 'tester' }) },
+          useValue: {
+            user: () => ({ id: 1, username: 'tester' }),
+            initialized: () => true,
+            isAuthenticated: () => true,
+            isAdmin: () => false,
+          },
         },
       ],
     });
@@ -269,5 +274,29 @@ describe('ShopService (carts + signals)', () => {
     await expect(promise).resolves.toBe(900);
     expect(player.loadCurrent).toHaveBeenCalled();
     expect(shop.sellCart()).toEqual([]);
+  });
+
+  describe('en tant qu’admin', () => {
+    beforeEach(() => {
+      TestBed.configureTestingModule({
+        providers: [
+          {
+            provide: AuthService,
+            useValue: {
+              user: () => ({ id: 8, username: 'admin', role: 'ADMIN' }),
+              initialized: () => true,
+              isAuthenticated: () => true,
+              isAdmin: () => true,
+            },
+          },
+        ],
+      });
+    });
+
+    it("ne demande pas le catalogue des unités : l'admin n'a pas de joueur", () => {
+      getShop();
+      TestBed.tick();
+      TestBed.inject(HttpTestingController).expectNone('/api/units/catalog');
+    });
   });
 });
