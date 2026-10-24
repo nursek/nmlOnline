@@ -216,8 +216,8 @@ export class CarteComponent {
   private readonly eventCleanupFns: (() => void)[] = [];
 
   constructor() {
-    void this.allianceState.loadMe();
     if (!this.isAdmin()) {
+      void this.allianceState.loadMe();
       void this.playerService.loadReserveUnits();
       void this.playerService.loadVehicles();
     }

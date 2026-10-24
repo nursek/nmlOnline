@@ -67,7 +67,9 @@ export class ShopService {
     this.auth.isAuthenticated() ? { url: `${environment.apiBaseUrl}/vehicles/types` } : undefined,
   );
   private readonly unitCatalogRef = httpResource<UnitCatalog>(() =>
-    this.auth.isAuthenticated() ? { url: `${environment.apiBaseUrl}/units/catalog` } : undefined,
+    this.auth.isAuthenticated() && !this.auth.isAdmin()
+      ? { url: `${environment.apiBaseUrl}/units/catalog` }
+      : undefined,
   );
 
   readonly equipments = computed(() => this.equipmentsRef.value()?.content ?? []);
