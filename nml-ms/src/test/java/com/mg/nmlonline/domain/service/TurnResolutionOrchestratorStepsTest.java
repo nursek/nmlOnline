@@ -39,6 +39,9 @@ class TurnResolutionOrchestratorStepsTest {
     private TurnResolutionOrchestrator orchestrator;
 
     @Autowired
+    private CombatService combatService;
+
+    @Autowired
     private TurnService turnService;
 
     @Autowired
@@ -331,6 +334,117 @@ class TurnResolutionOrchestratorStepsTest {
             assertEquals(turnBefore + 1, result.getNewTurn());
             assertTrue(result.getResolvedOrders() >= 1, "L'ordre attaquant est marqué résolu");
             assertFalse(orchestrator.getState().isActive(), "La session est fermée après finalize");
+        }
+
+        @Test
+        @Transactional
+        @DisplayName("finalizeTurn : guérit un blessé au tour suivant, sauf s'il a combattu")
+        void finalizeTurn_soigneUnBlesseSaufSilACambatte() {
+            turnService.setCurrentTurn(2);
+            Scenario sc = setupBruteVsLarbinOrder();
+            int turnBefore = turnService.getCurrentTurn();
+
+            Unit combatWounded = em.find(Unit.class, sc.bruteId);
+            combatWounded.setInjured(true);
+            combatWounded.recalculateBaseStats();
+            combatWounded.setInjuredAtTurn(turnBefore - 1);
+
+            Unit idleWounded = new Unit(5.0, UnitClass.TIREUR);
+            idleWounded.setInjured(true);
+            idleWounded.recalculateBaseStats();
+            idleWounded.setInjuredAtTurn(turnBefore - 1);
+            Sector idleSector = sc.board.getSector(sc.fromSector);
+            idleSector.addUnit(idleWounded);
+            em.flush();
+            Long idleId = idleWounded.getId();
+
+            orchestrator.startSession();
+            orchestrator.advanceHop();
+            double idleSectorAtkBefore = idleSector.getStats().getTotalAtk();
+            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(conflictId);
+            orchestrator.finalizeTurn();
+
+            em.flush();
+            em.clear();
+
+            assertFalse(em.find(Unit.class, idleId).isInjured(),
+                    "Un blessé qui ne combat pas guérit à la fin du tour suivant");
+            Unit combatWoundedAfter = em.find(Unit.class, sc.bruteId);
+            assertTrue(combatWoundedAfter.isInjured(),
+                    "Un blessé qui combat pendant la convalescence reste blessé un tour de plus");
+            assertEquals(turnBefore - 1, combatWoundedAfter.getInjuredAtTurn());
+            assertEquals(idleSectorAtkBefore + 25.0,
+                    boardRepository.findAll().getFirst().getSector(sc.fromSector).getStats().getTotalAtk(),
+                    "Le secteur du blessé soigné est recalculé");
+        }
+
+        @Test
+        @Transactional
+        @DisplayName("finalizeTurn : le blessé du tour ne guérit pas à la fin du même tour")
+        void finalizeTurn_blessePendantLaBataille_resteBlesse() {
+            turnService.setCurrentTurn(2);
+            Scenario sc = setupBruteVsLarbinOrder();
+            int turnBefore = turnService.getCurrentTurn();
+
+            orchestrator.startSession();
+            orchestrator.advanceHop();
+            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(conflictId);
+            orchestrator.finalizeTurn();
+
+            em.flush();
+            em.clear();
+
+            Unit brute = em.find(Unit.class, sc.bruteId);
+            assertTrue(brute.isInjured(), "Le blessé pendant la bataille ne guérit pas au même tour");
+            assertEquals(turnBefore, brute.getInjuredAtTurn());
+            assertFalse(brute.isHealingDelayed());
+        }
+
+        @Test
+        @Transactional
+        @DisplayName("timeline : soin au plus tard deux tours après la blessure")
+        void healingTimeline_plafonneeADeuxTours() {
+            turnService.setCurrentTurn(2);
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            List<Player> players = playerRepository.findAll();
+            Player attacker = players.getFirst();
+            Player defender = players.stream()
+                    .filter(p -> !p.getId().equals(attacker.getId()))
+                    .findFirst().orElseThrow();
+            Sector sector = board.getAllSectors().stream()
+                    .filter(s -> s.isNeutral() && s.getArmySize() == 0)
+                    .findFirst().orElseThrow();
+
+            Unit brute = new Unit(8.0, UnitClass.TIREUR);
+            brute.setPlayerId(attacker.getId());
+            sector.addUnit(brute);
+            em.flush();
+
+            for (int turn = 2; turn <= 4; turn++) {
+                orderRepository_deletePending(turn);
+                Unit enemy = new Unit(0.0, UnitClass.TIREUR);
+                enemy.setPlayerId(defender.getId());
+                sector.addUnit(enemy);
+                em.flush();
+                assertTrue(combatService.simulateSectorBattle(
+                        List.of(attacker), List.of(defender), board, sector.getNumber()).success());
+
+                orchestrator.startSession();
+                orchestrator.finalizeTurn();
+                em.flush();
+
+                if (turn < 4) {
+                    assertTrue(brute.isInjured(), "Toujours blessé après le combat du tour " + turn);
+                    assertEquals(2, brute.getInjuredAtTurn());
+                }
+            }
+
+            assertFalse(brute.isInjured(), "Soin au plus tard deux tours après la blessure");
+            assertEquals(0, brute.getInjuredAtTurn());
+            assertEquals(100.0, brute.getAttack());
+            assertEquals(100.0, brute.getDefense());
         }
 
         @Test

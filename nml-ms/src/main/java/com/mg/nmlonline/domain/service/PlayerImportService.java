@@ -295,6 +295,8 @@ public class PlayerImportService {
         unit.setPlayerId(player.getId());
         if (unitDto.isInjured) {
             unit.setInjured(true);
+            unit.setInjuredAtTurn(unitDto.injuredAtTurn);
+            unit.setHealingDelayed(unitDto.healingDelayed);
         }
 
 
@@ -343,6 +345,8 @@ public class PlayerImportService {
         public double experience;
         public List<String> equipments = new ArrayList<>();
         public boolean isInjured;
+        public int injuredAtTurn;
+        public boolean healingDelayed;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

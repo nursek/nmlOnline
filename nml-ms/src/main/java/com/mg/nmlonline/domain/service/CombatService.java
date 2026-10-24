@@ -97,6 +97,8 @@ public class CombatService {
         battle.setDefenderBonusPercent(campBonusPercent(turn, defenderCamp, attackerCamp));
         battle.classicCombatConfiguration(attackerCamp.getFirst(), defenderCamp.getFirst(),
                 attackerFighters, defenderFighters);
+        recordCombatParticipation(turn, attackerFighters);
+        recordCombatParticipation(turn, defenderFighters);
 
         Set<Long> survivorIds = new HashSet<>();
         attackerFighters.forEach(u -> survivorIds.add(u.getId()));
@@ -217,6 +219,7 @@ public class CombatService {
 
         Battle battle = new Battle();
         battle.classicStandoffConfiguration(activeCamps.stream().map(List::getFirst).toList(), camps, targets, bonuses);
+        camps.forEach(camp -> recordCombatParticipation(turn, camp));
 
         Set<Long> survivorIds = new HashSet<>();
         camps.forEach(camp -> camp.forEach(e -> survivorIds.add(e.getId())));
@@ -478,6 +481,13 @@ public class CombatService {
 
     private boolean isCasualty(CombatEntity entity, Set<Long> beforeIds, Set<Long> survivorIds) {
         return beforeIds.contains(entity.getId()) && !survivorIds.contains(entity.getId());
+    }
+
+    private void recordCombatParticipation(int turn, List<CombatEntity> fighters) {
+        fighters.stream()
+                .filter(Unit.class::isInstance)
+                .map(Unit.class::cast)
+                .forEach(unit -> unit.recordCombatParticipation(turn));
     }
 
     private void regenerateAfterBattle(CombatEntity entity) {
