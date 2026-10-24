@@ -17,6 +17,17 @@ FROM (
 ) w
 WHERE p.id = w.player_id;
 
+-- total_economy_power dérive de cette colonne : le recalculer après la décote.
+UPDATE public.players p
+SET total_economy_power = COALESCE(p.total_income, 0)
+        + COALESCE(p.total_equipment_value, 0)
+        + COALESCE(p.money, 0)
+        + COALESCE(p.total_vehicles_value, 0)
+WHERE p.id IN (
+    SELECT player_id FROM public.combat_entities
+    WHERE entity_type = 'VEHICLE' AND is_destroyed
+);
+
 -- Détache les FK pilot_id/vehicle_id avant le DELETE des épaves.
 UPDATE public.combat_entities
 SET pilot_id = NULL

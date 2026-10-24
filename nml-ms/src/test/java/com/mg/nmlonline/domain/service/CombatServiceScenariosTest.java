@@ -207,6 +207,7 @@ class CombatServiceScenariosTest {
     @DisplayName("Véhicule détruit : supprimé du secteur, équipage débarqué et vivant, perte de type VEHICLE")
     void destroyedVehicleIsDeletedAndDisembarksCrew() {
         VehicleWorld w = seedVehicleBattle();
+        long vehicleKillsBefore = vehicleKillCount();
 
         CombatService.SectorBattleResult r = runBattle(w.attackerId(), w.defenderId(), w.sectorNumber());
 
@@ -230,9 +231,14 @@ class CombatServiceScenariosTest {
                     "Le pilote reste une unité du secteur");
         });
 
-        var statistics = gameStatisticsService.getStatistics();
-        assertTrue(statistics.getVehicles().stream()
-                .anyMatch(entry -> "VTT_LEGER".equals(entry.getKey()) && entry.getCount() == 1));
+        assertEquals(vehicleKillsBefore + 1, vehicleKillCount());
+    }
+
+    private long vehicleKillCount() {
+        return gameStatisticsService.getStatistics().getVehicles().stream()
+                .filter(entry -> "VTT_LEGER".equals(entry.getKey()))
+                .mapToLong(entry -> entry.getCount())
+                .findFirst().orElse(0);
     }
 
     @Test

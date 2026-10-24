@@ -6,7 +6,12 @@ CREATE TABLE public.game_statistics (
 
 -- Reprend les pertes déjà journalisées dans les rapports de combat.
 WITH casualties AS (
-    SELECT jsonb_array_elements(payload::jsonb -> 'casualties') AS casualty
+    SELECT jsonb_array_elements(
+        CASE WHEN jsonb_typeof(payload::jsonb -> 'casualties') = 'array'
+             THEN payload::jsonb -> 'casualties'
+             ELSE '[]'::jsonb
+        END
+    ) AS casualty
     FROM public.battle_reports
     WHERE payload IS NOT NULL
 ),

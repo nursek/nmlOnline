@@ -38,7 +38,7 @@ public class DemoDataResetter implements CommandLineRunner {
         } else {
             // CASCADE : purge secteurs/armées/ordres/actions ; credentials exclu, les comptes survivent au reset.
             entityManager.createNativeQuery(
-                            "TRUNCATE TABLE battle_reports, boards, players, equipment, resource RESTART IDENTITY CASCADE")
+                            "TRUNCATE TABLE game_statistics, battle_reports, boards, players, equipment, resource RESTART IDENTITY CASCADE")
                     .executeUpdate();
         }
     }
