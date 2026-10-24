@@ -113,6 +113,13 @@ public class Player {
         return null;
     }
 
+    public void loseVehicle(VehicleType vehicleType) {
+        if (vehicleType == null) return;
+        stats.setTotalVehiclesValue(
+                Math.max(0, stats.getTotalVehiclesValue() - vehicleType.getCost()));
+        calculateTotalEconomyPower();
+    }
+
     public void addEquipmentToStack(Equipment equipment, int number) {
         if (equipment == null) return;
 

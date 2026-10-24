@@ -1,4 +1,4 @@
-import { saleMultiplier, saleValue, SALE_MULTIPLIERS } from './sale-multiplier';
+import { saleLabel, saleMultiplier, saleValue, SALE_MULTIPLIERS } from './sale-multiplier';
 
 describe('sale-multiplier', () => {
   it('renvoie le multiplicateur attendu pour chaque palier (1→9)', () => {
@@ -32,6 +32,13 @@ describe('sale-multiplier', () => {
 
   it('saleValue gère baseValue 0', () => {
     expect(saleValue(0, 5)).toBe(0);
+  });
+
+  it('saleLabel affiche la quantité vendue et le plafond au-delà de 9', () => {
+    expect(saleLabel(1, 9)).toBe('Vente de 1 ressource');
+    expect(saleLabel(5, 9)).toBe('Vente de 5 ressources');
+    expect(saleLabel(9, 9)).toBe('Vente de 9 ressources');
+    expect(saleLabel(10, 9)).toBe('Vente de 9 ressources (max 9)');
   });
 
   it('SALE_MULTIPLIERS a 9 entrées', () => {

@@ -1,10 +1,12 @@
 package com.mg.nmlonline;
 
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.statistics.GameStatistic;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.UserService;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
+import com.mg.nmlonline.infrastructure.repository.GameStatisticRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.SectorRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
@@ -51,11 +53,15 @@ class DemoDataRebootTest {
             User trazynUser = first.getBean(UserRepository.class).findByUsername("trazyn");
             assertNotNull(trazynUser, "l'import de démo doit créer le compte manquant");
             assertTrue(first.getBean(UserService.class).checkPassword("trazyn", trazynUser.getPassword()));
+            first.getBean(GameStatisticRepository.class).save(new GameStatistic("UNIT_LARBIN", 42));
+            assertEquals(1, first.getBean(GameStatisticRepository.class).count());
         }
 
         try (ConfigurableApplicationContext second = boot(jdbcUrl)) {
             assertTrue(second.getBean(EquipmentRepository.class).findByName("Gauss Blaster").isPresent());
             assertTrue(second.getBean(PlayerResourceRepository.class).count() > 0);
+            assertEquals(0, second.getBean(GameStatisticRepository.class).count(),
+                    "Le reset démo purge les compteurs de pertes");
 
             Player trazyn = second.getBean(PlayerService.class).findByName("trazyn");
             assertNotNull(trazyn);

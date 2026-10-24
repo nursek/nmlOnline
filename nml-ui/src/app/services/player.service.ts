@@ -33,7 +33,7 @@ export class PlayerService {
   readonly currentTurn = this._currentTurn.asReadonly();
 
   readonly undeployedVehicles = computed(() =>
-    this._vehicles().filter((v) => v.sectorNumber === null),
+    this._vehicles().filter((v) => v.sectorNumber === null && !v.isDestroyed),
   );
 
   constructor() {

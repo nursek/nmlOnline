@@ -5,7 +5,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import type { PlayerResource } from '../../models';
 import { slugify } from '../../core/slug';
-import { SALE_MAX_QUANTITY, saleValue } from '../../core/sale-multiplier';
+import {
+  SALE_MAX_QUANTITY,
+  saleLabel as saleLabelFor,
+  saleValue,
+} from '../../core/sale-multiplier';
 import { optimizedImage } from '../../core/optimized-image';
 import type { OptimizedImage } from '../../core/optimized-image';
 
@@ -27,8 +31,12 @@ export class ResourceCardComponent {
     optimizedImage(`assets/shop/resources/${slugify(this.resource().name)}.png`),
   );
 
+  readonly saleQuantity = computed(() => Math.min(this.resource().quantity, this.saleMax));
+
+  readonly saleLabel = computed(() => saleLabelFor(this.resource().quantity, this.saleMax));
+
   readonly totalValue = computed(() =>
-    saleValue(this.resource().baseValue ?? 0, Math.min(this.resource().quantity, this.saleMax)),
+    saleValue(this.resource().baseValue ?? 0, this.saleQuantity()),
   );
 
   onImgError(): void {

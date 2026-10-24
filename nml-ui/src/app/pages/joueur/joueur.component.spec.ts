@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { JoueurComponent } from './joueur.component';
+import { reserveVehicleGroups } from './joueur.helpers';
 import { PlayerService } from '../../services/player.service';
 import { PlayerActionsService } from '../../services/player-actions.service';
 import { AuthService } from '../../services/auth.service';
@@ -93,6 +94,7 @@ describe('JoueurComponent — déploiement véhicule', () => {
             loading: () => false,
             error: () => null,
             undeployedVehicles: () => [vehicle(42)],
+            vehicles: () => [{ ...vehicle(1), sectorNumber: 5 }],
             vehiclesLoading: () => false,
             reserveUnits: () => [],
             reserveUnitsLoading: () => false,
@@ -136,7 +138,7 @@ describe('JoueurComponent — déploiement véhicule', () => {
     fixture.detectChanges();
     const comp = fixture.componentInstance;
 
-    comp.openPlacementModal(vehicle(42));
+    comp.openVehiclePlacementModal(reserveVehicleGroups([vehicle(42)])[0]);
 
     expect(placeVehicleSpy).toHaveBeenCalledTimes(1);
     const [vehicleId, boardId, sectorNumber] = placeVehicleSpy.mock.calls[0];
@@ -149,6 +151,8 @@ describe('JoueurComponent — déploiement véhicule', () => {
     const fixture = TestBed.createComponent(JoueurComponent);
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.deployedVehicleCount()).toBe(1);
+    expect(fixture.componentInstance.vehicleSummaries()).toEqual([
+      { vehicleType: 'TANK', displayName: 'Tank de combat', count: 1 },
+    ]);
   });
 });
