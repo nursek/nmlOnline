@@ -41,6 +41,12 @@ public class Unit extends CombatEntity {
     @Column(nullable = true)
     private double experience = 0.0;
 
+    @Column(nullable = true)
+    private int injuredAtTurn = 0;
+
+    @Column(nullable = true)
+    private boolean healingDelayed = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = true)
     private UnitType type;
@@ -122,6 +128,30 @@ public class Unit extends CombatEntity {
         this.pdc *= (1.0 + pdcBonus);
         this.armor *= (1.0 + armorBonus);
         this.evasion -= (evasionBonus * 10);
+    }
+
+    // 0 = blessure héritée d'un import sans tour, comptée comme acquise au tour courant.
+    public void recordCombatParticipation(int turn) {
+        if (!isInjured) {
+            return;
+        }
+        if (injuredAtTurn == 0) {
+            injuredAtTurn = turn;
+            healingDelayed = false;
+        } else if (turn > injuredAtTurn) {
+            healingDelayed = true;
+        }
+    }
+
+    public boolean shouldRecover(int turnEnding) {
+        return isInjured && turnEnding - injuredAtTurn >= (healingDelayed ? 2 : 1);
+    }
+
+    public void recover() {
+        isInjured = false;
+        healingDelayed = false;
+        injuredAtTurn = 0;
+        recalculateBaseStats();
     }
 
     /** Priorité : unitEquipments (persistant) > equipments (champ transient, ancien code). */

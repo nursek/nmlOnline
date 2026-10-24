@@ -80,10 +80,11 @@
           <p class="text">
             Une unité d'infanterie qui survit à un combat avec une défense entamée devient
             <strong>blessée</strong> : ses statistiques de base (Attaque et Défense) sont divisées
-            par 2. Aucun soin d'infanterie n'existe à ce jour. Le personnage, lui, n'est jamais
-            blessé : il récupère une part de sa défense (50 points) à chaque tour. Un véhicule
-            endommagé répare lui aussi <strong>50 points de défense par tour</strong>, sans
-            dépasser sa défense de base.
+            par 2. Une unité blessée guérit à la fin du tour suivant, ou à la fin du surlendemain
+            si elle participe encore à un combat. Le personnage, lui, n'est jamais blessé : il
+            récupère une part de sa défense (50 points) à chaque tour. Un véhicule endommagé
+            répare lui aussi <strong>50 points de défense par tour</strong>, sans dépasser sa
+            défense de base.
           </p>
         </mat-expansion-panel>
 
@@ -514,7 +515,8 @@
               Si un camp est anéanti, l'autre l'emporte, capture ses bâtiments et prend le
               contrôle du secteur. Si les deux camps conservent des survivants, personne ne
               l'emporte : le secteur ne change pas de main. Après le combat, l'infanterie
-              survivante endommagée devient blessée.
+              survivante endommagée devient blessée ; elle guérit à la fin du tour suivant, ou
+              du surlendemain si elle combat encore.
             </p>
           </div>
           <p class="text">

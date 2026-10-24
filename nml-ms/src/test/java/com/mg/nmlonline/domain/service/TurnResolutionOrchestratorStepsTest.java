@@ -335,6 +335,44 @@ class TurnResolutionOrchestratorStepsTest {
 
         @Test
         @Transactional
+        @DisplayName("finalizeTurn : guérit un blessé au tour suivant, sauf s'il a combattu")
+        void finalizeTurn_soigneUnBlesseSaufSilACambatte() {
+            turnService.setCurrentTurn(2);
+            Scenario sc = setupBruteVsLarbinOrder();
+            int turnBefore = turnService.getCurrentTurn();
+
+            Unit combatWounded = em.find(Unit.class, sc.bruteId);
+            combatWounded.setInjured(true);
+            combatWounded.recalculateBaseStats();
+            combatWounded.setInjuredAtTurn(turnBefore - 1);
+
+            Unit idleWounded = new Unit(5.0, UnitClass.TIREUR);
+            idleWounded.setInjured(true);
+            idleWounded.recalculateBaseStats();
+            idleWounded.setInjuredAtTurn(turnBefore - 1);
+            em.persist(idleWounded);
+            em.flush();
+            Long idleId = idleWounded.getId();
+
+            orchestrator.startSession();
+            orchestrator.advanceHop();
+            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(conflictId);
+            orchestrator.finalizeTurn();
+
+            em.flush();
+            em.clear();
+
+            assertFalse(em.find(Unit.class, idleId).isInjured(),
+                    "Un blessé qui ne combat pas guérit à la fin du tour suivant");
+            Unit combatWoundedAfter = em.find(Unit.class, sc.bruteId);
+            assertTrue(combatWoundedAfter.isInjured(),
+                    "Un blessé qui combat pendant la convalescence reste blessé un tour de plus");
+            assertEquals(turnBefore - 1, combatWoundedAfter.getInjuredAtTurn());
+        }
+
+        @Test
+        @Transactional
         @DisplayName("finalizeTurn : refusé (409) tant que des hops restent")
         void finalizeTurn_tantQueDesHopsRestent_echoue() {
             setupBruteVsLarbinOrder();
