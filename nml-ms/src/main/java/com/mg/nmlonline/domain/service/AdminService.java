@@ -193,6 +193,8 @@ public class AdminService {
 
                         if (unit.isInjured()) {
                             uMap.put("isInjured", true);
+                            uMap.put("injuredAtTurn", unit.getInjuredAtTurn());
+                            uMap.put("healingDelayed", unit.isHealingDelayed());
                         }
                         army.add(uMap);
                     }
