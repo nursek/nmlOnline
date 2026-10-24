@@ -49,6 +49,7 @@ public class TurnResolutionOrchestrator {
     private final HarvestAutoCollector harvestAutoCollector;
     private final VehicleMaintenanceService vehicleMaintenanceService;
     private final ReserveUnitPlacer reserveUnitPlacer;
+    private final UnitRecoveryService unitRecoveryService;
 
     private static final long SESSION_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
 
@@ -65,7 +66,8 @@ public class TurnResolutionOrchestrator {
                                       GameCharacterService characterService,
                                       HarvestAutoCollector harvestAutoCollector,
                                       VehicleMaintenanceService vehicleMaintenanceService,
-                                      ReserveUnitPlacer reserveUnitPlacer) {
+                                      ReserveUnitPlacer reserveUnitPlacer,
+                                      UnitRecoveryService unitRecoveryService) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
@@ -77,6 +79,7 @@ public class TurnResolutionOrchestrator {
         this.harvestAutoCollector = harvestAutoCollector;
         this.vehicleMaintenanceService = vehicleMaintenanceService;
         this.reserveUnitPlacer = reserveUnitPlacer;
+        this.unitRecoveryService = unitRecoveryService;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -195,6 +198,7 @@ public class TurnResolutionOrchestrator {
             MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
             characterService.regenerateAllCharacters();
             vehicleMaintenanceService.repairAllVehicles();
+            unitRecoveryService.recoverWoundedUnits(s.turnEnding);
             board.setCurrentTurn(s.turnEnding + 1);
             boardRepository.save(board);
             turnService.publishTurn(s.turnEnding + 1);

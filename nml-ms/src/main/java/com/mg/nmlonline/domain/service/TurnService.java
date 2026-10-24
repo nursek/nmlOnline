@@ -27,6 +27,7 @@ public class TurnService {
     private final HarvestAutoCollector harvestAutoCollector;
     private final VehicleMaintenanceService vehicleMaintenanceService;
     private final ReserveUnitPlacer reserveUnitPlacer;
+    private final UnitRecoveryService unitRecoveryService;
 
     // Cache du tour (évite un N+1), publié avant commit et purgé sur rollback.
     private volatile Integer cachedTurn;
@@ -35,7 +36,8 @@ public class TurnService {
                        TurnLock turnLock, GameCharacterService characterService,
                        HarvestAutoCollector harvestAutoCollector,
                        VehicleMaintenanceService vehicleMaintenanceService,
-                       ReserveUnitPlacer reserveUnitPlacer) {
+                       ReserveUnitPlacer reserveUnitPlacer,
+                       UnitRecoveryService unitRecoveryService) {
         this.boardRepository = boardRepository;
         this.movementService = movementService;
         this.turnLock = turnLock;
@@ -43,6 +45,7 @@ public class TurnService {
         this.harvestAutoCollector = harvestAutoCollector;
         this.vehicleMaintenanceService = vehicleMaintenanceService;
         this.reserveUnitPlacer = reserveUnitPlacer;
+        this.unitRecoveryService = unitRecoveryService;
     }
 
     /** Retourne 1 si aucun plateau n'existe encore. */
@@ -122,6 +125,7 @@ public class TurnService {
 
             characterService.regenerateAllCharacters();
             vehicleMaintenanceService.repairAllVehicles();
+            unitRecoveryService.recoverWoundedUnits(turnEnding);
 
             int newTurn = turnEnding + 1;
             board.setCurrentTurn(newTurn);

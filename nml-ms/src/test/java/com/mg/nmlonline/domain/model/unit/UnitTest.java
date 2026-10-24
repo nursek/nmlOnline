@@ -115,6 +115,35 @@ class UnitTest {
             assertEquals(10.0, unit.getArmor());
             assertEquals(30.0, unit.getEvasion());
         }
+
+        @Test
+        @DisplayName("Soin à la fin du tour suivant, reporté au surlendemain si l'unité combat")
+        void shouldRecoverAfterOneTurnUnlessFoughtWhileWounded() {
+            Unit unit = new Unit(5, UnitClass.TIREUR);
+            unit.setInjured(true);
+            unit.recalculateBaseStats();
+            unit.recordCombatParticipation(10);
+
+            assertFalse(unit.shouldRecover(10), "Pas de soin le tour de la blessure");
+            assertTrue(unit.shouldRecover(11), "Soin à la fin du tour suivant sans combat");
+
+            Unit delayed = new Unit(5, UnitClass.TIREUR);
+            delayed.setInjured(true);
+            delayed.recalculateBaseStats();
+            delayed.recordCombatParticipation(10);
+            delayed.recordCombatParticipation(11);
+
+            assertFalse(delayed.shouldRecover(11), "Un combat pendant la convalescence reporte le soin");
+            delayed.recordCombatParticipation(12);
+            assertTrue(delayed.shouldRecover(12), "Plafond : soin au 2e tour même si l'unité combat encore");
+
+            delayed.recover();
+            assertFalse(delayed.isInjured());
+            assertFalse(delayed.isHealingDelayed());
+            assertEquals(0, delayed.getInjuredAtTurn());
+            assertEquals(50.0, delayed.getAttack());
+            assertEquals(50.0, delayed.getDefense());
+        }
     }
 
     @Nested
