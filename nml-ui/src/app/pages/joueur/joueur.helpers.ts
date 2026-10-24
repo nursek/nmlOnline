@@ -447,21 +447,19 @@ export function troopSummaries(sectors: Sector[], playerId: number | null): Troo
   });
 }
 
-export function vehicleSummaries(sectors: Sector[], playerId: number | null): VehicleSummary[] {
+export function vehicleSummaries(vehicles: Vehicle[]): VehicleSummary[] {
   const byType = new Map<string, VehicleSummary>();
-  for (const s of sectors) {
-    for (const v of s.vehicles ?? []) {
-      if (!isOwned(v.playerId, playerId) || v.isDestroyed) continue;
-      const entry = byType.get(v.vehicleType);
-      if (entry) {
-        entry.count++;
-      } else {
-        byType.set(v.vehicleType, {
-          vehicleType: v.vehicleType,
-          displayName: v.displayName,
-          count: 1,
-        });
-      }
+  for (const v of vehicles) {
+    if (v.sectorNumber == null || v.isDestroyed) continue;
+    const entry = byType.get(v.vehicleType);
+    if (entry) {
+      entry.count++;
+    } else {
+      byType.set(v.vehicleType, {
+        vehicleType: v.vehicleType,
+        displayName: v.displayName,
+        count: 1,
+      });
     }
   }
 

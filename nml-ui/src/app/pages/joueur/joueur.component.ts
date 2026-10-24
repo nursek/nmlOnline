@@ -201,9 +201,7 @@ export class JoueurComponent {
   readonly troopSummaries = computed(() =>
     troopSummaries(this.conqueredSectors(), this.player()?.id ?? null),
   );
-  readonly vehicleSummaries = computed(() =>
-    vehicleSummaries(this.conqueredSectors(), this.player()?.id ?? null),
-  );
+  readonly vehicleSummaries = computed(() => vehicleSummaries(this.playerService.vehicles()));
   readonly forces = computed(() =>
     playerForces(this.conqueredSectors(), this.player()?.id ?? null),
   );

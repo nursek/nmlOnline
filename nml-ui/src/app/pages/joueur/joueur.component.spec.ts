@@ -94,6 +94,7 @@ describe('JoueurComponent — déploiement véhicule', () => {
             loading: () => false,
             error: () => null,
             undeployedVehicles: () => [vehicle(42)],
+            vehicles: () => [{ ...vehicle(1), sectorNumber: 5 }],
             vehiclesLoading: () => false,
             reserveUnits: () => [],
             reserveUnitsLoading: () => false,

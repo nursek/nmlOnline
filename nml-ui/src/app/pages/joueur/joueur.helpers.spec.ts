@@ -239,25 +239,21 @@ describe('joueur.helpers', () => {
   });
 
   describe('vehicleSummaries', () => {
-    it('compte les véhicules déployés par type, sans les ennemis ni les épaves', () => {
-      const sectors = [
-        sector(1, me, {
-          vehicles: [
-            vehicle(1, me),
-            vehicle(2, me),
-            vehicle(3, me, { vehicleType: 'HELICOPTERE', displayName: 'Hélicoptère de combat' }),
-            vehicle(4, enemy),
-            vehicle(5, me, { isDestroyed: true }),
-          ],
-        }),
-        sector(2, me, {
-          vehicles: [
-            vehicle(6, me, { vehicleType: 'HELICOPTERE', displayName: 'Hélicoptère de combat' }),
-          ],
+    it('compte les véhicules déployés par type, sans les réserves ni les épaves', () => {
+      const vehicles = [
+        vehicle(1, me),
+        vehicle(2, me),
+        vehicle(3, me, { vehicleType: 'HELICOPTERE', displayName: 'Hélicoptère de combat' }),
+        vehicle(4, me, { isDestroyed: true }),
+        vehicle(5, me, { sectorNumber: null }),
+        vehicle(6, me, {
+          vehicleType: 'HELICOPTERE',
+          displayName: 'Hélicoptère de combat',
+          sectorNumber: 2,
         }),
       ];
 
-      expect(vehicleSummaries(sectors, me)).toEqual([
+      expect(vehicleSummaries(vehicles)).toEqual([
         { vehicleType: 'HELICOPTERE', displayName: 'Hélicoptère de combat', count: 2 },
         { vehicleType: 'TANK', displayName: 'Tank de combat', count: 2 },
       ]);
