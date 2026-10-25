@@ -35,6 +35,24 @@ export interface BattleLogEntry {
   message: string;
 }
 
+export interface EliminatedPlayer {
+  playerId: number;
+  playerName: string | null;
+  cause: string;
+}
+
+export interface PendingEliminationParticipant {
+  playerId: number;
+  playerName: string | null;
+}
+
+export interface PendingElimination {
+  victimPlayerId: number;
+  victimPlayerName: string | null;
+  cause: string;
+  participants: PendingEliminationParticipant[];
+}
+
 export interface ResolvedBattle {
   sectorNumber: number;
   standoff: boolean;
@@ -55,6 +73,7 @@ export interface ResolvedBattle {
   attackerCharacterLost: boolean;
   defenderCharacterLost: boolean;
   defenderHeadquartersCaptured: boolean;
+  eliminatedPlayers: EliminatedPlayer[] | null;
   battleLog: BattleLogEntry[] | null;
 }
 
@@ -65,6 +84,7 @@ export interface TurnResolutionState {
   maxSteps: number;
   pendingConflicts: PendingConflict[];
   resolvedConflicts: ResolvedBattle[];
+  pendingEliminations: PendingElimination[];
   transitCombatsCount: number;
   canAdvance: boolean;
   canFinalize: boolean;
@@ -79,5 +99,6 @@ export interface TurnFinalizeResult {
   conflictsResolved: number;
   transitCombats: number;
   capturedSectors: SectorCapture[];
+  eliminatedPlayers: string[] | null;
   message: string | null;
 }

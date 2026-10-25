@@ -195,6 +195,15 @@
             </mat-panel-title>
             <mat-panel-description class="panel-desc">
               <div class="stats-chips">
+                @if (player.eliminated) {
+                  <span
+                    class="stat-chip eliminated"
+                    matTooltip="Joueur éliminé — actions désactivées"
+                  >
+                    <mat-icon>dangerous</mat-icon>
+                    Éliminé
+                  </span>
+                }
                 <span class="stat-chip money" matTooltip="Argent">
                   <mat-icon>payments</mat-icon>
                   {{ formatMoney(player.stats.money) }}$

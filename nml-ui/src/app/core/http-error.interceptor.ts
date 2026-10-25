@@ -1,7 +1,10 @@
+import { Injector, inject } from '@angular/core';
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent } from '@angular/common/http';
 import { Observable, throwError, timer } from 'rxjs';
-import { retry, timeout } from 'rxjs/operators';
+import { catchError, retry, timeout } from 'rxjs/operators';
 import { APP_CONSTANTS } from './constants';
+import { PlayerStatusService } from '../services/player-status.service';
+import { PlayerService } from '../services/player.service';
 
 /**
  * Intercepteur HTTP global.
@@ -14,6 +17,7 @@ export const httpErrorInterceptor: HttpInterceptorFn = (
   next: HttpHandlerFn,
 ): Observable<HttpEvent<unknown>> => {
   const idempotent = req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS';
+  const injector = inject(Injector);
 
   return next(req).pipe(
     timeout(APP_CONSTANTS.HTTP_TIMEOUT_MS),
@@ -30,6 +34,17 @@ export const httpErrorInterceptor: HttpInterceptorFn = (
           },
         })
       : (source) => source,
+    catchError((error) => {
+      // 409 sur une action de jeu : le joueur vient peut-être d'être éliminé, l'UI est périmée.
+      if ((error as { status?: number })?.status === 409) {
+        injector.get(PlayerStatusService).reload();
+        const playerService = injector.get(PlayerService);
+        if (playerService.player()) {
+          void playerService.loadCurrent();
+        }
+      }
+      return throwError(() => error);
+    }),
   );
 };
 

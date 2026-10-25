@@ -958,3 +958,31 @@ textarea:focus-visible,
     scroll-behavior: auto !important;
   }
 }
+
+.main-content.readonly-mode {
+  :is(input, select, textarea, mat-checkbox, mat-radio-button, mat-slide-toggle, mat-select) {
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  button {
+    pointer-events: none;
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  :is(
+    [role='tab'],
+    .mat-mdc-tab,
+    .mdc-tab,
+    .mat-mdc-tab-header,
+    .mat-mdc-tab-header-pagination,
+    mat-expansion-panel-header,
+    .mat-expansion-panel-header,
+    .mat-expansion-panel-header button
+  ) {
+    pointer-events: auto;
+    opacity: 1;
+    cursor: pointer;
+  }
+}

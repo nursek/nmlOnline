@@ -98,6 +98,11 @@
       font-style: normal;
       font-size: 0.8rem;
     }
+
+    em.player-eliminated {
+      color: var(--danger);
+      font-weight: 700;
+    }
   }
 
   .camp.eliminated {

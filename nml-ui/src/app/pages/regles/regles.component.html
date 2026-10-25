@@ -513,8 +513,9 @@
             <mat-icon>flag</mat-icon>
             <p>
               Si un camp est anéanti, l'autre l'emporte, capture ses bâtiments et prend le
-              contrôle du secteur. Si les deux camps conservent des survivants, personne ne
-              l'emporte : le secteur ne change pas de main. Après le combat, l'infanterie
+              contrôle du secteur. Un quartier général capturé élimine son propriétaire (voir
+              Élimination et fin de partie). Si les deux camps conservent des survivants, personne
+              ne l'emporte : le secteur ne change pas de main. Après le combat, l'infanterie
               survivante endommagée devient blessée ; elle guérit à la fin du tour suivant, ou
               du surlendemain si elle combat encore.
             </p>
@@ -647,12 +648,46 @@
         <mat-expansion-panel id="victoire" class="rule-panel">
           <mat-expansion-panel-header>
             <mat-panel-title>
-              <mat-icon>emoji_events</mat-icon>Fin de partie et podium
-              <span class="soon">À venir</span>
+              <mat-icon>emoji_events</mat-icon>Élimination et fin de partie
+              <span class="soon">Podium à venir</span>
             </mat-panel-title>
           </mat-expansion-panel-header>
           <p class="text">
-            La partie se joue jusqu'au dernier survivant. Le podium récompense les
+            Un joueur est <strong>éliminé</strong> dès que son quartier général est
+            <strong>capturé</strong> ou que son <strong>personnage principal est tué</strong> au
+            combat. Un quartier général seulement détruit, mais non capturé, n'élimine pas son
+            propriétaire : il reste reconstructible et son armée est immobilisée en attendant.
+          </p>
+          <ul class="rule-list">
+            <li>
+              <strong>QG capturé</strong> — le quartier général bascule au vainqueur, y compris
+              lorsqu'il a été détruit pendant la bataille. À la fin du tour, le vainqueur récupère
+              <strong>tous les secteurs</strong> de la victime, y compris ceux qu'elle capture
+              pendant la résolution. Les bâtiments du secteur du QG sont <strong>pillés</strong>
+              (cache d'armes, banque), puis tous les bâtiments de la victime sont supprimés.
+              Si le personnage principal meurt dans le même combat, la capture du QG prime :
+              c'est la conquête totale qui s'applique.
+            </li>
+            <li>
+              <strong>Personnage principal tué</strong> — la ligne du personnage est supprimée et
+              son propriétaire est éliminé, même si son QG est intact. Le MJ désigne le tueur parmi
+              les participants du combat (ou « Personne » si personne ne doit récupérer le QG).
+              Le tueur récupère uniquement le <strong>secteur du QG, nu</strong> ; les autres
+              secteurs deviennent neutres et sont vidés.
+            </li>
+            <li>
+              <strong>QG détruit non capturé</strong> — aucune élimination : le joueur peut payer la
+              reconstruction sur place et reprendre la partie.
+            </li>
+            <li>
+              <strong>Après l'élimination</strong> — toutes ses pages passent en lecture seule et
+              ses actions sont refusées. Ses unités survivantes, véhicules, équipements et butin
+              non récupérés s'évaporent ; ses alliances sont rompues et ses échanges en attente
+              annulés. Un tueur lui-même éliminé pendant le tour ne récupère ni secteur ni butin.
+            </li>
+          </ul>
+          <p class="text">
+            La partie se joue jusqu'au dernier survivant. Le podium récompensera les
             <strong>trois finalistes</strong>, c'est-à-dire les trois derniers joueurs encore en
             vie.
           </p>
@@ -687,17 +722,12 @@
               <strong>Aucun survivant</strong> — pas de vainqueur, la partie se conclut sans
               première place.
             </li>
-            <li>
-              <strong>Élimination d'un joueur</strong> — perte de toutes ses unités et/ou de son QG
-              (conditions exactes à préciser).
-            </li>
           </ul>
           <div class="draft">
             <mat-icon>construction</mat-icon>
             <p>
-              Non implémenté : aucune condition de fin de partie ni élimination n'existe
-              aujourd'hui. Le vainqueur d'une bataille ne vaut que pour le secteur concerné, et la
-              perte du QG est récupérable.
+              Non implémenté : le podium et la condition de fin de partie. Les conséquences de
+              l'élimination d'un joueur (QG capturé ou personnage principal tué) sont actives.
             </p>
           </div>
         </mat-expansion-panel>

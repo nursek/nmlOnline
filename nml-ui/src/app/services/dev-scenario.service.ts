@@ -99,6 +99,20 @@ export class DevScenarioService {
     );
   }
 
+  async seedAllianceScenario(): Promise<void> {
+    await this.seed(
+      () => this.api.adminSeedAllianceScenario(),
+      "Erreur lors du seeding de l'alliance",
+    );
+  }
+
+  async seedResourceSaleScenario(): Promise<void> {
+    await this.seed(
+      () => this.api.adminSeedResourceSaleScenario(),
+      'Erreur lors du seeding de la vente',
+    );
+  }
+
   clearSeedReport(): void {
     this._seedReport.set(null);
   }

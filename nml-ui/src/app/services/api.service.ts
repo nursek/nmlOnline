@@ -153,6 +153,22 @@ export class ApiService {
     );
   }
 
+  adminResolveElimination(
+    victimPlayerId: number,
+    killerPlayerId: number | null,
+  ): Observable<TurnResolutionState> {
+    return this.http.post<TurnResolutionState>(
+      `${this.baseUrl}/admin/turn/resolve/elimination`,
+      {},
+      {
+        params: {
+          victimPlayerId,
+          ...(killerPlayerId !== null ? { killerPlayerId } : {}),
+        },
+      },
+    );
+  }
+
   adminFinalizeResolution(): Observable<TurnFinalizeResult> {
     return this.http.post<TurnFinalizeResult>(`${this.baseUrl}/admin/turn/resolve/finalize`, {});
   }
@@ -195,6 +211,17 @@ export class ApiService {
   adminSeedExchangeScenario(): Observable<ExchangeScenarioSummary> {
     return this.http.post<ExchangeScenarioSummary>(
       `${this.baseUrl}/admin/dev/seed-exchange-scenario`,
+      {},
+    );
+  }
+
+  adminSeedAllianceScenario(): Observable<ScenarioSummary> {
+    return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/seed-alliance-scenario`, {});
+  }
+
+  adminSeedResourceSaleScenario(): Observable<ScenarioSummary> {
+    return this.http.post<ScenarioSummary>(
+      `${this.baseUrl}/admin/dev/seed-resource-sale-scenario`,
       {},
     );
   }

@@ -4,6 +4,10 @@
       <mat-icon>science</mat-icon>
       <h1>Scénarios de tests</h1>
     </div>
+    <p class="subtitle">
+      Jeux de données rejouables pour vérifier le moteur de jeu. Chaque seed est idempotent et ne
+      touche que son périmètre.
+    </p>
   </header>
 
   @if (!available() && !loading()) {
@@ -18,147 +22,304 @@
       <div class="error-banner" role="alert">⚠ {{ error() }}</div>
     }
 
-    <div class="dev-scenario-panel">
-      <div class="dev-scenario-info">
-        <mat-icon>science</mat-icon>
-        <div class="dev-scenario-text">
-          <strong>Scénarios de test (dev)</strong>
+    <section class="scenario-section">
+      <header class="section-head">
+        <mat-icon>swords</mat-icon>
+        <div>
+          <h2>Combat</h2>
+          <p>
+            Arènes neutres dédiées, purgées puis peuplées à chaque seed. Un seul hop à résoudre dans
+            <strong>Gestion du tour</strong>.
+          </p>
+        </div>
+      </header>
+
+      <div class="scenario-grid">
+        @for (scenario of sortedCombatScenarios(); track scenario.code) {
+          <article class="scenario-card" [class.elimination]="scenario.eliminatesPlayer">
+            <div class="card-head">
+              <span class="card-icon"
+                ><mat-icon>{{ combatIcon(scenario.code) }}</mat-icon></span
+              >
+              <div class="card-title">
+                <h3>{{ scenario.label }}</h3>
+                <span class="card-meta">
+                  Arène {{ scenario.arenaSector }} · départ {{ scenario.stagingSector }}
+                </span>
+              </div>
+              @if (scenario.eliminatesPlayer) {
+                <span class="badge">Élimination</span>
+              }
+            </div>
+            <p class="card-desc">{{ scenario.description }}</p>
+            <ul class="observations">
+              @for (observation of scenario.observations; track $index) {
+                <li>{{ observation }}</li>
+              }
+            </ul>
+            <div class="card-actions">
+              <button
+                mat-flat-button
+                color="primary"
+                (click)="onSeedCombatScenario(scenario.code)"
+                [disabled]="seeding()"
+              >
+                @if (pendingAction() === scenario.code) {
+                  <mat-spinner diameter="18"></mat-spinner>
+                } @else {
+                  <mat-icon>play_circle</mat-icon>
+                }
+                Seeder
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="scenario-section">
+      <header class="section-head">
+        <mat-icon>tune</mat-icon>
+        <div>
+          <h2>Features</h2>
+          <p>
+            Alliances, échanges et économie : de quoi vérifier chaque écran métier sans rejouer une
+            partie complète.
+          </p>
+        </div>
+      </header>
+
+      <div class="scenario-grid">
+        <article class="scenario-card feature-card">
+          <div class="card-head">
+            <span class="card-icon"><mat-icon>handshake</mat-icon></span>
+            <div class="card-title">
+              <h3>Alliance scellée</h3>
+              <span class="card-meta">mortarion ↔ angron</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            Propose puis accepte l'alliance entre deux joueurs de fixture. L'annonce apparaît dans
+            Accueil au tour suivant.
+          </p>
+          <ul class="observations">
+            <li>Idempotent : si l'alliance est déjà active, le seed le signale sans doublon</li>
+            <li>Vérifiable dans la page Alliance et l'onglet Alliances du joueur</li>
+          </ul>
+          <div class="card-actions">
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="onSeedAllianceScenario()"
+              [disabled]="seeding()"
+            >
+              @if (pendingAction() === 'ALLIANCE') {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>play_circle</mat-icon>
+              }
+              Seeder
+            </button>
+          </div>
+        </article>
+
+        <article class="scenario-card feature-card">
+          <div class="card-head">
+            <span class="card-icon"><mat-icon>swap_horiz</mat-icon></span>
+            <div class="card-title">
+              <h3>Échanges</h3>
+              <span class="card-meta">lurio → cegorach · imotekh → nursek</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            Dépose une offre en attente et un échange déjà accepté entre joueurs de fixture.
+          </p>
+          <ul class="observations">
+            <li>Offre en attente visible par le destinataire</li>
+            <li>Échange accepté visible dans l'historique des deux joueurs</li>
+          </ul>
+          <div class="card-actions">
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="onSeedExchangeScenario()"
+              [disabled]="seeding()"
+            >
+              @if (pendingAction() === 'EXCHANGE') {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>play_circle</mat-icon>
+              }
+              Seeder
+            </button>
+          </div>
+        </article>
+
+        <article class="scenario-card feature-card">
+          <div class="card-head">
+            <span class="card-icon"><mat-icon>sell</mat-icon></span>
+            <div class="card-title">
+              <h3>Vente de ressources</h3>
+              <span class="card-meta">lurio · 5 × Caisse d'armes</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            Réapprovisionne le stock puis vend un lot pour vérifier le prix progressif et le journal
+            d'actions.
+          </p>
+          <ul class="observations">
+            <li>Palier de vente 5 appliqué</li>
+            <li>Action de vente retrouvée dans le journal du joueur</li>
+          </ul>
+          <div class="card-actions">
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="onSeedResourceSaleScenario()"
+              [disabled]="seeding()"
+            >
+              @if (pendingAction() === 'SALE') {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>play_circle</mat-icon>
+              }
+              Seeder
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="scenario-section">
+      <header class="section-head">
+        <mat-icon>event_repeat</mat-icon>
+        <div>
+          <h2>Tours</h2>
+          <p>
+            Déroulements prédéfinis sur plusieurs tours, ou situation de conflit isolée à résoudre
+            hop par hop.
+          </p>
+        </div>
+      </header>
+
+      <div class="scenario-grid">
+        <article class="scenario-card tour-card featured">
+          <div class="card-head">
+            <span class="card-icon"><mat-icon>smart_toy</mat-icon></span>
+            <div class="card-title">
+              <h3>Démo complète — tours 1 et 2</h3>
+              <span class="card-meta">depuis une partie vierge uniquement</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            Enchaîne ventes, équipement, alliance, récolte, recrutement, ordres puis résolutions des
+            tours 1 et 2. Les batailles sont arbitrées automatiquement.
+          </p>
+          <ol class="tour-flow">
+            <li>Ventes de ressources et achats d'équipement</li>
+            <li>Alliance mortarion ↔ angron</li>
+            <li>Récolte et recrutement au tour 2</li>
+            <li>Ordres de mouvement puis résolutions des conflits</li>
+          </ol>
+          <div class="card-actions">
+            <button
+              mat-flat-button
+              color="accent"
+              (click)="onPlayDemoTurns()"
+              [disabled]="seeding() || !demoAvailable()"
+              [matTooltip]="
+                demoAvailable()
+                  ? 'Depuis le tour 1 : ventes, équipement, alliance, ordres puis résolution des tours 1 et 2'
+                  : 'Déjà jouée — redémarrez le backend pour repartir de la démo vierge (H2 en mémoire)'
+              "
+            >
+              @if (pendingAction() === 'DEMO') {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>play_circle</mat-icon>
+              }
+              Jouer la démo
+            </button>
+          </div>
+        </article>
+
+        <article class="scenario-card tour-card">
+          <div class="card-head">
+            <span class="card-icon"><mat-icon>route</mat-icon></span>
+            <div class="card-title">
+              <h3>Attaque 2 hops</h3>
+              <span class="card-meta">lurio → cegorach, secteur 32</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            Place un ordre de mouvement de lurio (41) vers le secteur 32 tenu par cegorach, via 13.
+          </p>
+          <ul class="observations">
+            <li>Route [41, 13, 32]</li>
+            <li>Deux hops puis un conflit à résoudre</li>
+          </ul>
+          <div class="card-actions">
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="onSeedScenario()"
+              [disabled]="seeding()"
+            >
+              @if (pendingAction() === 'HOP_2') {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>play_circle</mat-icon>
+              }
+              Seeder
+            </button>
+          </div>
+        </article>
+
+        <article class="scenario-card tour-card">
+          <div class="card-head">
+            <span class="card-icon"><mat-icon>groups</mat-icon></span>
+            <div class="card-title">
+              <h3>Impasse 3 camps</h3>
+              <span class="card-meta">cegorach, imotekh, lurio au secteur 32</span>
+            </div>
+          </div>
+          <p class="card-desc">
+            Fait converger deux attaquants sur le défenseur au même hop pour déclencher une impasse
+            mexicaine.
+          </p>
+          <ul class="observations">
+            <li>Un seul conflit groupé à résoudre</li>
+            <li>Ordre des camps : défenseur, puis arrivants par ordre d'envoi</li>
+          </ul>
+          <div class="card-actions">
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="onSeedStandoffScenario()"
+              [disabled]="seeding()"
+            >
+              @if (pendingAction() === 'STANDOFF') {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>play_circle</mat-icon>
+              }
+              Seeder
+            </button>
+          </div>
+        </article>
+      </div>
+
+      @if (demoReport(); as demo) {
+        <div class="seed-report" [class.partial]="demo.observations?.length">
+          <mat-icon>{{ demo.observations?.length ? 'warning' : 'check_circle' }}</mat-icon>
           <span>
-            « Jouer la démo » enchaîne les tours 1 et 2 — ventes, équipement, alliance, récolte,
-            recrutement, ordres puis résolutions (batailles arbitrées automatiquement). 2 hops :
-            lurio (secteur 41) → secteur 32 (cegorach), route [41, 13, 32]. Impasse : cegorach
-            défend 32, imotekh (43) et lurio (41) y arrivent au même hop. Les scénarios de combat
-            utilisent des arènes neutres dédiées, purgées à chaque seed. Re-jouables à la demande.
+            {{ demo.message }}
+            @for (issue of demo.observations ?? []; track $index) {
+              <em class="issue">{{ issue }}</em>
+            }
           </span>
         </div>
-      </div>
-      <button
-        mat-flat-button
-        color="accent"
-        (click)="onPlayDemoTurns()"
-        [disabled]="seeding() || !demoAvailable()"
-        [matTooltip]="
-          demoAvailable()
-            ? 'Depuis le tour 1 : ventes, équipement, alliance, ordres puis résolution des tours 1 et 2'
-            : 'Déjà jouée — redémarrez le backend pour repartir de la démo vierge (H2 en mémoire)'
-        "
-      >
-        @if (seeding()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          <mat-icon>smart_toy</mat-icon>
-        }
-        Jouer la démo (tours 1 et 2)
-      </button>
-      <button
-        mat-flat-button
-        color="accent"
-        (click)="onSeedScenario()"
-        [disabled]="seeding()"
-        matTooltip="Sème le scénario pour le tour courant (idempotent)"
-      >
-        @if (seeding()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          <mat-icon>play_circle</mat-icon>
-        }
-        Seeder le scénario 2 hops
-      </button>
-      <button
-        mat-flat-button
-        color="primary"
-        (click)="onSeedStandoffScenario()"
-        [disabled]="seeding()"
-        matTooltip="Cegorach défend 32, imotekh et lurio y arrivent au même hop"
-      >
-        @if (seeding()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          <mat-icon>groups</mat-icon>
-        }
-        Seeder l'impasse 3 camps
-      </button>
-      <mat-form-field appearance="outline" class="combat-scenario-select" subscriptSizing="dynamic">
-        <mat-label>Scénario de combat</mat-label>
-        <mat-select
-          [value]="selectedCombatScenario()"
-          (valueChange)="selectedCombatScenario.set($event)"
-        >
-          @for (scenario of combatScenarios(); track scenario.code) {
-            <mat-option [value]="scenario.code">{{ scenario.label }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <button
-        mat-flat-button
-        color="primary"
-        (click)="onSeedCombatScenario()"
-        [disabled]="seeding() || !selectedScenarioInfo()"
-        matTooltip="Purge l'arène dédiée du scénario puis la peuple (1 hop à résoudre)"
-      >
-        @if (seeding()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          <mat-icon>swords</mat-icon>
-        }
-        Seeder le scénario de combat
-      </button>
-      <button
-        mat-stroked-button
-        color="primary"
-        (click)="onSeedExchangeScenario()"
-        [disabled]="seeding()"
-        matTooltip="Offre en attente lurio → cegorach et échange accepté imotekh → nursek"
-      >
-        @if (seeding()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          <mat-icon>swap_horiz</mat-icon>
-        }
-        Seeder un échange
-      </button>
-    </div>
-
-    @if (selectedScenarioInfo(); as scenario) {
-      <div class="combat-scenario-details">
-        <div class="combat-scenario-head">
-          <mat-icon>fact_check</mat-icon>
-          <strong>{{ scenario.label }}</strong>
-          <span class="arena"
-            >Arène {{ scenario.arenaSector }} · départ {{ scenario.stagingSector }}</span
-          >
-        </div>
-        <p>{{ scenario.description }}</p>
-        <ul>
-          @for (observation of scenario.observations; track $index) {
-            <li>{{ observation }}</li>
-          }
-        </ul>
-      </div>
-    }
-
-    @if (demoReport(); as demo) {
-      <div class="seed-report" [class.partial]="demo.observations?.length">
-        <mat-icon>{{ demo.observations?.length ? 'warning' : 'check_circle' }}</mat-icon>
-        <span>
-          {{ demo.message }}
-          @for (issue of demo.observations ?? []; track $index) {
-            <em class="issue">{{ issue }}</em>
-          }
-        </span>
-      </div>
-    }
-
-    @if (seedReport()) {
-      <div class="seed-report">
-        <mat-icon>check_circle</mat-icon>
-        <span>
-          {{ seedReport()?.message }}
-          @if (seedReport()?.route?.length) {
-            · Route {{ seedReport()?.route }} · Tour {{ seedReport()?.turn }}
-          }
-        </span>
-      </div>
-    }
+      }
+    </section>
   }
 </section>

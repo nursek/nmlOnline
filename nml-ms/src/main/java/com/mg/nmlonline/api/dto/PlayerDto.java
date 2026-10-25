@@ -17,4 +17,9 @@ public class PlayerDto {
     private GameCharacterDto character;
 
     private List<BuildingDto> buildings;
+
+    private boolean eliminated;
+    private String eliminationCause;
+    private Integer eliminatedTurn;
+    private Long eliminatedByPlayerId;
 }

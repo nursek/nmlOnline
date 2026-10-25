@@ -22,6 +22,8 @@ public class BattleReportDto {
         private String playerName;
         private boolean eliminated;
         private boolean characterLost;
+        private boolean playerEliminated;
+        private String eliminationCause;
     }
 
     @Data

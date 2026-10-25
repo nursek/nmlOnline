@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.api.dto.BuyEquipmentItemDto;
 import com.mg.nmlonline.api.dto.BuyUnitRequestDto;
 import com.mg.nmlonline.api.dto.PendingConflictDto;
+import com.mg.nmlonline.api.dto.PendingEliminationDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.api.dto.SellResourceBatchItemDto;
@@ -236,6 +237,14 @@ public class DemoTurnsSeeder {
         try {
             TurnResolutionStateDto state = orchestrator.startSession();
             while (!state.isCanFinalize()) {
+                if (!state.getPendingEliminations().isEmpty()) {
+                    for (PendingEliminationDto pending : state.getPendingEliminations()) {
+                        Long killerId = pending.getParticipants().isEmpty() ? null
+                                : pending.getParticipants().getFirst().getPlayerId();
+                        state = orchestrator.resolveElimination(pending.getVictimPlayerId(), killerId);
+                    }
+                    continue;
+                }
                 if (state.getPendingConflicts().isEmpty()) {
                     state = orchestrator.advanceHop();
                     continue;

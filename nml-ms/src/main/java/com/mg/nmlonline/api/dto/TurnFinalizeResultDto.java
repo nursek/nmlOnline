@@ -13,5 +13,6 @@ public class TurnFinalizeResultDto {
     private int conflictsResolved;
     private int transitCombats;
     private List<SectorCaptureDto> capturedSectors;
+    private List<String> eliminatedPlayers;
     private String message;
 }

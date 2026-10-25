@@ -197,6 +197,12 @@ public class AdminController {
         return report;
     }
 
+    @PostMapping("/turn/resolve/elimination")
+    public TurnResolutionStateDto resolveElimination(@RequestParam Long victimPlayerId,
+                                                     @RequestParam(required = false) Long killerPlayerId) {
+        return turnResolutionOrchestrator.resolveElimination(victimPlayerId, killerPlayerId);
+    }
+
     /**
      * Finalise : incrémente le tour ; 409 si hops/batailles incomplets ; libère le verrou.
      */

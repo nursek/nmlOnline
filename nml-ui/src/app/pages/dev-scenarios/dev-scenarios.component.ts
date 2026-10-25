@@ -9,8 +9,6 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DevScenarioService } from '../../services/dev-scenario.service';
@@ -22,8 +20,6 @@ import { DevScenarioService } from '../../services/dev-scenario.service';
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatFormFieldModule,
-    MatSelectModule,
     MatTooltipModule,
     MatSnackBarModule,
   ],
@@ -42,12 +38,26 @@ export class DevScenariosComponent {
   readonly demoAvailable = this.scenarios.demoAvailable;
   readonly error = this.scenarios.error;
   readonly combatScenarios = this.scenarios.combatScenarios;
-  readonly selectedCombatScenario = signal('MIXED_5050');
-  readonly selectedScenarioInfo = computed(
-    () =>
-      this.combatScenarios().find((scenario) => scenario.code === this.selectedCombatScenario()) ??
-      null,
+  readonly sortedCombatScenarios = computed(() =>
+    [...this.combatScenarios()].sort(
+      (a, b) => Number(b.eliminatesPlayer) - Number(a.eliminatesPlayer),
+    ),
   );
+  readonly pendingAction = signal<string | null>(null);
+
+  private readonly combatIcons: Record<string, string> = {
+    MIXED_5050: 'swords',
+    DESTRUCTOR_VS_TANK: 'directions_car',
+    CREW_PROTECTED: 'shield',
+    CREW_DISEMBARK: 'airport_shuttle',
+    AERIAL_HIT: 'flight',
+    AERIAL_ANTI_AIR: 'rocket_launch',
+    BLDG_CAPTURE: 'domain',
+    BLDG_DESTROY: 'gavel',
+    CHAR_KILL: 'person_off',
+    MAIN_CHARACTER_ELIMINATION: 'dangerous',
+    CHAR_REGEN: 'healing',
+  };
 
   constructor() {
     effect(() => {
@@ -55,36 +65,48 @@ export class DevScenariosComponent {
       if (!seed) {
         return;
       }
-      const msg =
-        'standoff' in seed
-          ? seed.standoff
-            ? `Impasse prête — ${seed.defender.name} défend le secteur ${seed.orders?.at(0)?.route.at(-1) ?? '?'}`
-            : `Scénario prêt — ${seed.attacker?.name} → secteur ${seed.route?.at(-1)} (${seed.defender.name})`
-          : seed.message;
-      this.snackBar.open(msg, 'OK', { duration: 6000, panelClass: 'toast-success' });
+      this.snackBar.open(seed.message ?? 'Scénario prêt', 'OK', {
+        duration: 6000,
+        panelClass: 'toast-success',
+      });
       this.scenarios.clearSeedReport();
     });
   }
 
-  onSeedScenario(): void {
-    void this.scenarios.seedDevScenario().catch(() => {
-      /* le service positionne déjà le signal d'erreur */
-    });
+  combatIcon(code: string): string {
+    return this.combatIcons[code] ?? 'swords';
   }
 
-  onPlayDemoTurns(): void {
-    void this.scenarios.playDemoTurns().catch(() => {});
-  }
-
-  onSeedStandoffScenario(): void {
-    void this.scenarios.seedStandoffScenario().catch(() => {});
-  }
-
-  onSeedCombatScenario(): void {
-    void this.scenarios.seedCombatScenario(this.selectedCombatScenario()).catch(() => {});
+  onSeedCombatScenario(code: string): void {
+    this.run(code, () => this.scenarios.seedCombatScenario(code));
   }
 
   onSeedExchangeScenario(): void {
-    void this.scenarios.seedExchangeScenario().catch(() => {});
+    this.run('EXCHANGE', () => this.scenarios.seedExchangeScenario());
+  }
+
+  onSeedAllianceScenario(): void {
+    this.run('ALLIANCE', () => this.scenarios.seedAllianceScenario());
+  }
+
+  onSeedResourceSaleScenario(): void {
+    this.run('SALE', () => this.scenarios.seedResourceSaleScenario());
+  }
+
+  onSeedScenario(): void {
+    this.run('HOP_2', () => this.scenarios.seedDevScenario());
+  }
+
+  onSeedStandoffScenario(): void {
+    this.run('STANDOFF', () => this.scenarios.seedStandoffScenario());
+  }
+
+  onPlayDemoTurns(): void {
+    this.run('DEMO', () => this.scenarios.playDemoTurns());
+  }
+
+  private run(action: string, call: () => Promise<void>): void {
+    this.pendingAction.set(action);
+    void call().finally(() => this.pendingAction.set(null));
   }
 }

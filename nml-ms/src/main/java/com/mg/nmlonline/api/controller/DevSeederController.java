@@ -5,6 +5,7 @@ import com.mg.nmlonline.api.dto.ExchangeScenarioSummaryDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.domain.service.DemoTurnsSeeder;
 import com.mg.nmlonline.domain.service.ExchangeScenarioSeeder;
+import com.mg.nmlonline.domain.service.FeatureScenarioSeeder;
 import com.mg.nmlonline.domain.service.TurnResolutionScenarioSeeder;
 import com.mg.nmlonline.domain.service.TurnService;
 import org.springframework.context.annotation.Profile;
@@ -28,15 +29,18 @@ public class DevSeederController {
 
     private final TurnResolutionScenarioSeeder scenarioSeeder;
     private final ExchangeScenarioSeeder exchangeScenarioSeeder;
+    private final FeatureScenarioSeeder featureScenarioSeeder;
     private final DemoTurnsSeeder demoTurnsSeeder;
     private final TurnService turnService;
 
     public DevSeederController(TurnResolutionScenarioSeeder scenarioSeeder,
                                ExchangeScenarioSeeder exchangeScenarioSeeder,
+                               FeatureScenarioSeeder featureScenarioSeeder,
                                DemoTurnsSeeder demoTurnsSeeder,
                                TurnService turnService) {
         this.scenarioSeeder = scenarioSeeder;
         this.exchangeScenarioSeeder = exchangeScenarioSeeder;
+        this.featureScenarioSeeder = featureScenarioSeeder;
         this.demoTurnsSeeder = demoTurnsSeeder;
         this.turnService = turnService;
     }
@@ -73,6 +77,16 @@ public class DevSeederController {
     @PostMapping("/seed-exchange-scenario")
     public ResponseEntity<ExchangeScenarioSummaryDto> seedExchangeScenario() {
         return ResponseEntity.ok(exchangeScenarioSeeder.seedExchangeScenario());
+    }
+
+    @PostMapping("/seed-alliance-scenario")
+    public ResponseEntity<ScenarioSummaryDto> seedAllianceScenario() {
+        return ResponseEntity.ok(featureScenarioSeeder.seedAllianceScenario());
+    }
+
+    @PostMapping("/seed-resource-sale-scenario")
+    public ResponseEntity<ScenarioSummaryDto> seedResourceSaleScenario() {
+        return ResponseEntity.ok(featureScenarioSeeder.seedResourceSaleScenario());
     }
 
     /** Navigation manuelle du compteur de tour, sans résolution des mouvements. */

@@ -275,6 +275,12 @@
     &.equipment {
       color: var(--forest);
     }
+    &.eliminated {
+      color: var(--danger);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
   }
 }
 

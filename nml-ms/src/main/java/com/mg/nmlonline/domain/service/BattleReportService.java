@@ -75,6 +75,8 @@ public class BattleReportService {
         }
         Map<Long, String> names = participants.stream()
                 .collect(Collectors.toMap(Player::getId, Player::getName, (a, b) -> a));
+        Map<Long, Player> playersById = participants.stream()
+                .collect(Collectors.toMap(Player::getId, player -> player, (a, b) -> a));
 
         BattleReportDto dto = new BattleReportDto();
         dto.setTurn(turn);
@@ -90,6 +92,10 @@ public class BattleReportService {
                     camp.setPlayerName(names.get(outcome.playerId()));
                     camp.setEliminated(outcome.eliminated());
                     camp.setCharacterLost(outcome.characterLost());
+                    Player player = playersById.get(outcome.playerId());
+                    camp.setPlayerEliminated(player != null && player.isEliminated());
+                    camp.setEliminationCause(player != null && player.getEliminationCause() != null
+                            ? player.getEliminationCause().name() : null);
                     return camp;
                 })
                 .toList());
@@ -119,6 +125,9 @@ public class BattleReportService {
         camp.setPlayerName(player.getName());
         camp.setEliminated(eliminated);
         camp.setCharacterLost(characterLost);
+        camp.setPlayerEliminated(player.isEliminated());
+        camp.setEliminationCause(player.getEliminationCause() != null
+                ? player.getEliminationCause().name() : null);
         return camp;
     }
 

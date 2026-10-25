@@ -55,6 +55,19 @@ public class Player {
     @Column(name = "ranking_comment", length = 500)
     private String rankingComment;
 
+    @Column(nullable = false)
+    private boolean eliminated;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "elimination_cause", length = 40)
+    private EliminationCause eliminationCause;
+
+    @Column(name = "eliminated_turn")
+    private Integer eliminatedTurn;
+
+    @Column(name = "eliminated_by_player_id")
+    private Long eliminatedByPlayerId;
+
     @Embedded
     private PlayerStats stats = new PlayerStats();
 
@@ -81,6 +94,22 @@ public class Player {
 
     public Player(String name) {
         this.name = name;
+    }
+
+    /** La capture du QG prime sur la mort du personnage : elle déclenche la conquête totale. */
+    public void eliminate(EliminationCause cause, int turn) {
+        eliminate(cause, turn, null);
+    }
+
+    public void eliminate(EliminationCause cause, int turn, Long byPlayerId) {
+        if (eliminated && !(cause == EliminationCause.HEADQUARTERS_CAPTURED
+                && eliminationCause != EliminationCause.HEADQUARTERS_CAPTURED)) {
+            return;
+        }
+        eliminated = true;
+        eliminationCause = cause;
+        eliminatedTurn = turn;
+        eliminatedByPlayerId = byPlayerId;
     }
 
     public Equipment getEquipmentByString(String name) {
