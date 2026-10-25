@@ -96,13 +96,14 @@ public class Player {
         this.name = name;
     }
 
-    /** Première cause gagnante : QG capturé puis personnage tué dans le même combat reste une seule élimination. */
+    /** La capture du QG prime sur la mort du personnage : elle déclenche la conquête totale. */
     public void eliminate(EliminationCause cause, int turn) {
         eliminate(cause, turn, null);
     }
 
     public void eliminate(EliminationCause cause, int turn, Long byPlayerId) {
-        if (eliminated) {
+        if (eliminated && !(cause == EliminationCause.HEADQUARTERS_CAPTURED
+                && eliminationCause != EliminationCause.HEADQUARTERS_CAPTURED)) {
             return;
         }
         eliminated = true;

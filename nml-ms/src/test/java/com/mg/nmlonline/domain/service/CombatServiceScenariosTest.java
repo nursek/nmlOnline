@@ -343,8 +343,9 @@ class CombatServiceScenariosTest {
             assertNull(em.find(GameCharacter.class, w.characterId()), "La ligne du personnage est supprimée");
             assertNull(defender.getCharacter(), "Le joueur perd son personnage (fin de partie arbitrée par le MJ)");
             assertTrue(defender.isEliminated(), "Personnage principal + QG perdus : joueur éliminé");
-            assertEquals(EliminationCause.MAIN_CHARACTER_KILLED, defender.getEliminationCause(),
-                    "La mort du personnage est enregistrée avant la capture du QG");
+            assertEquals(EliminationCause.HEADQUARTERS_CAPTURED, defender.getEliminationCause(),
+                    "La capture du QG prime sur la mort du personnage");
+            assertEquals(w.attackerId(), defender.getEliminatedByPlayerId());
 
             Headquarters hq = em.find(Headquarters.class, w.hqId());
             assertNotNull(hq, "Le QG détruit reste en BDD (jamais DELETE)");

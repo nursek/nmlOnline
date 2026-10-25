@@ -172,8 +172,19 @@ public class TurnResolutionOrchestrator {
 
         s.resolvedConflicts.add(rb);
         s.pendingConflicts.remove(pc);
+        clearHeadquartersEliminationPending(s, locked);
         registerPendingEliminations(s, rb, locked);
         return toBattleDto(rb, resolveNames(rb));
+    }
+
+    /** La capture du QG remplace une élimination par mort de personnage : l'attribution MJ devient inutile. */
+    private void clearHeadquartersEliminationPending(Session s, Map<Long, Player> locked) {
+        for (Player player : locked.values()) {
+            if (player.getEliminationCause() == EliminationCause.HEADQUARTERS_CAPTURED) {
+                s.pendingEliminations.remove(player.getId());
+                s.eliminationKillers.remove(player.getId());
+            }
+        }
     }
 
     /** Une mort de personnage principal est attribuée par le MJ parmi les participants du combat. */
