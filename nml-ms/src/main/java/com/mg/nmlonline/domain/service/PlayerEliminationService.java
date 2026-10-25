@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** Conséquences matérielles d'une élimination, appliquées à la finalisation du tour. */
 @Service
 @Transactional
 public class PlayerEliminationService {
@@ -68,12 +67,13 @@ public class PlayerEliminationService {
 
     public void apply(Board board, Player victim, Long killerId, int turn) {
         Player killer = killerId != null ? playerRepository.findById(killerId).orElse(null) : null;
-        String killerColor = killer != null ? playerColor(board, killerId) : "#ffffff";
+        boolean killerActive = killer != null && !killer.isEliminated();
+        String killerColor = killerActive ? playerColor(board, killerId) : "#ffffff";
         boolean headquartersCaptured = victim.getEliminationCause() == EliminationCause.HEADQUARTERS_CAPTURED;
         Integer headquartersSector = headquartersSector(victim);
         List<Sector> ownedSectors = new ArrayList<>(board.getSectorsByOwner(victim.getId()));
 
-        if (headquartersCaptured && killer != null && headquartersSector != null) {
+        if (headquartersCaptured && killerActive && headquartersSector != null) {
             lootHeadquartersSector(victim, headquartersSector, killerId, turn);
         }
         for (Building building : new ArrayList<>(victim.getBuildings())) {
@@ -89,24 +89,10 @@ public class PlayerEliminationService {
 
         victim.getEquipments().clear();
         victim.getResources().clear();
-        PlayerStats stats = victim.getStats();
-        stats.setMoney(0);
-        stats.setStartingMoneyRemaining(0);
-        stats.setTotalEquipmentValue(0);
-        stats.setTotalVehiclesValue(0);
-        stats.setTotalIncome(0);
-        stats.setTotalOffensivePower(0);
-        stats.setTotalDefensivePower(0);
-        stats.setGlobalPower(0);
-        stats.setTotalAtk(0);
-        stats.setTotalPdf(0);
-        stats.setTotalPdc(0);
-        stats.setTotalDef(0);
-        stats.setTotalArmor(0);
-        victim.calculateTotalEconomyPower();
+        victim.setStats(new PlayerStats());
 
         for (Sector sector : ownedSectors) {
-            boolean goesToKiller = killer != null
+            boolean goesToKiller = killerActive
                     && (headquartersCaptured
                         || (headquartersSector != null && sector.getNumber() == headquartersSector));
             if (goesToKiller) {
@@ -120,7 +106,7 @@ public class PlayerEliminationService {
         if (!headquartersCaptured && headquartersSector != null) {
             Sector headquarters = board.getSector(headquartersSector);
             if (headquarters != null) {
-                if (killer != null) {
+                if (killerActive) {
                     headquarters.setOwnerAndColor(killerId, killerColor);
                 } else {
                     headquarters.setOwnerAndColor(null, "#ffffff");
@@ -174,14 +160,14 @@ public class PlayerEliminationService {
                 continue;
             }
             if (entity instanceof Unit unit) {
-                detachFromVehicles(unit);
+                CombatService.detachFromVehicles(entityManager, unit);
                 Sector sector = unit.getSector();
                 if (sector != null) {
                     sector.getUnits().remove(unit);
                 }
                 entityManager.remove(unit);
             } else if (entity instanceof GameCharacter character) {
-                detachFromVehicles(character);
+                CombatService.detachFromVehicles(entityManager, character);
                 Sector sector = character.getSector();
                 if (sector != null) {
                     sector.getCharacters().remove(character);
@@ -207,21 +193,6 @@ public class PlayerEliminationService {
                 sector.getVehicles().remove(vehicle);
             }
             entityManager.remove(vehicle);
-        }
-    }
-
-    /** Un pilote ou passager supprimé doit être détaché avant le DELETE (FK pilot_id / table de passagers). */
-    private void detachFromVehicles(CombatEntity entity) {
-        List<Vehicle> vehicles = entityManager.createQuery(
-                        "select distinct v from Vehicle v left join v.passengers p "
-                                + "where v.pilot.id = :entityId or p.id = :entityId", Vehicle.class)
-                .setParameter("entityId", entity.getId())
-                .getResultList();
-        for (Vehicle vehicle : vehicles) {
-            if (vehicle.getPilot() != null && entity.getId().equals(vehicle.getPilot().getId())) {
-                vehicle.removePilot();
-            }
-            vehicle.disembark(entity);
         }
     }
 

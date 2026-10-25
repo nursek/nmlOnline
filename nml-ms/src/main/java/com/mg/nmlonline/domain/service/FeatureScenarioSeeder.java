@@ -10,7 +10,6 @@ import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Seeds unitaires des features hors combat : alliance déjà scellée et vente de ressources. */
 @Service
 public class FeatureScenarioSeeder {
 

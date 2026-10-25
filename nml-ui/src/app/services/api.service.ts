@@ -5,7 +5,6 @@ import {
   AuthResponse,
   LoginRequest,
   Player,
-  PlayerStatus,
   MovementOrder,
   MovementResolutionResult,
   TurnResolutionState,
@@ -58,10 +57,6 @@ export class ApiService {
 
   getPlayer(username: string): Observable<Player> {
     return this.http.get<Player>(`${this.baseUrl}/players/${username}`);
-  }
-
-  getMyStatus(): Observable<PlayerStatus> {
-    return this.http.get<PlayerStatus>(`${this.baseUrl}/players/me/status`);
   }
 
   sellResourcesBatch(items: SellResourceBatchItem[]): Observable<ResourceBatchSaleResponse> {

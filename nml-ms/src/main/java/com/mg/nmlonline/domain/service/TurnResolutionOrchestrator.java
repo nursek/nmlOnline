@@ -215,7 +215,6 @@ public class TurnResolutionOrchestrator {
         }
     }
 
-    /** Attribue le tueur d'une élimination par mort de personnage (null = personne). */
     public synchronized TurnResolutionStateDto resolveElimination(Long victimPlayerId, Long killerPlayerId) {
         Session s = requireSession();
         PendingElimination pending = s.pendingEliminations.get(victimPlayerId);
@@ -227,6 +226,11 @@ public class TurnResolutionOrchestrator {
             throw new IllegalArgumentException(
                     "Le tueur " + killerPlayerId + " n'a pas participé au combat");
         }
+        // Choix commité tout de suite : un abandon ou un redémarrage ne doit pas le perdre.
+        Player victim = playerRepository.findByIdForUpdate(victimPlayerId)
+                .orElseThrow(() -> new IllegalArgumentException("Joueur " + victimPlayerId + " introuvable"));
+        victim.setEliminatedByPlayerId(killerPlayerId);
+        playerRepository.save(victim);
         s.eliminationKillers.put(victimPlayerId, killerPlayerId);
         s.pendingEliminations.remove(victimPlayerId);
         return toStateDto(s);
@@ -258,15 +262,20 @@ public class TurnResolutionOrchestrator {
         Board board = loadBoard();
         movementService.refreshActiveOrders(s.ctx);
         try {
+            if (board.getCurrentTurn() != s.turnEnding) {
+                throw new IllegalStateException("Session périmée : le tour " + s.turnEnding
+                        + " a déjà été finalisé");
+            }
             // Propriété d'avant combats/déplacements : un secteur capturé pendant la résolution ne paie pas deux fois.
             harvestAutoCollector.collectRemainingMoney(board, s.turnEnding, s.sectorOwners);
 
             MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
             List<Player> eliminated = playerRepository.findByEliminatedTurnOrderByNameAsc(s.turnEnding);
             for (Player victim : eliminated) {
-                Long killerId = victim.getEliminationCause() == EliminationCause.HEADQUARTERS_CAPTURED
-                        ? victim.getEliminatedByPlayerId()
-                        : s.eliminationKillers.get(victim.getId());
+                // Décision en session d'abord : le commit du choix peut suivre une finalisation concurrente.
+                Long killerId = s.eliminationKillers.containsKey(victim.getId())
+                        ? s.eliminationKillers.get(victim.getId())
+                        : victim.getEliminatedByPlayerId();
                 playerEliminationService.apply(board, victim, killerId, s.turnEnding);
             }
             characterService.regenerateAllCharacters();

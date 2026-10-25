@@ -10,6 +10,7 @@ import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
+import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
@@ -527,6 +528,8 @@ class TurnResolutionScenariosTest {
                 && s.getArenaSector() == 24 && s.getStagingSector() == 19));
         assertTrue(scenarios.stream().anyMatch(s -> "BLDG_CAPTURE".equals(s.getCode())
                 && s.getArenaSector() == 5 && s.getStagingSector() == 4 && s.isEliminatesPlayer()));
+        assertTrue(scenarios.stream().anyMatch(s -> "BLDG_DESTROY".equals(s.getCode())
+                && s.isEliminatesPlayer()), "Un QG capturé même détruit élimine son propriétaire");
         assertTrue(scenarios.stream().anyMatch(s -> "MAIN_CHARACTER_ELIMINATION".equals(s.getCode())
                 && s.getArenaSector() == 43 && s.getStagingSector() == 38 && s.isEliminatesPlayer()));
         assertTrue(scenarios.stream().allMatch(s -> !s.getObservations().isEmpty()),
@@ -671,6 +674,9 @@ class TurnResolutionScenariosTest {
                     0.001, "75 % de la fortune exposée est transférée au vainqueur");
         });
 
+        double lurioMoneyBeforeFinalize = new TransactionTemplate(txManager).execute(status ->
+                playerRepository.findById(lurioId).orElseThrow().getStats().getMoney());
+
         TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
         assertTrue(fin.getEliminatedPlayers().contains("arene-batiments"));
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
@@ -679,13 +685,17 @@ class TurnResolutionScenariosTest {
                     "Les bâtiments pillés du secteur du QG sont supprimés");
             Player arenaOwner = playerRepository.findById(arenaOwnerId).orElseThrow();
             assertEquals(0.0, arenaOwner.getStats().getMoney(), "La fortune non récupérée s'évapore");
+            assertEquals(lurioMoneyBeforeFinalize,
+                    playerRepository.findById(lurioId).orElseThrow().getStats().getMoney(), 0.001,
+                    "Les bâtiments déjà capturés pendant le combat ne sont pas pillés une seconde fois");
         });
     }
 
     @Test
     @DisplayName("Scénario destruction : Banque et Cache rasées non capturées, QG capturé même détruit")
     void buildingDestroyScenario_onlyHeadquartersCaptured() {
-        seeder.seedCombatScenario("BLDG_DESTROY");
+        ScenarioSummaryDto seed = seeder.seedCombatScenario("BLDG_DESTROY");
+        Long lurioId = seed.getAttacker().getId();
 
         orchestrator.startSession();
         PendingConflictDto conflict = orchestrator.advanceHop().getPendingConflicts().getFirst();
@@ -701,6 +711,20 @@ class TurnResolutionScenariosTest {
                         .anyMatch(entry -> entry.getMessage().contains("détruit arene-ruines · Cache d'armes")));
         assertTrue(report.getBattleLog().stream()
                         .anyMatch(entry -> entry.getMessage().contains("détruit arene-ruines · Quartier Général")));
+
+        double lurioMoneyBeforeFinalize = new TransactionTemplate(txManager).execute(status ->
+                playerRepository.findById(lurioId).orElseThrow().getStats().getMoney());
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+
+        assertTrue(fin.getEliminatedPlayers().contains("arene-ruines"),
+                "La capture d'un QG détruit élimine son propriétaire");
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            assertTrue(board.getSector(23).getBuildings().isEmpty());
+            assertEquals(lurioMoneyBeforeFinalize,
+                    playerRepository.findById(lurioId).orElseThrow().getStats().getMoney(), 0.001,
+                    "Banque en ruines : aucun pillage à la finalisation");
+        });
     }
 
     @Test
@@ -765,6 +789,14 @@ class TurnResolutionScenariosTest {
         assertFalse(pendingState.isCanFinalize(), "Finalisation bloquée tant que le tueur n'est pas choisi");
         assertThrows(IllegalStateException.class, () -> orchestrator.finalizeTurn());
 
+        Long outsiderId = playerRepository.findAll().stream()
+                .map(Player::getId)
+                .filter(id -> !id.equals(defenderId) && !id.equals(attackerId))
+                .findFirst().orElseThrow();
+        assertThrows(IllegalArgumentException.class,
+                () -> orchestrator.resolveElimination(defenderId, outsiderId),
+                "Un tueur qui n'a pas participé au combat est refusé");
+
         TurnResolutionStateDto resolvedState = orchestrator.resolveElimination(defenderId, attackerId);
         assertTrue(resolvedState.getPendingEliminations().isEmpty());
 
@@ -799,10 +831,41 @@ class TurnResolutionScenariosTest {
             Player defender = playerRepository.findById(reseeded.getDefender().getId()).orElseThrow();
             assertFalse(defender.isEliminated(), "Re-seed : cegorach redevient actif");
             assertNull(defender.getEliminationCause());
+            assertNull(defender.getEliminatedByPlayerId(), "Re-seed : le tueur enregistré est effacé");
             GameCharacter character = defender.getCharacter();
             assertNotNull(character, "Un nouveau personnage principal est rattaché");
             assertEquals("Cegorach", character.getName());
             assertEquals(43, character.getSector().getNumber());
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            assertTrue(board.getSector(32).getBuildings().stream()
+                            .anyMatch(building -> building instanceof Headquarters
+                                    && defender.getId().equals(building.getPlayerId())),
+                    "Re-seed : le QG de cegorach est recréé en 32 pour rejouer le scénario");
+        });
+    }
+
+    @Test
+    @DisplayName("Re-seed : un QG déplacé hors de son secteur d'origine n'est pas dupliqué")
+    void reseedDoesNotDuplicateHeadquartersMovedOutOfDefaultSector() {
+        Long defenderId = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION").getDefender().getId();
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            Headquarters headquarters = board.getSector(32).getBuildings().stream()
+                    .filter(Headquarters.class::isInstance)
+                    .map(Headquarters.class::cast)
+                    .filter(building -> defenderId.equals(building.getPlayerId()))
+                    .findFirst().orElseThrow();
+            headquarters.setSector(board.getSector(27));
+        });
+
+        seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION");
+
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Long count = em.createQuery(
+                            "select count(h) from Headquarters h where h.playerId = :playerId", Long.class)
+                    .setParameter("playerId", defenderId)
+                    .getSingleResult();
+            assertEquals(1L, count, "Le QG existant hors secteur 32 ne doit pas être recréé");
         });
     }
 

@@ -42,6 +42,7 @@ public class TurnResolutionScenarioSeeder {
     private static final int STANDOFF_ATTACKER_FROM = 43;
 
     private static final String MAIN_CHARACTER_SCENARIO = "MAIN_CHARACTER_ELIMINATION";
+    private static final int MAIN_CHARACTER_HQ_SECTOR = 32;
 
     private record CombatScenarioDefinition(String code, String label, String description,
                                             List<String> observations, int arenaSector, int stagingSector,
@@ -98,8 +99,8 @@ public class TurnResolutionScenarioSeeder {
                     "4 BRUTEs MASTODONTE lourdement blindés rasent la Banque, le Cache puis le QG.",
                     List.of("Ordre d'exposition : Banque → Cache → QG, le surplus enchaîne",
                             "Banque et Cache détruites ne sont pas capturées",
-                            "Le QG est capturé même détruit (arbitrage MJ)"),
-                    23, 29, "arene-ruines", false),
+                            "Le QG est capturé même détruit : son propriétaire est éliminé"),
+                    23, 29, "arene-ruines", true),
             new CombatScenarioDefinition("CHAR_KILL", "Personnage secondaire éliminé",
                     "2 MALFRATs tuent le LARBIN d'arène puis son personnage secondaire, ciblé en dernier.",
                     List.of("Le LARBIN encaisse avant le personnage (exposition : unités → personnages)",
@@ -112,7 +113,7 @@ public class TurnResolutionScenarioSeeder {
                     List.of("Cegorach est déplacé dans l'arène 43 : son QG et ses biens en secteur 32 restent intacts",
                             "Le personnage est lié à Player.character : sa mort élimine cegorach",
                             "Esquive neutralisée dans l'arène pour garantir la mort",
-                            "Après élimination, ses unités restent sur la carte mais ses actions sont refusées",
+                            "Après finalisation, ses unités et bâtiments ont disparu et ses actions sont refusées",
                             "Re-seed : cegorach redevient actif avec un nouveau personnage principal"),
                     43, 38, "cegorach", true),
             new CombatScenarioDefinition("CHAR_REGEN", "Personnage blessé, régénération",
@@ -306,6 +307,7 @@ public class TurnResolutionScenarioSeeder {
         resetScenarioArena(board, arena, staging);
         if (MAIN_CHARACTER_SCENARIO.equals(definition.code())) {
             attachMainCharacter(defender, arena, mainCharacter);
+            restoreMainCharacterHeadquarters(board, defender);
         }
 
         List<Unit> attackers = new ArrayList<>();
@@ -466,9 +468,15 @@ public class TurnResolutionScenarioSeeder {
         character.setSector(arena);
         character.setEvasion(0);
         arena.getCharacters().add(character);
-        defender.setEliminated(false);
-        defender.setEliminationCause(null);
-        defender.setEliminatedTurn(null);
+        clearElimination(defender);
+    }
+
+    /** Une première exécution supprime tous les bâtiments de la victime : le seed recrée son QG. */
+    private void restoreMainCharacterHeadquarters(Board board, Player defender) {
+        boolean present = defender.getBuildings().stream().anyMatch(Headquarters.class::isInstance);
+        if (!present) {
+            placeHeadquarters(requireSector(board, MAIN_CHARACTER_HQ_SECTOR, "secteur du QG"), defender);
+        }
     }
 
     private void seedCharacterRegen(Sector arena, Sector staging, Player attacker, Player defender,
@@ -501,10 +509,15 @@ public class TurnResolutionScenarioSeeder {
             character.getSector().getCharacters().remove(character);
             defender.setCharacter(null);
         }
+        clearElimination(defender);
+        entityManager.flush();
+    }
+
+    private void clearElimination(Player defender) {
         defender.setEliminated(false);
         defender.setEliminationCause(null);
         defender.setEliminatedTurn(null);
-        entityManager.flush();
+        defender.setEliminatedByPlayerId(null);
     }
 
     private void purgeSector(Sector sector) {

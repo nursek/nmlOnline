@@ -86,7 +86,8 @@ export class TurnManagementService {
     );
   }
 
-  async resolveBattle(conflictId: number): Promise<void> {    this._busy.set(true);
+  async resolveBattle(conflictId: number): Promise<void> {
+    this._busy.set(true);
     this._error.set(null);
     this._lastReport.set(null);
     try {

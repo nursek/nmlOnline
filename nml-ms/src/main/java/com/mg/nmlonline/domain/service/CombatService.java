@@ -351,7 +351,7 @@ public class CombatService {
 
         for (Unit unit : new ArrayList<>(sector.getUnits())) {
             if (isCasualty(unit, beforeIds, survivorIds)) {
-                detachPilotFromVehicles(unit);
+                detachFromVehicles(em, unit);
                 // Sector.army sans orphanRemoval (V6) : em.remove cascade vers Unit.unitEquipments (cascade=ALL) → DELETE propre. Retrait mémoire pour cohérence de sector.getUnits().
                 em.remove(unit);
                 sector.getUnits().remove(unit);
@@ -361,7 +361,7 @@ public class CombatService {
 
         for (GameCharacter character : new ArrayList<>(sector.getCharacters())) {
             if (isCasualty(character, beforeIds, survivorIds)) {
-                detachCharacterFromVehicles(character);
+                detachFromVehicles(em, character);
                 Player owner = playersById.get(character.getPlayerId());
                 boolean mainCharacter = owner != null && owner.getCharacter() != null
                         && character.getId().equals(owner.getCharacter().getId());
@@ -622,28 +622,19 @@ public class CombatService {
                               List<CasualtyInfo> casualties, List<ExperienceGain> gains) {
     }
 
-    /** Détacher le personnage de tout véhicule (pilote ou passager) — sinon les FK pilot_id/vehicle_id bloquent le DELETE. */
-    private void detachCharacterFromVehicles(GameCharacter character) {
+    // FK pilot_id et table de passagers portées par la ligne du véhicule : détacher avant tout DELETE.
+    static void detachFromVehicles(EntityManager em, CombatEntity entity) {
         List<Vehicle> carrying = em.createQuery(
                         "select distinct v from Vehicle v left join v.passengers p " +
-                                "where v.pilot.id = :characterId or p.id = :characterId", Vehicle.class)
-                .setParameter("characterId", character.getId())
-                .getResultList();
-        for (Vehicle vehicle : carrying) {
-            if (vehicle.getPilot() != null && character.getId().equals(vehicle.getPilot().getId())) {
-                vehicle.removePilot();
-            }
-            vehicle.disembark(character);
-        }
-    }
-
-    // pilot_id est porté par la ligne du véhicule : un pilote supprimé doit être détaché avant le DELETE.
-    private void detachPilotFromVehicles(CombatEntity entity) {
-        List<Vehicle> piloted = em.createQuery(
-                        "select v from Vehicle v where v.pilot.id = :entityId", Vehicle.class)
+                                "where v.pilot.id = :entityId or p.id = :entityId", Vehicle.class)
                 .setParameter("entityId", entity.getId())
                 .getResultList();
-        piloted.forEach(Vehicle::removePilot);
+        for (Vehicle vehicle : carrying) {
+            if (vehicle.getPilot() != null && entity.getId().equals(vehicle.getPilot().getId())) {
+                vehicle.removePilot();
+            }
+            vehicle.disembark(entity);
+        }
     }
 
     private SectorBattleResult failedResult(String message) {

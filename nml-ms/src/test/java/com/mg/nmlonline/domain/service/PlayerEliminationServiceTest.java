@@ -146,8 +146,13 @@ class PlayerEliminationServiceTest {
             victim.addEquipmentToStack(equipment, 1);
             victim.addResource("Auramite", 5);
             victim.getStats().setMoney(1000.0);
+            victim.getStats().setStartingMoneyRemaining(50.0);
             victim.getStats().setTotalIncome(500.0);
             victim.getStats().setTotalAtk(100.0);
+            victim.getStats().setGlobalPower(999.0);
+            victim.getStats().setTotalDef(250.0);
+            victim.getStats().setTotalEquipmentValue(400.0);
+            victim.getStats().setTotalVehiclesValue(300.0);
             victim.eliminate(cause, 1, null);
             em.flush();
 
@@ -158,6 +163,8 @@ class PlayerEliminationServiceTest {
                     victim.getId(), ally.getId(), 100.0, 1, 2));
             pendingCaptureRepository.save(PendingCapture.create(board.getId(), HQ_SECTOR, 1,
                     List.of(victim.getId(), ally.getId())));
+            pendingCaptureRepository.save(PendingCapture.create(board.getId(), 39, 1,
+                    List.of(victim.getId())));
             em.flush();
             return new World(victim.getId(), killer.getId(), ally.getId(), alliance.getId(),
                     proposal.getId(), offer.getId());
@@ -206,6 +213,11 @@ class PlayerEliminationServiceTest {
             assertEquals(0.0, victim.getStats().getMoney());
             assertEquals(0.0, victim.getStats().getTotalIncome());
             assertEquals(0.0, victim.getStats().getTotalAtk());
+            assertEquals(0.0, victim.getStats().getGlobalPower());
+            assertEquals(0.0, victim.getStats().getTotalDef());
+            assertEquals(0.0, victim.getStats().getTotalEquipmentValue());
+            assertEquals(0.0, victim.getStats().getTotalVehiclesValue());
+            assertEquals(0.0, victim.getStats().getStartingMoneyRemaining());
             assertTrue(victim.getBuildings().isEmpty());
 
             Player killer = playerRepository.findById(world.killerId()).orElseThrow();
@@ -229,6 +241,48 @@ class PlayerEliminationServiceTest {
                     "Le joueur éliminé est retiré des candidats de capture");
             assertTrue(capture.candidateIds().contains(world.allyId()),
                     "Les autres candidats de la capture alliée sont conservés");
+            assertTrue(pendingCaptureRepository.findByResolvedFalseOrderByIdAsc().stream()
+                            .noneMatch(pending -> pending.getSectorNumber() == 39),
+                    "Une capture dont l'éliminé était l'unique candidat est supprimée");
+        });
+    }
+
+    @Test
+    @DisplayName("Tueur éliminé dans le même tour : aucun secteur ne lui revient")
+    void eliminatedKillerDoesNotInheritSectors() {
+        World world = seed(EliminationCause.MAIN_CHARACTER_KILLED);
+        new TransactionTemplate(txManager).executeWithoutResult(status ->
+                playerRepository.findById(world.killerId()).orElseThrow()
+                        .eliminate(EliminationCause.MAIN_CHARACTER_KILLED, 1));
+
+        apply(world, EliminationCause.MAIN_CHARACTER_KILLED, world.killerId());
+
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            em.clear();
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            assertNull(board.getSector(HQ_SECTOR).getOwnerId(),
+                    "Un tueur éliminé ne récupère pas le secteur du QG");
+            assertNull(board.getSector(OTHER_SECTOR).getOwnerId());
+        });
+    }
+
+    @Test
+    @DisplayName("Personnage tué : le secteur du QG revient au tueur même s'il appartenait à un tiers")
+    void mainCharacterDeathGrantsHeadquartersSectorEvenWhenUnowned() {
+        World world = seed(EliminationCause.MAIN_CHARACTER_KILLED);
+        new TransactionTemplate(txManager).executeWithoutResult(status -> boardRepository.findAll().stream()
+                .findFirst().orElseThrow().getSector(HQ_SECTOR)
+                .setOwnerAndColor(world.allyId(), "#222222"));
+
+        apply(world, EliminationCause.MAIN_CHARACTER_KILLED, world.killerId());
+
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            em.clear();
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            assertEquals(world.killerId(), board.getSector(HQ_SECTOR).getOwnerId(),
+                    "Le tueur récupère le secteur du QG même s'il n'était pas celui de la victime");
+            assertTrue(board.getSector(HQ_SECTOR).getBuildings().isEmpty());
+            assertNull(board.getSector(OTHER_SECTOR).getOwnerId());
         });
     }
 

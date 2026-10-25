@@ -1,4 +1,4 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -25,10 +25,27 @@ export class PlayerStatusService {
     return { url: `${environment.apiBaseUrl}/players/me/status` };
   });
 
-  readonly status = computed(() => this.statusRef.value() ?? ACTIVE);
-  readonly eliminated = computed(() => this.status().eliminated);
+  private readonly lastKnown = signal<PlayerStatus | null>(null);
+
+  readonly status = computed(() => {
+    if (!this.auth.user()) {
+      return ACTIVE;
+    }
+    const value = this.statusRef.hasValue() ? this.statusRef.value() : null;
+    return value ?? this.lastKnown() ?? ACTIVE;
+  });
+  // Le MJ reste opérateur : /api/admin/** échappe au filtre serveur, l'UI doit suivre.
+  readonly eliminated = computed(() => this.status().eliminated && !this.auth.isAdmin());
 
   constructor() {
+    // Une erreur réseau ne doit pas rouvrir les actions d'un joueur déjà éliminé.
+    effect(() => {
+      if (!this.auth.user()) {
+        this.lastKnown.set(null);
+      } else if (this.statusRef.hasValue()) {
+        this.lastKnown.set(this.statusRef.value());
+      }
+    });
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => this.reload());
