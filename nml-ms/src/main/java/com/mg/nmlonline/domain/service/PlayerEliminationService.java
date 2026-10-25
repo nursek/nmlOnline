@@ -14,6 +14,7 @@ import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.player.PlayerStats;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
@@ -30,10 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /** Conséquences matérielles d'une élimination, appliquées à la finalisation du tour. */
 @Service
@@ -72,7 +71,6 @@ public class PlayerEliminationService {
         String killerColor = killer != null ? playerColor(board, killerId) : "#ffffff";
         boolean headquartersCaptured = victim.getEliminationCause() == EliminationCause.HEADQUARTERS_CAPTURED;
         Integer headquartersSector = headquartersSector(victim);
-        Set<Integer> affectedSectors = new HashSet<>();
         List<Sector> ownedSectors = new ArrayList<>(board.getSectorsByOwner(victim.getId()));
 
         if (headquartersCaptured && killer != null && headquartersSector != null) {
@@ -82,7 +80,6 @@ public class PlayerEliminationService {
             Sector sector = building.getSector();
             if (sector != null) {
                 sector.getBuildings().remove(building);
-                affectedSectors.add(sector.getNumber());
             }
             victim.getBuildings().remove(building);
         }
@@ -92,10 +89,20 @@ public class PlayerEliminationService {
 
         victim.getEquipments().clear();
         victim.getResources().clear();
-        victim.getStats().setMoney(0);
-        victim.getStats().setStartingMoneyRemaining(0);
-        victim.getStats().setTotalEquipmentValue(0);
-        victim.getStats().setTotalVehiclesValue(0);
+        PlayerStats stats = victim.getStats();
+        stats.setMoney(0);
+        stats.setStartingMoneyRemaining(0);
+        stats.setTotalEquipmentValue(0);
+        stats.setTotalVehiclesValue(0);
+        stats.setTotalIncome(0);
+        stats.setTotalOffensivePower(0);
+        stats.setTotalDefensivePower(0);
+        stats.setGlobalPower(0);
+        stats.setTotalAtk(0);
+        stats.setTotalPdf(0);
+        stats.setTotalPdc(0);
+        stats.setTotalDef(0);
+        stats.setTotalArmor(0);
         victim.calculateTotalEconomyPower();
 
         for (Sector sector : ownedSectors) {
@@ -107,7 +114,6 @@ public class PlayerEliminationService {
             } else {
                 sector.setOwnerAndColor(null, "#ffffff");
             }
-            affectedSectors.add(sector.getNumber());
         }
 
         // Mort du personnage : le secteur du QG revient nu au tueur, même s'il n'était pas possédé par la victime.
@@ -119,21 +125,15 @@ public class PlayerEliminationService {
                 } else {
                     headquarters.setOwnerAndColor(null, "#ffffff");
                 }
-                affectedSectors.add(headquartersSector);
             }
         }
 
         breakAlliances(victim, turn);
         cancelPendingProposals(victim, turn);
         cancelPendingExchanges(victim, turn);
-        deletePendingCaptures(victim.getId());
+        removeVictimFromPendingCaptures(victim.getId());
 
-        for (Integer sectorNumber : affectedSectors) {
-            Sector sector = board.getSector(sectorNumber);
-            if (sector != null) {
-                sector.recalculateMilitaryPower();
-            }
-        }
+        board.getAllSectors().forEach(Sector::recalculateMilitaryPower);
 
         victim.setEliminatedByPlayerId(killerId);
         playerRepository.save(victim);
@@ -254,10 +254,21 @@ public class PlayerEliminationService {
         exchangeOfferRepository.saveAll(pending);
     }
 
-    private void deletePendingCaptures(Long victimId) {
+    private void removeVictimFromPendingCaptures(Long victimId) {
         for (PendingCapture capture : pendingCaptureRepository.findByResolvedFalseOrderByIdAsc()) {
-            if (capture.candidateIds().contains(victimId)) {
+            List<Long> candidates = capture.candidateIds();
+            if (!candidates.contains(victimId)) {
+                continue;
+            }
+            List<Long> remaining = candidates.stream()
+                    .filter(candidateId -> !candidateId.equals(victimId))
+                    .toList();
+            if (remaining.isEmpty()) {
                 pendingCaptureRepository.delete(capture);
+            } else {
+                capture.setCandidatePlayerIds(String.join(",",
+                        remaining.stream().map(String::valueOf).toList()));
+                pendingCaptureRepository.save(capture);
             }
         }
     }

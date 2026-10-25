@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.domain.model.alliance.Alliance;
 import com.mg.nmlonline.domain.model.alliance.AllianceProposal;
+import com.mg.nmlonline.domain.model.alliance.PendingCapture;
 import com.mg.nmlonline.domain.model.alliance.ProposalKind;
 import com.mg.nmlonline.domain.model.alliance.ProposalStatus;
 import com.mg.nmlonline.domain.model.bank.ExchangeOffer;
@@ -25,6 +26,7 @@ import com.mg.nmlonline.infrastructure.repository.AllianceProposalRepository;
 import com.mg.nmlonline.infrastructure.repository.AllianceRepository;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.ExchangeOfferRepository;
+import com.mg.nmlonline.infrastructure.repository.PendingCaptureRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
@@ -67,6 +69,9 @@ class PlayerEliminationServiceTest {
 
     @Autowired
     private ExchangeOfferRepository exchangeOfferRepository;
+
+    @Autowired
+    private PendingCaptureRepository pendingCaptureRepository;
 
     @Autowired
     private EntityManager em;
@@ -121,6 +126,11 @@ class PlayerEliminationServiceTest {
             otherUnit.setPlayerId(victim.getId());
             otherSector.addUnit(otherUnit);
 
+            Sector transitSector = board.getSector(36);
+            Unit transitUnit = new Unit(8.0, UnitClass.TIREUR);
+            transitUnit.setPlayerId(victim.getId());
+            transitSector.addUnit(transitUnit);
+
             Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, victim.getId());
             vehicle.setSector(hqSector);
             hqSector.getVehicles().add(vehicle);
@@ -136,6 +146,8 @@ class PlayerEliminationServiceTest {
             victim.addEquipmentToStack(equipment, 1);
             victim.addResource("Auramite", 5);
             victim.getStats().setMoney(1000.0);
+            victim.getStats().setTotalIncome(500.0);
+            victim.getStats().setTotalAtk(100.0);
             victim.eliminate(cause, 1, null);
             em.flush();
 
@@ -144,6 +156,8 @@ class PlayerEliminationServiceTest {
                     ProposalKind.ALLIANCE, victim.getId(), ally.getId(), 1));
             ExchangeOffer offer = exchangeOfferRepository.save(new ExchangeOffer(
                     victim.getId(), ally.getId(), 100.0, 1, 2));
+            pendingCaptureRepository.save(PendingCapture.create(board.getId(), HQ_SECTOR, 1,
+                    List.of(victim.getId(), ally.getId())));
             em.flush();
             return new World(victim.getId(), killer.getId(), ally.getId(), alliance.getId(),
                     proposal.getId(), offer.getId());
@@ -179,6 +193,10 @@ class PlayerEliminationServiceTest {
             assertTrue(board.getSector(HQ_SECTOR).getUnits().isEmpty());
             assertTrue(board.getSector(HQ_SECTOR).getVehicles().isEmpty());
             assertTrue(board.getSector(OTHER_SECTOR).getUnits().isEmpty());
+            assertTrue(board.getSector(36).getUnits().isEmpty(),
+                    "Une unité en transit est retirée de son secteur");
+            assertEquals(0.0, board.getSector(36).getStats().getTotalAtk(),
+                    "Les statistiques du secteur de transit sont recalculées");
 
             Player victim = playerRepository.findById(world.victimId()).orElseThrow();
             assertTrue(victim.isEliminated());
@@ -186,6 +204,8 @@ class PlayerEliminationServiceTest {
             assertTrue(victim.getEquipments().isEmpty());
             assertTrue(victim.getResources().isEmpty());
             assertEquals(0.0, victim.getStats().getMoney());
+            assertEquals(0.0, victim.getStats().getTotalIncome());
+            assertEquals(0.0, victim.getStats().getTotalAtk());
             assertTrue(victim.getBuildings().isEmpty());
 
             Player killer = playerRepository.findById(world.killerId()).orElseThrow();
@@ -201,6 +221,14 @@ class PlayerEliminationServiceTest {
                     proposalRepository.findById(world.proposalId()).orElseThrow().getStatus());
             assertEquals(ExchangeOfferStatus.CANCELLED,
                     exchangeOfferRepository.findById(world.offerId()).orElseThrow().getStatus());
+            PendingCapture capture = pendingCaptureRepository.findByResolvedFalseOrderByIdAsc().stream()
+                    .filter(pending -> pending.getSectorNumber() == HQ_SECTOR)
+                    .findFirst()
+                    .orElseThrow();
+            assertFalse(capture.candidateIds().contains(world.victimId()),
+                    "Le joueur éliminé est retiré des candidats de capture");
+            assertTrue(capture.candidateIds().contains(world.allyId()),
+                    "Les autres candidats de la capture alliée sont conservés");
         });
     }
 

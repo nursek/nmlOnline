@@ -31,12 +31,14 @@ export class PlayerStatusService {
   constructor() {
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe(() => this.statusRef.reload());
+      .subscribe(() => this.reload());
     // L'élimination est décidée par un autre joueur/MJ : rafraîchir sans navigation.
-    window.setInterval(() => this.statusRef.reload(), 30_000);
+    window.setInterval(() => this.reload(), 30_000);
   }
 
   reload(): void {
-    this.statusRef.reload();
+    if (this.auth.initialized() && this.auth.user()) {
+      this.statusRef.reload();
+    }
   }
 }
