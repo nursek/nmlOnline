@@ -72,15 +72,25 @@ public class SectorMapper {
         return sector;
     }
 
-    /** Contexte de lecture : propriétaire ou allié avec une troupe sur place → détail complet, sinon restrictif. */
-    public record Visibility(Long requesterPlayerId, Set<Long> allyIds) {
+    /** Contexte de lecture : propriétaire, allié avec une troupe sur place ou MJ → détail complet, sinon restrictif. */
+    public record Visibility(Long requesterPlayerId, Set<Long> allyIds, boolean seeAll) {
 
         public static Visibility none() {
-            return new Visibility(null, Set.of());
+            return new Visibility(null, Set.of(), false);
+        }
+
+        public static Visibility admin() {
+            return new Visibility(null, Set.of(), true);
         }
 
         public boolean canSeeDetail(Sector sector) {
-            if (requesterPlayerId == null || sector == null) {
+            if (sector == null) {
+                return false;
+            }
+            if (seeAll) {
+                return true;
+            }
+            if (requesterPlayerId == null) {
                 return false;
             }
             if (sector.isOwnedBy(requesterPlayerId)) {

@@ -1,0 +1,439 @@
+@use '../../../styles/shared' as shared;
+
+.players-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.admin-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2.5px solid var(--line-2);
+  flex-wrap: wrap;
+  gap: 16px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px;
+    width: 72px;
+    height: 2px;
+    background: var(--accent);
+    box-shadow: var(--glow-amber);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .admin-avatar {
+    @include shared.avatar;
+    border-color: var(--accent-line);
+
+    mat-icon {
+      color: var(--accent);
+    }
+  }
+
+  .admin-title {
+    @include shared.gradient-title;
+  }
+}
+
+.import-progress {
+  margin-bottom: 16px;
+}
+
+.search-field {
+  width: 100%;
+  margin-bottom: 8px;
+
+  mat-icon {
+    color: shared.$text-muted;
+    margin-right: 8px;
+  }
+}
+
+.player-count {
+  color: shared.$text-muted;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+
+  .filter-info {
+    font-style: italic;
+  }
+}
+
+.loading-container {
+  @include shared.loading-container;
+  min-height: 40vh;
+}
+
+.race-panel {
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+
+  .race-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    mat-icon {
+      color: var(--accent);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .race-count {
+      padding: 1px 8px;
+      border-radius: var(--r-xs);
+      background: var(--accent-tint);
+      color: var(--accent-ink);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+  }
+}
+
+.player-panel {
+  margin-bottom: 8px !important;
+  border-radius: var(--r-sm) !important;
+  @include shared.hover-lift;
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 140px;
+
+    .player-icon {
+      color: shared.$primary-color;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    .player-name {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+  }
+
+  .panel-desc {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+}
+
+.stats-chips {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+
+  .stat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: shared.$text-muted;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &.money {
+      color: var(--sun);
+    }
+    &.sectors {
+      color: var(--accent);
+    }
+    &.army {
+      color: var(--danger);
+    }
+    &.equipment {
+      color: var(--forest);
+    }
+    &.eliminated {
+      color: var(--danger);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  }
+}
+
+.panel-content {
+  padding-top: 8px;
+}
+
+.section {
+  padding: 12px 0;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+
+    mat-icon {
+      color: shared.$primary-color;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 12px;
+    background: var(--paper);
+    border-radius: var(--r-sm);
+    border: 1.5px solid var(--line-2);
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: shared.$text-muted;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+
+      &.money {
+        color: var(--sun);
+      }
+      @include shared.stat-colors;
+    }
+  }
+}
+
+.equipment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  .eq-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--paper-2);
+    border: 1.5px solid var(--line-2);
+    border-radius: var(--r-md);
+    font-size: 0.8rem;
+    color: var(--ink);
+
+    .eq-qty {
+      font-weight: 600;
+      color: shared.$primary-color;
+    }
+
+    .eq-used {
+      font-size: 0.7rem;
+      color: shared.$text-muted;
+    }
+  }
+
+  .resource-chip {
+    background: var(--sun-tint);
+    border-color: var(--sun-tint);
+  }
+}
+
+.sector-block {
+  background: var(--paper);
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: 12px;
+  margin-bottom: 8px;
+
+  .sector-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+
+    .sector-name {
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .sector-meta {
+      font-size: 0.8rem;
+      color: shared.$text-muted;
+    }
+
+    .sector-army-count {
+      margin-left: auto;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--danger);
+    }
+  }
+}
+
+.army-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .unit-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 8px;
+    background: var(--surface);
+    border-radius: var(--r-xs);
+    border: 1.5px solid var(--line-2);
+    font-size: 0.8rem;
+
+    .unit-type {
+      font-weight: 600;
+      color: var(--ink);
+      min-width: 100px;
+      cursor: help;
+    }
+
+    .unit-exp {
+      color: shared.$text-muted;
+      min-width: 50px;
+    }
+
+    .unit-stats {
+      display: flex;
+      gap: 6px;
+      font-weight: 500;
+
+      span {
+        @include shared.stat-colors;
+      }
+    }
+
+    .unit-classes {
+      color: shared.$primary-color;
+      font-size: 0.75rem;
+      margin-left: auto;
+    }
+
+    .injured-icon {
+      color: var(--danger);
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.sector-stats-row {
+  display: flex;
+  gap: 12px;
+  padding: 6px 8px;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: shared.$text-muted;
+  border-top: 1px dashed var(--line);
+
+  span {
+    @include shared.stat-colors;
+  }
+}
+
+.actions-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0 4px;
+  flex-wrap: wrap;
+
+  button {
+    mat-icon {
+      margin-right: 4px;
+    }
+  }
+}
+
+.empty-state {
+  @include shared.empty-state;
+  margin-top: 48px;
+}
+
+.empty-text {
+  color: shared.$text-muted;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stats-chips {
+    display: none;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .unit-row {
+    flex-wrap: wrap;
+
+    .unit-classes {
+      margin-left: 0 !important;
+      width: 100%;
+    }
+  }
+
+  .sector-header {
+    .sector-army-count {
+      margin-left: 0 !important;
+    }
+  }
+}
+
+:host ::ng-deep {
+  .success-snackbar .mdc-snackbar__surface {
+    background: var(--forest-deep) !important;
+  }
+  .error-snackbar .mdc-snackbar__surface {
+    background: var(--danger-deep) !important;
+  }
+}

@@ -1,32 +1,33 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiService } from './api.service';
 import {
   AdminMovementOrder,
   MovementStatusFilter,
   PageResult,
   Player,
-  Board,
   ExchangeOffer,
   ExchangeOfferStatusFilter,
+  AdminAllianceHistory,
 } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 import { environment } from '../../environments/environment';
 
-/**
- * Admin console state: paginated player list + import/delete operations.
- * Pure signals + services — no NgRx.
- */
+/** État partagé console admin (ordres, échanges, alliances) et gestion des joueurs. */
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly api = inject(ApiService);
+  private readonly snackBar = inject(MatSnackBar);
 
-  // Player catalog reactive GET; re-fetched on `reloadPlayers()`.
-  private readonly playersRef = httpResource<PageResult<Player>>(() => ({
-    url: `${environment.apiBaseUrl}/admin/players`,
-    params: { page: '0', size: '50' },
-  }));
+  // Chaque resource n'est chargée que par la page qui la consomme (cf. reload*).
+  private readonly playersRequested = signal(false);
+  private readonly playersRef = httpResource<PageResult<Player>>(() =>
+    this.playersRequested()
+      ? { url: `${environment.apiBaseUrl}/admin/players`, params: { page: '0', size: '50' } }
+      : undefined,
+  );
 
   readonly players = computed(() => this.playersRef.value()?.content ?? []);
   readonly playersTruncated = computed(() => {
@@ -37,7 +38,9 @@ export class AdminService {
 
   // Filtre réactif : la resource se recharge à chaque changement de statut.
   readonly orderStatusFilter = signal<MovementStatusFilter>('ALL');
+  private readonly ordersRequested = signal(false);
   private readonly ordersRef = httpResource<AdminMovementOrder[]>(() => {
+    if (!this.ordersRequested()) return undefined;
     const filter = this.orderStatusFilter();
     return {
       url: `${environment.apiBaseUrl}/admin/turn/orders`,
@@ -48,7 +51,9 @@ export class AdminService {
   readonly ordersLoading = computed(() => this.ordersRef.isLoading());
 
   readonly exchangeStatusFilter = signal<ExchangeOfferStatusFilter>('ALL');
+  private readonly exchangesRequested = signal(false);
   private readonly exchangesRef = httpResource<PageResult<ExchangeOffer>>(() => {
+    if (!this.exchangesRequested()) return undefined;
     const filter = this.exchangeStatusFilter();
     return {
       url: `${environment.apiBaseUrl}/admin/exchanges`,
@@ -58,29 +63,58 @@ export class AdminService {
   readonly exchanges = computed(() => this.exchangesRef.value()?.content ?? []);
   readonly exchangesLoading = computed(() => this.exchangesRef.isLoading());
 
+  private readonly alliancesRequested = signal(false);
+  private readonly alliancesRef = httpResource<AdminAllianceHistory>(() =>
+    this.alliancesRequested() ? { url: `${environment.apiBaseUrl}/admin/alliances` } : undefined,
+  );
+  readonly allianceEntries = computed(() => this.alliancesRef.value()?.alliances ?? []);
+  readonly allianceProposals = computed(() => this.alliancesRef.value()?.proposals ?? []);
+  readonly alliancesLoading = computed(() => this.alliancesRef.isLoading());
+
   private readonly _importing = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _successMessage = signal<string | null>(null);
   private readonly _currentTurn = signal<number | null>(null);
 
   readonly importing = this._importing.asReadonly();
-  readonly error = this._error.asReadonly();
-  readonly successMessage = this._successMessage.asReadonly();
   readonly currentTurn = this._currentTurn.asReadonly();
 
+  constructor() {
+    // Un seul abonné aux messages : les deux pages admin partagent le même service root.
+    effect(() => {
+      const message = this._successMessage();
+      if (!message) return;
+      this.snackBar.open(message, 'OK', { duration: 4000, panelClass: 'success-snackbar' });
+      this._successMessage.set(null);
+    });
+    effect(() => {
+      const error = this._error();
+      if (!error) return;
+      this.snackBar.open(error, 'Fermer', { duration: 6000, panelClass: 'error-snackbar' });
+      this._error.set(null);
+    });
+  }
+
   reloadPlayers(): void {
-    this.playersRef.reload();
+    if (this.playersRequested()) this.playersRef.reload();
+    else this.playersRequested.set(true);
   }
 
   reloadOrders(): void {
-    this.ordersRef.reload();
+    if (this.ordersRequested()) this.ordersRef.reload();
+    else this.ordersRequested.set(true);
   }
 
   reloadExchanges(): void {
-    this.exchangesRef.reload();
+    if (this.exchangesRequested()) this.exchangesRef.reload();
+    else this.exchangesRequested.set(true);
   }
 
-  /** Charge le tour courant depuis la source unique de vérité (TurnService). */
+  reloadAlliances(): void {
+    if (this.alliancesRequested()) this.alliancesRef.reload();
+    else this.alliancesRequested.set(true);
+  }
+
   async loadCurrentTurn(): Promise<void> {
     try {
       const res = await firstValueFrom(this.api.adminGetCurrentTurn());
@@ -120,43 +154,5 @@ export class AdminService {
       this._error.set(message);
       throw new Error(message);
     }
-  }
-
-  /**
-   * Importe le Board depuis un board.json. Si mapImage + svgOverlay sont fournis,
-   * ils sont uploadés d'abord (POST /boards/assets) et les URLs renvoyées sont
-   * passées à l'import. Réutilise le signal `_importing` commun au header.
-   */
-  async importBoard(file: File, mapImage?: File, svgOverlay?: File): Promise<Board> {
-    this._importing.set(true);
-    this._error.set(null);
-    this._successMessage.set(null);
-    try {
-      let mapImageUrl: string | undefined;
-      let svgOverlayUrl: string | undefined;
-      if (mapImage && svgOverlay) {
-        const assets = await firstValueFrom(this.api.adminUploadBoardAssets(mapImage, svgOverlay));
-        mapImageUrl = assets.mapImageUrl;
-        svgOverlayUrl = assets.svgOverlayUrl;
-      }
-      const board = await firstValueFrom(
-        this.api.adminImportBoard(file, mapImageUrl, svgOverlayUrl),
-      );
-      this._successMessage.set(
-        `Board "${board.name}" importé (${Object.keys(board.sectors ?? {}).length} secteurs)`,
-      );
-      return board;
-    } catch (error) {
-      const message = httpErrorMessage(error, "Erreur lors de l'import du board");
-      this._error.set(message);
-      throw new Error(message);
-    } finally {
-      this._importing.set(false);
-    }
-  }
-
-  clearMessages(): void {
-    this._error.set(null);
-    this._successMessage.set(null);
   }
 }

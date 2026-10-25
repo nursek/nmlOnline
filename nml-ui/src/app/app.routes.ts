@@ -28,9 +28,11 @@ export const routes: Routes = [
     canActivate: [authGuard, adminGuard],
   },
   {
-    path: 'admin/conflits',
+    path: 'admin/joueurs',
     loadComponent: () =>
-      import('./pages/conflicts/conflicts.component').then((m) => m.ConflictsComponent),
+      import('./pages/player-management/player-management.component').then(
+        (m) => m.PlayerManagementComponent,
+      ),
     canActivate: [authGuard, adminGuard],
   },
   {

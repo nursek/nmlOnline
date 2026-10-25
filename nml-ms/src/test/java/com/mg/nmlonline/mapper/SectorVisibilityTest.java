@@ -31,7 +31,14 @@ class SectorVisibilityTest {
     }
 
     private SectorMapper.Visibility visibility() {
-        return new SectorMapper.Visibility(ME, Set.of(ALLY));
+        return new SectorMapper.Visibility(ME, Set.of(ALLY), false);
+    }
+
+    @Test
+    @DisplayName("MJ : détail complet de tous les secteurs")
+    void adminSeesEveryDetail() {
+        assertTrue(SectorMapper.Visibility.admin().canSeeDetail(sectorOwnedBy(3L)));
+        assertTrue(SectorMapper.Visibility.admin().canSeeDetail(sectorOwnedBy(null)));
     }
 
     @Test

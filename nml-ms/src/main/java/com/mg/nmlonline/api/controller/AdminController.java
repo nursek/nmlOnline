@@ -1,5 +1,6 @@
 package com.mg.nmlonline.api.controller;
 
+import com.mg.nmlonline.api.dto.AdminAllianceHistoryDto;
 import com.mg.nmlonline.api.dto.AdminMovementOrderDto;
 import com.mg.nmlonline.api.dto.ExchangeOfferDto;
 import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
@@ -11,6 +12,7 @@ import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.service.AdminService;
+import com.mg.nmlonline.domain.service.AllianceService;
 import com.mg.nmlonline.domain.service.BoardAssetStorageService;
 import com.mg.nmlonline.domain.service.ExchangeOfferService;
 import com.mg.nmlonline.domain.service.MovementAdminService;
@@ -48,6 +50,7 @@ public class AdminController {
     private final TurnResolutionOrchestrator turnResolutionOrchestrator;
     private final RankingService rankingService;
     private final ExchangeOfferService exchangeOfferService;
+    private final AllianceService allianceService;
 
     public AdminController(AdminService adminService,
                            PlayerService playerService,
@@ -56,7 +59,8 @@ public class AdminController {
                            MovementAdminService movementAdminService,
                            TurnResolutionOrchestrator turnResolutionOrchestrator,
                            RankingService rankingService,
-                           ExchangeOfferService exchangeOfferService) {
+                           ExchangeOfferService exchangeOfferService,
+                           AllianceService allianceService) {
         this.adminService = adminService;
         this.playerService = playerService;
         this.boardAssetStorageService = boardAssetStorageService;
@@ -65,6 +69,7 @@ public class AdminController {
         this.turnResolutionOrchestrator = turnResolutionOrchestrator;
         this.rankingService = rankingService;
         this.exchangeOfferService = exchangeOfferService;
+        this.allianceService = allianceService;
     }
 
     @GetMapping("/players")
@@ -80,6 +85,11 @@ public class AdminController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @GetMapping("/alliances")
+    public AdminAllianceHistoryDto getAllianceHistory() {
+        return allianceService.getHistory();
     }
 
     @GetMapping("/players/{id}/export")

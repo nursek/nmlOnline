@@ -43,17 +43,19 @@
       }
 
       <span class="legend-toggles">
-        <button
-          type="button"
-          class="overlay-toggle"
-          [class.active]="isOverlay('front')"
-          [attr.aria-pressed]="isOverlay('front')"
-          (click)="toggleOverlay('front')"
-          title="Bordures avec les secteurs ennemis (jamais les neutres)"
-        >
-          <mat-icon>shield</mat-icon>
-          Frontières
-        </button>
+        @if (!isAdmin()) {
+          <button
+            type="button"
+            class="overlay-toggle"
+            [class.active]="isOverlay('front')"
+            [attr.aria-pressed]="isOverlay('front')"
+            (click)="toggleOverlay('front')"
+            title="Bordures avec les secteurs ennemis (jamais les neutres)"
+          >
+            <mat-icon>shield</mat-icon>
+            Frontières
+          </button>
+        }
         <button
           type="button"
           class="overlay-toggle"
@@ -307,9 +309,9 @@
                     <mat-icon>event_repeat</mat-icon>
                     Gestion du tour
                   </a>
-                  <a mat-stroked-button routerLink="/admin/conflits">
-                    <mat-icon>gavel</mat-icon>
-                    Conflits
+                  <a mat-stroked-button routerLink="/admin/joueurs">
+                    <mat-icon>groups</mat-icon>
+                    Gestion des joueurs
                   </a>
                   <a mat-stroked-button routerLink="/admin">
                     <mat-icon>admin_panel_settings</mat-icon>
@@ -430,5 +432,33 @@
         </mat-card-content>
       </mat-card>
     </div>
+  </div>
+}
+
+@if (isAdmin()) {
+  <div class="container">
+    <section class="board-management">
+      <h2>
+        <mat-icon>settings</mat-icon>
+        Gestion du board
+      </h2>
+      <p class="panel-hint">
+        <mat-icon>info</mat-icon>
+        Crée/remplace le board depuis un board.json (+ image de carte et overlay SVG optionnels).
+      </p>
+      <button
+        mat-stroked-button
+        color="accent"
+        (click)="triggerBoardImport()"
+        [disabled]="importingBoard()"
+      >
+        @if (importingBoard()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>map</mat-icon>
+        }
+        Importer le board
+      </button>
+    </section>
   </div>
 }

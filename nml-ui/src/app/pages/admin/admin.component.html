@@ -6,29 +6,7 @@
       </div>
       <h1 class="admin-title">Console Admin</h1>
     </div>
-    <button mat-flat-button color="primary" (click)="triggerImport()" [disabled]="importing()">
-      @if (importing()) {
-        <mat-spinner diameter="20"></mat-spinner>
-      } @else {
-        <mat-icon>upload_file</mat-icon>
-      }
-      Importer un joueur
-    </button>
-    <button
-      mat-stroked-button
-      color="accent"
-      (click)="triggerBoardImport()"
-      [disabled]="importing()"
-      matTooltip="Créer/remplacer le board depuis un board.json (+ assets visuels)"
-    >
-      <mat-icon>map</mat-icon>
-      Importer le board
-    </button>
   </div>
-
-  @if (importing()) {
-    <mat-progress-bar mode="indeterminate" class="import-progress"></mat-progress-bar>
-  }
 
   <div class="admin-panel">
     <div class="panel-header">
@@ -155,272 +133,98 @@
     }
   </div>
 
-  <mat-form-field appearance="outline" class="search-field">
-    <mat-icon matPrefix>search</mat-icon>
-    <mat-label>Rechercher un joueur...</mat-label>
-    <input
-      matInput
-      [value]="searchQuery()"
-      (input)="onSearchChange($any($event.target).value)"
-      placeholder="Nom du joueur"
-    />
-  </mat-form-field>
-
-  @if (loading() && !importing()) {
-    <div class="loading-container">
-      <mat-spinner diameter="48"></mat-spinner>
-    </div>
-  }
-
-  @if (!loading()) {
-    <div class="player-count">
-      {{ filteredPlayers().length }} joueur{{ filteredPlayers().length > 1 ? 's' : '' }}
-      @if (searchQuery()) {
-        <span class="filter-info">(filtrés)</span>
-      }
-      @if (playersTruncated()) {
-        <span class="filter-info">(liste partielle — 50 premiers)</span>
-      }
-    </div>
-  }
-
-  @if (!loading()) {
-    <mat-accordion multi>
-      @for (player of filteredPlayers(); track player.id) {
-        <mat-expansion-panel class="player-panel">
-          <mat-expansion-panel-header>
-            <mat-panel-title class="panel-title">
-              <mat-icon class="player-icon">person</mat-icon>
-              <span class="player-name">{{ player.name }}</span>
-            </mat-panel-title>
-            <mat-panel-description class="panel-desc">
-              <div class="stats-chips">
-                @if (player.eliminated) {
-                  <span
-                    class="stat-chip eliminated"
-                    matTooltip="Joueur éliminé — actions désactivées"
-                  >
-                    <mat-icon>dangerous</mat-icon>
-                    Éliminé
-                  </span>
-                }
-                <span class="stat-chip money" matTooltip="Argent">
-                  <mat-icon>payments</mat-icon>
-                  {{ formatMoney(player.stats.money) }}$
-                </span>
-                <span class="stat-chip sectors" matTooltip="Secteurs">
-                  <mat-icon>map</mat-icon>
-                  {{ player.sectors.length || 0 }}
-                </span>
-                <span class="stat-chip army" matTooltip="Unités totales">
-                  <mat-icon>groups</mat-icon>
-                  {{ getTotalArmySize(player) }}
-                </span>
-                <span class="stat-chip equipment" matTooltip="Équipements">
-                  <mat-icon>shield</mat-icon>
-                  {{ getEquipmentCount(player) }}
-                </span>
-              </div>
-            </mat-panel-description>
-          </mat-expansion-panel-header>
-
-          <div class="panel-content">
-            <div class="section">
-              <div class="section-title">
-                <mat-icon>bar_chart</mat-icon>
-                <span>Statistiques</span>
-              </div>
-              <div class="stats-grid">
-                <div class="stat-item">
-                  <span class="stat-label">Argent</span>
-                  <span class="stat-value money">{{ player.stats.money | number: '1.0-0' }}$</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Revenu total</span>
-                  <span class="stat-value">{{ player.stats.totalIncome | number: '1.0-0' }}$</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">ATK</span>
-                  <span class="stat-value atk">{{ player.stats.totalAtk | number: '1.0-0' }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">DEF</span>
-                  <span class="stat-value def">{{ player.stats.totalDef | number: '1.0-0' }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">PDF</span>
-                  <span class="stat-value pdf">{{ player.stats.totalPdf | number: '1.0-0' }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">PDC</span>
-                  <span class="stat-value pdc">{{ player.stats.totalPdc | number: '1.0-0' }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Armure</span>
-                  <span class="stat-value arm">{{
-                    player.stats.totalArmor | number: '1.0-0'
-                  }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">Puissance éco</span>
-                  <span class="stat-value">{{ formatMoney(player.stats.totalEconomyPower) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <mat-divider></mat-divider>
-
-            @if (player.equipments && player.equipments.length > 0) {
-              <div class="section">
-                <div class="section-title">
-                  <mat-icon>shield</mat-icon>
-                  <span>Équipements ({{ getEquipmentCount(player) }})</span>
-                </div>
-                <div class="equipment-list">
-                  @for (eq of player.equipments; track eq.equipment.name) {
-                    <span class="eq-chip">
-                      {{ eq.equipment.name }}
-                      <span class="eq-qty">×{{ eq.quantity }}</span>
-                      @if (eq.available < eq.quantity) {
-                        <span class="eq-used">({{ eq.available }} dispo)</span>
-                      }
-                    </span>
-                  }
-                </div>
-              </div>
-              <mat-divider></mat-divider>
-            }
-
-            @if (player.resources && player.resources.length > 0) {
-              <div class="section">
-                <div class="section-title">
-                  <mat-icon>inventory_2</mat-icon>
-                  <span>Ressources</span>
-                </div>
-                <div class="equipment-list">
-                  @for (res of player.resources; track res.name) {
-                    <span class="eq-chip resource-chip">
-                      {{ res.name }}
-                      <span class="eq-qty">×{{ res.quantity }}</span>
-                      @if (res.baseValue) {
-                        <span class="eq-used">({{ res.baseValue }}$/u)</span>
-                      }
-                    </span>
-                  }
-                </div>
-              </div>
-              <mat-divider></mat-divider>
-            }
-
-            @if (player.sectors && player.sectors.length > 0) {
-              <div class="section">
-                <div class="section-title">
-                  <mat-icon>map</mat-icon>
-                  <span>Secteurs ({{ player.sectors.length }})</span>
-                </div>
-                @for (sector of player.sectors; track sector.number) {
-                  <div class="sector-block">
-                    <div class="sector-header">
-                      <span class="sector-name">{{ sector.name }}</span>
-                      <span class="sector-meta">
-                        #{{ sector.number }} • {{ sector.income | number: '1.0-0' }}$/tour
-                        @if (sector.resource) {
-                          • {{ sector.resource }}
-                        }
-                      </span>
-                      <span class="sector-army-count">{{ sector.army?.length || 0 }} unités</span>
-                    </div>
-                    @if (sector.army && sector.army.length > 0) {
-                      <div class="army-list">
-                        @for (unit of sector.army; track unit.id) {
-                          <div class="unit-row">
-                            <span class="unit-type" [matTooltip]="getClassNames(unit.classes)">
-                              {{ getUnitTypeLabel(unit.type) }} n°{{ unit.number }}
-                            </span>
-                            <span class="unit-exp">Exp: {{ unit.experience | exp }}</span>
-                            <span class="unit-stats">
-                              <span class="atk">{{ unit.attack | number: '1.0-0' }}A</span>
-                              <span class="def">{{ unit.defense | number: '1.0-0' }}D</span>
-                              @if (unit.pdf) {
-                                <span class="pdf">{{ unit.pdf | number: '1.0-0' }}P</span>
-                              }
-                              @if (unit.armor) {
-                                <span class="arm">{{ unit.armor | number: '1.0-0' }}Ar</span>
-                              }
-                            </span>
-                            <span class="unit-classes">{{ getClassNames(unit.classes) }}</span>
-                            @if (unit.isInjured) {
-                              <mat-icon class="injured-icon" matTooltip="Blessé"
-                                >local_hospital</mat-icon
-                              >
-                            }
-                          </div>
-                        }
-                      </div>
-                    }
-                    @if (sector.stats) {
-                      <div class="sector-stats-row">
-                        Total:
-                        <span class="atk">{{ sector.stats.totalAtk | number: '1.0-0' }} ATK</span>
-                        <span class="def">{{ sector.stats.totalDef | number: '1.0-0' }} DEF</span>
-                        <span class="arm">{{ sector.stats.totalArmor | number: '1.0-0' }} ARM</span>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            } @else {
-              <div class="section">
-                <div class="section-title">
-                  <mat-icon>map</mat-icon>
-                  <span>Secteurs</span>
-                </div>
-                <p class="empty-text">Aucun secteur possédé</p>
-              </div>
-            }
-
-            <mat-divider></mat-divider>
-
-            <div class="actions-row">
-              <button
-                mat-stroked-button
-                (click)="exportPlayer(player)"
-                matTooltip="Télécharger le JSON du joueur"
-              >
-                <mat-icon>download</mat-icon>
-                Exporter JSON
-              </button>
-              <button
-                mat-stroked-button
-                color="warn"
-                (click)="confirmDelete(player)"
-                matTooltip="Supprime le joueur et rend ses secteurs neutres"
-              >
-                <mat-icon>delete_forever</mat-icon>
-                Supprimer
-              </button>
-            </div>
-          </div>
-        </mat-expansion-panel>
-      }
-    </mat-accordion>
-  }
-
-  @if (!loading() && filteredPlayers().length === 0 && searchQuery()) {
-    <div class="empty-state">
-      <mat-icon>search_off</mat-icon>
-      <p>Aucun joueur trouvé pour "{{ searchQuery() }}"</p>
-    </div>
-  }
-
-  @if (!loading() && players().length === 0 && !searchQuery()) {
-    <div class="empty-state">
-      <mat-icon>group_off</mat-icon>
-      <p>Aucun joueur enregistré</p>
-      <button mat-flat-button color="primary" (click)="triggerImport()">
-        <mat-icon>upload_file</mat-icon>
-        Importer un joueur
+  <div class="admin-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <mat-icon>handshake</mat-icon>
+        <span>Alliance entre joueurs</span>
+      </div>
+      <button
+        mat-stroked-button
+        color="accent"
+        (click)="onReloadAlliances()"
+        [disabled]="alliancesLoading()"
+        matTooltip="Recharge l'historique des alliances"
+      >
+        <mat-icon>refresh</mat-icon>
+        Rafraîchir
       </button>
     </div>
-  }
+
+    @if (alliancesLoading()) {
+      <div class="loading-container">
+        <mat-spinner diameter="32"></mat-spinner>
+      </div>
+    } @else {
+      <div class="sub-section-title">
+        <mat-icon>handshake</mat-icon>
+        <span>Alliances ({{ alliances().length }})</span>
+      </div>
+      @if (alliances().length === 0) {
+        <p class="empty-text">Aucune alliance pour l'instant.</p>
+      } @else {
+        <div class="orders-list">
+          @for (alliance of alliances(); track alliance.id) {
+            <div class="order-row">
+              <div class="order-main">
+                <span class="order-player" matTooltip="Joueurs alliés">
+                  <mat-icon>person</mat-icon>
+                  {{ alliance.playerOneName ?? '#' + alliance.playerOneId }}
+                  ↔
+                  {{ alliance.playerTwoName ?? '#' + alliance.playerTwoId }}
+                </span>
+                <span class="order-route">
+                  T{{ alliance.createdTurn }}
+                  @if (alliance.endedTurn !== null) {
+                    → T{{ alliance.endedTurn }}
+                  }
+                </span>
+                @if (alliance.endedByPlayerId !== null) {
+                  <span class="order-type" matTooltip="Auteur de la rupture">
+                    <mat-icon>gavel</mat-icon>
+                    {{ alliance.endedByName ?? '#' + alliance.endedByPlayerId }}
+                  </span>
+                }
+              </div>
+              <span class="status-badge {{ allianceStatusClass(alliance) }}">
+                {{ allianceStatusLabel(alliance) }}
+              </span>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="sub-section-title">
+        <mat-icon>history</mat-icon>
+        <span>Demandes ({{ allianceProposals().length }})</span>
+      </div>
+      @if (allianceProposals().length === 0) {
+        <p class="empty-text">Aucune demande d'alliance.</p>
+      } @else {
+        <div class="orders-list">
+          @for (proposal of allianceProposals(); track proposal.id) {
+            <div class="order-row">
+              <div class="order-main">
+                <span class="order-player" matTooltip="Émetteur → destinataire">
+                  <mat-icon>person</mat-icon>
+                  {{ proposalActor(proposal) }}
+                </span>
+                <span class="order-route">{{ proposalKindLabel(proposal.kind) }}</span>
+                <span class="order-type" matTooltip="Tour de création">
+                  <mat-icon>schedule</mat-icon>
+                  T{{ proposal.createdTurn }}
+                  @if (proposal.resolvedTurn !== null) {
+                    → T{{ proposal.resolvedTurn }}
+                  }
+                </span>
+              </div>
+              <span class="status-badge {{ proposalStatusClass(proposal.status) }}">
+                {{ proposalStatusLabel(proposal.status) }}
+              </span>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
 </div>
