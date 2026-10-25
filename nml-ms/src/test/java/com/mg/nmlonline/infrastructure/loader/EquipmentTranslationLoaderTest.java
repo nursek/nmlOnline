@@ -44,7 +44,7 @@ class EquipmentTranslationLoaderTest {
 
         Equipment phylactery = equipmentRepository.findByName("Phylactery").orElseThrow();
         assertEquals("Guenilles renforcées", phylactery.getDisplayNames().get(PlayerRace.ORKS));
-        assertEquals("Phylactère", phylactery.getDisplayNames().get(PlayerRace.NECRONS));
+        assertEquals("Spectres Canopteks", phylactery.getDisplayNames().get(PlayerRace.NECRONS));
     }
 
     @Test

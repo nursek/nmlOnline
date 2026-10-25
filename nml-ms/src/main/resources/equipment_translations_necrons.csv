@@ -2,7 +2,7 @@ name,displayName,description
 Enmitic Disintegrator Pistol,Pistolet désintégrateur enmitique,Pistolet d'appoint : la foudre enmitique dissout la chair sans un bruit.
 Gauss Blaster,Éclateur gauss,L'éclateur gauss arrache la matière atome par atome à chaque salve.
 Tesla Carbine,Carabine tesla,Ses arcs électriques rebondissent d'une cible à l'autre dans un crépitement bleu.
-Gauss Flayer,Fusil gauss,Le fusil des phalanges : lent à charger mais impossible à arrêter.
+Gauss Flayer,Fusil gauss,Le fusil des phalanges : chaque salve dépouille la cible atome après atome.
 Gauss Reaper,Faucheur gauss,Canon court à double flux taillé pour les assauts à bout portant.
 Gauss Destructor,Destructeur gauss,Une variante lourde qui ouvre des brèches dans les blindages les plus épais.
 Particle Caster,Émetteur à particules,Sa particule verte traverse l'infanterie comme une aiguille traverse le tissu.
@@ -12,31 +12,31 @@ Gauss Cannon,Canon gauss,Le canon des marcheurs : la réponse nécron aux blind�
 Heavy Gauss Cannon,Canon gauss lourd,Assez puissant pour arracher les aéronefs au ciel.
 Enmitic Annihilator,Annihilateur enmitique,Une pluie enmitique qui réduit les véhicules à l'état d'épave fumante.
 Synaptic Disintegrator,Désintégrateur synaptique,L'arme des traqueurs : la cible s'effondre avant que le tir ne soit entendu.
-Particle Shredder,Eclateur du Jugement Dernier,Un déluge de particules qui hache le champ de bataille.
+Particle Shredder,Éclateur du Jugement Dernier,Un déluge de particules qui hache les rangs en un jugement sans appel.
 Enmitic Exterminator,Exterminateur enmitique,Sa salve enmitique strie le ciel et abat les silhouettes alignées.
 Flensing Claw,Griffe écorcheuse,Des serres capables de déchiqueter l'armure et l'os.
 Voidblade,Lame du vide,La lame du vide : une entaille dans la réalité plus qu'une épée.
 Hyperphase Reap-Blade,Lame faucheuse hyperphase,Une faux de duel qui fauche les rangs d'un seul geste.
 Hyperphase Sword,Épée hyperphase,L'épée des seigneurs : rapide et d'une précision chirurgicale.
 Hyperphase Glaive,Glaive hyperphase,Une arme d'hast pour les duellistes qui aiment garder la distance.
-Hyperphase Harvester,Faux de guerre,La moissonneuse des phalanges : chaque fauchée ramène le silence.
-Monomolecular Proboscis,OLD // TO DELETE,
+Hyperphase Harvester,Faux de guerre,La faux de guerre des seigneurs nécrons : elle traverse l'armure comme si elle n'existait pas.
+Monomolecular Proboscis,Gantelet de feu,Un gantelet qui crache un feu capable de calciner la chair et de fondre le métal.
 Rod of Covenant,Sceptre du Pacte,Le sceptre des juges : la sentence est portée par l'énergie.
 Staff of Light,Bâton de lumière,Il brille comme un soleil miniature et frappe comme la foudre.
 Tachyon Arrow,Flèche tachyonique,Une seule flèche pour une seule cible : le tir ne se rate pas.
 Hyperphase Thresher,Batteuse hyperphase,La batteuse hyperphase déchire ce qu'elle frôle.
-Phylactery,Phylactère,Le phylactère pulse au rythme des blessures de son porteur.
-Solar Pulse,Chronométron,Une impulsion solaire qui aveugle les tireurs adverses.
-Phase Shifter,Déphaseur,Le déphaseur laisse son porteur glisser entre les coups.
-Sempiternal Weave,Trame sempiternelle,Une trame tissée dans l'éternité qui endurcit chair et métal.
-Quantum Shielding,Bouclier quantique,Le bouclier quantique plie la réalité autour de son porteur.
+Phylactery,Spectres Canopteks,Des spectres canopteks se déphasent autour du porteur pour intercepter les coups.
+Solar Pulse,Chronométron,Le chronométron étire les secondes autour de son porteur : les coups arrivent trop tard.
+Phase Shifter,Plastron métallique lourd,Un plastron de métal vivant qui encaisse les impacts à la place du porteur.
+Sempiternal Weave,Exosquelette métallique blindé,Un exosquelette de métal vivant tissé sous la peau, qui se referme sur chaque impact.
+Quantum Shielding,Casque blindé nécrontyrs,Un casque de métal vivant dont le champ quantique dévie les tirs les plus lourds.
 Lightning Field,Champ d'éclairs,Un champ d'éclairs punit quiconque ose toucher le porteur.
 Dispersion Shield,Bouclier de dispersion,Un bouclier qui disperse l'impact avant qu'il ne se forme.
 Bouclier balistique,Bouclier phasique lourd,Des plaques phasiques qui rient des projectiles ordinaires.
 Veil of Darkness,Voile de ténèbres,Le voile de ténèbres efface le porteur du regard ennemi.
 Nightmare Shroud,Linceul de cauchemars,Un linceul vivant qui nourrit les cauchemars de l'adversaire.
-Protège-dents,Proboscis monomoléculaire,Un protecteur nerveux qui rend les mandibules aussi dures que le métal.
-Casque militaire,Casque de métal vivant,Le casque de métal vivant lisse les pensées et ferme les esprits.
+Protège-dents,Proboscis monomoléculaire,Un proboscis monomoléculaire qui rend les mandibules aussi dures que le métal.
+Casque militaire,Casque de métal vivant,Un casque de métal vivant qui encaisse les tirs et ferme l'esprit aux intrusions.
 Gilet Kevlar,Mécarachnide,Une carapace de mécarachnide tressée pour les soldats nécrons.
 Treillis de camouflage urbain,Camouflage phasique urbain,Un treillis qui brouille la chaleur et dérobe les silhouettes.
-Gilet de camouflage optique,Casque de vision nocturne nécrodermique,Un voile de phase qui fait scintiller puis disparaître le porteur.
+Gilet de camouflage optique,Casque de vision nocturne nécrodermique,Un casque nécrodermique qui perce la nuit et dérobe le porteur aux regards.
