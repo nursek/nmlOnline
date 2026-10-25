@@ -8,8 +8,10 @@ import com.mg.nmlonline.domain.model.alliance.PendingCapture;
 import com.mg.nmlonline.domain.model.alliance.ProposalStatus;
 import com.mg.nmlonline.domain.model.bank.ExchangeOffer;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.Headquarters;
+import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -45,6 +47,7 @@ public class PlayerEliminationService {
     private final AnnouncementRepository announcementRepository;
     private final ExchangeOfferRepository exchangeOfferRepository;
     private final PendingCaptureRepository pendingCaptureRepository;
+    private final BuildingService buildingService;
 
     public PlayerEliminationService(EntityManager entityManager,
                                     PlayerRepository playerRepository,
@@ -52,7 +55,8 @@ public class PlayerEliminationService {
                                     AllianceProposalRepository proposalRepository,
                                     AnnouncementRepository announcementRepository,
                                     ExchangeOfferRepository exchangeOfferRepository,
-                                    PendingCaptureRepository pendingCaptureRepository) {
+                                    PendingCaptureRepository pendingCaptureRepository,
+                                    BuildingService buildingService) {
         this.entityManager = entityManager;
         this.playerRepository = playerRepository;
         this.allianceRepository = allianceRepository;
@@ -60,6 +64,7 @@ public class PlayerEliminationService {
         this.announcementRepository = announcementRepository;
         this.exchangeOfferRepository = exchangeOfferRepository;
         this.pendingCaptureRepository = pendingCaptureRepository;
+        this.buildingService = buildingService;
     }
 
     public void apply(Board board, Player victim, Long killerId, int turn) {
@@ -70,10 +75,10 @@ public class PlayerEliminationService {
         Set<Integer> affectedSectors = new HashSet<>();
         List<Sector> ownedSectors = new ArrayList<>(board.getSectorsByOwner(victim.getId()));
 
+        if (headquartersCaptured && killer != null && headquartersSector != null) {
+            lootHeadquartersSector(victim, headquartersSector, killerId, turn);
+        }
         for (Building building : new ArrayList<>(victim.getBuildings())) {
-            if (isKeptWithHeadquarters(building, headquartersCaptured, headquartersSector)) {
-                continue;
-            }
             Sector sector = building.getSector();
             if (sector != null) {
                 sector.getBuildings().remove(building);
@@ -134,12 +139,19 @@ public class PlayerEliminationService {
         playerRepository.save(victim);
     }
 
-    private static boolean isKeptWithHeadquarters(Building building, boolean headquartersCaptured,
-                                                  Integer headquartersSector) {
-        return headquartersCaptured
-                && headquartersSector != null
-                && building.getSector() != null
-                && building.getSector().getNumber() == headquartersSector;
+    private void lootHeadquartersSector(Player victim, int sectorNumber, Long killerId, int turn) {
+        for (Building building : new ArrayList<>(victim.getBuildings())) {
+            if (building.isDestroyed() || building.isCaptured()
+                    || building.getSector() == null
+                    || building.getSector().getNumber() != sectorNumber) {
+                continue;
+            }
+            if (building instanceof WeaponCache cache) {
+                buildingService.captureWeaponCache(cache.getId(), killerId, turn);
+            } else if (building instanceof Bank bank) {
+                buildingService.captureBank(bank.getId(), killerId, turn);
+            }
+        }
     }
 
     private Integer headquartersSector(Player victim) {

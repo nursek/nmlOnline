@@ -675,8 +675,8 @@ class TurnResolutionScenariosTest {
         assertTrue(fin.getEliminatedPlayers().contains("arene-batiments"));
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-            assertEquals(3, board.getSector(5).getBuildings().size(),
-                    "Les bâtiments avec le QG restent capturés après la finalisation");
+            assertTrue(board.getSector(5).getBuildings().isEmpty(),
+                    "Les bâtiments pillés du secteur du QG sont supprimés");
             Player arenaOwner = playerRepository.findById(arenaOwnerId).orElseThrow();
             assertEquals(0.0, arenaOwner.getStats().getMoney(), "La fortune non récupérée s'évapore");
         });

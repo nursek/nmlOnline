@@ -13,6 +13,7 @@ import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
+import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -105,6 +106,14 @@ class PlayerEliminationServiceTest {
             victim.getBuildings().add(otherBank);
             otherSector.getBuildings().add(otherBank);
 
+            Equipment cachedEquipment = new Equipment("Butin cache", 50, 0, 0, 0, 0,
+                    Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
+            em.persist(cachedEquipment);
+            EquipmentStack cacheStack = new EquipmentStack(cachedEquipment);
+            cacheStack.setPlayer(victim);
+            cache.getStoredEquipments().add(cacheStack);
+            hqBank.setStoredMoney(0);
+
             Unit hqUnit = new Unit(0.0, UnitClass.TIREUR);
             hqUnit.setPlayerId(victim.getId());
             hqSector.addUnit(hqUnit);
@@ -151,8 +160,8 @@ class PlayerEliminationServiceTest {
     }
 
     @Test
-    @DisplayName("QG capturé : tous les secteurs au tueur, seuls les bâtiments du QG survivent")
-    void headquartersCaptureTransfersAllSectorsAndKeepsOnlyHeadquartersBuildings() {
+    @DisplayName("QG capturé : tous les secteurs au tueur, bâtiments du QG pillés puis supprimés")
+    void headquartersCaptureTransfersAllSectorsAndLootsHeadquartersBuildings() {
         World world = seed(EliminationCause.HEADQUARTERS_CAPTURED);
 
         apply(world, EliminationCause.HEADQUARTERS_CAPTURED, world.killerId());
@@ -163,8 +172,8 @@ class PlayerEliminationServiceTest {
             assertEquals(world.killerId(), board.getSector(HQ_SECTOR).getOwnerId());
             assertEquals(world.killerId(), board.getSector(OTHER_SECTOR).getOwnerId());
             assertTrue(board.getSectorsByOwner(world.victimId()).isEmpty());
-            assertEquals(3, board.getSector(HQ_SECTOR).getBuildings().size(),
-                    "QG + Banque + Cache du secteur du QG conservés");
+            assertTrue(board.getSector(HQ_SECTOR).getBuildings().isEmpty(),
+                    "QG, Banque et Cache du secteur du QG sont supprimés après pillage");
             assertTrue(board.getSector(OTHER_SECTOR).getBuildings().isEmpty(),
                     "Les bâtiments hors secteur du QG s'évaporent");
             assertTrue(board.getSector(HQ_SECTOR).getUnits().isEmpty());
@@ -177,9 +186,15 @@ class PlayerEliminationServiceTest {
             assertTrue(victim.getEquipments().isEmpty());
             assertTrue(victim.getResources().isEmpty());
             assertEquals(0.0, victim.getStats().getMoney());
-            assertTrue(victim.getBuildings().stream()
-                    .allMatch(building -> building.getSector() != null
-                            && building.getSector().getNumber() == HQ_SECTOR));
+            assertTrue(victim.getBuildings().isEmpty());
+
+            Player killer = playerRepository.findById(world.killerId()).orElseThrow();
+            assertEquals(750.0, killer.getStats().getMoney(), 0.001,
+                    "La banque du QG est pillée avant suppression");
+            assertTrue(killer.getEquipments().stream()
+                            .anyMatch(stack -> "Butin cache".equals(stack.getEquipment().getName())
+                                    && stack.getQuantity() == 1),
+                    "La cache du QG est pillée avant suppression");
 
             assertFalse(allianceRepository.findById(world.allianceId()).orElseThrow().isActive());
             assertEquals(ProposalStatus.WITHDRAWN,
