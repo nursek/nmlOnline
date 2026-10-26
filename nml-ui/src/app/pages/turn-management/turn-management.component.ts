@@ -249,6 +249,7 @@ export class TurnManagementComponent {
         duration: 4000,
       });
       await this.loadPendingCaptures();
+      void this.preview.loadPreview();
     } catch {
       this.snackBar.open("Échec de l'attribution", 'OK', { duration: 4000 });
     }

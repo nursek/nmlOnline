@@ -13,7 +13,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -220,11 +219,9 @@ class AllianceServiceTest {
         assertNull(pendingEntry.getResolvedTurn());
 
         // Même tour : ordre id DESC, la demande la plus récente d'abord.
-        List<Long> ids = List.of(later.getId(), pending.getId());
         int laterIndex = history.getProposals().indexOf(proposalEntry(history, later.getId()));
         int pendingIndex = history.getProposals().indexOf(proposalEntry(history, pending.getId()));
         assertTrue(laterIndex < pendingIndex, "Demandes triées de la plus récente à la plus ancienne");
-        assertEquals(2, ids.size());
     }
 
     private AdminAllianceHistoryDto.AllianceEntryDto allianceEntry(
