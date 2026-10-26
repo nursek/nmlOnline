@@ -22,17 +22,25 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { firstValueFrom } from 'rxjs';
 import { Player, Sector } from '../../models';
 import { sanitizeSvg } from '../../core/svg-sanitize';
+import { httpErrorMessage } from '../../core/http-error.interceptor';
 import { characterStats } from '../../core/stats';
 import { VehicleImageService } from '../../core/vehicle-image.service';
 import type { OptimizedImage } from '../../core/optimized-image';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
+import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { PlayerActionsService } from '../../services/player-actions.service';
 import { PlayerDirectoryService } from '../../services/player-directory.service';
 import { PlayerService } from '../../services/player.service';
+import {
+  BoardImportDialogComponent,
+  BoardImportResult,
+} from '../../shared/board-import-dialog/board-import-dialog.component';
 import { contrastColor, haloColor, MAP_THEME } from './carte.config';
 import { frontBorders } from './carte.helpers';
 
@@ -75,6 +83,7 @@ export function isSameOriginAssetUrl(url: string): boolean {
     MatDividerModule,
     MatButtonModule,
     MatSnackBarModule,
+    MatDialogModule,
   ],
   templateUrl: './carte.component.html',
   styleUrls: ['./carte.component.scss'],
@@ -83,6 +92,7 @@ export class CarteComponent {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   // Les libellés vivent dans le viewBox SVG : sans grossissement, ils deviennent
   // illisibles quand la carte est réduite à la largeur d'un téléphone.
@@ -108,6 +118,7 @@ export class CarteComponent {
   private readonly playerDirectory = inject(PlayerDirectoryService);
   private readonly allianceState = inject(AllianceStateService);
   private readonly auth = inject(AuthService);
+  private readonly api = inject(ApiService);
   private readonly playerActions = inject(PlayerActionsService);
   private readonly playerService = inject(PlayerService);
   private readonly vehicleImages = inject(VehicleImageService);
@@ -117,6 +128,7 @@ export class CarteComponent {
   readonly undeployedVehicles = this.playerService.undeployedVehicles;
   readonly overlays = signal<ReadonlySet<OverlayKey>>(new Set());
   readonly placing = signal<Placement | null>(null);
+  readonly importingBoard = signal(false);
   readonly resourceLegend = Object.entries(MAP_THEME.resourceColors).map(([name, color]) => ({
     name,
     color,
@@ -705,6 +717,46 @@ export class CarteComponent {
       else next.add(overlay);
       return next;
     });
+  }
+
+  triggerBoardImport(): void {
+    this.dialog
+      .open(BoardImportDialogComponent)
+      .afterClosed()
+      .subscribe(async (result: BoardImportResult | undefined) => {
+        if (!result || this.importingBoard()) return;
+        this.importingBoard.set(true);
+        try {
+          let mapImageUrl: string | undefined;
+          let svgOverlayUrl: string | undefined;
+          if (result.mapImage && result.svgOverlay) {
+            const assets = await firstValueFrom(
+              this.api.adminUploadBoardAssets(result.mapImage, result.svgOverlay),
+            );
+            mapImageUrl = assets.mapImageUrl;
+            svgOverlayUrl = assets.svgOverlayUrl;
+          }
+          const board = await firstValueFrom(
+            this.api.adminImportBoard(result.file, mapImageUrl, svgOverlayUrl),
+          );
+          this.snackBar.open(
+            `Board "${board.name}" importé (${Object.keys(board.sectors ?? {}).length} secteurs)`,
+            'OK',
+            { duration: 5000 },
+          );
+          // Le détail ouvert porte l'ancienne géométrie du secteur.
+          this.selectedSector.set(null);
+          this.activeBoard.reload();
+        } catch (error) {
+          this.snackBar.open(
+            httpErrorMessage(error, "Erreur lors de l'import du board"),
+            'Fermer',
+            { duration: 6000 },
+          );
+        } finally {
+          this.importingBoard.set(false);
+        }
+      });
   }
 
   startPlacement(kind: 'unit' | 'vehicle', id: number | null, label: string): void {

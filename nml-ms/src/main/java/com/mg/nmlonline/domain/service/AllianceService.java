@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.AdminAllianceHistoryDto;
 import com.mg.nmlonline.api.dto.AllianceMeDto;
 import com.mg.nmlonline.api.dto.AllianceMessageDto;
 import com.mg.nmlonline.api.dto.AllianceProposalDto;
@@ -112,6 +113,53 @@ public class AllianceService {
             bonus.setVictimName(names.get(victimId));
             bonus.setBonusPercent(betrayal.betrayalBonusPercent());
             dto.getActiveBetrayalBonuses().add(bonus);
+        }
+        return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public AdminAllianceHistoryDto getHistory() {
+        List<Alliance> alliances = allianceRepository.findAllByOrderByCreatedTurnDescIdDesc();
+        List<AllianceProposal> proposals = proposalRepository.findAllByOrderByCreatedTurnDescIdDesc();
+
+        Set<Long> ids = new HashSet<>();
+        for (Alliance alliance : alliances) {
+            ids.addAll(Set.of(alliance.getPlayerOneId(), alliance.getPlayerTwoId()));
+            if (alliance.getEndedByPlayerId() != null) {
+                ids.add(alliance.getEndedByPlayerId());
+            }
+        }
+        proposals.forEach(proposal -> ids.addAll(Set.of(proposal.getFromPlayerId(), proposal.getToPlayerId())));
+        Map<Long, String> names = namesById(ids);
+
+        AdminAllianceHistoryDto dto = new AdminAllianceHistoryDto();
+        for (Alliance alliance : alliances) {
+            AdminAllianceHistoryDto.AllianceEntryDto entry = new AdminAllianceHistoryDto.AllianceEntryDto();
+            entry.setId(alliance.getId());
+            entry.setPlayerOneId(alliance.getPlayerOneId());
+            entry.setPlayerOneName(names.get(alliance.getPlayerOneId()));
+            entry.setPlayerTwoId(alliance.getPlayerTwoId());
+            entry.setPlayerTwoName(names.get(alliance.getPlayerTwoId()));
+            entry.setCreatedTurn(alliance.getCreatedTurn());
+            entry.setEndedTurn(alliance.getEndedTurn());
+            entry.setEndedByPlayerId(alliance.getEndedByPlayerId());
+            entry.setEndedByName(alliance.getEndedByPlayerId() != null
+                    ? names.get(alliance.getEndedByPlayerId()) : null);
+            entry.setBetrayal(alliance.isBetrayal());
+            dto.getAlliances().add(entry);
+        }
+        for (AllianceProposal proposal : proposals) {
+            AdminAllianceHistoryDto.ProposalEntryDto entry = new AdminAllianceHistoryDto.ProposalEntryDto();
+            entry.setId(proposal.getId());
+            entry.setKind(proposal.getKind().name());
+            entry.setStatus(proposal.getStatus().name());
+            entry.setFromPlayerId(proposal.getFromPlayerId());
+            entry.setFromPlayerName(names.get(proposal.getFromPlayerId()));
+            entry.setToPlayerId(proposal.getToPlayerId());
+            entry.setToPlayerName(names.get(proposal.getToPlayerId()));
+            entry.setCreatedTurn(proposal.getCreatedTurn());
+            entry.setResolvedTurn(proposal.getResolvedTurn());
+            dto.getProposals().add(entry);
         }
         return dto;
     }

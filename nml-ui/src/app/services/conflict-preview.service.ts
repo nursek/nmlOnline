@@ -16,16 +16,22 @@ export class ConflictPreviewService {
   readonly error = this._error.asReadonly();
   readonly report = this._report.asReadonly();
 
+  private requestSeq = 0;
+
   async loadPreview(): Promise<void> {
+    const seq = ++this.requestSeq;
     this._previewing.set(true);
     this._error.set(null);
     this._report.set(null);
     try {
-      this._report.set(await firstValueFrom(this.api.adminPreviewMovements()));
+      const report = await firstValueFrom(this.api.adminPreviewMovements());
+      if (seq === this.requestSeq) this._report.set(report);
     } catch (error) {
-      this._error.set(httpErrorMessage(error, "Erreur lors de l'aperçu des conflits"));
+      if (seq === this.requestSeq) {
+        this._error.set(httpErrorMessage(error, "Erreur lors de l'aperçu des conflits"));
+      }
     } finally {
-      this._previewing.set(false);
+      if (seq === this.requestSeq) this._previewing.set(false);
     }
   }
 }

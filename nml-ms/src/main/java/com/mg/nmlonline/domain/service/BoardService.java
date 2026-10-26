@@ -134,28 +134,31 @@ public class BoardService {
 
     // Mapping dans la transaction (sectorsList et sous-collections sont LAZY).
 
-    public List<BoardDto> getAllBoardsDto(Long requesterUserId) {
-        SectorMapper.Visibility visibility = visibilityFor(requesterUserId);
+    public List<BoardDto> getAllBoardsDto(Long requesterUserId, boolean seeAll) {
+        SectorMapper.Visibility visibility = visibilityFor(requesterUserId, seeAll);
         return getAllBoards().stream().map(board -> boardMapper.toPublicDto(board, visibility)).toList();
     }
 
-    public Optional<BoardDto> getBoardByIdDto(Long id, Long requesterUserId) {
-        SectorMapper.Visibility visibility = visibilityFor(requesterUserId);
+    public Optional<BoardDto> getBoardByIdDto(Long id, Long requesterUserId, boolean seeAll) {
+        SectorMapper.Visibility visibility = visibilityFor(requesterUserId, seeAll);
         return getBoardById(id).map(board -> boardMapper.toPublicDto(board, visibility));
     }
 
-    public Optional<BoardDto> getBoardByNameDto(String name, Long requesterUserId) {
-        SectorMapper.Visibility visibility = visibilityFor(requesterUserId);
+    public Optional<BoardDto> getBoardByNameDto(String name, Long requesterUserId, boolean seeAll) {
+        SectorMapper.Visibility visibility = visibilityFor(requesterUserId, seeAll);
         return getBoardByName(name).map(board -> boardMapper.toPublicDto(board, visibility));
     }
 
-    private SectorMapper.Visibility visibilityFor(Long requesterUserId) {
+    private SectorMapper.Visibility visibilityFor(Long requesterUserId, boolean seeAll) {
+        if (seeAll) {
+            return SectorMapper.Visibility.admin();
+        }
         if (requesterUserId == null) {
             return SectorMapper.Visibility.none();
         }
         return playerRepository.findByUserId(requesterUserId)
                 .map(player -> new SectorMapper.Visibility(
-                        player.getId(), allianceGraph.alliedPlayerIds(player.getId())))
+                        player.getId(), allianceGraph.alliedPlayerIds(player.getId()), false))
                 .orElseGet(SectorMapper.Visibility::none);
     }
 

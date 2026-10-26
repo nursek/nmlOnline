@@ -20,6 +20,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { TurnManagementService } from '../../services/turn-management.service';
+import { ConflictPreviewService } from '../../services/conflict-preview.service';
 import { DevScenarioService } from '../../services/dev-scenario.service';
 import { ApiService } from '../../services/api.service';
 import { PendingCapture, ResolvedBattle } from '../../models';
@@ -46,6 +47,7 @@ import { CombatLogDialogComponent } from './combat-log-dialog.component';
 })
 export class TurnManagementComponent {
   private readonly turnManagement = inject(TurnManagementService);
+  private readonly preview = inject(ConflictPreviewService);
   private readonly devScenarios = inject(DevScenarioService);
   private readonly api = inject(ApiService);
   private readonly dialog = inject(MatDialog);
@@ -65,6 +67,21 @@ export class TurnManagementComponent {
   readonly navigating = this.turnManagement.navigating;
   readonly devScenarioAvailable = this.devScenarios.available;
 
+  readonly previewReport = this.preview.report;
+  readonly previewing = this.preview.previewing;
+  readonly previewError = this.preview.error;
+  readonly hasReportContent = computed(() => {
+    const r = this.previewReport();
+    return (
+      !!r &&
+      (r.resolved.length > 0 ||
+        r.blocked.length > 0 ||
+        r.hasConflicts ||
+        r.hasTransitCombats ||
+        r.capturedSectors.length > 0)
+    );
+  });
+
   readonly currentTurnLabel = computed(() => {
     const t = this.currentTurn();
     return t === null || t === undefined ? '—' : `Tour ${t}`;
@@ -79,6 +96,7 @@ export class TurnManagementComponent {
     void this.turnManagement.loadState();
     void this.turnManagement.loadCurrentTurn();
     void this.loadPendingCaptures();
+    void this.preview.loadPreview();
 
     effect(() => {
       const report = this.lastReport();
@@ -109,17 +127,28 @@ export class TurnManagementComponent {
   }
 
   onStart(): void {
-    void this.turnManagement.startSession().catch(() => {
-      /* le service positionne déjà le signal d'erreur */
-    });
+    this.afterMutation(this.turnManagement.startSession());
+  }
+
+  onReloadPreview(): void {
+    void this.preview.loadPreview();
   }
 
   onAdvanceHop(): void {
-    void this.turnManagement.advanceHop().catch(() => {});
+    this.afterMutation(this.turnManagement.advanceHop());
   }
 
   onResolveBattle(conflictId: number): void {
-    void this.turnManagement.resolveBattle(conflictId).catch(() => {});
+    this.afterMutation(this.turnManagement.resolveBattle(conflictId));
+  }
+
+  private afterMutation(action: Promise<unknown>): void {
+    // L'aperçu des conflits dépend de l'état du tour : il est périmé après chaque mutation.
+    void action
+      .catch(() => {
+        /* le service positionne déjà le signal d'erreur */
+      })
+      .finally(() => this.preview.loadPreview());
   }
 
   onResolveElimination(victimPlayerId: number, killerPlayerId: number | null): void {
@@ -164,7 +193,7 @@ export class TurnManagementComponent {
       .afterClosed()
       .subscribe((confirmed: boolean) => {
         if (confirmed) {
-          void this.turnManagement.finalizeResolution().catch(() => {});
+          this.afterMutation(this.turnManagement.finalizeResolution());
         }
       });
   }
@@ -198,7 +227,7 @@ export class TurnManagementComponent {
     if (turn === null || turn < 1) {
       return;
     }
-    void this.turnManagement.navigateToTurn(turn).catch(() => {});
+    this.afterMutation(this.turnManagement.navigateToTurn(turn));
   }
 
   async loadPendingCaptures(): Promise<void> {
@@ -220,6 +249,7 @@ export class TurnManagementComponent {
         duration: 4000,
       });
       await this.loadPendingCaptures();
+      void this.preview.loadPreview();
     } catch {
       this.snackBar.open("Échec de l'attribution", 'OK', { duration: 4000 });
     }

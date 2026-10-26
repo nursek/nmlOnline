@@ -31,6 +31,8 @@ public interface AllianceRepository extends JpaRepository<Alliance, Long> {
     @Query("select a from Alliance a where a.endedTurn = :turn")
     List<Alliance> findEndedAtTurn(@Param("turn") int turn);
 
+    List<Alliance> findAllByOrderByCreatedTurnDescIdDesc();
+
     /** UPDATE conditionnel : une rupture acceptée en parallèle ne peut pas être écrasée par une trahison. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update Alliance a set a.endedTurn = :turn, a.endedByPlayerId = :breakerId, a.betrayal = true "
