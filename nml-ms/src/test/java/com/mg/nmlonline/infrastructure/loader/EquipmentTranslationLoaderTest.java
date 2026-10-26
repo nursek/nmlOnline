@@ -44,7 +44,11 @@ class EquipmentTranslationLoaderTest {
 
         Equipment phylactery = equipmentRepository.findByName("Phylactery").orElseThrow();
         assertEquals("Guenilles renforcées", phylactery.getDisplayNames().get(PlayerRace.ORKS));
-        assertEquals("Phylactère", phylactery.getDisplayNames().get(PlayerRace.NECRONS));
+        assertEquals("Spectres Canopteks", phylactery.getDisplayNames().get(PlayerRace.NECRONS));
+
+        Equipment sempiternalWeave = equipmentRepository.findByName("Sempiternal Weave").orElseThrow();
+        assertEquals("Un exosquelette de métal vivant tissé sous la peau, qui se referme sur chaque impact.",
+                sempiternalWeave.getDisplayDescriptions().get(PlayerRace.NECRONS));
     }
 
     @Test
