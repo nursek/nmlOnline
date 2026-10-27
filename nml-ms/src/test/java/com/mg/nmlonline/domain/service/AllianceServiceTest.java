@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
+import com.mg.nmlonline.api.dto.AdminAllianceHistoryDto;
 import com.mg.nmlonline.api.dto.AllianceMeDto;
 import com.mg.nmlonline.api.dto.AllianceProposalDto;
 import com.mg.nmlonline.domain.model.alliance.ProposalKind;
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -171,5 +173,77 @@ class AllianceServiceTest {
                 requester.getUserId(), ProposalKind.RUPTURE, accepter.getId());
         assertThrows(IllegalStateException.class,
                 () -> allianceService.accept(accepter.getUserId(), rupture.getId()));
+    }
+
+    @Test
+    @DisplayName("Historique admin : noms, trahison, rupture amiable, demandes et ordre antéchronologique")
+    void adminHistoryExposesBetrayalRuptureAndProposals() {
+        Player traitor = createPlayer("HistTraitre" + USER_SEQ.get());
+        Player victim = createPlayer("HistVictime" + USER_SEQ.get());
+        ally(traitor, victim);
+        Long betrayedId = allianceService.getMe(traitor.getUserId()).getAlliances().getFirst().getId();
+        allianceService.betray(traitor.getUserId(), betrayedId);
+
+        Player rupturer = createPlayer("HistRuptA" + USER_SEQ.get());
+        Player ruptured = createPlayer("HistRuptB" + USER_SEQ.get());
+        ally(rupturer, ruptured);
+        AllianceProposalDto rupture = allianceService.propose(
+                rupturer.getUserId(), ProposalKind.RUPTURE, ruptured.getId());
+        allianceService.accept(ruptured.getUserId(), rupture.getId());
+
+        Player proposer = createPlayer("HistPropA" + USER_SEQ.get());
+        Player target = createPlayer("HistPropB" + USER_SEQ.get());
+        AllianceProposalDto pending = allianceService.propose(
+                proposer.getUserId(), ProposalKind.ALLIANCE, target.getId());
+        AllianceProposalDto later = allianceService.propose(
+                rupturer.getUserId(), ProposalKind.ALLIANCE, target.getId());
+
+        AdminAllianceHistoryDto history = allianceService.getHistory();
+
+        AdminAllianceHistoryDto.AllianceEntryDto betrayal = allianceEntry(history, traitor, victim);
+        assertTrue(betrayal.isBetrayal());
+        assertEquals(traitor.getId(), betrayal.getEndedByPlayerId());
+        assertEquals(traitor.getName(), betrayal.getEndedByName());
+        assertEquals(turnService.getCurrentTurn(), betrayal.getEndedTurn());
+
+        AdminAllianceHistoryDto.AllianceEntryDto ruptureEntry = allianceEntry(history, rupturer, ruptured);
+        assertFalse(ruptureEntry.isBetrayal());
+        assertEquals(rupturer.getId(), ruptureEntry.getEndedByPlayerId());
+        assertEquals(rupturer.getName(), ruptureEntry.getEndedByName());
+
+        AdminAllianceHistoryDto.ProposalEntryDto pendingEntry = proposalEntry(history, pending.getId());
+        assertEquals("ALLIANCE", pendingEntry.getKind());
+        assertEquals("PENDING", pendingEntry.getStatus());
+        assertEquals(proposer.getName(), pendingEntry.getFromPlayerName());
+        assertEquals(target.getName(), pendingEntry.getToPlayerName());
+        assertNull(pendingEntry.getResolvedTurn());
+
+        // Même tour : ordre id DESC, la demande la plus récente d'abord.
+        int laterIndex = history.getProposals().indexOf(proposalEntry(history, later.getId()));
+        int pendingIndex = history.getProposals().indexOf(proposalEntry(history, pending.getId()));
+        assertTrue(laterIndex < pendingIndex, "Demandes triées de la plus récente à la plus ancienne");
+    }
+
+    private AdminAllianceHistoryDto.AllianceEntryDto allianceEntry(
+            AdminAllianceHistoryDto history, Player first, Player second) {
+        long low = Math.min(first.getId(), second.getId());
+        long high = Math.max(first.getId(), second.getId());
+        AdminAllianceHistoryDto.AllianceEntryDto entry = history.getAlliances().stream()
+                .filter(candidate -> candidate.getPlayerOneId() == low && candidate.getPlayerTwoId() == high)
+                .findFirst()
+                .orElseThrow();
+        Player one = first.getId() < second.getId() ? first : second;
+        Player two = one == first ? second : first;
+        assertEquals(one.getName(), entry.getPlayerOneName());
+        assertEquals(two.getName(), entry.getPlayerTwoName());
+        return entry;
+    }
+
+    private AdminAllianceHistoryDto.ProposalEntryDto proposalEntry(
+            AdminAllianceHistoryDto history, Long proposalId) {
+        return history.getProposals().stream()
+                .filter(candidate -> candidate.getId().equals(proposalId))
+                .findFirst()
+                .orElseThrow();
     }
 }

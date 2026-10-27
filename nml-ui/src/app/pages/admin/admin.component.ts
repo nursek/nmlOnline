@@ -1,79 +1,35 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-} from '@angular/core';
-import { DecimalPipe } from '@angular/common';
-import { MatExpansionModule } from '@angular/material/expansion';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { firstValueFrom } from 'rxjs';
 import {
-  Player,
-  UnitClass,
-  UnitType,
-  MovementStatusFilter,
+  AdminAllianceEntry,
+  AdminAllianceProposalEntry,
   ExchangeOffer,
   ExchangeOfferStatus,
   ExchangeOfferStatusFilter,
+  MovementStatusFilter,
 } from '../../models';
 import { AdminService } from '../../services/admin.service';
-import { ApiService } from '../../services/api.service';
-import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
-import {
-  BoardImportDialogComponent,
-  BoardImportResult,
-} from '../../shared/board-import-dialog/board-import-dialog.component';
-import { APP_CONSTANTS } from '../../core/constants';
-import { ExpPipe } from '../../shared/exp.pipe';
-import { PlayerEditDialogComponent } from '../player-management/player-edit-dialog/player-edit-dialog.component';
 
 @Component({
   selector: 'app-admin',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DecimalPipe,
-    ExpPipe,
-    MatExpansionModule,
     MatButtonModule,
     MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatProgressSpinnerModule,
     MatChipsModule,
     MatTooltipModule,
-    MatDividerModule,
-    MatSnackBarModule,
-    MatProgressBarModule,
-    MatDialogModule,
   ],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent {
   private readonly admin = inject(AdminService);
-  private readonly api = inject(ApiService);
-  private readonly snackBar = inject(MatSnackBar);
-  private readonly dialog = inject(MatDialog);
 
-  readonly players = this.admin.players;
-  readonly playersTruncated = this.admin.playersTruncated;
-  readonly loading = this.admin.loading;
-  readonly importing = this.admin.importing;
-  readonly successMessage = this.admin.successMessage;
-  readonly errorMessage = this.admin.error;
   readonly currentTurn = this.admin.currentTurn;
 
   readonly orders = this.admin.orders;
@@ -83,6 +39,10 @@ export class AdminComponent {
   readonly exchanges = this.admin.exchanges;
   readonly exchangesLoading = this.admin.exchangesLoading;
   readonly exchangeStatusFilter = this.admin.exchangeStatusFilter;
+
+  readonly alliances = this.admin.allianceEntries;
+  readonly allianceProposals = this.admin.allianceProposals;
+  readonly alliancesLoading = this.admin.alliancesLoading;
 
   readonly statusFilters: ReadonlyArray<MovementStatusFilter> = [
     'ALL',
@@ -109,43 +69,28 @@ export class AdminComponent {
     EXPIRED: 'Expirée',
   };
 
-  readonly searchQuery = signal('');
+  readonly proposalStatusLabels: Record<string, string> = {
+    PENDING: 'En attente',
+    ACCEPTED: 'Acceptée',
+    DECLINED: 'Refusée',
+    WITHDRAWN: 'Retirée',
+  };
+
+  readonly proposalKindLabels: Record<string, string> = {
+    ALLIANCE: 'Alliance',
+    RUPTURE: 'Rupture',
+  };
 
   readonly currentTurnLabel = computed(() => {
     const t = this.currentTurn();
     return t === null || t === undefined ? '—' : `Tour ${t}`;
   });
 
-  readonly filteredPlayers = computed(() => {
-    const query = this.searchQuery().toLowerCase();
-    const all = this.players();
-    return query ? all.filter((p) => p.name.toLowerCase().includes(query)) : all;
-  });
-
   constructor() {
-    this.admin.reloadPlayers();
     void this.admin.loadCurrentTurn();
     this.admin.reloadOrders();
     this.admin.reloadExchanges();
-
-    effect(() => {
-      const msg = this.successMessage();
-      if (msg) {
-        this.snackBar.open(msg, 'OK', { duration: 4000, panelClass: 'success-snackbar' });
-        this.admin.clearMessages();
-      }
-    });
-    effect(() => {
-      const err = this.errorMessage();
-      if (err) {
-        this.snackBar.open(err, 'Fermer', { duration: 6000, panelClass: 'error-snackbar' });
-        this.admin.clearMessages();
-      }
-    });
-  }
-
-  onSearchChange(value: string): void {
-    this.searchQuery.set(value);
+    this.admin.reloadAlliances();
   }
 
   onOrderStatusChange(status: MovementStatusFilter): void {
@@ -160,99 +105,8 @@ export class AdminComponent {
     this.admin.reloadExchanges();
   }
 
-  triggerImport(): void {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (event) => {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        return;
-      }
-      // ponytail: window.prompt au lieu d'un dialog MatDialog — un seul champ,
-      // pas assez de valeur pour un composant dédié. Upgrade: dialog custom si
-      // on veut validation/policy de mot de passe (longueur min, confirmation).
-      const password = window.prompt(
-        `Mot de passe pour le compte lié au joueur "${file.name.replace(/\.json$/i, '')}" ?\n` +
-          '(Laisser vide = importer sans compte de connexion.)',
-        '',
-      );
-      // prompt renvoie null si l'utilisateur annule : on abandonne l'import.
-      if (password === null) {
-        return;
-      }
-      void this.admin.importPlayer(file, password === '' ? undefined : password).catch(() => {
-        // AdminService already set the error signal; ignore here.
-      });
-    };
-    input.click();
-  }
-
-  triggerBoardImport(): void {
-    this.dialog
-      .open(BoardImportDialogComponent)
-      .afterClosed()
-      .subscribe((result: BoardImportResult | undefined) => {
-        if (!result) {
-          return;
-        }
-        void this.admin.importBoard(result.file, result.mapImage, result.svgOverlay).catch(() => {
-          // AdminService already set the error signal; ignore here.
-        });
-      });
-  }
-
-  openEdit(player: Player): void {
-    if (player.id === null) return;
-    this.dialog
-      .open(PlayerEditDialogComponent, {
-        width: '90vw',
-        maxWidth: '1200px',
-        maxHeight: '92vh',
-        data: { playerId: player.id, playerName: player.name },
-      })
-      .afterClosed()
-      .subscribe(() => this.admin.closeEdit());
-  }
-
-  async exportPlayer(player: Player): Promise<void> {
-    if (player.id === null) return;
-    try {
-      const data = await firstValueFrom(this.api.adminExportPlayer(player.id));
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${player.name}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      this.snackBar.open(`Export de ${player.name} téléchargé`, 'OK', {
-        duration: APP_CONSTANTS.SNACKBAR_SHORT_DURATION_MS,
-      });
-    } catch {
-      this.snackBar.open("Erreur lors de l'export", 'Fermer', { duration: 4000 });
-    }
-  }
-
-  confirmDelete(player: Player): void {
-    if (player.id === null) return;
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: 'Supprimer le joueur',
-        message: `Supprimer définitivement "${player.name}" ? Ses secteurs redeviendront neutres.`,
-        confirmLabel: 'Supprimer',
-        cancelLabel: 'Annuler',
-      },
-    });
-    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
-      if (confirmed && player.id != null) {
-        void this.admin.deletePlayer(player.id).catch(() => {});
-      }
-    });
-  }
-
-  getTotalArmySize(player: Player): number {
-    return player.sectors?.reduce((sum, s) => sum + (s.army?.length || 0), 0) || 0;
+  onReloadAlliances(): void {
+    this.admin.reloadAlliances();
   }
 
   exchangeItemsLabel(offer: ExchangeOffer): string {
@@ -275,23 +129,44 @@ export class AdminComponent {
     }
   }
 
+  allianceStatusLabel(alliance: AdminAllianceEntry): string {
+    if (alliance.endedTurn === null) return 'Active';
+    return alliance.betrayal ? 'Trahison' : 'Rompue';
+  }
+
+  allianceStatusClass(alliance: AdminAllianceEntry): string {
+    if (alliance.endedTurn === null) return 'status-resolved';
+    return alliance.betrayal ? 'status-blocked' : 'status-cancelled';
+  }
+
+  proposalStatusClass(status: string): string {
+    switch (status) {
+      case 'PENDING':
+        return 'status-pending';
+      case 'ACCEPTED':
+        return 'status-resolved';
+      case 'DECLINED':
+        return 'status-blocked';
+      default:
+        return 'status-cancelled';
+    }
+  }
+
+  proposalStatusLabel(status: string): string {
+    return this.proposalStatusLabels[status] ?? status;
+  }
+
+  proposalKindLabel(kind: string): string {
+    return this.proposalKindLabels[kind] ?? kind;
+  }
+
   formatMoney(amount: number): string {
     if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1) + 'M';
     if (amount >= 1_000) return (amount / 1_000).toFixed(1) + 'k';
     return amount.toFixed(0);
   }
 
-  getEquipmentCount(player: Player): number {
-    return player.equipments?.reduce((sum, eq) => sum + eq.quantity, 0) || 0;
-  }
-
-  getUnitTypeLabel(type: UnitType | string | null | undefined): string {
-    if (!type) return '?';
-    return typeof type === 'string' ? type : type.name || '?';
-  }
-
-  getClassNames(classes: UnitClass[] | string[] | null | undefined): string {
-    if (!classes || classes.length === 0) return '';
-    return classes.map((c) => (typeof c === 'string' ? c : c.name || c.code || '?')).join(' / ');
+  proposalActor(proposal: AdminAllianceProposalEntry): string {
+    return `${proposal.fromPlayerName ?? '#' + proposal.fromPlayerId} → ${proposal.toPlayerName ?? '#' + proposal.toPlayerId}`;
   }
 }

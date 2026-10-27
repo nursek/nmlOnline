@@ -30,19 +30,22 @@ public class BoardController {
 
     @GetMapping
     public ResponseEntity<List<BoardDto>> getAllBoards(HttpServletRequest request) {
-        return ResponseEntity.ok(boardService.getAllBoardsDto((Long) request.getAttribute("userId")));
+        return ResponseEntity.ok(boardService.getAllBoardsDto((Long) request.getAttribute("userId"),
+                request.isUserInRole("ADMIN")));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<BoardDto> getBoardById(@PathVariable("id") Long id, HttpServletRequest request) {
-        return boardService.getBoardByIdDto(id, (Long) request.getAttribute("userId"))
+        return boardService.getBoardByIdDto(id, (Long) request.getAttribute("userId"),
+                        request.isUserInRole("ADMIN"))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/name/{name}")
     public ResponseEntity<BoardDto> getBoardByName(@PathVariable("name") String name, HttpServletRequest request) {
-        return boardService.getBoardByNameDto(name, (Long) request.getAttribute("userId"))
+        return boardService.getBoardByNameDto(name, (Long) request.getAttribute("userId"),
+                        request.isUserInRole("ADMIN"))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

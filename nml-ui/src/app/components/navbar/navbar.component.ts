@@ -42,7 +42,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' },
   { path: '/admin/tour', label: 'Gestion du tour', icon: 'event_repeat' },
-  { path: '/admin/conflits', label: 'Conflits', icon: 'gavel' },
+  { path: '/admin/joueurs', label: 'Gestion des joueurs', icon: 'groups' },
   { path: '/admin/scenarios', label: 'Scénarios de tests', icon: 'science' },
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
 ];

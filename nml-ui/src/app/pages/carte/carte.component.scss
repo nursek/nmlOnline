@@ -267,6 +267,36 @@
   }
 }
 
+.board-management {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 4px;
+    font-size: 1rem;
+    color: var(--ink);
+
+    mat-icon {
+      color: var(--accent);
+    }
+  }
+
+  .panel-hint {
+    margin-top: 0;
+  }
+
+  button mat-spinner {
+    display: inline-block;
+    margin-right: 4px;
+  }
+}
+
 .detail-section {
   padding: 16px 0;
   border-bottom: 1px solid var(--line);
