@@ -17,6 +17,7 @@ export * from './ranking.model';
 export * from './exchange-offer.model';
 export * from './alliance.model';
 export * from './game-statistics.model';
+export * from './admin.model';
 
 /** Minimal Spring Data page wrapper — `totalElements` détecte une liste tronquée par la taille de page. */
 export interface PageResult<T> {

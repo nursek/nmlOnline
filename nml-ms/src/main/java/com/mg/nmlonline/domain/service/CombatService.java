@@ -4,6 +4,8 @@ import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
 import com.mg.nmlonline.domain.model.building.Headquarters;
+import com.mg.nmlonline.domain.model.equipment.Equipment;
+import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -11,6 +13,7 @@ import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.EntityCategory;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
+import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.domain.model.battle.Battle;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
@@ -351,6 +354,7 @@ public class CombatService {
 
         for (Unit unit : new ArrayList<>(sector.getUnits())) {
             if (isCasualty(unit, beforeIds, survivorIds)) {
+                discardDestroyedEquipment(playersById.get(unit.getPlayerId()), unit);
                 detachFromVehicles(em, unit);
                 // Sector.army sans orphanRemoval (V6) : em.remove cascade vers Unit.unitEquipments (cascade=ALL) → DELETE propre. Retrait mémoire pour cohérence de sector.getUnits().
                 em.remove(unit);
@@ -620,6 +624,31 @@ public class CombatService {
 
     private record ResultCamp(String label, List<CombatEntity> survivors,
                               List<CasualtyInfo> casualties, List<ExperienceGain> gains) {
+    }
+
+    /** L'unité détruite emporte ses équipements : le total du propriétaire baisse, le disponible ne bouge pas. */
+    static void discardDestroyedEquipment(Player owner, Unit unit) {
+        if (owner == null || unit == null) {
+            return;
+        }
+        for (UnitEquipment row : unit.getUnitEquipments()) {
+            Equipment equipment = row.getEquipment();
+            if (equipment == null) {
+                continue;
+            }
+            EquipmentStack stack = owner.getEquipments().stream()
+                    .filter(s -> s.getEquipment() != null
+                            && equipment.getName().equals(s.getEquipment().getName()))
+                    .findFirst()
+                    .orElse(null);
+            if (stack == null) {
+                continue;
+            }
+            stack.decrementEquipped();
+            if (stack.getQuantity() <= 0) {
+                owner.getEquipments().remove(stack);
+            }
+        }
     }
 
     // FK pilot_id et table de passagers portées par la ligne du véhicule : détacher avant tout DELETE.

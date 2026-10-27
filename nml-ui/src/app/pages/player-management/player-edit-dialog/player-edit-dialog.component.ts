@@ -1,0 +1,447 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  linkedSignal,
+  signal,
+  WritableSignal,
+} from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { firstValueFrom, Observable } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
+import {
+  MatDialog,
+  MatDialogModule,
+  MatDialogRef,
+  MAT_DIALOG_DATA,
+} from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import {
+  BUILDING_TYPES,
+  Building,
+  BuildingType,
+  EquipmentStack,
+  PlayerResource,
+  Unit,
+  Vehicle,
+} from '../../../models';
+import { AdminService } from '../../../services/admin.service';
+import { ApiService } from '../../../services/api.service';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../../shared/confirm-dialog/confirm-dialog.component';
+
+export interface PlayerEditDialogData {
+  playerId: number;
+  playerName: string;
+}
+
+@Component({
+  selector: 'app-player-edit-dialog',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    DecimalPipe,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressBarModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    MatTabsModule,
+    MatTooltipModule,
+  ],
+  templateUrl: './player-edit-dialog.component.html',
+  styleUrls: ['./player-edit-dialog.component.scss'],
+})
+export class PlayerEditDialogComponent {
+  private readonly admin = inject(AdminService);
+  private readonly api = inject(ApiService);
+  private readonly dialog = inject(MatDialog);
+  private readonly dialogRef = inject(MatDialogRef<PlayerEditDialogComponent>);
+  readonly data = inject<PlayerEditDialogData>(MAT_DIALOG_DATA);
+
+  readonly edit = this.admin.edit;
+  readonly catalog = this.admin.catalog;
+  readonly loading = this.admin.editLoading;
+  readonly busy = signal(false);
+
+  readonly currentEdit = computed(() => {
+    const edit = this.edit();
+    return edit && edit.player.id === this.data.playerId ? edit : null;
+  });
+  readonly player = computed(() => this.currentEdit()?.player ?? null);
+  readonly ownedSectors = computed(() => this.player()?.sectors ?? []);
+  readonly equipmentCatalog = computed(() => this.catalog()?.equipments ?? []);
+  readonly resourceCatalog = computed(() => this.catalog()?.resources ?? []);
+  readonly unitTypes = computed(() => this.catalog()?.unitTypes ?? []);
+  readonly unitClassCatalog = computed(() => this.catalog()?.unitClasses ?? []);
+  readonly vehicleTypes = computed(() => this.catalog()?.vehicleTypes ?? []);
+
+  readonly money = signal<number | null>(null);
+  readonly moneyValue = computed(() => this.money() ?? this.player()?.stats.money ?? 0);
+
+  readonly resourceName = linkedSignal(() => this.resourceCatalog()[0]?.name ?? '');
+  readonly resourceQuantity = signal(1);
+  readonly resourceRemoveQuantity = signal<Record<string, number>>({});
+
+  readonly equipmentName = linkedSignal(() => this.equipmentCatalog()[0]?.name ?? '');
+  readonly equipmentQuantity = signal(1);
+  readonly equipmentRemoveQuantity = signal<Record<string, number>>({});
+
+  readonly unitType = linkedSignal(() => this.unitTypes()[0]?.name ?? '');
+  readonly unitClasses = linkedSignal(() => {
+    const first = this.unitClassCatalog()[0]?.name;
+    return first ? [first] : [];
+  });
+  readonly unitQuantity = signal(1);
+  private readonly unitSectorChoice = signal<number | null | undefined>(undefined);
+  readonly unitSector = computed(() => {
+    const choice = this.unitSectorChoice();
+    return choice === undefined ? (this.ownedSectors()[0]?.number ?? null) : choice;
+  });
+
+  readonly vehicleType = linkedSignal(() => this.vehicleTypes()[0]?.name ?? '');
+  readonly vehicleQuantity = signal(1);
+  private readonly vehicleSectorChoice = signal<number | null | undefined>(undefined);
+  readonly vehicleSector = computed(() => {
+    const choice = this.vehicleSectorChoice();
+    return choice === undefined ? (this.ownedSectors()[0]?.number ?? null) : choice;
+  });
+
+  readonly buildingTypes = BUILDING_TYPES;
+  readonly buildingType = signal<BuildingType>('WEAPON_CACHE');
+  private readonly buildingSectorChoice = signal<number | null | undefined>(undefined);
+  readonly buildingSector = computed(() => {
+    const choice = this.buildingSectorChoice();
+    return choice === undefined ? (this.ownedSectors()[0]?.number ?? null) : choice;
+  });
+
+  readonly buildingLabels: Record<BuildingType, string> = {
+    HEADQUARTERS: 'Quartier Général',
+    WEAPON_CACHE: "Cache d'armes",
+    BANK: 'Banque',
+  };
+
+  constructor() {
+    this.admin.openEdit(this.data.playerId);
+  }
+
+  close(): void {
+    this.dialogRef.close();
+  }
+
+  unitLabel(unit: Unit): string {
+    const type = unit.type?.name ?? '?';
+    return unit.number > 0 ? `${type} n°${unit.number}` : type;
+  }
+
+  classesLabel(classes: ReadonlyArray<{ name: string }> | null | undefined): string {
+    return (classes ?? []).map((unitClass) => unitClass.name).join(' / ');
+  }
+
+  sectorLabel(sectorNumber: number | null | undefined): string {
+    return sectorNumber === null || sectorNumber === undefined
+      ? 'Réserve'
+      : `Secteur ${sectorNumber}`;
+  }
+
+  carriers(equipmentName: string): Unit[] {
+    return (this.currentEdit()?.units ?? []).filter((unit) =>
+      (unit.equipments ?? []).some((equipment) => equipment.name === equipmentName),
+    );
+  }
+
+  equippedCount(equipmentName: string): number {
+    return (this.currentEdit()?.units ?? []).reduce(
+      (total, unit) =>
+        total +
+        (unit.equipments ?? []).filter((equipment) => equipment.name === equipmentName).length,
+      0,
+    );
+  }
+
+  carrierNames(equipmentName: string): string {
+    return this.carriers(equipmentName)
+      .map((unit) => `${this.unitLabel(unit)} (${this.sectorLabel(unit.sectorNumber)})`)
+      .join(', ');
+  }
+
+  equipmentNames(unit: Unit): string {
+    return (unit.equipments ?? []).map((equipment) => equipment.name).join(', ');
+  }
+
+  setQuantity(target: WritableSignal<number>, value: number): void {
+    target.set(Math.max(0, Number.isFinite(value) ? Math.trunc(value) : 0));
+  }
+
+  setUnitClasses(values: string[]): void {
+    this.unitClasses.set(values.slice(0, 2));
+  }
+
+  setUnitSector(value: number | null): void {
+    this.unitSectorChoice.set(value);
+  }
+
+  setVehicleSector(value: number | null): void {
+    this.vehicleSectorChoice.set(value);
+  }
+
+  setBuildingSector(value: number | null): void {
+    this.buildingSectorChoice.set(value);
+  }
+
+  equipmentRemoveQty(name: string, max: number): number {
+    return this.clampQuantity(this.equipmentRemoveQuantity()[name] ?? 1, max);
+  }
+
+  setEquipmentRemoveQty(name: string, value: number): void {
+    this.equipmentRemoveQuantity.update((map) => ({
+      ...map,
+      [name]: Math.max(1, Math.trunc(value) || 1),
+    }));
+  }
+
+  resourceRemoveQty(name: string, max: number): number {
+    return this.clampQuantity(this.resourceRemoveQuantity()[name] ?? 1, max);
+  }
+
+  setResourceRemoveQty(name: string, value: number): void {
+    this.resourceRemoveQuantity.update((map) => ({
+      ...map,
+      [name]: Math.max(1, Math.trunc(value) || 1),
+    }));
+  }
+
+  async applyMoney(): Promise<void> {
+    const amount = this.moneyValue();
+    if (!Number.isFinite(amount) || amount < 0) {
+      return;
+    }
+    const done = await this.run(
+      this.api.adminSetMoney(this.data.playerId, amount),
+      'Argent mis à jour',
+    );
+    if (done) {
+      this.money.set(null);
+    }
+  }
+
+  async addResource(): Promise<void> {
+    const name = this.resourceName();
+    const quantity = this.resourceQuantity();
+    if (!name || quantity < 1) {
+      return;
+    }
+    const done = await this.run(
+      this.api.adminAddResource(this.data.playerId, name, quantity),
+      `${quantity} × ${name} ajouté(s)`,
+    );
+    if (done) {
+      this.resourceQuantity.set(1);
+    }
+  }
+
+  async removeResource(resource: PlayerResource): Promise<void> {
+    const quantity = this.clampQuantity(
+      this.resourceRemoveQuantity()[resource.name] ?? 1,
+      resource.quantity,
+    );
+    const done = await this.run(
+      this.api.adminRemoveResource(this.data.playerId, resource.name, quantity),
+      `${quantity} × ${resource.name} retiré(s)`,
+    );
+    if (done) {
+      this.resourceRemoveQuantity.update((map) => ({ ...map, [resource.name]: 1 }));
+    }
+  }
+
+  async addEquipment(): Promise<void> {
+    const name = this.equipmentName();
+    const quantity = this.equipmentQuantity();
+    if (!name || quantity < 1) {
+      return;
+    }
+    const done = await this.run(
+      this.api.adminAddEquipment(this.data.playerId, name, quantity),
+      `${quantity} × ${name} ajouté(s)`,
+    );
+    if (done) {
+      this.equipmentQuantity.set(1);
+    }
+  }
+
+  async removeEquipment(stack: EquipmentStack): Promise<void> {
+    const name = stack.equipment.name;
+    const quantity = this.clampQuantity(this.equipmentRemoveQuantity()[name] ?? 1, stack.quantity);
+    const fromUnits = Math.max(0, quantity - stack.available);
+    if (fromUnits > 0) {
+      const detail = this.carrierNames(name) || 'aucune unité identifiée';
+      const confirmed = await this.confirm({
+        title: `Retirer ${quantity} × ${name} ?`,
+        message: `${fromUnits} exemplaire(s) sont équipés sur : ${detail}. Ils seront déséquipés avant le retrait.`,
+        confirmLabel: 'Retirer',
+      });
+      if (!confirmed) {
+        return;
+      }
+    }
+    const done = await this.run(
+      this.api.adminRemoveEquipment(this.data.playerId, name, quantity, fromUnits > 0),
+      `${quantity} × ${name} retiré(s)`,
+    );
+    if (done) {
+      this.equipmentRemoveQuantity.update((map) => ({ ...map, [name]: 1 }));
+    }
+  }
+
+  async addUnit(): Promise<void> {
+    const type = this.unitType();
+    const classes = this.unitClasses();
+    const quantity = this.unitQuantity();
+    if (!type || classes.length === 0 || quantity < 1) {
+      return;
+    }
+    const done = await this.run(
+      this.api.adminAddUnits(this.data.playerId, {
+        type,
+        classes,
+        quantity,
+        sectorNumber: this.unitSector(),
+      }),
+      `${quantity} × ${type} ajouté(s)`,
+    );
+    if (done) {
+      this.unitQuantity.set(1);
+    }
+  }
+
+  async deleteUnit(unit: Unit): Promise<void> {
+    const confirmed = await this.confirm({
+      title: "Supprimer l'unité",
+      message: `Supprimer ${this.unitLabel(unit)} (${this.sectorLabel(unit.sectorNumber)}) ? Ses équipements reviennent à l'inventaire du joueur.`,
+      confirmLabel: 'Supprimer',
+    });
+    if (!confirmed) {
+      return;
+    }
+    await this.run(this.api.adminDeleteUnit(this.data.playerId, unit.id), 'Unité supprimée');
+  }
+
+  async addVehicle(): Promise<void> {
+    const vehicleType = this.vehicleType();
+    const quantity = this.vehicleQuantity();
+    if (!vehicleType || quantity < 1) {
+      return;
+    }
+    const done = await this.run(
+      this.api.adminAddVehicles(this.data.playerId, {
+        vehicleType,
+        quantity,
+        sectorNumber: this.vehicleSector(),
+      }),
+      `${quantity} × ${vehicleType} ajouté(s)`,
+    );
+    if (done) {
+      this.vehicleQuantity.set(1);
+    }
+  }
+
+  async deleteVehicle(vehicle: Vehicle): Promise<void> {
+    if (vehicle.id === null) {
+      return;
+    }
+    const confirmed = await this.confirm({
+      title: 'Supprimer le véhicule',
+      message: `Supprimer ${vehicle.displayName} (${this.sectorLabel(vehicle.sectorNumber)}) ? L'équipage sera débarqué dans le secteur.`,
+      confirmLabel: 'Supprimer',
+    });
+    if (!confirmed) {
+      return;
+    }
+    await this.run(
+      this.api.adminDeleteVehicle(this.data.playerId, vehicle.id),
+      'Véhicule supprimé',
+    );
+  }
+
+  async addBuilding(): Promise<void> {
+    const sectorNumber = this.buildingSector();
+    if (sectorNumber === null) {
+      return;
+    }
+    const type = this.buildingType();
+    await this.run(
+      this.api.adminAddBuilding(this.data.playerId, { buildingType: type, sectorNumber }),
+      `${this.buildingLabels[type]} ajouté`,
+    );
+  }
+
+  async deleteBuilding(building: Building): Promise<void> {
+    if (building.id === null) {
+      return;
+    }
+    const warning = this.buildingWarning(building.buildingType);
+    const confirmed = await this.confirm({
+      title: 'Supprimer le bâtiment',
+      message: `Supprimer ${this.buildingLabels[building.buildingType]} (${this.sectorLabel(building.sectorNumber)}) ?${warning}`,
+      confirmLabel: 'Supprimer',
+    });
+    if (!confirmed) {
+      return;
+    }
+    await this.run(
+      this.api.adminDeleteBuilding(this.data.playerId, building.id),
+      'Bâtiment supprimé',
+    );
+  }
+
+  private buildingWarning(type: BuildingType): string {
+    switch (type) {
+      case 'HEADQUARTERS':
+        return " Le joueur n'aura plus de QG.";
+      case 'BANK':
+        return ' Les ressources stockées dans la banque seront perdues.';
+      case 'WEAPON_CACHE':
+        return ' Les équipements stockés dans la cache seront perdus.';
+    }
+  }
+
+  private clampQuantity(value: number, max: number): number {
+    const rounded = Math.trunc(Number.isFinite(value) ? value : 1);
+    return Math.min(Math.max(1, rounded), Math.max(1, max));
+  }
+
+  private async confirm(data: ConfirmDialogData): Promise<boolean> {
+    return (
+      (await firstValueFrom(this.dialog.open(ConfirmDialogComponent, { data }).afterClosed())) ===
+      true
+    );
+  }
+
+  private async run(call: Observable<unknown>, successMessage: string): Promise<boolean> {
+    if (this.busy()) {
+      return false;
+    }
+    this.busy.set(true);
+    try {
+      await this.admin.mutate(call, successMessage);
+      return true;
+    } catch {
+      // Erreur déjà exposée par AdminService (snackbar de la page admin).
+      return false;
+    } finally {
+      this.busy.set(false);
+    }
+  }
+}

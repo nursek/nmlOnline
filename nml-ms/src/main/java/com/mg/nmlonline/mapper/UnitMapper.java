@@ -80,17 +80,7 @@ public class UnitMapper {
         dto.setExperience(unit.getExperience());
 
         if (unit.getType() != null) {
-            UnitTypeDto typeDto = new UnitTypeDto();
-            typeDto.setName(unit.getType().name());
-            typeDto.setLevel(unit.getType().getLevel());
-            typeDto.setMinExp(unit.getType().getMinExp());
-            typeDto.setMaxExp(unit.getType().getMaxExp());
-            typeDto.setBaseAttack(unit.getType().getBaseAttack());
-            typeDto.setBaseDefense(unit.getType().getBaseDefense());
-            typeDto.setMaxFirearms(unit.getType().getMaxFirearms());
-            typeDto.setMaxMeleeWeapons(unit.getType().getMaxMeleeWeapons());
-            typeDto.setMaxDefensiveEquipment(unit.getType().getMaxDefensiveEquipment());
-            dto.setType(typeDto);
+            dto.setType(toUnitTypeDto(unit.getType()));
         }
 
         if (unit.getClasses() != null) {
@@ -126,6 +116,21 @@ public class UnitMapper {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    public UnitTypeDto toUnitTypeDto(UnitType unitType) {
+        if (unitType == null) return null;
+        UnitTypeDto dto = new UnitTypeDto();
+        dto.setName(unitType.name());
+        dto.setLevel(unitType.getLevel());
+        dto.setMinExp(unitType.getMinExp());
+        dto.setMaxExp(unitType.getMaxExp());
+        dto.setBaseAttack(unitType.getBaseAttack());
+        dto.setBaseDefense(unitType.getBaseDefense());
+        dto.setMaxFirearms(unitType.getMaxFirearms());
+        dto.setMaxMeleeWeapons(unitType.getMaxMeleeWeapons());
+        dto.setMaxDefensiveEquipment(unitType.getMaxDefensiveEquipment());
+        return dto;
     }
 
     public UnitClassDto toUnitClassDto(UnitClass unitClass) {

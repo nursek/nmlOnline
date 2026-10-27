@@ -1,9 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { httpResource } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import {
+  AdminCatalog,
   AdminMovementOrder,
+  AdminPlayerEdit,
   MovementStatusFilter,
   PageResult,
   Player,
@@ -58,6 +60,21 @@ export class AdminService {
   readonly exchanges = computed(() => this.exchangesRef.value()?.content ?? []);
   readonly exchangesLoading = computed(() => this.exchangesRef.isLoading());
 
+  private readonly editPlayerIdState = signal<number | null>(null);
+  private readonly editRef = httpResource<AdminPlayerEdit>(() => {
+    const id = this.editPlayerIdState();
+    return id === null ? undefined : { url: `${environment.apiBaseUrl}/admin/players/${id}` };
+  });
+  readonly edit = computed(() => this.editRef.value() ?? null);
+  readonly editLoading = computed(() => this.editRef.isLoading());
+
+  private readonly catalogRef = httpResource<AdminCatalog>(() =>
+    this.editPlayerIdState() === null
+      ? undefined
+      : { url: `${environment.apiBaseUrl}/admin/catalog` },
+  );
+  readonly catalog = computed(() => this.catalogRef.value() ?? null);
+
   private readonly _importing = signal(false);
   private readonly _error = signal<string | null>(null);
   private readonly _successMessage = signal<string | null>(null);
@@ -78,6 +95,29 @@ export class AdminService {
 
   reloadExchanges(): void {
     this.exchangesRef.reload();
+  }
+
+  openEdit(playerId: number): void {
+    this.editPlayerIdState.set(playerId);
+  }
+
+  closeEdit(): void {
+    this.editPlayerIdState.set(null);
+    this.reloadPlayers();
+  }
+
+  async mutate(call: Observable<unknown>, successMessage: string): Promise<void> {
+    this._error.set(null);
+    try {
+      await firstValueFrom(call);
+      this._successMessage.set(successMessage);
+      this.editRef.reload();
+      this.reloadPlayers();
+    } catch (error) {
+      const message = httpErrorMessage(error, 'Erreur lors de la modification');
+      this._error.set(message);
+      throw new Error(message);
+    }
   }
 
   /** Charge le tour courant depuis la source unique de vérité (TurnService). */

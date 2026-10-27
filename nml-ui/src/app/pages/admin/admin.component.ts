@@ -38,6 +38,7 @@ import {
 } from '../../shared/board-import-dialog/board-import-dialog.component';
 import { APP_CONSTANTS } from '../../core/constants';
 import { ExpPipe } from '../../shared/exp.pipe';
+import { PlayerEditDialogComponent } from '../player-management/player-edit-dialog/player-edit-dialog.component';
 
 @Component({
   selector: 'app-admin',
@@ -199,6 +200,19 @@ export class AdminComponent {
           // AdminService already set the error signal; ignore here.
         });
       });
+  }
+
+  openEdit(player: Player): void {
+    if (player.id === null) return;
+    this.dialog
+      .open(PlayerEditDialogComponent, {
+        width: '90vw',
+        maxWidth: '1200px',
+        maxHeight: '92vh',
+        data: { playerId: player.id, playerName: player.name },
+      })
+      .afterClosed()
+      .subscribe(() => this.admin.closeEdit());
   }
 
   async exportPlayer(player: Player): Promise<void> {

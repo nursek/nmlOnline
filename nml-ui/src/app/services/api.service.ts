@@ -89,6 +89,78 @@ export class ApiService {
     });
   }
 
+  adminSetMoney(playerId: number, amount: number): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/money`, { amount });
+  }
+
+  adminAddResource(playerId: number, name: string, quantity: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/resources`, {
+      name,
+      quantity,
+    });
+  }
+
+  adminRemoveResource(playerId: number, name: string, quantity: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/resources`, {
+      params: { name, quantity },
+    });
+  }
+
+  adminAddEquipment(playerId: number, name: string, quantity: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/equipments`, {
+      name,
+      quantity,
+    });
+  }
+
+  adminRemoveEquipment(
+    playerId: number,
+    name: string,
+    quantity: number,
+    includeEquipped: boolean,
+  ): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/equipments`, {
+      params: { name, quantity, includeEquipped: String(includeEquipped) },
+    });
+  }
+
+  adminAddUnits(
+    playerId: number,
+    payload: { type: string; classes: string[]; quantity: number; sectorNumber: number | null },
+  ): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/units`, payload);
+  }
+
+  adminDeleteUnit(playerId: number, unitId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/units/${unitId}`);
+  }
+
+  adminAddVehicles(
+    playerId: number,
+    payload: { vehicleType: string; quantity: number; sectorNumber: number | null },
+  ): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/vehicles`, payload);
+  }
+
+  adminDeleteVehicle(playerId: number, vehicleId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/admin/players/${playerId}/vehicles/${vehicleId}`,
+    );
+  }
+
+  adminAddBuilding(
+    playerId: number,
+    payload: { buildingType: string; sectorNumber: number | null },
+  ): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/buildings`, payload);
+  }
+
+  adminDeleteBuilding(playerId: number, buildingId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/admin/players/${playerId}/buildings/${buildingId}`,
+    );
+  }
+
   // Board — import en 2 étapes : upload des assets visuels (image + SVG),
   // puis import du board.json en lui passant les URLs renvoyées par l'étape 1.
   adminUploadBoardAssets(

@@ -9,6 +9,7 @@ public class UnitDto {
     private Long playerId;
     private Integer number;
     private String name; // Nom optionnel pour les personnages
+    private Integer sectorNumber; // Renseigné uniquement par la vue admin (réserve = null)
     private Double experience;
     private UnitTypeDto type;
     private List<UnitClassDto> classes;

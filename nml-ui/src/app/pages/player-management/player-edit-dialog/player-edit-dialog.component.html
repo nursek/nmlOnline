@@ -1,0 +1,490 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon>edit</mat-icon>
+  <span>Modifier {{ data.playerName }}</span>
+</h2>
+
+<mat-dialog-content class="edit-content">
+  @if (!currentEdit() && loading()) {
+    <div class="loading">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else if (currentEdit(); as e) {
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    }
+
+    <mat-tab-group animationDuration="0ms">
+      <mat-tab label="Inventaire">
+        <div class="tab-body">
+          <section class="block">
+            <h3>Argent</h3>
+            <div class="row">
+              <mat-form-field appearance="outline" class="medium-field">
+                <mat-label>Argent</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [value]="moneyValue()"
+                  (input)="money.set(+$any($event.target).value)"
+                />
+              </mat-form-field>
+              <button mat-flat-button color="primary" (click)="applyMoney()" [disabled]="busy()">
+                <mat-icon>save</mat-icon>
+                Définir
+              </button>
+            </div>
+          </section>
+
+          <section class="block">
+            <h3>Ressources ({{ e.player.resources.length }})</h3>
+            @if (e.player.resources.length === 0) {
+              <p class="empty">Aucune ressource.</p>
+            } @else {
+              <div class="lines">
+                @for (resource of e.player.resources; track resource.name) {
+                  <div class="line">
+                    <span class="line-name">{{ resource.name }}</span>
+                    <span class="line-qty">×{{ resource.quantity }}</span>
+                    <mat-form-field appearance="outline" class="qty-field">
+                      <mat-label>Qté</mat-label>
+                      <input
+                        matInput
+                        type="number"
+                        min="1"
+                        [max]="resource.quantity"
+                        [value]="resourceRemoveQty(resource.name, resource.quantity)"
+                        (input)="setResourceRemoveQty(resource.name, +$any($event.target).value)"
+                      />
+                    </mat-form-field>
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      matTooltip="Retirer"
+                      (click)="removeResource(resource)"
+                      [disabled]="busy()"
+                    >
+                      <mat-icon>remove_circle</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+            <div class="row add-row">
+              <mat-form-field appearance="outline" class="wide-field">
+                <mat-label>Ressource</mat-label>
+                <mat-select
+                  [value]="resourceName()"
+                  (selectionChange)="resourceName.set($event.value)"
+                >
+                  @for (resource of resourceCatalog(); track resource.name) {
+                    <mat-option [value]="resource.name">
+                      {{ resource.name }} ({{ resource.baseValue }}$/u)
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="qty-field">
+                <mat-label>Qté</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="1"
+                  step="1"
+                  [value]="resourceQuantity()"
+                  (input)="setQuantity(resourceQuantity, +$any($event.target).value)"
+                />
+              </mat-form-field>
+              <button
+                mat-stroked-button
+                color="primary"
+                (click)="addResource()"
+                [disabled]="busy() || !resourceName() || resourceQuantity() < 1"
+              >
+                <mat-icon>add</mat-icon>
+                Ajouter
+              </button>
+            </div>
+          </section>
+
+          <section class="block">
+            <h3>Équipements ({{ e.player.equipments.length }})</h3>
+            @if (e.player.equipments.length === 0) {
+              <p class="empty">Aucun équipement.</p>
+            } @else {
+              <div class="lines">
+                @for (stack of e.player.equipments; track stack.equipment.name) {
+                  <div class="line">
+                    <span class="line-name">{{ stack.equipment.name }}</span>
+                    <span class="line-qty">×{{ stack.quantity }}</span>
+                    <span class="line-meta">{{ stack.available }} dispo</span>
+                    @if (equippedCount(stack.equipment.name) > 0) {
+                      <span
+                        class="line-warn"
+                        [matTooltip]="'Équipé sur : ' + carrierNames(stack.equipment.name)"
+                      >
+                        {{ equippedCount(stack.equipment.name) }} équipé(s)
+                      </span>
+                    }
+                    <mat-form-field appearance="outline" class="qty-field">
+                      <mat-label>Qté</mat-label>
+                      <input
+                        matInput
+                        type="number"
+                        min="1"
+                        [max]="stack.quantity"
+                        [value]="equipmentRemoveQty(stack.equipment.name, stack.quantity)"
+                        (input)="
+                          setEquipmentRemoveQty(stack.equipment.name, +$any($event.target).value)
+                        "
+                      />
+                    </mat-form-field>
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      matTooltip="Retirer"
+                      (click)="removeEquipment(stack)"
+                      [disabled]="busy()"
+                    >
+                      <mat-icon>remove_circle</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+            <div class="row add-row">
+              <mat-form-field appearance="outline" class="wide-field">
+                <mat-label>Équipement</mat-label>
+                <mat-select
+                  [value]="equipmentName()"
+                  (selectionChange)="equipmentName.set($event.value)"
+                >
+                  @for (equipment of equipmentCatalog(); track equipment.name) {
+                    <mat-option [value]="equipment.name">
+                      {{ equipment.name }} ({{ equipment.cost }}$)
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="qty-field">
+                <mat-label>Qté</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="1"
+                  step="1"
+                  [value]="equipmentQuantity()"
+                  (input)="setQuantity(equipmentQuantity, +$any($event.target).value)"
+                />
+              </mat-form-field>
+              <button
+                mat-stroked-button
+                color="primary"
+                (click)="addEquipment()"
+                [disabled]="busy() || !equipmentName() || equipmentQuantity() < 1"
+              >
+                <mat-icon>add</mat-icon>
+                Ajouter
+              </button>
+            </div>
+          </section>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Unités ({{ e.units.length }})">
+        <div class="tab-body">
+          <section class="block">
+            @if (e.units.length === 0) {
+              <p class="empty">Aucune unité.</p>
+            } @else {
+              <div class="lines">
+                @for (unit of e.units; track unit.id) {
+                  <div class="line">
+                    <span class="line-name">{{ unitLabel(unit) }}</span>
+                    <span class="line-meta">
+                      {{ classesLabel(unit.classes) }} · Exp
+                      {{ unit.experience | number: '1.0-1' }}
+                    </span>
+                    <span class="line-meta">{{ sectorLabel(unit.sectorNumber) }}</span>
+                    @if (unit.isInjured) {
+                      <mat-icon
+                        class="warn-icon"
+                        matTooltip="Blessée"
+                        aria-hidden="false"
+                        aria-label="Unité blessée"
+                        >local_hospital</mat-icon
+                      >
+                    }
+                    @if (unit.equipments.length > 0) {
+                      <span class="line-meta" [matTooltip]="equipmentNames(unit)">
+                        {{ unit.equipments.length }} équip.
+                      </span>
+                    }
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      matTooltip="Supprimer"
+                      [attr.aria-label]="'Supprimer ' + unitLabel(unit)"
+                      (click)="deleteUnit(unit)"
+                      [disabled]="busy()"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+
+          <section class="block">
+            <h3>Ajouter des unités</h3>
+            <div class="row add-row">
+              <mat-form-field appearance="outline" class="medium-field">
+                <mat-label>Type</mat-label>
+                <mat-select [value]="unitType()" (selectionChange)="unitType.set($event.value)">
+                  @for (type of unitTypes(); track type.name) {
+                    <mat-option [value]="type.name">{{ type.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="medium-field">
+                <mat-label>Classes</mat-label>
+                <mat-select
+                  multiple
+                  [value]="unitClasses()"
+                  (selectionChange)="setUnitClasses($event.value)"
+                >
+                  @for (unitClass of unitClassCatalog(); track unitClass.name) {
+                    <mat-option
+                      [value]="unitClass.name"
+                      [disabled]="
+                        unitClasses().length >= 2 && !unitClasses().includes(unitClass.name)
+                      "
+                    >
+                      {{ unitClass.name }} ({{ unitClass.code }})
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="qty-field">
+                <mat-label>Qté</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="1"
+                  step="1"
+                  [value]="unitQuantity()"
+                  (input)="setQuantity(unitQuantity, +$any($event.target).value)"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="medium-field">
+                <mat-label>Destination</mat-label>
+                <mat-select
+                  [value]="unitSector()"
+                  (selectionChange)="setUnitSector($event.value)"
+                  [canSelectNullableOptions]="true"
+                >
+                  <mat-option [value]="null">Réserve</mat-option>
+                  @for (sector of ownedSectors(); track sector.number) {
+                    <mat-option [value]="sector.number">
+                      {{ sector.name }} (#{{ sector.number }})
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <button
+                mat-flat-button
+                color="primary"
+                (click)="addUnit()"
+                [disabled]="
+                  busy() || !unitType() || unitClasses().length === 0 || unitQuantity() < 1
+                "
+              >
+                <mat-icon>add</mat-icon>
+                Ajouter
+              </button>
+            </div>
+          </section>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Véhicules ({{ e.vehicles.length }})">
+        <div class="tab-body">
+          <section class="block">
+            @if (e.vehicles.length === 0) {
+              <p class="empty">Aucun véhicule.</p>
+            } @else {
+              <div class="lines">
+                @for (vehicle of e.vehicles; track vehicle.id) {
+                  <div class="line">
+                    <span class="line-name">{{ vehicle.displayName }}</span>
+                    <span class="line-meta">{{ sectorLabel(vehicle.sectorNumber) }}</span>
+                    <span class="line-meta">
+                      Pilote {{ vehicle.pilotName ?? '—' }} · {{ vehicle.passengerCount }}/{{
+                        vehicle.capacity
+                      }}
+                      passager(s)
+                    </span>
+                    @if (vehicle.isDestroyed) {
+                      <span class="badge danger">Détruit</span>
+                    }
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      matTooltip="Supprimer"
+                      [attr.aria-label]="'Supprimer ' + vehicle.displayName"
+                      (click)="deleteVehicle(vehicle)"
+                      [disabled]="busy()"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+
+          <section class="block">
+            <h3>Ajouter des véhicules</h3>
+            <div class="row add-row">
+              <mat-form-field appearance="outline" class="wide-field">
+                <mat-label>Modèle</mat-label>
+                <mat-select
+                  [value]="vehicleType()"
+                  (selectionChange)="vehicleType.set($event.value)"
+                >
+                  @for (type of vehicleTypes(); track type.name) {
+                    <mat-option [value]="type.name">
+                      {{ type.displayName }} ({{ type.cost }}$)
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="qty-field">
+                <mat-label>Qté</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="1"
+                  step="1"
+                  [value]="vehicleQuantity()"
+                  (input)="setQuantity(vehicleQuantity, +$any($event.target).value)"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="medium-field">
+                <mat-label>Destination</mat-label>
+                <mat-select
+                  [value]="vehicleSector()"
+                  (selectionChange)="setVehicleSector($event.value)"
+                  [canSelectNullableOptions]="true"
+                >
+                  <mat-option [value]="null">Réserve</mat-option>
+                  @for (sector of ownedSectors(); track sector.number) {
+                    <mat-option [value]="sector.number">
+                      {{ sector.name }} (#{{ sector.number }})
+                    </mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <button
+                mat-flat-button
+                color="primary"
+                (click)="addVehicle()"
+                [disabled]="busy() || !vehicleType() || vehicleQuantity() < 1"
+              >
+                <mat-icon>add</mat-icon>
+                Ajouter
+              </button>
+            </div>
+          </section>
+        </div>
+      </mat-tab>
+
+      <mat-tab label="Bâtiments ({{ e.player.buildings.length }})">
+        <div class="tab-body">
+          <section class="block">
+            @if (e.player.buildings.length === 0) {
+              <p class="empty">Aucun bâtiment.</p>
+            } @else {
+              <div class="lines">
+                @for (building of e.player.buildings; track building.id) {
+                  <div class="line">
+                    <span class="line-name">{{ buildingLabels[building.buildingType] }}</span>
+                    <span class="line-meta">{{ sectorLabel(building.sectorNumber) }}</span>
+                    @if (building.isDestroyed) {
+                      <span class="badge danger">Détruit</span>
+                    }
+                    @if (building.isCaptured) {
+                      <span class="badge warn">Capturé</span>
+                    }
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      matTooltip="Supprimer"
+                      [attr.aria-label]="'Supprimer ' + buildingLabels[building.buildingType]"
+                      (click)="deleteBuilding(building)"
+                      [disabled]="busy()"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+
+          <section class="block">
+            <h3>Ajouter un bâtiment</h3>
+            @if (ownedSectors().length === 0) {
+              <p class="empty">
+                Aucun secteur possédé : le joueur doit d'abord recevoir un secteur.
+              </p>
+            } @else {
+              <div class="row add-row">
+                <mat-form-field appearance="outline" class="medium-field">
+                  <mat-label>Type</mat-label>
+                  <mat-select
+                    [value]="buildingType()"
+                    (selectionChange)="buildingType.set($event.value)"
+                  >
+                    @for (type of buildingTypes; track type) {
+                      <mat-option [value]="type">{{ buildingLabels[type] }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="medium-field">
+                  <mat-label>Secteur</mat-label>
+                  <mat-select
+                    [value]="buildingSector()"
+                    (selectionChange)="setBuildingSector($event.value)"
+                  >
+                    @for (sector of ownedSectors(); track sector.number) {
+                      <mat-option [value]="sector.number">
+                        {{ sector.name }} (#{{ sector.number }})
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <button
+                  mat-flat-button
+                  color="primary"
+                  (click)="addBuilding()"
+                  [disabled]="busy() || buildingSector() === null"
+                >
+                  <mat-icon>add</mat-icon>
+                  Ajouter
+                </button>
+              </div>
+            }
+          </section>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  } @else {
+    <p class="empty">Impossible de charger ce joueur.</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Fermer</button>
+</mat-dialog-actions>

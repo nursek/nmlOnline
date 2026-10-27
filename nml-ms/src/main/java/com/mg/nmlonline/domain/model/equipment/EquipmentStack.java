@@ -60,6 +60,13 @@ public class EquipmentStack {
         }
     }
 
+    /** Retrait d'une copie équipée : le total baisse, le stock disponible ne bouge pas. */
+    public void decrementEquipped() {
+        if (quantity > 0) {
+            quantity--;
+        }
+    }
+
     public boolean isAvailable() {
         return available > 0;
     }
