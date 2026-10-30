@@ -226,6 +226,55 @@ export class ApiService {
     );
   }
 
+  adminSetVehicleCrew(
+    playerId: number,
+    vehicleId: number,
+    pilotId: number | null,
+    passengerIds: number[],
+  ): Observable<void> {
+    return this.http.put<void>(
+      `${this.baseUrl}/admin/players/${playerId}/vehicles/${vehicleId}/crew`,
+      { pilotId, passengerIds },
+    );
+  }
+
+  adminAddBankResource(playerId: number, name: string, quantity: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/bank/resources`, {
+      name,
+      quantity,
+    });
+  }
+
+  adminRemoveBankResource(playerId: number, name: string, quantity: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/bank/resources`, {
+      params: { name, quantity },
+    });
+  }
+
+  adminAddCacheEquipment(
+    playerId: number,
+    buildingId: number,
+    name: string,
+    quantity: number,
+  ): Observable<void> {
+    return this.http.post<void>(
+      `${this.baseUrl}/admin/players/${playerId}/buildings/${buildingId}/equipments`,
+      { name, quantity },
+    );
+  }
+
+  adminRemoveCacheEquipment(
+    playerId: number,
+    buildingId: number,
+    name: string,
+    quantity: number,
+  ): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/admin/players/${playerId}/buildings/${buildingId}/equipments`,
+      { params: { name, quantity } },
+    );
+  }
+
   adminAddBuilding(
     playerId: number,
     payload: { buildingType: string; sectorNumber: number | null },

@@ -52,6 +52,28 @@
   gap: 6px;
 }
 
+.building-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 4px 12px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--line-2);
+  border-radius: var(--r-xs);
+  background: var(--paper);
+
+  .stock-head {
+    font-size: 0.8rem;
+    color: shared.$text-muted;
+  }
+}
+
 .line {
   display: flex;
   align-items: center;

@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLRestriction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,14 +83,16 @@ public class Player {
     @BatchSize(size = 20)
     private List<Building> buildings = new ArrayList<>();
 
-    // orphanRemoval=true + FK player_id NOT NULL : risque 500 si chemin de transfert ajouté.
+    // Contenu de cache/banque : ces lignes gardent player_id (FK NOT NULL), filtrer évite un double inventaire.
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 20)
+    @SQLRestriction("weapon_cache_id IS NULL")
     private List<EquipmentStack> equipments = new ArrayList<>();
 
     // orphanRemoval=true + FK player_id NOT NULL : risque 500 si chemin de transfert ajouté.
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 20)
+    @SQLRestriction("bank_id IS NULL")
     private List<PlayerResource> resources = new ArrayList<>();
 
     public Player(String name) {

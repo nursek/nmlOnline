@@ -6,10 +6,12 @@ import com.mg.nmlonline.api.dto.AdminCharacterRequestDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
 import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.BuildingDto;
+import com.mg.nmlonline.api.dto.SetVehicleCrewRequestDto;
 import com.mg.nmlonline.api.dto.UnitDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.alliance.PendingCapture;
+import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.action.PlayerAction;
@@ -19,6 +21,7 @@ import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -958,6 +961,179 @@ class AdminPlayerEditServiceTest {
         assertNotNull(dto.getPlayer().getBuildings());
         assertNotNull(dto.getUnits().getFirst().getType().getName());
         assertNotNull(dto.getVehicles());
+    }
+
+    @Test
+    @DisplayName("Banque : ressources ajoutées puis retirées, l'inventaire du joueur reste intact")
+    void bankResourcesAreEditedWithoutTouchingInventory() {
+        int inventoryBefore = player.getResourceQuantity("Caisse d'armes");
+        service.addBankResource(player.getId(), "Caisse d'armes", 3);
+        entityManager.flush();
+
+        Bank bank = player.getBuildings().stream()
+                .filter(Bank.class::isInstance)
+                .map(Bank.class::cast)
+                .findFirst().orElseThrow();
+        assertEquals(3, storedBankQuantity(bank, "Caisse d'armes"));
+        assertEquals(inventoryBefore, player.getResourceQuantity("Caisse d'armes"));
+
+        service.removeBankResource(player.getId(), "Caisse d'armes", 2);
+        entityManager.flush();
+        assertEquals(1, storedBankQuantity(bank, "Caisse d'armes"));
+        assertThrows(IllegalArgumentException.class,
+                () -> service.removeBankResource(player.getId(), "Caisse d'armes", 2));
+
+        service.removeBankResource(player.getId(), "Caisse d'armes", 1);
+        entityManager.flush();
+        assertTrue(bank.getStoredResources().isEmpty());
+
+        entityManager.clear();
+        Player reloaded = playerRepository.findById(player.getId()).orElseThrow();
+        assertEquals(inventoryBefore, reloaded.getResourceQuantity("Caisse d'armes"));
+    }
+
+    @Test
+    @DisplayName("Cache d'armes : ajout/retrait bornés par la capacité, inventaire inchangé")
+    void cacheEquipmentIsEditedWithinCapacity() {
+        service.addBuilding(player.getId(), "WEAPON_CACHE", 41);
+        entityManager.flush();
+        WeaponCache cache = player.getBuildings().stream()
+                .filter(WeaponCache.class::isInstance)
+                .map(WeaponCache.class::cast)
+                .filter(candidate -> candidate.getSector() != null
+                        && candidate.getSector().getNumber() == 41)
+                .findFirst().orElseThrow();
+        int inventoryBefore = equipmentQuantity(player, "Gauss Destructor");
+
+        service.addCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 2);
+        entityManager.flush();
+        assertEquals(2, cachedQuantity(cache, "Gauss Destructor"));
+
+        assertThrows(IllegalArgumentException.class, () -> service.addCacheEquipment(
+                player.getId(), cache.getId(), "Gauss Destructor", 299));
+
+        service.removeCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 1);
+        entityManager.flush();
+        assertEquals(1, cachedQuantity(cache, "Gauss Destructor"));
+        service.removeCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 1);
+        entityManager.flush();
+        assertTrue(cache.getStoredEquipments().isEmpty());
+
+        entityManager.clear();
+        Player reloaded = playerRepository.findById(player.getId()).orElseThrow();
+        assertEquals(inventoryBefore, equipmentQuantity(reloaded, "Gauss Destructor"));
+    }
+
+    @Test
+    @DisplayName("Cache d'armes : cible refusée si ce n'est pas une cache ou pas celle du joueur")
+    void cacheEquipmentRejectsWrongBuilding() {
+        Building bank = buildingRepository.findAll().stream()
+                .filter(candidate -> player.getId().equals(candidate.getPlayerId()))
+                .filter(Bank.class::isInstance)
+                .findFirst().orElseThrow();
+        assertThrows(IllegalArgumentException.class, () -> service.addCacheEquipment(
+                player.getId(), bank.getId(), "Gauss Destructor", 1));
+
+        WeaponCache foreign = buildingRepository.findAll().stream()
+                .filter(WeaponCache.class::isInstance)
+                .map(WeaponCache.class::cast)
+                .filter(candidate -> candidate.getPlayerId() != null
+                        && !player.getId().equals(candidate.getPlayerId()))
+                .findFirst().orElse(null);
+        assumeTrue(foreign != null);
+        assertThrows(IllegalArgumentException.class, () -> service.addCacheEquipment(
+                player.getId(), foreign.getId(), "Gauss Destructor", 1));
+    }
+
+    @Test
+    @DisplayName("Équipage : règles du jeu appliquées (pilote P, même secteur, propriétaire, capacité)")
+    void setVehicleCrewEnforcesGameRules() {
+        Unit pilot = addUnit("LARBIN", UnitClass.PILOTE_DESTRUCTEUR, 41);
+        Unit passenger = addUnit("LARBIN", UnitClass.LEGER, 41);
+        Unit outsider = addUnit("LARBIN", UnitClass.LEGER, 13);
+        service.addVehicles(player.getId(), "VTT_LEGER", 1, 41);
+        entityManager.flush();
+        Vehicle vehicle = vehicleRepository.findByPlayerId(player.getId()).getFirst();
+
+        service.setVehicleCrew(player.getId(), vehicle.getId(),
+                crewRequest(pilot.getId(), List.of(passenger.getId())));
+        entityManager.flush();
+        assertEquals(pilot.getId(), vehicle.getPilot().getId());
+        assertEquals(1, vehicle.getPassengerCount());
+
+        assertThrows(IllegalArgumentException.class, () -> service.setVehicleCrew(
+                player.getId(), vehicle.getId(), crewRequest(passenger.getId(), List.of())));
+        assertThrows(IllegalArgumentException.class, () -> service.setVehicleCrew(
+                player.getId(), vehicle.getId(), crewRequest(null, List.of(outsider.getId()))));
+        assertThrows(IllegalArgumentException.class, () -> service.setVehicleCrew(
+                player.getId(), vehicle.getId(), crewRequest(null,
+                        List.of(pilot.getId(), passenger.getId(), outsider.getId()))));
+
+        Unit foreign = unitRepository.findAll().stream()
+                .filter(unit -> unit.getPlayerId() != null
+                        && !player.getId().equals(unit.getPlayerId()))
+                .findFirst().orElse(null);
+        assumeTrue(foreign != null);
+        assertThrows(SecurityException.class, () -> service.setVehicleCrew(
+                player.getId(), vehicle.getId(), crewRequest(null, List.of(foreign.getId()))));
+    }
+
+    @Test
+    @DisplayName("Équipage : véhicule en réserve refusé, actions ACTIVE de composition clôturées")
+    void setVehicleCrewRequiresDeployedVehicleAndClosesActions() {
+        Unit pilot = addUnit("LARBIN", UnitClass.PILOTE_DESTRUCTEUR, 41);
+        service.addVehicles(player.getId(), "VTT_LEGER", 1, 41);
+        service.addVehicles(player.getId(), "VTT_LEGER", 1, null);
+        entityManager.flush();
+        Vehicle vehicle = vehicleRepository.findByPlayerId(player.getId()).stream()
+                .filter(candidate -> candidate.getSector() != null)
+                .findFirst().orElseThrow();
+        Vehicle reserve = vehicleRepository.findByPlayerId(player.getId()).stream()
+                .filter(candidate -> candidate.getSector() == null)
+                .findFirst().orElseThrow();
+
+        assertThrows(IllegalStateException.class, () -> service.setVehicleCrew(
+                player.getId(), reserve.getId(), crewRequest(pilot.getId(), List.of())));
+
+        PlayerAction action = PlayerAction.setVehicleCrew(
+                player.getId(), board.getCurrentTurn(), vehicle.getId(), null, "");
+        playerActionRepository.save(action);
+        entityManager.flush();
+
+        service.setVehicleCrew(player.getId(), vehicle.getId(), crewRequest(pilot.getId(), List.of()));
+        entityManager.flush();
+
+        assertEquals(PlayerActionStatus.UNDONE,
+                playerActionRepository.findById(action.getId()).orElseThrow().getStatus());
+        assertEquals(pilot.getId(), vehicle.getPilot().getId());
+    }
+
+    private SetVehicleCrewRequestDto crewRequest(Long pilotId, List<Long> passengerIds) {
+        SetVehicleCrewRequestDto request = new SetVehicleCrewRequestDto();
+        request.setPilotId(pilotId);
+        request.setPassengerIds(passengerIds);
+        return request;
+    }
+
+    private int storedBankQuantity(Bank bank, String name) {
+        return bank.getStoredResources().stream()
+                .filter(resource -> name.equals(resource.getResourceName()))
+                .map(PlayerResource::getQuantity)
+                .findFirst().orElse(0);
+    }
+
+    private int cachedQuantity(WeaponCache cache, String name) {
+        return cache.getStoredEquipments().stream()
+                .filter(stack -> name.equals(stack.getEquipment().getName()))
+                .mapToInt(EquipmentStack::getQuantity)
+                .findFirst().orElse(0);
+    }
+
+    private int equipmentQuantity(Player owner, String name) {
+        return owner.getEquipments().stream()
+                .filter(stack -> name.equals(stack.getEquipment().getName()))
+                .mapToInt(EquipmentStack::getQuantity)
+                .sum();
     }
 
     private AdminCharacterRequestDto characterRequest(String name, double attack, double defense,
