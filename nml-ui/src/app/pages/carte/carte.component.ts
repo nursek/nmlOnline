@@ -42,7 +42,7 @@ import {
   BoardImportResult,
 } from '../../shared/board-import-dialog/board-import-dialog.component';
 import { contrastColor, haloColor, MAP_THEME } from './carte.config';
-import { frontBorders } from './carte.helpers';
+import { frontBorders, resourceIconSrc } from './carte.helpers';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -129,10 +129,13 @@ export class CarteComponent {
   readonly overlays = signal<ReadonlySet<OverlayKey>>(new Set());
   readonly placing = signal<Placement | null>(null);
   readonly importingBoard = signal(false);
-  readonly resourceLegend = Object.entries(MAP_THEME.resourceColors).map(([name, color]) => ({
-    name,
-    color,
-  }));
+  readonly resourceLegend = computed(() => {
+    const names = new Set<string>();
+    Object.values(this.board()?.sectors ?? {}).forEach((sector) => {
+      if (sector.resource) names.add(sector.resource);
+    });
+    return [...names].map((name) => ({ name, src: resourceIconSrc(name) }));
+  });
 
   readonly alliedPlayerIds = this.allianceState.alliedPlayerIds;
   readonly characterStats = characterStats;
@@ -260,7 +263,7 @@ export class CarteComponent {
       void this.overlays();
       void this.frontSectors();
       this.updateAllPathColors(container);
-      this.updateSectorLabelColors(container);
+      this.updateSectorLabels(container);
       this.updateOverlays(container);
     });
   }
@@ -511,16 +514,20 @@ export class CarteComponent {
    * getContrastColor pour garantir la lisibilité (MAP_THEME.label.contrastOnSelect)
    * et on pose le halo opposé via getHaloColor.
    */
-  private updateSectorLabelColors(container: HTMLElement): void {
-    const labels = container.querySelectorAll('text.sector-label');
+  private updateSectorLabels(container: HTMLElement): void {
+    const svg = container.querySelector('svg');
+    if (!svg) return;
+    const showResources = this.isOverlay('resources');
+    const labels = svg.querySelectorAll('text.sector-label');
     const selectedNum = this.selectedSector()?.number ?? null;
     const lbl = MAP_THEME.label;
     labels.forEach((label) => {
+      const txt = label as SVGTextElement;
+      txt.style.display = showResources ? 'none' : '';
       const num = parseInt(label.getAttribute('data-sector') ?? '', 10);
       if (Number.isNaN(num)) return;
       const sector = this.sectorsMap().get(num);
       const color = sector ? this.getSectorColor(sector) : MAP_THEME.neutralColor;
-      const txt = label as SVGTextElement;
       if (lbl.contrastOnSelect && selectedNum === num) {
         txt.style.fill = this.getContrastColor();
         txt.style.stroke = this.getHaloColor();
@@ -530,13 +537,41 @@ export class CarteComponent {
         txt.style.stroke = '';
       }
     });
+    this.updateResourceIcons(svg, showResources);
+  }
+
+  /** Pastilles du calque « Ressources » : posées sur le pôle visuel déjà calculé pour les numéros. */
+  private updateResourceIcons(svg: SVGSVGElement, show: boolean): void {
+    let group = svg.querySelector<SVGGElement>('#resource-icons');
+    if (!group) {
+      group = document.createElementNS(SVG_NS, 'g');
+      group.setAttribute('id', 'resource-icons');
+      group.setAttribute('pointer-events', 'none');
+      svg.appendChild(group);
+    }
+    group.replaceChildren();
+    if (!show) return;
+
+    const size = MAP_THEME.resourceIcon.size;
+    svg.querySelectorAll('text.sector-label').forEach((label) => {
+      const number = parseInt(label.getAttribute('data-sector') ?? '', 10);
+      const resource = Number.isNaN(number) ? null : this.sectorsMap().get(number)?.resource;
+      if (!resource) return;
+      const icon = document.createElementNS(SVG_NS, 'image');
+      icon.setAttribute('href', resourceIconSrc(resource));
+      icon.setAttribute('x', String(Number(label.getAttribute('x')) - size / 2));
+      icon.setAttribute('y', String(Number(label.getAttribute('y')) - size / 2));
+      icon.setAttribute('width', String(size));
+      icon.setAttribute('height', String(size));
+      group.appendChild(icon);
+    });
   }
 
   private updatePathStyle(path: SVGElement, sectorNumber: number): void {
     const sector = this.sectorsMap().get(sectorNumber);
     const color = sector ? this.getSectorColor(sector) : MAP_THEME.neutralColor;
     const showResources = this.isOverlay('resources');
-    const isNeutral = showResources ? !sector?.resource : sector?.ownerId == null;
+    const isNeutral = !showResources && sector?.ownerId == null;
     const selected = this.selectedSector();
     const isSelected = selected?.number === sectorNumber;
 
@@ -672,9 +707,7 @@ export class CarteComponent {
   }
 
   getSectorColor(sector: Sector | SectorWithPlayer): string {
-    if (this.isOverlay('resources')) {
-      return (sector.resource && MAP_THEME.resourceColors[sector.resource]) || MAP_THEME.neutralColor;
-    }
+    if (this.isOverlay('resources')) return MAP_THEME.neutralColor;
     return this.getPlayerColor(sector.ownerId);
   }
 

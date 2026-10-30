@@ -1,4 +1,6 @@
 import type { Sector } from '../../models';
+import { optimizedImage } from '../../core/optimized-image';
+import { slugify } from '../../core/slug';
 
 export interface FrontBorders {
   mine: number[];
@@ -29,4 +31,9 @@ export function frontBorders(
     }
   }
   return { mine, enemies: [...enemies].sort((a, b) => a - b) };
+}
+
+// Vignette du calque « Ressources » : dérivé WebP, les PNG d'origine pèsent jusqu'à 2 Mo.
+export function resourceIconSrc(name: string): string {
+  return optimizedImage(`assets/shop/resources/${slugify(name)}.png`).src;
 }
