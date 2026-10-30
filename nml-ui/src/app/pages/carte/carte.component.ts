@@ -707,7 +707,7 @@ export class CarteComponent {
   }
 
   getSectorColor(sector: Sector | SectorWithPlayer): string {
-    if (this.isOverlay('resources')) return MAP_THEME.neutralColor;
+    if (this.isOverlay('resources')) return MAP_THEME.resourceFill;
     return this.getPlayerColor(sector.ownerId);
   }
 
