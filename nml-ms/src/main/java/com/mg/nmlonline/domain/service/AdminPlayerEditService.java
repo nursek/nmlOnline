@@ -55,6 +55,7 @@ public class AdminPlayerEditService {
     private final VehicleRepository vehicleRepository;
     private final BuildingRepository buildingRepository;
     private final MovementOrderRepository movementOrderRepository;
+    private final PlayerActionService playerActionService;
     private final ResourceRepository resourceRepository;
     private final EquipmentService equipmentService;
     private final BuildingService buildingService;
@@ -71,6 +72,7 @@ public class AdminPlayerEditService {
                                   VehicleRepository vehicleRepository,
                                   BuildingRepository buildingRepository,
                                   MovementOrderRepository movementOrderRepository,
+                                  PlayerActionService playerActionService,
                                   ResourceRepository resourceRepository,
                                   EquipmentService equipmentService,
                                   BuildingService buildingService,
@@ -86,6 +88,7 @@ public class AdminPlayerEditService {
         this.vehicleRepository = vehicleRepository;
         this.buildingRepository = buildingRepository;
         this.movementOrderRepository = movementOrderRepository;
+        this.playerActionService = playerActionService;
         this.resourceRepository = resourceRepository;
         this.equipmentService = equipmentService;
         this.buildingService = buildingService;
@@ -141,6 +144,8 @@ public class AdminPlayerEditService {
         requireTurnOpen();
         Player player = lockPlayer(playerId);
         player.getStats().setMoney(amount);
+        player.getStats().setStartingMoneyRemaining(
+                Math.min(player.getStats().getStartingMoneyRemaining(), amount));
         player.calculateTotalEconomyPower();
         playerRepository.save(player);
     }
@@ -202,6 +207,8 @@ public class AdminPlayerEditService {
                     + " » sont équipés sur des unités — confirmez le retrait");
         }
 
+        playerActionService.discardActiveActionsReferencing(
+                playerId, board.getCurrentTurn(), null, null, null, name);
         int fromStock = Math.min(quantity, stack.getAvailable());
         for (int i = 0; i < fromStock; i++) {
             player.removeEquipmentFromStack(stack.getEquipment());
@@ -261,6 +268,8 @@ public class AdminPlayerEditService {
         if (!playerId.equals(unit.getPlayerId())) {
             throw new IllegalArgumentException("L'unité " + unitId + " n'appartient pas à ce joueur");
         }
+        playerActionService.discardActiveActionsReferencing(
+                playerId, board.getCurrentTurn(), unitId, null, null, null);
         removeUnitFromPendingOrders(playerId, unitId);
         for (UnitEquipment row : new ArrayList<>(unit.getUnitEquipments())) {
             player.incrementEquipmentAvailability(row.getEquipment());
@@ -309,6 +318,8 @@ public class AdminPlayerEditService {
         if (!playerId.equals(vehicle.getPlayerId())) {
             throw new IllegalArgumentException("Le véhicule " + vehicleId + " n'appartient pas à ce joueur");
         }
+        playerActionService.discardActiveActionsReferencing(
+                playerId, board.getCurrentTurn(), null, vehicleId, null, null);
         cancelPendingVehicleOrders(vehicleId);
         boolean valueLost = !vehicle.isDestroyed() && vehicle.getVehicleType() != null;
         VehicleType type = vehicle.getVehicleType();
@@ -356,6 +367,8 @@ public class AdminPlayerEditService {
         if (!playerId.equals(building.getPlayerId())) {
             throw new IllegalArgumentException("Le bâtiment " + buildingId + " n'appartient pas à ce joueur");
         }
+        playerActionService.discardActiveActionsReferencing(
+                playerId, board.getCurrentTurn(), null, null, buildingId, null);
         Sector sector = building.getSector();
         if (sector != null) {
             sector.getBuildings().remove(building);

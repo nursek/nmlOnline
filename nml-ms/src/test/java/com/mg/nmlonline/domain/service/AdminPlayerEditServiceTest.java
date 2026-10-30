@@ -7,7 +7,10 @@ import com.mg.nmlonline.api.dto.BuildingDto;
 import com.mg.nmlonline.api.dto.UnitDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
+import com.mg.nmlonline.domain.model.action.PlayerAction;
+import com.mg.nmlonline.domain.model.action.PlayerActionStatus;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
@@ -21,6 +24,7 @@ import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
+import com.mg.nmlonline.infrastructure.repository.PlayerActionRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.UnitRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
@@ -32,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,6 +70,12 @@ class AdminPlayerEditServiceTest {
 
     @Autowired
     private MovementOrderRepository movementOrderRepository;
+
+    @Autowired
+    private PlayerActionRepository playerActionRepository;
+
+    @Autowired
+    private TurnLock turnLock;
 
     @Autowired
     private EntityManager entityManager;
@@ -477,6 +488,151 @@ class AdminPlayerEditServiceTest {
         service.deleteBuilding(player.getId(), headquarters.getId());
         entityManager.flush();
         assertTrue(buildingRepository.findById(headquarters.getId()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Argent : la dotation restante est plafonnée au nouveau solde")
+    void setMoneyCapsStartingMoneyRemaining() {
+        player.getStats().setStartingMoneyTotal(2000);
+        player.getStats().setStartingMoneyRemaining(2000);
+        playerRepository.save(player);
+        entityManager.flush();
+
+        service.setMoney(player.getId(), 1500);
+        entityManager.flush();
+        assertEquals(1500, player.getStats().getStartingMoneyRemaining(), 0.001);
+        assertEquals(0, player.getTransferableMoney(), 0.001);
+
+        service.setMoney(player.getId(), 2500);
+        entityManager.flush();
+        assertEquals(1500, player.getStats().getStartingMoneyRemaining(), 0.001);
+        assertEquals(1000, player.getTransferableMoney(), 0.001);
+    }
+
+    @Test
+    @DisplayName("Suppression d'une unité : les actions ACTIVE liées sont clôturées, les autres restent")
+    void deleteUnitDiscardsActiveActions() {
+        Unit unit = unitRepository.findByPlayerId(player.getId()).stream()
+                .filter(candidate -> candidate.getSector() != null)
+                .findFirst().orElseThrow();
+        int turn = board.getCurrentTurn();
+        PlayerAction unitAction = PlayerAction.buyUnit(
+                player.getId(), turn, unit.getId(), "LARBIN", 100, 0);
+        PlayerAction otherAction = PlayerAction.sellResource(
+                player.getId(), turn, "Caisse d'armes", 1, 10);
+        playerActionRepository.saveAll(List.of(unitAction, otherAction));
+        entityManager.flush();
+
+        service.deleteUnit(player.getId(), unit.getId());
+        entityManager.flush();
+
+        assertEquals(PlayerActionStatus.UNDONE,
+                playerActionRepository.findById(unitAction.getId()).orElseThrow().getStatus());
+        assertEquals(PlayerActionStatus.ACTIVE,
+                playerActionRepository.findById(otherAction.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    @DisplayName("Retrait d'équipement : les actions ACTIVE liées à l'équipement sont clôturées")
+    void removeEquipmentDiscardsEquipmentActions() {
+        Unit unit = unitRepository.findByPlayerId(player.getId()).stream()
+                .filter(candidate -> candidate.getSector() != null)
+                .findFirst().orElseThrow();
+        PlayerAction action = PlayerAction.equipUnit(
+                player.getId(), board.getCurrentTurn(), unit.getId(), "Tesla Carbine");
+        playerActionRepository.save(action);
+        entityManager.flush();
+
+        service.removeEquipment(player.getId(), "Tesla Carbine", 1, true);
+        entityManager.flush();
+
+        assertEquals(PlayerActionStatus.UNDONE,
+                playerActionRepository.findById(action.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    @DisplayName("Suppression d'une entité d'un autre joueur : refusée et entité intacte")
+    void deleteRejectsEntitiesOfAnotherPlayer() {
+        Unit foreignUnit = unitRepository.findAll().stream()
+                .filter(candidate -> candidate.getPlayerId() != null
+                        && !player.getId().equals(candidate.getPlayerId()))
+                .findFirst().orElseThrow();
+        assertThrows(IllegalArgumentException.class,
+                () -> service.deleteUnit(player.getId(), foreignUnit.getId()));
+        assertTrue(unitRepository.findById(foreignUnit.getId()).isPresent());
+
+        Vehicle foreignVehicle = vehicleRepository.findAll().stream()
+                .filter(candidate -> candidate.getPlayerId() != null
+                        && !player.getId().equals(candidate.getPlayerId()))
+                .findFirst().orElseThrow();
+        assertThrows(IllegalArgumentException.class,
+                () -> service.deleteVehicle(player.getId(), foreignVehicle.getId()));
+        assertTrue(vehicleRepository.findById(foreignVehicle.getId()).isPresent());
+
+        Building foreignBuilding = buildingRepository.findAll().stream()
+                .filter(candidate -> candidate.getPlayerId() != null
+                        && !player.getId().equals(candidate.getPlayerId()))
+                .findFirst().orElseThrow();
+        assertThrows(IllegalArgumentException.class,
+                () -> service.deleteBuilding(player.getId(), foreignBuilding.getId()));
+        assertTrue(buildingRepository.findById(foreignBuilding.getId()).isPresent());
+    }
+
+    @Test
+    @DisplayName("Suppression d'une unité sur deux : l'ordre reste PENDING pour la survivante")
+    void deleteOneUnitKeepsOrderForSurvivor() {
+        List<Long> beforeIds = unitRepository.findByPlayerId(player.getId()).stream()
+                .map(Unit::getId).toList();
+        service.addUnits(player.getId(), "LARBIN", List.of("LEGER"), 2, 41);
+        entityManager.flush();
+        List<Unit> created = unitRepository.findByPlayerId(player.getId()).stream()
+                .filter(unit -> !beforeIds.contains(unit.getId()))
+                .sorted(Comparator.comparing(Unit::getId))
+                .toList();
+        assertEquals(2, created.size());
+        MovementOrder order = movementService.placeFootOrder(player.getId(),
+                board.getCurrentTurn(),
+                created.stream().map(Unit::getId).toList(),
+                List.of(41, 13), board);
+
+        service.deleteUnit(player.getId(), created.getFirst().getId());
+        entityManager.flush();
+
+        MovementOrder reloaded = movementOrderRepository.findById(order.getId()).orElseThrow();
+        assertEquals(MovementStatus.PENDING, reloaded.getStatus());
+        assertEquals(List.of(created.get(1).getId()), reloaded.getEntityIds());
+    }
+
+    @Test
+    @DisplayName("Édition admin refusée pendant la résolution du tour")
+    void mutationsRejectedWhileTurnLocked() {
+        assertTrue(turnLock.tryAcquire());
+        try {
+            assertThrows(IllegalStateException.class, () -> service.addUnits(
+                    player.getId(), "LARBIN", List.of("LEGER"), 1, 41));
+        } finally {
+            turnLock.release();
+        }
+    }
+
+    @Test
+    @DisplayName("Argent et équipement : valeur d'inventaire et puissance économique recalculées")
+    void moneyAndEquipmentUpdatesRecalculateEconomy() {
+        player.getStats().setTotalIncome(10);
+        player.getStats().setTotalVehiclesValue(20);
+        player.setTotalEquipmentValue();
+        service.setMoney(player.getId(), 100);
+        entityManager.flush();
+        double equipmentValue = player.getStats().getTotalEquipmentValue();
+        assertEquals(130 + equipmentValue, player.getStats().getTotalEconomyPower(), 0.001);
+
+        double cost = stack("Tesla Carbine").getEquipment().getCost();
+        service.addEquipment(player.getId(), "Tesla Carbine", 2);
+        entityManager.flush();
+        assertEquals(equipmentValue + 2 * cost,
+                player.getStats().getTotalEquipmentValue(), 0.001);
+        assertEquals(130 + equipmentValue + 2 * cost,
+                player.getStats().getTotalEconomyPower(), 0.001);
     }
 
     @Test

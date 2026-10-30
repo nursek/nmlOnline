@@ -61,6 +61,7 @@
                       mat-icon-button
                       color="warn"
                       matTooltip="Retirer"
+                      [attr.aria-label]="'Retirer ' + resource.name"
                       (click)="removeResource(resource)"
                       [disabled]="busy()"
                     >
@@ -143,6 +144,7 @@
                       mat-icon-button
                       color="warn"
                       matTooltip="Retirer"
+                      [attr.aria-label]="'Retirer ' + stack.equipment.name"
                       (click)="removeEquipment(stack)"
                       [disabled]="busy()"
                     >

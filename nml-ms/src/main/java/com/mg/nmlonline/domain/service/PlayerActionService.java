@@ -212,6 +212,23 @@ public class PlayerActionService {
         actionRepository.deleteByPlayerId(playerId);
     }
 
+    /** Entité retirée par le MJ : clore ses actions pour préserver l'annulation des autres. */
+    public void discardActiveActionsReferencing(Long playerId, int turn, Long unitId,
+                                                Long vehicleId, Long buildingId,
+                                                String equipmentName) {
+        for (PlayerAction action : actionRepository.findByPlayerIdAndTurnAndStatusOrderByIdAsc(
+                playerId, turn, PlayerActionStatus.ACTIVE)) {
+            boolean references = (unitId != null && unitId.equals(action.getUnitId()))
+                    || (vehicleId != null && vehicleId.equals(action.getVehicleId()))
+                    || (buildingId != null && buildingId.equals(action.getBuildingId()))
+                    || (equipmentName != null && equipmentName.equals(action.getEquipmentName()));
+            if (references) {
+                action.markUndone();
+                actionRepository.save(action);
+            }
+        }
+    }
+
     public List<PlayerActionDto> undoFrom(Long userId, Long actionId) {
         // Le journal reste figé pendant la résolution : annuler modifierait un état déjà combattu.
         if (turnLock.isLocked()) {

@@ -13,6 +13,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -88,6 +89,37 @@ class AdminControllerTransactionBoundaryTest {
                         .content("{\"name\":\"Caisse d'armes\",\"quantity\":1001}")
                         .header("Authorization", bearer(TestDataInitializer.ADMIN)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteResourceWithoutQuantityReturns400() throws Exception {
+        Long playerId = playerRepository.findByName("lurio").orElseThrow().getId();
+        mockMvc.perform(delete("/api/admin/players/{id}/resources", playerId)
+                        .param("name", "Caisse d'armes")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteResourceWithInvalidQuantityReturns400() throws Exception {
+        Long playerId = playerRepository.findByName("lurio").orElseThrow().getId();
+        mockMvc.perform(delete("/api/admin/players/{id}/resources", playerId)
+                        .param("name", "Caisse d'armes")
+                        .param("quantity", "abc")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @Transactional
+    void deleteEquippedEquipmentWithIncludeEquippedReturns204() throws Exception {
+        Long playerId = playerRepository.findByName("lurio").orElseThrow().getId();
+        mockMvc.perform(delete("/api/admin/players/{id}/equipments", playerId)
+                        .param("name", "Tesla Carbine")
+                        .param("quantity", "1")
+                        .param("includeEquipped", "true")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN)))
+                .andExpect(status().isNoContent());
     }
 
     @Test
