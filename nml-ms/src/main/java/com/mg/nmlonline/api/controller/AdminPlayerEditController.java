@@ -2,9 +2,11 @@ package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.AdminBuildingCreateRequestDto;
 import com.mg.nmlonline.api.dto.AdminCatalogDto;
+import com.mg.nmlonline.api.dto.AdminCharacterRequestDto;
 import com.mg.nmlonline.api.dto.AdminItemQuantityRequestDto;
 import com.mg.nmlonline.api.dto.AdminMoneyRequestDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
+import com.mg.nmlonline.api.dto.AdminPlayerNameRequestDto;
 import com.mg.nmlonline.api.dto.AdminUnitCreateRequestDto;
 import com.mg.nmlonline.api.dto.AdminUnitEquipRequestDto;
 import com.mg.nmlonline.api.dto.AdminUnitMoveRequestDto;
@@ -35,6 +37,33 @@ public class AdminPlayerEditController {
     @GetMapping("/catalog")
     public AdminCatalogDto getCatalog() {
         return adminPlayerEditService.getCatalog();
+    }
+
+    @PutMapping("/players/{id}/name")
+    public ResponseEntity<Void> updatePlayerName(@PathVariable Long id,
+                                                 @Valid @RequestBody AdminPlayerNameRequestDto request) {
+        adminPlayerEditService.updatePlayerName(id, request.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/players/{id}/character")
+    public ResponseEntity<Void> updateCharacter(@PathVariable Long id,
+                                                @Valid @RequestBody AdminCharacterRequestDto request) {
+        adminPlayerEditService.updateCharacter(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/players/{id}/character")
+    public ResponseEntity<Void> createCharacter(@PathVariable Long id,
+                                                @Valid @RequestBody AdminCharacterRequestDto request) {
+        adminPlayerEditService.createCharacter(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/players/{id}/character")
+    public ResponseEntity<Void> deleteCharacter(@PathVariable Long id) {
+        adminPlayerEditService.deleteCharacter(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/players/{id}/money")

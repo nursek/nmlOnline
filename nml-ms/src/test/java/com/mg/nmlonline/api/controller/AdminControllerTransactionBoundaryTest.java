@@ -142,6 +142,32 @@ class AdminControllerTransactionBoundaryTest {
     }
 
     @Test
+    @Transactional
+    void updatePlayerNameReturns204() throws Exception {
+        Long playerId = playerRepository.findByName("lurio").orElseThrow().getId();
+        mockMvc.perform(put("/api/admin/players/{id}/name", playerId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"lurio-admin-test\"}")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @Transactional
+    void updateCharacterReturns204() throws Exception {
+        var player = playerRepository.findByName("lurio").orElseThrow();
+        Long playerId = player.getId();
+        String characterName = player.getCharacter().getName();
+        mockMvc.perform(put("/api/admin/players/{id}/character", playerId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"" + characterName + "\",\"baseAttack\":10,"
+                                + "\"baseDefense\":20,\"basePdf\":30,\"basePdc\":40,"
+                                + "\"baseArmor\":50,\"baseEvasion\":60}")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
     void addUnitsRejectsTooManyClasses() throws Exception {
         Long playerId = playerRepository.findByName("lurio").orElseThrow().getId();
         mockMvc.perform(post("/api/admin/players/{id}/units", playerId)

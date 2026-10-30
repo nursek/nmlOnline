@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.AdminCatalogDto;
+import com.mg.nmlonline.api.dto.AdminCharacterRequestDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
 import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.ResourceCatalogDto;
@@ -61,6 +62,7 @@ public class AdminPlayerEditService {
     private final ResourceRepository resourceRepository;
     private final EquipmentService equipmentService;
     private final BuildingService buildingService;
+    private final GameCharacterService gameCharacterService;
     private final PlayerStatsService playerStatsService;
     private final BoardService boardService;
     private final PlayerMapper playerMapper;
@@ -78,6 +80,7 @@ public class AdminPlayerEditService {
                                   ResourceRepository resourceRepository,
                                   EquipmentService equipmentService,
                                   BuildingService buildingService,
+                                  GameCharacterService gameCharacterService,
                                   PlayerStatsService playerStatsService,
                                   BoardService boardService,
                                   PlayerMapper playerMapper,
@@ -94,6 +97,7 @@ public class AdminPlayerEditService {
         this.resourceRepository = resourceRepository;
         this.equipmentService = equipmentService;
         this.buildingService = buildingService;
+        this.gameCharacterService = gameCharacterService;
         this.playerStatsService = playerStatsService;
         this.boardService = boardService;
         this.playerMapper = playerMapper;
@@ -150,6 +154,47 @@ public class AdminPlayerEditService {
                 Math.min(player.getStats().getStartingMoneyRemaining(), amount));
         player.calculateTotalEconomyPower();
         playerRepository.save(player);
+    }
+
+    @Transactional
+    public void updatePlayerName(Long playerId, String name) {
+        requireTurnOpen();
+        Player player = lockPlayer(playerId);
+        String trimmed = normalizeName(name);
+        playerRepository.findByName(trimmed).ifPresent(existing -> {
+            if (!existing.getId().equals(playerId)) {
+                throw new IllegalArgumentException("Un joueur avec ce nom existe déjà");
+            }
+        });
+        player.setName(trimmed);
+        playerRepository.save(player);
+    }
+
+    @Transactional
+    public void updateCharacter(Long playerId, AdminCharacterRequestDto request) {
+        requireTurnOpen();
+        lockPlayer(playerId);
+        validateCharacter(request);
+        gameCharacterService.updateCharacter(playerId, request.getName().trim(),
+                request.getBaseAttack(), request.getBasePdf(), request.getBasePdc(),
+                request.getBaseDefense(), request.getBaseArmor(), request.getBaseEvasion());
+    }
+
+    @Transactional
+    public void createCharacter(Long playerId, AdminCharacterRequestDto request) {
+        requireTurnOpen();
+        lockPlayer(playerId);
+        validateCharacter(request);
+        gameCharacterService.createCharacter(playerId, request.getName().trim(),
+                request.getBaseAttack(), request.getBasePdf(), request.getBasePdc(),
+                request.getBaseDefense(), request.getBaseArmor(), request.getBaseEvasion());
+    }
+
+    @Transactional
+    public void deleteCharacter(Long playerId) {
+        requireTurnOpen();
+        lockPlayer(playerId);
+        gameCharacterService.deleteCharacter(playerId);
     }
 
     @Transactional
@@ -505,6 +550,32 @@ public class AdminPlayerEditService {
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
         playerRepository.save(player);
+    }
+
+    private void validateCharacter(AdminCharacterRequestDto request) {
+        normalizeName(request.getName());
+        double[] stats = {
+                request.getBaseAttack(), request.getBaseDefense(), request.getBasePdf(),
+                request.getBasePdc(), request.getBaseArmor(), request.getBaseEvasion()
+        };
+        for (double stat : stats) {
+            if (!Double.isFinite(stat) || stat < 0) {
+                throw new IllegalArgumentException(
+                        "Les statistiques du personnage doivent être positives");
+            }
+        }
+    }
+
+    private String normalizeName(String name) {
+        String trimmed = name == null ? "" : name.trim();
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("Le nom est requis");
+        }
+        if (trimmed.length() > 100) {
+            throw new IllegalArgumentException(
+                    "Le nom est trop long (100 caractères maximum)");
+        }
+        return trimmed;
     }
 
     private Unit requireUnitOfPlayer(Long playerId, Long unitId) {

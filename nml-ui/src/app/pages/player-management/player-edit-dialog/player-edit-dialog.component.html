@@ -1,6 +1,6 @@
 <h2 mat-dialog-title class="dialog-title">
   <mat-icon>edit</mat-icon>
-  <span>Modifier {{ data.playerName }}</span>
+  <span>Modifier {{ player()?.name ?? data.playerName }}</span>
 </h2>
 
 <mat-dialog-content class="edit-content">
@@ -14,6 +14,133 @@
     }
 
     <mat-tab-group animationDuration="0ms">
+      <mat-tab label="Joueur">
+        <div class="tab-body">
+          <section class="block">
+            <h3>Identité</h3>
+            <div class="row">
+              <mat-form-field appearance="outline" class="medium-field">
+                <mat-label>Nom du joueur</mat-label>
+                <input
+                  matInput
+                  maxlength="100"
+                  [value]="playerName()"
+                  (input)="playerName.set($any($event.target).value)"
+                />
+              </mat-form-field>
+              <button
+                mat-flat-button
+                color="primary"
+                (click)="savePlayerName()"
+                [disabled]="busy() || !playerName().trim()"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </section>
+
+          <section class="block">
+            <h3>Personnage principal</h3>
+            @if (!character()) {
+              <p class="empty">Aucun personnage. Renseignez les champs pour en créer un.</p>
+            }
+            <div class="row">
+              <mat-form-field appearance="outline" class="medium-field">
+                <mat-label>Nom du personnage</mat-label>
+                <input
+                  matInput
+                  maxlength="100"
+                  [value]="characterName()"
+                  (input)="characterName.set($any($event.target).value)"
+                />
+              </mat-form-field>
+            </div>
+            <div class="row">
+              <mat-form-field appearance="outline" class="qty-field">
+                <mat-label>ATK</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [value]="characterAttack()"
+                  (input)="characterAttack.set(+$any($event.target).value)"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="qty-field">
+                <mat-label>DEF</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [value]="characterDefense()"
+                  (input)="characterDefense.set(+$any($event.target).value)"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="qty-field">
+                <mat-label>PDF</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [value]="characterPdf()"
+                  (input)="characterPdf.set(+$any($event.target).value)"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="qty-field">
+                <mat-label>PDC</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [value]="characterPdc()"
+                  (input)="characterPdc.set(+$any($event.target).value)"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="qty-field">
+                <mat-label>ARM</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [value]="characterArmor()"
+                  (input)="characterArmor.set(+$any($event.target).value)"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="qty-field">
+                <mat-label>EVA</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [value]="characterEvasion()"
+                  (input)="characterEvasion.set(+$any($event.target).value)"
+                />
+              </mat-form-field>
+            </div>
+            <div class="row">
+              <button
+                mat-flat-button
+                color="primary"
+                (click)="saveCharacter()"
+                [disabled]="busy() || !validCharacter()"
+              >
+                {{ character() ? 'Enregistrer' : 'Créer' }}
+              </button>
+              @if (character()) {
+                <button
+                  mat-stroked-button
+                  color="warn"
+                  (click)="deleteCharacter()"
+                  [disabled]="busy()"
+                >
+                  Supprimer
+                </button>
+              }
+            </div>
+          </section>
+        </div>
+      </mat-tab>
+
       <mat-tab label="Inventaire">
         <div class="tab-body">
           <section class="block">

@@ -2,6 +2,7 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.AdminCatalogDto;
+import com.mg.nmlonline.api.dto.AdminCharacterRequestDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
 import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.BuildingDto;
@@ -18,6 +19,7 @@ import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitEquipment;
@@ -41,8 +43,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @EmbeddedPostgresTest
 @Transactional
@@ -740,6 +744,82 @@ class AdminPlayerEditServiceTest {
     }
 
     @Test
+    @DisplayName("Joueur : renommage autorisé, nom en doublon refusé")
+    void updatePlayerNameRejectsDuplicate() {
+        service.updatePlayerName(player.getId(), "lurio-admin");
+        entityManager.flush();
+        assertEquals("lurio-admin", player.getName());
+
+        String otherName = playerRepository.findAll().stream()
+                .filter(candidate -> !candidate.getId().equals(player.getId()))
+                .map(Player::getName)
+                .findFirst().orElseThrow();
+        assertThrows(IllegalArgumentException.class,
+                () -> service.updatePlayerName(player.getId(), otherName));
+        assertEquals("lurio-admin", player.getName());
+    }
+
+    @Test
+    @DisplayName("Personnage : mise à jour des stats de base et soin complet")
+    void updateCharacterRecalculatesStats() {
+        GameCharacter character = player.getCharacter();
+        assertNotNull(character);
+        character.setDefense(Math.max(0, character.getBaseDefense() - 10));
+        entityManager.flush();
+
+        AdminCharacterRequestDto request = characterRequest(
+                character.getName(), 120, 80, 40, 30, 20, 10);
+        service.updateCharacter(player.getId(), request);
+        entityManager.flush();
+
+        assertEquals(120, character.getAttack(), 0.001);
+        assertEquals(80, character.getDefense(), 0.001);
+        assertEquals(80, character.getBaseDefense(), 0.001);
+        assertEquals(10, character.getEvasion(), 0.001);
+    }
+
+    @Test
+    @DisplayName("Personnage : nom en doublon refusé")
+    void updateCharacterRejectsDuplicateName() {
+        GameCharacter character = player.getCharacter();
+        assertNotNull(character);
+        String otherName = playerRepository.findAll().stream()
+                .filter(candidate -> !candidate.getId().equals(player.getId()))
+                .map(Player::getCharacter)
+                .filter(Objects::nonNull)
+                .map(GameCharacter::getName)
+                .findFirst().orElse(null);
+        assumeTrue(otherName != null);
+        AdminCharacterRequestDto request = characterRequest(otherName, 1, 1, 1, 1, 1, 1);
+        assertThrows(IllegalArgumentException.class,
+                () -> service.updateCharacter(player.getId(), request));
+    }
+
+    @Test
+    @DisplayName("Personnage : suppression puis recréation, détachement du secteur")
+    void deleteAndCreateCharacterDetachesFromSector() {
+        GameCharacter character = player.getCharacter();
+        assertNotNull(character);
+        Sector sector = character.getSector();
+        service.deleteCharacter(player.getId());
+        entityManager.flush();
+
+        assertNull(player.getCharacter());
+        assertNull(entityManager.find(GameCharacter.class, character.getId()));
+        if (sector != null) {
+            assertFalse(sector.getCharacters().contains(character));
+        }
+
+        AdminCharacterRequestDto request = characterRequest(
+                "Lurio-Recreated", 10, 20, 30, 40, 50, 60);
+        service.createCharacter(player.getId(), request);
+        entityManager.flush();
+
+        assertNotNull(player.getCharacter());
+        assertEquals("Lurio-Recreated", player.getCharacter().getName());
+    }
+
+    @Test
     @DisplayName("Le catalogue et la vue d'édition ne dépendent pas de la session HTTP (mapping en transaction)")
     void dtoMappingSurvivesWithoutOpenSessionInView() {
         AdminPlayerEditDto dto = service.getEdit(player.getId());
@@ -747,6 +827,20 @@ class AdminPlayerEditServiceTest {
         assertNotNull(dto.getPlayer().getBuildings());
         assertNotNull(dto.getUnits().getFirst().getType().getName());
         assertNotNull(dto.getVehicles());
+    }
+
+    private AdminCharacterRequestDto characterRequest(String name, double attack, double defense,
+                                                       double pdf, double pdc, double armor,
+                                                       double evasion) {
+        AdminCharacterRequestDto request = new AdminCharacterRequestDto();
+        request.setName(name);
+        request.setBaseAttack(attack);
+        request.setBaseDefense(defense);
+        request.setBasePdf(pdf);
+        request.setBasePdc(pdc);
+        request.setBaseArmor(armor);
+        request.setBaseEvasion(evasion);
+        return request;
     }
 
     private Unit addUnit(String type, UnitClass unitClass, Integer sectorNumber) {

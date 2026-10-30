@@ -89,6 +89,16 @@ export class PlayerEditDialogComponent {
   readonly unitClassCatalog = computed(() => this.catalog()?.unitClasses ?? []);
   readonly vehicleTypes = computed(() => this.catalog()?.vehicleTypes ?? []);
 
+  readonly playerName = linkedSignal(() => this.player()?.name ?? '');
+  readonly character = computed(() => this.player()?.character ?? null);
+  readonly characterName = linkedSignal(() => this.character()?.name ?? '');
+  readonly characterAttack = linkedSignal(() => this.character()?.baseAttack ?? 0);
+  readonly characterDefense = linkedSignal(() => this.character()?.baseDefense ?? 0);
+  readonly characterPdf = linkedSignal(() => this.character()?.basePdf ?? 0);
+  readonly characterPdc = linkedSignal(() => this.character()?.basePdc ?? 0);
+  readonly characterArmor = linkedSignal(() => this.character()?.baseArmor ?? 0);
+  readonly characterEvasion = linkedSignal(() => this.character()?.baseEvasion ?? 0);
+
   readonly money = signal<number | null>(null);
   readonly moneyValue = computed(() => this.money() ?? this.player()?.stats.money ?? 0);
 
@@ -327,6 +337,36 @@ export class PlayerEditDialogComponent {
     }
   }
 
+  async savePlayerName(): Promise<void> {
+    const name = this.playerName().trim();
+    if (!name) return;
+    await this.run(
+      this.api.adminUpdatePlayerName(this.data.playerId, name),
+      'Nom du joueur mis à jour',
+    );
+  }
+
+  async saveCharacter(): Promise<void> {
+    if (!this.validCharacter()) return;
+    const payload = this.characterPayload();
+    const call = this.character()
+      ? this.api.adminUpdateCharacter(this.data.playerId, payload)
+      : this.api.adminCreateCharacter(this.data.playerId, payload);
+    await this.run(call, this.character() ? 'Personnage mis à jour' : 'Personnage créé');
+  }
+
+  async deleteCharacter(): Promise<void> {
+    const character = this.character();
+    if (!character) return;
+    const confirmed = await this.confirm({
+      title: 'Supprimer le personnage',
+      message: `Supprimer ${character.name} ? Il sera détaché de son secteur et de son véhicule.`,
+      confirmLabel: 'Supprimer',
+    });
+    if (!confirmed) return;
+    await this.run(this.api.adminDeleteCharacter(this.data.playerId), 'Personnage supprimé');
+  }
+
   openUnitEdit(unit: Unit): void {
     if (unit.id === null) return;
     this.dialog.open(UnitEditDialogComponent, {
@@ -426,6 +466,31 @@ export class PlayerEditDialogComponent {
       case 'WEAPON_CACHE':
         return ' Les équipements stockés dans la cache seront perdus.';
     }
+  }
+
+  private characterPayload() {
+    return {
+      name: this.characterName().trim(),
+      baseAttack: this.characterAttack(),
+      baseDefense: this.characterDefense(),
+      basePdf: this.characterPdf(),
+      basePdc: this.characterPdc(),
+      baseArmor: this.characterArmor(),
+      baseEvasion: this.characterEvasion(),
+    };
+  }
+
+  validCharacter(): boolean {
+    const name = this.characterName().trim();
+    if (name.length === 0 || name.length > 100) return false;
+    return [
+      this.characterAttack(),
+      this.characterDefense(),
+      this.characterPdf(),
+      this.characterPdc(),
+      this.characterArmor(),
+      this.characterEvasion(),
+    ].every((stat) => Number.isFinite(stat) && stat >= 0);
   }
 
   private clampQuantity(value: number, max: number): number {

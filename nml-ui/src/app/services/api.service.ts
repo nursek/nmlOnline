@@ -38,6 +38,16 @@ import {
 } from '../models';
 import { environment } from '../../environments/environment';
 
+export interface AdminCharacterPayload {
+  name: string;
+  baseAttack: number;
+  baseDefense: number;
+  basePdf: number;
+  basePdc: number;
+  baseArmor: number;
+  baseEvasion: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -81,6 +91,22 @@ export class ApiService {
 
   adminDeletePlayer(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/admin/players/${id}`);
+  }
+
+  adminUpdatePlayerName(playerId: number, name: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/name`, { name });
+  }
+
+  adminCreateCharacter(playerId: number, payload: AdminCharacterPayload): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/character`, payload);
+  }
+
+  adminUpdateCharacter(playerId: number, payload: AdminCharacterPayload): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/character`, payload);
+  }
+
+  adminDeleteCharacter(playerId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/character`);
   }
 
   adminUpdateRankingComment(playerId: number, comment: string): Observable<void> {
