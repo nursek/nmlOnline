@@ -33,3 +33,13 @@ export interface AdminPlayerEdit {
   units: Unit[];
   vehicles: Vehicle[];
 }
+
+export interface AdminAuditEntry {
+  id: number;
+  adminUsername: string | null;
+  playerId: number | null;
+  action: string;
+  details: string | null;
+  createdAt: string;
+  turn: number | null;
+}

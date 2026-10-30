@@ -35,6 +35,7 @@ import {
   AllianceMessage,
   Announcement,
   PendingCapture,
+  AdminAuditEntry,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -112,6 +113,16 @@ export class ApiService {
   adminReassignSector(sectorNumber: number, playerId: number | null): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/admin/sectors/${sectorNumber}/owner`, {
       playerId,
+    });
+  }
+
+  adminGetAudit(
+    playerId: number,
+    page: number,
+    size: number,
+  ): Observable<PageResult<AdminAuditEntry>> {
+    return this.http.get<PageResult<AdminAuditEntry>>(`${this.baseUrl}/admin/audit`, {
+      params: { playerId, page, size },
     });
   }
 

@@ -665,6 +665,41 @@
           </section>
         </div>
       </mat-tab>
+
+      <mat-tab label="Historique">
+        <div class="tab-body">
+          @if (auditLoading()) {
+            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+          }
+          <section class="block">
+            <div class="audit-header">
+              <h3>Historique des modifications</h3>
+              <button mat-stroked-button (click)="loadAudit()" [disabled]="auditLoading()">
+                Actualiser
+              </button>
+            </div>
+            @if (auditEntries().length === 0 && !auditLoading()) {
+              <p class="empty">Aucune modification enregistrée.</p>
+            } @else {
+              <div class="audit-lines">
+                @for (entry of auditEntries(); track entry.id) {
+                  <div class="audit-line">
+                    <span class="audit-date">{{ entry.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+                    <span class="audit-action">{{ auditActionLabel(entry.action) }}</span>
+                    <span class="audit-details">{{ entry.details }}</span>
+                    <span class="audit-admin">{{ entry.adminUsername }}</span>
+                  </div>
+                }
+              </div>
+              @if (auditEntries().length < auditTotal()) {
+                <button mat-button (click)="loadMoreAudit()" [disabled]="auditLoading()">
+                  Charger plus
+                </button>
+              }
+            }
+          </section>
+        </div>
+      </mat-tab>
     </mat-tab-group>
   } @else {
     <p class="empty">Impossible de charger ce joueur.</p>

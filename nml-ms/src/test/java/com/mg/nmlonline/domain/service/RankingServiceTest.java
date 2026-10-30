@@ -30,12 +30,15 @@ class RankingServiceTest {
     private PlayerRepository playerRepository;
     @Mock
     private BoardRepository boardRepository;
+    @Mock
+    private AdminAuditService adminAuditService;
 
     private RankingService rankingService;
 
     @BeforeEach
     void setUp() {
-        rankingService = new RankingService(playerRepository, boardRepository, new PlayerStatsService());
+        rankingService = new RankingService(playerRepository, boardRepository,
+                new PlayerStatsService(), adminAuditService);
     }
 
     @Test

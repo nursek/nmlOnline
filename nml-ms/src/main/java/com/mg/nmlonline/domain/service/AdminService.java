@@ -2,6 +2,7 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
+import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
@@ -41,6 +42,7 @@ public class AdminService {
     private final EntityManager entityManager;
     private final PlayerMapper playerMapper;
     private final BoardMapper boardMapper;
+    private final AdminAuditService adminAuditService;
 
     public AdminService(PlayerImportService playerImportService,
                         PlayerService playerService,
@@ -51,7 +53,8 @@ public class AdminService {
                         VehicleRepository vehicleRepository,
                         EntityManager entityManager,
                         PlayerMapper playerMapper,
-                        BoardMapper boardMapper) {
+                        BoardMapper boardMapper,
+                        AdminAuditService adminAuditService) {
         this.playerImportService = playerImportService;
         this.playerService = playerService;
         this.boardImportService = boardImportService;
@@ -62,6 +65,7 @@ public class AdminService {
         this.entityManager = entityManager;
         this.playerMapper = playerMapper;
         this.boardMapper = boardMapper;
+        this.adminAuditService = adminAuditService;
     }
 
     /** Import JSON : supprime un joueur homonyme au préalable ; si password est fourni, crée/met à jour le compte User associé. */
@@ -105,6 +109,8 @@ public class AdminService {
         playerImportService.clearEquipmentCache();
 
         logger.info("Import joueur '{}' (id {})", player.getName(), player.getId());
+        adminAuditService.record(player.getId(), AdminAuditAction.IMPORT_PLAYER,
+                "Import : " + player.getName());
         return player;
     }
 
@@ -256,6 +262,8 @@ public class AdminService {
             userRepository.delete(user);
         }
         logger.info("Suppression joueur '{}' (id {})", name, playerId);
+        adminAuditService.record(playerId, AdminAuditAction.DELETE_PLAYER,
+                "Suppression : " + name);
     }
 
     /** Import board.json. Les URLs fournies override celles du JSON ; upsert par nom via saveBoard. */
@@ -271,6 +279,8 @@ public class AdminService {
         String boardName = board.getName() != null ? board.getName() : "Carte Principale";
         Board saved = boardService.saveBoard(board, boardName);
         logger.info("Import board '{}' (id {})", saved.getName(), saved.getId());
+        adminAuditService.record(null, AdminAuditAction.IMPORT_BOARD,
+                "Board : " + saved.getName());
         return saved;
     }
 

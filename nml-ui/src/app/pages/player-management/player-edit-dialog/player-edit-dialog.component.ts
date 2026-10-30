@@ -7,7 +7,7 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { firstValueFrom, Observable } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -25,6 +25,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import {
+  AdminAuditEntry,
   BUILDING_TYPES,
   Building,
   BuildingType,
@@ -50,6 +51,7 @@ export interface PlayerEditDialogData {
   selector: 'app-player-edit-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DatePipe,
     DecimalPipe,
     MatButtonModule,
     MatDialogModule,
@@ -99,6 +101,37 @@ export class PlayerEditDialogComponent {
   readonly characterPdc = linkedSignal(() => this.character()?.basePdc ?? 0);
   readonly characterArmor = linkedSignal(() => this.character()?.baseArmor ?? 0);
   readonly characterEvasion = linkedSignal(() => this.character()?.baseEvasion ?? 0);
+
+  readonly auditEntries = signal<AdminAuditEntry[]>([]);
+  readonly auditLoading = signal(false);
+  readonly auditTotal = signal(0);
+  readonly auditPage = signal(0);
+  readonly auditActionLabels: Record<string, string> = {
+    PLAYER_NAME: 'Nom du joueur',
+    CHARACTER_CREATE: 'Création du personnage',
+    CHARACTER_UPDATE: 'Mise à jour du personnage',
+    CHARACTER_DELETE: 'Suppression du personnage',
+    SET_MONEY: 'Argent',
+    ADD_RESOURCE: 'Ajout de ressource',
+    REMOVE_RESOURCE: 'Retrait de ressource',
+    ADD_EQUIPMENT: 'Ajout d’équipement',
+    REMOVE_EQUIPMENT: 'Retrait d’équipement',
+    ADD_UNITS: 'Ajout d’unités',
+    DELETE_UNIT: 'Suppression d’unité',
+    UPDATE_UNIT: 'Mise à jour d’unité',
+    MOVE_UNIT: 'Déplacement d’unité',
+    EQUIP_UNIT: 'Équipement d’unité',
+    UNEQUIP_UNIT: 'Déséquipement d’unité',
+    ADD_VEHICLES: 'Ajout de véhicules',
+    DELETE_VEHICLE: 'Suppression de véhicule',
+    ADD_BUILDING: 'Ajout de bâtiment',
+    DELETE_BUILDING: 'Suppression de bâtiment',
+    REASSIGN_SECTOR: 'Réassignation de secteur',
+    IMPORT_PLAYER: 'Import de joueur',
+    DELETE_PLAYER: 'Suppression de joueur',
+    IMPORT_BOARD: 'Import de board',
+    RANKING_COMMENT: 'Commentaire de classement',
+  };
 
   readonly sectorToReassign = linkedSignal(() => this.ownedSectors()[0]?.number ?? null);
   readonly sectorTarget = linkedSignal<number | null>(() => null);
@@ -159,6 +192,7 @@ export class PlayerEditDialogComponent {
 
   constructor() {
     this.admin.openEdit(this.data.playerId);
+    void this.loadAudit();
   }
 
   close(): void {
@@ -380,6 +414,29 @@ export class PlayerEditDialogComponent {
     await this.run(this.api.adminDeleteCharacter(this.data.playerId), 'Personnage supprimé');
   }
 
+  async loadAudit(page = 0, append = false): Promise<void> {
+    if (this.auditLoading()) return;
+    this.auditLoading.set(true);
+    try {
+      const result = await firstValueFrom(this.api.adminGetAudit(this.data.playerId, page, 20));
+      this.auditEntries.set(append ? [...this.auditEntries(), ...result.content] : result.content);
+      this.auditTotal.set(result.totalElements ?? result.content.length);
+      this.auditPage.set(page);
+    } catch {
+      // Historique indisponible : la fiche reste utilisable.
+    } finally {
+      this.auditLoading.set(false);
+    }
+  }
+
+  loadMoreAudit(): void {
+    void this.loadAudit(this.auditPage() + 1, true);
+  }
+
+  auditActionLabel(action: string): string {
+    return this.auditActionLabels[action] ?? action;
+  }
+
   async reassignSector(): Promise<void> {
     const sector = this.selectedSector();
     if (!sector || sector.number === null) return;
@@ -549,6 +606,7 @@ export class PlayerEditDialogComponent {
     this.busy.set(true);
     try {
       await this.admin.mutate(call, successMessage);
+      void this.loadAudit();
       return true;
     } catch {
       // Erreur déjà exposée par AdminService (snackbar de la page admin).

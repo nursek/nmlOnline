@@ -43,6 +43,8 @@ class AdminServiceTest {
     PlayerMapper playerMapper;
     @Mock
     BoardMapper boardMapper;
+    @Mock
+    AdminAuditService adminAuditService;
 
     @InjectMocks
     AdminService adminService;

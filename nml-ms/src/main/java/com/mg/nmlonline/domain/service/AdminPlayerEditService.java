@@ -6,6 +6,7 @@ import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
 import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.ResourceCatalogDto;
 import com.mg.nmlonline.api.dto.UnitDto;
+import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
@@ -61,6 +62,7 @@ public class AdminPlayerEditService {
     private final MovementOrderRepository movementOrderRepository;
     private final PlayerActionService playerActionService;
     private final PendingCaptureRepository pendingCaptureRepository;
+    private final AdminAuditService adminAuditService;
     private final ResourceRepository resourceRepository;
     private final EquipmentService equipmentService;
     private final BuildingService buildingService;
@@ -80,6 +82,7 @@ public class AdminPlayerEditService {
                                   MovementOrderRepository movementOrderRepository,
                                   PlayerActionService playerActionService,
                                   PendingCaptureRepository pendingCaptureRepository,
+                                  AdminAuditService adminAuditService,
                                   ResourceRepository resourceRepository,
                                   EquipmentService equipmentService,
                                   BuildingService buildingService,
@@ -98,6 +101,7 @@ public class AdminPlayerEditService {
         this.movementOrderRepository = movementOrderRepository;
         this.playerActionService = playerActionService;
         this.pendingCaptureRepository = pendingCaptureRepository;
+        this.adminAuditService = adminAuditService;
         this.resourceRepository = resourceRepository;
         this.equipmentService = equipmentService;
         this.buildingService = buildingService;
@@ -153,17 +157,21 @@ public class AdminPlayerEditService {
         }
         requireTurnOpen();
         Player player = lockPlayer(playerId);
+        double previousMoney = player.getStats().getMoney();
         player.getStats().setMoney(amount);
         player.getStats().setStartingMoneyRemaining(
                 Math.min(player.getStats().getStartingMoneyRemaining(), amount));
         player.calculateTotalEconomyPower();
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.SET_MONEY,
+                "Argent : " + previousMoney + " → " + amount);
     }
 
     @Transactional
     public void updatePlayerName(Long playerId, String name) {
         requireTurnOpen();
         Player player = lockPlayer(playerId);
+        String previousName = player.getName();
         String trimmed = normalizeName(name);
         playerRepository.findByName(trimmed).ifPresent(existing -> {
             if (!existing.getId().equals(playerId)) {
@@ -172,6 +180,8 @@ public class AdminPlayerEditService {
         });
         player.setName(trimmed);
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.PLAYER_NAME,
+                previousName + " → " + trimmed);
     }
 
     @Transactional
@@ -182,6 +192,8 @@ public class AdminPlayerEditService {
         gameCharacterService.updateCharacter(playerId, request.getName().trim(),
                 request.getBaseAttack(), request.getBasePdf(), request.getBasePdc(),
                 request.getBaseDefense(), request.getBaseArmor(), request.getBaseEvasion());
+        audit(playerId, AdminAuditAction.CHARACTER_UPDATE,
+                "Personnage : " + request.getName().trim());
     }
 
     @Transactional
@@ -192,13 +204,19 @@ public class AdminPlayerEditService {
         gameCharacterService.createCharacter(playerId, request.getName().trim(),
                 request.getBaseAttack(), request.getBasePdf(), request.getBasePdc(),
                 request.getBaseDefense(), request.getBaseArmor(), request.getBaseEvasion());
+        audit(playerId, AdminAuditAction.CHARACTER_CREATE,
+                "Personnage : " + request.getName().trim());
     }
 
     @Transactional
     public void deleteCharacter(Long playerId) {
         requireTurnOpen();
-        lockPlayer(playerId);
+        Player player = lockPlayer(playerId);
+        String characterName = player.getCharacter() != null
+                ? player.getCharacter().getName()
+                : "personnage";
         gameCharacterService.deleteCharacter(playerId);
+        audit(playerId, AdminAuditAction.CHARACTER_DELETE, "Personnage : " + characterName);
     }
 
     @Transactional
@@ -242,6 +260,11 @@ public class AdminPlayerEditService {
             playerStatsService.recalculateStats(target, board);
         }
         boardService.save(board);
+        String currentName = current != null ? current.getName() : "neutre";
+        String targetName = target != null ? target.getName() : "neutre";
+        audit(currentOwnerId != null ? currentOwnerId : targetPlayerId,
+                AdminAuditAction.REASSIGN_SECTOR,
+                "Secteur " + sectorNumber + " : " + currentName + " → " + targetName);
     }
 
     @Transactional
@@ -253,6 +276,7 @@ public class AdminPlayerEditService {
                 .orElseThrow(() -> new IllegalArgumentException("Ressource inconnue : " + name));
         player.addResource(resource.getName(), quantity);
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.ADD_RESOURCE, quantity + " × " + name);
     }
 
     @Transactional
@@ -265,6 +289,7 @@ public class AdminPlayerEditService {
                     + " » (possédé : " + player.getResourceQuantity(name) + ")");
         }
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.REMOVE_RESOURCE, quantity + " × " + name);
     }
 
     @Transactional
@@ -278,6 +303,7 @@ public class AdminPlayerEditService {
         player.setTotalEquipmentValue();
         player.calculateTotalEconomyPower();
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.ADD_EQUIPMENT, quantity + " × " + name);
     }
 
     /** {@code includeEquipped} : retire aussi les copies portées par des unités (après confirmation UI). */
@@ -323,6 +349,8 @@ public class AdminPlayerEditService {
         playerStatsService.recalculateStats(player, board);
         playerRepository.save(player);
         boardService.save(board);
+        audit(playerId, AdminAuditAction.REMOVE_EQUIPMENT,
+                quantity + " × " + name + (includeEquipped ? " (copies équipées incluses)" : ""));
     }
 
     @Transactional
@@ -350,6 +378,8 @@ public class AdminPlayerEditService {
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.ADD_UNITS,
+                quantity + " × " + typeName + " " + classNames + " → " + sectorLabel(sectorNumber));
     }
 
     @Transactional
@@ -370,6 +400,8 @@ public class AdminPlayerEditService {
         }
         CombatService.detachFromVehicles(em, unit);
         Sector sector = unit.getSector();
+        String unitLabel = unit.getType() + " n°" + unit.getNumber()
+                + " (" + (sector != null ? "secteur " + sector.getNumber() : "réserve") + ")";
         if (sector != null) {
             sector.removeUnit(unit);
         }
@@ -377,6 +409,7 @@ public class AdminPlayerEditService {
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.DELETE_UNIT, unitLabel);
     }
 
     @Transactional
@@ -425,6 +458,8 @@ public class AdminPlayerEditService {
             }
         }
         saveUnitAndStats(player, board, unit);
+        audit(playerId, AdminAuditAction.UPDATE_UNIT,
+                "Unité " + unit.getType() + " n°" + unit.getNumber());
     }
 
     @Transactional
@@ -445,6 +480,7 @@ public class AdminPlayerEditService {
         Sector target = sectorNumber == null
                 ? null
                 : resolveOwnedSector(player, board, sectorNumber, true);
+        String unitLabel = unit.getType() + " n°" + unit.getNumber();
         removeUnitFromPendingOrders(playerId, unitId);
         if (current != null) {
             current.removeUnit(unit);
@@ -456,6 +492,8 @@ public class AdminPlayerEditService {
             target.addUnit(unit);
         }
         saveUnitAndStats(player, board, unit);
+        audit(playerId, AdminAuditAction.MOVE_UNIT,
+                unitLabel + " : " + sectorLabel(currentNumber) + " → " + sectorLabel(sectorNumber));
     }
 
     @Transactional
@@ -487,6 +525,8 @@ public class AdminPlayerEditService {
                     "L'unité ne peut pas équiper « " + equipmentName + " »");
         }
         saveUnitAndStats(player, board, unit);
+        audit(playerId, AdminAuditAction.EQUIP_UNIT,
+                equipmentName + " sur " + unit.getType() + " n°" + unit.getNumber());
     }
 
     @Transactional
@@ -503,6 +543,8 @@ public class AdminPlayerEditService {
         em.remove(row);
         player.incrementEquipmentAvailability(row.getEquipment());
         saveUnitAndStats(player, board, unit);
+        audit(playerId, AdminAuditAction.UNEQUIP_UNIT,
+                equipmentName + " retiré de " + unit.getType() + " n°" + unit.getNumber());
     }
 
     @Transactional
@@ -526,6 +568,8 @@ public class AdminPlayerEditService {
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.ADD_VEHICLES,
+                quantity + " × " + vehicleTypeName + " → " + sectorLabel(sectorNumber));
     }
 
     @Transactional
@@ -545,6 +589,8 @@ public class AdminPlayerEditService {
         VehicleType type = vehicle.getVehicleType();
         vehicle.disembarkAll();
         Sector sector = vehicle.getSector();
+        String vehicleLabel = (type != null ? type.name() : "Véhicule")
+                + " (" + (sector != null ? "secteur " + sector.getNumber() : "réserve") + ")";
         if (sector != null) {
             sector.getVehicles().remove(vehicle);
         }
@@ -555,6 +601,7 @@ public class AdminPlayerEditService {
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.DELETE_VEHICLE, vehicleLabel);
     }
 
     @Transactional
@@ -575,6 +622,8 @@ public class AdminPlayerEditService {
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.ADD_BUILDING,
+                type.name() + " → " + sectorLabel(sectorNumber));
     }
 
     @Transactional
@@ -590,6 +639,8 @@ public class AdminPlayerEditService {
         playerActionService.discardActiveActionsReferencing(
                 playerId, board.getCurrentTurn(), null, null, buildingId, null);
         Sector sector = building.getSector();
+        String buildingLabel = building.getBuildingType() + " ("
+                + (sector != null ? "secteur " + sector.getNumber() : "sans secteur") + ")";
         if (sector != null) {
             sector.getBuildings().remove(building);
         }
@@ -597,6 +648,7 @@ public class AdminPlayerEditService {
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
         playerRepository.save(player);
+        audit(playerId, AdminAuditAction.DELETE_BUILDING, buildingLabel);
     }
 
     private void validateCharacter(AdminCharacterRequestDto request) {
@@ -611,6 +663,14 @@ public class AdminPlayerEditService {
                         "Les statistiques du personnage doivent être positives");
             }
         }
+    }
+
+    private void audit(Long playerId, AdminAuditAction action, String details) {
+        adminAuditService.record(playerId, action, details);
+    }
+
+    private String sectorLabel(Integer number) {
+        return number == null ? "réserve" : "secteur " + number;
     }
 
     private String playerColor(Board board, Long playerId) {

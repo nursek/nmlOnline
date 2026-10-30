@@ -215,6 +215,12 @@ class AdminControllerTransactionBoundaryTest {
     }
 
     @Test
+    void getAuditReturnsOk() throws Exception {
+        mockMvc.perform(get("/api/admin/audit").header("Authorization", bearer(TestDataInitializer.ADMIN)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void getAllExchangesRejectsUnknownStatus() throws Exception {
         mockMvc.perform(get("/api/admin/exchanges").param("status", "INCONNU")
                         .header("Authorization", bearer(TestDataInitializer.ADMIN)))

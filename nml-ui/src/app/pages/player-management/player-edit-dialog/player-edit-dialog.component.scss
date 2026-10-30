@@ -139,3 +139,57 @@
 :host ::ng-deep .mat-mdc-form-field-subscript-wrapper {
   display: none;
 }
+
+.audit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.audit-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.audit-line {
+  display: grid;
+  grid-template-columns: 130px 190px 1fr 120px;
+  gap: 12px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 0.85rem;
+}
+
+.audit-date,
+.audit-admin {
+  color: var(--ink-3);
+}
+
+.audit-date {
+  white-space: nowrap;
+}
+
+.audit-action {
+  font-weight: 600;
+}
+
+.audit-details {
+  overflow-wrap: anywhere;
+}
+
+.audit-admin {
+  text-align: right;
+}
+
+@media (max-width: 700px) {
+  .audit-line {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .audit-admin {
+    text-align: left;
+  }
+}
