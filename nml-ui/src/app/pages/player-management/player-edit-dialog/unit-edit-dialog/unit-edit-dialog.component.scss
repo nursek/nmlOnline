@@ -1,0 +1,67 @@
+:host {
+  display: block;
+}
+
+mat-dialog-content {
+  min-width: min(760px, 90vw);
+}
+
+.block {
+  margin-bottom: 20px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.full-field {
+  width: 100%;
+}
+
+.medium-field {
+  width: 300px;
+}
+
+.small-field {
+  width: 160px;
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.add-row {
+  margin-top: 8px;
+}
+
+.hint {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.85rem;
+}
+
+.hint.warn {
+  color: var(--mat-sys-error);
+}
+
+.empty {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

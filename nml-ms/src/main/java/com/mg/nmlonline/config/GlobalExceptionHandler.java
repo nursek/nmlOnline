@@ -13,8 +13,10 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.stream.Collectors;
 
@@ -111,6 +113,18 @@ public class GlobalExceptionHandler {
                 "La donnée a été modifiée entre-temps : rechargez et réessayez");
         problem.setTitle("Conflit de version");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    @ExceptionHandler({MissingServletRequestParameterException.class,
+            MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ProblemDetail> handleBadRequestParameter(Exception e) {
+        logger.debug("Bad request parameter: {}", e.getMessage());
+        String detail = e instanceof MissingServletRequestParameterException missing
+                ? "Paramètre manquant : " + missing.getParameterName()
+                : "Paramètre invalide : " + ((MethodArgumentTypeMismatchException) e).getName();
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+        problem.setTitle("Bad Request");
+        return ResponseEntity.badRequest().body(problem);
     }
 
     @ExceptionHandler(Exception.class)

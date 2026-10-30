@@ -50,18 +50,20 @@ public class BuildingService {
 
     /** Crée QG + Cache + Banque ; maintient la cohérence bidirectionnelle Player <-> Building. */
     public void createInitialBuildings(Player player) {
-        Headquarters headquarters = new Headquarters(player.getId());
-        headquarters.setPlayer(player);
-        player.getBuildings().add(headquarters);
-        buildingRepository.save(headquarters);
-        WeaponCache weaponCache = new WeaponCache(player.getId());
-        weaponCache.setPlayer(player);
-        player.getBuildings().add(weaponCache);
-        buildingRepository.save(weaponCache);
-        Bank bank = new Bank(player.getId());
-        bank.setPlayer(player);
-        player.getBuildings().add(bank);
-        buildingRepository.save(bank);
+        for (BuildingType type : BuildingType.values()) {
+            buildingRepository.save(createBuilding(player, type));
+        }
+    }
+
+    public Building createBuilding(Player player, BuildingType type) {
+        Building building = switch (type) {
+            case HEADQUARTERS -> new Headquarters(player.getId());
+            case WEAPON_CACHE -> new WeaponCache(player.getId());
+            case BANK -> new Bank(player.getId());
+        };
+        building.setPlayer(player);
+        player.getBuildings().add(building);
+        return building;
     }
 
     public Optional<Headquarters> getHeadquarters(Long playerId) {
@@ -144,6 +146,11 @@ public class BuildingService {
         cache.onCapture(capturingPlayerId, currentTurn);
         // orphanRemoval : un stack sorti du Cache est DELETE au flush, d'où la recréation chez le capturant.
         for (EquipmentStack stack : cache.transferAllEquipments()) {
+            // player_id NOT NULL rattache aussi le stack au joueur : le sortir des deux collections évite un cascade persist.
+            Player owner = stack.getPlayer();
+            if (owner != null) {
+                owner.getEquipments().remove(stack);
+            }
             capturingPlayer.addEquipmentToStack(stack.getEquipment(), stack.getQuantity());
         }
         buildingRepository.save(cache);

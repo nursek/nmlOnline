@@ -2,6 +2,7 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.RankingEntryDto;
 import com.mg.nmlonline.api.dto.RankingsDto;
+import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
@@ -22,12 +23,15 @@ public class RankingService {
     private final PlayerRepository playerRepository;
     private final BoardRepository boardRepository;
     private final PlayerStatsService playerStatsService;
+    private final AdminAuditService adminAuditService;
 
     public RankingService(PlayerRepository playerRepository, BoardRepository boardRepository,
-                          PlayerStatsService playerStatsService) {
+                          PlayerStatsService playerStatsService,
+                          AdminAuditService adminAuditService) {
         this.playerRepository = playerRepository;
         this.boardRepository = boardRepository;
         this.playerStatsService = playerStatsService;
+        this.adminAuditService = adminAuditService;
     }
 
     @Transactional(readOnly = true)
@@ -45,6 +49,8 @@ public class RankingService {
         Player player = playerRepository.findByIdForUpdate(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable"));
         player.setRankingComment(comment == null || comment.isBlank() ? null : comment.trim());
+        adminAuditService.record(playerId, AdminAuditAction.RANKING_COMMENT,
+                "Commentaire de classement mis à jour");
     }
 
     /**

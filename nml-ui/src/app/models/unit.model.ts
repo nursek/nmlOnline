@@ -14,6 +14,8 @@ export interface Unit {
   id: number;
   playerId?: number | null;
   number: number;
+  /** Renseigné par la vue admin (null = réserve). */
+  sectorNumber?: number | null;
   experience: number;
   type: UnitType;
   classes: UnitClass[];

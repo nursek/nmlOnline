@@ -264,6 +264,15 @@
 
                 <div class="actions-row">
                   <button
+                    mat-flat-button
+                    color="primary"
+                    (click)="openEdit(player)"
+                    matTooltip="Modifier l'inventaire, les unités, véhicules et bâtiments"
+                  >
+                    <mat-icon>edit</mat-icon>
+                    Modifier
+                  </button>
+                  <button
                     mat-stroked-button
                     (click)="exportPlayer(player)"
                     matTooltip="Télécharger le JSON du joueur"

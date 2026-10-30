@@ -54,12 +54,11 @@ export class PlayerService {
   }
 
   async loadCurrent(): Promise<void> {
-    const username = this.auth.user()?.username;
-    if (!username) return;
+    if (!this.auth.user()) return;
     this._loading.set(true);
     this._error.set(null);
     try {
-      const player = await firstValueFrom(this.api.getPlayer(username));
+      const player = await firstValueFrom(this.api.getCurrentPlayer());
       this._player.set(player);
     } catch (error) {
       this._error.set(this.messageFor(error, 'Erreur lors de la récupération du joueur'));
@@ -190,8 +189,7 @@ export class PlayerService {
 
   private messageFor(error: unknown, fallback: string): string {
     if ((error as { status?: number })?.status === 404) {
-      const username = this.auth.user()?.username ?? '';
-      return `Aucun profil de joueur trouvé pour "${username}". Créez un joueur avec ce nom dans le jeu.`;
+      return "Aucun profil de joueur n'est lié à ce compte.";
     }
     return httpErrorMessage(error, fallback);
   }

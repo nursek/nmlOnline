@@ -173,6 +173,14 @@ public class PlayerService {
         return Optional.of(playerMapper.toDtoWithSectors(player, board));
     }
 
+    @Transactional(readOnly = true)
+    public Optional<PlayerDto> findByUserIdDto(Long userId) {
+        Player player = playerRepository.findByUserId(userId).orElse(null);
+        if (player == null) return Optional.empty();
+        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        return Optional.of(playerMapper.toDtoWithSectors(player, board));
+    }
+
     @Transactional
     public PlayerDto buyEquipmentsDto(Long playerId, List<BuyEquipmentItemDto> items) {
         Player saved = buyEquipments(playerId, items);

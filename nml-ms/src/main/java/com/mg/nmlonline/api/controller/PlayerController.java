@@ -50,6 +50,17 @@ public class PlayerController {
                 player.getEliminatedByPlayerId());
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<PlayerDto> me(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return playerService.findByUserIdDto(userId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/{name}")
     public ResponseEntity<PlayerDto> findByName(@PathVariable String name, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");

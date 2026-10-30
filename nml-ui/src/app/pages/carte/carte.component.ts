@@ -147,8 +147,9 @@ export class CarteComponent {
   readonly players = this.playerDirectory.players;
   readonly playerColorMap = this.playerDirectory.colorMap;
   readonly myPlayer = computed(() => {
-    const username = this.auth.user()?.username;
-    return username ? (this.players().find((player) => player.name === username) ?? null) : null;
+    const me = this.playerService.player();
+    if (!me) return null;
+    return this.players().find((player) => player.id === me.id) ?? null;
   });
 
   private readonly svgOverlayUrl = computed(() => this.board()?.svgOverlayUrl || null);

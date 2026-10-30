@@ -25,6 +25,7 @@ import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dial
 import { APP_CONSTANTS } from '../../core/constants';
 import { ExpPipe } from '../../shared/exp.pipe';
 import { groupPlayersByRace } from './player-management.helpers';
+import { PlayerEditDialogComponent } from './player-edit-dialog/player-edit-dialog.component';
 
 @Component({
   selector: 'app-player-management',
@@ -138,6 +139,19 @@ export class PlayerManagementComponent {
         void this.admin.deletePlayer(player.id).catch(() => {});
       }
     });
+  }
+
+  openEdit(player: Player): void {
+    if (player.id === null) return;
+    this.dialog
+      .open(PlayerEditDialogComponent, {
+        width: '90vw',
+        maxWidth: '1200px',
+        maxHeight: '92vh',
+        data: { playerId: player.id, playerName: player.name },
+      })
+      .afterClosed()
+      .subscribe(() => this.admin.closeEdit());
   }
 
   getTotalArmySize(player: Player): number {

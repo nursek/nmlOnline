@@ -35,8 +35,19 @@ import {
   AllianceMessage,
   Announcement,
   PendingCapture,
+  AdminAuditEntry,
 } from '../models';
 import { environment } from '../../environments/environment';
+
+export interface AdminCharacterPayload {
+  name: string;
+  baseAttack: number;
+  baseDefense: number;
+  basePdf: number;
+  basePdc: number;
+  baseArmor: number;
+  baseEvasion: number;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -57,6 +68,10 @@ export class ApiService {
 
   getPlayer(username: string): Observable<Player> {
     return this.http.get<Player>(`${this.baseUrl}/players/${username}`);
+  }
+
+  getCurrentPlayer(): Observable<Player> {
+    return this.http.get<Player>(`${this.baseUrl}/players/me`);
   }
 
   sellResourcesBatch(items: SellResourceBatchItem[]): Observable<ResourceBatchSaleResponse> {
@@ -83,10 +98,145 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/admin/players/${id}`);
   }
 
+  adminUpdatePlayerName(playerId: number, name: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/name`, { name });
+  }
+
+  adminCreateCharacter(playerId: number, payload: AdminCharacterPayload): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/character`, payload);
+  }
+
+  adminUpdateCharacter(playerId: number, payload: AdminCharacterPayload): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/character`, payload);
+  }
+
+  adminDeleteCharacter(playerId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/character`);
+  }
+
+  adminReassignSector(sectorNumber: number, playerId: number | null): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/sectors/${sectorNumber}/owner`, {
+      playerId,
+    });
+  }
+
+  adminGetAudit(
+    playerId: number,
+    page: number,
+    size: number,
+  ): Observable<PageResult<AdminAuditEntry>> {
+    return this.http.get<PageResult<AdminAuditEntry>>(`${this.baseUrl}/admin/audit`, {
+      params: { playerId, page, size },
+    });
+  }
+
   adminUpdateRankingComment(playerId: number, comment: string): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/ranking-comment`, {
       comment,
     });
+  }
+
+  adminSetMoney(playerId: number, amount: number): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/money`, { amount });
+  }
+
+  adminAddResource(playerId: number, name: string, quantity: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/resources`, {
+      name,
+      quantity,
+    });
+  }
+
+  adminRemoveResource(playerId: number, name: string, quantity: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/resources`, {
+      params: { name, quantity },
+    });
+  }
+
+  adminAddEquipment(playerId: number, name: string, quantity: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/equipments`, {
+      name,
+      quantity,
+    });
+  }
+
+  adminRemoveEquipment(
+    playerId: number,
+    name: string,
+    quantity: number,
+    includeEquipped: boolean,
+  ): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/equipments`, {
+      params: { name, quantity, includeEquipped: String(includeEquipped) },
+    });
+  }
+
+  adminAddUnits(
+    playerId: number,
+    payload: { type: string; classes: string[]; quantity: number; sectorNumber: number | null },
+  ): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/units`, payload);
+  }
+
+  adminDeleteUnit(playerId: number, unitId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/units/${unitId}`);
+  }
+
+  adminUpdateUnit(
+    playerId: number,
+    unitId: number,
+    payload: { experience: number; classes: string[]; injured: boolean },
+  ): Observable<void> {
+    return this.http.put<void>(
+      `${this.baseUrl}/admin/players/${playerId}/units/${unitId}`,
+      payload,
+    );
+  }
+
+  adminMoveUnit(playerId: number, unitId: number, sectorNumber: number | null): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/units/${unitId}/sector`, {
+      sectorNumber,
+    });
+  }
+
+  adminEquipUnit(playerId: number, unitId: number, name: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.baseUrl}/admin/players/${playerId}/units/${unitId}/equipments`,
+      { name },
+    );
+  }
+
+  adminUnequipUnit(playerId: number, unitId: number, name: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/admin/players/${playerId}/units/${unitId}/equipments`,
+      { params: { name } },
+    );
+  }
+
+  adminAddVehicles(
+    playerId: number,
+    payload: { vehicleType: string; quantity: number; sectorNumber: number | null },
+  ): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/vehicles`, payload);
+  }
+
+  adminDeleteVehicle(playerId: number, vehicleId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/admin/players/${playerId}/vehicles/${vehicleId}`,
+    );
+  }
+
+  adminAddBuilding(
+    playerId: number,
+    payload: { buildingType: string; sectorNumber: number | null },
+  ): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/buildings`, payload);
+  }
+
+  adminDeleteBuilding(playerId: number, buildingId: number): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/admin/players/${playerId}/buildings/${buildingId}`,
+    );
   }
 
   // Board — import en 2 étapes : upload des assets visuels (image + SVG),

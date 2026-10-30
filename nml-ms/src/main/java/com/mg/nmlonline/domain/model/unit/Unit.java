@@ -235,6 +235,11 @@ public class Unit extends CombatEntity {
                 .orElse(1);
     }
 
+    public boolean canHaveTwoClasses() {
+        return type != UnitType.LARBIN && type != UnitType.VOYOU
+                && experience >= MIN_EXPERIENCE_FOR_SECOND_CLASS;
+    }
+
     public boolean canAddSecondClass() {
         long effectiveClassCount = classesSet.size();
         if (type == UnitType.LARBIN || type == UnitType.VOYOU) {
