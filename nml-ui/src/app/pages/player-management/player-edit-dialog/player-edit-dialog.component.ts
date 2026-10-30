@@ -74,6 +74,7 @@ export class PlayerEditDialogComponent {
 
   readonly edit = this.admin.edit;
   readonly catalog = this.admin.catalog;
+  readonly players = this.admin.players;
   readonly loading = this.admin.editLoading;
   readonly busy = signal(false);
 
@@ -98,6 +99,18 @@ export class PlayerEditDialogComponent {
   readonly characterPdc = linkedSignal(() => this.character()?.basePdc ?? 0);
   readonly characterArmor = linkedSignal(() => this.character()?.baseArmor ?? 0);
   readonly characterEvasion = linkedSignal(() => this.character()?.baseEvasion ?? 0);
+
+  readonly sectorToReassign = linkedSignal(() => this.ownedSectors()[0]?.number ?? null);
+  readonly sectorTarget = linkedSignal<number | null>(() => null);
+  readonly sectorTargets = computed(() =>
+    this.players().filter(
+      (candidate) =>
+        candidate.id !== null && candidate.id !== this.data.playerId && !candidate.eliminated,
+    ),
+  );
+  readonly selectedSector = computed(
+    () => this.ownedSectors().find((sector) => sector.number === this.sectorToReassign()) ?? null,
+  );
 
   readonly money = signal<number | null>(null);
   readonly moneyValue = computed(() => this.money() ?? this.player()?.stats.money ?? 0);
@@ -365,6 +378,30 @@ export class PlayerEditDialogComponent {
     });
     if (!confirmed) return;
     await this.run(this.api.adminDeleteCharacter(this.data.playerId), 'Personnage supprimé');
+  }
+
+  async reassignSector(): Promise<void> {
+    const sector = this.selectedSector();
+    if (!sector || sector.number === null) return;
+    const target = this.sectorTargets().find((candidate) => candidate.id === this.sectorTarget());
+    const targetLabel = target?.name ?? 'neutre';
+    const entities = [
+      sector.army?.length ? `${sector.army.length} unité(s)` : '',
+      sector.vehicles?.length ? `${sector.vehicles.length} véhicule(s)` : '',
+      sector.buildings?.length ? `${sector.buildings.length} bâtiment(s)` : '',
+      sector.character ? '1 personnage' : '',
+    ].filter(Boolean);
+    const entityLabel = entities.length > 0 ? entities.join(', ') : 'aucune entité';
+    const confirmed = await this.confirm({
+      title: 'Réassigner le secteur',
+      message: `Réassigner ${sector.name} (#${sector.number}) à ${targetLabel} ? Les entités présentes (${entityLabel}) restent sur place et pourront recapturer le secteur.`,
+      confirmLabel: 'Réassigner',
+    });
+    if (!confirmed) return;
+    await this.run(
+      this.api.adminReassignSector(sector.number, this.sectorTarget()),
+      'Secteur réassigné',
+    );
   }
 
   openUnitEdit(unit: Unit): void {

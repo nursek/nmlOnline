@@ -617,6 +617,54 @@
           </section>
         </div>
       </mat-tab>
+
+      <mat-tab label="Secteurs ({{ ownedSectors().length }})">
+        <div class="tab-body">
+          <section class="block">
+            <h3>Réassigner un secteur</h3>
+            @if (ownedSectors().length === 0) {
+              <p class="empty">Aucun secteur possédé.</p>
+            } @else {
+              <div class="row">
+                <mat-form-field appearance="outline" class="medium-field">
+                  <mat-label>Secteur</mat-label>
+                  <mat-select
+                    [value]="sectorToReassign()"
+                    (selectionChange)="sectorToReassign.set($event.value)"
+                  >
+                    @for (sector of ownedSectors(); track sector.number) {
+                      <mat-option [value]="sector.number">
+                        {{ sector.name }} (#{{ sector.number }})
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="medium-field">
+                  <mat-label>Nouveau propriétaire</mat-label>
+                  <mat-select
+                    [value]="sectorTarget()"
+                    (selectionChange)="sectorTarget.set($event.value)"
+                    [canSelectNullableOptions]="true"
+                  >
+                    <mat-option [value]="null">Neutre</mat-option>
+                    @for (target of sectorTargets(); track target.id) {
+                      <mat-option [value]="target.id">{{ target.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <button
+                  mat-flat-button
+                  color="primary"
+                  (click)="reassignSector()"
+                  [disabled]="busy() || sectorToReassign() === null"
+                >
+                  Réassigner
+                </button>
+              </div>
+            }
+          </section>
+        </div>
+      </mat-tab>
     </mat-tab-group>
   } @else {
     <p class="empty">Impossible de charger ce joueur.</p>

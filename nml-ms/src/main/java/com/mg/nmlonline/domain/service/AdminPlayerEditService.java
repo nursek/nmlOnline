@@ -24,6 +24,7 @@ import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
+import com.mg.nmlonline.infrastructure.repository.PendingCaptureRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.UnitRepository;
@@ -59,6 +60,7 @@ public class AdminPlayerEditService {
     private final BuildingRepository buildingRepository;
     private final MovementOrderRepository movementOrderRepository;
     private final PlayerActionService playerActionService;
+    private final PendingCaptureRepository pendingCaptureRepository;
     private final ResourceRepository resourceRepository;
     private final EquipmentService equipmentService;
     private final BuildingService buildingService;
@@ -77,6 +79,7 @@ public class AdminPlayerEditService {
                                   BuildingRepository buildingRepository,
                                   MovementOrderRepository movementOrderRepository,
                                   PlayerActionService playerActionService,
+                                  PendingCaptureRepository pendingCaptureRepository,
                                   ResourceRepository resourceRepository,
                                   EquipmentService equipmentService,
                                   BuildingService buildingService,
@@ -94,6 +97,7 @@ public class AdminPlayerEditService {
         this.buildingRepository = buildingRepository;
         this.movementOrderRepository = movementOrderRepository;
         this.playerActionService = playerActionService;
+        this.pendingCaptureRepository = pendingCaptureRepository;
         this.resourceRepository = resourceRepository;
         this.equipmentService = equipmentService;
         this.buildingService = buildingService;
@@ -195,6 +199,49 @@ public class AdminPlayerEditService {
         requireTurnOpen();
         lockPlayer(playerId);
         gameCharacterService.deleteCharacter(playerId);
+    }
+
+    @Transactional
+    public void reassignSector(int sectorNumber, Long targetPlayerId) {
+        requireTurnOpen();
+        Board board = activeBoard();
+        Sector sector = board.getSector(sectorNumber);
+        if (sector == null) {
+            throw new EntityNotFoundException("Secteur introuvable : " + sectorNumber);
+        }
+        Long currentOwnerId = sector.getOwnerId();
+        if (Objects.equals(currentOwnerId, targetPlayerId)) {
+            return;
+        }
+        if (pendingCaptureRepository.existsByBoardIdAndSectorNumberAndTurnAndResolvedFalse(
+                board.getId(), sectorNumber, board.getCurrentTurn())) {
+            throw new IllegalArgumentException("Une capture est en attente sur ce secteur");
+        }
+        List<Long> ids = new ArrayList<>();
+        if (currentOwnerId != null) ids.add(currentOwnerId);
+        if (targetPlayerId != null) ids.add(targetPlayerId);
+        ids = ids.stream().distinct().sorted().toList();
+        Player current = null;
+        Player target = null;
+        for (Long id : ids) {
+            Player locked = lockPlayer(id);
+            if (id.equals(currentOwnerId)) current = locked;
+            if (id.equals(targetPlayerId)) target = locked;
+        }
+        if (target != null && target.isEliminated()) {
+            throw new IllegalArgumentException(
+                    "Impossible de céder un secteur à un joueur éliminé");
+        }
+        String color = target == null ? "#ffffff" : playerColor(board, target.getId());
+        sector.setOwnerAndColor(targetPlayerId, color);
+        sector.recalculateMilitaryPower();
+        if (current != null) {
+            playerStatsService.recalculateStats(current, board);
+        }
+        if (target != null) {
+            playerStatsService.recalculateStats(target, board);
+        }
+        boardService.save(board);
     }
 
     @Transactional
@@ -564,6 +611,14 @@ public class AdminPlayerEditService {
                         "Les statistiques du personnage doivent être positives");
             }
         }
+    }
+
+    private String playerColor(Board board, Long playerId) {
+        return board.getSectorsByOwner(playerId).stream()
+                .map(Sector::getColor)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse("#ffffff");
     }
 
     private String normalizeName(String name) {

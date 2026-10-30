@@ -7,6 +7,7 @@ import com.mg.nmlonline.api.dto.AdminItemQuantityRequestDto;
 import com.mg.nmlonline.api.dto.AdminMoneyRequestDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
 import com.mg.nmlonline.api.dto.AdminPlayerNameRequestDto;
+import com.mg.nmlonline.api.dto.AdminSectorOwnerRequestDto;
 import com.mg.nmlonline.api.dto.AdminUnitCreateRequestDto;
 import com.mg.nmlonline.api.dto.AdminUnitEquipRequestDto;
 import com.mg.nmlonline.api.dto.AdminUnitMoveRequestDto;
@@ -63,6 +64,13 @@ public class AdminPlayerEditController {
     @DeleteMapping("/players/{id}/character")
     public ResponseEntity<Void> deleteCharacter(@PathVariable Long id) {
         adminPlayerEditService.deleteCharacter(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/sectors/{sectorNumber}/owner")
+    public ResponseEntity<Void> reassignSector(@PathVariable int sectorNumber,
+                                               @RequestBody AdminSectorOwnerRequestDto request) {
+        adminPlayerEditService.reassignSector(sectorNumber, request.getPlayerId());
         return ResponseEntity.noContent().build();
     }
 

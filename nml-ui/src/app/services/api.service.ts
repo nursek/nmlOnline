@@ -109,6 +109,12 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/character`);
   }
 
+  adminReassignSector(sectorNumber: number, playerId: number | null): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/sectors/${sectorNumber}/owner`, {
+      playerId,
+    });
+  }
+
   adminUpdateRankingComment(playerId: number, comment: string): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/ranking-comment`, {
       comment,

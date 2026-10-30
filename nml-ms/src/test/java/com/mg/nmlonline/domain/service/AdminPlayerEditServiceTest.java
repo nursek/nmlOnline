@@ -9,6 +9,7 @@ import com.mg.nmlonline.api.dto.BuildingDto;
 import com.mg.nmlonline.api.dto.UnitDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.alliance.PendingCapture;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.action.PlayerAction;
@@ -28,6 +29,7 @@ import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
+import com.mg.nmlonline.infrastructure.repository.PendingCaptureRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerActionRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.UnitRepository;
@@ -80,6 +82,9 @@ class AdminPlayerEditServiceTest {
 
     @Autowired
     private PlayerActionRepository playerActionRepository;
+
+    @Autowired
+    private PendingCaptureRepository pendingCaptureRepository;
 
     @Autowired
     private TurnLock turnLock;
@@ -817,6 +822,50 @@ class AdminPlayerEditServiceTest {
 
         assertNotNull(player.getCharacter());
         assertEquals("Lurio-Recreated", player.getCharacter().getName());
+    }
+
+    @Test
+    @DisplayName("Secteur : réassignation à un joueur puis neutralisation")
+    void reassignSectorMovesOwnerAndStats() {
+        Player target = playerRepository.findByName("cegorach").orElseThrow();
+        service.reassignSector(41, target.getId());
+        entityManager.flush();
+
+        Sector sector = board.getSector(41);
+        assertEquals(target.getId(), sector.getOwnerId());
+        assertNotNull(sector.getColor());
+        assertTrue(board.getSectorsByOwner(target.getId()).contains(sector));
+        assertFalse(board.getSectorsByOwner(player.getId()).contains(sector));
+
+        service.reassignSector(41, null);
+        entityManager.flush();
+        assertNull(sector.getOwnerId());
+        assertEquals("#ffffff", sector.getColor());
+    }
+
+    @Test
+    @DisplayName("Secteur : réassignation refusée si une capture est en attente")
+    void reassignSectorRejectsPendingCapture() {
+        PendingCapture pending = PendingCapture.create(
+                board.getId(), 41, board.getCurrentTurn(), List.of(player.getId()));
+        pendingCaptureRepository.save(pending);
+        entityManager.flush();
+        Player target = playerRepository.findByName("cegorach").orElseThrow();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.reassignSector(41, target.getId()));
+    }
+
+    @Test
+    @DisplayName("Secteur : réassignation refusée vers un joueur éliminé")
+    void reassignSectorRejectsEliminatedTarget() {
+        Player target = playerRepository.findByName("cegorach").orElseThrow();
+        target.setEliminated(true);
+        playerRepository.save(target);
+        entityManager.flush();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.reassignSector(41, target.getId()));
     }
 
     @Test

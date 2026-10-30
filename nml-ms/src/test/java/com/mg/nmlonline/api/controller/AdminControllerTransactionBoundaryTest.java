@@ -168,6 +168,17 @@ class AdminControllerTransactionBoundaryTest {
     }
 
     @Test
+    @Transactional
+    void reassignSectorReturns204() throws Exception {
+        Long targetId = playerRepository.findByName("cegorach").orElseThrow().getId();
+        mockMvc.perform(put("/api/admin/sectors/{sectorNumber}/owner", 41)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"playerId\":" + targetId + "}")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
     void addUnitsRejectsTooManyClasses() throws Exception {
         Long playerId = playerRepository.findByName("lurio").orElseThrow().getId();
         mockMvc.perform(post("/api/admin/players/{id}/units", playerId)
