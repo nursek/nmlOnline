@@ -70,6 +70,10 @@ export class ApiService {
     return this.http.get<Player>(`${this.baseUrl}/players/${username}`);
   }
 
+  getCurrentPlayer(): Observable<Player> {
+    return this.http.get<Player>(`${this.baseUrl}/players/me`);
+  }
+
   sellResourcesBatch(items: SellResourceBatchItem[]): Observable<ResourceBatchSaleResponse> {
     return this.http.post<ResourceBatchSaleResponse>(
       `${this.baseUrl}/players/resources/sell-batch`,

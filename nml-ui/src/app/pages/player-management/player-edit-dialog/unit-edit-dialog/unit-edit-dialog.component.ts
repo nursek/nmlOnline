@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   linkedSignal,
   signal,
@@ -68,12 +69,11 @@ export class UnitEditDialogComponent {
   readonly equipmentCatalog = computed(() => this.catalog()?.equipments ?? []);
   readonly unitClassCatalog = computed(() => this.catalog()?.unitClasses ?? []);
 
-  readonly experience = linkedSignal(() => this.unit()?.experience ?? 0);
-  readonly classes = linkedSignal(
-    () => this.unit()?.classes.map((unitClass) => unitClass.name) ?? [],
-  );
-  readonly injured = linkedSignal(() => this.unit()?.isInjured ?? false);
-  readonly sectorChoice = linkedSignal<number | null>(() => this.unit()?.sectorNumber ?? null);
+  readonly experience = signal(0);
+  readonly classes = signal<string[]>([]);
+  readonly injured = signal(false);
+  readonly sectorChoice = signal<number | null>(null);
+  private formInitialized = false;
 
   readonly embedded = computed(() =>
     (this.edit()?.vehicles ?? []).some(
@@ -115,6 +115,18 @@ export class UnitEditDialogComponent {
       )
       .map((equipment) => equipment.name);
   });
+
+  constructor() {
+    effect(() => {
+      const unit = this.unit();
+      if (!unit || this.formInitialized) return;
+      this.experience.set(unit.experience);
+      this.classes.set(unit.classes.map((unitClass) => unitClass.name));
+      this.injured.set(unit.isInjured);
+      this.sectorChoice.set(unit.sectorNumber ?? null);
+      this.formInitialized = true;
+    });
+  }
 
   unitLabel(unit: Unit | null): string {
     if (!unit) return 'Unité';

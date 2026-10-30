@@ -869,6 +869,88 @@ class AdminPlayerEditServiceTest {
     }
 
     @Test
+    @DisplayName("Unité : l'ajout refuse deux classes à un LARBIN")
+    void addUnitsRejectsTwoClassesForLarbin() {
+        int before = unitRepository.findByPlayerId(player.getId()).size();
+        assertThrows(IllegalArgumentException.class,
+                () -> service.addUnits(player.getId(), "LARBIN",
+                        List.of("LEGER", "TIREUR"), 1, 41));
+        assertEquals(before, unitRepository.findByPlayerId(player.getId()).size());
+    }
+
+    @Test
+    @DisplayName("Personnage : la mise à jour recalcule le secteur et les stats du joueur")
+    void updateCharacterRecalculatesSectorAndPlayerStats() {
+        GameCharacter character = player.getCharacter();
+        assertNotNull(character);
+        Sector sector = character.getSector();
+        if (sector == null) {
+            service.updateCharacter(player.getId(), characterRequest(
+                    character.getName(), 120, 80, 40, 30, 20, 10));
+            entityManager.flush();
+            character = player.getCharacter();
+            sector = character.getSector();
+        }
+        assertNotNull(sector);
+        double playerAtkBefore = player.getStats().getTotalAtk();
+        double sectorAtkBefore = sector.getStats().getTotalAtk();
+
+        service.updateCharacter(player.getId(), characterRequest(
+                character.getName(), 500, 80, 40, 30, 20, 10));
+        entityManager.flush();
+
+        assertEquals(500, character.getAttack(), 0.001);
+        assertTrue(player.getStats().getTotalAtk() > playerAtkBefore);
+        assertTrue(sector.getStats().getTotalAtk() > sectorAtkBefore);
+    }
+
+    @Test
+    @DisplayName("Personnage : suppression d'un ordre PENDING et recréation dans un secteur")
+    void deleteCharacterCleansOrderAndCreatesInSector() {
+        GameCharacter character = player.getCharacter();
+        assertNotNull(character);
+        assertNotNull(character.getSector());
+        int sectorNumber = character.getSector().getNumber();
+        int targetNumber = character.getSector().getNeighbors().getFirst();
+        MovementOrder order = movementService.placeFootOrder(player.getId(),
+                board.getCurrentTurn(), List.of(character.getId()),
+                List.of(sectorNumber, targetNumber), board);
+
+        service.deleteCharacter(player.getId());
+        entityManager.flush();
+
+        assertEquals(MovementStatus.CANCELLED, order.getStatus());
+        assertNull(player.getCharacter());
+
+        service.createCharacter(player.getId(), characterRequest(
+                "Lurio-Recreated", 10, 20, 30, 40, 50, 60));
+        entityManager.flush();
+
+        GameCharacter recreated = player.getCharacter();
+        assertNotNull(recreated);
+        assertNotNull(recreated.getSector());
+        assertEquals(10, recreated.getAttack(), 0.001);
+        assertEquals(20, recreated.getDefense(), 0.001);
+        assertEquals(30, recreated.getPdf(), 0.001);
+        assertEquals(40, recreated.getPdc(), 0.001);
+        assertEquals(50, recreated.getArmor(), 0.001);
+        assertEquals(60, recreated.getEvasion(), 0.001);
+    }
+
+    @Test
+    @DisplayName("Secteur : une capture en attente d'un tour antérieur bloque la réassignation")
+    void reassignSectorRejectsStalePendingCapture() {
+        PendingCapture pending = PendingCapture.create(
+                board.getId(), 41, board.getCurrentTurn() - 1, List.of(player.getId()));
+        pendingCaptureRepository.save(pending);
+        entityManager.flush();
+        Player target = playerRepository.findByName("cegorach").orElseThrow();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.reassignSector(41, target.getId()));
+    }
+
+    @Test
     @DisplayName("Le catalogue et la vue d'édition ne dépendent pas de la session HTTP (mapping en transaction)")
     void dtoMappingSurvivesWithoutOpenSessionInView() {
         AdminPlayerEditDto dto = service.getEdit(player.getId());

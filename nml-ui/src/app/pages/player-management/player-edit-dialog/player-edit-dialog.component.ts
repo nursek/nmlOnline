@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   linkedSignal,
   signal,
@@ -32,6 +33,7 @@ import {
   EquipmentStack,
   PlayerResource,
   Unit,
+  UnitClass,
   Vehicle,
 } from '../../../models';
 import { AdminService } from '../../../services/admin.service';
@@ -92,18 +94,20 @@ export class PlayerEditDialogComponent {
   readonly unitClassCatalog = computed(() => this.catalog()?.unitClasses ?? []);
   readonly vehicleTypes = computed(() => this.catalog()?.vehicleTypes ?? []);
 
-  readonly playerName = linkedSignal(() => this.player()?.name ?? '');
+  readonly playerName = signal('');
   readonly character = computed(() => this.player()?.character ?? null);
-  readonly characterName = linkedSignal(() => this.character()?.name ?? '');
-  readonly characterAttack = linkedSignal(() => this.character()?.baseAttack ?? 0);
-  readonly characterDefense = linkedSignal(() => this.character()?.baseDefense ?? 0);
-  readonly characterPdf = linkedSignal(() => this.character()?.basePdf ?? 0);
-  readonly characterPdc = linkedSignal(() => this.character()?.basePdc ?? 0);
-  readonly characterArmor = linkedSignal(() => this.character()?.baseArmor ?? 0);
-  readonly characterEvasion = linkedSignal(() => this.character()?.baseEvasion ?? 0);
+  readonly characterName = signal('');
+  readonly characterAttack = signal(0);
+  readonly characterDefense = signal(0);
+  readonly characterPdf = signal(0);
+  readonly characterPdc = signal(0);
+  readonly characterArmor = signal(0);
+  readonly characterEvasion = signal(0);
+  private formInitialized = false;
 
   readonly auditEntries = signal<AdminAuditEntry[]>([]);
   readonly auditLoading = signal(false);
+  readonly auditError = signal(false);
   readonly auditTotal = signal(0);
   readonly auditPage = signal(0);
   readonly auditActionLabels: Record<string, string> = {
@@ -133,7 +137,11 @@ export class PlayerEditDialogComponent {
     RANKING_COMMENT: 'Commentaire de classement',
   };
 
-  readonly sectorToReassign = linkedSignal(() => this.ownedSectors()[0]?.number ?? null);
+  private readonly sectorChoice = signal<number | null | undefined>(undefined);
+  readonly sectorToReassign = computed(() => {
+    const choice = this.sectorChoice();
+    return choice === undefined ? (this.ownedSectors()[0]?.number ?? null) : choice;
+  });
   readonly sectorTarget = linkedSignal<number | null>(() => null);
   readonly sectorTargets = computed(() =>
     this.players().filter(
@@ -160,6 +168,13 @@ export class PlayerEditDialogComponent {
   readonly unitClasses = linkedSignal(() => {
     const first = this.unitClassCatalog()[0]?.name;
     return first ? [first] : [];
+  });
+  readonly selectedAddUnitType = computed(
+    () => this.unitTypes().find((type) => type.name === this.unitType()) ?? null,
+  );
+  readonly canAddSecondClassToNewUnit = computed(() => {
+    const type = this.selectedAddUnitType();
+    return !!type && type.name !== 'LARBIN' && type.name !== 'VOYOU' && type.minExp >= 5;
   });
   readonly unitQuantity = signal(1);
   private readonly unitSectorChoice = signal<number | null | undefined>(undefined);
@@ -192,6 +207,13 @@ export class PlayerEditDialogComponent {
 
   constructor() {
     this.admin.openEdit(this.data.playerId);
+    effect(() => {
+      const player = this.player();
+      if (!player || this.formInitialized) return;
+      this.playerName.set(player.name);
+      this.seedCharacterForm();
+      this.formInitialized = true;
+    });
     void this.loadAudit();
   }
 
@@ -245,6 +267,19 @@ export class PlayerEditDialogComponent {
 
   setUnitClasses(values: string[]): void {
     this.unitClasses.set(values.slice(0, 2));
+  }
+
+  setUnitType(name: string): void {
+    this.unitType.set(name);
+    if (!this.canAddSecondClassToNewUnit() && this.unitClasses().length > 1) {
+      this.unitClasses.set(this.unitClasses().slice(0, 1));
+    }
+  }
+
+  isAddClassDisabled(unitClass: UnitClass): boolean {
+    if (this.unitClasses().includes(unitClass.name)) return false;
+    if (this.unitClasses().length >= 2) return true;
+    return this.unitClasses().length === 1 && !this.canAddSecondClassToNewUnit();
   }
 
   setUnitSector(value: number | null): void {
@@ -411,12 +446,19 @@ export class PlayerEditDialogComponent {
       confirmLabel: 'Supprimer',
     });
     if (!confirmed) return;
-    await this.run(this.api.adminDeleteCharacter(this.data.playerId), 'Personnage supprimé');
+    const done = await this.run(
+      this.api.adminDeleteCharacter(this.data.playerId),
+      'Personnage supprimé',
+    );
+    if (done) {
+      this.resetCharacterForm();
+    }
   }
 
   async loadAudit(page = 0, append = false): Promise<void> {
     if (this.auditLoading()) return;
     this.auditLoading.set(true);
+    this.auditError.set(false);
     try {
       const result = await firstValueFrom(this.api.adminGetAudit(this.data.playerId, page, 20));
       this.auditEntries.set(append ? [...this.auditEntries(), ...result.content] : result.content);
@@ -424,6 +466,7 @@ export class PlayerEditDialogComponent {
       this.auditPage.set(page);
     } catch {
       // Historique indisponible : la fiche reste utilisable.
+      this.auditError.set(true);
     } finally {
       this.auditLoading.set(false);
     }
@@ -455,10 +498,39 @@ export class PlayerEditDialogComponent {
       confirmLabel: 'Réassigner',
     });
     if (!confirmed) return;
-    await this.run(
+    const done = await this.run(
       this.api.adminReassignSector(sector.number, this.sectorTarget()),
       'Secteur réassigné',
     );
+    if (done) {
+      this.sectorChoice.set(undefined);
+      this.sectorTarget.set(null);
+    }
+  }
+
+  setSectorToReassign(value: number | null): void {
+    this.sectorChoice.set(value);
+  }
+
+  private seedCharacterForm(): void {
+    const character = this.character();
+    this.characterName.set(character?.name ?? '');
+    this.characterAttack.set(character?.baseAttack ?? 0);
+    this.characterDefense.set(character?.baseDefense ?? 0);
+    this.characterPdf.set(character?.basePdf ?? 0);
+    this.characterPdc.set(character?.basePdc ?? 0);
+    this.characterArmor.set(character?.baseArmor ?? 0);
+    this.characterEvasion.set(character?.baseEvasion ?? 0);
+  }
+
+  private resetCharacterForm(): void {
+    this.characterName.set('');
+    this.characterAttack.set(0);
+    this.characterDefense.set(0);
+    this.characterPdf.set(0);
+    this.characterPdc.set(0);
+    this.characterArmor.set(0);
+    this.characterEvasion.set(0);
   }
 
   openUnitEdit(unit: Unit): void {

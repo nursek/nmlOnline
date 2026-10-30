@@ -199,4 +199,27 @@ class AdminServiceTest {
 
         verify(userRepository, never()).delete(any());
     }
+
+    @Test
+    @DisplayName("deletePlayer + user lié par userId → supprime le bon compte")
+    void shouldDeleteUserByUserId() {
+        Long playerId = 42L;
+        Player player = newPlayer();
+        player.setId(playerId);
+        player.setUserId(9L);
+
+        User user = new User();
+        user.setId(9L);
+        user.setUsername("ancien-nom");
+        user.setRole("USER");
+
+        when(playerService.findById(playerId)).thenReturn(java.util.Optional.of(player));
+        when(playerService.delete(playerId)).thenReturn(true);
+        when(userRepository.findById(9L)).thenReturn(java.util.Optional.of(user));
+
+        adminService.deletePlayer(playerId);
+
+        verify(userRepository).delete(user);
+        verify(userRepository, never()).findByUsername(any());
+    }
 }

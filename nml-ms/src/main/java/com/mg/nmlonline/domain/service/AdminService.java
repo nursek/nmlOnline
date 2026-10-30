@@ -257,7 +257,9 @@ public class AdminService {
         if (!playerService.delete(playerId)) {
             throw new IllegalArgumentException("Joueur introuvable avec l'ID " + playerId);
         }
-        User user = userRepository.findByUsername(name);
+        User user = player.getUserId() != null
+                ? userRepository.findById(player.getUserId()).orElse(null)
+                : userRepository.findByUsername(name);
         if (user != null && !"ADMIN".equals(user.getRole())) {
             userRepository.delete(user);
         }

@@ -179,6 +179,22 @@ class AdminControllerTransactionBoundaryTest {
     }
 
     @Test
+    @Transactional
+    void currentPlayerFollowsRenameByUserId() throws Exception {
+        Long playerId = playerRepository.findByName("TestPlayer1").orElseThrow().getId();
+        mockMvc.perform(put("/api/admin/players/{id}/name", playerId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"TestPlayer1-renamed\"}")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/players/me")
+                        .header("Authorization", bearer(TestDataInitializer.USER_1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("TestPlayer1-renamed"));
+    }
+
+    @Test
     void addUnitsRejectsTooManyClasses() throws Exception {
         Long playerId = playerRepository.findByName("lurio").orElseThrow().getId();
         mockMvc.perform(post("/api/admin/players/{id}/units", playerId)

@@ -2,6 +2,7 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.GameCharacterDto;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.infrastructure.repository.GameCharacterRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
@@ -63,6 +64,16 @@ public class GameCharacterService {
 
     public Optional<GameCharacter> getCharacterByName(String name) {
         return characterRepository.findByName(name);
+    }
+
+    public void placeInSector(Long playerId, Sector sector) {
+        GameCharacter character = characterRepository.findByPlayerId(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Le joueur n'a pas de personnage"));
+        character.setSector(sector);
+        if (sector != null && !sector.getCharacters().contains(character)) {
+            sector.getCharacters().add(character);
+        }
+        characterRepository.save(character);
     }
 
     public void updateCharacter(Long playerId, String name,

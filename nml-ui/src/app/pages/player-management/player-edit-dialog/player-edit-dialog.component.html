@@ -379,7 +379,7 @@
             <div class="row add-row">
               <mat-form-field appearance="outline" class="medium-field">
                 <mat-label>Type</mat-label>
-                <mat-select [value]="unitType()" (selectionChange)="unitType.set($event.value)">
+                <mat-select [value]="unitType()" (selectionChange)="setUnitType($event.value)">
                   @for (type of unitTypes(); track type.name) {
                     <mat-option [value]="type.name">{{ type.name }}</mat-option>
                   }
@@ -393,12 +393,7 @@
                   (selectionChange)="setUnitClasses($event.value)"
                 >
                   @for (unitClass of unitClassCatalog(); track unitClass.name) {
-                    <mat-option
-                      [value]="unitClass.name"
-                      [disabled]="
-                        unitClasses().length >= 2 && !unitClasses().includes(unitClass.name)
-                      "
-                    >
+                    <mat-option [value]="unitClass.name" [disabled]="isAddClassDisabled(unitClass)">
                       {{ unitClass.name }} ({{ unitClass.code }})
                     </mat-option>
                   }
@@ -630,7 +625,7 @@
                   <mat-label>Secteur</mat-label>
                   <mat-select
                     [value]="sectorToReassign()"
-                    (selectionChange)="sectorToReassign.set($event.value)"
+                    (selectionChange)="setSectorToReassign($event.value)"
                   >
                     @for (sector of ownedSectors(); track sector.number) {
                       <mat-option [value]="sector.number">
@@ -678,7 +673,14 @@
                 Actualiser
               </button>
             </div>
-            @if (auditEntries().length === 0 && !auditLoading()) {
+            @if (auditError()) {
+              <p class="empty">
+                Historique indisponible.
+                <button mat-button (click)="loadAudit()" [disabled]="auditLoading()">
+                  Réessayer
+                </button>
+              </p>
+            } @else if (auditEntries().length === 0 && !auditLoading()) {
               <p class="empty">Aucune modification enregistrée.</p>
             } @else {
               <div class="audit-lines">

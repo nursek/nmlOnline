@@ -17,6 +17,7 @@ import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.unit.UnitEquipment;
@@ -187,11 +188,17 @@ public class AdminPlayerEditService {
     @Transactional
     public void updateCharacter(Long playerId, AdminCharacterRequestDto request) {
         requireTurnOpen();
-        lockPlayer(playerId);
+        Player player = lockPlayer(playerId);
+        Board board = activeBoard();
         validateCharacter(request);
         gameCharacterService.updateCharacter(playerId, request.getName().trim(),
                 request.getBaseAttack(), request.getBasePdf(), request.getBasePdc(),
                 request.getBaseDefense(), request.getBaseArmor(), request.getBaseEvasion());
+        GameCharacter character = gameCharacterService.getCharacter(playerId).orElseThrow();
+        if (character.getSector() == null) {
+            gameCharacterService.placeInSector(playerId, resolveCharacterSector(player, board));
+        }
+        recalculateCharacterStats(player, board, character);
         audit(playerId, AdminAuditAction.CHARACTER_UPDATE,
                 "Personnage : " + request.getName().trim());
     }
@@ -199,11 +206,16 @@ public class AdminPlayerEditService {
     @Transactional
     public void createCharacter(Long playerId, AdminCharacterRequestDto request) {
         requireTurnOpen();
-        lockPlayer(playerId);
+        Player player = lockPlayer(playerId);
+        Board board = activeBoard();
         validateCharacter(request);
+        Sector sector = resolveCharacterSector(player, board);
         gameCharacterService.createCharacter(playerId, request.getName().trim(),
                 request.getBaseAttack(), request.getBasePdf(), request.getBasePdc(),
                 request.getBaseDefense(), request.getBaseArmor(), request.getBaseEvasion());
+        gameCharacterService.placeInSector(playerId, sector);
+        GameCharacter character = gameCharacterService.getCharacter(playerId).orElseThrow();
+        recalculateCharacterStats(player, board, character);
         audit(playerId, AdminAuditAction.CHARACTER_CREATE,
                 "Personnage : " + request.getName().trim());
     }
@@ -212,10 +224,18 @@ public class AdminPlayerEditService {
     public void deleteCharacter(Long playerId) {
         requireTurnOpen();
         Player player = lockPlayer(playerId);
-        String characterName = player.getCharacter() != null
-                ? player.getCharacter().getName()
-                : "personnage";
+        Board board = activeBoard();
+        GameCharacter character = gameCharacterService.getCharacter(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Le joueur n'a pas de personnage"));
+        String characterName = character.getName();
+        Sector sector = character.getSector();
+        removeEntityFromPendingOrders(playerId, character.getId());
         gameCharacterService.deleteCharacter(playerId);
+        if (sector != null) {
+            sector.recalculateMilitaryPower();
+        }
+        playerStatsService.recalculateStats(player, board);
+        boardService.save(board);
         audit(playerId, AdminAuditAction.CHARACTER_DELETE, "Personnage : " + characterName);
     }
 
@@ -231,8 +251,8 @@ public class AdminPlayerEditService {
         if (Objects.equals(currentOwnerId, targetPlayerId)) {
             return;
         }
-        if (pendingCaptureRepository.existsByBoardIdAndSectorNumberAndTurnAndResolvedFalse(
-                board.getId(), sectorNumber, board.getCurrentTurn())) {
+        if (pendingCaptureRepository.existsByBoardIdAndSectorNumberAndResolvedFalse(
+                board.getId(), sectorNumber)) {
             throw new IllegalArgumentException("Une capture est en attente sur ce secteur");
         }
         List<Long> ids = new ArrayList<>();
@@ -365,6 +385,10 @@ public class AdminPlayerEditService {
         Sector sector = resolveOwnedSector(player, board, sectorNumber, false);
         for (int i = 0; i < quantity; i++) {
             Unit unit = new Unit(type.getMinExp(), classes.getFirst());
+            if (classes.size() > 1 && !unit.canHaveTwoClasses()) {
+                throw new IllegalArgumentException(
+                        "Une unité " + type + " ne peut pas avoir deux classes");
+            }
             if (classes.size() > 1) {
                 unit.setClasses(classes);
             }
@@ -394,7 +418,7 @@ public class AdminPlayerEditService {
         }
         playerActionService.discardActiveActionsReferencing(
                 playerId, board.getCurrentTurn(), unitId, null, null, null);
-        removeUnitFromPendingOrders(playerId, unitId);
+        removeEntityFromPendingOrders(playerId, unitId);
         for (UnitEquipment row : new ArrayList<>(unit.getUnitEquipments())) {
             player.incrementEquipmentAvailability(row.getEquipment());
         }
@@ -481,7 +505,7 @@ public class AdminPlayerEditService {
                 ? null
                 : resolveOwnedSector(player, board, sectorNumber, true);
         String unitLabel = unit.getType() + " n°" + unit.getNumber();
-        removeUnitFromPendingOrders(playerId, unitId);
+        removeEntityFromPendingOrders(playerId, unitId);
         if (current != null) {
             current.removeUnit(unit);
         }
@@ -735,16 +759,35 @@ public class AdminPlayerEditService {
         playerRepository.save(player);
     }
 
-    private void removeUnitFromPendingOrders(Long playerId, Long unitId) {
+    private void removeEntityFromPendingOrders(Long playerId, Long entityId) {
         for (MovementOrder order : movementOrderRepository.findByPlayerIdAndStatus(
                 playerId, MovementStatus.PENDING)) {
-            if (order.getEntityIds().remove(unitId)) {
+            if (order.getEntityIds().remove(entityId)) {
                 if (order.getEntityIds().isEmpty()) {
                     order.cancel();
                 }
                 movementOrderRepository.save(order);
             }
         }
+    }
+
+    private Sector resolveCharacterSector(Player player, Board board) {
+        Sector headquartersSector = buildingService.getHeadquarters(player.getId())
+                .map(Building::getSector).orElse(null);
+        if (headquartersSector != null) {
+            return headquartersSector;
+        }
+        return board.getSectorsByOwner(player.getId()).stream().findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Le joueur n'a aucun secteur pour accueillir le personnage"));
+    }
+
+    private void recalculateCharacterStats(Player player, Board board, GameCharacter character) {
+        if (character.getSector() != null) {
+            character.getSector().recalculateMilitaryPower();
+        }
+        playerStatsService.recalculateStats(player, board);
+        boardService.save(board);
     }
 
     private void cancelPendingVehicleOrders(Long vehicleId) {
