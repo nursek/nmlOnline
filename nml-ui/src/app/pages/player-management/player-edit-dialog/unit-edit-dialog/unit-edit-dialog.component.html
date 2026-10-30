@@ -1,0 +1,133 @@
+<h2 mat-dialog-title>Éditer {{ unitLabel(unit()) }}</h2>
+<mat-dialog-content>
+  @if (unit(); as u) {
+    <section class="block">
+      <h3>Progression</h3>
+      <div class="row">
+        <mat-form-field appearance="outline" class="small-field">
+          <mat-label>Expérience</mat-label>
+          <input
+            matInput
+            type="number"
+            min="0"
+            step="0.5"
+            [value]="experience()"
+            (input)="experience.set(+$any($event.target).value)"
+          />
+        </mat-form-field>
+        <mat-checkbox [checked]="injured()" (change)="injured.set($event.checked)">
+          Blessée
+        </mat-checkbox>
+      </div>
+    </section>
+
+    <section class="block">
+      <h3>Classes</h3>
+      <mat-form-field appearance="outline" class="full-field">
+        <mat-label>Classes</mat-label>
+        <mat-select multiple [value]="classes()" (selectionChange)="classes.set($event.value)">
+          @for (unitClass of unitClassCatalog(); track unitClass.name) {
+            <mat-option [value]="unitClass.name" [disabled]="isClassDisabled(unitClass)">
+              {{ unitClass.name }} ({{ unitClass.code }})
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      @if (classes().length === 1 && !canAddSecondClass()) {
+        <p class="hint">
+          Deuxième classe réservée aux unités non LARBIN/VOYOU avec au moins 5 d'expérience.
+        </p>
+      }
+      @if (incompatibleEquipment().length > 0) {
+        <p class="hint warn">
+          À l'enregistrement, ces équipements seront retirés et rendus au stock :
+          {{ incompatibleEquipment().join(', ') }}.
+        </p>
+      }
+    </section>
+
+    <section class="block">
+      <h3>Destination</h3>
+      <div class="row">
+        <mat-form-field appearance="outline" class="medium-field">
+          <mat-label>Destination</mat-label>
+          <mat-select
+            [value]="sectorChoice()"
+            (selectionChange)="sectorChoice.set($event.value)"
+            [canSelectNullableOptions]="true"
+            [disabled]="embedded()"
+          >
+            <mat-option [value]="null">Réserve</mat-option>
+            @for (sector of ownedSectors(); track sector.number) {
+              <mat-option [value]="sector.number">
+                {{ sectorLabel(sector.number) }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <button mat-flat-button color="primary" (click)="move()" [disabled]="busy() || embedded()">
+          Déplacer
+        </button>
+      </div>
+      @if (embedded()) {
+        <p class="hint">Détachez l'unité de son véhicule avant de la déplacer.</p>
+      }
+    </section>
+
+    <section class="block">
+      <h3>Équipements ({{ u.equipments.length }})</h3>
+      @if (u.equipments.length === 0) {
+        <p class="empty">Aucun équipement.</p>
+      } @else {
+        <div class="lines">
+          @for (equipment of u.equipments; track equipment.name) {
+            <div class="line">
+              <span>{{ equipment.name }}</span>
+              <button
+                mat-icon-button
+                color="warn"
+                matTooltip="Retirer"
+                [attr.aria-label]="'Retirer ' + equipment.name"
+                (click)="unequip(equipment.name)"
+                [disabled]="busy()"
+              >
+                <mat-icon>remove_circle</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+      <div class="row add-row">
+        <mat-form-field appearance="outline" class="medium-field">
+          <mat-label>Ajouter un équipement</mat-label>
+          <mat-select
+            [value]="equipmentToAdd()"
+            (selectionChange)="equipmentToAdd.set($event.value)"
+            [disabled]="availableEquipments().length === 0"
+          >
+            @for (equipment of availableEquipments(); track equipment.name) {
+              <mat-option [value]="equipment.name">{{ equipment.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <button mat-flat-button (click)="equip()" [disabled]="busy() || !equipmentToAdd()">
+          Équiper
+        </button>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="save()"
+        [disabled]="busy() || classes().length === 0"
+      >
+        Enregistrer
+      </button>
+      <button mat-button (click)="close()">Fermer</button>
+    </div>
+  } @else {
+    <p class="empty">Chargement…</p>
+  }
+</mat-dialog-content>

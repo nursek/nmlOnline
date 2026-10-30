@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.AdminCatalogDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
+import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.BuildingDto;
 import com.mg.nmlonline.api.dto.UnitDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
@@ -11,6 +12,7 @@ import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.action.PlayerAction;
 import com.mg.nmlonline.domain.model.action.PlayerActionStatus;
+import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
@@ -37,6 +39,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -636,6 +639,107 @@ class AdminPlayerEditServiceTest {
     }
 
     @Test
+    @DisplayName("Unité : l'expérience admin fait évoluer le type")
+    void updateUnitEvolvesTypeFromExperience() {
+        Unit unit = addUnit("LARBIN", UnitClass.LEGER, 41);
+        AdminUnitUpdateRequestDto request = new AdminUnitUpdateRequestDto();
+        request.setExperience((double) UnitType.MALFRAT.getMinExp());
+
+        service.updateUnit(player.getId(), unit.getId(), request);
+        entityManager.flush();
+
+        assertEquals(UnitType.MALFRAT, unit.getType());
+        assertEquals(UnitType.MALFRAT.getMinExp(), unit.getExperience(), 0.001);
+    }
+
+    @Test
+    @DisplayName("Unité : règles de classes appliquées à l'édition")
+    void updateUnitAppliesClassRules() {
+        Unit larbin = addUnit("LARBIN", UnitClass.LEGER, 41);
+        AdminUnitUpdateRequestDto twoClasses = new AdminUnitUpdateRequestDto();
+        twoClasses.setClasses(List.of("LEGER", "TIREUR"));
+        assertThrows(IllegalArgumentException.class,
+                () -> service.updateUnit(player.getId(), larbin.getId(), twoClasses));
+        assertEquals(1, larbin.getClasses().size());
+
+        Unit malfrat = addUnit("MALFRAT", UnitClass.TIREUR, 41);
+        twoClasses.setClasses(List.of("TIREUR", "MASTODONTE"));
+        service.updateUnit(player.getId(), malfrat.getId(), twoClasses);
+        entityManager.flush();
+        assertEquals(2, malfrat.getClasses().size());
+    }
+
+    @Test
+    @DisplayName("Unité : un changement de classes déséquipe les pièces incompatibles")
+    void updateUnitUnequipsIncompatibleEquipment() {
+        Equipment equipment = player.getEquipments().stream()
+                .map(EquipmentStack::getEquipment)
+                .filter(candidate -> !candidate.getCompatibleClasses().isEmpty())
+                .filter(candidate -> candidate.getCompatibleClasses().size()
+                        < UnitClass.values().length)
+                .findFirst().orElseThrow();
+        UnitClass compatible = equipment.getCompatibleClasses().iterator().next();
+        UnitClass incompatible = Arrays.stream(UnitClass.values())
+                .filter(candidate -> !equipment.getCompatibleClasses().contains(candidate))
+                .findFirst().orElseThrow();
+        Unit unit = addUnit("MALFRAT", compatible, 41);
+        service.addEquipment(player.getId(), equipment.getName(), 1);
+        service.equipUnit(player.getId(), unit.getId(), equipment.getName());
+        entityManager.flush();
+        int availableBefore = stack(equipment.getName()).getAvailable();
+
+        AdminUnitUpdateRequestDto request = new AdminUnitUpdateRequestDto();
+        request.setClasses(List.of(incompatible.name()));
+        service.updateUnit(player.getId(), unit.getId(), request);
+        entityManager.flush();
+
+        assertTrue(unit.getEquipments().isEmpty());
+        assertEquals(availableBefore + 1, stack(equipment.getName()).getAvailable());
+    }
+
+    @Test
+    @DisplayName("Unité : déplacement secteur ↔ réserve, secteur étranger refusé")
+    void moveUnitBetweenSectorsAndReserve() {
+        Unit unit = addUnit("LARBIN", UnitClass.LEGER, 41);
+
+        service.moveUnit(player.getId(), unit.getId(), 13);
+        entityManager.flush();
+        assertEquals(13, unit.getSector().getNumber());
+
+        service.moveUnit(player.getId(), unit.getId(), null);
+        entityManager.flush();
+        assertNull(unit.getSector());
+        assertEquals(0, unit.getNumber());
+
+        service.moveUnit(player.getId(), unit.getId(), 41);
+        entityManager.flush();
+        assertEquals(41, unit.getSector().getNumber());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.moveUnit(player.getId(), unit.getId(), 1));
+    }
+
+    @Test
+    @DisplayName("Unité : blessure et soin admin recalculent les stats")
+    void updateUnitTogglesInjury() {
+        Unit unit = addUnit("LARBIN", UnitClass.LEGER, 41);
+        double attack = unit.getAttack();
+        AdminUnitUpdateRequestDto request = new AdminUnitUpdateRequestDto();
+
+        request.setInjured(true);
+        service.updateUnit(player.getId(), unit.getId(), request);
+        entityManager.flush();
+        assertTrue(unit.isInjured());
+        assertEquals(attack / 2, unit.getAttack(), 0.001);
+
+        request.setInjured(false);
+        service.updateUnit(player.getId(), unit.getId(), request);
+        entityManager.flush();
+        assertFalse(unit.isInjured());
+        assertEquals(attack, unit.getAttack(), 0.001);
+    }
+
+    @Test
     @DisplayName("Le catalogue et la vue d'édition ne dépendent pas de la session HTTP (mapping en transaction)")
     void dtoMappingSurvivesWithoutOpenSessionInView() {
         AdminPlayerEditDto dto = service.getEdit(player.getId());
@@ -643,6 +747,16 @@ class AdminPlayerEditServiceTest {
         assertNotNull(dto.getPlayer().getBuildings());
         assertNotNull(dto.getUnits().getFirst().getType().getName());
         assertNotNull(dto.getVehicles());
+    }
+
+    private Unit addUnit(String type, UnitClass unitClass, Integer sectorNumber) {
+        List<Long> beforeIds = unitRepository.findByPlayerId(player.getId()).stream()
+                .map(Unit::getId).toList();
+        service.addUnits(player.getId(), type, List.of(unitClass.name()), 1, sectorNumber);
+        entityManager.flush();
+        return unitRepository.findByPlayerId(player.getId()).stream()
+                .filter(unit -> !beforeIds.contains(unit.getId()))
+                .findFirst().orElseThrow();
     }
 
     private List<Unit> carriersOf(String equipmentName) {

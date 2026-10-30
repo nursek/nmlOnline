@@ -5,6 +5,7 @@ import com.mg.nmlonline.config.TestDataInitializer;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.JwtService;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.UnitRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,9 @@ class AdminControllerTransactionBoundaryTest {
 
     @Autowired
     private PlayerRepository playerRepository;
+
+    @Autowired
+    private UnitRepository unitRepository;
 
     @Test
     void getAllPlayers() throws Exception {
@@ -118,6 +122,21 @@ class AdminControllerTransactionBoundaryTest {
                         .param("name", "Tesla Carbine")
                         .param("quantity", "1")
                         .param("includeEquipped", "true")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @Transactional
+    void updateUnitReturns204() throws Exception {
+        Long playerId = playerRepository.findByName("lurio").orElseThrow().getId();
+        Long unitId = unitRepository.findByPlayerId(playerId).stream()
+                .filter(unit -> unit.getClasses().size() == 1)
+                .findFirst().orElseThrow()
+                .getId();
+        mockMvc.perform(put("/api/admin/players/{id}/units/{unitId}", playerId, unitId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"experience\":6.0}")
                         .header("Authorization", bearer(TestDataInitializer.ADMIN)))
                 .andExpect(status().isNoContent());
     }

@@ -6,6 +6,9 @@ import com.mg.nmlonline.api.dto.AdminItemQuantityRequestDto;
 import com.mg.nmlonline.api.dto.AdminMoneyRequestDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
 import com.mg.nmlonline.api.dto.AdminUnitCreateRequestDto;
+import com.mg.nmlonline.api.dto.AdminUnitEquipRequestDto;
+import com.mg.nmlonline.api.dto.AdminUnitMoveRequestDto;
+import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.AdminVehicleCreateRequestDto;
 import com.mg.nmlonline.domain.service.AdminPlayerEditService;
 import jakarta.validation.Valid;
@@ -83,6 +86,34 @@ public class AdminPlayerEditController {
     @DeleteMapping("/players/{id}/units/{unitId}")
     public ResponseEntity<Void> deleteUnit(@PathVariable Long id, @PathVariable Long unitId) {
         adminPlayerEditService.deleteUnit(id, unitId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/players/{id}/units/{unitId}")
+    public ResponseEntity<Void> updateUnit(@PathVariable Long id, @PathVariable Long unitId,
+                                           @Valid @RequestBody AdminUnitUpdateRequestDto request) {
+        adminPlayerEditService.updateUnit(id, unitId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/players/{id}/units/{unitId}/sector")
+    public ResponseEntity<Void> moveUnit(@PathVariable Long id, @PathVariable Long unitId,
+                                         @RequestBody AdminUnitMoveRequestDto request) {
+        adminPlayerEditService.moveUnit(id, unitId, request.getSectorNumber());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/players/{id}/units/{unitId}/equipments")
+    public ResponseEntity<Void> equipUnit(@PathVariable Long id, @PathVariable Long unitId,
+                                          @Valid @RequestBody AdminUnitEquipRequestDto request) {
+        adminPlayerEditService.equipUnit(id, unitId, request.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/players/{id}/units/{unitId}/equipments")
+    public ResponseEntity<Void> unequipUnit(@PathVariable Long id, @PathVariable Long unitId,
+                                            @RequestParam String name) {
+        adminPlayerEditService.unequipUnit(id, unitId, name);
         return ResponseEntity.noContent().build();
     }
 

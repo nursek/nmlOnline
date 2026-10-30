@@ -135,6 +135,37 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/units/${unitId}`);
   }
 
+  adminUpdateUnit(
+    playerId: number,
+    unitId: number,
+    payload: { experience: number; classes: string[]; injured: boolean },
+  ): Observable<void> {
+    return this.http.put<void>(
+      `${this.baseUrl}/admin/players/${playerId}/units/${unitId}`,
+      payload,
+    );
+  }
+
+  adminMoveUnit(playerId: number, unitId: number, sectorNumber: number | null): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/units/${unitId}/sector`, {
+      sectorNumber,
+    });
+  }
+
+  adminEquipUnit(playerId: number, unitId: number, name: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.baseUrl}/admin/players/${playerId}/units/${unitId}/equipments`,
+      { name },
+    );
+  }
+
+  adminUnequipUnit(playerId: number, unitId: number, name: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/admin/players/${playerId}/units/${unitId}/equipments`,
+      { params: { name } },
+    );
+  }
+
   adminAddVehicles(
     playerId: number,
     payload: { vehicleType: string; quantity: number; sectorNumber: number | null },

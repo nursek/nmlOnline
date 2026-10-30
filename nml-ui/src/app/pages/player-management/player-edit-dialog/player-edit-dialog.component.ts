@@ -39,6 +39,7 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { UnitEditDialogComponent } from './unit-edit-dialog/unit-edit-dialog.component';
 
 export interface PlayerEditDialogData {
   playerId: number;
@@ -324,6 +325,16 @@ export class PlayerEditDialogComponent {
     if (done) {
       this.unitQuantity.set(1);
     }
+  }
+
+  openUnitEdit(unit: Unit): void {
+    if (unit.id === null) return;
+    this.dialog.open(UnitEditDialogComponent, {
+      width: '95vw',
+      maxWidth: '900px',
+      maxHeight: '90vh',
+      data: { playerId: this.data.playerId, unitId: unit.id },
+    });
   }
 
   async deleteUnit(unit: Unit): Promise<void> {

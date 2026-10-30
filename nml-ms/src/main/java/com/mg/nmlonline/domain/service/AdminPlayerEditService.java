@@ -2,6 +2,7 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.AdminCatalogDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
+import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.ResourceCatalogDto;
 import com.mg.nmlonline.api.dto.UnitDto;
 import com.mg.nmlonline.domain.model.board.Board;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class AdminPlayerEditService {
@@ -286,6 +288,132 @@ public class AdminPlayerEditService {
     }
 
     @Transactional
+    public void updateUnit(Long playerId, Long unitId, AdminUnitUpdateRequestDto request) {
+        requireTurnOpen();
+        Player player = lockPlayer(playerId);
+        Board board = activeBoard();
+        Unit unit = requireUnitOfPlayer(playerId, unitId);
+        boolean classOrExperienceChanged = false;
+
+        if (request.getExperience() != null) {
+            double target = request.getExperience();
+            if (!Double.isFinite(target) || target < 0) {
+                throw new IllegalArgumentException("L'expérience doit être un nombre positif");
+            }
+            double delta = target - unit.getExperience();
+            if (delta != 0) {
+                unit.gainExperience(delta);
+            }
+            classOrExperienceChanged = true;
+        }
+        if (request.getClasses() != null) {
+            List<UnitClass> classes = parseUnitClasses(request.getClasses());
+            if (classes.size() == 2 && !unit.canHaveTwoClasses()) {
+                throw new IllegalArgumentException(
+                        "Cette unité ne peut pas avoir deux classes (type ou expérience insuffisante)");
+            }
+            autoUnequipIncompatible(player, unit, classes);
+            unit.setClasses(classes);
+            unit.recalculateBaseStats();
+            classOrExperienceChanged = true;
+        }
+        if (classOrExperienceChanged
+                && unit.getClasses().size() == 2 && !unit.canHaveTwoClasses()) {
+            throw new IllegalArgumentException(
+                    "Une unité à deux classes doit avoir au moins 5 d'expérience et ne peut pas être LARBIN/VOYOU");
+        }
+        if (request.getInjured() != null) {
+            if (request.getInjured()) {
+                unit.setInjured(true);
+                unit.setInjuredAtTurn(board.getCurrentTurn());
+                unit.setHealingDelayed(false);
+                unit.recalculateBaseStats();
+            } else {
+                unit.recover();
+            }
+        }
+        saveUnitAndStats(player, board, unit);
+    }
+
+    @Transactional
+    public void moveUnit(Long playerId, Long unitId, Integer sectorNumber) {
+        requireTurnOpen();
+        Player player = lockPlayer(playerId);
+        Board board = activeBoard();
+        Unit unit = requireUnitOfPlayer(playerId, unitId);
+        if (unitIsInVehicle(unitId)) {
+            throw new IllegalArgumentException(
+                    "Détachez l'unité de son véhicule avant de la déplacer");
+        }
+        Sector current = unit.getSector();
+        Integer currentNumber = current == null ? null : current.getNumber();
+        if (Objects.equals(currentNumber, sectorNumber)) {
+            return;
+        }
+        Sector target = sectorNumber == null
+                ? null
+                : resolveOwnedSector(player, board, sectorNumber, true);
+        removeUnitFromPendingOrders(playerId, unitId);
+        if (current != null) {
+            current.removeUnit(unit);
+        }
+        if (target == null) {
+            unit.setSector(null);
+            unit.setNumber(0);
+        } else {
+            target.addUnit(unit);
+        }
+        saveUnitAndStats(player, board, unit);
+    }
+
+    @Transactional
+    public void equipUnit(Long playerId, Long unitId, String equipmentName) {
+        requireTurnOpen();
+        Player player = lockPlayer(playerId);
+        Board board = activeBoard();
+        Unit unit = requireUnitOfPlayer(playerId, unitId);
+        Equipment equipment = equipmentService.findByName(equipmentName)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Équipement inconnu : " + equipmentName));
+        EquipmentStack stack = player.getEquipments().stream()
+                .filter(candidate -> candidate.getEquipment() != null
+                        && equipmentName.equals(candidate.getEquipment().getName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Le joueur ne possède pas « " + equipmentName + " »"));
+        if (stack.getAvailable() <= 0) {
+            throw new IllegalArgumentException(
+                    "Aucune copie disponible de « " + equipmentName + " »");
+        }
+        if (!unit.canEquip(equipment)) {
+            throw new IllegalArgumentException(
+                    "L'unité ne peut pas équiper « " + equipmentName + " »");
+        }
+        player.decrementEquipmentAvailability(equipment);
+        if (!unit.addEquipment(equipment)) {
+            throw new IllegalArgumentException(
+                    "L'unité ne peut pas équiper « " + equipmentName + " »");
+        }
+        saveUnitAndStats(player, board, unit);
+    }
+
+    @Transactional
+    public void unequipUnit(Long playerId, Long unitId, String equipmentName) {
+        requireTurnOpen();
+        Player player = lockPlayer(playerId);
+        Board board = activeBoard();
+        Unit unit = requireUnitOfPlayer(playerId, unitId);
+        UnitEquipment row = unit.removeOneEquipment(equipmentName);
+        if (row == null) {
+            throw new IllegalArgumentException(
+                    "L'unité ne porte pas « " + equipmentName + " »");
+        }
+        em.remove(row);
+        player.incrementEquipmentAvailability(row.getEquipment());
+        saveUnitAndStats(player, board, unit);
+    }
+
+    @Transactional
     public void addVehicles(Long playerId, String vehicleTypeName, int quantity, Integer sectorNumber) {
         requireQuantity(quantity, MAX_ENTITY_QUANTITY);
         requireTurnOpen();
@@ -374,6 +502,48 @@ public class AdminPlayerEditService {
             sector.getBuildings().remove(building);
         }
         player.getBuildings().remove(building);
+        playerStatsService.recalculateStats(player, board);
+        boardService.save(board);
+        playerRepository.save(player);
+    }
+
+    private Unit requireUnitOfPlayer(Long playerId, Long unitId) {
+        Unit unit = unitRepository.findById(unitId)
+                .orElseThrow(() -> new EntityNotFoundException("Unité introuvable : " + unitId));
+        if (!playerId.equals(unit.getPlayerId())) {
+            throw new IllegalArgumentException("L'unité " + unitId + " n'appartient pas à ce joueur");
+        }
+        return unit;
+    }
+
+    private boolean unitIsInVehicle(Long unitId) {
+        return vehicleRepository.findAll().stream().anyMatch(vehicle ->
+                (vehicle.getPilot() != null && unitId.equals(vehicle.getPilot().getId()))
+                        || vehicle.getPassengers().stream()
+                        .anyMatch(passenger -> unitId.equals(passenger.getId())));
+    }
+
+    private void autoUnequipIncompatible(Player player, Unit unit, List<UnitClass> newClasses) {
+        for (UnitEquipment row : new ArrayList<>(unit.getUnitEquipments())) {
+            Equipment equipment = row.getEquipment();
+            if (equipment == null) {
+                continue;
+            }
+            boolean compatible = equipment.getCompatibleClasses().stream()
+                    .anyMatch(newClasses::contains);
+            if (!compatible) {
+                unit.removeOneEquipment(equipment.getName());
+                em.remove(row);
+                player.incrementEquipmentAvailability(equipment);
+            }
+        }
+    }
+
+    private void saveUnitAndStats(Player player, Board board, Unit unit) {
+        if (unit.getSector() != null) {
+            unit.getSector().recalculateMilitaryPower();
+        }
+        unitRepository.save(unit);
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
         playerRepository.save(player);

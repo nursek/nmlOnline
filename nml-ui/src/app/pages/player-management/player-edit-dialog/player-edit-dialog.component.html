@@ -224,6 +224,15 @@
                     }
                     <button
                       mat-icon-button
+                      matTooltip="Éditer"
+                      [attr.aria-label]="'Éditer ' + unitLabel(unit)"
+                      (click)="openUnitEdit(unit)"
+                      [disabled]="busy()"
+                    >
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
                       color="warn"
                       matTooltip="Supprimer"
                       [attr.aria-label]="'Supprimer ' + unitLabel(unit)"
