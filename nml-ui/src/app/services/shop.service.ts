@@ -342,13 +342,14 @@ export class ShopService {
     }
   }
 
-  async checkoutEquipments(): Promise<void> {
+  async checkoutEquipments(cacheId?: number): Promise<void> {
     this._purchaseLoading.set(true);
     this._error.set(null);
     try {
       const items = this._cart().map((item) => ({
         name: item.equipment.name,
         quantity: item.quantity,
+        cacheId: cacheId ?? null,
       }));
       await firstValueFrom(this.api.buyEquipments(items));
       this.clearCart();

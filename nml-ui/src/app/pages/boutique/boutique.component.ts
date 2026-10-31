@@ -1,4 +1,4 @@
-﻿import {
+import {
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -18,9 +18,9 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { firstValueFrom } from 'rxjs';
 import {
   Equipment,
-  EquipmentStack,
   PlayerResource,
   UnitCartItem,
   UnitCatalogEntry,
@@ -31,6 +31,7 @@ import { ShopService, unitCartKey } from '../../services/shop.service';
 import { PlayerService } from '../../services/player.service';
 import {
   clampUnitQuantity,
+  cacheChoices,
   compareEquipments,
   equipmentClassLabel,
   equipmentSummary,
@@ -59,6 +60,12 @@ import {
   PurchaseSuccessDialogComponent,
   PurchaseSuccessData,
 } from '../../shared/purchase-success-dialog/purchase-success-dialog.component';
+import {
+  CachePickerDialogComponent,
+  CachePickerDialogData,
+  CachePickerDialogResult,
+} from './cache-picker-dialog.component';
+import { allEquipmentStacks } from '../joueur/joueur.helpers';
 
 @Component({
   selector: 'app-boutique',
@@ -296,10 +303,10 @@ export class BoutiqueComponent {
   }
 
   getOwnedQuantity(equipmentName: string): number {
-    const stack = this.player()?.equipments?.find(
-      (e: EquipmentStack) => e.equipment.name === equipmentName,
+    return (
+      allEquipmentStacks(this.player()).find((stack) => stack.equipment.name === equipmentName)
+        ?.quantity ?? 0
     );
-    return stack?.quantity || 0;
   }
 
   getCartQuantity(equipmentName: string): number {
@@ -308,15 +315,39 @@ export class BoutiqueComponent {
 
   async checkout(): Promise<void> {
     const snapshot = [...this.cart()];
+    if (!snapshot.length) return;
+    const choice = await this.pickCacheForCart();
+    if (choice.cancelled) return;
     await this.runCheckout(
       snapshot.length,
-      () => this.shop.checkoutEquipments(),
+      () => this.shop.checkoutEquipments(choice.cacheId),
       () => ({
         title: 'Équipements achetés !',
         lines: snapshot.map((item) => `${item.quantity} × ${this.equipmentLabel(item.equipment)}`),
         totalCost: snapshot.reduce((s, i) => s + i.equipment.cost * i.quantity, 0),
       }),
     );
+  }
+
+  private async pickCacheForCart(): Promise<{ cancelled: boolean; cacheId?: number }> {
+    const choices = cacheChoices(this.player()?.buildings);
+    if (choices.length < 2) {
+      return { cancelled: false };
+    }
+    const totalQuantity = this.cart().reduce((sum, item) => sum + item.quantity, 0);
+    const result = await firstValueFrom(
+      this.dialog
+        .open<CachePickerDialogComponent, CachePickerDialogData, CachePickerDialogResult | null>(
+          CachePickerDialogComponent,
+          {
+            width: '420px',
+            maxWidth: '95vw',
+            data: { caches: choices, totalQuantity },
+          },
+        )
+        .afterClosed(),
+    );
+    return result ? { cancelled: false, cacheId: result.cacheId } : { cancelled: true };
   }
 
   addVehicleToCart(vehicleType: VehicleTypeInfo): void {

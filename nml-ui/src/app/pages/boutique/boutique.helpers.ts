@@ -1,4 +1,5 @@
 import type {
+  Building,
   Equipment,
   UnitCartItem,
   UnitCatalogEntry,
@@ -18,6 +19,29 @@ const CATEGORY_ORDER: Readonly<Record<string, number>> = {
   FIREARM: 1,
   DEFENSIVE: 2,
 };
+
+export interface CacheChoice {
+  id: number;
+  sectorNumber: number | null;
+  availableCapacity: number;
+}
+
+/** Caches d'armes utilisables (non détruites, avec de la place) pour choisir où ranger un achat. */
+export function cacheChoices(buildings: Building[] | null | undefined): CacheChoice[] {
+  return (buildings ?? [])
+    .filter(
+      (building) =>
+        building.buildingType === 'WEAPON_CACHE' &&
+        !building.isDestroyed &&
+        building.id != null &&
+        (building.availableCapacity ?? 0) > 0,
+    )
+    .map((building) => ({
+      id: building.id as number,
+      sectorNumber: building.sectorNumber,
+      availableCapacity: building.availableCapacity ?? 0,
+    }));
+}
 
 export interface EquipmentCategoryGroup {
   key: string;
