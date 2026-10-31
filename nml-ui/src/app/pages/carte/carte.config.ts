@@ -109,14 +109,11 @@ export const MAP_THEME = {
     frontMaskWidth: 20,
   },
 
-  // Calque « Ressources » (et sa légende) : une teinte par ressource.
-  resourceColors: {
-    "Caisse d'armes": '#d4a86a',
-    Prométhéum: '#6f93c9',
-    Plastacier: '#b47ccb',
-    Adamentium: '#e6decb',
-    'Conteneur blindé': '#9fbf4a',
-    Auramite: '#e8bb45',
-    Noctilithe: '#4fc3c9',
-  } as Record<string, string>,
+  // Calque « Ressources » : fond uni, pastille de ressource à la place du numéro.
+  resourceFill: '#ffffff',
+  resourceHoverFill: '#6e788540',
+  resourceSelectedFill: '#6e788580',
+  resourceIcon: {
+    size: 40,
+  },
 } as const;

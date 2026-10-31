@@ -1,4 +1,4 @@
-import { frontBorders } from './carte.helpers';
+import { frontBorders, resourceIconSrc } from './carte.helpers';
 import type { Sector } from '../../models';
 
 function sector(number: number, ownerId: number | null, neighbors: number[]): Sector {
@@ -32,5 +32,14 @@ describe('frontBorders', () => {
 
   it('sans joueur identifié, aucun front', () => {
     expect(frontBorders(sectors, null, new Set())).toEqual({ mine: [], enemies: [] });
+  });
+});
+
+describe('resourceIconSrc', () => {
+  it('résout la vignette optimisée depuis le nom affiché', () => {
+    expect(resourceIconSrc("Caisse d'armes")).toBe(
+      '/assets/_opt/shop/resources/caisse-d-armes.320.webp',
+    );
+    expect(resourceIconSrc('Prométhéum')).toBe('/assets/_opt/shop/resources/prometheum.320.webp');
   });
 });
