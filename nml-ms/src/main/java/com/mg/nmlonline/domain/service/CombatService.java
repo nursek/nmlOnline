@@ -636,17 +636,13 @@ public class CombatService {
             if (equipment == null) {
                 continue;
             }
-            EquipmentStack stack = owner.getEquipments().stream()
-                    .filter(s -> s.getEquipment() != null
-                            && equipment.getName().equals(s.getEquipment().getName()))
-                    .findFirst()
-                    .orElse(null);
+            EquipmentStack stack = owner.findEquipmentStack(equipment.getName());
             if (stack == null) {
                 continue;
             }
             stack.decrementEquipped();
             if (stack.getQuantity() <= 0) {
-                owner.getEquipments().remove(stack);
+                owner.removeEquipmentStack(stack);
             }
         }
     }

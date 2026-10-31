@@ -160,7 +160,7 @@ public class AdminService {
         result.put("resources", resources);
 
         List<Map<String, Object>> equipments = new ArrayList<>();
-        for (var stack : player.getEquipments()) {
+        for (var stack : player.getAllEquipmentStacks()) {
             Map<String, Object> eq = new LinkedHashMap<>();
             eq.put("name", stack.getEquipment().getName());
             eq.put("quantity", stack.getQuantity());

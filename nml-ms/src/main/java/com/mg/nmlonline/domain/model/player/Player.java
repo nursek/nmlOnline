@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.model.player;
 
 import com.mg.nmlonline.domain.model.building.Building;
+import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
@@ -116,7 +117,7 @@ public class Player {
     }
 
     public Equipment getEquipmentByString(String name) {
-        EquipmentStack stack = findStackByName(name);
+        EquipmentStack stack = findEquipmentStack(name);
         return stack != null ? stack.getEquipment() : null;
     }
 
@@ -155,7 +156,7 @@ public class Player {
     public void addEquipmentToStack(Equipment equipment, int number) {
         if (equipment == null) return;
 
-        EquipmentStack existingStack = findStackByName(equipment.getName());
+        EquipmentStack existingStack = findInventoryStack(equipment.getName());
         if (existingStack != null) {
             for (int i = 0; i < number; i++) {
                 existingStack.increment();
@@ -177,8 +178,7 @@ public class Player {
     }
 
     public boolean isEquipmentAvailable(String equipmentName) {
-        EquipmentStack stack = findStackByName(equipmentName);
-        return stack != null && stack.isAvailable();
+        return findAvailableEquipmentStack(equipmentName) != null;
     }
 
     public void decrementEquipmentAvailability(Equipment equipment) {
@@ -187,7 +187,10 @@ public class Player {
     }
 
     public void decrementEquipmentAvailability(String equipmentName) {
-        EquipmentStack stack = findStackByName(equipmentName);
+        EquipmentStack stack = findAvailableEquipmentStack(equipmentName);
+        if (stack == null) {
+            stack = findEquipmentStack(equipmentName);
+        }
         if (stack != null) {
             stack.decrementAvailable();
             setTotalEquipmentValue();
@@ -195,12 +198,67 @@ public class Player {
         }
     }
 
-    private EquipmentStack findStackByName(String equipmentName) {
+    public EquipmentStack findEquipmentStack(String equipmentName) {
+        if (equipmentName == null) return null;
+        for (EquipmentStack stack : getAllEquipmentStacks()) {
+            Equipment stackEquip = stack.getEquipment();
+            if (stackEquip != null && equipmentName.equals(stackEquip.getName())) {
+                return stack;
+            }
+        }
+        return null;
+    }
+
+    public EquipmentStack findAvailableEquipmentStack(String equipmentName) {
+        if (equipmentName == null) return null;
+        for (EquipmentStack stack : getAllEquipmentStacks()) {
+            Equipment stackEquip = stack.getEquipment();
+            if (stackEquip != null && equipmentName.equals(stackEquip.getName()) && stack.isAvailable()) {
+                return stack;
+            }
+        }
+        return null;
+    }
+
+    public int getAvailableEquipmentQuantity(String equipmentName) {
+        if (equipmentName == null) return 0;
+        int total = 0;
+        for (EquipmentStack stack : getAllEquipmentStacks()) {
+            Equipment stackEquip = stack.getEquipment();
+            if (stackEquip != null && equipmentName.equals(stackEquip.getName())) {
+                total += stack.getAvailable();
+            }
+        }
+        return total;
+    }
+
+    public List<EquipmentStack> getAllEquipmentStacks() {
+        List<EquipmentStack> all = new ArrayList<>(equipments);
+        for (Building building : buildings) {
+            if (building instanceof WeaponCache cache && !cache.isDestroyed()) {
+                all.addAll(cache.getStoredEquipments());
+            }
+        }
+        return all;
+    }
+
+    public void removeEquipmentStack(EquipmentStack stack) {
+        if (stack == null) return;
+        if (equipments.remove(stack)) {
+            return;
+        }
+        for (Building building : buildings) {
+            if (building instanceof WeaponCache cache && cache.getStoredEquipments().remove(stack)) {
+                return;
+            }
+        }
+    }
+
+    private EquipmentStack findInventoryStack(String equipmentName) {
         if (equipmentName == null) return null;
         for (EquipmentStack stack : equipments) {
             Equipment stackEquip = stack.getEquipment();
-            if (stackEquip != null && stackEquip.getName() != null &&
-                stackEquip.getName().equals(equipmentName)) {
+            if (stackEquip != null && equipmentName.equals(stackEquip.getName())) {
                 return stack;
             }
         }
@@ -209,21 +267,23 @@ public class Player {
 
     public void removeEquipmentFromStack(Equipment equipment) {
         if (equipment == null) return;
-        EquipmentStack stack = findStackByName(equipment.getName());
-        if (stack != null) {
-            if (stack.getQuantity() > 1) {
-                stack.decrement();
-            } else {
-                equipments.remove(stack);
-            }
+        EquipmentStack stack = findAvailableEquipmentStack(equipment.getName());
+        if (stack == null) {
+            stack = findEquipmentStack(equipment.getName());
+        }
+        if (stack == null) return;
+        if (stack.getQuantity() > 1) {
+            stack.decrement();
+        } else {
+            removeEquipmentStack(stack);
         }
     }
 
     public void setTotalEquipmentValue() {
-        double inventoryValue = equipments.stream()
+        double equipmentValue = getAllEquipmentStacks().stream()
                 .mapToDouble(stack -> stack.getEquipment().getCost() * stack.getQuantity())
                 .sum();
-        stats.setTotalEquipmentValue(inventoryValue);
+        stats.setTotalEquipmentValue(equipmentValue);
     }
 
     public List<Equipment> getCompatibleEquipments(Unit unit) {
@@ -231,7 +291,7 @@ public class Player {
             return new ArrayList<>();
         }
 
-        return equipments.stream()
+        return getAllEquipmentStacks().stream()
                 .filter(stack -> stack.getAvailable() > 0)
                 .map(EquipmentStack::getEquipment)
                 .filter(unit::canEquip)
@@ -243,7 +303,7 @@ public class Player {
             return new ArrayList<>();
         }
 
-        return equipments.stream()
+        return getAllEquipmentStacks().stream()
                 .filter(stack -> stack.getAvailable() > 0)
                 .map(EquipmentStack::getEquipment)
                 .filter(eq -> eq.getCategory() == category)
@@ -316,12 +376,24 @@ public class Player {
 
     public void incrementEquipmentAvailability(Equipment equipment) {
         if (equipment == null) return;
-        EquipmentStack stack = findStackByName(equipment.getName());
+        EquipmentStack stack = findStackWithEquippedCopy(equipment.getName());
         if (stack != null) {
             stack.incrementAvailable();
             setTotalEquipmentValue();
             calculateTotalEconomyPower();
         }
+    }
+
+    private EquipmentStack findStackWithEquippedCopy(String equipmentName) {
+        if (equipmentName == null) return null;
+        for (EquipmentStack stack : getAllEquipmentStacks()) {
+            Equipment stackEquip = stack.getEquipment();
+            if (stackEquip != null && equipmentName.equals(stackEquip.getName())
+                    && stack.getAvailable() < stack.getQuantity()) {
+                return stack;
+            }
+        }
+        return findEquipmentStack(equipmentName);
     }
 
     public void incrementMoney(double amount) {

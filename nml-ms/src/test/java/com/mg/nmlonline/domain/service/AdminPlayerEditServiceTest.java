@@ -91,6 +91,9 @@ class AdminPlayerEditServiceTest {
     private PlayerActionService playerActionService;
 
     @Autowired
+    private UnitService unitService;
+
+    @Autowired
     private PendingCaptureRepository pendingCaptureRepository;
 
     @Autowired
@@ -1066,6 +1069,58 @@ class AdminPlayerEditServiceTest {
     }
 
     @Test
+    @DisplayName("Cache : l'équipement stocké est équipable et valorisé")
+    void cacheEquipmentIsEquippableAndValued() {
+        Unit unit = addUnit("LARBIN", UnitClass.LEGER, 41);
+        service.addBuilding(player.getId(), "WEAPON_CACHE", 41);
+        entityManager.flush();
+        WeaponCache cache = player.getBuildings().stream()
+                .filter(WeaponCache.class::isInstance)
+                .map(WeaponCache.class::cast)
+                .filter(candidate -> candidate.getSector() != null
+                        && candidate.getSector().getNumber() == 41)
+                .findFirst().orElseThrow();
+        player.setTotalEquipmentValue();
+        double valueBefore = player.getStats().getTotalEquipmentValue();
+
+        service.addCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 1);
+        entityManager.flush();
+        assertEquals(valueBefore + 1600.0, player.getStats().getTotalEquipmentValue(), 0.001);
+
+        unitService.assignEquipment(unit.getId(), player.getUserId(), "Tesla Carbine");
+        entityManager.flush();
+
+        assertTrue(unit.getEquipments().stream()
+                .anyMatch(equipment -> "Tesla Carbine".equals(equipment.getName())));
+        assertEquals(0, cachedAvailable(cache, "Tesla Carbine"));
+        assertNull(player.findAvailableEquipmentStack("Tesla Carbine"));
+    }
+
+    @Test
+    @DisplayName("Cache : retirer un stack le supprime de la cache, l'inventaire est intact")
+    void cacheStackRemovalTargetsTheCacheCollection() {
+        service.addBuilding(player.getId(), "WEAPON_CACHE", 41);
+        entityManager.flush();
+        WeaponCache cache = player.getBuildings().stream()
+                .filter(WeaponCache.class::isInstance)
+                .map(WeaponCache.class::cast)
+                .filter(candidate -> candidate.getSector() != null
+                        && candidate.getSector().getNumber() == 41)
+                .findFirst().orElseThrow();
+        int inventoryBefore = equipmentQuantity(player, "Tesla Carbine");
+
+        service.addCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 2);
+        entityManager.flush();
+        Equipment tesla = cache.getStoredEquipments().getFirst().getEquipment();
+
+        player.removeEquipmentFromStack(tesla);
+        player.removeEquipmentFromStack(tesla);
+
+        assertTrue(cache.getStoredEquipments().isEmpty());
+        assertEquals(inventoryBefore, equipmentQuantity(player, "Tesla Carbine"));
+    }
+
+    @Test
     @DisplayName("Cache d'armes : cible refusée si ce n'est pas une cache ou pas celle du joueur")
     void cacheEquipmentRejectsWrongBuilding() {
         Building bank = buildingRepository.findAll().stream()
@@ -1194,6 +1249,13 @@ class AdminPlayerEditServiceTest {
         return cache.getStoredEquipments().stream()
                 .filter(stack -> name.equals(stack.getEquipment().getName()))
                 .mapToInt(EquipmentStack::getQuantity)
+                .findFirst().orElse(0);
+    }
+
+    private int cachedAvailable(WeaponCache cache, String name) {
+        return cache.getStoredEquipments().stream()
+                .filter(stack -> name.equals(stack.getEquipment().getName()))
+                .mapToInt(EquipmentStack::getAvailable)
                 .findFirst().orElse(0);
     }
 

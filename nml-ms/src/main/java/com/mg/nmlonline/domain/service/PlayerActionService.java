@@ -296,14 +296,14 @@ public class PlayerActionService {
     }
 
     private void undoBuyEquipment(PlayerAction action, Player player) {
-        EquipmentStack stack = findStack(player, action.getEquipmentName());
         int quantity = action.getQuantity() != null ? action.getQuantity() : 1;
-        if (stack == null || stack.getAvailable() < quantity) {
+        if (player.getAvailableEquipmentQuantity(action.getEquipmentName()) < quantity) {
             throw new PlayerActionUndoException(
                     "« " + action.getEquipmentName() + " » est équipé sur une unité : déséquipez-le d'abord.");
         }
+        Equipment equipment = player.findEquipmentStack(action.getEquipmentName()).getEquipment();
         for (int i = 0; i < quantity; i++) {
-            player.removeEquipmentFromStack(stack.getEquipment());
+            player.removeEquipmentFromStack(equipment);
         }
         player.refundMoney(action.getMoney() != null ? action.getMoney() : 0, action.getStartingMoneySpent());
         player.setTotalEquipmentValue();
@@ -491,10 +491,7 @@ public class PlayerActionService {
     }
 
     private EquipmentStack findStack(Player player, String equipmentName) {
-        return player.getEquipments().stream()
-                .filter(s -> s.getEquipment() != null && s.getEquipment().getName().equals(equipmentName))
-                .findFirst()
-                .orElse(null);
+        return player.findEquipmentStack(equipmentName);
     }
 
     private Player requirePlayerByUserId(Long userId) {

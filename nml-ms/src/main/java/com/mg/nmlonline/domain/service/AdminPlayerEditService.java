@@ -790,6 +790,8 @@ public class AdminPlayerEditService {
         stored.setQuantity(stored.getQuantity() + quantity);
         stored.setAvailable(stored.getAvailable() + quantity);
         buildingRepository.save(cache);
+        player.setTotalEquipmentValue();
+        player.calculateTotalEconomyPower();
         audit(playerId, AdminAuditAction.ADD_CACHE_EQUIPMENT,
                 quantity + " × " + name + " → " + buildingLabel(cache));
     }
@@ -798,7 +800,7 @@ public class AdminPlayerEditService {
     public void removeCacheEquipment(Long playerId, Long buildingId, String name, int quantity) {
         requireQuantity(quantity, MAX_STACK_QUANTITY);
         requireTurnOpen();
-        lockPlayer(playerId);
+        Player player = lockPlayer(playerId);
         WeaponCache cache = requireCacheOfPlayer(playerId, buildingId);
         EquipmentStack stored = cache.getStoredEquipments().stream()
                 .filter(stack -> stack.getEquipment() != null && name.equals(stack.getEquipment().getName()))
@@ -815,6 +817,8 @@ public class AdminPlayerEditService {
             cache.getStoredEquipments().remove(stored);
         }
         buildingRepository.save(cache);
+        player.setTotalEquipmentValue();
+        player.calculateTotalEconomyPower();
         audit(playerId, AdminAuditAction.REMOVE_CACHE_EQUIPMENT,
                 quantity + " × " + name + " ← " + buildingLabel(cache));
     }
