@@ -9,6 +9,7 @@ import com.mg.nmlonline.api.dto.BuildingDto;
 import com.mg.nmlonline.api.dto.SetVehicleCrewRequestDto;
 import com.mg.nmlonline.api.dto.UnitDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
+import com.mg.nmlonline.domain.exception.PlayerActionUndoException;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.alliance.PendingCapture;
 import com.mg.nmlonline.domain.model.building.Bank;
@@ -85,6 +86,9 @@ class AdminPlayerEditServiceTest {
 
     @Autowired
     private PlayerActionRepository playerActionRepository;
+
+    @Autowired
+    private PlayerActionService playerActionService;
 
     @Autowired
     private PendingCaptureRepository pendingCaptureRepository;
@@ -1025,6 +1029,43 @@ class AdminPlayerEditServiceTest {
     }
 
     @Test
+    @DisplayName("Contenu banque/cache : hors inventaire même après rechargement")
+    void storedBankAndCacheContentStaysOutOfInventory() {
+        int inventoryResource = player.getResourceQuantity("Caisse d'armes");
+        int inventoryEquipment = equipmentQuantity(player, "Gauss Destructor");
+
+        service.addBankResource(player.getId(), "Caisse d'armes", 3);
+        service.addBuilding(player.getId(), "WEAPON_CACHE", 41);
+        entityManager.flush();
+        WeaponCache cache = player.getBuildings().stream()
+                .filter(WeaponCache.class::isInstance)
+                .map(WeaponCache.class::cast)
+                .filter(candidate -> candidate.getSector() != null
+                        && candidate.getSector().getNumber() == 41)
+                .findFirst().orElseThrow();
+        service.addCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 2);
+        entityManager.flush();
+
+        entityManager.clear();
+        Player reloaded = playerRepository.findById(player.getId()).orElseThrow();
+        assertEquals(inventoryResource, reloaded.getResourceQuantity("Caisse d'armes"));
+        assertEquals(inventoryEquipment, equipmentQuantity(reloaded, "Gauss Destructor"));
+
+        Bank bank = reloaded.getBuildings().stream()
+                .filter(Bank.class::isInstance)
+                .map(Bank.class::cast)
+                .findFirst().orElseThrow();
+        assertEquals(3, storedBankQuantity(bank, "Caisse d'armes"));
+        WeaponCache reloadedCache = reloaded.getBuildings().stream()
+                .filter(WeaponCache.class::isInstance)
+                .map(WeaponCache.class::cast)
+                .filter(candidate -> candidate.getSector() != null
+                        && candidate.getSector().getNumber() == 41)
+                .findFirst().orElseThrow();
+        assertEquals(2, cachedQuantity(reloadedCache, "Gauss Destructor"));
+    }
+
+    @Test
     @DisplayName("Cache d'armes : cible refusée si ce n'est pas une cache ou pas celle du joueur")
     void cacheEquipmentRejectsWrongBuilding() {
         Building bank = buildingRepository.findAll().stream()
@@ -1079,7 +1120,7 @@ class AdminPlayerEditServiceTest {
     }
 
     @Test
-    @DisplayName("Équipage : véhicule en réserve refusé, actions ACTIVE de composition clôturées")
+    @DisplayName("Équipage : véhicule en réserve refusé, seule l'action d'équipage est clôturée")
     void setVehicleCrewRequiresDeployedVehicleAndClosesActions() {
         Unit pilot = addUnit("LARBIN", UnitClass.PILOTE_DESTRUCTEUR, 41);
         service.addVehicles(player.getId(), "VTT_LEGER", 1, 41);
@@ -1098,6 +1139,9 @@ class AdminPlayerEditServiceTest {
         PlayerAction action = PlayerAction.setVehicleCrew(
                 player.getId(), board.getCurrentTurn(), vehicle.getId(), null, "");
         playerActionRepository.save(action);
+        PlayerAction placement = PlayerAction.placeVehicle(player.getId(), board.getCurrentTurn(),
+                vehicle.getId(), board.getId(), vehicle.getSector().getNumber());
+        playerActionRepository.save(placement);
         entityManager.flush();
 
         service.setVehicleCrew(player.getId(), vehicle.getId(), crewRequest(pilot.getId(), List.of()));
@@ -1105,7 +1149,31 @@ class AdminPlayerEditServiceTest {
 
         assertEquals(PlayerActionStatus.UNDONE,
                 playerActionRepository.findById(action.getId()).orElseThrow().getStatus());
+        assertEquals(PlayerActionStatus.ACTIVE,
+                playerActionRepository.findById(placement.getId()).orElseThrow().getStatus());
         assertEquals(pilot.getId(), vehicle.getPilot().getId());
+    }
+
+    @Test
+    @DisplayName("Équipage : le joueur ne peut pas annuler le placement d'une unité embarquée")
+    void undoPlacementIsRefusedForEmbarkedUnit() {
+        Unit pilot = addUnit("LARBIN", UnitClass.PILOTE_DESTRUCTEUR, 41);
+        service.addVehicles(player.getId(), "VTT_LEGER", 1, 41);
+        entityManager.flush();
+        Vehicle vehicle = vehicleRepository.findByPlayerId(player.getId()).getFirst();
+
+        PlayerAction placement = PlayerAction.placeUnit(
+                player.getId(), board.getCurrentTurn(), pilot.getId(), board.getId(), 41);
+        playerActionRepository.save(placement);
+        entityManager.flush();
+
+        service.setVehicleCrew(player.getId(), vehicle.getId(), crewRequest(pilot.getId(), List.of()));
+        entityManager.flush();
+
+        assertThrows(PlayerActionUndoException.class,
+                () -> playerActionService.undoFrom(player.getUserId(), placement.getId()));
+        assertEquals(pilot.getId(), vehicle.getPilot().getId());
+        assertNotNull(pilot.getSector());
     }
 
     private SetVehicleCrewRequestDto crewRequest(Long pilotId, List<Long> passengerIds) {

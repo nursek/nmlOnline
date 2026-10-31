@@ -7,6 +7,7 @@ import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.ResourceCatalogDto;
 import com.mg.nmlonline.api.dto.SetVehicleCrewRequestDto;
 import com.mg.nmlonline.api.dto.UnitDto;
+import com.mg.nmlonline.domain.model.action.PlayerActionType;
 import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Bank;
@@ -356,7 +357,7 @@ public class AdminPlayerEditService {
         }
 
         playerActionService.discardActiveActionsReferencing(
-                playerId, board.getCurrentTurn(), null, null, null, name);
+                playerId, board.getCurrentTurn(), null, null, null, name, null);
         int fromStock = Math.min(quantity, stack.getAvailable());
         for (int i = 0; i < fromStock; i++) {
             player.removeEquipmentFromStack(stack.getEquipment());
@@ -425,7 +426,7 @@ public class AdminPlayerEditService {
             throw new IllegalArgumentException("L'unité " + unitId + " n'appartient pas à ce joueur");
         }
         playerActionService.discardActiveActionsReferencing(
-                playerId, board.getCurrentTurn(), unitId, null, null, null);
+                playerId, board.getCurrentTurn(), unitId, null, null, null, null);
         removeEntityFromPendingOrders(playerId, unitId);
         for (UnitEquipment row : new ArrayList<>(unit.getUnitEquipments())) {
             player.incrementEquipmentAvailability(row.getEquipment());
@@ -615,7 +616,7 @@ public class AdminPlayerEditService {
             throw new IllegalArgumentException("Le véhicule " + vehicleId + " n'appartient pas à ce joueur");
         }
         playerActionService.discardActiveActionsReferencing(
-                playerId, board.getCurrentTurn(), null, vehicleId, null, null);
+                playerId, board.getCurrentTurn(), null, vehicleId, null, null, null);
         cancelPendingVehicleOrders(vehicleId);
         boolean valueLost = !vehicle.isDestroyed() && vehicle.getVehicleType() != null;
         VehicleType type = vehicle.getVehicleType();
@@ -660,7 +661,8 @@ public class AdminPlayerEditService {
             return;
         }
         playerActionService.discardActiveActionsReferencing(
-                playerId, board.getCurrentTurn(), null, vehicleId, null, null);
+                playerId, board.getCurrentTurn(), null, vehicleId, null, null,
+                PlayerActionType.SET_VEHICLE_CREW);
         vehicleRepository.save(vehicle);
         CombatEntity pilot = vehicle.getPilot();
         audit(playerId, AdminAuditAction.SET_VEHICLE_CREW,
@@ -702,7 +704,7 @@ public class AdminPlayerEditService {
             throw new IllegalArgumentException("Le bâtiment " + buildingId + " n'appartient pas à ce joueur");
         }
         playerActionService.discardActiveActionsReferencing(
-                playerId, board.getCurrentTurn(), null, null, buildingId, null);
+                playerId, board.getCurrentTurn(), null, null, buildingId, null, null);
         Sector sector = building.getSector();
         String buildingLabel = building.getBuildingType() + " ("
                 + (sector != null ? "secteur " + sector.getNumber() : "sans secteur") + ")";

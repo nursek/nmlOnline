@@ -95,6 +95,9 @@ public class ResourceService {
         if (owner == null || !player.getId().equals(owner.getId())) {
             throw new SecurityException("Access denied: resource does not belong to authenticated user");
         }
+        if (!owner.getResources().contains(playerResource)) {
+            throw new SecurityException("Cette ressource n'est pas dans l'inventaire du joueur");
+        }
 
         if (playerResource.getQuantity() < quantity) {
             throw new IllegalArgumentException("Insufficient quantity");

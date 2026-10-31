@@ -215,14 +215,14 @@ public class PlayerActionService {
     /** Entité retirée par le MJ : clore ses actions pour préserver l'annulation des autres. */
     public void discardActiveActionsReferencing(Long playerId, int turn, Long unitId,
                                                 Long vehicleId, Long buildingId,
-                                                String equipmentName) {
+                                                String equipmentName, PlayerActionType actionType) {
         for (PlayerAction action : actionRepository.findByPlayerIdAndTurnAndStatusOrderByIdAsc(
                 playerId, turn, PlayerActionStatus.ACTIVE)) {
             boolean references = (unitId != null && unitId.equals(action.getUnitId()))
                     || (vehicleId != null && vehicleId.equals(action.getVehicleId()))
                     || (buildingId != null && buildingId.equals(action.getBuildingId()))
                     || (equipmentName != null && equipmentName.equals(action.getEquipmentName()));
-            if (references) {
+            if (references && (actionType == null || actionType == action.getType())) {
                 action.markUndone();
                 actionRepository.save(action);
             }
@@ -398,6 +398,11 @@ public class PlayerActionService {
     private void undoPlaceUnit(PlayerAction action) {
         Unit unit = unitRepository.findById(action.getUnitId())
                 .orElseThrow(() -> new PlayerActionUndoException("Unité introuvable."));
+        if (vehicleRepository.findByPilot_Id(unit.getId()).isPresent()
+                || vehicleRepository.findByPassengers_Id(unit.getId()).isPresent()) {
+            throw new PlayerActionUndoException(
+                    "L'unité est à bord d'un véhicule : retirez-la de l'équipage d'abord.");
+        }
         int turn = turnService.getCurrentTurn();
         if (!movementOrderRepository.findPendingEntityIds(turn, List.of(unit.getId())).isEmpty()) {
             throw new PlayerActionUndoException("L'unité a un ordre à pied en attente : annulez-le d'abord.");
