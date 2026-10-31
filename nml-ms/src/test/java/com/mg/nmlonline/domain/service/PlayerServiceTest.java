@@ -2,8 +2,10 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.BuyEquipmentItemDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
+import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
+import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
@@ -57,6 +59,25 @@ class PlayerServiceTest {
         dto.setName(name);
         dto.setQuantity(quantity);
         return dto;
+    }
+
+    private BuyEquipmentItemDto item(String name, int quantity, Long cacheId) {
+        BuyEquipmentItemDto dto = item(name, quantity);
+        dto.setCacheId(cacheId);
+        return dto;
+    }
+
+    private WeaponCache cache(long id, int stored) {
+        WeaponCache cache = new WeaponCache(1L);
+        cache.setId(id);
+        player.getBuildings().add(cache);
+        if (stored > 0) {
+            EquipmentStack stack = new EquipmentStack(equipment("Stock", 1));
+            stack.setQuantity(stored);
+            stack.setAvailable(stored);
+            cache.getStoredEquipments().add(stack);
+        }
+        return cache;
     }
 
     private Equipment equipment(String name, int cost) {
@@ -166,5 +187,94 @@ class PlayerServiceTest {
         playerService.buyEquipments(1L, List.of(item("Pistolet", 2)));
 
         assertEquals(0.0, player.getStats().getMoney());
+    }
+
+    @Test
+    @DisplayName("Une seule cache avec de la place : l'achat y est stocké automatiquement")
+    void shouldStorePurchaseInSingleWeaponCache() {
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(equipment("Pistolet", 500)));
+        when(playerRepository.save(player)).thenReturn(player);
+        WeaponCache cache = cache(10L, 0);
+
+        playerService.buyEquipments(1L, List.of(item("Pistolet", 2)));
+
+        assertTrue(player.getEquipments().isEmpty());
+        assertEquals(2, cache.getTotalStoredCount());
+        assertEquals(1000.0, player.getStats().getTotalEquipmentValue());
+    }
+
+    @Test
+    @DisplayName("Deux caches avec de la place et aucun choix : l'achat est refusé")
+    void shouldRejectAmbiguousCacheChoice() {
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(equipment("Pistolet", 500)));
+        cache(10L, 0);
+        cache(11L, 0);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> playerService.buyEquipments(1L, List.of(item("Pistolet", 1))));
+
+        assertEquals(2000.0, player.getStats().getMoney());
+        assertTrue(player.getEquipments().isEmpty());
+        verify(playerRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Cache pleine : l'achat est refusé avant tout débit")
+    void shouldRejectPurchaseWhenOnlyCacheIsFull() {
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(equipment("Pistolet", 500)));
+        cache(10L, 300);
+
+        assertThrows(IllegalStateException.class,
+                () -> playerService.buyEquipments(1L, List.of(item("Pistolet", 1))));
+
+        assertEquals(2000.0, player.getStats().getMoney());
+        verify(playerRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Une cache pleine et une libre : la libre est choisie automatiquement")
+    void shouldPickTheOnlyCacheWithSpace() {
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(equipment("Pistolet", 500)));
+        when(playerRepository.save(player)).thenReturn(player);
+        cache(10L, 300);
+        WeaponCache free = cache(11L, 0);
+
+        playerService.buyEquipments(1L, List.of(item("Pistolet", 1)));
+
+        assertEquals(1, free.getTotalStoredCount());
+        assertTrue(player.getEquipments().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Cache explicite : l'achat est stocké dans la cache demandée")
+    void shouldStorePurchaseInRequestedCache() {
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(equipment("Pistolet", 500)));
+        when(playerRepository.save(player)).thenReturn(player);
+        WeaponCache first = cache(10L, 0);
+        WeaponCache second = cache(11L, 0);
+
+        playerService.buyEquipments(1L, List.of(item("Pistolet", 2, 11L)));
+
+        assertEquals(0, first.getTotalStoredCount());
+        assertEquals(2, second.getTotalStoredCount());
+    }
+
+    @Test
+    @DisplayName("Panier dépassant la capacité de la cache : refusé avant tout débit")
+    void shouldRejectCartOverCacheCapacity() {
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(equipment("Pistolet", 500)));
+        cache(10L, 299);
+
+        assertThrows(IllegalStateException.class,
+                () -> playerService.buyEquipments(1L, List.of(item("Pistolet", 1), item("Pistolet", 1))));
+
+        assertEquals(2000.0, player.getStats().getMoney());
+        verify(playerRepository, never()).save(any());
     }
 }

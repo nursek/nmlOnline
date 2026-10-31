@@ -122,17 +122,51 @@ public class Player {
     }
 
     public boolean buyEquipment(Equipment equipment, int quantity) {
+        return buyEquipment(equipment, quantity, null);
+    }
+
+    public boolean buyEquipment(Equipment equipment, int quantity, WeaponCache cache) {
         if (equipment == null || quantity <=0){
             return false;
         }
         double totalCost = (double) equipment.getCost() * quantity;
         if (spendMoney(totalCost)) {
-            addEquipmentToStack(equipment, quantity);
+            if (cache != null) {
+                addEquipmentToCache(cache, equipment, quantity);
+            } else {
+                addEquipmentToStack(equipment, quantity);
+            }
             setTotalEquipmentValue();
             calculateTotalEconomyPower();
             return true;
         }
         return false;
+    }
+
+    public void addEquipmentToCache(WeaponCache cache, Equipment equipment, int quantity) {
+        if (cache == null || equipment == null || quantity <= 0) return;
+        EquipmentStack stored = cache.getStoredEquipments().stream()
+                .filter(stack -> stack.getEquipment() != null
+                        && equipment.getName().equals(stack.getEquipment().getName()))
+                .findFirst()
+                .orElseGet(() -> {
+                    EquipmentStack created = new EquipmentStack(equipment);
+                    created.setPlayer(this);
+                    created.setQuantity(0);
+                    created.setAvailable(0);
+                    cache.getStoredEquipments().add(created);
+                    return created;
+                });
+        stored.setQuantity(stored.getQuantity() + quantity);
+        stored.setAvailable(stored.getAvailable() + quantity);
+    }
+
+    public List<WeaponCache> getUsableWeaponCaches() {
+        return buildings.stream()
+                .filter(WeaponCache.class::isInstance)
+                .map(WeaponCache.class::cast)
+                .filter(cache -> !cache.isDestroyed())
+                .toList();
     }
 
     public Vehicle buyVehicle(VehicleType vehicleType) {

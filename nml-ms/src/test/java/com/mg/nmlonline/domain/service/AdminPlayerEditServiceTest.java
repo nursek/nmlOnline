@@ -6,6 +6,7 @@ import com.mg.nmlonline.api.dto.AdminCharacterRequestDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
 import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.BuildingDto;
+import com.mg.nmlonline.api.dto.BuyEquipmentItemDto;
 import com.mg.nmlonline.api.dto.SetVehicleCrewRequestDto;
 import com.mg.nmlonline.api.dto.UnitDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
@@ -92,6 +93,9 @@ class AdminPlayerEditServiceTest {
 
     @Autowired
     private UnitService unitService;
+
+    @Autowired
+    private PlayerService playerService;
 
     @Autowired
     private PendingCaptureRepository pendingCaptureRepository;
@@ -1069,6 +1073,21 @@ class AdminPlayerEditServiceTest {
     }
 
     @Test
+    @DisplayName("Achat : l'équipement rejoint automatiquement la cache d'armes")
+    void purchaseGoesAutomaticallyToWeaponCache() {
+        service.setMoney(player.getId(), 50_000);
+        WeaponCache cache = player.getUsableWeaponCaches().getFirst();
+        int cachedBefore = cachedQuantity(cache, "Gauss Destructor");
+        int inventoryBefore = equipmentQuantity(player, "Gauss Destructor");
+
+        playerService.buyEquipments(player.getId(), List.of(buyItem("Gauss Destructor", 2)));
+        entityManager.flush();
+
+        assertEquals(cachedBefore + 2, cachedQuantity(cache, "Gauss Destructor"));
+        assertEquals(inventoryBefore, equipmentQuantity(player, "Gauss Destructor"));
+    }
+
+    @Test
     @DisplayName("Cache : l'équipement stocké est équipable et valorisé")
     void cacheEquipmentIsEquippableAndValued() {
         Unit unit = addUnit("LARBIN", UnitClass.LEGER, 41);
@@ -1236,6 +1255,13 @@ class AdminPlayerEditServiceTest {
         request.setPilotId(pilotId);
         request.setPassengerIds(passengerIds);
         return request;
+    }
+
+    private BuyEquipmentItemDto buyItem(String name, int quantity) {
+        BuyEquipmentItemDto item = new BuyEquipmentItemDto();
+        item.setName(name);
+        item.setQuantity(quantity);
+        return item;
     }
 
     private int storedBankQuantity(Bank bank, String name) {
