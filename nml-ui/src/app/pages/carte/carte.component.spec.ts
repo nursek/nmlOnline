@@ -48,3 +48,67 @@ describe('updateOverlays — frontières', () => {
     expect(front?.getAttribute('id')).toBeNull();
   });
 });
+
+type PathHost = {
+  overlays: () => ReadonlySet<'front' | 'resources'>;
+  selectedSector: () => { number: number } | null;
+  sectorsMap: () => Map<
+    number,
+    { number: number; ownerId: number | null; resource: string | null }
+  >;
+  playerColorMap: () => ReadonlyMap<number, string>;
+  isAllyOwner: (playerId: number | null) => boolean;
+  updatePathStyle: (path: SVGElement, sectorNumber: number) => void;
+};
+
+function styleHost(overlay: 'resources' | null, selected: number | null): PathHost {
+  const component = Object.create(CarteComponent.prototype) as unknown as PathHost;
+  component.overlays = () => new Set<'front' | 'resources'>(overlay ? [overlay] : []);
+  component.selectedSector = () => (selected === null ? null : { number: selected });
+  component.sectorsMap = () =>
+    new Map([
+      [1, { number: 1, ownerId: 1, resource: 'Prométhéum' }],
+      [2, { number: 2, ownerId: 2, resource: null }],
+    ]);
+  component.playerColorMap = () =>
+    new Map([
+      [1, '#ff0000'],
+      [2, '#00ff00'],
+    ]);
+  component.isAllyOwner = () => false;
+  return component;
+}
+
+function svgPath(): SVGElement {
+  return document.createElementNS('http://www.w3.org/2000/svg', 'path');
+}
+
+describe('updatePathStyle — calque ressources', () => {
+  it('aplatit le secteur sans trait ni halo qui débordent', () => {
+    const component = styleHost('resources', 1);
+    const selected = svgPath();
+    const normal = svgPath();
+
+    component.updatePathStyle(selected, 1);
+    component.updatePathStyle(normal, 2);
+
+    expect(selected.style.fill).toBe('#ffffff');
+    expect(normal.style.fill).toBe('#ffffff80');
+    for (const path of [selected, normal]) {
+      expect(path.style.stroke).toBe('none');
+      expect(path.style.strokeWidth).toBe('0');
+      expect(path.style.filter).toBe('none');
+    }
+  });
+
+  it('restaure la couleur du propriétaire et le contour de sélection hors calque', () => {
+    const component = styleHost(null, 1);
+    const selected = svgPath();
+
+    component.updatePathStyle(selected, 1);
+
+    expect(selected.style.stroke).toBe('#ff0000');
+    expect(selected.style.strokeWidth).toBe('3');
+    expect(selected.style.filter).toContain('url(#selection-overflow)');
+  });
+});

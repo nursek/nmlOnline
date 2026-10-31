@@ -576,8 +576,9 @@ export class CarteComponent {
     const isSelected = selected?.number === sectorNumber;
 
     path.style.fill = isNeutral ? 'url(#neutral-stripes)' : color + MAP_THEME.fill.normalAlpha;
-    path.style.stroke = color;
-    path.style.strokeWidth = String(MAP_THEME.stroke.normal);
+    // Calque « Ressources » : aplat seul, le trait blanc déborde du secteur sur la carte.
+    path.style.stroke = showResources ? 'none' : color;
+    path.style.strokeWidth = showResources ? '0' : String(MAP_THEME.stroke.normal);
     path.style.strokeDasharray =
       !showResources && this.isAllyOwner(sector?.ownerId ?? null) ? '7 4' : '';
     path.style.cursor = 'pointer';
@@ -587,12 +588,14 @@ export class CarteComponent {
 
     if (isSelected) {
       path.style.fill = isNeutral ? MAP_THEME.neutralColor : color;
-      path.style.strokeWidth = String(MAP_THEME.stroke.selected);
-      const filters: string[] = ['url(#selection-overflow)'];
-      if (MAP_THEME.selection.glowRadius > 0) {
-        filters.push(`drop-shadow(0 0 ${MAP_THEME.selection.glowRadius}px ${color})`);
+      if (!showResources) {
+        path.style.strokeWidth = String(MAP_THEME.stroke.selected);
+        const filters: string[] = ['url(#selection-overflow)'];
+        if (MAP_THEME.selection.glowRadius > 0) {
+          filters.push(`drop-shadow(0 0 ${MAP_THEME.selection.glowRadius}px ${color})`);
+        }
+        path.style.filter = filters.join(' ');
       }
-      path.style.filter = filters.join(' ');
     }
   }
 
@@ -692,7 +695,9 @@ export class CarteComponent {
     const color = sector ? this.getSectorColor(sector) : MAP_THEME.neutralColor;
     if (this.selectedSector()?.number !== sectorNumber) {
       path.style.fill = color + MAP_THEME.fill.hoverAlpha;
-      path.style.strokeWidth = String(MAP_THEME.stroke.hover);
+      if (!this.isOverlay('resources')) {
+        path.style.strokeWidth = String(MAP_THEME.stroke.hover);
+      }
     }
   }
 
