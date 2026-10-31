@@ -316,6 +316,8 @@ export class BoutiqueComponent {
   async checkout(): Promise<void> {
     const snapshot = [...this.cart()];
     if (!snapshot.length) return;
+    // Les caches peuvent avoir changé hors de cette page (ajout MJ) : relire avant de choisir.
+    await this.playerService.loadCurrent();
     const choice = await this.pickCacheForCart();
     if (choice.cancelled) return;
     await this.runCheckout(

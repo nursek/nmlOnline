@@ -1088,6 +1088,21 @@ class AdminPlayerEditServiceTest {
     }
 
     @Test
+    @DisplayName("Vue d'édition : toutes les caches d'armes sont exposées")
+    void getEditExposesEveryWeaponCache() {
+        service.addBuilding(player.getId(), "WEAPON_CACHE", 41);
+        entityManager.flush();
+
+        AdminPlayerEditDto dto = service.getEdit(player.getId());
+
+        long caches = dto.getPlayer().getBuildings().stream()
+                .filter(building -> "WEAPON_CACHE".equals(building.getBuildingType()))
+                .count();
+        assertEquals(2, caches);
+        assertEquals(2, player.getUsableWeaponCaches().size());
+    }
+
+    @Test
     @DisplayName("Cache : l'équipement stocké est équipable et valorisé")
     void cacheEquipmentIsEquippableAndValued() {
         Unit unit = addUnit("LARBIN", UnitClass.LEGER, 41);
