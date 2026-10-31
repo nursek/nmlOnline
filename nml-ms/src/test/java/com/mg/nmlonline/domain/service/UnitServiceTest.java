@@ -82,9 +82,7 @@ class UnitServiceTest {
         playerService.save(player);
         player = playerOfTestUser(TestDataInitializer.USER_1);
 
-        long dispoBefore = player.getEquipments().stream()
-                .filter(s -> s.getEquipment().getName().equals(eq.getName()))
-                .mapToInt(s -> s.getAvailable()).findFirst().orElse(-1);
+        long dispoBefore = availableOf(eq.getName());
         assertEquals(2, dispoBefore);
 
         Unit updated = unitService.assignEquipment(unit.getId(), player.getUserId(), eq.getName());
@@ -92,18 +90,12 @@ class UnitServiceTest {
         assertTrue(updated.getEquipments().stream().anyMatch(e -> e.getName().equals(eq.getName())),
                 "L'unité doit porter l'équipement après assignation");
 
-        player = playerOfTestUser(TestDataInitializer.USER_1);
-        long dispoAfter = player.getEquipments().stream()
-                .filter(s -> s.getEquipment().getName().equals(eq.getName()))
-                .mapToInt(s -> s.getAvailable()).findFirst().orElse(-1);
-        assertEquals(1, dispoAfter, "La dispo de l'inventaire doit décrémenter de 1");
+        long dispoAfter = availableOf(eq.getName());
+        assertEquals(1, dispoAfter, "La dispo du matériel doit décrémenter de 1");
 
         unitService.removeEquipment(unit.getId(), player.getUserId(), eq.getName());
-        player = playerOfTestUser(TestDataInitializer.USER_1);
-        long dispoFinal = player.getEquipments().stream()
-                .filter(s -> s.getEquipment().getName().equals(eq.getName()))
-                .mapToInt(s -> s.getAvailable()).findFirst().orElse(-1);
-        assertEquals(2, dispoFinal, "removeEquipment doit rendre l'exemplaire à l'inventaire");
+        long dispoFinal = availableOf(eq.getName());
+        assertEquals(2, dispoFinal, "removeEquipment doit rendre l'exemplaire au matériel");
     }
 
     @Test
@@ -284,10 +276,7 @@ class UnitServiceTest {
     }
 
     private int availableOf(String equipmentName) {
-        return playerOfTestUser(TestDataInitializer.USER_1).getEquipments().stream()
-                .filter(s -> s.getEquipment().getName().equals(equipmentName))
-                .mapToInt(s -> s.getAvailable())
-                .findFirst()
-                .orElse(-1);
+        return playerOfTestUser(TestDataInitializer.USER_1)
+                .getAvailableEquipmentQuantity(equipmentName);
     }
 }

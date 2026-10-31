@@ -453,14 +453,26 @@
                     <span class="line-name">{{ vehicle.displayName }}</span>
                     <span class="line-meta">{{ sectorLabel(vehicle.sectorNumber) }}</span>
                     <span class="line-meta">
-                      Pilote {{ vehicle.pilotName ?? '—' }} · {{ vehicle.passengerCount }}/{{
+                      {{ vehicleCrewLabel(vehicle) }} · {{ vehicle.passengerCount }}/{{
                         vehicle.capacity
                       }}
-                      passager(s)
                     </span>
                     @if (vehicle.isDestroyed) {
                       <span class="badge danger">Détruit</span>
                     }
+                    <button
+                      mat-icon-button
+                      [matTooltip]="
+                        vehicleCrewEditable(vehicle)
+                          ? 'Modifier l’équipage'
+                          : 'Véhicule hors d’un secteur possédé : réassignez un secteur d’abord'
+                      "
+                      [attr.aria-label]="'Équipage de ' + vehicle.displayName"
+                      (click)="openVehicleCrew(vehicle)"
+                      [disabled]="busy() || !vehicleCrewEditable(vehicle)"
+                    >
+                      <mat-icon>groups</mat-icon>
+                    </button>
                     <button
                       mat-icon-button
                       color="warn"
@@ -541,25 +553,207 @@
             } @else {
               <div class="lines">
                 @for (building of e.player.buildings; track building.id) {
-                  <div class="line">
-                    <span class="line-name">{{ buildingLabels[building.buildingType] }}</span>
-                    <span class="line-meta">{{ sectorLabel(building.sectorNumber) }}</span>
-                    @if (building.isDestroyed) {
-                      <span class="badge danger">Détruit</span>
+                  <div class="building-entry">
+                    <div class="line">
+                      <span class="line-name">{{ buildingLabels[building.buildingType] }}</span>
+                      <span class="line-meta">{{ sectorLabel(building.sectorNumber) }}</span>
+                      @if (building.isDestroyed) {
+                        <span class="badge danger">Détruit</span>
+                      }
+                      @if (building.isCaptured) {
+                        <span class="badge warn">Capturé</span>
+                      }
+                      <button
+                        mat-icon-button
+                        color="warn"
+                        matTooltip="Supprimer"
+                        [attr.aria-label]="'Supprimer ' + buildingLabels[building.buildingType]"
+                        (click)="deleteBuilding(building)"
+                        [disabled]="busy()"
+                      >
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+
+                    @if (building.buildingType === 'BANK') {
+                      <div class="stock">
+                        <span class="stock-head">
+                          Stocké :
+                          {{ building.storedMoney ?? 0 | number: '1.0-0' }} ₡ — 75 % de la fortune,
+                          modifiable via l'onglet Inventaire › Argent.
+                        </span>
+                        @if ((building.storedResources?.length ?? 0) === 0) {
+                          <p class="empty">Aucune ressource stockée.</p>
+                        } @else {
+                          @for (resource of building.storedResources ?? []; track resource.name) {
+                            <div class="line">
+                              <span class="line-name">{{ resource.name }}</span>
+                              <span class="line-qty">×{{ resource.quantity }}</span>
+                              <mat-form-field appearance="outline" class="qty-field">
+                                <mat-label>Qté</mat-label>
+                                <input
+                                  matInput
+                                  type="number"
+                                  min="1"
+                                  [max]="resource.quantity"
+                                  [value]="bankRemoveQty(resource.name, resource.quantity)"
+                                  (input)="
+                                    setBankRemoveQty(resource.name, +$any($event.target).value)
+                                  "
+                                />
+                              </mat-form-field>
+                              <button
+                                mat-icon-button
+                                color="warn"
+                                matTooltip="Retirer de la banque"
+                                [attr.aria-label]="'Retirer ' + resource.name + ' de la banque'"
+                                (click)="removeBankResource(resource)"
+                                [disabled]="busy()"
+                              >
+                                <mat-icon>remove_circle</mat-icon>
+                              </button>
+                            </div>
+                          }
+                        }
+                        <div class="row add-row">
+                          <mat-form-field appearance="outline" class="wide-field">
+                            <mat-label>Ressource</mat-label>
+                            <mat-select
+                              [value]="bankResourceName()"
+                              (selectionChange)="bankResourceName.set($event.value)"
+                            >
+                              @for (resource of resourceCatalog(); track resource.name) {
+                                <mat-option [value]="resource.name">{{ resource.name }}</mat-option>
+                              }
+                            </mat-select>
+                          </mat-form-field>
+                          <mat-form-field appearance="outline" class="qty-field">
+                            <mat-label>Qté</mat-label>
+                            <input
+                              matInput
+                              type="number"
+                              min="1"
+                              step="1"
+                              [value]="bankResourceQuantity()"
+                              (input)="
+                                setQuantity(bankResourceQuantity, +$any($event.target).value)
+                              "
+                            />
+                          </mat-form-field>
+                          <button
+                            mat-stroked-button
+                            color="primary"
+                            (click)="addBankResource()"
+                            [disabled]="busy() || !bankResourceName() || bankResourceQuantity() < 1"
+                          >
+                            <mat-icon>add</mat-icon>
+                            Ajouter
+                          </button>
+                        </div>
+                      </div>
                     }
-                    @if (building.isCaptured) {
-                      <span class="badge warn">Capturé</span>
+
+                    @if (building.buildingType === 'WEAPON_CACHE') {
+                      <div class="stock">
+                        <span class="stock-head">
+                          Capacité {{ building.currentCapacity ?? 0 }}/{{
+                            building.maxCapacity ?? 0
+                          }}
+                          — {{ building.availableCapacity ?? 0 }} place(s) disponible(s).
+                        </span>
+                        @if ((building.storedEquipments?.length ?? 0) === 0) {
+                          <p class="empty">Aucun équipement stocké.</p>
+                        } @else {
+                          @for (
+                            stack of building.storedEquipments ?? [];
+                            track stack.equipment.name
+                          ) {
+                            <div class="line">
+                              <span class="line-name">{{ stack.equipment.name }}</span>
+                              <span class="line-qty">×{{ stack.quantity }}</span>
+                              <mat-form-field appearance="outline" class="qty-field">
+                                <mat-label>Qté</mat-label>
+                                <input
+                                  matInput
+                                  type="number"
+                                  min="1"
+                                  [max]="stack.quantity"
+                                  [value]="
+                                    cacheRemoveQty(
+                                      building.id,
+                                      stack.equipment.name,
+                                      stack.quantity
+                                    )
+                                  "
+                                  (input)="
+                                    setCacheRemoveQty(
+                                      building.id,
+                                      stack.equipment.name,
+                                      +$any($event.target).value
+                                    )
+                                  "
+                                />
+                              </mat-form-field>
+                              <button
+                                mat-icon-button
+                                color="warn"
+                                matTooltip="Retirer de la cache"
+                                [attr.aria-label]="
+                                  'Retirer ' + stack.equipment.name + ' de la cache'
+                                "
+                                (click)="removeCacheEquipment(building, stack)"
+                                [disabled]="busy()"
+                              >
+                                <mat-icon>remove_circle</mat-icon>
+                              </button>
+                            </div>
+                          }
+                        }
+                        <div class="row add-row">
+                          <mat-form-field appearance="outline" class="wide-field">
+                            <mat-label>Équipement</mat-label>
+                            <mat-select
+                              [value]="cacheEquipmentName(building.id)"
+                              (selectionChange)="setCacheEquipmentName(building.id, $event.value)"
+                            >
+                              @for (equipment of equipmentCatalog(); track equipment.name) {
+                                <mat-option [value]="equipment.name">{{
+                                  equipment.name
+                                }}</mat-option>
+                              }
+                            </mat-select>
+                          </mat-form-field>
+                          <mat-form-field appearance="outline" class="qty-field">
+                            <mat-label>Qté</mat-label>
+                            <input
+                              matInput
+                              type="number"
+                              min="1"
+                              step="1"
+                              [value]="
+                                cacheEquipmentQty(building.id, building.availableCapacity ?? 1)
+                              "
+                              (input)="
+                                setCacheEquipmentQty(building.id, +$any($event.target).value)
+                              "
+                            />
+                          </mat-form-field>
+                          <button
+                            mat-stroked-button
+                            color="primary"
+                            (click)="addCacheEquipment(building)"
+                            [disabled]="
+                              busy() ||
+                              (building.availableCapacity ?? 0) < 1 ||
+                              !cacheEquipmentName(building.id)
+                            "
+                          >
+                            <mat-icon>add</mat-icon>
+                            Ajouter
+                          </button>
+                        </div>
+                      </div>
                     }
-                    <button
-                      mat-icon-button
-                      color="warn"
-                      matTooltip="Supprimer"
-                      [attr.aria-label]="'Supprimer ' + buildingLabels[building.buildingType]"
-                      (click)="deleteBuilding(building)"
-                      [disabled]="busy()"
-                    >
-                      <mat-icon>delete</mat-icon>
-                    </button>
                   </div>
                 }
               </div>

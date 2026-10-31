@@ -42,6 +42,11 @@ import {
   ConfirmDialogComponent,
   ConfirmDialogData,
 } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import {
+  VehicleCrewModalComponent,
+  type VehicleCrewDialogResult,
+} from '../../joueur/vehicle-crew-modal.component';
+import { crewLabel, sectorOfVehicle } from './player-edit-dialog.helpers';
 import { UnitEditDialogComponent } from './unit-edit-dialog/unit-edit-dialog.component';
 
 export interface PlayerEditDialogData {
@@ -128,6 +133,11 @@ export class PlayerEditDialogComponent {
     UNEQUIP_UNIT: 'Déséquipement d’unité',
     ADD_VEHICLES: 'Ajout de véhicules',
     DELETE_VEHICLE: 'Suppression de véhicule',
+    SET_VEHICLE_CREW: 'Équipage de véhicule',
+    ADD_BANK_RESOURCE: 'Ajout en banque',
+    REMOVE_BANK_RESOURCE: 'Retrait de banque',
+    ADD_CACHE_EQUIPMENT: 'Ajout en cache',
+    REMOVE_CACHE_EQUIPMENT: 'Retrait de cache',
     ADD_BUILDING: 'Ajout de bâtiment',
     DELETE_BUILDING: 'Suppression de bâtiment',
     REASSIGN_SECTOR: 'Réassignation de secteur',
@@ -204,6 +214,14 @@ export class PlayerEditDialogComponent {
     WEAPON_CACHE: "Cache d'armes",
     BANK: 'Banque',
   };
+
+  readonly bankResourceName = linkedSignal(() => this.resourceCatalog()[0]?.name ?? '');
+  readonly bankResourceQuantity = signal(1);
+  readonly bankRemoveQuantity = signal<Record<string, number>>({});
+
+  private readonly cacheEquipmentNames = signal<Record<number, string>>({});
+  private readonly cacheEquipmentQuantities = signal<Record<number, number>>({});
+  private readonly cacheRemoveQuantities = signal<Record<string, number>>({});
 
   constructor() {
     this.admin.openEdit(this.data.playerId);
@@ -621,6 +639,161 @@ export class PlayerEditDialogComponent {
       this.api.adminDeleteBuilding(this.data.playerId, building.id),
       'Bâtiment supprimé',
     );
+  }
+
+  bankRemoveQty(name: string, max: number): number {
+    return this.clampQuantity(this.bankRemoveQuantity()[name] ?? 1, max);
+  }
+
+  setBankRemoveQty(name: string, value: number): void {
+    this.bankRemoveQuantity.update((quantities) => ({
+      ...quantities,
+      [name]: Math.max(1, Math.trunc(value) || 1),
+    }));
+  }
+
+  async addBankResource(): Promise<void> {
+    const name = this.bankResourceName();
+    const quantity = this.bankResourceQuantity();
+    if (!name || quantity < 1) {
+      return;
+    }
+    const done = await this.run(
+      this.api.adminAddBankResource(this.data.playerId, name, quantity),
+      `${quantity} × ${name} ajouté(s) en banque`,
+    );
+    if (done) {
+      this.bankResourceQuantity.set(1);
+    }
+  }
+
+  async removeBankResource(resource: PlayerResource): Promise<void> {
+    const quantity = this.clampQuantity(
+      this.bankRemoveQuantity()[resource.name] ?? 1,
+      resource.quantity,
+    );
+    const done = await this.run(
+      this.api.adminRemoveBankResource(this.data.playerId, resource.name, quantity),
+      `${quantity} × ${resource.name} retiré(s) de la banque`,
+    );
+    if (done) {
+      this.bankRemoveQuantity.update((quantities) => ({ ...quantities, [resource.name]: 1 }));
+    }
+  }
+
+  cacheEquipmentName(buildingId: number | null): string {
+    if (buildingId === null) return '';
+    return this.cacheEquipmentNames()[buildingId] ?? this.equipmentCatalog()[0]?.name ?? '';
+  }
+
+  setCacheEquipmentName(buildingId: number | null, name: string): void {
+    if (buildingId === null) return;
+    this.cacheEquipmentNames.update((names) => ({ ...names, [buildingId]: name }));
+  }
+
+  cacheEquipmentQty(buildingId: number | null, max: number): number {
+    return this.clampQuantity(
+      buildingId === null ? 1 : (this.cacheEquipmentQuantities()[buildingId] ?? 1),
+      max,
+    );
+  }
+
+  setCacheEquipmentQty(buildingId: number | null, value: number): void {
+    if (buildingId === null) return;
+    this.cacheEquipmentQuantities.update((quantities) => ({
+      ...quantities,
+      [buildingId]: Math.max(1, Math.trunc(value) || 1),
+    }));
+  }
+
+  cacheRemoveQty(buildingId: number | null, name: string, max: number): number {
+    const key = `${buildingId}:${name}`;
+    return this.clampQuantity(
+      buildingId === null ? 1 : (this.cacheRemoveQuantities()[key] ?? 1),
+      max,
+    );
+  }
+
+  setCacheRemoveQty(buildingId: number | null, name: string, value: number): void {
+    if (buildingId === null) return;
+    this.cacheRemoveQuantities.update((quantities) => ({
+      ...quantities,
+      [`${buildingId}:${name}`]: Math.max(1, Math.trunc(value) || 1),
+    }));
+  }
+
+  async addCacheEquipment(building: Building): Promise<void> {
+    const buildingId = building.id;
+    const available = building.availableCapacity ?? 0;
+    if (buildingId === null || available < 1) {
+      return;
+    }
+    const name = this.cacheEquipmentName(buildingId);
+    const quantity = this.cacheEquipmentQty(buildingId, available);
+    if (!name || quantity < 1) {
+      return;
+    }
+    const done = await this.run(
+      this.api.adminAddCacheEquipment(this.data.playerId, buildingId, name, quantity),
+      `${quantity} × ${name} ajouté(s) en cache`,
+    );
+    if (done) {
+      this.setCacheEquipmentQty(buildingId, 1);
+    }
+  }
+
+  async removeCacheEquipment(building: Building, stack: EquipmentStack): Promise<void> {
+    const buildingId = building.id;
+    if (buildingId === null) {
+      return;
+    }
+    const name = stack.equipment.name;
+    const quantity = this.clampQuantity(
+      this.cacheRemoveQuantities()[`${buildingId}:${name}`] ?? 1,
+      stack.quantity,
+    );
+    const done = await this.run(
+      this.api.adminRemoveCacheEquipment(this.data.playerId, buildingId, name, quantity),
+      `${quantity} × ${name} retiré(s) de la cache`,
+    );
+    if (done) {
+      this.setCacheRemoveQty(buildingId, name, 1);
+    }
+  }
+
+  vehicleCrewLabel(vehicle: Vehicle): string {
+    return crewLabel(this.currentEdit(), vehicle);
+  }
+
+  vehicleCrewEditable(vehicle: Vehicle): boolean {
+    return sectorOfVehicle(this.player(), vehicle) !== null;
+  }
+
+  openVehicleCrew(vehicle: Vehicle): void {
+    const vehicleId = vehicle.id;
+    const sector = sectorOfVehicle(this.player(), vehicle);
+    if (vehicleId === null || !sector) {
+      return;
+    }
+    this.dialog
+      .open(VehicleCrewModalComponent, {
+        width: '480px',
+        maxHeight: '90vh',
+        data: { vehicle, sector, playerId: this.data.playerId },
+      })
+      .afterClosed()
+      .subscribe((result: VehicleCrewDialogResult | null | undefined) => {
+        if (!result) return;
+        void this.run(
+          this.api.adminSetVehicleCrew(
+            this.data.playerId,
+            vehicleId,
+            result.pilotId,
+            result.passengerIds,
+          ),
+          'Équipage mis à jour',
+        );
+      });
   }
 
   private buildingWarning(type: BuildingType): string {

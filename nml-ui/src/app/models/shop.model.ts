@@ -11,6 +11,7 @@ export interface CartItem {
 export interface BuyEquipmentItem {
   name: string;
   quantity: number;
+  cacheId?: number | null;
 }
 
 export interface VehicleCartItem {

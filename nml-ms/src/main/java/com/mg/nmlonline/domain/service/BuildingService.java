@@ -131,7 +131,7 @@ public class BuildingService {
                 .toList();
     }
 
-    /** Capture d'un cache d'armes : les équipements stockés rejoignent l'inventaire du capturant. */
+    /** Capture d'une cache d'armes : le contenu rejoint les caches du capturant, sinon son inventaire. */
     public void captureWeaponCache(Long cacheId, Long capturingPlayerId, int currentTurn) {
         Building building = buildingRepository.findById(cacheId).orElse(null);
         if (!(building instanceof WeaponCache cache)) {
@@ -146,13 +146,10 @@ public class BuildingService {
         cache.onCapture(capturingPlayerId, currentTurn);
         // orphanRemoval : un stack sorti du Cache est DELETE au flush, d'où la recréation chez le capturant.
         for (EquipmentStack stack : cache.transferAllEquipments()) {
-            // player_id NOT NULL rattache aussi le stack au joueur : le sortir des deux collections évite un cascade persist.
-            Player owner = stack.getPlayer();
-            if (owner != null) {
-                owner.getEquipments().remove(stack);
-            }
-            capturingPlayer.addEquipmentToStack(stack.getEquipment(), stack.getQuantity());
+            capturingPlayer.addEquipmentToStorage(stack.getEquipment(), stack.getQuantity());
         }
+        capturingPlayer.setTotalEquipmentValue();
+        capturingPlayer.calculateTotalEconomyPower();
         buildingRepository.save(cache);
         playerRepository.save(capturingPlayer);
     }
@@ -267,18 +264,19 @@ public class BuildingService {
             throw new IllegalStateException("La cache d'armes est détruite");
         }
 
-        EquipmentStack stack = player.getEquipments().stream()
+        EquipmentStack stack = cache.getStoredEquipments().stream()
                 .filter(s -> s.getEquipment() != null
                         && equipmentName.equals(s.getEquipment().getName()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Équipement introuvable : " + equipmentName));
-        // Seul le matériel disponible (non équipé sur une unité) peut être jeté.
         if (stack.getAvailable() < quantity) {
-            throw new IllegalArgumentException("Quantité disponible insuffisante");
+            throw new IllegalArgumentException("Quantité disponible insuffisante dans la cache d'armes");
         }
 
-        for (int i = 0; i < quantity; i++) {
-            player.removeEquipmentFromStack(stack.getEquipment());
+        stack.setQuantity(stack.getQuantity() - quantity);
+        stack.setAvailable(stack.getAvailable() - quantity);
+        if (stack.getQuantity() <= 0) {
+            cache.getStoredEquipments().remove(stack);
         }
         player.setTotalEquipmentValue();
         player.calculateTotalEconomyPower();

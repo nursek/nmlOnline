@@ -5,18 +5,24 @@ import com.mg.nmlonline.api.dto.AdminCharacterRequestDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
 import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.ResourceCatalogDto;
+import com.mg.nmlonline.api.dto.SetVehicleCrewRequestDto;
 import com.mg.nmlonline.api.dto.UnitDto;
+import com.mg.nmlonline.domain.model.action.PlayerActionType;
 import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
+import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
@@ -73,6 +79,7 @@ public class AdminPlayerEditService {
     private final PlayerMapper playerMapper;
     private final UnitMapper unitMapper;
     private final VehicleMapper vehicleMapper;
+    private final VehicleCrewService vehicleCrewService;
     private final TurnLock turnLock;
     private final EntityManager em;
 
@@ -93,6 +100,7 @@ public class AdminPlayerEditService {
                                   PlayerMapper playerMapper,
                                   UnitMapper unitMapper,
                                   VehicleMapper vehicleMapper,
+                                  VehicleCrewService vehicleCrewService,
                                   TurnLock turnLock,
                                   EntityManager em) {
         this.playerRepository = playerRepository;
@@ -112,6 +120,7 @@ public class AdminPlayerEditService {
         this.playerMapper = playerMapper;
         this.unitMapper = unitMapper;
         this.vehicleMapper = vehicleMapper;
+        this.vehicleCrewService = vehicleCrewService;
         this.turnLock = turnLock;
         this.em = em;
     }
@@ -348,7 +357,7 @@ public class AdminPlayerEditService {
         }
 
         playerActionService.discardActiveActionsReferencing(
-                playerId, board.getCurrentTurn(), null, null, null, name);
+                playerId, board.getCurrentTurn(), null, null, null, name, null);
         int fromStock = Math.min(quantity, stack.getAvailable());
         for (int i = 0; i < fromStock; i++) {
             player.removeEquipmentFromStack(stack.getEquipment());
@@ -417,7 +426,7 @@ public class AdminPlayerEditService {
             throw new IllegalArgumentException("L'unité " + unitId + " n'appartient pas à ce joueur");
         }
         playerActionService.discardActiveActionsReferencing(
-                playerId, board.getCurrentTurn(), unitId, null, null, null);
+                playerId, board.getCurrentTurn(), unitId, null, null, null, null);
         removeEntityFromPendingOrders(playerId, unitId);
         for (UnitEquipment row : new ArrayList<>(unit.getUnitEquipments())) {
             player.incrementEquipmentAvailability(row.getEquipment());
@@ -607,7 +616,7 @@ public class AdminPlayerEditService {
             throw new IllegalArgumentException("Le véhicule " + vehicleId + " n'appartient pas à ce joueur");
         }
         playerActionService.discardActiveActionsReferencing(
-                playerId, board.getCurrentTurn(), null, vehicleId, null, null);
+                playerId, board.getCurrentTurn(), null, vehicleId, null, null, null);
         cancelPendingVehicleOrders(vehicleId);
         boolean valueLost = !vehicle.isDestroyed() && vehicle.getVehicleType() != null;
         VehicleType type = vehicle.getVehicleType();
@@ -626,6 +635,40 @@ public class AdminPlayerEditService {
         boardService.save(board);
         playerRepository.save(player);
         audit(playerId, AdminAuditAction.DELETE_VEHICLE, vehicleLabel);
+    }
+
+    @Transactional
+    public void setVehicleCrew(Long playerId, Long vehicleId, SetVehicleCrewRequestDto request) {
+        requireTurnOpen();
+        Player player = lockPlayer(playerId);
+        Board board = activeBoard();
+        Vehicle vehicle = vehicleRepository.findByIdForUpdate(vehicleId)
+                .orElseThrow(() -> new EntityNotFoundException("Véhicule introuvable : " + vehicleId));
+        if (!playerId.equals(vehicle.getPlayerId())) {
+            throw new IllegalArgumentException("Le véhicule " + vehicleId + " n'appartient pas à ce joueur");
+        }
+        if (vehicle.getSector() == null) {
+            throw new IllegalStateException("Le véhicule n'est pas déployé sur un secteur");
+        }
+        if (vehicle.isDestroyed()) {
+            throw new IllegalStateException("Le véhicule est détruit");
+        }
+        Long prevPilotId = vehicle.getPilot() != null ? vehicle.getPilot().getId() : null;
+        List<Long> prevPassengerIds = vehicle.getPassengers().stream()
+                .map(CombatEntity::getId).toList();
+        if (!vehicleCrewService.updateCrew(player, vehicle, request.getPilotId(),
+                request.getPassengerIds(), prevPilotId, prevPassengerIds)) {
+            return;
+        }
+        playerActionService.discardActiveActionsReferencing(
+                playerId, board.getCurrentTurn(), null, vehicleId, null, null,
+                PlayerActionType.SET_VEHICLE_CREW);
+        vehicleRepository.save(vehicle);
+        CombatEntity pilot = vehicle.getPilot();
+        audit(playerId, AdminAuditAction.SET_VEHICLE_CREW,
+                vehicle.getDisplayName() + " : pilote "
+                        + (pilot != null ? pilot.getDisplayName() : "aucun")
+                        + ", " + vehicle.getPassengerCount() + " passager(s)");
     }
 
     @Transactional
@@ -661,7 +704,7 @@ public class AdminPlayerEditService {
             throw new IllegalArgumentException("Le bâtiment " + buildingId + " n'appartient pas à ce joueur");
         }
         playerActionService.discardActiveActionsReferencing(
-                playerId, board.getCurrentTurn(), null, null, buildingId, null);
+                playerId, board.getCurrentTurn(), null, null, buildingId, null, null);
         Sector sector = building.getSector();
         String buildingLabel = building.getBuildingType() + " ("
                 + (sector != null ? "secteur " + sector.getNumber() : "sans secteur") + ")";
@@ -673,6 +716,142 @@ public class AdminPlayerEditService {
         boardService.save(board);
         playerRepository.save(player);
         audit(playerId, AdminAuditAction.DELETE_BUILDING, buildingLabel);
+    }
+
+    @Transactional
+    public void addBankResource(Long playerId, String name, int quantity) {
+        requireQuantity(quantity, MAX_STACK_QUANTITY);
+        requireTurnOpen();
+        Player player = lockPlayer(playerId);
+        Resource resource = resourceRepository.findByName(name)
+                .orElseThrow(() -> new IllegalArgumentException("Ressource inconnue : " + name));
+        Bank bank = requireBankOfPlayer(playerId);
+        PlayerResource stored = bank.getStoredResources().stream()
+                .filter(candidate -> name.equals(candidate.getResourceName()))
+                .findFirst()
+                .orElseGet(() -> {
+                    PlayerResource created = new PlayerResource(name, 0);
+                    created.setPlayer(player);
+                    bank.getStoredResources().add(created);
+                    return created;
+                });
+        stored.addQuantity(quantity);
+        buildingRepository.save(bank);
+        audit(playerId, AdminAuditAction.ADD_BANK_RESOURCE,
+                quantity + " × " + resource.getName() + " en banque");
+    }
+
+    @Transactional
+    public void removeBankResource(Long playerId, String name, int quantity) {
+        requireQuantity(quantity, MAX_STACK_QUANTITY);
+        requireTurnOpen();
+        lockPlayer(playerId);
+        Bank bank = requireBankOfPlayer(playerId);
+        PlayerResource stored = bank.getStoredResources().stream()
+                .filter(candidate -> name.equals(candidate.getResourceName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Aucune ressource « " + name + " » dans la banque"));
+        if (!stored.removeQuantity(quantity)) {
+            throw new IllegalArgumentException("La banque ne contient que " + stored.getQuantity()
+                    + " × « " + name + " »");
+        }
+        if (stored.getQuantity() <= 0) {
+            bank.getStoredResources().remove(stored);
+        }
+        buildingRepository.save(bank);
+        audit(playerId, AdminAuditAction.REMOVE_BANK_RESOURCE,
+                quantity + " × " + name + " retiré(s) de la banque");
+    }
+
+    @Transactional
+    public void addCacheEquipment(Long playerId, Long buildingId, String name, int quantity) {
+        requireQuantity(quantity, MAX_STACK_QUANTITY);
+        requireTurnOpen();
+        Player player = lockPlayer(playerId);
+        WeaponCache cache = requireCacheOfPlayer(playerId, buildingId);
+        Equipment equipment = equipmentService.findByName(name)
+                .orElseThrow(() -> new IllegalArgumentException("Équipement inconnu : " + name));
+        if (!cache.hasCapacity(quantity)) {
+            throw new IllegalArgumentException("Capacité insuffisante dans la cache : "
+                    + cache.getAvailableCapacity() + " place(s) disponible(s)");
+        }
+        EquipmentStack stored = cache.getStoredEquipments().stream()
+                .filter(stack -> stack.getEquipment() != null && name.equals(stack.getEquipment().getName()))
+                .findFirst()
+                .orElseGet(() -> {
+                    EquipmentStack created = new EquipmentStack(equipment);
+                    created.setPlayer(player);
+                    created.setQuantity(0);
+                    created.setAvailable(0);
+                    cache.getStoredEquipments().add(created);
+                    return created;
+                });
+        stored.setQuantity(stored.getQuantity() + quantity);
+        stored.setAvailable(stored.getAvailable() + quantity);
+        buildingRepository.save(cache);
+        player.setTotalEquipmentValue();
+        player.calculateTotalEconomyPower();
+        audit(playerId, AdminAuditAction.ADD_CACHE_EQUIPMENT,
+                quantity + " × " + name + " → " + buildingLabel(cache));
+    }
+
+    @Transactional
+    public void removeCacheEquipment(Long playerId, Long buildingId, String name, int quantity) {
+        requireQuantity(quantity, MAX_STACK_QUANTITY);
+        requireTurnOpen();
+        Player player = lockPlayer(playerId);
+        WeaponCache cache = requireCacheOfPlayer(playerId, buildingId);
+        EquipmentStack stored = cache.getStoredEquipments().stream()
+                .filter(stack -> stack.getEquipment() != null && name.equals(stack.getEquipment().getName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Aucun équipement « " + name + " » dans cette cache"));
+        if (quantity > stored.getAvailable()) {
+            throw new IllegalArgumentException("La cache ne contient que " + stored.getAvailable()
+                    + " × « " + name + " » disponibles (copies équipées exclues)");
+        }
+        stored.setQuantity(stored.getQuantity() - quantity);
+        stored.setAvailable(stored.getAvailable() - quantity);
+        if (stored.getQuantity() <= 0) {
+            cache.getStoredEquipments().remove(stored);
+        }
+        buildingRepository.save(cache);
+        player.setTotalEquipmentValue();
+        player.calculateTotalEconomyPower();
+        audit(playerId, AdminAuditAction.REMOVE_CACHE_EQUIPMENT,
+                quantity + " × " + name + " ← " + buildingLabel(cache));
+    }
+
+    private Bank requireBankOfPlayer(Long playerId) {
+        Bank bank = buildingService.getBank(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Le joueur n'a pas de banque"));
+        if (bank.isDestroyed()) {
+            throw new IllegalStateException("La banque est détruite");
+        }
+        return bank;
+    }
+
+    private WeaponCache requireCacheOfPlayer(Long playerId, Long buildingId) {
+        Building building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new EntityNotFoundException("Bâtiment introuvable : " + buildingId));
+        if (!(building instanceof WeaponCache cache)) {
+            throw new IllegalArgumentException("Le bâtiment " + buildingId + " n'est pas une cache d'armes");
+        }
+        if (!playerId.equals(cache.getPlayerId())) {
+            throw new IllegalArgumentException(
+                    "La cache " + buildingId + " n'appartient pas à ce joueur");
+        }
+        if (cache.isDestroyed()) {
+            throw new IllegalStateException("La cache d'armes est détruite");
+        }
+        return cache;
+    }
+
+    private String buildingLabel(Building building) {
+        Sector sector = building.getSector();
+        return building.getBuildingType() + " #" + building.getId()
+                + " (" + (sector != null ? "secteur " + sector.getNumber() : "sans secteur") + ")";
     }
 
     private void validateCharacter(AdminCharacterRequestDto request) {

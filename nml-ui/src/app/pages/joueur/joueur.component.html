@@ -83,13 +83,19 @@
             (move)="openBuildingMove($event)"
             (exchange)="openExchangeDialog()"
           />
-          <app-weapon-cache-panel
-            [building]="weaponCache()"
-            [stacks]="inventoryStacks()"
-            [currentTurn]="currentTurn()"
-            (move)="openBuildingMove($event)"
-            (equipments)="openCacheEquipments()"
-          />
+          @if (weaponCaches().length === 0) {
+            <app-weapon-cache-panel [building]="null" [currentTurn]="currentTurn()" />
+          } @else {
+            @for (cache of weaponCaches(); track cache.id) {
+              <app-weapon-cache-panel
+                [building]="cache"
+                [stacks]="cache.storedEquipments ?? []"
+                [currentTurn]="currentTurn()"
+                (move)="openBuildingMove($event)"
+                (equipments)="openCacheEquipments(cache)"
+              />
+            }
+          }
           <app-headquarters-panel
             [building]="headquarters()"
             [currentTurn]="currentTurn()"
@@ -263,7 +269,7 @@
             </div>
             <p class="section-subtitle">Votre arsenal actuel</p>
 
-            @if (player.equipments.length === 0) {
+            @if (equipmentStacks().length === 0) {
               <div class="empty-state">
                 <mat-icon>inventory_2</mat-icon>
                 <p>Aucun équipement. Visitez la boutique !</p>

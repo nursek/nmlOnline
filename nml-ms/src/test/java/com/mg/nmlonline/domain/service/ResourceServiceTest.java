@@ -54,6 +54,7 @@ class ResourceServiceTest {
     private PlayerResource ownedResource(String name, int quantity) {
         PlayerResource pr = new PlayerResource(name, quantity);
         pr.setPlayer(player);
+        player.getResources().add(pr);
         return pr;
     }
 
@@ -138,6 +139,19 @@ class ResourceServiceTest {
 
             when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
+
+            assertThrows(SecurityException.class,
+                    () -> resourceService.sellResource(7L, 1, 10L));
+        }
+
+        @Test
+        @DisplayName("Vendre une ressource stockée en banque (hors inventaire) est interdit")
+        void shouldRejectResourceOutsideInventory() {
+            PlayerResource stored = new PlayerResource("Auramite", 5);
+            stored.setPlayer(player);
+
+            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(stored));
 
             assertThrows(SecurityException.class,
                     () -> resourceService.sellResource(7L, 1, 10L));

@@ -8,6 +8,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Equipment } from '../../models';
 import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
 import { PlayerService } from '../../services/player.service';
+import { allEquipmentStacks } from './joueur.helpers';
 
 export interface UnitSlotPickerData {
   unitId: number;
@@ -40,8 +41,8 @@ export class UnitSlotPickerComponent {
   /** Équipements éligibles de la catégorie (dispo > 0 + compat classe + cap non pleine). */
   readonly eligible = computed(() => {
     const p = this.player();
-    if (!p?.equipments) return [];
-    return p.equipments.filter(
+    if (!p) return [];
+    return allEquipmentStacks(p).filter(
       (st) =>
         st.available > 0 &&
         st.equipment.category === this.data.category &&
@@ -52,8 +53,8 @@ export class UnitSlotPickerComponent {
   /** Inéligibles (dispo > 0, catégorie OK mais classe/cap bloqué) — grisés avec raison. */
   readonly ineligible = computed(() => {
     const p = this.player();
-    if (!p?.equipments) return [];
-    return p.equipments.filter(
+    if (!p) return [];
+    return allEquipmentStacks(p).filter(
       (st) =>
         st.available > 0 &&
         st.equipment.category === this.data.category &&

@@ -90,13 +90,12 @@ public class UnitService {
         Unit unit = requireUnit(board, unitId);
         requireOwnedBy(unit, player);
 
-        EquipmentStack stack = player.getEquipments().stream()
-                .filter(s -> s.getEquipment() != null && s.getEquipment().getName().equals(equipmentName))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Équipement \"" + equipmentName + "\" introuvable dans l'inventaire du joueur."));
-
-        if (stack.getAvailable() <= 0) {
+        EquipmentStack stack = player.findAvailableEquipmentStack(equipmentName);
+        if (stack == null) {
+            if (player.findEquipmentStack(equipmentName) == null) {
+                throw new IllegalArgumentException(
+                        "Équipement \"" + equipmentName + "\" introuvable dans l'inventaire du joueur.");
+            }
             throw new IllegalArgumentException(
                     "Aucun exemplaire disponible de \"" + equipmentName + "\" dans l'inventaire.");
         }
@@ -122,10 +121,7 @@ public class UnitService {
         requireOwnedBy(unit, player);
 
         // Retrouver l'Equipment du catalogue par nom : s'il n'est plus en stock, on ne peut l'identifier.
-        EquipmentStack stack = player.getEquipments().stream()
-                .filter(s -> s.getEquipment() != null && s.getEquipment().getName().equals(equipmentName))
-                .findFirst()
-                .orElse(null);
+        EquipmentStack stack = player.findEquipmentStack(equipmentName);
 
         if (stack == null) {
             throw new IllegalArgumentException(

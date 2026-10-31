@@ -1,5 +1,6 @@
-import { Equipment, UnitCartItem, UnitClass, VehicleTypeInfo } from '../../models';
+import { Building, Equipment, UnitCartItem, UnitClass, VehicleTypeInfo } from '../../models';
 import {
+  cacheChoices,
   clampUnitQuantity,
   compareEquipments,
   equipmentBonusSummary,
@@ -329,6 +330,51 @@ describe('boutique.helpers — résumés compacts', () => {
 
     it('ne construit rien sans faction', () => {
       expect(unitImageUrl(entry, unitClass, '', new Set())).toBe('');
+    });
+  });
+
+  describe('cacheChoices', () => {
+    it("ne garde que les caches d'armes utilisables avec de la place", () => {
+      const choices = cacheChoices([
+        {
+          id: 1,
+          buildingType: 'WEAPON_CACHE',
+          isDestroyed: false,
+          sectorNumber: 13,
+          availableCapacity: 42,
+        },
+        {
+          id: 2,
+          buildingType: 'WEAPON_CACHE',
+          isDestroyed: true,
+          sectorNumber: 13,
+          availableCapacity: 42,
+        },
+        {
+          id: 3,
+          buildingType: 'WEAPON_CACHE',
+          isDestroyed: false,
+          sectorNumber: 41,
+          availableCapacity: 0,
+        },
+        {
+          id: 4,
+          buildingType: 'BANK',
+          isDestroyed: false,
+          sectorNumber: 13,
+          availableCapacity: 42,
+        },
+        {
+          id: null,
+          buildingType: 'WEAPON_CACHE',
+          isDestroyed: false,
+          sectorNumber: 13,
+          availableCapacity: 42,
+        },
+      ] as unknown as Building[]);
+
+      expect(choices).toEqual([{ id: 1, sectorNumber: 13, availableCapacity: 42 }]);
+      expect(cacheChoices(undefined)).toEqual([]);
     });
   });
 });

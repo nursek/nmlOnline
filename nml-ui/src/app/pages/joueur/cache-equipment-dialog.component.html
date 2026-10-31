@@ -9,7 +9,7 @@
   </p>
 
   @if (stacks().length === 0) {
-    <p class="empty">Aucun équipement dans votre inventaire.</p>
+    <p class="empty">Aucun équipement dans cette cache.</p>
   } @else {
     <div class="equipment-list">
       @for (stack of stacks(); track stack.equipment.name) {

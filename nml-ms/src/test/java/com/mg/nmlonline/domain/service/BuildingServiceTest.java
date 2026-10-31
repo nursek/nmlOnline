@@ -238,6 +238,69 @@ class BuildingServiceTest {
     }
 
     @Nested
+    @DisplayName("Capture de cache d'armes")
+    class CaptureWeaponCacheTests {
+
+        private Equipment equipmentOf(String name) {
+            return new Equipment(name, 100, 10, 0, 0, 0,
+                    Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
+        }
+
+        private WeaponCache capturerCache(int stored) {
+            WeaponCache cache = new WeaponCache(1L);
+            cache.setId(20L);
+            player.getBuildings().add(cache);
+            if (stored > 0) {
+                EquipmentStack filler = new EquipmentStack(equipmentOf("Stock"));
+                filler.setQuantity(stored);
+                filler.setAvailable(stored);
+                cache.getStoredEquipments().add(filler);
+            }
+            return cache;
+        }
+
+        private WeaponCache capturedCache(String equipmentName, int quantity) {
+            WeaponCache cache = new WeaponCache(2L);
+            cache.setId(50L);
+            EquipmentStack stack = new EquipmentStack(equipmentOf(equipmentName));
+            stack.setQuantity(quantity);
+            stack.setAvailable(quantity);
+            cache.getStoredEquipments().add(stack);
+            return cache;
+        }
+
+        @Test
+        @DisplayName("Le butin rejoint la cache du capturant en priorité")
+        void shouldStoreLootInCapturerCache() {
+            WeaponCache captured = capturedCache("Pistolet", 2);
+            WeaponCache own = capturerCache(0);
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(captured));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+
+            buildingService.captureWeaponCache(50L, 1L, 7);
+
+            assertEquals(2, own.getTotalStoredCount());
+            assertTrue(player.getEquipments().isEmpty());
+            assertTrue(captured.getStoredEquipments().isEmpty());
+            verify(playerRepository).save(player);
+        }
+
+        @Test
+        @DisplayName("Cache du capturant pleine : le butin va dans l'inventaire")
+        void shouldFallBackToInventoryWhenCacheIsFull() {
+            WeaponCache captured = capturedCache("Pistolet", 2);
+            WeaponCache own = capturerCache(299);
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(captured));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+
+            buildingService.captureWeaponCache(50L, 1L, 7);
+
+            assertEquals(299, own.getTotalStoredCount());
+            assertEquals(2, player.getEquipments().getFirst().getQuantity());
+        }
+    }
+
+    @Nested
     @DisplayName("Vampirisation des revenus")
     class VampirizeTests {
 
@@ -358,39 +421,73 @@ class BuildingServiceTest {
                     Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
         }
 
-        @Test
-        @DisplayName("Jette uniquement le matériel disponible (non équipé)")
-        void shouldDiscardOnlyAvailableEquipment() {
-            Equipment equipment = equipmentOf("Pistolet");
-            player.addEquipmentToStack(equipment, 3);
-            player.decrementEquipmentAvailability(equipment);
+        private WeaponCache cacheWith(String equipmentName, int quantity) {
             WeaponCache cache = new WeaponCache(1L);
+            EquipmentStack stack = new EquipmentStack(equipmentOf(equipmentName));
+            stack.setPlayer(player);
+            stack.setQuantity(quantity);
+            stack.setAvailable(quantity);
+            cache.getStoredEquipments().add(stack);
+            return cache;
+        }
+
+        @Test
+        @DisplayName("Jette le stock de la cache, pas l'inventaire hors cache")
+        void shouldDiscardCacheStock() {
+            WeaponCache cache = cacheWith("Pistolet", 3);
             when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
 
             buildingService.discardPlayerEquipment(50L, "Pistolet", 2, 7L);
 
-            EquipmentStack stack = player.getEquipments().getFirst();
-            assertEquals(1, stack.getQuantity());
-            assertEquals(0, stack.getAvailable());
+            assertEquals(1, cache.getStoredEquipments().getFirst().getQuantity());
+            assertEquals(1, cache.getStoredEquipments().getFirst().getAvailable());
+            assertTrue(player.getEquipments().isEmpty());
             verify(playerRepository).save(player);
         }
 
         @Test
-        @DisplayName("Refuse de jeter du matériel équipé")
-        void shouldRefuseDiscardWhenNotEnoughAvailable() {
-            Equipment equipment = equipmentOf("Pistolet");
-            player.addEquipmentToStack(equipment, 3);
-            player.decrementEquipmentAvailability(equipment);
+        @DisplayName("Quantité supérieure au stock de la cache : refusée sans rien jeter")
+        void shouldRefuseDiscardBeyondCacheStock() {
+            WeaponCache cache = cacheWith("Pistolet", 3);
+            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 4, 7L));
+
+            assertEquals(3, cache.getStoredEquipments().getFirst().getQuantity());
+            verify(playerRepository, never()).save(any(Player.class));
+        }
+
+        @Test
+        @DisplayName("L'équipement hors cache n'est pas jetable via la cache")
+        void shouldNotDiscardInventoryStock() {
+            player.addEquipmentToStack(equipmentOf("Pistolet"), 2);
             WeaponCache cache = new WeaponCache(1L);
             when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
 
             assertThrows(IllegalArgumentException.class,
-                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 3, 7L));
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 1, 7L));
 
-            assertEquals(3, player.getEquipments().getFirst().getQuantity());
+            assertEquals(2, player.getEquipments().getFirst().getQuantity());
             verify(playerRepository, never()).save(any(Player.class));
+        }
+
+        @Test
+        @DisplayName("Un exemplaire équipé sur une unité n'est pas jetable")
+        void shouldRefuseDiscardOfEquippedCopy() {
+            WeaponCache cache = cacheWith("Pistolet", 3);
+            cache.getStoredEquipments().getFirst().setAvailable(1);
+            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 2, 7L));
+
+            assertEquals(3, cache.getStoredEquipments().getFirst().getQuantity());
+            assertEquals(1, cache.getStoredEquipments().getFirst().getAvailable());
         }
 
         @Test

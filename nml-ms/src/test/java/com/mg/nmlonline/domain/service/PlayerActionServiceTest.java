@@ -12,7 +12,6 @@ import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
-import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -563,10 +562,7 @@ class PlayerActionServiceTest {
     }
 
     private int availableOf(Player player, String equipmentName) {
-        return playerRepository.findById(player.getId()).orElseThrow().getEquipments().stream()
-                .filter(s -> s.getEquipment().getName().equals(equipmentName))
-                .findFirst()
-                .map(EquipmentStack::getAvailable)
-                .orElse(0);
+        return playerRepository.findById(player.getId()).orElseThrow()
+                .getAvailableEquipmentQuantity(equipmentName);
     }
 }
