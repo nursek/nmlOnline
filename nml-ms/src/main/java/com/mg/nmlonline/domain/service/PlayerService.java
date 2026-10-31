@@ -67,7 +67,11 @@ public class PlayerService {
 
     /** Verrou pessimiste : sérialise les mutations d'inventaire avec les achats (anti lost-update). */
     public Player findByUserIdForUpdate(Long userId) {
-        return playerRepository.findByUserIdForUpdate(userId).orElse(null);
+        Player player = playerRepository.findByUserIdForUpdate(userId).orElse(null);
+        if (player != null) {
+            player.moveInventoryToWeaponCaches();
+        }
+        return player;
     }
 
     @Transactional
@@ -83,6 +87,7 @@ public class PlayerService {
         }
         Player player = playerRepository.findByIdForUpdate(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Player not found"));
+        player.moveInventoryToWeaponCaches();
 
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("No items to buy");

@@ -277,4 +277,32 @@ class PlayerServiceTest {
         assertEquals(2000.0, player.getStats().getMoney());
         verify(playerRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Verrou joueur : l'inventaire hérité est rangé dans la cache")
+    void shouldMoveLegacyInventoryOnLock() {
+        player.addEquipmentToStack(equipment("Pistolet", 500), 1);
+        WeaponCache cache = cache(10L, 0);
+        when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+
+        assertSame(player, playerService.findByUserIdForUpdate(10L));
+
+        assertTrue(player.getEquipments().isEmpty());
+        assertEquals(1, cache.getTotalStoredCount());
+    }
+
+    @Test
+    @DisplayName("Un achat range aussi l'inventaire hérité dans la cache")
+    void shouldMoveLegacyInventoryBeforePurchase() {
+        player.addEquipmentToStack(equipment("Fusil", 300), 1);
+        WeaponCache cache = cache(10L, 0);
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(equipment("Pistolet", 500)));
+        when(playerRepository.save(player)).thenReturn(player);
+
+        playerService.buyEquipments(1L, List.of(item("Pistolet", 1)));
+
+        assertTrue(player.getEquipments().isEmpty());
+        assertEquals(2, cache.getTotalStoredCount());
+    }
 }

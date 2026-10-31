@@ -1083,8 +1083,8 @@ class AdminPlayerEditServiceTest {
         playerService.buyEquipments(player.getId(), List.of(buyItem("Gauss Destructor", 2)));
         entityManager.flush();
 
-        assertEquals(cachedBefore + 2, cachedQuantity(cache, "Gauss Destructor"));
-        assertEquals(inventoryBefore, equipmentQuantity(player, "Gauss Destructor"));
+        assertEquals(cachedBefore + inventoryBefore + 2, cachedQuantity(cache, "Gauss Destructor"));
+        assertEquals(0, equipmentQuantity(player, "Gauss Destructor"));
     }
 
     @Test
@@ -1137,6 +1137,31 @@ class AdminPlayerEditServiceTest {
 
         assertTrue(cache.getStoredEquipments().isEmpty());
         assertEquals(inventoryBefore, equipmentQuantity(player, "Tesla Carbine"));
+    }
+
+    @Test
+    @DisplayName("Cache : un exemplaire équipé n'est pas retiré par le MJ")
+    void cacheEquipmentRemovalSkipsEquippedCopies() {
+        Unit unit = addUnit("LARBIN", UnitClass.LEGER, 41);
+        service.addBuilding(player.getId(), "WEAPON_CACHE", 41);
+        entityManager.flush();
+        WeaponCache cache = player.getBuildings().stream()
+                .filter(WeaponCache.class::isInstance)
+                .map(WeaponCache.class::cast)
+                .filter(candidate -> candidate.getSector() != null
+                        && candidate.getSector().getNumber() == 41)
+                .findFirst().orElseThrow();
+        service.addCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 2);
+        unitService.assignEquipment(unit.getId(), player.getUserId(), "Tesla Carbine");
+        entityManager.flush();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.removeCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 2));
+        service.removeCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 1);
+        entityManager.flush();
+
+        assertEquals(1, cachedQuantity(cache, "Tesla Carbine"));
+        assertEquals(0, cachedAvailable(cache, "Tesla Carbine"));
     }
 
     @Test

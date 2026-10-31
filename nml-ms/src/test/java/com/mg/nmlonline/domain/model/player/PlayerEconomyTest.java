@@ -1,7 +1,9 @@
 package com.mg.nmlonline.domain.model.player;
 
+import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
+import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
@@ -95,6 +97,96 @@ class PlayerEconomyTest {
             assertEquals(1, player.getEquipments().size());
             assertEquals(3, player.getEquipments().getFirst().getQuantity());
             assertEquals(700.0, player.getStats().getMoney());
+        }
+    }
+
+    @Nested
+    @DisplayName("Rangement de l'inventaire dans les caches")
+    class MoveInventoryToCachesTests {
+
+        private WeaponCache cache(long id, int stored) {
+            WeaponCache cache = new WeaponCache(1L);
+            cache.setId(id);
+            player.getBuildings().add(cache);
+            if (stored > 0) {
+                EquipmentStack filler = new EquipmentStack(equipment("Stock", 1));
+                filler.setQuantity(stored);
+                filler.setAvailable(stored);
+                cache.getStoredEquipments().add(filler);
+            }
+            return cache;
+        }
+
+        @Test
+        @DisplayName("Déplace un stack entier dans la cache en conservant la disponibilité")
+        void shouldMoveInventoryStackIntoCache() {
+            player.addEquipmentToStack(equipment("Pistolet", 100), 2);
+            player.decrementEquipmentAvailability("Pistolet");
+            WeaponCache cache = cache(10L, 0);
+
+            player.moveInventoryToWeaponCaches();
+
+            assertTrue(player.getEquipments().isEmpty());
+            EquipmentStack stored = cache.getStoredEquipments().getFirst();
+            assertEquals("Pistolet", stored.getEquipment().getName());
+            assertEquals(2, stored.getQuantity());
+            assertEquals(1, stored.getAvailable());
+        }
+
+        @Test
+        @DisplayName("Fusionne avec le stack du même équipement déjà présent dans la cache")
+        void shouldMergeWithExistingCacheStack() {
+            player.addEquipmentToStack(equipment("Pistolet", 100), 2);
+            WeaponCache cache = cache(10L, 0);
+            EquipmentStack cached = new EquipmentStack(equipment("Pistolet", 100));
+            cached.setPlayer(player);
+            cache.getStoredEquipments().add(cached);
+
+            player.moveInventoryToWeaponCaches();
+
+            assertEquals(1, cache.getStoredEquipments().size());
+            assertEquals(3, cache.getStoredEquipments().getFirst().getQuantity());
+            assertTrue(player.getEquipments().isEmpty());
+        }
+
+        @Test
+        @DisplayName("Laisse en inventaire ce qui ne tient pas (aucun split de stack)")
+        void shouldKeepOverflowInInventory() {
+            player.addEquipmentToStack(equipment("Pistolet", 100), 2);
+            WeaponCache cache = cache(10L, 299);
+
+            player.moveInventoryToWeaponCaches();
+
+            assertEquals(2, player.getEquipments().getFirst().getQuantity());
+            assertEquals(299, cache.getTotalStoredCount());
+        }
+
+        @Test
+        @DisplayName("Sans cache utilisable, l'inventaire ne bouge pas")
+        void shouldDoNothingWithoutUsableCache() {
+            player.addEquipmentToStack(equipment("Pistolet", 100), 1);
+            WeaponCache destroyed = cache(10L, 0);
+            destroyed.setDestroyed(true);
+
+            player.moveInventoryToWeaponCaches();
+
+            assertEquals(1, player.getEquipments().size());
+            assertTrue(destroyed.getStoredEquipments().isEmpty());
+        }
+
+        @Test
+        @DisplayName("Remplit les caches dans l'ordre tant qu'un stack entier tient")
+        void shouldFillCachesInOrder() {
+            player.addEquipmentToStack(equipment("A", 100), 2);
+            player.addEquipmentToStack(equipment("B", 100), 2);
+            WeaponCache first = cache(10L, 299);
+            WeaponCache second = cache(11L, 0);
+
+            player.moveInventoryToWeaponCaches();
+
+            assertTrue(player.getEquipments().isEmpty());
+            assertEquals(299, first.getTotalStoredCount());
+            assertEquals(4, second.getTotalStoredCount());
         }
     }
 

@@ -807,12 +807,12 @@ public class AdminPlayerEditService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Aucun équipement « " + name + " » dans cette cache"));
-        if (quantity > stored.getQuantity()) {
-            throw new IllegalArgumentException("La cache ne contient que " + stored.getQuantity()
-                    + " × « " + name + " »");
+        if (quantity > stored.getAvailable()) {
+            throw new IllegalArgumentException("La cache ne contient que " + stored.getAvailable()
+                    + " × « " + name + " » disponibles (copies équipées exclues)");
         }
         stored.setQuantity(stored.getQuantity() - quantity);
-        stored.setAvailable(Math.max(0, stored.getAvailable() - quantity));
+        stored.setAvailable(stored.getAvailable() - quantity);
         if (stored.getQuantity() <= 0) {
             cache.getStoredEquipments().remove(stored);
         }

@@ -169,6 +169,49 @@ public class Player {
                 .toList();
     }
 
+    public void addEquipmentToStorage(Equipment equipment, int quantity) {
+        if (equipment == null || quantity <= 0) return;
+        for (WeaponCache cache : getUsableWeaponCaches()) {
+            if (cache.hasCapacity(quantity)) {
+                addEquipmentToCache(cache, equipment, quantity);
+                return;
+            }
+        }
+        addEquipmentToStack(equipment, quantity);
+    }
+
+    /** Range l'inventaire hors cache dans les caches avec assez de place (stacks entiers). */
+    public void moveInventoryToWeaponCaches() {
+        List<WeaponCache> caches = getUsableWeaponCaches();
+        if (caches.isEmpty() || equipments.isEmpty()) {
+            return;
+        }
+        for (EquipmentStack stack : new ArrayList<>(equipments)) {
+            WeaponCache target = caches.stream()
+                    .filter(cache -> cache.hasCapacity(stack.getQuantity()))
+                    .findFirst()
+                    .orElse(null);
+            if (target == null) {
+                continue;
+            }
+            EquipmentStack stored = target.getStoredEquipments().stream()
+                    .filter(candidate -> candidate.getEquipment() != null
+                            && stack.getEquipment().getName().equals(candidate.getEquipment().getName()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        EquipmentStack created = new EquipmentStack(stack.getEquipment());
+                        created.setPlayer(this);
+                        created.setQuantity(0);
+                        created.setAvailable(0);
+                        target.getStoredEquipments().add(created);
+                        return created;
+                    });
+            stored.setQuantity(stored.getQuantity() + stack.getQuantity());
+            stored.setAvailable(stored.getAvailable() + stack.getAvailable());
+            equipments.remove(stack);
+        }
+    }
+
     public Vehicle buyVehicle(VehicleType vehicleType) {
         if (vehicleType == null) return null;
         int cost = vehicleType.getCost();

@@ -238,6 +238,69 @@ class BuildingServiceTest {
     }
 
     @Nested
+    @DisplayName("Capture de cache d'armes")
+    class CaptureWeaponCacheTests {
+
+        private Equipment equipmentOf(String name) {
+            return new Equipment(name, 100, 10, 0, 0, 0,
+                    Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
+        }
+
+        private WeaponCache capturerCache(int stored) {
+            WeaponCache cache = new WeaponCache(1L);
+            cache.setId(20L);
+            player.getBuildings().add(cache);
+            if (stored > 0) {
+                EquipmentStack filler = new EquipmentStack(equipmentOf("Stock"));
+                filler.setQuantity(stored);
+                filler.setAvailable(stored);
+                cache.getStoredEquipments().add(filler);
+            }
+            return cache;
+        }
+
+        private WeaponCache capturedCache(String equipmentName, int quantity) {
+            WeaponCache cache = new WeaponCache(2L);
+            cache.setId(50L);
+            EquipmentStack stack = new EquipmentStack(equipmentOf(equipmentName));
+            stack.setQuantity(quantity);
+            stack.setAvailable(quantity);
+            cache.getStoredEquipments().add(stack);
+            return cache;
+        }
+
+        @Test
+        @DisplayName("Le butin rejoint la cache du capturant en priorité")
+        void shouldStoreLootInCapturerCache() {
+            WeaponCache captured = capturedCache("Pistolet", 2);
+            WeaponCache own = capturerCache(0);
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(captured));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+
+            buildingService.captureWeaponCache(50L, 1L, 7);
+
+            assertEquals(2, own.getTotalStoredCount());
+            assertTrue(player.getEquipments().isEmpty());
+            assertTrue(captured.getStoredEquipments().isEmpty());
+            verify(playerRepository).save(player);
+        }
+
+        @Test
+        @DisplayName("Cache du capturant pleine : le butin va dans l'inventaire")
+        void shouldFallBackToInventoryWhenCacheIsFull() {
+            WeaponCache captured = capturedCache("Pistolet", 2);
+            WeaponCache own = capturerCache(299);
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(captured));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+
+            buildingService.captureWeaponCache(50L, 1L, 7);
+
+            assertEquals(299, own.getTotalStoredCount());
+            assertEquals(2, player.getEquipments().getFirst().getQuantity());
+        }
+    }
+
+    @Nested
     @DisplayName("Vampirisation des revenus")
     class VampirizeTests {
 
