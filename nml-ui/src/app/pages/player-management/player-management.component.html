@@ -147,14 +147,14 @@
 
                 <mat-divider></mat-divider>
 
-                @if (player.equipments && player.equipments.length > 0) {
+                @if (getEquipmentStacks(player).length > 0) {
                   <div class="section">
                     <div class="section-title">
                       <mat-icon>shield</mat-icon>
                       <span>Équipements ({{ getEquipmentCount(player) }})</span>
                     </div>
                     <div class="equipment-list">
-                      @for (eq of player.equipments; track eq.equipment.name) {
+                      @for (eq of getEquipmentStacks(player); track eq.equipment.name) {
                         <span class="eq-chip">
                           {{ eq.equipment.name }}
                           <span class="eq-qty">×{{ eq.quantity }}</span>

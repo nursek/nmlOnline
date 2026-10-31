@@ -468,7 +468,6 @@ export function vehicleSummaries(vehicles: Vehicle[]): VehicleSummary[] {
   );
 }
 
-/** L'équipement du joueur, par nom : inventaire hors cache + contenu des caches non détruites. */
 export function allEquipmentStacks(player: Player | null): EquipmentStack[] {
   const byName = new Map<string, EquipmentStack>();
   const add = (stack: EquipmentStack): void => {

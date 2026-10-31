@@ -88,7 +88,7 @@
         <button
           mat-raised-button
           [color]="canAfford() ? 'primary' : 'warn'"
-          [disabled]="!canAfford() || purchaseLoading()"
+          [disabled]="!canAfford() || purchaseLoading() || checkoutBusy()"
           class="checkout-btn"
           (click)="checkout()"
         >

@@ -24,6 +24,9 @@ class AdminExportImportTest {
     private AdminService adminService;
 
     @Autowired
+    private AdminPlayerEditService adminPlayerEditService;
+
+    @Autowired
     private PlayerRepository playerRepository;
 
     @Autowired
@@ -93,5 +96,22 @@ class AdminExportImportTest {
         assertEquals(250.0, ((Number) charParsed.get("baseDefense")).doubleValue());
         assertNotNull(dto.buildings, "L'import doit retrouver la section buildings");
         assertEquals(3, dto.buildings.size());
+    }
+
+    @Test
+    @org.springframework.transaction.annotation.Transactional
+    @DisplayName("Export : les ressources stockées en banque sont conservées")
+    void exportIncludesBankResources() {
+        Player nursek = playerRepository.findByName("nursek")
+                .orElseThrow(() -> new AssertionError("Le joueur nursek doit être importé au démarrage (profil test)"));
+        adminPlayerEditService.addBankResource(nursek.getId(), "Caisse d'armes", 3);
+
+        Map<String, Object> exported = adminService.exportPlayer(nursek.getId());
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> resources = (List<Map<String, Object>>) exported.get("resources");
+        assertTrue(resources.stream().anyMatch(resource -> "Caisse d'armes".equals(resource.get("name"))
+                        && ((Number) resource.get("quantity")).intValue() == 3),
+                "Les ressources de la banque doivent figurer dans l'export");
     }
 }

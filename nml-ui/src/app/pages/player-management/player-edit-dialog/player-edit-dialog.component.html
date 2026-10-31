@@ -463,9 +463,11 @@
                     <button
                       mat-icon-button
                       [matTooltip]="
-                        vehicleCrewEditable(vehicle)
-                          ? 'Modifier l’équipage'
-                          : 'Véhicule hors d’un secteur possédé : réassignez un secteur d’abord'
+                        vehicle.isDestroyed
+                          ? 'Véhicule détruit'
+                          : vehicleCrewEditable(vehicle)
+                            ? 'Modifier l’équipage'
+                            : 'Véhicule hors d’un secteur possédé : réassignez un secteur d’abord'
                       "
                       [attr.aria-label]="'Équipage de ' + vehicle.displayName"
                       (click)="openVehicleCrew(vehicle)"
@@ -575,7 +577,7 @@
                       </button>
                     </div>
 
-                    @if (building.buildingType === 'BANK') {
+                    @if (building.buildingType === 'BANK' && !building.isDestroyed) {
                       <div class="stock">
                         <span class="stock-head">
                           Stocké :
@@ -653,7 +655,7 @@
                       </div>
                     }
 
-                    @if (building.buildingType === 'WEAPON_CACHE') {
+                    @if (building.buildingType === 'WEAPON_CACHE' && !building.isDestroyed) {
                       <div class="stock">
                         <span class="stock-head">
                           Capacité {{ building.currentCapacity ?? 0 }}/{{
@@ -670,30 +672,32 @@
                           ) {
                             <div class="line">
                               <span class="line-name">{{ stack.equipment.name }}</span>
-                              <span class="line-qty">×{{ stack.quantity }}</span>
-                              <mat-form-field appearance="outline" class="qty-field">
-                                <mat-label>Qté</mat-label>
-                                <input
-                                  matInput
-                                  type="number"
-                                  min="1"
-                                  [max]="stack.quantity"
-                                  [value]="
-                                    cacheRemoveQty(
-                                      building.id,
-                                      stack.equipment.name,
-                                      stack.quantity
-                                    )
-                                  "
-                                  (input)="
-                                    setCacheRemoveQty(
-                                      building.id,
-                                      stack.equipment.name,
-                                      +$any($event.target).value
-                                    )
-                                  "
-                                />
-                              </mat-form-field>
+                              <span class="line-qty">{{ stack.available }}/{{ stack.quantity }}</span>
+                              @if (stack.available > 0) {
+                                <mat-form-field appearance="outline" class="qty-field">
+                                  <mat-label>Qté</mat-label>
+                                  <input
+                                    matInput
+                                    type="number"
+                                    min="1"
+                                    [max]="stack.available"
+                                    [value]="
+                                      cacheRemoveQty(
+                                        building.id,
+                                        stack.equipment.name,
+                                        stack.available
+                                      )
+                                    "
+                                    (input)="
+                                      setCacheRemoveQty(
+                                        building.id,
+                                        stack.equipment.name,
+                                        +$any($event.target).value
+                                      )
+                                    "
+                                  />
+                                </mat-form-field>
+                              }
                               <button
                                 mat-icon-button
                                 color="warn"
@@ -702,7 +706,7 @@
                                   'Retirer ' + stack.equipment.name + ' de la cache'
                                 "
                                 (click)="removeCacheEquipment(building, stack)"
-                                [disabled]="busy()"
+                                [disabled]="busy() || stack.available < 1"
                               >
                                 <mat-icon>remove_circle</mat-icon>
                               </button>

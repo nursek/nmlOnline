@@ -120,6 +120,8 @@ class PlayerActionServiceTest {
         assertTrue(reloaded.getEquipments().stream()
                         .noneMatch(s -> s.getEquipment().getName().equals(eq.getName())),
                 "Le stock acheté doit être supprimé après annulation");
+        assertEquals(0, availableOf(reloaded, eq.getName()),
+                "Aucun exemplaire ne doit rester dans les caches après annulation");
     }
 
     @Test
@@ -199,6 +201,8 @@ class PlayerActionServiceTest {
         Player reloaded = playerRepository.findById(player.getId()).orElseThrow();
         assertEquals(moneyBefore, reloaded.getStats().getMoney(), 0.001);
         assertTrue(reloaded.getEquipments().isEmpty());
+        assertEquals(0, availableOf(reloaded, melee.getName()),
+                "Aucun exemplaire ne doit rester dans les caches après annulation");
     }
 
     @Test

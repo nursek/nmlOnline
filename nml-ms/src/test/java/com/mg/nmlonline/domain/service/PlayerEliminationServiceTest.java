@@ -17,6 +17,7 @@ import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
@@ -326,6 +327,34 @@ class PlayerEliminationServiceTest {
             assertTrue(board.getSector(HQ_SECTOR).getBuildings().isEmpty());
             assertNull(playerRepository.findById(world.victimId()).orElseThrow()
                     .getEliminatedByPlayerId());
+        });
+    }
+
+    @Test
+    @DisplayName("Ressources stockées en banque : elles sont créditées au tueur après flush")
+    void bankResourcesAreLootedByKiller() {
+        World world = seed(EliminationCause.HEADQUARTERS_CAPTURED);
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            Player victim = playerRepository.findById(world.victimId()).orElseThrow();
+            Bank bank = victim.getBuildings().stream()
+                    .filter(Bank.class::isInstance)
+                    .map(Bank.class::cast)
+                    .filter(candidate -> candidate.getSector() != null
+                            && candidate.getSector().getNumber() == HQ_SECTOR)
+                    .findFirst().orElseThrow();
+            PlayerResource loot = new PlayerResource("Auramite", 3);
+            loot.setPlayer(victim);
+            bank.getStoredResources().add(loot);
+            em.flush();
+        });
+
+        apply(world, EliminationCause.HEADQUARTERS_CAPTURED, world.killerId());
+
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            em.clear();
+            Player killer = playerRepository.findById(world.killerId()).orElseThrow();
+            assertEquals(3, killer.getResourceQuantity("Auramite"),
+                    "Les ressources bancaires pillées doivent survivre au flush");
         });
     }
 }

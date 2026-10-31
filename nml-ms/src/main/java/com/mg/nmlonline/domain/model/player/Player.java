@@ -180,7 +180,6 @@ public class Player {
         addEquipmentToStack(equipment, quantity);
     }
 
-    /** Range l'inventaire hors cache dans les caches avec assez de place (stacks entiers). */
     public void moveInventoryToWeaponCaches() {
         List<WeaponCache> caches = getUsableWeaponCaches();
         if (caches.isEmpty() || equipments.isEmpty()) {
@@ -461,7 +460,7 @@ public class Player {
         }
     }
 
-    private EquipmentStack findStackWithEquippedCopy(String equipmentName) {
+    public EquipmentStack findStackWithEquippedCopy(String equipmentName) {
         if (equipmentName == null) return null;
         for (EquipmentStack stack : getAllEquipmentStacks()) {
             Equipment stackEquip = stack.getEquipment();

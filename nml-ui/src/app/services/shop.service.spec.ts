@@ -276,6 +276,30 @@ describe('ShopService (carts + signals)', () => {
     expect(shop.sellCart()).toEqual([]);
   });
 
+  it('envoie la cache choisie avec chaque ligne d’achat d’équipement', async () => {
+    const shop = getShop();
+    const http = TestBed.inject(HttpTestingController);
+    shop.addToCart({
+      name: 'Épée',
+      cost: 100,
+      category: 'Arme',
+      pdfBonus: 5,
+      pdcBonus: 0,
+      armBonus: 0,
+      evasionBonus: 0,
+      compatibleClass: [],
+    });
+
+    const promise = shop.checkoutEquipments(11);
+    const req = http.expectOne('/api/players/equipment/buy');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual([{ name: 'Épée', quantity: 1, cacheId: 11 }]);
+    req.flush({});
+
+    await promise;
+    expect(shop.cart()).toEqual([]);
+  });
+
   describe('en tant qu’admin', () => {
     beforeEach(() => {
       TestBed.configureTestingModule({

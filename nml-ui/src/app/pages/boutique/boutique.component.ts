@@ -142,6 +142,7 @@ export class BoutiqueComponent {
   readonly showCart = signal(false);
   readonly searchOpen = signal(false);
   readonly searchTerm = signal('');
+  readonly checkoutBusy = signal(false);
   // Sélection par défaut : la 1re classe du catalogue (le filtrage par classe est la navigation).
   readonly selectedClassFilter = linkedSignal(() => this.equipmentClasses()[0]?.key ?? 'all');
   readonly selectedUnitType = linkedSignal(() => this.unitTypes()[0]?.name ?? '');
@@ -314,21 +315,28 @@ export class BoutiqueComponent {
   }
 
   async checkout(): Promise<void> {
+    // Relire le joueur + choisir la cache laisse la main : sans ce verrou un double clic passe deux commandes.
+    if (this.checkoutBusy() || this.purchaseLoading()) return;
     const snapshot = [...this.cart()];
     if (!snapshot.length) return;
-    // Les caches peuvent avoir changé hors de cette page (ajout MJ) : relire avant de choisir.
-    await this.playerService.loadCurrent();
-    const choice = await this.pickCacheForCart();
-    if (choice.cancelled) return;
-    await this.runCheckout(
-      snapshot.length,
-      () => this.shop.checkoutEquipments(choice.cacheId),
-      () => ({
-        title: 'Équipements achetés !',
-        lines: snapshot.map((item) => `${item.quantity} × ${this.equipmentLabel(item.equipment)}`),
-        totalCost: snapshot.reduce((s, i) => s + i.equipment.cost * i.quantity, 0),
-      }),
-    );
+    this.checkoutBusy.set(true);
+    try {
+      // Les caches peuvent avoir changé hors de cette page (ajout MJ) : relire avant de choisir.
+      await this.playerService.loadCurrent();
+      const choice = await this.pickCacheForCart();
+      if (choice.cancelled) return;
+      await this.runCheckout(
+        snapshot.length,
+        () => this.shop.checkoutEquipments(choice.cacheId),
+        () => ({
+          title: 'Équipements achetés !',
+          lines: snapshot.map((item) => `${item.quantity} × ${this.equipmentLabel(item.equipment)}`),
+          totalCost: snapshot.reduce((s, i) => s + i.equipment.cost * i.quantity, 0),
+        }),
+      );
+    } finally {
+      this.checkoutBusy.set(false);
+    }
   }
 
   private async pickCacheForCart(): Promise<{ cancelled: boolean; cacheId?: number }> {

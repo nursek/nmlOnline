@@ -31,6 +31,7 @@ public class PlayerService {
     private final PlayerMapper playerMapper;
     private final BoardService boardService;
     private final PlayerActionService playerActionService;
+    private final TurnLock turnLock;
     private final EntityManager entityManager;
 
     public PlayerService(PlayerRepository playerRepository,
@@ -39,6 +40,7 @@ public class PlayerService {
                           PlayerMapper playerMapper,
                           BoardService boardService,
                           PlayerActionService playerActionService,
+                          TurnLock turnLock,
                           EntityManager entityManager) {
         this.playerRepository = playerRepository;
         this.sectorService = sectorService;
@@ -46,6 +48,7 @@ public class PlayerService {
         this.playerMapper = playerMapper;
         this.boardService = boardService;
         this.playerActionService = playerActionService;
+        this.turnLock = turnLock;
         this.entityManager = entityManager;
     }
 
@@ -82,6 +85,11 @@ public class PlayerService {
     /** Achat atomique : valide tous les items (existence, quantité, fonds) avant d'appliquer. */
     @Transactional
     public Player buyEquipments(Long playerId, List<BuyEquipmentItemDto> items) {
+        // Un achat pendant la résolution échapperait au placement et écraserait les caches pillées.
+        if (turnLock.isLocked()) {
+            throw new IllegalStateException(
+                    "La résolution du tour est en cours — réessayez après la fin du tour");
+        }
         if (playerId == null) {
             throw new IllegalArgumentException("Player ID is required");
         }

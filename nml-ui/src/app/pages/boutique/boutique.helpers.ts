@@ -26,7 +26,6 @@ export interface CacheChoice {
   availableCapacity: number;
 }
 
-/** Caches d'armes utilisables (non détruites, avec de la place) pour choisir où ranger un achat. */
 export function cacheChoices(buildings: Building[] | null | undefined): CacheChoice[] {
   return (buildings ?? [])
     .filter(

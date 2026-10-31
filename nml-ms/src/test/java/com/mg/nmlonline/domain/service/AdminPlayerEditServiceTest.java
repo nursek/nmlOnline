@@ -1131,6 +1131,68 @@ class AdminPlayerEditServiceTest {
     }
 
     @Test
+    @DisplayName("Cache : le MJ équipe et déséquipe depuis le stock de la cache")
+    void adminCanEquipFromWeaponCache() {
+        Unit unit = addUnit("LARBIN", UnitClass.LEGER, 41);
+        service.addBuilding(player.getId(), "WEAPON_CACHE", 41);
+        entityManager.flush();
+        WeaponCache cache = player.getBuildings().stream()
+                .filter(WeaponCache.class::isInstance)
+                .map(WeaponCache.class::cast)
+                .filter(candidate -> candidate.getSector() != null
+                        && candidate.getSector().getNumber() == 41)
+                .findFirst().orElseThrow();
+        service.addCacheEquipment(player.getId(), cache.getId(), "Gauss Blaster", 1);
+        entityManager.flush();
+
+        service.equipUnit(player.getId(), unit.getId(), "Gauss Blaster");
+        entityManager.flush();
+
+        assertTrue(unit.getEquipments().stream()
+                .anyMatch(equipment -> "Gauss Blaster".equals(equipment.getName())));
+        assertEquals(0, cachedAvailable(cache, "Gauss Blaster"));
+
+        service.unequipUnit(player.getId(), unit.getId(), "Gauss Blaster");
+        entityManager.flush();
+
+        assertEquals(1, cachedAvailable(cache, "Gauss Blaster"));
+        assertFalse(unit.getEquipments().stream()
+                .anyMatch(equipment -> "Gauss Blaster".equals(equipment.getName())));
+    }
+
+    @Test
+    @DisplayName("Cache : le retrait MJ clôt l'achat correspondant du journal du tour")
+    void removeCacheEquipmentDiscardsMatchingPurchaseAction() {
+        service.setMoney(player.getId(), 50_000);
+        WeaponCache cache = player.getUsableWeaponCaches().getFirst();
+        playerService.buyEquipments(player.getId(), List.of(buyItem("Gauss Destructor", 1)));
+        entityManager.flush();
+        assertFalse(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty());
+
+        service.removeCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 1);
+        entityManager.flush();
+
+        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty(),
+                "L'achat annulé par le MJ ne doit pas bloquer l'annulation du reste du tour");
+    }
+
+    @Test
+    @DisplayName("Suppression MJ d'une cache : les achats de son contenu quittent le journal")
+    void deleteCacheDiscardsPurchaseActions() {
+        service.setMoney(player.getId(), 50_000);
+        WeaponCache cache = player.getUsableWeaponCaches().getFirst();
+        playerService.buyEquipments(player.getId(), List.of(buyItem("Gauss Destructor", 1)));
+        entityManager.flush();
+        assertFalse(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty());
+
+        service.deleteBuilding(player.getId(), cache.getId());
+        entityManager.flush();
+
+        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty(),
+                "Le contenu supprimé avec la cache ne doit pas bloquer l'annulation du tour");
+    }
+
+    @Test
     @DisplayName("Cache : retirer un stack le supprime de la cache, l'inventaire est intact")
     void cacheStackRemovalTargetsTheCacheCollection() {
         service.addBuilding(player.getId(), "WEAPON_CACHE", 41);
@@ -1288,6 +1350,30 @@ class AdminPlayerEditServiceTest {
                 () -> playerActionService.undoFrom(player.getUserId(), placement.getId()));
         assertEquals(pilot.getId(), vehicle.getPilot().getId());
         assertNotNull(pilot.getSector());
+    }
+
+    @Test
+    @DisplayName("Équipage : le joueur ne peut pas annuler le placement d'un passager embarqué")
+    void undoPlacementIsRefusedForEmbarkedPassenger() {
+        Unit pilot = addUnit("LARBIN", UnitClass.PILOTE_DESTRUCTEUR, 41);
+        Unit passenger = addUnit("LARBIN", UnitClass.LEGER, 41);
+        service.addVehicles(player.getId(), "VTT_LEGER", 1, 41);
+        entityManager.flush();
+        Vehicle vehicle = vehicleRepository.findByPlayerId(player.getId()).getFirst();
+
+        PlayerAction passengerPlacement = PlayerAction.placeUnit(
+                player.getId(), board.getCurrentTurn(), passenger.getId(), board.getId(), 41);
+        playerActionRepository.save(passengerPlacement);
+        entityManager.flush();
+
+        service.setVehicleCrew(player.getId(), vehicle.getId(),
+                crewRequest(pilot.getId(), List.of(passenger.getId())));
+        entityManager.flush();
+
+        assertThrows(PlayerActionUndoException.class,
+                () -> playerActionService.undoFrom(player.getUserId(), passengerPlacement.getId()));
+        assertEquals(1, vehicle.getPassengerCount());
+        assertNotNull(passenger.getSector());
     }
 
     private SetVehicleCrewRequestDto crewRequest(Long pilotId, List<Long> passengerIds) {

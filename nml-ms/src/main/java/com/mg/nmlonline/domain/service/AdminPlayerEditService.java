@@ -538,13 +538,12 @@ public class AdminPlayerEditService {
         Equipment equipment = equipmentService.findByName(equipmentName)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Équipement inconnu : " + equipmentName));
-        EquipmentStack stack = player.getEquipments().stream()
-                .filter(candidate -> candidate.getEquipment() != null
-                        && equipmentName.equals(candidate.getEquipment().getName()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Le joueur ne possède pas « " + equipmentName + " »"));
-        if (stack.getAvailable() <= 0) {
+        EquipmentStack stack = player.findAvailableEquipmentStack(equipmentName);
+        if (stack == null) {
+            if (player.findEquipmentStack(equipmentName) == null) {
+                throw new IllegalArgumentException(
+                        "Le joueur ne possède pas « " + equipmentName + " »");
+            }
             throw new IllegalArgumentException(
                     "Aucune copie disponible de « " + equipmentName + " »");
         }
@@ -705,6 +704,13 @@ public class AdminPlayerEditService {
         }
         playerActionService.discardActiveActionsReferencing(
                 playerId, board.getCurrentTurn(), null, null, buildingId, null, null);
+        if (building instanceof WeaponCache cache) {
+            for (EquipmentStack stack : cache.getStoredEquipments()) {
+                playerActionService.discardActiveActionsReferencing(
+                        playerId, board.getCurrentTurn(), null, null, null,
+                        stack.getEquipment().getName(), PlayerActionType.BUY_EQUIPMENT);
+            }
+        }
         Sector sector = building.getSector();
         String buildingLabel = building.getBuildingType() + " ("
                 + (sector != null ? "secteur " + sector.getNumber() : "sans secteur") + ")";
@@ -811,6 +817,9 @@ public class AdminPlayerEditService {
             throw new IllegalArgumentException("La cache ne contient que " + stored.getAvailable()
                     + " × « " + name + " » disponibles (copies équipées exclues)");
         }
+        playerActionService.discardActiveActionsReferencing(
+                playerId, activeBoard().getCurrentTurn(), null, null, null, name,
+                PlayerActionType.BUY_EQUIPMENT);
         stored.setQuantity(stored.getQuantity() - quantity);
         stored.setAvailable(stored.getAvailable() - quantity);
         if (stored.getQuantity() <= 0) {

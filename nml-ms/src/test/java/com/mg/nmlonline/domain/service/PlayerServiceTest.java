@@ -42,6 +42,9 @@ class PlayerServiceTest {
     @Mock
     PlayerActionService playerActionService;
 
+    @Mock
+    TurnLock turnLock;
+
     @InjectMocks
     PlayerService playerService;
 
@@ -304,5 +307,30 @@ class PlayerServiceTest {
 
         assertTrue(player.getEquipments().isEmpty());
         assertEquals(2, cache.getTotalStoredCount());
+    }
+
+    @Test
+    @DisplayName("Cache demandée absente ou détruite : l'achat est refusé avant tout débit")
+    void shouldRejectUnknownCacheId() {
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        when(equipmentService.findByName("Pistolet")).thenReturn(Optional.of(equipment("Pistolet", 500)));
+        cache(10L, 0);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> playerService.buyEquipments(1L, List.of(item("Pistolet", 1, 99L))));
+
+        assertEquals(2000.0, player.getStats().getMoney());
+        verify(playerRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Achat refusé pendant la résolution du tour")
+    void shouldRejectPurchaseDuringTurnResolution() {
+        when(turnLock.isLocked()).thenReturn(true);
+
+        assertThrows(IllegalStateException.class,
+                () -> playerService.buyEquipments(1L, List.of(item("Pistolet", 1))));
+
+        verify(playerRepository, never()).save(any());
     }
 }

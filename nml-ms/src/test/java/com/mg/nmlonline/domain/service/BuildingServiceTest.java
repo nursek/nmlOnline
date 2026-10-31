@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.domain.model.action.PlayerActionType;
 import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
@@ -195,7 +196,8 @@ class BuildingServiceTest {
             assertEquals(0.0, bank.getStoredMoney());
             assertTrue(bank.getStoredResources().isEmpty());
             assertTrue(bank.isCaptured());
-            assertSame(capturer, result.resources().getFirst().getPlayer());
+            assertEquals(100, capturer.getResourceQuantity("Auramite"),
+                    "les ressources bankées rejoignent l'inventaire du capturant");
         }
 
         @Test
@@ -297,6 +299,40 @@ class BuildingServiceTest {
 
             assertEquals(299, own.getTotalStoredCount());
             assertEquals(2, player.getEquipments().getFirst().getQuantity());
+        }
+
+        @Test
+        @DisplayName("Copies équipées : seul le stock disponible est pillé et le perdant reste inventorié")
+        void shouldTransferOnlyAvailableCopies() {
+            WeaponCache captured = capturedCache("Pistolet", 3);
+            captured.getStoredEquipments().getFirst().setAvailable(1);
+            WeaponCache own = capturerCache(0);
+            Player victim = new Player("Perdant");
+            victim.setId(2L);
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(captured));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(victim));
+
+            buildingService.captureWeaponCache(50L, 1L, 7);
+
+            assertEquals(1, own.getTotalStoredCount(), "seule la copie disponible est pillée");
+            EquipmentStack remaining = captured.getStoredEquipments().getFirst();
+            assertEquals(2, remaining.getQuantity(), "les deux copies équipées restent comptées chez le perdant");
+            assertEquals(0, remaining.getAvailable());
+            verify(playerRepository).save(victim);
+        }
+
+        @Test
+        @DisplayName("Auto-capture : le stock de la cache reste intact")
+        void shouldIgnoreSelfCapture() {
+            WeaponCache own = capturerCache(2);
+            when(buildingRepository.findById(20L)).thenReturn(Optional.of(own));
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+
+            buildingService.captureWeaponCache(20L, 1L, 7);
+
+            assertEquals(2, own.getTotalStoredCount());
+            assertEquals(2, own.getStoredEquipments().getFirst().getAvailable());
         }
     }
 
@@ -443,6 +479,8 @@ class BuildingServiceTest {
             assertEquals(1, cache.getStoredEquipments().getFirst().getQuantity());
             assertEquals(1, cache.getStoredEquipments().getFirst().getAvailable());
             assertTrue(player.getEquipments().isEmpty());
+            verify(playerActionService).discardActiveActionsReferencing(
+                    1L, 0, null, null, 50L, "Pistolet", PlayerActionType.BUY_EQUIPMENT);
             verify(playerRepository).save(player);
         }
 

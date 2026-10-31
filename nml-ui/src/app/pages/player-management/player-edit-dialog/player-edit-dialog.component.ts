@@ -750,7 +750,7 @@ export class PlayerEditDialogComponent {
     const name = stack.equipment.name;
     const quantity = this.clampQuantity(
       this.cacheRemoveQuantities()[`${buildingId}:${name}`] ?? 1,
-      stack.quantity,
+      stack.available,
     );
     const done = await this.run(
       this.api.adminRemoveCacheEquipment(this.data.playerId, buildingId, name, quantity),
@@ -766,7 +766,7 @@ export class PlayerEditDialogComponent {
   }
 
   vehicleCrewEditable(vehicle: Vehicle): boolean {
-    return sectorOfVehicle(this.player(), vehicle) !== null;
+    return !vehicle.isDestroyed && sectorOfVehicle(this.player(), vehicle) !== null;
   }
 
   openVehicleCrew(vehicle: Vehicle): void {
