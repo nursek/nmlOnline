@@ -58,7 +58,9 @@ type PathHost = {
   >;
   playerColorMap: () => ReadonlyMap<number, string>;
   isAllyOwner: (playerId: number | null) => boolean;
+  hoveredSectorNumber: { set: (value: number | null) => void };
   updatePathStyle: (path: SVGElement, sectorNumber: number) => void;
+  onSectorHover: (sectorNumber: number, path: SVGElement) => void;
 };
 
 function styleHost(overlay: 'resources' | null, selected: number | null): PathHost {
@@ -76,6 +78,7 @@ function styleHost(overlay: 'resources' | null, selected: number | null): PathHo
       [2, '#00ff00'],
     ]);
   component.isAllyOwner = () => false;
+  component.hoveredSectorNumber = { set: () => undefined };
   return component;
 }
 
@@ -92,13 +95,26 @@ describe('updatePathStyle — calque ressources', () => {
     component.updatePathStyle(selected, 1);
     component.updatePathStyle(normal, 2);
 
-    expect(selected.style.fill).toBe('#ffffff');
+    expect(selected.style.fill).toBe('#6e788580');
     expect(normal.style.fill).toBe('#ffffff80');
     for (const path of [selected, normal]) {
       expect(path.style.stroke).toBe('none');
       expect(path.style.strokeWidth).toBe('0');
       expect(path.style.filter).toBe('none');
     }
+  });
+
+  it('grise la case au survol', () => {
+    const component = styleHost('resources', null);
+    const path = svgPath();
+
+    component.updatePathStyle(path, 1);
+    expect(path.style.fill).toBe('#ffffff80');
+
+    component.onSectorHover(1, path);
+
+    expect(path.style.fill).toBe('#6e788540');
+    expect(path.style.strokeWidth).toBe('0');
   });
 
   it('restaure la couleur du propriétaire et le contour de sélection hors calque', () => {

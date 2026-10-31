@@ -111,6 +111,8 @@ export const MAP_THEME = {
 
   // Calque « Ressources » : fond uni, pastille de ressource à la place du numéro.
   resourceFill: '#ffffff',
+  resourceHoverFill: '#6e788540',
+  resourceSelectedFill: '#6e788580',
   resourceIcon: {
     size: 40,
   },

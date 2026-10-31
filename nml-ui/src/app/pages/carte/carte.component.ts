@@ -576,7 +576,7 @@ export class CarteComponent {
     const isSelected = selected?.number === sectorNumber;
 
     path.style.fill = isNeutral ? 'url(#neutral-stripes)' : color + MAP_THEME.fill.normalAlpha;
-    // Calque « Ressources » : aplat seul, le trait blanc déborde du secteur sur la carte.
+    // Calque « Ressources » : aplat seul, ni trait ni filtre qui débordent du secteur.
     path.style.stroke = showResources ? 'none' : color;
     path.style.strokeWidth = showResources ? '0' : String(MAP_THEME.stroke.normal);
     path.style.strokeDasharray =
@@ -587,7 +587,11 @@ export class CarteComponent {
     path.style.filter = 'none';
 
     if (isSelected) {
-      path.style.fill = isNeutral ? MAP_THEME.neutralColor : color;
+      path.style.fill = showResources
+        ? MAP_THEME.resourceSelectedFill
+        : isNeutral
+          ? MAP_THEME.neutralColor
+          : color;
       if (!showResources) {
         path.style.strokeWidth = String(MAP_THEME.stroke.selected);
         const filters: string[] = ['url(#selection-overflow)'];
@@ -694,7 +698,9 @@ export class CarteComponent {
     const sector = this.sectorsMap().get(sectorNumber);
     const color = sector ? this.getSectorColor(sector) : MAP_THEME.neutralColor;
     if (this.selectedSector()?.number !== sectorNumber) {
-      path.style.fill = color + MAP_THEME.fill.hoverAlpha;
+      path.style.fill = this.isOverlay('resources')
+        ? MAP_THEME.resourceHoverFill
+        : color + MAP_THEME.fill.hoverAlpha;
       if (!this.isOverlay('resources')) {
         path.style.strokeWidth = String(MAP_THEME.stroke.hover);
       }
