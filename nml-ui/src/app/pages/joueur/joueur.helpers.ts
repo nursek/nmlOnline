@@ -468,6 +468,33 @@ export function vehicleSummaries(vehicles: Vehicle[]): VehicleSummary[] {
   );
 }
 
+/** L'équipement du joueur, par nom : inventaire hors cache + contenu des caches non détruites. */
+export function allEquipmentStacks(player: Player | null): EquipmentStack[] {
+  const byName = new Map<string, EquipmentStack>();
+  const add = (stack: EquipmentStack): void => {
+    const key = stack.equipment.name;
+    const existing = byName.get(key);
+    byName.set(
+      key,
+      existing
+        ? {
+            ...existing,
+            quantity: existing.quantity + stack.quantity,
+            available: existing.available + stack.available,
+          }
+        : { ...stack },
+    );
+  };
+  if (!player) return [];
+  for (const stack of player.equipments ?? []) add(stack);
+  for (const building of player.buildings ?? []) {
+    if (building.buildingType === 'WEAPON_CACHE' && !building.isDestroyed) {
+      for (const stack of building.storedEquipments ?? []) add(stack);
+    }
+  }
+  return [...byName.values()];
+}
+
 /** Classes dans l'ordre du catalogue (« Sans classe » en fin), catégories comme la boutique. */
 export function equipmentByClass(stacks: EquipmentStack[]): EquipmentClassGroup[] {
   const byClass = new Map<string, EquipmentStack[]>();

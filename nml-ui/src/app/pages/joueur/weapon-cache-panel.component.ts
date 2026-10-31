@@ -24,10 +24,11 @@ export class WeaponCachePanelComponent {
   readonly total = computed(() =>
     this.stacks().reduce((sum, stack) => sum + (stack.quantity ?? 0), 0),
   );
-  readonly available = computed(() =>
-    this.stacks().reduce((sum, stack) => sum + (stack.available ?? 0), 0),
-  );
   readonly maxCapacity = computed(() => this.building()?.maxCapacity ?? 0);
+  readonly sectorLabel = computed(() => {
+    const number = this.building()?.sectorNumber;
+    return number == null ? 'hors secteur' : `secteur ${number}`;
+  });
   readonly fillPercentage = computed(() => {
     const max = this.maxCapacity();
     return max > 0 ? Math.min(100, (this.total() / max) * 100) : 0;

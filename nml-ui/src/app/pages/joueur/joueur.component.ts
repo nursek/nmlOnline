@@ -63,6 +63,7 @@ import { AllianceComponent } from '../alliance/alliance.component';
 import { ExpPipe } from '../../shared/exp.pipe';
 import { ResourceCardComponent } from '../../shared/resource-card/resource-card.component';
 import {
+  allEquipmentStacks,
   buildingStats,
   EconomyBreakdown,
   economyBreakdown,
@@ -171,15 +172,12 @@ export class JoueurComponent {
   readonly bank = computed(
     () => this.buildings().find((building) => building.buildingType === 'BANK') ?? null,
   );
-  readonly weaponCache = computed(
-    () =>
-      this.buildings().find(
-        (building) => building.buildingType === 'WEAPON_CACHE' && !building.isDestroyed,
-      ) ??
-      this.buildings().find((building) => building.buildingType === 'WEAPON_CACHE') ??
-      null,
+  readonly weaponCaches = computed(() =>
+    this.buildings().filter(
+      (building) => building.buildingType === 'WEAPON_CACHE' && !building.isDestroyed,
+    ),
   );
-  readonly inventoryStacks = computed(() => this.player()?.equipments ?? []);
+  readonly equipmentStacks = computed(() => allEquipmentStacks(this.player()));
   readonly startingMoneyRemaining = computed(
     () => this.player()?.stats?.startingMoneyRemaining ?? 0,
   );
@@ -237,7 +235,7 @@ export class JoueurComponent {
     }
     return numbers;
   });
-  readonly groupedEquipments = computed(() => equipmentByClass(this.player()?.equipments ?? []));
+  readonly groupedEquipments = computed(() => equipmentByClass(this.equipmentStacks()));
   readonly economy = computed<EconomyBreakdown | null>(() => {
     const p = this.player();
     return p ? economyBreakdown(p, this.income()) : null;
@@ -562,8 +560,8 @@ export class JoueurComponent {
     this.dialog.open(ExchangeDialogComponent, { width: '640px', maxWidth: '95vw', data });
   }
 
-  openCacheEquipments(): void {
-    const cacheId = this.weaponCache()?.id;
+  openCacheEquipments(cache: Building | null): void {
+    const cacheId = cache?.id;
     if (cacheId == null) return;
     const data: CacheEquipmentDialogData = { buildingId: cacheId };
     this.dialog.open(CacheEquipmentDialogComponent, {

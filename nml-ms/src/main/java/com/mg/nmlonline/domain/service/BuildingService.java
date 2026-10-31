@@ -267,18 +267,19 @@ public class BuildingService {
             throw new IllegalStateException("La cache d'armes est détruite");
         }
 
-        EquipmentStack stack = player.getEquipments().stream()
+        EquipmentStack stack = cache.getStoredEquipments().stream()
                 .filter(s -> s.getEquipment() != null
                         && equipmentName.equals(s.getEquipment().getName()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Équipement introuvable : " + equipmentName));
-        // Seul le matériel disponible (non équipé sur une unité) peut être jeté.
         if (stack.getAvailable() < quantity) {
-            throw new IllegalArgumentException("Quantité disponible insuffisante");
+            throw new IllegalArgumentException("Quantité disponible insuffisante dans la cache d'armes");
         }
 
-        for (int i = 0; i < quantity; i++) {
-            player.removeEquipmentFromStack(stack.getEquipment());
+        stack.setQuantity(stack.getQuantity() - quantity);
+        stack.setAvailable(stack.getAvailable() - quantity);
+        if (stack.getQuantity() <= 0) {
+            cache.getStoredEquipments().remove(stack);
         }
         player.setTotalEquipmentValue();
         player.calculateTotalEconomyPower();
