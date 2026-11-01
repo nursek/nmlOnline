@@ -21,9 +21,9 @@
 
     <div class="legend-bar" aria-label="Légende de la carte et calques">
       @if (isOverlay('resources')) {
-        @for (resource of resourceLegend; track resource.name) {
+        @for (resource of resourceLegend(); track resource.name) {
           <span class="legend-item">
-            <span class="legend-dot" [style.background-color]="resource.color"></span>
+            <img class="legend-icon" [src]="resource.src" [alt]="resource.name" />
             <span class="legend-name">{{ resource.name }}</span>
           </span>
         }
@@ -62,7 +62,7 @@
           [class.active]="isOverlay('resources')"
           [attr.aria-pressed]="isOverlay('resources')"
           (click)="toggleOverlay('resources')"
-          title="Colorer les secteurs par type de ressource"
+          title="Afficher la ressource de chaque secteur"
         >
           <mat-icon>diamond</mat-icon>
           Ressources
@@ -125,8 +125,8 @@
       <mat-card class="details-card">
         <mat-card-content>
           @if (selectedSector(); as sector) {
-            <div class="sector-header" [style.border-color]="getSectorColor(sector)">
-              <div class="sector-color" [style.background-color]="getSectorColor(sector)"></div>
+            <div class="sector-header" [style.border-color]="getPlayerColor(sector.ownerId)">
+              <div class="sector-color" [style.background-color]="getPlayerColor(sector.ownerId)"></div>
               <div>
                 <h2>{{ sector.name }}</h2>
                 <span class="sector-id">Secteur n°{{ sector.number }}</span>
