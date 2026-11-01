@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.model.vehicle;
 
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
@@ -76,6 +77,26 @@ class VehicleTest {
             assertTrue(VehicleType.HELICOPTERE.isAerial());
             assertTrue(VehicleType.AVION_TRANSPORT.isAerial());
             assertFalse(VehicleType.TANK.isAerial());
+        }
+
+        @Test
+        @DisplayName("Nom par race, repli sur le nom générique sans race")
+        void shouldResolveRaceDisplayNames() {
+            assertEquals("Trukk", VehicleType.VTT_LEGER.displayNameFor(PlayerRace.ORKS));
+            assertEquals("Arche fantôme", VehicleType.VTT_LEGER.displayNameFor(PlayerRace.NECRONS));
+            assertEquals("VTT léger", VehicleType.VTT_LEGER.displayNameFor(null));
+            assertEquals("VTT léger", VehicleType.VTT_LEGER.getDisplayName());
+        }
+
+        @Test
+        @DisplayName("Chaque type a un nom propre à chaque race")
+        void shouldNameEveryTypeForEveryRace() {
+            for (VehicleType type : VehicleType.values()) {
+                for (PlayerRace race : PlayerRace.values()) {
+                    assertNotEquals(type.getDisplayName(), type.displayNameFor(race),
+                            type + " sans nom " + race);
+                }
+            }
         }
     }
 

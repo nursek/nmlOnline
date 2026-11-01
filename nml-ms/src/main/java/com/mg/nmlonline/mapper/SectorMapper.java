@@ -2,6 +2,7 @@ package com.mg.nmlonline.mapper;
 
 import com.mg.nmlonline.api.dto.SectorDto;
 import com.mg.nmlonline.api.dto.SectorStatsDto;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.sector.SectorStats;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -73,14 +74,15 @@ public class SectorMapper {
     }
 
     /** Contexte de lecture : propriétaire, allié avec une troupe sur place ou MJ → détail complet, sinon restrictif. */
-    public record Visibility(Long requesterPlayerId, Set<Long> allyIds, boolean seeAll) {
+    public record Visibility(Long requesterPlayerId, Set<Long> allyIds, boolean seeAll,
+                             PlayerRace requesterRace) {
 
         public static Visibility none() {
-            return new Visibility(null, Set.of(), false);
+            return new Visibility(null, Set.of(), false, null);
         }
 
         public static Visibility admin() {
-            return new Visibility(null, Set.of(), true);
+            return new Visibility(null, Set.of(), true, null);
         }
 
         public boolean canSeeDetail(Sector sector) {
@@ -114,7 +116,7 @@ public class SectorMapper {
             return null;
         }
         if (visibility != null && visibility.canSeeDetail(sector)) {
-            return toDto(sector);
+            return toDto(sector, visibility.requesterRace());
         }
         return toRestrictedDto(sector);
     }
@@ -139,6 +141,10 @@ public class SectorMapper {
     }
 
     public SectorDto toDto(Sector sector) {
+        return toDto(sector, null);
+    }
+
+    public SectorDto toDto(Sector sector, PlayerRace race) {
         if (sector == null) return null;
 
         SectorDto dto = new SectorDto();
@@ -190,7 +196,7 @@ public class SectorMapper {
 
         if (sector.getVehicles() != null && !sector.getVehicles().isEmpty()) {
             dto.setVehicles(sector.getVehicles().stream()
-                    .map(vehicleMapper::toDto)
+                    .map(vehicle -> vehicleMapper.toDto(vehicle, race))
                     .toList());
         }
 

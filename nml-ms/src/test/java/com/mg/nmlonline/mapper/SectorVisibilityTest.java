@@ -31,7 +31,7 @@ class SectorVisibilityTest {
     }
 
     private SectorMapper.Visibility visibility() {
-        return new SectorMapper.Visibility(ME, Set.of(ALLY), false);
+        return new SectorMapper.Visibility(ME, Set.of(ALLY), false, null);
     }
 
     @Test

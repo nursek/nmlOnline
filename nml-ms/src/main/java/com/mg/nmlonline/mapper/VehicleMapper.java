@@ -2,6 +2,7 @@ package com.mg.nmlonline.mapper;
 
 import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.api.dto.VehicleTypeDto;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
@@ -11,13 +12,17 @@ import org.springframework.stereotype.Component;
 public class VehicleMapper {
 
     public VehicleDto toDto(Vehicle vehicle) {
+        return toDto(vehicle, null);
+    }
+
+    public VehicleDto toDto(Vehicle vehicle, PlayerRace race) {
         if (vehicle == null) return null;
 
         VehicleDto dto = new VehicleDto();
         dto.setId(vehicle.getId());
         dto.setPlayerId(vehicle.getPlayerId());
         dto.setVehicleType(vehicle.getVehicleType() != null ? vehicle.getVehicleType().name() : null);
-        dto.setDisplayName(vehicle.getDisplayName());
+        dto.setDisplayName(vehicle.getDisplayName(race));
         dto.setPdf(vehicle.getPdf());
         dto.setDefense(vehicle.getDefense());
         dto.setIsDestroyed(vehicle.isDestroyed());
@@ -39,11 +44,15 @@ public class VehicleMapper {
     }
 
     public VehicleTypeDto vehicleTypeToDto(VehicleType vt) {
+        return vehicleTypeToDto(vt, null);
+    }
+
+    public VehicleTypeDto vehicleTypeToDto(VehicleType vt, PlayerRace race) {
         if (vt == null) return null;
 
         VehicleTypeDto dto = new VehicleTypeDto();
         dto.setName(vt.name());
-        dto.setDisplayName(vt.getDisplayName());
+        dto.setDisplayName(vt.displayNameFor(race));
         dto.setCost(vt.getCost());
         dto.setBasePdf(vt.getBasePdf());
         dto.setBaseDefense(vt.getBaseDefense());

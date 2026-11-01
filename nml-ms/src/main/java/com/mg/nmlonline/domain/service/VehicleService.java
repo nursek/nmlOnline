@@ -3,10 +3,12 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.api.dto.BuyVehicleRequestDto;
 import com.mg.nmlonline.api.dto.MovementOrderDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
+import com.mg.nmlonline.api.dto.VehicleTypeDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
@@ -67,8 +69,12 @@ public class VehicleService {
         }
     }
 
-    public List<VehicleType> getAllVehicleTypes() {
-        return Arrays.asList(VehicleType.values());
+    public List<VehicleTypeDto> getVehicleTypesDto(Long userId) {
+        PlayerRace race = userId == null ? null
+                : playerRepository.findByUserId(userId).map(Player::getRace).orElse(null);
+        return Arrays.stream(VehicleType.values())
+                .map(type -> vehicleMapper.vehicleTypeToDto(type, race))
+                .toList();
     }
 
     private void requireAvailableAtCurrentTurn(VehicleType vehicleType) {
@@ -169,12 +175,6 @@ public class VehicleService {
         return created;
     }
 
-    public List<Vehicle> getPlayerVehicles(Long userId) {
-        Player player = playerRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
-        return vehicleRepository.findByPlayerId(player.getId());
-    }
-
     @Transactional
     public Vehicle placeVehicle(Long vehicleId, Long boardId, int sectorNumber, Long userId) {
         requireTurnOpen();
@@ -232,13 +232,13 @@ public class VehicleService {
         List<Long> prevPassengerIds = vehicle.getPassengers().stream().map(CombatEntity::getId).toList();
         if (!vehicleCrewService.updateCrew(player, vehicle, pilotId, passengerIds,
                 prevPilotId, prevPassengerIds)) {
-            return vehicleMapper.toDto(vehicle);
+            return vehicleMapper.toDto(vehicle, player.getRace());
         }
 
         vehicleRepository.save(vehicle);
         playerActionService.recordSetVehicleCrew(player.getId(), vehicleId, prevPilotId,
                 prevPassengerIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
-        return vehicleMapper.toDto(vehicle);
+        return vehicleMapper.toDto(vehicle, player.getRace());
     }
 
     @Transactional
@@ -256,7 +256,11 @@ public class VehicleService {
 
     @Transactional(readOnly = true)
     public List<VehicleDto> getPlayerVehiclesDto(Long userId) {
-        return getPlayerVehicles(userId).stream().map(vehicleMapper::toDto).toList();
+        Player player = playerRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
+        return vehicleRepository.findByPlayerId(player.getId()).stream()
+                .map(vehicle -> vehicleMapper.toDto(vehicle, player.getRace()))
+                .toList();
     }
 
     @Transactional
@@ -271,6 +275,8 @@ public class VehicleService {
 
     @Transactional
     public VehicleDto placeVehicleDto(Long vehicleId, Long boardId, int sectorNumber, Long userId) {
-        return vehicleMapper.toDto(placeVehicle(vehicleId, boardId, sectorNumber, userId));
+        Vehicle vehicle = placeVehicle(vehicleId, boardId, sectorNumber, userId);
+        PlayerRace race = playerRepository.findByUserId(userId).map(Player::getRace).orElse(null);
+        return vehicleMapper.toDto(vehicle, race);
     }
 }
