@@ -8,4 +8,5 @@ import lombok.NoArgsConstructor;
 public class BuyEquipmentItemDto {
     private String name;
     private int quantity;
+    private Long cacheId;
 }

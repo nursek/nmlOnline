@@ -4,6 +4,7 @@ import com.mg.nmlonline.api.dto.BuyEquipmentItemDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
@@ -16,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -28,6 +31,7 @@ public class PlayerService {
     private final PlayerMapper playerMapper;
     private final BoardService boardService;
     private final PlayerActionService playerActionService;
+    private final TurnLock turnLock;
     private final EntityManager entityManager;
 
     public PlayerService(PlayerRepository playerRepository,
@@ -36,6 +40,7 @@ public class PlayerService {
                           PlayerMapper playerMapper,
                           BoardService boardService,
                           PlayerActionService playerActionService,
+                          TurnLock turnLock,
                           EntityManager entityManager) {
         this.playerRepository = playerRepository;
         this.sectorService = sectorService;
@@ -43,6 +48,7 @@ public class PlayerService {
         this.playerMapper = playerMapper;
         this.boardService = boardService;
         this.playerActionService = playerActionService;
+        this.turnLock = turnLock;
         this.entityManager = entityManager;
     }
 
@@ -64,7 +70,11 @@ public class PlayerService {
 
     /** Verrou pessimiste : sérialise les mutations d'inventaire avec les achats (anti lost-update). */
     public Player findByUserIdForUpdate(Long userId) {
-        return playerRepository.findByUserIdForUpdate(userId).orElse(null);
+        Player player = playerRepository.findByUserIdForUpdate(userId).orElse(null);
+        if (player != null) {
+            player.moveInventoryToWeaponCaches();
+        }
+        return player;
     }
 
     @Transactional
@@ -75,19 +85,30 @@ public class PlayerService {
     /** Achat atomique : valide tous les items (existence, quantité, fonds) avant d'appliquer. */
     @Transactional
     public Player buyEquipments(Long playerId, List<BuyEquipmentItemDto> items) {
+        // Un achat pendant la résolution échapperait au placement et écraserait les caches pillées.
+        if (turnLock.isLocked()) {
+            throw new IllegalStateException(
+                    "La résolution du tour est en cours — réessayez après la fin du tour");
+        }
         if (playerId == null) {
             throw new IllegalArgumentException("Player ID is required");
         }
         Player player = playerRepository.findByIdForUpdate(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Player not found"));
+        player.moveInventoryToWeaponCaches();
 
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("No items to buy");
         }
 
-        record ResolvedItem(Equipment equipment, int quantity) {}
+        record ResolvedItem(Equipment equipment, int quantity, WeaponCache cache) {}
         List<ResolvedItem> resolvedItems = new ArrayList<>();
         double totalCost = 0;
+        List<WeaponCache> caches = player.getUsableWeaponCaches();
+        Map<Long, Integer> remainingByCache = new HashMap<>();
+        for (WeaponCache cache : caches) {
+            remainingByCache.put(cache.getId(), cache.getAvailableCapacity());
+        }
 
         for (BuyEquipmentItemDto item : items) {
             if (item == null) {
@@ -98,8 +119,12 @@ public class PlayerService {
             }
             Equipment equipment = equipmentService.findByName(item.getName())
                     .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + item.getName()));
+            WeaponCache cache = resolvePurchaseCache(caches, remainingByCache, item);
+            if (cache != null) {
+                remainingByCache.merge(cache.getId(), -item.getQuantity(), Integer::sum);
+            }
             totalCost += (double) equipment.getCost() * item.getQuantity();
-            resolvedItems.add(new ResolvedItem(equipment, item.getQuantity()));
+            resolvedItems.add(new ResolvedItem(equipment, item.getQuantity(), cache));
         }
 
         if (player.getStats().getMoney() < totalCost) {
@@ -109,7 +134,7 @@ public class PlayerService {
         for (ResolvedItem resolved : resolvedItems) {
             double cost = (double) resolved.equipment().getCost() * resolved.quantity();
             double startingShare = player.startingShareOf(cost);
-            boolean success = player.buyEquipment(resolved.equipment(), resolved.quantity());
+            boolean success = player.buyEquipment(resolved.equipment(), resolved.quantity(), resolved.cache());
             if (!success) {
                 throw new IllegalStateException("Failed to apply purchase for: " + resolved.equipment().getName());
             }
@@ -118,6 +143,36 @@ public class PlayerService {
         }
 
         return playerRepository.save(player);
+    }
+
+    private WeaponCache resolvePurchaseCache(List<WeaponCache> caches, Map<Long, Integer> remainingByCache,
+                                             BuyEquipmentItemDto item) {
+        if (item.getCacheId() != null) {
+            WeaponCache cache = caches.stream()
+                    .filter(candidate -> item.getCacheId().equals(candidate.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Cache d'armes introuvable ou détruite : " + item.getCacheId()));
+            if (remainingByCache.getOrDefault(cache.getId(), 0) < item.getQuantity()) {
+                throw new IllegalStateException("Capacité insuffisante dans la cache d'armes : "
+                        + remainingByCache.getOrDefault(cache.getId(), 0) + " place(s) disponible(s)");
+            }
+            return cache;
+        }
+        if (caches.isEmpty()) {
+            return null;
+        }
+        List<WeaponCache> candidates = caches.stream()
+                .filter(cache -> remainingByCache.getOrDefault(cache.getId(), 0) >= item.getQuantity())
+                .toList();
+        if (candidates.isEmpty()) {
+            throw new IllegalStateException("Pas assez de place dans vos caches d'armes.");
+        }
+        if (candidates.size() > 1) {
+            throw new IllegalArgumentException(
+                    "Plusieurs caches d'armes peuvent accueillir cet équipement : choisissez la cache.");
+        }
+        return candidates.getFirst();
     }
 
     /**

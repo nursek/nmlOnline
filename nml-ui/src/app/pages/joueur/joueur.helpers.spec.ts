@@ -1,4 +1,5 @@
 import {
+  allEquipmentStacks,
   buildingMoveStatus,
   economyBreakdown,
   equipmentByClass,
@@ -555,6 +556,48 @@ describe('joueur.helpers', () => {
       expect(
         buildingMoveStatus(building(1, me, { isOperational: false, canMove: false }), 10).label,
       ).toBe('QG inopérant');
+    });
+  });
+
+  describe('allEquipmentStacks', () => {
+    it("fusionne l'inventaire hors cache et le contenu des caches non détruites", () => {
+      const inventory = stack('Fusil', 'FIREARM');
+      const cached = stack('Pistolet', 'FIREARM');
+      const player = {
+        equipments: [inventory],
+        buildings: [
+          { buildingType: 'WEAPON_CACHE', isDestroyed: false, storedEquipments: [cached] },
+          {
+            buildingType: 'WEAPON_CACHE',
+            isDestroyed: true,
+            storedEquipments: [stack('Hache', 'MELEE')],
+          },
+          { buildingType: 'BANK', isDestroyed: false, storedEquipments: [stack('Lance', 'MELEE')] },
+        ],
+      } as unknown as Player;
+
+      expect(allEquipmentStacks(player)).toEqual([inventory, cached]);
+      expect(allEquipmentStacks(null)).toEqual([]);
+    });
+
+    it("cumule un même équipement présent dans l'inventaire et en cache", () => {
+      const player = {
+        equipments: [stack('Pistolet', 'FIREARM')],
+        buildings: [
+          {
+            buildingType: 'WEAPON_CACHE',
+            isDestroyed: false,
+            storedEquipments: [stack('Pistolet', 'FIREARM')],
+          },
+        ],
+      } as unknown as Player;
+
+      const [merged, ...others] = allEquipmentStacks(player);
+
+      expect(others).toEqual([]);
+      expect(merged.equipment.name).toBe('Pistolet');
+      expect(merged.quantity).toBe(6);
+      expect(merged.available).toBe(2);
     });
   });
 

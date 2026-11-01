@@ -18,7 +18,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
-import { Player, UnitClass, UnitType } from '../../models';
+import { EquipmentStack, Player, UnitClass, UnitType } from '../../models';
 import { AdminService } from '../../services/admin.service';
 import { ApiService } from '../../services/api.service';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
@@ -26,6 +26,7 @@ import { APP_CONSTANTS } from '../../core/constants';
 import { ExpPipe } from '../../shared/exp.pipe';
 import { groupPlayersByRace } from './player-management.helpers';
 import { PlayerEditDialogComponent } from './player-edit-dialog/player-edit-dialog.component';
+import { allEquipmentStacks } from '../joueur/joueur.helpers';
 
 @Component({
   selector: 'app-player-management',
@@ -164,8 +165,12 @@ export class PlayerManagementComponent {
     return amount.toFixed(0);
   }
 
+  getEquipmentStacks(player: Player): EquipmentStack[] {
+    return allEquipmentStacks(player);
+  }
+
   getEquipmentCount(player: Player): number {
-    return player.equipments?.reduce((sum, eq) => sum + eq.quantity, 0) || 0;
+    return this.getEquipmentStacks(player).reduce((sum, eq) => sum + eq.quantity, 0);
   }
 
   getUnitTypeLabel(type: UnitType | string | null | undefined): string {

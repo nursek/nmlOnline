@@ -215,14 +215,14 @@ public class PlayerActionService {
     /** Entité retirée par le MJ : clore ses actions pour préserver l'annulation des autres. */
     public void discardActiveActionsReferencing(Long playerId, int turn, Long unitId,
                                                 Long vehicleId, Long buildingId,
-                                                String equipmentName) {
+                                                String equipmentName, PlayerActionType actionType) {
         for (PlayerAction action : actionRepository.findByPlayerIdAndTurnAndStatusOrderByIdAsc(
                 playerId, turn, PlayerActionStatus.ACTIVE)) {
             boolean references = (unitId != null && unitId.equals(action.getUnitId()))
                     || (vehicleId != null && vehicleId.equals(action.getVehicleId()))
                     || (buildingId != null && buildingId.equals(action.getBuildingId()))
                     || (equipmentName != null && equipmentName.equals(action.getEquipmentName()));
-            if (references) {
+            if (references && (actionType == null || actionType == action.getType())) {
                 action.markUndone();
                 actionRepository.save(action);
             }
@@ -296,14 +296,14 @@ public class PlayerActionService {
     }
 
     private void undoBuyEquipment(PlayerAction action, Player player) {
-        EquipmentStack stack = findStack(player, action.getEquipmentName());
         int quantity = action.getQuantity() != null ? action.getQuantity() : 1;
-        if (stack == null || stack.getAvailable() < quantity) {
+        if (player.getAvailableEquipmentQuantity(action.getEquipmentName()) < quantity) {
             throw new PlayerActionUndoException(
                     "« " + action.getEquipmentName() + " » est équipé sur une unité : déséquipez-le d'abord.");
         }
+        Equipment equipment = player.findEquipmentStack(action.getEquipmentName()).getEquipment();
         for (int i = 0; i < quantity; i++) {
-            player.removeEquipmentFromStack(stack.getEquipment());
+            player.removeEquipmentFromStack(equipment);
         }
         player.refundMoney(action.getMoney() != null ? action.getMoney() : 0, action.getStartingMoneySpent());
         player.setTotalEquipmentValue();
@@ -398,6 +398,11 @@ public class PlayerActionService {
     private void undoPlaceUnit(PlayerAction action) {
         Unit unit = unitRepository.findById(action.getUnitId())
                 .orElseThrow(() -> new PlayerActionUndoException("Unité introuvable."));
+        if (vehicleRepository.findByPilot_Id(unit.getId()).isPresent()
+                || vehicleRepository.findByPassengers_Id(unit.getId()).isPresent()) {
+            throw new PlayerActionUndoException(
+                    "L'unité est à bord d'un véhicule : retirez-la de l'équipage d'abord.");
+        }
         int turn = turnService.getCurrentTurn();
         if (!movementOrderRepository.findPendingEntityIds(turn, List.of(unit.getId())).isEmpty()) {
             throw new PlayerActionUndoException("L'unité a un ordre à pied en attente : annulez-le d'abord.");
@@ -486,10 +491,7 @@ public class PlayerActionService {
     }
 
     private EquipmentStack findStack(Player player, String equipmentName) {
-        return player.getEquipments().stream()
-                .filter(s -> s.getEquipment() != null && s.getEquipment().getName().equals(equipmentName))
-                .findFirst()
-                .orElse(null);
+        return player.findEquipmentStack(equipmentName);
     }
 
     private Player requirePlayerByUserId(Long userId) {

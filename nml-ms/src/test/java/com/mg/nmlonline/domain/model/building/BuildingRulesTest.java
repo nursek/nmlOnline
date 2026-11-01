@@ -278,16 +278,6 @@ class BuildingRulesTest {
             assertFalse(cache.discardEquipment("Fusil", 1));
             assertEquals(2, cache.getTotalStoredCount());
         }
-
-        @Test
-        @DisplayName("Capture : transfert de tous les équipements et vidage")
-        void shouldTransferAllEquipmentsOnCapture() {
-            WeaponCache cache = new WeaponCache(1L);
-            cache.getStoredEquipments().add(stackOf("Pistolet", 5));
-
-            assertEquals(1, cache.transferAllEquipments().size());
-            assertTrue(cache.getStoredEquipments().isEmpty());
-        }
     }
 
     @Nested

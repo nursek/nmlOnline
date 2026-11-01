@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
@@ -48,5 +49,44 @@ class CombatServiceEquipmentLossTest {
         CombatService.discardDestroyedEquipment(owner, unit);
 
         assertTrue(owner.getEquipments().isEmpty());
+    }
+
+    @Test
+    @DisplayName("L'exemplaire détruit est retiré de la pile qui porte l'équipé, pas de l'inventaire")
+    void discardDestroyedEquipmentTargetsTheEquippedStack() {
+        Player owner = new Player("Propriétaire");
+        owner.addEquipmentToStack(FIREARM, 1);
+        // Ids distincts : EquipmentStack.equals ne compare que l'id (deux piles non persistées sont égales).
+        owner.getEquipments().getFirst().setId(1L);
+        WeaponCache cache = new WeaponCache(1L);
+        owner.getBuildings().add(cache);
+        EquipmentStack cached = new EquipmentStack(FIREARM);
+        cached.setId(2L);
+        cached.setQuantity(1);
+        cached.setAvailable(0);
+        cache.getStoredEquipments().add(cached);
+        Unit unit = new Unit(0, UnitClass.LEGER);
+        assertTrue(unit.addEquipment(FIREARM));
+
+        CombatService.discardDestroyedEquipment(owner, unit);
+
+        assertEquals(1, owner.getEquipments().getFirst().getQuantity(),
+                "L'inventaire disponible ne doit pas être amputé");
+        assertTrue(cache.getStoredEquipments().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Donnée héritée : copie portée sans décompte, l'invariant disponible <= total reste vrai")
+    void discardDestroyedEquipmentKeepsInvariantForLegacyUnitEquipment() {
+        Player owner = new Player("Propriétaire");
+        owner.addEquipmentToStack(FIREARM, 2);
+        Unit unit = new Unit(0, UnitClass.LEGER);
+        assertTrue(unit.addEquipment(FIREARM));
+
+        CombatService.discardDestroyedEquipment(owner, unit);
+
+        EquipmentStack stack = owner.getEquipments().getFirst();
+        assertEquals(1, stack.getQuantity());
+        assertEquals(1, stack.getAvailable());
     }
 }

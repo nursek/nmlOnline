@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.BuildingDto;
+import com.mg.nmlonline.domain.model.action.PlayerActionType;
 import com.mg.nmlonline.domain.model.building.*;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
@@ -131,7 +132,6 @@ public class BuildingService {
                 .toList();
     }
 
-    /** Capture d'un cache d'armes : les équipements stockés rejoignent l'inventaire du capturant. */
     public void captureWeaponCache(Long cacheId, Long capturingPlayerId, int currentTurn) {
         Building building = buildingRepository.findById(cacheId).orElse(null);
         if (!(building instanceof WeaponCache cache)) {
@@ -142,19 +142,35 @@ public class BuildingService {
         Player capturingPlayer = playerRepository.findByIdForUpdate(capturingPlayerId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Le joueur capturant avec l'ID " + capturingPlayerId + " n'existe pas"));
+        Player victim = cache.getPlayerId() != null
+                ? playerRepository.findByIdForUpdate(cache.getPlayerId()).orElse(null)
+                : null;
 
         cache.onCapture(capturingPlayerId, currentTurn);
-        // orphanRemoval : un stack sorti du Cache est DELETE au flush, d'où la recréation chez le capturant.
-        for (EquipmentStack stack : cache.transferAllEquipments()) {
-            // player_id NOT NULL rattache aussi le stack au joueur : le sortir des deux collections évite un cascade persist.
-            Player owner = stack.getPlayer();
-            if (owner != null) {
-                owner.getEquipments().remove(stack);
+        if (!capturingPlayerId.equals(cache.getPlayerId())) {
+            // Seul le stock disponible est pillé : les copies équipées restent suivies par les unités du perdant.
+            for (EquipmentStack stack : new ArrayList<>(cache.getStoredEquipments())) {
+                int available = stack.getAvailable();
+                if (available <= 0) {
+                    continue;
+                }
+                capturingPlayer.addEquipmentToStorage(stack.getEquipment(), available);
+                stack.setQuantity(stack.getQuantity() - available);
+                stack.setAvailable(0);
+                if (stack.getQuantity() <= 0) {
+                    cache.getStoredEquipments().remove(stack);
+                }
             }
-            capturingPlayer.addEquipmentToStack(stack.getEquipment(), stack.getQuantity());
         }
+        capturingPlayer.setTotalEquipmentValue();
+        capturingPlayer.calculateTotalEconomyPower();
         buildingRepository.save(cache);
         playerRepository.save(capturingPlayer);
+        if (victim != null) {
+            victim.setTotalEquipmentValue();
+            victim.calculateTotalEconomyPower();
+            playerRepository.save(victim);
+        }
     }
 
     public Optional<Bank> getBank(Long playerId) {
@@ -190,16 +206,10 @@ public class BuildingService {
         capturingPlayer.incrementMoney(transferredMoney);
 
         if (transferredResources != null && !transferredResources.isEmpty()) {
-            List<PlayerResource> playerResources = capturingPlayer.getResources();
-            if (playerResources == null) {
-                playerResources = new ArrayList<>();
-                capturingPlayer.setResources(playerResources);
-            }
-
+            // Recréation chez le capturant : les lignes bank_id sont supprimées par l'orphanRemoval de Bank.storedResources.
             for (PlayerResource resource : transferredResources) {
-                resource.setPlayer(capturingPlayer);
+                capturingPlayer.addResource(resource.getResourceName(), resource.getQuantity());
             }
-            playerResources.addAll(transferredResources);
         }
 
         playerRepository.save(capturingPlayer);
@@ -266,19 +276,23 @@ public class BuildingService {
         if (cache.isDestroyed()) {
             throw new IllegalStateException("La cache d'armes est détruite");
         }
+        playerActionService.discardActiveActionsReferencing(
+                player.getId(), turnService.getCurrentTurn(), null, null, buildingId,
+                equipmentName, PlayerActionType.BUY_EQUIPMENT);
 
-        EquipmentStack stack = player.getEquipments().stream()
+        EquipmentStack stack = cache.getStoredEquipments().stream()
                 .filter(s -> s.getEquipment() != null
                         && equipmentName.equals(s.getEquipment().getName()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Équipement introuvable : " + equipmentName));
-        // Seul le matériel disponible (non équipé sur une unité) peut être jeté.
         if (stack.getAvailable() < quantity) {
-            throw new IllegalArgumentException("Quantité disponible insuffisante");
+            throw new IllegalArgumentException("Quantité disponible insuffisante dans la cache d'armes");
         }
 
-        for (int i = 0; i < quantity; i++) {
-            player.removeEquipmentFromStack(stack.getEquipment());
+        stack.setQuantity(stack.getQuantity() - quantity);
+        stack.setAvailable(stack.getAvailable() - quantity);
+        if (stack.getQuantity() <= 0) {
+            cache.getStoredEquipments().remove(stack);
         }
         player.setTotalEquipmentValue();
         player.calculateTotalEconomyPower();

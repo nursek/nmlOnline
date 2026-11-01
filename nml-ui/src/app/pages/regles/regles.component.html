@@ -351,8 +351,10 @@
               Capturée, son contenu est transféré au vainqueur.
             </li>
             <li>
-              <strong>Cache d'armes</strong> — stocke jusqu'à 300 équipements. Capturée, son contenu
-              rejoint l'inventaire du vainqueur.
+              <strong>Cache d'armes</strong> — stocke jusqu'à 300 équipements achetés, rangés
+              automatiquement dedans. Avec plusieurs caches, vous choisissez la destination à
+              l'achat ; si aucune n'a de place, l'achat est refusé. Capturée, son contenu rejoint les
+              caches du vainqueur, puis son inventaire si elles sont pleines.
             </li>
             <li>
               <strong>Déplacement</strong> — un bâtiment ne se déplace que dans un secteur que vous
@@ -406,12 +408,12 @@
             >
           </mat-expansion-panel-header>
           <p class="text">
-            Les équipements s'achètent, se stockent, puis s'assignent à une unité dans la limite de
-            ses emplacements par catégorie et de la compatibilité de sa classe. Trois catégories
-            existent : <strong>arme à feu</strong>, <strong>arme de corps-à-corps</strong> et
-            <strong>équipement défensif</strong>. L'onglet <strong>Unités</strong> sert au
-            recrutement d'infanterie (voir Recrutement des unités) et l'onglet
-            <strong>Véhicules</strong> à l'achat des véhicules.
+            Les équipements s'achètent, se rangent dans votre cache d'armes et s'assignent à une
+            unité dans la limite de ses emplacements par catégorie et de la compatibilité de sa
+            classe. Trois catégories existent : <strong>arme à feu</strong>,
+            <strong>arme de corps-à-corps</strong> et <strong>équipement défensif</strong>. L'onglet
+            <strong>Unités</strong> sert au recrutement d'infanterie (voir Recrutement des unités) et
+            l'onglet <strong>Véhicules</strong> à l'achat des véhicules.
           </p>
           <p class="text">
             Les noms et illustrations des équipements varient selon la faction du joueur (Orks,
@@ -435,11 +437,13 @@
             </li>
           </ul>
           <p class="text">
-            À l'achat, le coût est débité selon la quantité (<code>coût × quantité</code>).
+            À l'achat, le coût est débité selon la quantité (<code>coût × quantité</code>) et
+            l'équipement rejoint une cache d'armes : automatiquement s'il n'y en a qu'une avec de la
+            place, sinon vous choisissez la cache. Sans cache, il reste en inventaire.
           </p>
           <p class="text">
-            Une unité détruite au combat emporte ses équipements : ils quittent l'inventaire du
-            joueur (le total diminue, le stock disponible n'est pas reconstitué).
+            Une unité détruite au combat emporte ses équipements : ils quittent votre arsenal (le
+            total diminue, le stock disponible n'est pas reconstitué).
           </p>
         </mat-expansion-panel>
 

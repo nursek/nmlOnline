@@ -4,7 +4,9 @@
       <mat-icon class="building-icon">inventory_2</mat-icon>
       <h2>Cache d'armes</h2>
     </div>
-    <p class="building-subtitle">Capacité de stockage de votre arsenal</p>
+    <p class="building-subtitle">
+      Capacité de stockage de votre arsenal — {{ sectorLabel() }}
+    </p>
 
     @if (building()) {
       <div class="building-metrics">
@@ -13,10 +15,8 @@
           <span class="metric-value">{{ total() }} / {{ maxCapacity() }}</span>
         </div>
         <div class="metric-row">
-          <span class="metric-label" matTooltip="Non équipés sur une unité, donc jetables"
-            >Disponibles</span
-          >
-          <span class="metric-value">{{ available() }}</span>
+          <span class="metric-label">Places libres</span>
+          <span class="metric-value">{{ building()?.availableCapacity ?? 0 }}</span>
         </div>
       </div>
 

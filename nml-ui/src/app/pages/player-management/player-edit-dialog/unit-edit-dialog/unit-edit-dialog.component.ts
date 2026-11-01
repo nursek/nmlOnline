@@ -22,6 +22,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Unit, UnitClass } from '../../../../models';
+import { allEquipmentStacks } from '../../../joueur/joueur.helpers';
 import { AdminService } from '../../../../services/admin.service';
 import { ApiService } from '../../../../services/api.service';
 import {
@@ -92,7 +93,7 @@ export class UnitEditDialogComponent {
     const unit = this.unit();
     if (!unit) return [];
     const available = new Map(
-      (this.player()?.equipments ?? []).map((stack) => [stack.equipment.name, stack.available]),
+      allEquipmentStacks(this.player()).map((stack) => [stack.equipment.name, stack.available]),
     );
     const classNames = new Set(this.classes());
     return this.equipmentCatalog().filter(

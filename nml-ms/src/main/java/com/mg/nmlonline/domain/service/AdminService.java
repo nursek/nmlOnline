@@ -4,6 +4,7 @@ import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -151,7 +152,13 @@ public class AdminService {
         result.put("money", player.getStats().getMoney());
 
         List<Map<String, Object>> resources = new ArrayList<>();
-        for (PlayerResource pr : player.getResources()) {
+        // Le filtre bank_id exclut ces lignes de player.resources : les aplatir garde l'export relisible sans perte.
+        List<PlayerResource> ownedResources = new ArrayList<>(player.getResources());
+        player.getBuildings().stream()
+                .filter(Bank.class::isInstance)
+                .map(Bank.class::cast)
+                .forEach(bank -> ownedResources.addAll(bank.getStoredResources()));
+        for (PlayerResource pr : ownedResources) {
             Map<String, Object> res = new LinkedHashMap<>();
             res.put("name", pr.getResourceName());
             res.put("quantity", pr.getQuantity());
@@ -160,7 +167,7 @@ public class AdminService {
         result.put("resources", resources);
 
         List<Map<String, Object>> equipments = new ArrayList<>();
-        for (var stack : player.getEquipments()) {
+        for (var stack : player.getAllEquipmentStacks()) {
             Map<String, Object> eq = new LinkedHashMap<>();
             eq.put("name", stack.getEquipment().getName());
             eq.put("quantity", stack.getQuantity());

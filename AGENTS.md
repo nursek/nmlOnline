@@ -8,9 +8,12 @@ Fast lane. Détails dans [README.md](README.md) ; cartes SVG dans [SVG_MAP_GUIDE
 # nml-ms/ (Spring Boot 4.1.1 / Java 25)
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"   # JWT_SECRET + JWT_PEPPER requis
 .\mvnw.cmd clean test                                          # PostgreSQL 14 embarqué (Zonky), sans config
-# Avant de rendre la main : mvnw clean test + npm test + npm run lint.
+# Avant de rendre la main : (nml-ms/) .\mvnw.cmd clean test ; (nml-ui/) npm test + npm run lint + npm run build.
+# `npm run build` est le seul contrôle des templates stricts (strictTemplates) ; la CI l'exige.
+# clean obligatoire : un target/classes/db/migration périmé fait échouer Flyway (versions dupliquées).
 # clean test exige le repo complet : SaleMultipliersParityTest lit ../nml-ui/src/app/core/sale-multiplier.ts.
 # Test d'intégration : @EmbeddedPostgresTest obligatoire, sinon profil default (H2) — pas de parité prod.
+# Pas de refresh sur @DirtiesContext : la base unique serait vidée sans réimport des fixtures.
 # nml-ui/ (Angular 22)
 npm start / npm test / npm run lint / npm run format
 npm run build                              # prod (Docker) + pipeline images (génère _opt/, gitignoré)
@@ -34,7 +37,7 @@ Avant de finir une tâche, relire les lignes `+` de `git diff -U0` et supprimer 
 
 Seul marqueur autorisé : `// ponytail:` + plafond + voie d'upgrade
 (`// ponytail: lock global, passer par-compte si le débit devient un souci`).
-Réponses et commentaires en **français** ; README/docs en anglais.
+Réponses et commentaires en **français** ; README en anglais (guide SVG en français).
 
 ## Règles dures
 
@@ -75,6 +78,10 @@ Réponses et commentaires en **français** ; README/docs en anglais.
   `BoardDto.sectors` (map) est reconstruite dans `BoardMapper`. `@JsonIgnore` côté many.
 - Cascade JPA : pas d'`orphanRemoval=true` sur une `@OneToMany` dont l'enfant porte une FK
   NOT NULL — préférer `@OnDelete(CASCADE)` + FK `ON DELETE CASCADE` (V5, V6).
+- **Stockage cache/banque** : `EquipmentStack.weapon_cache_id` et `PlayerResource.bank_id`
+  portent le contenu hors inventaire ; `Player.equipments`/`resources` sont filtrés
+  (`@SQLRestriction`) — passer par `getAllEquipmentStacks()`/`getUsableWeaponCaches()` et clore
+  les `BUY_EQUIPMENT` actifs (`discardActiveActionsReferencing`) avant tout retrait de stock.
 - **Tour** : `TurnService.advanceTurn()`, `TurnService.setCurrentTurn()` (navigation dev) et
   `TurnResolutionOrchestrator` mutent `Board.currentTurn` — les trois doivent publier/invalider
   `TurnService.cachedTurn` (`publishTurn` avant commit, purge sur rollback).
@@ -84,7 +91,7 @@ Réponses et commentaires en **français** ; README/docs en anglais.
 - **Véhicules** : pilote = personnage ou unité `PILOTE_DESTRUCTEUR`, passagers ≤ `VehicleType.capacity` ;
   occupants laissés dans `Sector.army`/`characters` (stats inchangées) et référencés par le véhicule ;
   le véhicule les emporte, ils sont exclus des ordres à pied. Détacher un pilote unité avant `em.remove`
-  (FK `pilot_id` portée par la ligne véhicule — `CombatService.detachPilotFromVehicles`).
+  (FK `pilot_id` portée par la ligne véhicule — `CombatService.detachFromVehicles`).
 
 ## Données prod
 

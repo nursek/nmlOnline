@@ -71,12 +71,6 @@ public class WeaponCache extends Building {
         return (double) getTotalStoredCount() / maxCapacity * 100;
     }
 
-    public List<EquipmentStack> transferAllEquipments() {
-        List<EquipmentStack> transferred = new ArrayList<>(storedEquipments);
-        storedEquipments.clear();
-        return transferred;
-    }
-
     public boolean discardEquipment(String equipmentName, int quantity) {
         Iterator<EquipmentStack> iterator = storedEquipments.iterator();
         while (iterator.hasNext()) {

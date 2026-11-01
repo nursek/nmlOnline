@@ -13,6 +13,7 @@ import com.mg.nmlonline.api.dto.AdminUnitEquipRequestDto;
 import com.mg.nmlonline.api.dto.AdminUnitMoveRequestDto;
 import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.AdminVehicleCreateRequestDto;
+import com.mg.nmlonline.api.dto.SetVehicleCrewRequestDto;
 import com.mg.nmlonline.domain.service.AdminPlayerEditService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -165,6 +166,43 @@ public class AdminPlayerEditController {
     @DeleteMapping("/players/{id}/vehicles/{vehicleId}")
     public ResponseEntity<Void> deleteVehicle(@PathVariable Long id, @PathVariable Long vehicleId) {
         adminPlayerEditService.deleteVehicle(id, vehicleId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/players/{id}/vehicles/{vehicleId}/crew")
+    public ResponseEntity<Void> setVehicleCrew(@PathVariable Long id, @PathVariable Long vehicleId,
+                                               @RequestBody SetVehicleCrewRequestDto request) {
+        adminPlayerEditService.setVehicleCrew(id, vehicleId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/players/{id}/bank/resources")
+    public ResponseEntity<Void> addBankResource(@PathVariable Long id,
+                                                @Valid @RequestBody AdminItemQuantityRequestDto request) {
+        adminPlayerEditService.addBankResource(id, request.getName(), request.getQuantity());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/players/{id}/bank/resources")
+    public ResponseEntity<Void> removeBankResource(@PathVariable Long id,
+                                                   @RequestParam String name,
+                                                   @RequestParam int quantity) {
+        adminPlayerEditService.removeBankResource(id, name, quantity);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/players/{id}/buildings/{buildingId}/equipments")
+    public ResponseEntity<Void> addCacheEquipment(@PathVariable Long id, @PathVariable Long buildingId,
+                                                  @Valid @RequestBody AdminItemQuantityRequestDto request) {
+        adminPlayerEditService.addCacheEquipment(id, buildingId, request.getName(), request.getQuantity());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/players/{id}/buildings/{buildingId}/equipments")
+    public ResponseEntity<Void> removeCacheEquipment(@PathVariable Long id, @PathVariable Long buildingId,
+                                                     @RequestParam String name,
+                                                     @RequestParam int quantity) {
+        adminPlayerEditService.removeCacheEquipment(id, buildingId, name, quantity);
         return ResponseEntity.noContent().build();
     }
 

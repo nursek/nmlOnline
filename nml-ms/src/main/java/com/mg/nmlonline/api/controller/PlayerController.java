@@ -135,8 +135,6 @@ public class PlayerController {
             return ResponseEntity.ok(dto);
         } catch (InsufficientFundsException e) {
             return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(null);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
         }
     }
 }

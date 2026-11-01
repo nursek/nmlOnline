@@ -33,8 +33,12 @@ export class CacheEquipmentDialogComponent {
   private readonly playerService = inject(PlayerService);
   readonly data = inject<CacheEquipmentDialogData>(MAT_DIALOG_DATA);
 
+  readonly building = computed(
+    () => this.playerService.player()?.buildings.find((b) => b.id === this.data.buildingId) ?? null,
+  );
+
   readonly stacks = computed(() =>
-    [...(this.playerService.player()?.equipments ?? [])].sort((a, b) =>
+    [...(this.building()?.storedEquipments ?? [])].sort((a, b) =>
       this.equipmentLabel(a.equipment).localeCompare(this.equipmentLabel(b.equipment)),
     ),
   );

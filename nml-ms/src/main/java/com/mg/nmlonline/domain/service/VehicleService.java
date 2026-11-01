@@ -22,10 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -231,32 +228,13 @@ public class VehicleService {
             throw new IllegalStateException("Le véhicule est détruit.");
         }
 
-        List<Long> passengers = passengerIds != null ? passengerIds : List.of();
-        if (passengers.stream().distinct().count() != passengers.size()) {
-            throw new IllegalArgumentException("Un même passager est présent deux fois.");
-        }
-        if (pilotId != null && passengers.contains(pilotId)) {
-            throw new IllegalArgumentException("Le pilote ne peut pas être passager.");
-        }
-        if (passengers.size() > vehicle.getCapacity()) {
-            throw new IllegalArgumentException(
-                    "Capacité du véhicule dépassée (" + vehicle.getCapacity() + " passagers).");
-        }
-
         Long prevPilotId = vehicle.getPilot() != null ? vehicle.getPilot().getId() : null;
         List<Long> prevPassengerIds = vehicle.getPassengers().stream().map(CombatEntity::getId).toList();
-        if (Objects.equals(prevPilotId, pilotId)
-                && new HashSet<>(prevPassengerIds).equals(new HashSet<>(passengers))) {
+        if (!vehicleCrewService.updateCrew(player, vehicle, pilotId, passengerIds,
+                prevPilotId, prevPassengerIds)) {
             return vehicleMapper.toDto(vehicle);
         }
 
-        List<Long> targeted = new ArrayList<>(passengers);
-        if (pilotId != null) {
-            targeted.add(pilotId);
-        }
-        validateCrewCandidates(player, vehicle, targeted, prevPilotId, prevPassengerIds);
-
-        vehicleCrewService.applyCrew(vehicle, pilotId, passengers);
         vehicleRepository.save(vehicle);
         playerActionService.recordSetVehicleCrew(player.getId(), vehicleId, prevPilotId,
                 prevPassengerIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
@@ -274,53 +252,6 @@ public class VehicleService {
         MovementOrder order = movementService.placeVehicleOrder(
                 player.getId(), turnService.getCurrentTurn(), vehicleId, route, board);
         return movementMapper.toDto(order);
-    }
-
-    private void validateCrewCandidates(Player player, Vehicle vehicle, List<Long> ids,
-                                        Long prevPilotId, List<Long> prevPassengerIds) {
-        if (ids.isEmpty()) {
-            return;
-        }
-        List<Long> alreadyOrdered = movementOrderRepository
-                .findPendingEntityIds(turnService.getCurrentTurn(), ids);
-        if (!alreadyOrdered.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Entité(s) déjà engagée(s) dans un ordre en attente : " + alreadyOrdered + ".");
-        }
-        Set<Long> currentCrew = new HashSet<>(prevPassengerIds);
-        if (prevPilotId != null) {
-            currentCrew.add(prevPilotId);
-        }
-        Sector sector = vehicle.getSector();
-        for (Long id : ids) {
-            CombatEntity entity = vehicleCrewService.findEntity(id);
-            if (!player.getId().equals(entity.getPlayerId())) {
-                throw new SecurityException("L'entité #" + id + " n'appartient pas au joueur.");
-            }
-            if (entity.isDestroyed()) {
-                throw new IllegalStateException("L'entité #" + id + " est détruite.");
-            }
-            if (!currentCrew.contains(id)) {
-                if (vehicleRepository.findByPilot_Id(id)
-                        .filter(other -> !Objects.equals(other.getId(), vehicle.getId()))
-                        .isPresent()) {
-                    throw new IllegalStateException("L'entité #" + id + " pilote déjà un autre véhicule.");
-                }
-                if (vehicleRepository.findByPassengers_Id(id)
-                        .filter(other -> !Objects.equals(other.getId(), vehicle.getId()))
-                        .isPresent()) {
-                    throw new IllegalStateException("L'entité #" + id + " est déjà dans un autre véhicule.");
-                }
-            }
-            boolean inVehicleSector = entity.getSector() != null
-                    && entity.getSector().getNumber() == sector.getNumber()
-                    && entity.getSector().getBoard() != null
-                    && Objects.equals(entity.getSector().getBoard().getId(), sector.getBoard().getId());
-            if (!inVehicleSector) {
-                throw new IllegalArgumentException(
-                        "L'entité #" + id + " n'est pas dans le secteur " + sector.getNumber() + ".");
-            }
-        }
     }
 
     @Transactional(readOnly = true)
