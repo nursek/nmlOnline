@@ -3,12 +3,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   signal,
   viewChild,
 } from '@angular/core';
-import { SlicePipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -18,13 +19,15 @@ import { map } from 'rxjs/operators';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Player, Sector } from '../../models';
+import { environment } from '../../../environments/environment';
 import { sanitizeSvg } from '../../core/svg-sanitize';
 import { httpErrorMessage } from '../../core/http-error.interceptor';
 import { characterStats } from '../../core/stats';
@@ -73,15 +76,15 @@ export function isSameOriginAssetUrl(url: string): boolean {
   selector: 'app-carte',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    SlicePipe,
     DecimalPipe,
     RouterLink,
     MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,
-    MatChipsModule,
     MatDividerModule,
     MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
     MatSnackBarModule,
     MatDialogModule,
   ],
@@ -139,6 +142,7 @@ export class CarteComponent {
 
   readonly alliedPlayerIds = this.allianceState.alliedPlayerIds;
   readonly characterStats = characterStats;
+  readonly resourceIcon = resourceIconSrc;
 
   readonly loading = computed(() => this.activeBoard.loading() || this.playerDirectory.loading());
   readonly error = computed(() => {
@@ -179,6 +183,21 @@ export class CarteComponent {
 
   readonly selectedSector = signal<SectorWithPlayer | null>(null);
   readonly hoveredSectorNumber = signal<number | null>(null);
+
+  private readonly sectorNotesRef = httpResource<Record<string, string>>(() => {
+    const boardId = this.board()?.id;
+    return !this.isAdmin() && this.auth.user() && boardId
+      ? { url: `${environment.apiBaseUrl}/boards/${boardId}/sector-notes` }
+      : undefined;
+  });
+  readonly sectorNotes = computed(() => this.sectorNotesRef.value() ?? {});
+  readonly savedNote = computed(() => {
+    const sectorNumber = this.selectedSector()?.number;
+    return sectorNumber == null ? '' : (this.sectorNotes()[sectorNumber] ?? '');
+  });
+  readonly noteDraft = signal('');
+  readonly savingNote = signal(false);
+  readonly noteChanged = computed(() => this.noteDraft().trim() !== this.savedNote());
 
   private readonly svgContainer = viewChild<ElementRef<HTMLDivElement>>('svgContainer');
 
@@ -240,6 +259,7 @@ export class CarteComponent {
       void this.playerService.loadReserveUnits();
       void this.playerService.loadVehicles();
     }
+    effect(() => this.noteDraft.set(this.savedNote()));
     // Attach SVG listeners once whenever a fresh SVG is rendered. Cleanup drops
     // them before re-attaching on the next SVG.
     afterRenderEffect((onCleanup) => {
@@ -742,6 +762,30 @@ export class CarteComponent {
 
   selectSector(sector: SectorWithPlayer): void {
     this.selectedSector.set(this.selectedSector()?.number === sector.number ? null : sector);
+  }
+
+  onNoteInput(event: Event): void {
+    this.noteDraft.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  async saveSectorNote(): Promise<void> {
+    const boardId = this.board()?.id;
+    const sectorNumber = this.selectedSector()?.number;
+    if (!boardId || sectorNumber == null || this.savingNote()) return;
+    this.savingNote.set(true);
+    try {
+      await firstValueFrom(this.api.saveSectorNote(boardId, sectorNumber, this.noteDraft()));
+      this.sectorNotesRef.reload();
+      this.snackBar.open('Note enregistrée.', 'OK', { duration: 2500 });
+    } catch (error) {
+      this.snackBar.open(
+        httpErrorMessage(error, "Erreur lors de l'enregistrement de la note"),
+        'Fermer',
+        { duration: 5000 },
+      );
+    } finally {
+      this.savingNote.set(false);
+    }
   }
 
   onMapBackgroundClick(event: MouseEvent): void {
