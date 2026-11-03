@@ -236,6 +236,7 @@ export class CarteComponent {
 
   constructor() {
     if (!this.isAdmin()) {
+      void this.playerService.loadCurrent();
       void this.allianceState.loadMe();
       void this.playerService.loadReserveUnits();
       void this.playerService.loadVehicles();
