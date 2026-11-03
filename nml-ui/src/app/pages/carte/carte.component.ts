@@ -259,7 +259,10 @@ export class CarteComponent {
       void this.playerService.loadReserveUnits();
       void this.playerService.loadVehicles();
     }
-    effect(() => this.noteDraft.set(this.savedNote()));
+    effect(() => {
+      const sectorNumber = this.selectedSector()?.number;
+      this.noteDraft.set(sectorNumber == null ? '' : (this.sectorNotes()[sectorNumber] ?? ''));
+    });
     // Attach SVG listeners once whenever a fresh SVG is rendered. Cleanup drops
     // them before re-attaching on the next SVG.
     afterRenderEffect((onCleanup) => {
