@@ -9,7 +9,6 @@ import com.mg.nmlonline.api.dto.SetVehicleCrewRequestDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.api.dto.VehicleTypeDto;
 import com.mg.nmlonline.domain.service.VehicleService;
-import com.mg.nmlonline.mapper.VehicleMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -22,18 +21,15 @@ import java.util.List;
 public class VehicleController {
 
     private final VehicleService vehicleService;
-    private final VehicleMapper vehicleMapper;
 
-    public VehicleController(VehicleService vehicleService, VehicleMapper vehicleMapper) {
+    public VehicleController(VehicleService vehicleService) {
         this.vehicleService = vehicleService;
-        this.vehicleMapper = vehicleMapper;
     }
 
     @GetMapping("/types")
-    public List<VehicleTypeDto> getVehicleTypes() {
-        return vehicleService.getAllVehicleTypes().stream()
-                .map(vehicleMapper::vehicleTypeToDto)
-                .toList();
+    public List<VehicleTypeDto> getVehicleTypes(HttpServletRequest httpRequest) {
+        Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
+        return vehicleService.getVehicleTypesDto(authenticatedUserId);
     }
 
     @GetMapping("/my")

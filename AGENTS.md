@@ -48,7 +48,8 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   d'environnement uniquement. Pas de console H2, pas de `@CrossOrigin` (CORS dans `CorsConfig`).
 - **JWT** : access token = claim `type=access`, refresh = `type=refresh` ; ne jamais accepter l'un pour l'autre.
 - **Races** : ajouter une race = valeur `PlayerRace` + CHECK Flyway sur `equipment_translations.race`
-  + `nml-ms/src/main/resources/equipment_translations_<race>.csv` ; les vignettes vont dans `assets/shop/equipment/<race>/`.
+  + `nml-ms/src/main/resources/equipment_translations_<race>.csv` + noms de véhicules dans
+  `VehicleType.raceNames` ; vignettes dans `assets/shop/equipment/<race>/` et `assets/shop/vehicles/<race>/`.
 - **Verrous** : joueur (`findByUserIdForUpdate`) puis véhicule (`findByIdForUpdate`) — la FK
   `player_actions.player_id` pose un KEY SHARE sur `players` ; l'ordre inverse deadlock.
 - **Lecture** : jamais l'état privé d'autrui — `PlayerDto` complet = propriétaire/admin,

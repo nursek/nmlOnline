@@ -90,7 +90,7 @@ public class PlayerMapper {
         if (board != null && player.getId() != null) {
             for (Sector sector : board.getAllSectors()) {
                 if (player.getId().equals(sector.getOwnerId())) {
-                    playerSectors.add(sectorMapper.toDto(sector));
+                    playerSectors.add(sectorMapper.toDto(sector, player.getRace()));
                 }
             }
         }

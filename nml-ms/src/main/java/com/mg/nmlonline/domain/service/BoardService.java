@@ -158,7 +158,8 @@ public class BoardService {
         }
         return playerRepository.findByUserId(requesterUserId)
                 .map(player -> new SectorMapper.Visibility(
-                        player.getId(), allianceGraph.alliedPlayerIds(player.getId()), false))
+                        player.getId(), allianceGraph.alliedPlayerIds(player.getId()), false,
+                        player.getRace()))
                 .orElseGet(SectorMapper.Visibility::none);
     }
 

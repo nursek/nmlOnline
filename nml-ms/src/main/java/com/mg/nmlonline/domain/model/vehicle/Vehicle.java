@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.model.vehicle;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.EntityCategory;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -51,7 +52,11 @@ public class Vehicle extends CombatEntity {
 
     @Override
     public String getDisplayName() {
-        return vehicleType != null ? vehicleType.getDisplayName() : "Véhicule";
+        return getDisplayName(null);
+    }
+
+    public String getDisplayName(PlayerRace race) {
+        return vehicleType != null ? vehicleType.displayNameFor(race) : "Véhicule";
     }
 
     @Override
