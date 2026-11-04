@@ -16,23 +16,23 @@ public enum VehicleType {
 
     VTT_LEGER("VTT léger", 0, 50, 4000, 2, 10, 0, false, false, 5,
             Map.of(PlayerRace.ORKS, "Rukkatrukk Squigbuggy",
-                    PlayerRace.NECRONS, "Arche fantôme")),
+                    PlayerRace.NECRONS, "Mécanoptères")),
 
     VTT_BLINDE("VTT blindé", 100, 150, 6500, 2, 10, 0, true, false, 7,
             Map.of(PlayerRace.ORKS, "Chariot de guerre",
-                    PlayerRace.NECRONS, "Monolithe")),
+                    PlayerRace.NECRONS, "Arche fantôme")),
 
     TANK("Tank de combat", 125, 250, 7500, 1, 0, 50, false, false, 8,
             Map.of(PlayerRace.ORKS, "Morkanaut",
-                    PlayerRace.NECRONS, "Barge de commandement")),
+                    PlayerRace.NECRONS, "Arche du Jugement Dernier")),
 
     HELICOPTERE("Hélicoptère de combat", 250, 125, 9000, 2, 5, 0, true, true, 8,
             Map.of(PlayerRace.ORKS, "Kopters d'la Mort",
-                    PlayerRace.NECRONS, "Moissonneuse funèbre")),
+                    PlayerRace.NECRONS, "Moissonneur")),
 
     AVION_TRANSPORT("Avion de transport", 0, 1000, 15000, 4, 50, 0, false, true, 12,
             Map.of(PlayerRace.ORKS, "Dakkajet",
-                    PlayerRace.NECRONS, "Moissonneuse nocturne"));
+                    PlayerRace.NECRONS, "Monolithe"));
 
     private final String displayName;
     private final double basePdf;

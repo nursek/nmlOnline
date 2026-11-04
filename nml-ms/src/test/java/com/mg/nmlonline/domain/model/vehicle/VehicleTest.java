@@ -83,7 +83,7 @@ class VehicleTest {
         @DisplayName("Nom par race, repli sur le nom générique sans race")
         void shouldResolveRaceDisplayNames() {
             assertEquals("Rukkatrukk Squigbuggy", VehicleType.VTT_LEGER.displayNameFor(PlayerRace.ORKS));
-            assertEquals("Arche fantôme", VehicleType.VTT_LEGER.displayNameFor(PlayerRace.NECRONS));
+            assertEquals("Mécanoptères", VehicleType.VTT_LEGER.displayNameFor(PlayerRace.NECRONS));
             assertEquals("VTT léger", VehicleType.VTT_LEGER.displayNameFor(null));
             assertEquals("VTT léger", VehicleType.VTT_LEGER.getDisplayName());
         }
