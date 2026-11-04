@@ -288,6 +288,12 @@ export class ApiService {
     );
   }
 
+  saveSectorNote(boardId: number, sectorNumber: number, note: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/boards/${boardId}/sectors/${sectorNumber}/note`, {
+      note,
+    });
+  }
+
   // Board — import en 2 étapes : upload des assets visuels (image + SVG),
   // puis import du board.json en lui passant les URLs renvoyées par l'étape 1.
   adminUploadBoardAssets(

@@ -126,7 +126,10 @@
         <mat-card-content>
           @if (selectedSector(); as sector) {
             <div class="sector-header" [style.border-color]="getPlayerColor(sector.ownerId)">
-              <div class="sector-color" [style.background-color]="getPlayerColor(sector.ownerId)"></div>
+              <div
+                class="sector-color"
+                [style.background-color]="getPlayerColor(sector.ownerId)"
+              ></div>
               <div>
                 <h2>{{ sector.name }}</h2>
                 <span class="sector-id">Secteur n°{{ sector.number }}</span>
@@ -139,25 +142,24 @@
             <mat-divider></mat-divider>
 
             <div class="detail-section">
-              <h3><mat-icon>person</mat-icon> Propriétaire</h3>
-              <p class="owner-name">{{ sector.playerName || 'Territoire neutre' }}</p>
+              <h3><mat-icon>person</mat-icon> Propriétaire & ressources</h3>
+              <div class="owner-summary">
+                <p class="owner-name">{{ sector.playerName || 'Territoire neutre' }}</p>
+                <div class="owner-facts">
+                  @if (sector.resource) {
+                    <span class="fact" [attr.title]="sector.resource">
+                      <img class="fact-icon" [src]="resourceIcon(sector.resource)" alt="" />
+                      {{ sector.resource }}
+                    </span>
+                  }
+                  @if (sector.army) {
+                    <span class="fact gold">{{ sector.income || 0 }} ₡/tour</span>
+                  }
+                </div>
+              </div>
             </div>
 
             @if (sector.army) {
-              <div class="detail-section">
-                <h3><mat-icon>attach_money</mat-icon> Économie</h3>
-                <div class="stat-row">
-                  <span>Revenus</span>
-                  <span class="value gold">{{ sector.income || 0 }} ₡/tour</span>
-                </div>
-                @if (sector.resource) {
-                  <div class="stat-row">
-                    <span>Ressource</span>
-                    <span class="value">{{ sector.resource }}</span>
-                  </div>
-                }
-              </div>
-
               <div class="detail-section">
                 <h3>
                   <mat-icon>military_tech</mat-icon>
@@ -242,18 +244,38 @@
                   </div>
                 </div>
               }
-            } @else {
-              <div class="detail-section restricted">
-                <h3><mat-icon>visibility_off</mat-icon> Informations restreintes</h3>
-                <p class="owner-name">
-                  Détail militaire masqué — seul le propriétaire ou un allié présent le voit.
-                </p>
-                @if (sector.resource) {
-                  <div class="stat-row">
-                    <span>Ressource</span>
-                    <span class="value">{{ sector.resource }}</span>
-                  </div>
-                }
+            }
+
+            @if (!isAdmin()) {
+              <div class="detail-section note-section">
+                <h3>
+                  <mat-icon>edit_note</mat-icon>
+                  Note
+                  <span class="private-badge">privée</span>
+                </h3>
+                <mat-form-field appearance="outline" class="note-field" subscriptSizing="dynamic">
+                  <textarea
+                    matInput
+                    rows="3"
+                    maxlength="500"
+                    placeholder="Ex. : secteur piégé, dernière position connue…"
+                    aria-label="Note privée sur ce secteur"
+                    [value]="noteDraft()"
+                    (input)="onNoteInput($event)"
+                  ></textarea>
+                </mat-form-field>
+                <div class="note-actions">
+                  <span class="note-counter">{{ noteDraft().length }}/500</span>
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    (click)="saveSectorNote()"
+                    [disabled]="!noteChanged() || savingNote()"
+                  >
+                    <mat-icon>save</mat-icon>
+                    Enregistrer
+                  </button>
+                </div>
               </div>
             }
 
@@ -262,19 +284,18 @@
               <div class="neighbors-list">
                 @for (neighborNum of sector.neighbors; track neighborNum) {
                   @if (getSectorByNumber(neighborNum); as neighbor) {
-                    <mat-chip
-                      (click)="selectSector(neighbor)"
-                      (keydown.enter)="selectSector(neighbor)"
-                      tabindex="0"
-                      role="button"
-                      [attr.aria-label]="'Sélectionner le secteur ' + neighborNum"
+                    <button
+                      type="button"
                       class="neighbor-chip"
-                      [style.background-color]="getSectorColor(neighbor) + '26'"
+                      (click)="selectSector(neighbor)"
+                      [attr.aria-label]="
+                        'Sélectionner le secteur ' + neighborNum + ' — ' + neighbor.name
+                      "
+                      [attr.title]="neighbor.name"
                       [style.border-color]="getSectorColor(neighbor)"
-                      style="border: 1px solid"
                     >
-                      #{{ neighborNum }} - {{ neighbor.name | slice: 0 : 12 }}
-                    </mat-chip>
+                      #{{ neighborNum }}
+                    </button>
                   }
                 }
               </div>

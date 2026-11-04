@@ -1,8 +1,11 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.BoardDto;
+import com.mg.nmlonline.api.dto.SectorNoteRequestDto;
 import com.mg.nmlonline.domain.service.BoardService;
+import com.mg.nmlonline.domain.service.SectorNoteService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,15 +20,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/boards")
 public class BoardController {
 
     private final BoardService boardService;
+    private final SectorNoteService sectorNoteService;
 
-    public BoardController(BoardService boardService) {
+    public BoardController(BoardService boardService, SectorNoteService sectorNoteService) {
         this.boardService = boardService;
+        this.sectorNoteService = sectorNoteService;
     }
 
     @GetMapping
@@ -48,6 +54,23 @@ public class BoardController {
                         request.isUserInRole("ADMIN"))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{boardId}/sector-notes")
+    public ResponseEntity<Map<Integer, String>> getSectorNotes(
+            @PathVariable("boardId") Long boardId, HttpServletRequest request) {
+        return ResponseEntity.ok(sectorNoteService.getNotes((Long) request.getAttribute("userId"), boardId));
+    }
+
+    @PutMapping("/{boardId}/sectors/{sectorNumber}/note")
+    public ResponseEntity<Void> saveSectorNote(
+            @PathVariable("boardId") Long boardId,
+            @PathVariable("sectorNumber") int sectorNumber,
+            @Valid @RequestBody SectorNoteRequestDto noteRequest,
+            HttpServletRequest request) {
+        sectorNoteService.saveNote((Long) request.getAttribute("userId"), boardId, sectorNumber,
+                noteRequest.getNote());
+        return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasRole('ADMIN')")

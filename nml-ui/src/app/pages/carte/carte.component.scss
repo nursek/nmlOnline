@@ -323,10 +323,44 @@
   }
 }
 
+.owner-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .owner-name {
   font-size: 1.15rem;
   font-weight: 600;
   margin: 0;
+}
+
+.owner-facts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: shared.$text-muted;
+  font-size: 0.82rem;
+}
+
+.fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &.gold {
+    color: var(--sun);
+    font-weight: 600;
+  }
+}
+
+.fact-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .stat-row {
@@ -438,16 +472,62 @@
 .neighbors-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .neighbor-chip {
+  min-width: 32px;
+  padding: 2px 7px;
+  border: 1px solid;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
   cursor: pointer;
-  font-size: 0.78rem !important;
-  &:hover {
-    background: shared.$primary-color !important;
-    color: var(--void) !important;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    background: shared.$primary-color;
+    color: var(--void);
   }
+}
+
+.note-section {
+  h3 {
+    margin-bottom: 8px;
+  }
+}
+
+.private-badge {
+  @include shared.tag;
+  font-size: 0.6rem;
+}
+
+.note-field {
+  width: 100%;
+
+  textarea {
+    resize: vertical;
+  }
+}
+
+.note-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.note-counter {
+  color: shared.$text-muted;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
 }
 
 .close-btn {

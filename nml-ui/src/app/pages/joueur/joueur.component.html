@@ -189,13 +189,9 @@
               <mat-icon>local_shipping</mat-icon>
               <h2>Véhicules disponibles</h2>
             </div>
-            <p class="section-subtitle">Vos véhicules, tous secteurs confondus</p>
 
             @if (vehicleSummaries().length === 0 && reserveVehicleGroups().length === 0) {
-              <div class="empty-state">
-                <mat-icon>local_shipping</mat-icon>
-                <p>Aucun véhicule pour le moment. Visitez la boutique !</p>
-              </div>
+              <p class="empty-vehicles">Aucun véhicule disponible.</p>
             } @else {
               @if (vehicleSummaries().length > 0) {
                 <div class="vehicles-inline">
