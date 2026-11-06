@@ -174,7 +174,13 @@ export class ReglesComponent {
         'À chaque phase de tir (PdF, PdC, ATK), 10 % de chances de voir ses dégâts multipliés par 1,5 pour la phase.',
       actif: true,
     },
-    { nom: unitClassLabel('SNIPER'), effet: 'Aucun effet de combat implémenté.', actif: false },
+    {
+      nom: unitClassLabel('SNIPER'),
+      effet:
+        'Combat à distance : tir sur un autre secteur, esquive des cibles selon leur rang, ' +
+        "surveillance d'un secteur allié. Non implémenté.",
+      actif: false,
+    },
     {
       nom: unitClassLabel('PILOTE_DESTRUCTEUR'),
       effet:
@@ -182,6 +188,13 @@ export class ReglesComponent {
         "les armes anti-véhicules (Gauss Cannon, Heavy Gauss Cannon, Enmitic Annihilator) doublent les dégâts contre leur catégorie de cible.",
       actif: true,
     },
+  ];
+
+  readonly esquivesSniper: readonly { type: string; chance: number }[] = [
+    { type: 'LARBIN', chance: 20 },
+    { type: 'VOYOU', chance: 35 },
+    { type: 'MALFRAT', chance: 50 },
+    { type: 'BRUTE', chance: 65 },
   ];
 
   readonly recrues: readonly RecrueUnite[] = [

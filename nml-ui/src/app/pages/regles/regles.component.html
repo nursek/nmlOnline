@@ -173,6 +173,67 @@
               </tbody>
             </table>
           </div>
+          <p class="text">
+            <strong>Sniper.</strong> Un sniper est spécialisé dans le combat à distance. Lorsqu'il
+            attaque à distance, il prend pour cible, comme dans un combat classique, les unités
+            adverses de la plus faible à la plus puissante. Chaque cible peut esquiver la salve
+            selon son rang :
+          </p>
+          <div class="table-wrap">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Esquive</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (esquive of esquivesSniper; track esquive.type) {
+                  <tr>
+                    <td>
+                      <strong>{{ esquive.type }}</strong>
+                    </td>
+                    <td>{{ esquive.chance }} %</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="text">
+            Une unité qui esquive une salve n'est plus inquiétée par ce tir et gagne
+            <strong>1 Exp</strong> en fin de combat. Un sniper ne gagne de l'expérience que s'il
+            est lui-même pris pour cible à distance et qu'il survit.
+          </p>
+          <ul class="rule-list">
+            <li>
+              <strong>Déplacement et tir</strong> — un sniper ne peut pas se déplacer vers un
+              secteur puis tirer à distance sur un autre secteur dans le même tour.
+            </li>
+            <li>
+              <strong>Attaque sur place</strong> — attaqué là où il se trouve alors qu'il visait un
+              autre secteur, un sniper annule son tir à distance pour se défendre.
+            </li>
+            <li>
+              <strong>Surveillance</strong> — s'il n'effectue aucune autre action, un sniper peut
+              « surveiller » un secteur qui vous appartient ou appartient à un allié. Lorsqu'il
+              couvre à distance des unités attaquant un secteur, il intervient en même temps que
+              les autres unités, pendant la phase PdF (armes à feu).
+            </li>
+          </ul>
+          <div class="callout">
+            <mat-icon>info</mat-icon>
+            <p>
+              Une arme à distance peut être utilisée comme une arme à feu classique pour attaquer
+              physiquement un secteur ; les bonus et malus de visée ne s'appliquent alors pas.
+            </p>
+          </div>
+          <div class="draft">
+            <mat-icon>construction</mat-icon>
+            <p>
+              Règles définies, pas encore implémentées en jeu : le tir à distance et la surveillance
+              d'un secteur restent à venir.
+            </p>
+          </div>
         </mat-expansion-panel>
 
         <mat-expansion-panel id="recrutement" class="rule-panel">
