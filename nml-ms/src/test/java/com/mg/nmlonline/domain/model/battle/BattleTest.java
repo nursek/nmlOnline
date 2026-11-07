@@ -20,12 +20,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Tests déterministes : évasion 0 ou 100, aucune cible aérienne sauf mention, Random seedé injecté par sécurité. */
+/** Tests déterministes : jets scriptés (100 = pas de critique), évasion 0 ou 100, aucune cible aérienne sauf mention. */
 @DisplayName("Battle — Moteur de combat individuel")
 class BattleTest {
 
@@ -36,11 +35,16 @@ class BattleTest {
     @BeforeEach
     void setUp() {
         battle = new Battle();
-        battle.setRandom(new Random(42));
+        battle.setRandomSource(() -> 100);
         attacker = new Player("Attaquant");
         attacker.setId(1L);
         defender = new Player("Defenseur");
         defender.setId(2L);
+    }
+
+    private static RandomSource rolls(int... values) {
+        int[] index = {0};
+        return () -> index[0] < values.length ? values[index[0]++] : 100;
     }
 
     private Unit larbin() {
@@ -512,6 +516,83 @@ class BattleTest {
             assertTrue(log.stream().anyMatch(e -> BattleLogEntry.DESTROYED.equals(e.outcome())
                     && e.message().contains("Attaquant · BRUTE n°1 détruit Defenseur · LARBIN n°1")));
             assertTrue(log.stream().anyMatch(e -> BattleLogEntry.WINNER.equals(e.outcome())));
+        }
+    }
+
+    @Nested
+    @DisplayName("Coups critiques")
+    class CriticalTests {
+
+        @Test
+        @DisplayName("TIREUR : jet ≤ 10 multiplie les dégâts par 1,5 et le journalise")
+        void tireurCritMultipliesDamage() {
+            Unit striker = brute();
+            striker.setNumber(1);
+            battle.setRandomSource(rolls(10));
+            Headquarters hq = new Headquarters(1L);
+            hq.setPlayerId(1L);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(hq));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(50.0, hq.getDefense(), "100 ATK × 1,5 = 150 face à 200 def");
+            assertTrue(logContains("critique ×1.5 (jet 10 ≤ 10 % : 100 → 150)"));
+        }
+
+        @Test
+        @DisplayName("TIREUR : jet > 10 conserve les dégâts normaux")
+        void tireurWithoutCritDealsNormalDamage() {
+            Unit striker = brute();
+            striker.setNumber(1);
+            battle.setRandomSource(rolls(11));
+            Headquarters hq = new Headquarters(1L);
+            hq.setPlayerId(1L);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(hq));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(100.0, hq.getDefense(), "Sans critique : 100 ATK face à 200 def");
+            assertFalse(logContains("critique"));
+        }
+
+        @Test
+        @DisplayName("Critique : le surplus enchaîné reste en points de base (le ×1,5 ne se cumule pas)")
+        void critSurplusStaysInBasePoints() {
+            Unit striker = brute();
+            striker.setNumber(1);
+            battle.setRandomSource(rolls(1, 1));
+            Unit larbin = larbin();
+            larbin.setNumber(1);
+            Headquarters hq = new Headquarters(1L);
+            hq.setPlayerId(1L);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(larbin, hq));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertSame(hq, defenderUnits.getFirst(), "Le LARBIN tombe, le QG reste");
+            assertEquals(60.0, hq.getDefense(),
+                    "Surplus 100 − 10/1,5 = 93,33, puis ×1,5 = 140 contre 200 def");
+        }
+
+        @Test
+        @DisplayName("Sans classe critique, aucun jet n'est consommé")
+        void noRollWithoutCriticalClass() {
+            Unit striker = new Unit(8, UnitClass.LEGER);
+            striker.setNumber(1);
+            battle.setRandomSource(() -> {
+                throw new AssertionError("Jet inattendu : le LEGER n'a pas de critique");
+            });
+            Headquarters hq = new Headquarters(1L);
+            hq.setPlayerId(1L);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(hq));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(100.0, hq.getDefense());
         }
     }
 

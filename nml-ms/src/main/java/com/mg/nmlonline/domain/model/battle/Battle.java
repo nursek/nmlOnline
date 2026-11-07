@@ -35,7 +35,7 @@ public class Battle {
     // Un combat peut avoir un vainqueur (qui prend ou garde le secteur) — optionnel.
     private Player winner;
 
-    private Random random;
+    private RandomSource randomSource;
 
     private final List<BattleLogEntry> log = new ArrayList<>();
 
@@ -50,7 +50,7 @@ public class Battle {
     private final Map<CombatEntity, Vehicle> carriedBy = new IdentityHashMap<>();
 
     public Battle() {
-        this.random = new Random();
+        this.randomSource = new ThreadLocalRandomSource();
     }
 
     public record Participation(boolean fired, boolean damaged, boolean dodged, boolean destroyedTarget,
@@ -78,7 +78,7 @@ public class Battle {
     }
 
     private int rand() {
-        return random.nextInt(100) + 1;
+        return randomSource.rollPercent();
     }
 
     private double attackerMultiplier() {
@@ -307,16 +307,34 @@ public class Battle {
                 }
             }
 
+            double criticalChance = striker.getCriticalChance();
+            boolean critical = false;
+            int criticalRoll = 0;
+            double criticalMultiplier = 1.0;
+            if (criticalChance > 0) {
+                criticalRoll = rand();
+                critical = criticalRoll <= Math.round(criticalChance * 100);
+                if (critical) {
+                    criticalMultiplier = striker.getCriticalMultiplier();
+                }
+            }
+
             double bonus = striker instanceof Unit unit
                     ? unit.getVehicleDamageBonus(target instanceof Vehicle vehicle ? vehicle : null, damageType)
                     : 0;
-            double gross = remaining * (1 + bonus / 100);
+            double boosted = remaining * (1 + bonus / 100);
+            double gross = boosted * criticalMultiplier;
             double resistance = target.getDamageReduction(damageType);
             double effective = gross * (1 - resistance);
             double armor = target.getArmor();
             double defense = target.getDefense();
             String bonusText = bonus > 0
                     ? ", bonus anti-véhicule +" + formatPoints(bonus) + " % (" + formatPoints(remaining)
+                            + " → " + formatPoints(boosted) + ")"
+                    : "";
+            String criticalText = critical
+                    ? ", critique ×" + formatPoints(criticalMultiplier) + " (jet " + criticalRoll + " ≤ "
+                            + formatPoints(criticalChance * 100) + " % : " + formatPoints(boosted)
                             + " → " + formatPoints(gross) + ")"
                     : "";
             String resistanceText = resistance > 0
@@ -328,12 +346,13 @@ public class Battle {
             if (armor + defense <= effective) {
                 double cost = (armor + defense) / (1 - resistance);
                 // Reste en points de base : le bonus anti-véhicule ne doit pas être réappliqué au surplus enchaîné.
-                remaining -= cost / (1 + bonus / 100);
+                remaining -= cost / ((1 + bonus / 100) * criticalMultiplier);
                 tracker(striker).destroyedTarget = true;
                 tracker(striker).damageDealt += armor + defense;
                 tracker(target).damaged = true;
                 tracker(target).damageTaken += armor + defense;
-                destroyTarget(enemies, target, segments, actor, targetOwner, damageType, bonusText, resistanceText);
+                destroyTarget(enemies, target, segments, actor, targetOwner, damageType, bonusText, criticalText,
+                        resistanceText);
             } else if (effective <= armor) {
                 target.setArmor(armor - effective);
                 tracker(striker).damageDealt += effective;
@@ -341,7 +360,8 @@ public class Battle {
                 tracker(target).damageTaken += effective;
                 remaining = 0;
                 segments.add(actor + " touche " + targetLabel(targetOwner, target) + " : armure "
-                        + formatPoints(armor) + " → " + formatPoints(target.getArmor()) + bonusText + resistanceText);
+                        + formatPoints(armor) + " → " + formatPoints(target.getArmor()) + bonusText + criticalText
+                        + resistanceText);
             } else {
                 target.setArmor(0);
                 target.setDefense(Math.max(0, defense - (effective - armor)));
@@ -351,7 +371,7 @@ public class Battle {
                 remaining = 0;
                 segments.add(actor + " touche " + targetLabel(targetOwner, target) + " : armure "
                         + formatPoints(armor) + " → 0, défense " + formatPoints(defense) + " → "
-                        + formatPoints(target.getDefense()) + bonusText + resistanceText);
+                        + formatPoints(target.getDefense()) + bonusText + criticalText + resistanceText);
             }
         }
 
@@ -370,10 +390,10 @@ public class Battle {
 
     private void destroyTarget(List<CombatEntity> enemies, CombatEntity target, List<String> segments,
                                String actor, String targetOwner, String damageType, String bonusText,
-                               String resistanceText) {
+                               String criticalText, String resistanceText) {
         enemies.remove(target);
         String segment = actor + " détruit " + targetLabel(targetOwner, target) + " (" + damageType + ")"
-                + bonusText + resistanceText;
+                + bonusText + criticalText + resistanceText;
         if (target instanceof Vehicle vehicle) {
             List<CombatEntity> occupants = vehicle.disembarkAll();
             if (!occupants.isEmpty()) {

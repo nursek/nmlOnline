@@ -17,6 +17,7 @@ import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.domain.model.battle.Battle;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
+import com.mg.nmlonline.domain.model.battle.RandomSource;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import jakarta.persistence.EntityManager;
@@ -54,6 +55,9 @@ public class CombatService {
 
     @Autowired
     private PlayerRepository playerRepository;
+
+    @Autowired
+    private RandomSource randomSource;
 
     @Autowired
     private EntityManager em;
@@ -101,6 +105,7 @@ public class CombatService {
 
         int turn = board.getCurrentTurn();
         Battle battle = new Battle();
+        battle.setRandomSource(randomSource);
         battle.setAttackerBonusPercent(campBonusPercent(turn, attackerCamp, defenderCamp));
         battle.setDefenderBonusPercent(campBonusPercent(turn, defenderCamp, attackerCamp));
         battle.classicCombatConfiguration(attackerCamp.getFirst(), defenderCamp.getFirst(),
@@ -226,6 +231,7 @@ public class CombatService {
         }
 
         Battle battle = new Battle();
+        battle.setRandomSource(randomSource);
         battle.classicStandoffConfiguration(activeCamps.stream().map(List::getFirst).toList(), camps, targets, bonuses);
         camps.forEach(camp -> recordCombatParticipation(turn, camp));
 

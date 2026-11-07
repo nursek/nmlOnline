@@ -170,8 +170,8 @@ export class ReglesComponent {
     },
     {
       nom: unitClassLabel('TIREUR'),
-      effet: 'Critique défini (10 %, dégâts ×1,5) mais jamais appliqué en combat.',
-      actif: false,
+      effet: "10 % de chances d'infliger 1,5× les dégâts à chaque frappe.",
+      actif: true,
     },
     { nom: unitClassLabel('SNIPER'), effet: 'Aucun effet de combat implémenté.', actif: false },
     {
