@@ -485,7 +485,7 @@ public class Battle {
     }
 
     private static String formatPoints(double value) {
-        return Math.abs(value - Math.rint(value)) < 0.05 ? String.valueOf((long) Math.rint(value)) : String.format("%.1f", value);
+        return Math.abs(value - Math.rint(value)) < 0.05 ? String.valueOf((long) Math.rint(value)) : String.format(Locale.ROOT, "%.1f", value);
     }
 
     private void collectEmbarked(List<CombatEntity> camp) {
