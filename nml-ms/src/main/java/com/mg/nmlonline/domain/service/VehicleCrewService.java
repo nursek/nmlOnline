@@ -7,6 +7,7 @@ import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.GameCharacterRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
+import com.mg.nmlonline.infrastructure.repository.SniperOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.UnitRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
@@ -27,17 +28,20 @@ public class VehicleCrewService {
     private final GameCharacterRepository characterRepository;
     private final VehicleRepository vehicleRepository;
     private final MovementOrderRepository movementOrderRepository;
+    private final SniperOrderRepository sniperOrderRepository;
     private final TurnService turnService;
 
     public VehicleCrewService(UnitRepository unitRepository,
                               GameCharacterRepository characterRepository,
                               VehicleRepository vehicleRepository,
                               MovementOrderRepository movementOrderRepository,
+                              SniperOrderRepository sniperOrderRepository,
                               TurnService turnService) {
         this.unitRepository = unitRepository;
         this.characterRepository = characterRepository;
         this.vehicleRepository = vehicleRepository;
         this.movementOrderRepository = movementOrderRepository;
+        this.sniperOrderRepository = sniperOrderRepository;
         this.turnService = turnService;
     }
 
@@ -114,6 +118,12 @@ public class VehicleCrewService {
         if (!alreadyOrdered.isEmpty()) {
             throw new IllegalArgumentException(
                     "Entité(s) déjà engagée(s) dans un ordre en attente : " + alreadyOrdered + ".");
+        }
+        List<Long> sniperOrdered = sniperOrderRepository
+                .findPendingUnitIds(turnService.getCurrentTurn(), ids);
+        if (!sniperOrdered.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Entité(s) déjà engagée(s) dans un ordre sniper en attente : " + sniperOrdered + ".");
         }
         Set<Long> currentCrew = new HashSet<>(prevPassengerIds);
         if (prevPilotId != null) {

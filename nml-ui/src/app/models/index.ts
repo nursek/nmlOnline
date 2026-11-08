@@ -8,6 +8,7 @@ export * from './building.model';
 export * from './board.model';
 export * from './shop.model';
 export * from './movement.model';
+export * from './sniper-order.model';
 export * from './movement-resolution.model';
 export * from './turn-resolution.model';
 export * from './player-action.model';

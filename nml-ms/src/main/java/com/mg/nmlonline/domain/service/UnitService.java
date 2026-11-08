@@ -20,6 +20,7 @@ import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.infrastructure.repository.PlayerActionRepository;
 import com.mg.nmlonline.infrastructure.repository.SectorRepository;
+import com.mg.nmlonline.infrastructure.repository.SniperOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.UnitRepository;
 import com.mg.nmlonline.mapper.MovementMapper;
 import com.mg.nmlonline.mapper.UnitMapper;
@@ -54,6 +55,7 @@ public class UnitService {
     private final UnitRepository unitRepository;
     private final PlayerActionRepository actionRepository;
     private final SectorRepository sectorRepository;
+    private final SniperOrderRepository sniperOrderRepository;
     private final UnitMapper unitMapper;
     private final MovementMapper movementMapper;
     private final EntityManager em;
@@ -67,6 +69,7 @@ public class UnitService {
                         UnitRepository unitRepository,
                         PlayerActionRepository actionRepository,
                         SectorRepository sectorRepository,
+                        SniperOrderRepository sniperOrderRepository,
                         UnitMapper unitMapper,
                         MovementMapper movementMapper,
                         EntityManager em) {
@@ -79,6 +82,7 @@ public class UnitService {
         this.unitRepository = unitRepository;
         this.actionRepository = actionRepository;
         this.sectorRepository = sectorRepository;
+        this.sniperOrderRepository = sniperOrderRepository;
         this.unitMapper = unitMapper;
         this.movementMapper = movementMapper;
         this.em = em;
@@ -149,6 +153,11 @@ public class UnitService {
         Player player = requirePlayerByUserIdForUpdate(userId);
         Board board = requireBoard();
         int turn = turnService.getCurrentTurn();
+        List<Long> sniperOrdered = sniperOrderRepository.findPendingUnitIds(turn, entityIds);
+        if (!sniperOrdered.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Entité(s) déjà engagée(s) dans un ordre sniper en attente : " + sniperOrdered + ".");
+        }
         return movementService.placeFootOrder(player.getId(), turn, entityIds, route, board);
     }
 

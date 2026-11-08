@@ -226,6 +226,10 @@ public class Unit extends CombatEntity {
         return classesSet != null && !classesSet.isEmpty();
     }
 
+    public boolean isSniper() {
+        return classesSet != null && classesSet.contains(UnitClass.SNIPER);
+    }
+
     /** Max de secteurs parcourus par tour = max parmi les classes (LEGER=2, autres=1) ; sans classe ⇒ 1. */
     public int getMaxMovementHops() {
         if (classesSet == null || classesSet.isEmpty()) return 1;
