@@ -391,6 +391,11 @@
     color: var(--void) !important;
     --mat-chip-label-text-color: var(--void);
   }
+  &.aim {
+    background: var(--plum) !important;
+    color: var(--void) !important;
+    --mat-chip-label-text-color: var(--void);
+  }
 }
 
 .quantity {

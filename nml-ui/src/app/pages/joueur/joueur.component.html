@@ -343,6 +343,18 @@
                                     }}</mat-chip
                                   >
                                 }
+                                @if ((stack.equipment.aimMalusReduction ?? 0) > 0) {
+                                  <mat-chip class="bonus-chip aim"
+                                    >-{{ stack.equipment.aimMalusReduction }} % MALUS
+                                    VISÉE</mat-chip
+                                  >
+                                }
+                                @if ((stack.equipment.enemyAimMalus ?? 0) > 0) {
+                                  <mat-chip class="bonus-chip aim"
+                                    >+{{ stack.equipment.enemyAimMalus }} % MALUS VISÉE
+                                    ADV.</mat-chip
+                                  >
+                                }
                               </div>
                               <span class="stack-cost">{{ stackCost(stack) }}</span>
                             </mat-card-content>

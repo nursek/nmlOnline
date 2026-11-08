@@ -220,6 +220,31 @@
               les autres unités, pendant la phase PdF (armes à feu).
             </li>
           </ul>
+          <p class="text">
+            <strong>Malus de visée.</strong> Un tir à distance sur un autre secteur subit un malus
+            de visée. Deux armes sniper l'atténuent pour leur porteur, et une protection l'aggrave
+            pour les snipers adverses qui visent le porteur :
+          </p>
+          <div class="table-wrap">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Équipement</th>
+                  <th>Effet</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (visee of modificateursViseeSniper; track visee.nom) {
+                  <tr>
+                    <td>
+                      <strong>{{ visee.nom }}</strong>
+                    </td>
+                    <td>{{ visee.effet }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
           <div class="callout">
             <mat-icon>info</mat-icon>
             <p>
@@ -230,8 +255,8 @@
           <div class="draft">
             <mat-icon>construction</mat-icon>
             <p>
-              Règles définies, pas encore implémentées en jeu : le tir à distance et la surveillance
-              d'un secteur restent à venir.
+              Règles définies, pas encore implémentées en jeu : le tir à distance, son malus de
+              visée et la surveillance d'un secteur restent à venir.
             </p>
           </div>
         </mat-expansion-panel>
@@ -495,6 +520,11 @@
               Cannon, Enmitic Annihilator) infligent des dégâts doublés contre leur catégorie de
               cible : véhicules terrestres ou aériens. Le bonus s'applique aux tirs PdF et ne se
               cumule pas entre armes (le meilleur bonus l'emporte).
+            </li>
+            <li>
+              <strong>Visée</strong> — les équipements sniper modifient le malus de visée des tirs
+              à distance : Particle Shredder et Enmitic Exterminator l'atténuent, le Gilet de
+              camouflage optique l'aggrave pour les snipers adverses (voir Classes).
             </li>
           </ul>
           <p class="text">

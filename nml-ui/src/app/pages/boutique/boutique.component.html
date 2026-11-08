@@ -486,6 +486,16 @@
                         }}</span
                       >
                     }
+                    @if ((equipment.aimMalusReduction ?? 0) > 0) {
+                      <span class="stat-tag aim"
+                        >-{{ equipment.aimMalusReduction }} MALUS VISÉE</span
+                      >
+                    }
+                    @if ((equipment.enemyAimMalus ?? 0) > 0) {
+                      <span class="stat-tag aim"
+                        >+{{ equipment.enemyAimMalus }} MALUS VISÉE ADV.</span
+                      >
+                    }
                   </div>
 
                   <div class="tile-actions-row">

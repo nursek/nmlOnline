@@ -40,7 +40,9 @@ public class EquipmentMapper {
                 compatibleClassDtos,
                 category,
                 toDisplayNameDtos(domain.getDisplayNames()),
-                toDisplayNameDtos(domain.getDisplayDescriptions())
+                toDisplayNameDtos(domain.getDisplayDescriptions()),
+                domain.getAimMalusReduction(),
+                domain.getEnemyAimMalus()
         );
     }
 
@@ -83,6 +85,16 @@ public class EquipmentMapper {
         }
         equipment.setDisplayNames(toDisplayNames(dto.getDisplayNames()));
         equipment.setDisplayDescriptions(toDisplayDescriptions(dto.getDisplayDescriptions()));
+        if (dto.getAimMalusReduction() < 0 || dto.getAimMalusReduction() > 100) {
+            throw new IllegalArgumentException(
+                    "Réduction de malus de visée hors bornes : " + dto.getAimMalusReduction());
+        }
+        if (dto.getEnemyAimMalus() < 0 || dto.getEnemyAimMalus() > 100) {
+            throw new IllegalArgumentException(
+                    "Malus de visée adverse hors bornes : " + dto.getEnemyAimMalus());
+        }
+        equipment.setAimMalusReduction(dto.getAimMalusReduction());
+        equipment.setEnemyAimMalus(dto.getEnemyAimMalus());
         return equipment;
     }
 

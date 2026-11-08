@@ -197,6 +197,15 @@ export class ReglesComponent {
     { type: 'BRUTE', chance: 65 },
   ];
 
+  readonly modificateursViseeSniper: readonly { nom: string; effet: string }[] = [
+    { nom: 'Particle Shredder', effet: 'Malus de visée réduit de 10 %.' },
+    { nom: 'Enmitic Exterminator', effet: 'Malus de visée réduit de 15 %.' },
+    {
+      nom: 'Gilet de camouflage optique',
+      effet: 'Malus de visée des snipers adverses augmenté de 15 %.',
+    },
+  ];
+
   readonly recrues: readonly RecrueUnite[] = [
     {
       type: 'LARBIN',
