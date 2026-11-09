@@ -82,6 +82,9 @@ class CombatServiceScenariosTest {
                                        Long vehicleId, Long characterId) {
     }
 
+    private record RangedWorld(Long attackerId, Long defenderId, int sectorNumber, Long bankId) {
+    }
+
     private Sector pickEmptyNeutralSector(Board board) {
         return board.getAllSectors().stream()
                 .filter(s -> s.isNeutral() && s.getArmySize() == 0
@@ -529,5 +532,55 @@ class CombatServiceScenariosTest {
             assertEquals("FusilBtC", attacker.getEquipments().getFirst().getEquipment().getName());
             assertEquals(1, attacker.getEquipments().getFirst().getQuantity());
         });
+    }
+
+    private RangedWorld seedRangedBattle() {
+        return new TransactionTemplate(txManager).execute(status -> {
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            Sector sector = pickEmptyNeutralSector(board);
+            Player attacker = new Player("AttaquantSniper");
+            playerRepository.save(attacker);
+            Player defender = new Player("DefenseurSniper");
+            playerRepository.save(defender);
+            Unit attackerUnit = new Unit(0.0, UnitClass.LEGER);
+            attackerUnit.setPlayerId(attacker.getId());
+            sector.addUnit(attackerUnit);
+            Bank bank = new Bank(defender.getId());
+            bank.setAttack(0);
+            bank.setArmor(0);
+            bank.setDefense(100);
+            bank.setSector(sector);
+            defender.getBuildings().add(bank);
+            em.flush();
+            return new RangedWorld(attacker.getId(), defender.getId(), sector.getNumber(), bank.getId());
+        });
+    }
+
+    @Test
+    @DisplayName("Soutien sniper : bâtiment défenseur détruit, aucun combattant sniper ni capture")
+    void rangedSupportDestroysDefenderBuildingWithoutCapture() {
+        RangedWorld w = seedRangedBattle();
+        Unit sniper = new Unit(0.0, UnitClass.SNIPER);
+        sniper.setPlayerId(w.attackerId());
+        sniper.setAttack(0);
+        sniper.setPdf(500);
+        sniper.setPdc(0);
+
+        CombatService.SectorBattleResult r = new TransactionTemplate(txManager).execute(status -> {
+            Player attacker = playerRepository.findById(w.attackerId()).orElseThrow();
+            Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            return combatService.simulateSectorBattle(List.of(attacker), List.of(defender), board,
+                    w.sectorNumber(), List.of(sniper), List.of());
+        });
+
+        assertTrue(r.success());
+        assertEquals(w.attackerId(), r.winner().getId());
+        assertEquals(1, r.defenderCasualties().size(), "Le bâtiment est la seule perte");
+        assertEquals(0, r.capturedBuildings(), "Un bâtiment détruit par le tir n'est pas capturé");
+        assertTrue(r.battleLog().stream().anyMatch(entry -> entry.message().contains("Tir à distance")));
+
+        new TransactionTemplate(txManager).executeWithoutResult(status ->
+                assertTrue(em.find(Bank.class, w.bankId()).isDestroyed()));
     }
 }

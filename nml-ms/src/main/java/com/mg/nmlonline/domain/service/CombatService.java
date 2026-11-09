@@ -78,6 +78,12 @@ public class CombatService {
      */
     public SectorBattleResult simulateSectorBattle(List<Player> attackerCamp, List<Player> defenderCamp,
                                                    Board board, int sectorNumber) {
+        return simulateSectorBattle(attackerCamp, defenderCamp, board, sectorNumber, List.of(), List.of());
+    }
+
+    public SectorBattleResult simulateSectorBattle(List<Player> attackerCamp, List<Player> defenderCamp,
+                                                   Board board, int sectorNumber,
+                                                   List<Unit> rangedAttackers, List<Unit> rangedDefenders) {
         if (attackerCamp == null || attackerCamp.isEmpty() || defenderCamp == null || defenderCamp.isEmpty()
                 || board == null) {
             return failedResult("Paramètres invalides");
@@ -108,6 +114,8 @@ public class CombatService {
         battle.setRandomSource(randomSource);
         battle.setAttackerBonusPercent(campBonusPercent(turn, attackerCamp, defenderCamp));
         battle.setDefenderBonusPercent(campBonusPercent(turn, defenderCamp, attackerCamp));
+        battle.setRangedAttackers(rangedAttackers != null ? rangedAttackers : List.of());
+        battle.setRangedDefenders(rangedDefenders != null ? rangedDefenders : List.of());
         battle.classicCombatConfiguration(attackerCamp.getFirst(), defenderCamp.getFirst(),
                 attackerFighters, defenderFighters);
         recordCombatParticipation(turn, attackerFighters);
@@ -192,6 +200,11 @@ public class CombatService {
 
     /** L'unique camp avec des combattants hors bâtiments l'emporte et capture les bâtiments des autres. */
     public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber) {
+        return simulateSectorStandoff(playerCamps, board, sectorNumber, Map.of());
+    }
+
+    public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber,
+                                                       Map<Integer, List<Unit>> rangedByCamp) {
         if (playerCamps == null || playerCamps.size() < 3 || board == null) {
             return failedStandoff("Paramètres invalides");
         }
@@ -202,10 +215,15 @@ public class CombatService {
 
         List<List<Player>> activeCamps = new ArrayList<>();
         List<List<CombatEntity>> camps = new ArrayList<>();
-        for (List<Player> camp : playerCamps) {
+        Map<Integer, List<Unit>> activeRangedByCamp = new HashMap<>();
+        for (int i = 0; i < playerCamps.size(); i++) {
+            List<Player> camp = playerCamps.get(i);
             camp.forEach(player -> playerStatsService.updateCombatStats(player, board));
             List<CombatEntity> fighters = collectBattleParticipants(sector, idsOf(camp));
             if (!fighters.isEmpty()) {
+                if (rangedByCamp != null && rangedByCamp.containsKey(i)) {
+                    activeRangedByCamp.put(activeCamps.size(), rangedByCamp.get(i));
+                }
                 activeCamps.add(camp);
                 camps.add(fighters);
             }
@@ -232,6 +250,7 @@ public class CombatService {
 
         Battle battle = new Battle();
         battle.setRandomSource(randomSource);
+        battle.setRangedByCamp(activeRangedByCamp);
         battle.classicStandoffConfiguration(activeCamps.stream().map(List::getFirst).toList(), camps, targets, bonuses);
         camps.forEach(camp -> recordCombatParticipation(turn, camp));
 

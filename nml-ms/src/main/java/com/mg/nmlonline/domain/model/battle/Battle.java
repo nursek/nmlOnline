@@ -12,6 +12,7 @@ import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
+import com.mg.nmlonline.domain.model.sniper.SniperRules;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.slf4j.Logger;
@@ -48,6 +49,11 @@ public class Battle {
     private final Map<CombatEntity, Tracker> trackers = new IdentityHashMap<>();
     private final Set<CombatEntity> embarked = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Map<CombatEntity, Vehicle> carriedBy = new IdentityHashMap<>();
+
+    private List<Unit> rangedAttackers = new ArrayList<>();
+    private List<Unit> rangedDefenders = new ArrayList<>();
+    /** Clé = index de camp de l'impasse. */
+    private Map<Integer, List<Unit>> rangedByCamp = new HashMap<>();
 
     public Battle() {
         this.randomSource = new ThreadLocalRandomSource();
@@ -139,7 +145,7 @@ public class Battle {
         collectEmbarked(attackerUnits);
         collectEmbarked(defenderUnits);
 
-        duelPhase("PDF", "PDF", attackerUnits, defenderUnits, e -> true, attacker, defender);
+        pdfPhase(attacker, defender, attackerUnits, defenderUnits);
         if (abortIfWiped(attacker, defender, attackerUnits, defenderUnits)) return;
 
         duelPhase("Bâtiments secondaires", "ATK", attackerUnits, defenderUnits, Battle::isSecondaryBuilding, attacker, defender);
@@ -188,6 +194,19 @@ public class Battle {
                 attacker.getName(), defender.getName());
         resolveStrikes(defenderStrikers, attackerUnits, damageType, defenderMultiplier(),
                 defender.getName(), attacker.getName());
+    }
+
+    private void pdfPhase(Player attacker, Player defender, List<CombatEntity> attackerUnits,
+                          List<CombatEntity> defenderUnits) {
+        List<CombatEntity> attackerStrikers = collectStrikers(attackerUnits, "PDF", e -> true);
+        List<CombatEntity> defenderStrikers = collectStrikers(defenderUnits, "PDF", e -> true);
+        printPhaseHeader("PDF");
+        resolveStrikes(attackerStrikers, defenderUnits, "PDF", attackerMultiplier(),
+                attacker.getName(), defender.getName());
+        resolveRangedStrikes(rangedAttackers, defenderUnits, defender.getName());
+        resolveStrikes(defenderStrikers, attackerUnits, "PDF", defenderMultiplier(),
+                defender.getName(), attacker.getName());
+        resolveRangedStrikes(rangedDefenders, attackerUnits, attacker.getName());
     }
 
     private void endBattle(Player attacker, Player defender, List<CombatEntity> attackerUnits, List<CombatEntity> defenderUnits) {
@@ -249,6 +268,10 @@ public class Battle {
             }
             resolveStrikes(strikers.get(i), camps.get(targetIndex), damageType,
                     1 + bonusPercents[i] / 100.0, players.get(i).getName(), players.get(targetIndex).getName());
+            if ("PDF".equals(damageType)) {
+                resolveRangedStrikes(rangedByCamp.getOrDefault(i, List.of()), camps.get(targetIndex),
+                        players.get(targetIndex).getName());
+            }
         }
     }
 
@@ -408,6 +431,132 @@ public class Battle {
             }
         }
         segments.add(segment);
+    }
+
+    private void resolveRangedStrikes(List<Unit> snipers, List<CombatEntity> enemies, String targetOwner) {
+        if (snipers == null || snipers.isEmpty() || enemies.isEmpty()) {
+            return;
+        }
+        double totalPdf = 0;
+        int destroyed = 0;
+        int touched = 0;
+        int dodged = 0;
+        int missed = 0;
+        for (Unit sniper : snipers) {
+            if (sniper == null || sniper.getPdf() <= 0) {
+                continue;
+            }
+            totalPdf += sniper.getPdf();
+            RangedResult result = performRangedStrike(sniper, enemies, targetOwner);
+            destroyed += result.destroyed();
+            touched += result.touched();
+            dodged += result.dodged();
+            missed += result.missed();
+        }
+        if (totalPdf <= 0) {
+            return;
+        }
+        List<String> parts = new ArrayList<>();
+        if (destroyed > 0) parts.add(destroyed + " cible(s) détruite(s)");
+        if (touched - destroyed > 0) parts.add((touched - destroyed) + " cible(s) touchée(s)");
+        if (dodged > 0) parts.add(dodged + " esquive(s)");
+        if (missed > 0) parts.add(missed + " tir(s) raté(s)");
+        String message = "Tir à distance : " + formatPoints(totalPdf) + " PdF"
+                + (parts.isEmpty() ? "" : " — " + String.join(", ", parts));
+        logger.info("      > {}", message);
+        recordEvent(destroyed > 0 ? BattleLogEntry.DESTROYED
+                : touched > 0 ? BattleLogEntry.DAMAGE
+                : BattleLogEntry.DODGE, message);
+    }
+
+    private RangedResult performRangedStrike(Unit sniper, List<CombatEntity> enemies, String targetOwner) {
+        double remaining = sniper.getPdf();
+        CombatEntity target = rangedTarget(enemies);
+        if (target == null) {
+            return new RangedResult(0, 0, 0, 0);
+        }
+        if (!SniperRules.hits(sniper, target, rand())) {
+            return new RangedResult(0, 0, 0, 1);
+        }
+        int destroyed = 0;
+        int touched = 0;
+        int dodged = 0;
+        boolean first = true;
+        while (remaining > 0 && !enemies.isEmpty()) {
+            if (!first) {
+                target = rangedTarget(enemies);
+            }
+            first = false;
+            if (target == null) {
+                break;
+            }
+            if (SniperRules.dodges(target, rand())) {
+                dodged++;
+                tracker(target).dodged = true;
+                break;
+            }
+            double resistance = target.getDamageReduction("PDF");
+            double effective = remaining * (1 - resistance);
+            double armor = target.getArmor();
+            double defense = target.getDefense();
+            if (armor + defense <= effective) {
+                double cost = (armor + defense) / (1 - resistance);
+                remaining -= cost;
+                markRangedDamage(target, armor + defense);
+                destroyTarget(enemies, target, new ArrayList<>(), "Tir à distance", targetOwner, "PDF", "", "");
+                destroyed++;
+                touched++;
+            } else if (effective <= armor) {
+                target.setArmor(armor - effective);
+                markRangedDamage(target, effective);
+                touched++;
+                remaining = 0;
+            } else {
+                target.setArmor(0);
+                target.setDefense(Math.max(0, defense - (effective - armor)));
+                markRangedDamage(target, effective);
+                touched++;
+                remaining = 0;
+            }
+        }
+        return new RangedResult(destroyed, touched, dodged, 0);
+    }
+
+    private void markRangedDamage(CombatEntity target, double amount) {
+        tracker(target).damaged = true;
+        tracker(target).damageTaken += amount;
+    }
+
+    private CombatEntity rangedTarget(List<CombatEntity> enemies) {
+        return enemies.stream()
+                .filter(entity -> !embarked.contains(entity))
+                .min(RANGED_EXPOSURE_ORDER)
+                .orElse(null);
+    }
+
+    private static final Comparator<CombatEntity> RANGED_EXPOSURE_ORDER = Comparator
+            .comparingInt(Battle::rangedRank)
+            .thenComparingDouble(Battle::rangedExperience)
+            .thenComparingDouble(CombatEntity::getTotalDefense)
+            .thenComparingDouble(CombatEntity::getTotalAttack)
+            .thenComparing(CombatEntity::getId, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparingInt(System::identityHashCode);
+
+    private static int rangedRank(CombatEntity entity) {
+        if (entity instanceof Unit) return 0;
+        if (entity instanceof Vehicle) return 1;
+        if (entity instanceof Bank) return 2;
+        if (entity instanceof WeaponCache) return 3;
+        if (entity instanceof Headquarters) return 4;
+        if (entity instanceof GameCharacter) return 5;
+        return 3;
+    }
+
+    private static double rangedExperience(CombatEntity entity) {
+        return entity instanceof Unit unit ? unit.getExperience() : 0;
+    }
+
+    private record RangedResult(int destroyed, int touched, int dodged, int missed) {
     }
 
     private Boolean chooseCategory(List<CombatEntity> enemies, String damageType, boolean preferVehicle) {

@@ -21,9 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -54,6 +56,7 @@ public class TurnResolutionOrchestrator {
     private final ReserveUnitPlacer reserveUnitPlacer;
     private final UnitRecoveryService unitRecoveryService;
     private final PlayerEliminationService playerEliminationService;
+    private final SniperService sniperService;
 
     private static final long SESSION_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
 
@@ -72,7 +75,8 @@ public class TurnResolutionOrchestrator {
                                       VehicleMaintenanceService vehicleMaintenanceService,
                                       ReserveUnitPlacer reserveUnitPlacer,
                                       UnitRecoveryService unitRecoveryService,
-                                      PlayerEliminationService playerEliminationService) {
+                                      PlayerEliminationService playerEliminationService,
+                                      SniperService sniperService) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
@@ -86,6 +90,7 @@ public class TurnResolutionOrchestrator {
         this.reserveUnitPlacer = reserveUnitPlacer;
         this.unitRecoveryService = unitRecoveryService;
         this.playerEliminationService = playerEliminationService;
+        this.sniperService = sniperService;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -146,23 +151,37 @@ public class TurnResolutionOrchestrator {
                         "Conflit " + conflictId + " introuvable ou déjà résolu"));
         Board board = loadBoard();
         Map<Long, Player> locked = lockPlayers(pc.camps);
+        Set<Integer> battleSectors = new HashSet<>();
+        s.resolvedConflicts.forEach(resolved -> battleSectors.add(resolved.sectorNumber()));
+        s.pendingConflicts.forEach(pending -> battleSectors.add(pending.sectorNumber));
 
         ResolvedBattle rb;
         if (pc.standoff) {
             List<List<Player>> camps = pc.camps.stream()
                     .map(camp -> camp.stream().map(locked::get).toList())
                     .toList();
+            SniperService.StandoffSupport support = sniperService.collectStandoffSupport(
+                    s.turnEnding, pc.sectorNumber, pc.camps, battleSectors);
             CombatService.StandoffBattleResult r =
-                    combatService.simulateSectorStandoff(camps, board, pc.sectorNumber);
+                    combatService.simulateSectorStandoff(camps, board, pc.sectorNumber, support.byCamp());
             battleReportService.saveStandoffReport(s.turnEnding, pc.sectorNumber,
                     camps.stream().flatMap(List::stream).toList(), r);
+            if (r.success()) {
+                sniperService.markResolved(support.resolvedOrders());
+            }
             rb = ResolvedBattle.standoff(pc.sectorNumber, camps, r);
         } else {
             List<Player> attackerCamp = pc.camps.get(0).stream().map(locked::get).toList();
             List<Player> defenderCamp = pc.camps.get(1).stream().map(locked::get).toList();
+            SniperService.DuelSupport support = sniperService.collectDuelSupport(
+                    s.turnEnding, pc.sectorNumber, pc.camps.get(0), pc.camps.get(1), battleSectors);
             CombatService.SectorBattleResult r =
-                    combatService.simulateSectorBattle(attackerCamp, defenderCamp, board, pc.sectorNumber);
+                    combatService.simulateSectorBattle(attackerCamp, defenderCamp, board, pc.sectorNumber,
+                            support.attackers(), support.defenders());
             battleReportService.saveDuelReport(s.turnEnding, pc.sectorNumber, attackerCamp, defenderCamp, r);
+            if (r.success()) {
+                sniperService.markResolved(support.resolvedOrders());
+            }
             rb = ResolvedBattle.duel(pc.sectorNumber, attackerCamp, defenderCamp, r);
         }
 

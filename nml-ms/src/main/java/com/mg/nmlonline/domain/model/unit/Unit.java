@@ -445,6 +445,26 @@ public class Unit extends CombatEntity {
                 .orElse(0);
     }
 
+    /** Réduction de malus de visée du meilleur équipement à feu compatible (points de pourcentage). */
+    public double getAimMalusReduction() {
+        return getEquipmentsForCalculation().stream()
+                .filter(this::isEquipmentCompatible)
+                .filter(equipment -> equipment.getCategory() == EquipmentCategory.FIREARM)
+                .mapToDouble(Equipment::getAimMalusReduction)
+                .max()
+                .orElse(0);
+    }
+
+    /** Malus de visée infligé aux snipers adverses par le meilleur défensif compatible (points). */
+    public double getEnemyAimMalus() {
+        return getEquipmentsForCalculation().stream()
+                .filter(this::isEquipmentCompatible)
+                .filter(equipment -> equipment.getCategory() == EquipmentCategory.DEFENSIVE)
+                .mapToDouble(Equipment::getEnemyAimMalus)
+                .max()
+                .orElse(0);
+    }
+
     private boolean hasAntiAerialWeapon() {
         return getEquipmentsForCalculation().stream()
                 .filter(this::isEquipmentCompatible)

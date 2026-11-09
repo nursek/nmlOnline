@@ -177,9 +177,9 @@ export class ReglesComponent {
     {
       nom: unitClassLabel('SNIPER'),
       effet:
-        'Combat à distance : tir sur un autre secteur, esquive des cibles selon leur rang, ' +
-        "surveillance d'un secteur allié. Non implémenté.",
-      actif: false,
+        'Combat à distance : jet de HIT puis Esquive, tir de soutien pendant un combat au sol, ' +
+        "surveillance d'un secteur allié. Tir isolé et contre-tir à venir.",
+      actif: true,
     },
     {
       nom: unitClassLabel('PILOTE_DESTRUCTEUR'),
@@ -198,11 +198,17 @@ export class ReglesComponent {
   ];
 
   readonly modificateursViseeSniper: readonly { nom: string; effet: string }[] = [
-    { nom: 'Particle Shredder', effet: 'Malus de visée réduit de 10 %.' },
-    { nom: 'Enmitic Exterminator', effet: 'Malus de visée réduit de 15 %.' },
+    {
+      nom: 'Particle Shredder',
+      effet: 'Malus de HIT réduit de 10 points (LARBIN : 20 % → 10 %).',
+    },
+    {
+      nom: 'Enmitic Exterminator',
+      effet: 'Malus de HIT réduit de 15 points (LARBIN : 20 % → 5 %).',
+    },
     {
       nom: 'Gilet de camouflage optique',
-      effet: 'Malus de visée des snipers adverses augmenté de 15 %.',
+      effet: 'Esquive +15 points contre les tirs sniper (LARBIN : 20 % → 35 %).',
     },
   ];
 

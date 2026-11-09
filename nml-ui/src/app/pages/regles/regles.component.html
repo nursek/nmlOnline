@@ -176,14 +176,16 @@
           <p class="text">
             <strong>Sniper.</strong> Un sniper est spécialisé dans le combat à distance. Lorsqu'il
             attaque à distance, il prend pour cible, comme dans un combat classique, les unités
-            adverses de la plus faible à la plus puissante. Chaque cible peut esquiver la salve
-            selon son rang :
+            adverses de la plus faible à la plus puissante. Chaque salve subit d'abord un
+            <strong>jet de HIT</strong>, puis la cible peut <strong>esquiver</strong> ; les deux
+            valeurs de base dépendent de son type :
           </p>
           <div class="table-wrap">
             <table class="rules-table">
               <thead>
                 <tr>
                   <th>Type</th>
+                  <th>Malus de HIT</th>
                   <th>Esquive</th>
                 </tr>
               </thead>
@@ -194,17 +196,27 @@
                       <strong>{{ esquive.type }}</strong>
                     </td>
                     <td>{{ esquive.chance }} %</td>
+                    <td>{{ esquive.chance }} %</td>
                   </tr>
                 }
               </tbody>
             </table>
           </div>
           <p class="text">
-            Une unité qui esquive une salve n'est plus inquiétée par ce tir et gagne
-            <strong>1 Exp</strong> en fin de combat. Un sniper ne gagne de l'expérience que s'il
+            Le <strong>jet de HIT</strong> rate si le dé (1–100) est inférieur ou égal au malus ;
+            l'arme du tireur réduit ce malus à plat (—10 points pour le Particle Shredder, —15
+            pour l'Enmitic Exterminator). Si le tir touche, l'<strong>esquive</strong> annule la
+            salve si le dé est inférieur ou égal à la valeur de classe ; le Gilet de camouflage
+            optique ajoute +15 points à cette esquive. Une cible qui esquive gagne
+            <strong>1 Exp</strong> en fin de combat ; un sniper ne gagne de l'expérience que s'il
             est lui-même pris pour cible à distance et qu'il survit.
           </p>
           <ul class="rule-list">
+            <li>
+              <strong>Choix de l'action</strong> — un secteur voisin neutre ou ennemi donne un
+              <strong>Tir de précision</strong> ; un secteur possédé par le joueur ou un allié
+              donne une <strong>Surveillance</strong>.
+            </li>
             <li>
               <strong>Déplacement et tir</strong> — un sniper ne peut pas se déplacer vers un
               secteur puis tirer à distance sur un autre secteur dans le même tour.
@@ -214,16 +226,26 @@
               autre secteur, un sniper annule son tir à distance pour se défendre.
             </li>
             <li>
+              <strong>Tir de soutien</strong> — lorsqu'un combat a lieu sur le secteur visé, la
+              salve rejoint la phase PdF du camp du sniper : ses pertes comptent pour le combat,
+              mais le sniper n'est pas ciblable et ne capture pas le secteur. Le rapport de combat
+              ne nomme pas les unités qui ont tiré.
+            </li>
+            <li>
               <strong>Surveillance</strong> — s'il n'effectue aucune autre action, un sniper peut
               « surveiller » un secteur qui vous appartient ou appartient à un allié. Lorsqu'il
               couvre à distance des unités attaquant un secteur, il intervient en même temps que
               les autres unités, pendant la phase PdF (armes à feu).
             </li>
+            <li>
+              <strong>Contre-tir</strong> — un sniper qui n'a pas tiré et qui n'est pas engagé dans
+              un combat au sol riposte automatiquement à une salve ennemie, contre les snipers qui
+              ont tiré.
+            </li>
           </ul>
           <p class="text">
-            <strong>Malus de visée.</strong> Un tir à distance sur un autre secteur subit un malus
-            de visée. Deux armes sniper l'atténuent pour leur porteur, et une protection l'aggrave
-            pour les snipers adverses qui visent le porteur :
+            <strong>Malus de visée.</strong> Le malus de HIT et l'Esquive à distance sont modifiés
+            par l'équipement sniper :
           </p>
           <div class="table-wrap">
             <table class="rules-table">
@@ -255,8 +277,9 @@
           <div class="draft">
             <mat-icon>construction</mat-icon>
             <p>
-              Règles définies, pas encore implémentées en jeu : le tir à distance, son malus de
-              visée et la surveillance d'un secteur restent à venir.
+              Implémenté : le jet de HIT et le tir de soutien pendant un combat au sol (Tir de
+              précision et Surveillance). À venir : le tir isolé hors combat, le contre-tir et les
+              détails d'expérience.
             </p>
           </div>
         </mat-expansion-panel>
@@ -522,9 +545,9 @@
               cumule pas entre armes (le meilleur bonus l'emporte).
             </li>
             <li>
-              <strong>Visée</strong> — les équipements sniper modifient le malus de visée des tirs
-              à distance : Particle Shredder et Enmitic Exterminator l'atténuent, le Gilet de
-              camouflage optique l'aggrave pour les snipers adverses (voir Classes).
+              <strong>Visée</strong> — les équipements sniper modifient le jet de HIT et l'Esquive
+              à distance : Particle Shredder et Enmitic Exterminator réduisent le malus de HIT, le
+              Gilet de camouflage optique augmente l'Esquive contre les tirs sniper (voir Classes).
             </li>
           </ul>
           <p class="text">
