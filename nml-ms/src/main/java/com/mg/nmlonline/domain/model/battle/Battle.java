@@ -254,12 +254,34 @@ public class Battle {
 
     private void resolveStrikes(List<CombatEntity> strikers, List<CombatEntity> enemies, String damageType,
                                 double multiplier, String strikerOwner, String targetOwner) {
+        if (enemies.isEmpty()) {
+            return;
+        }
         for (CombatEntity striker : strikers) {
-            if (statValue(striker, damageType) <= 0) {
+            double base = statValue(striker, damageType);
+            if (base <= 0) {
                 continue;
             }
-            performStrike(striker, enemies, damageType, multiplier, strikerOwner, targetOwner);
+            performStrike(striker, enemies, damageType,
+                    multiplier * rollCriticalMultiplier(striker, base, damageType, strikerOwner),
+                    strikerOwner, targetOwner);
         }
+    }
+
+    private double rollCriticalMultiplier(CombatEntity striker, double base, String damageType, String strikerOwner) {
+        double chance = striker.getCriticalChance();
+        if (chance <= 0) {
+            return 1.0;
+        }
+        int roll = rand();
+        if (roll > Math.round(chance * 100)) {
+            return 1.0;
+        }
+        double criticalMultiplier = striker.getCriticalMultiplier();
+        recordEvent(BattleLogEntry.INFO, actorLabel(striker, strikerOwner) + " critique (jet " + roll + " ≤ "
+                + formatPoints(chance * 100) + " %) : " + formatPoints(base) + " → "
+                + formatPoints(base * criticalMultiplier) + " " + damageType);
+        return criticalMultiplier;
     }
 
     private void performStrike(CombatEntity striker, List<CombatEntity> enemies, String damageType,
@@ -307,38 +329,20 @@ public class Battle {
                 }
             }
 
-            double criticalChance = striker.getCriticalChance();
-            boolean critical = false;
-            int criticalRoll = 0;
-            double criticalMultiplier = 1.0;
-            if (criticalChance > 0) {
-                criticalRoll = rand();
-                critical = criticalRoll <= Math.round(criticalChance * 100);
-                if (critical) {
-                    criticalMultiplier = striker.getCriticalMultiplier();
-                }
-            }
-
             double bonus = striker instanceof Unit unit
                     ? unit.getVehicleDamageBonus(target instanceof Vehicle vehicle ? vehicle : null, damageType)
                     : 0;
             double boosted = remaining * (1 + bonus / 100);
-            double gross = boosted * criticalMultiplier;
             double resistance = target.getDamageReduction(damageType);
-            double effective = gross * (1 - resistance);
+            double effective = boosted * (1 - resistance);
             double armor = target.getArmor();
             double defense = target.getDefense();
             String bonusText = bonus > 0
                     ? ", bonus anti-véhicule +" + formatPoints(bonus) + " % (" + formatPoints(remaining)
                             + " → " + formatPoints(boosted) + ")"
                     : "";
-            String criticalText = critical
-                    ? ", critique ×" + formatPoints(criticalMultiplier) + " (jet " + criticalRoll + " ≤ "
-                            + formatPoints(criticalChance * 100) + " % : " + formatPoints(boosted)
-                            + " → " + formatPoints(gross) + ")"
-                    : "";
             String resistanceText = resistance > 0
-                    ? ", résistance " + formatPoints(resistance * 100) + " % (" + formatPoints(gross)
+                    ? ", résistance " + formatPoints(resistance * 100) + " % (" + formatPoints(boosted)
                             + " → " + formatPoints(effective) + ")"
                     : "";
 
@@ -346,12 +350,12 @@ public class Battle {
             if (armor + defense <= effective) {
                 double cost = (armor + defense) / (1 - resistance);
                 // Reste en points de base : le bonus anti-véhicule ne doit pas être réappliqué au surplus enchaîné.
-                remaining -= cost / ((1 + bonus / 100) * criticalMultiplier);
+                remaining -= cost / (1 + bonus / 100);
                 tracker(striker).destroyedTarget = true;
                 tracker(striker).damageDealt += armor + defense;
                 tracker(target).damaged = true;
                 tracker(target).damageTaken += armor + defense;
-                destroyTarget(enemies, target, segments, actor, targetOwner, damageType, bonusText, criticalText,
+                destroyTarget(enemies, target, segments, actor, targetOwner, damageType, bonusText,
                         resistanceText);
             } else if (effective <= armor) {
                 target.setArmor(armor - effective);
@@ -360,7 +364,7 @@ public class Battle {
                 tracker(target).damageTaken += effective;
                 remaining = 0;
                 segments.add(actor + " touche " + targetLabel(targetOwner, target) + " : armure "
-                        + formatPoints(armor) + " → " + formatPoints(target.getArmor()) + bonusText + criticalText
+                        + formatPoints(armor) + " → " + formatPoints(target.getArmor()) + bonusText
                         + resistanceText);
             } else {
                 target.setArmor(0);
@@ -371,7 +375,7 @@ public class Battle {
                 remaining = 0;
                 segments.add(actor + " touche " + targetLabel(targetOwner, target) + " : armure "
                         + formatPoints(armor) + " → 0, défense " + formatPoints(defense) + " → "
-                        + formatPoints(target.getDefense()) + bonusText + criticalText + resistanceText);
+                        + formatPoints(target.getDefense()) + bonusText + resistanceText);
             }
         }
 
@@ -390,10 +394,10 @@ public class Battle {
 
     private void destroyTarget(List<CombatEntity> enemies, CombatEntity target, List<String> segments,
                                String actor, String targetOwner, String damageType, String bonusText,
-                               String criticalText, String resistanceText) {
+                               String resistanceText) {
         enemies.remove(target);
         String segment = actor + " détruit " + targetLabel(targetOwner, target) + " (" + damageType + ")"
-                + bonusText + criticalText + resistanceText;
+                + bonusText + resistanceText;
         if (target instanceof Vehicle vehicle) {
             List<CombatEntity> occupants = vehicle.disembarkAll();
             if (!occupants.isEmpty()) {

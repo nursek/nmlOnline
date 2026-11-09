@@ -537,7 +537,7 @@ class BattleTest {
             battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
 
             assertEquals(50.0, hq.getDefense(), "100 ATK × 1,5 = 150 face à 200 def");
-            assertTrue(logContains("critique ×1.5 (jet 10 ≤ 10 % : 100 → 150)"));
+            assertTrue(logContains("critique (jet 10 ≤ 10 %) : 100 → 150 ATK"));
         }
 
         @Test
@@ -558,8 +558,8 @@ class BattleTest {
         }
 
         @Test
-        @DisplayName("Critique : le surplus enchaîné reste en points de base (le ×1,5 ne se cumule pas)")
-        void critSurplusStaysInBasePoints() {
+        @DisplayName("Critique : un seul jet par phase, le surplus part de la base boostée (150)")
+        void critSurplusChainsFromBoostedBase() {
             Unit striker = brute();
             striker.setNumber(1);
             battle.setRandomSource(rolls(1, 1));
@@ -574,7 +574,30 @@ class BattleTest {
 
             assertSame(hq, defenderUnits.getFirst(), "Le LARBIN tombe, le QG reste");
             assertEquals(60.0, hq.getDefense(),
-                    "Surplus 100 − 10/1,5 = 93,33, puis ×1,5 = 140 contre 200 def");
+                    "Surplus 150 − 10 = 140 contre 200 def");
+        }
+
+        @Test
+        @DisplayName("Un TIREUR tire un critique par phase : PDF critique, PDC non")
+        void critIsRolledOncePerPhase() {
+            Unit striker = new Unit(8, UnitClass.TIREUR);
+            striker.setNumber(1);
+            striker.setPdf(100);
+            striker.setPdc(100);
+            striker.setAttack(0);
+            battle.setRandomSource(rolls(1, 100));
+            Headquarters hq = new Headquarters(1L);
+            hq.setPlayerId(1L);
+            hq.setDefense(400);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(hq));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(150.0, hq.getDefense(), "400 − 150 (PDF crit) − 100 (PDC sans crit)");
+            assertEquals(1, battle.getLog().stream()
+                    .filter(entry -> entry.message().contains("critique"))
+                    .count());
         }
 
         @Test
