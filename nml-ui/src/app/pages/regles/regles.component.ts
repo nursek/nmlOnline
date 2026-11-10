@@ -170,8 +170,9 @@ export class ReglesComponent {
     },
     {
       nom: unitClassLabel('TIREUR'),
-      effet: 'Critique défini (10 %, dégâts ×1,5) mais jamais appliqué en combat.',
-      actif: false,
+      effet:
+        'À chaque phase de tir (PdF, PdC, ATK), 10 % de chances de voir ses dégâts multipliés par 1,5 pour la phase.',
+      actif: true,
     },
     { nom: unitClassLabel('SNIPER'), effet: 'Aucun effet de combat implémenté.', actif: false },
     {

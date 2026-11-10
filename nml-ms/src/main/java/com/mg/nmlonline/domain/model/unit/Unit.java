@@ -398,6 +398,23 @@ public class Unit extends CombatEntity {
     }
 
     @Override
+    public double getCriticalChance() {
+        return classesSet.stream()
+                .mapToDouble(UnitClass::getCriticalChance)
+                .max()
+                .orElse(0.0);
+    }
+
+    @Override
+    public double getCriticalMultiplier() {
+        return classesSet.stream()
+                .filter(unitClass -> unitClass.getCriticalChance() > 0)
+                .mapToDouble(UnitClass::getCriticalMultiplier)
+                .max()
+                .orElse(1.0);
+    }
+
+    @Override
     public double getAerialHitChance() {
         if (hasAntiAerialWeapon()) {
             return 0.75;

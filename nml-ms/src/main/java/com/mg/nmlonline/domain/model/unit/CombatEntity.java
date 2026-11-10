@@ -70,6 +70,14 @@ public abstract class CombatEntity {
         return 0.0;
     }
 
+    public double getCriticalChance() {
+        return 0.0;
+    }
+
+    public double getCriticalMultiplier() {
+        return 1.0;
+    }
+
     /** Valeur par défaut (0,5) : bâtiments et entités sans règle spécifique. */
     public double getAerialHitChance() {
         return 0.5;

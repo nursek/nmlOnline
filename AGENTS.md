@@ -57,6 +57,11 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
 - Minimal wins : pas d'abstraction spéculative, pas d'échafaudage « pour plus tard »,
   pas de nouvelle dépendance quand quelques lignes suffisent. Supprimer > ajouter.
 - Logique non triviale = **un** test qui casse si la logique casse. Pas de suite par fonction.
+- **Hasard de combat** : toute chance (critique, esquive, toucher aérien…) passe par
+  `RandomSource` injecté dans `Battle` par `CombatService` (`domain/model/battle/`), jamais
+  `java.util.Random` ou `Math.random` dans le domaine. Tests unitaires = jets scriptés
+  (`BattleTest.rolls`), intégration = `CombatTestRandomConfig` (jet 100, via
+  `@EmbeddedPostgresTest`) — aucun test probabiliste.
 - **Commentaires** : zéro par défaut — relire les lignes `+` de `git diff -U0` avant de rendre
   la main (voir « Commentaires »). Un `catch` vide ne survit que justifié en une ligne.
 - **Règles du jeu** : elles vivent dans la page Règles

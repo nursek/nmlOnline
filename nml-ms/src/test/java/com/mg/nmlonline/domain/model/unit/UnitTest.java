@@ -357,11 +357,19 @@ class UnitTest {
         }
 
         @Test
-        @DisplayName("Critique TIREUR défini mais jamais utilisé en combat")
-        void shouldPinUnusedTireurCrit() {
-            // règle morte : aucun appel dans Battle.
-            assertEquals(0.10, UnitClass.TIREUR.getCriticalChance());
-            assertEquals(1.5, UnitClass.TIREUR.getCriticalMultiplier());
+        @DisplayName("Critique : porté par la classe TIREUR, agrégé au max des classes")
+        void shouldExposeTireurCrit() {
+            Unit tireur = new Unit(5, UnitClass.TIREUR);
+            assertEquals(0.10, tireur.getCriticalChance());
+            assertEquals(1.5, tireur.getCriticalMultiplier());
+
+            Unit leger = new Unit(5, UnitClass.LEGER);
+            assertEquals(0.0, leger.getCriticalChance());
+            assertEquals(1.0, leger.getCriticalMultiplier());
+
+            leger.addSecondClass(UnitClass.TIREUR);
+            assertEquals(0.10, leger.getCriticalChance());
+            assertEquals(1.5, leger.getCriticalMultiplier());
         }
     }
 }

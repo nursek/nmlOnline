@@ -2,6 +2,7 @@ package com.mg.nmlonline;
 
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.lang.annotation.ElementType;
@@ -22,6 +23,7 @@ import static io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseType.POSTGR
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(CombatTestRandomConfig.class)
 @AutoConfigureEmbeddedDatabase(type = POSTGRES, provider = EMBEDDED)
 public @interface EmbeddedPostgresTest {
 }
