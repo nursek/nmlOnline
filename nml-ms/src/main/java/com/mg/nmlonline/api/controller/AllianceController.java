@@ -1,7 +1,6 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.AllianceMeDto;
-import com.mg.nmlonline.api.dto.AllianceMessageDto;
 import com.mg.nmlonline.api.dto.AllianceProposalDto;
 import com.mg.nmlonline.api.dto.AnnouncementDto;
 import com.mg.nmlonline.domain.model.alliance.ProposalKind;
@@ -69,20 +68,6 @@ public class AllianceController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/alliances/{id}/messages")
-    public ResponseEntity<List<AllianceMessageDto>> getMessages(@PathVariable("id") Long id,
-                                                                HttpServletRequest request) {
-        return ResponseEntity.ok(allianceService.getMessages(userId(request), id));
-    }
-
-    @PostMapping("/alliances/{id}/messages")
-    public ResponseEntity<AllianceMessageDto> postMessage(@PathVariable("id") Long id,
-                                                          @RequestBody MessageRequest body,
-                                                          HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(allianceService.postMessage(userId(request), id, body.body()));
-    }
-
     @GetMapping("/announcements")
     public ResponseEntity<List<AnnouncementDto>> getAnnouncements() {
         return ResponseEntity.ok(allianceService.getAnnouncements());
@@ -94,9 +79,6 @@ public class AllianceController {
             throw new SecurityException("Utilisateur non authentifié.");
         }
         return userId;
-    }
-
-    public record MessageRequest(String body) {
     }
 
     public record ProposalRequest(String kind, Long targetPlayerId) {

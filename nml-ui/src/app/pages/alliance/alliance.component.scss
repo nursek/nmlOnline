@@ -112,11 +112,6 @@
   border-radius: var(--r-sm);
   border: 1.5px solid var(--line);
 
-  &.selected {
-    border-color: var(--line-strong);
-    background: var(--paper);
-  }
-
   .alliance-select {
     font-weight: 600;
     display: inline-flex;
@@ -158,48 +153,12 @@
   }
 }
 
-.propose-form,
-.chat-form {
+.propose-form {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 
   mat-form-field {
     flex: 1;
-  }
-}
-
-.chat-messages {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  max-height: 320px;
-  overflow-y: auto;
-  margin-bottom: 0.75rem;
-}
-
-.chat-message {
-  display: flex;
-  flex-direction: column;
-  padding: 0.35rem 0.6rem;
-  border-radius: var(--r-sm);
-  background: var(--paper);
-  border: 1.5px solid var(--line);
-
-  &.mine {
-    background: var(--accent-tint);
-    border-color: var(--accent-line);
-  }
-
-  .sender {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: shared.$text-muted;
-  }
-
-  .body {
-    white-space: pre-wrap;
-    color: var(--ink);
   }
 }
