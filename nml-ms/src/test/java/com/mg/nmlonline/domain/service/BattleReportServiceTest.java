@@ -31,6 +31,8 @@ import static org.mockito.Mockito.*;
 @DisplayName("BattleReportService — sérialisation JSON et lecture par participant")
 class BattleReportServiceTest {
 
+    private static final Long BOARD_ID = 1L;
+
     @Mock
     private BattleReportRepository reportRepository;
 
@@ -60,7 +62,7 @@ class BattleReportServiceTest {
                         UnitType.VOYOU, 3.0)),
                 List.of(), List.of(), List.of());
 
-        service.saveDuelReport(7, 32, List.of(attacker), List.of(defender), result);
+        service.saveDuelReport(BOARD_ID, 7, 32, List.of(attacker), List.of(defender), result);
 
         ArgumentCaptor<BattleReport> captor = ArgumentCaptor.forClass(BattleReport.class);
         verify(reportRepository).save(captor.capture());
@@ -71,10 +73,10 @@ class BattleReportServiceTest {
         assertEquals(Set.of(1L, 2L), saved.getParticipantIds());
         assertTrue(saved.getPayload().contains("VOYOU"), "Le payload JSON est sérialisé");
 
-        when(playerRepository.findByUserId(99L)).thenReturn(Optional.of(defender));
+        when(playerRepository.findByUserIdAndBoardId(99L, BOARD_ID)).thenReturn(Optional.of(defender));
         when(reportRepository.findByParticipantId(eq(2L), any(Pageable.class))).thenReturn(List.of(saved));
 
-        List<BattleReportDto> reports = service.getReportsForUser(99L);
+        List<BattleReportDto> reports = service.getReportsForUser(99L, BOARD_ID);
 
         assertEquals(1, reports.size());
         BattleReportDto dto = reports.getFirst();
@@ -111,7 +113,7 @@ class BattleReportServiceTest {
                 List.of(),
                 List.of(), List.of(), List.of());
 
-        service.saveStandoffReport(12, 32, List.of(premier, deuxieme, troisieme), result);
+        service.saveStandoffReport(BOARD_ID, 12, 32, List.of(premier, deuxieme, troisieme), result);
 
         ArgumentCaptor<BattleReport> captor = ArgumentCaptor.forClass(BattleReport.class);
         verify(reportRepository).save(captor.capture());
@@ -120,10 +122,10 @@ class BattleReportServiceTest {
         assertEquals(12, saved.getTurn());
         assertEquals(Set.of(1L, 2L, 3L), saved.getParticipantIds());
 
-        when(playerRepository.findByUserId(99L)).thenReturn(Optional.of(deuxieme));
+        when(playerRepository.findByUserIdAndBoardId(99L, BOARD_ID)).thenReturn(Optional.of(deuxieme));
         when(reportRepository.findByParticipantId(eq(2L), any(Pageable.class))).thenReturn(List.of(saved));
 
-        BattleReportDto dto = service.getReportsForUser(99L).getFirst();
+        BattleReportDto dto = service.getReportsForUser(99L, BOARD_ID).getFirst();
 
         assertTrue(dto.isStandoff());
         assertEquals("Cegorach", dto.getWinnerName());
@@ -159,7 +161,7 @@ class BattleReportServiceTest {
                 List.of(highlight("CHARACTER_LOST", BattleHighlights.PUBLIC, "Personnage perdu : Defenseur"),
                         highlight("CRIT", BattleHighlights.ADMIN, "2 coups critiques")));
 
-        service.saveDuelReport(7, 32, List.of(attacker), List.of(defender), result);
+        service.saveDuelReport(11L, 7, 32, List.of(attacker), List.of(defender), result);
 
         ArgumentCaptor<BattleReport> captor = ArgumentCaptor.forClass(BattleReport.class);
         verify(reportRepository).save(captor.capture());
@@ -200,7 +202,7 @@ class BattleReportServiceTest {
         Player shooter = new Player("Sniper");
         shooter.setId(1L);
 
-        BattleReportDetailDto detail = service.saveRangedReport(5, 15, List.of(shooter),
+        BattleReportDetailDto detail = service.saveRangedReport(11L, 5, 15, List.of(shooter),
                 List.of(new CombatService.CasualtyInfo(2L, "Brute", "INFANTRY", UnitType.LARBIN, 1, 1.0)),
                 List.of(), "2 cible(s) touchée(s)", Map.of());
 

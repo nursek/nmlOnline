@@ -23,6 +23,8 @@ import static org.mockito.Mockito.*;
 @DisplayName("AdminService — gestion du compte User (création/maj/suppression)")
 class AdminServiceTest {
 
+    private static final Long BOARD_ID = 1L;
+
     @Mock
     PlayerImportService playerImportService;
     @Mock
@@ -67,17 +69,16 @@ class AdminServiceTest {
         persisted.setId(42L);
 
         when(playerImportService.parse(JSON)).thenReturn(dto);
-        when(playerImportService.importPlayer(dto)).thenReturn(player);
-        when(playerService.findByName(PLAYER_NAME)).thenReturn(null);
+        when(playerImportService.importPlayer(dto, BOARD_ID)).thenReturn(player);
+        when(playerService.findByName(BOARD_ID, PLAYER_NAME)).thenReturn(null);
         when(playerService.save(any(Player.class))).thenReturn(persisted);
-        when(boardService.getAllBoards()).thenReturn(java.util.List.of());
         when(userRepository.findByUsername(PLAYER_NAME)).thenReturn(null);
         when(userService.encodePassword(PASSWORD)).thenReturn("hashed:" + PASSWORD);
         User savedUser = new User();
         savedUser.setId(7L);
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
-        Player result = adminService.importPlayer(JSON, PASSWORD);
+        Player result = adminService.importPlayer(JSON, PASSWORD, BOARD_ID);
 
         org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
@@ -104,15 +105,14 @@ class AdminServiceTest {
         existing.setPassword("old-hash");
 
         when(playerImportService.parse(JSON)).thenReturn(dto);
-        when(playerImportService.importPlayer(dto)).thenReturn(newPlayer());
-        when(playerService.findByName(PLAYER_NAME)).thenReturn(null);
+        when(playerImportService.importPlayer(dto, BOARD_ID)).thenReturn(newPlayer());
+        when(playerService.findByName(BOARD_ID, PLAYER_NAME)).thenReturn(null);
         when(playerService.save(any(Player.class))).thenReturn(persisted);
-        when(boardService.getAllBoards()).thenReturn(java.util.List.of());
         when(userRepository.findByUsername(PLAYER_NAME)).thenReturn(existing);
         when(userService.encodePassword(PASSWORD)).thenReturn("new-hash");
         when(userRepository.save(existing)).thenReturn(existing);
 
-        adminService.importPlayer(JSON, PASSWORD);
+        adminService.importPlayer(JSON, PASSWORD, BOARD_ID);
 
         verify(userRepository).save(existing);
         assertEquals("USER", existing.getRole());
@@ -129,97 +129,30 @@ class AdminServiceTest {
         persisted.setId(42L);
 
         when(playerImportService.parse(JSON)).thenReturn(dto);
-        when(playerImportService.importPlayer(dto)).thenReturn(newPlayer());
-        when(playerService.findByName(PLAYER_NAME)).thenReturn(null);
+        when(playerImportService.importPlayer(dto, BOARD_ID)).thenReturn(newPlayer());
+        when(playerService.findByName(BOARD_ID, PLAYER_NAME)).thenReturn(null);
         when(playerService.save(any(Player.class))).thenReturn(persisted);
-        when(boardService.getAllBoards()).thenReturn(java.util.List.of());
 
-        Player result = adminService.importPlayer(JSON, "   ");
+        Player result = adminService.importPlayer(JSON, "   ", BOARD_ID);
 
         assertNull(result.getUserId(), "Aucun userId ne doit être posé sans mot de passe");
         verify(userRepository, never()).findByUsername(any());
         verify(userRepository, never()).save(any(User.class));
         verify(userService, never()).encodePassword(any());
     }
-
     @Test
-    @DisplayName("deletePlayer + user non-admin → supprime aussi le compte User")
-    void shouldDeleteNonAdminUserOnPlayerDeletion() {
-        Long playerId = 42L;
-        Player player = newPlayer();
-        player.setId(playerId);
-
-        User user = new User();
-        user.setId(7L);
-        user.setUsername(PLAYER_NAME);
-        user.setRole("USER");
-
-        when(playerService.findById(playerId)).thenReturn(java.util.Optional.of(player));
-        when(playerService.delete(playerId)).thenReturn(true);
-        when(userRepository.findByUsername(PLAYER_NAME)).thenReturn(user);
-
-        adminService.deletePlayer(playerId);
-
-        verify(userRepository).delete(user);
-    }
-
-    @Test
-    @DisplayName("deletePlayer + user ADMIN → ne supprime PAS le compte admin")
-    void shouldNotDeleteAdminUserOnPlayerDeletion() {
-        Long playerId = 42L;
-        Player player = newPlayer();
-        player.setId(playerId);
-
-        User admin = new User();
-        admin.setId(1L);
-        admin.setUsername(PLAYER_NAME);
-        admin.setRole("ADMIN");
-
-        when(playerService.findById(playerId)).thenReturn(java.util.Optional.of(player));
-        when(playerService.delete(playerId)).thenReturn(true);
-        when(userRepository.findByUsername(PLAYER_NAME)).thenReturn(admin);
-
-        adminService.deletePlayer(playerId);
-
-        verify(userRepository, never()).delete(any());
-    }
-
-    @Test
-    @DisplayName("deletePlayer + aucun user associé → ne lève pas, ne supprime rien")
-    void shouldTolerateMissingUserOnPlayerDeletion() {
-        Long playerId = 42L;
-        Player player = newPlayer();
-        player.setId(playerId);
-
-        when(playerService.findById(playerId)).thenReturn(java.util.Optional.of(player));
-        when(playerService.delete(playerId)).thenReturn(true);
-        when(userRepository.findByUsername(PLAYER_NAME)).thenReturn(null);
-
-        adminService.deletePlayer(playerId);
-
-        verify(userRepository, never()).delete(any());
-    }
-
-    @Test
-    @DisplayName("deletePlayer + user lié par userId → supprime le bon compte")
-    void shouldDeleteUserByUserId() {
+    @DisplayName("deletePlayer ne touche jamais le compte global : il peut jouer dans une autre partie")
+    void playerDeletionKeepsGlobalAccount() {
         Long playerId = 42L;
         Player player = newPlayer();
         player.setId(playerId);
         player.setUserId(9L);
 
-        User user = new User();
-        user.setId(9L);
-        user.setUsername("ancien-nom");
-        user.setRole("USER");
-
         when(playerService.findById(playerId)).thenReturn(java.util.Optional.of(player));
         when(playerService.delete(playerId)).thenReturn(true);
-        when(userRepository.findById(9L)).thenReturn(java.util.Optional.of(user));
 
         adminService.deletePlayer(playerId);
 
-        verify(userRepository).delete(user);
-        verify(userRepository, never()).findByUsername(any());
+        verify(userRepository, never()).delete(any());
     }
 }

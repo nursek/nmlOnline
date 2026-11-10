@@ -2,6 +2,7 @@ package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.HarvestRequestDto;
 import com.mg.nmlonline.api.dto.PlayerActionDto;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.PlayerActionService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -22,37 +23,41 @@ public class PlayerActionController {
     @GetMapping
     public ResponseEntity<List<PlayerActionDto>> getActions(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
+        Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(playerActionService.getCurrentTurnActions(userId));
+        return ResponseEntity.ok(playerActionService.getCurrentTurnActions(userId, boardId));
     }
 
     @PostMapping("/{actionId}/undo")
     public ResponseEntity<List<PlayerActionDto>> undoFrom(@PathVariable Long actionId, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
+        Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(playerActionService.undoFrom(userId, actionId));
+        return ResponseEntity.ok(playerActionService.undoFrom(userId, boardId, actionId));
     }
 
     @PostMapping("/harvest")
     public ResponseEntity<List<PlayerActionDto>> harvest(@RequestBody HarvestRequestDto body,
                                                          HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
+        Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(playerActionService.harvest(userId, body.choice(), body.sectorNumbers()));
+        return ResponseEntity.ok(playerActionService.harvest(userId, boardId, body.choice(), body.sectorNumbers()));
     }
 
     @PostMapping("/undo-all")
     public ResponseEntity<List<PlayerActionDto>> undoAll(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
+        Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(playerActionService.undoAll(userId));
+        return ResponseEntity.ok(playerActionService.undoAll(userId, boardId));
     }
 }

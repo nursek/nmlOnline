@@ -88,8 +88,10 @@ class SniperServiceFireTest {
                     .orElseThrow(() -> new AssertionError("Aucun secteur voisin vide pour le tir"));
 
             Player shooter = new Player("TireurSniper");
+            shooter.setBoardId(board.getId());
             playerRepository.save(shooter);
             Player target = new Player("CibleSniper");
+            target.setBoardId(board.getId());
             playerRepository.save(target);
             targetSector.setOwnerAndColor(target.getId(), "#ffffff");
 
@@ -112,7 +114,7 @@ class SniperServiceFireTest {
 
             int turn = board.getCurrentTurn();
             SniperOrder order = sniperOrderRepository.save(SniperOrder.create(
-                    shooter.getId(), turn, shooterUnit.getId(), shooterSector.getNumber(),
+                    board.getId(), shooter.getId(), turn, shooterUnit.getId(), shooterSector.getNumber(),
                     targetSector.getNumber()));
             if (targetHasOwnOrder) {
                 Sector other = targetSector.getNeighbors().stream()
@@ -122,7 +124,7 @@ class SniperServiceFireTest {
                         .findFirst()
                         .orElseThrow(() -> new AssertionError("Aucun secteur voisin pour l'ordre du sniper ciblé"));
                 SniperOrder targetOrder = sniperOrderRepository.save(SniperOrder.create(
-                        target.getId(), turn, targetUnit.getId(), targetSector.getNumber(),
+                        board.getId(), target.getId(), turn, targetUnit.getId(), targetSector.getNumber(),
                         other.getNumber()));
                 if (targetOrderResolved) {
                     targetOrder.resolve();
@@ -187,8 +189,10 @@ class SniperServiceFireTest {
                     .orElseThrow(() -> new AssertionError("Aucun secteur voisin vide pour le tir"));
 
             Player shooter = new Player("TireurBlessure");
+            shooter.setBoardId(board.getId());
             playerRepository.save(shooter);
             Player target = new Player("CibleBlessure");
+            target.setBoardId(board.getId());
             playerRepository.save(target);
             targetSector.setOwnerAndColor(target.getId(), "#ffffff");
 
@@ -208,7 +212,7 @@ class SniperServiceFireTest {
             em.flush();
 
             int turn = board.getCurrentTurn();
-            sniperOrderRepository.save(SniperOrder.create(shooter.getId(), turn, shooterUnit.getId(),
+            sniperOrderRepository.save(SniperOrder.create(board.getId(), shooter.getId(), turn, shooterUnit.getId(),
                     shooterSector.getNumber(), targetSector.getNumber()));
             em.flush();
             return new WoundWorld(targetUnit.getId(), (long) targetSector.getNumber(), turn);
@@ -233,6 +237,7 @@ class SniperServiceFireTest {
             }
 
             Player bankOwner = new Player("BanqueCible");
+            bankOwner.setBoardId(board.getId());
             playerRepository.save(bankOwner);
             targetSector.setOwnerAndColor(bankOwner.getId(), "#ffffff");
             Bank bank = new Bank(bankOwner.getId());
@@ -241,6 +246,7 @@ class SniperServiceFireTest {
             targetSector.getBuildings().add(bank);
 
             List<Player> shooters = List.of(new Player("TireurCombineA"), new Player("TireurCombineB"));
+            shooters.forEach(player -> player.setBoardId(board.getId()));
             shooters.forEach(playerRepository::save);
             for (int i = 0; i < 2; i++) {
                 Unit shooterUnit = new Unit(0.0, UnitClass.SNIPER);
@@ -253,7 +259,7 @@ class SniperServiceFireTest {
             int turn = board.getCurrentTurn();
             for (int i = 0; i < 2; i++) {
                 Unit shooterUnit = shooterSectors.get(i).getUnits().getFirst();
-                sniperOrderRepository.save(SniperOrder.create(shooters.get(i).getId(), turn,
+                sniperOrderRepository.save(SniperOrder.create(board.getId(), shooters.get(i).getId(), turn,
                         shooterUnit.getId(), shooterSectors.get(i).getNumber(), targetSector.getNumber()));
             }
             em.flush();

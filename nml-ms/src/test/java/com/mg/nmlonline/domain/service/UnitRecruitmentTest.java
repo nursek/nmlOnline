@@ -82,8 +82,7 @@ class UnitRecruitmentTest {
         Board board = board();
         setTurn(board, 2);
 
-        List<UnitDto> created = unitService.buyUnitsDto(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 2)));
+        List<UnitDto> created = unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 2)), player.getBoardId());
 
         assertEquals(2, created.size());
         UnitDto first = created.getFirst();
@@ -93,8 +92,8 @@ class UnitRecruitmentTest {
         assertEquals("LEGER", first.getClasses().getFirst().getName());
         assertEquals(9200.0, reload(player).getStats().getMoney(), 0.001);
 
-        assertEquals(2, unitService.getReserveUnitsDto(player.getUserId()).size());
-        assertEquals(2, playerActionService.getCurrentTurnActions(player.getUserId()).stream()
+        assertEquals(2, unitService.getReserveUnitsDto(player.getUserId(), player.getBoardId()).size());
+        assertEquals(2, playerActionService.getCurrentTurnActions(player.getUserId(), player.getBoardId()).stream()
                 .filter(a -> a.getType() == PlayerActionType.BUY_UNIT)
                 .count());
     }
@@ -106,12 +105,10 @@ class UnitRecruitmentTest {
         Board board = board();
         setTurn(board, 2);
 
-        assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(),
-                List.of(item("VOYOU", "LEGER", 1))));
+        assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(), List.of(item("VOYOU", "LEGER", 1)), player.getBoardId()));
 
         setTurn(board, 5);
-        List<UnitDto> created = unitService.buyUnitsDto(player.getUserId(),
-                List.of(item("VOYOU", "TIREUR", 1)));
+        List<UnitDto> created = unitService.buyUnitsDto(player.getUserId(), List.of(item("VOYOU", "TIREUR", 1)), player.getBoardId());
         assertEquals("VOYOU", created.getFirst().getType().getName());
         assertEquals(2.0, created.getFirst().getExperience(), 0.001);
     }
@@ -123,14 +120,11 @@ class UnitRecruitmentTest {
         Board board = board();
         setTurn(board, 2);
 
-        assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 21))));
+        assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(), List.of(item("LARBIN", "LEGER", 21)), player.getBoardId()));
 
         setTurn(board, 5);
-        assertEquals(30, unitService.buyUnitsDto(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 30))).size());
-        assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 1))));
+        assertEquals(30, unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 30)), player.getBoardId()).size());
+        assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()));
     }
 
     @Test
@@ -140,8 +134,7 @@ class UnitRecruitmentTest {
         Board board = board();
         setTurn(board, 2);
 
-        assertThrows(InsufficientFundsException.class, () -> unitService.buyUnits(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 1))));
+        assertThrows(InsufficientFundsException.class, () -> unitService.buyUnits(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()));
     }
 
     @Test
@@ -152,29 +145,28 @@ class UnitRecruitmentTest {
         Sector sector = ownedSector(player, board);
         setTurn(board, 2);
 
-        UnitDto bought = unitService.buyUnitsDto(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 1))).getFirst();
+        UnitDto bought = unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()).getFirst();
         long unitId = bought.getId().longValue();
 
         unitService.placeUnitDto(player.getUserId(), unitId, board.getId(), sector.getNumber());
 
-        assertTrue(unitService.getReserveUnitsDto(player.getUserId()).isEmpty());
+        assertTrue(unitService.getReserveUnitsDto(player.getUserId(), player.getBoardId()).isEmpty());
         assertTrue(sector.getArmy().stream().anyMatch(u -> unitId == u.getId()));
 
-        PlayerActionDto placement = playerActionService.getCurrentTurnActions(player.getUserId()).stream()
+        PlayerActionDto placement = playerActionService.getCurrentTurnActions(player.getUserId(), player.getBoardId()).stream()
                 .filter(a -> a.getType() == PlayerActionType.PLACE_UNIT)
                 .findFirst().orElseThrow();
-        playerActionService.undoFrom(player.getUserId(), placement.getId());
+        playerActionService.undoFrom(player.getUserId(), player.getBoardId(), placement.getId());
 
-        assertFalse(unitService.getReserveUnitsDto(player.getUserId()).isEmpty(),
+        assertFalse(unitService.getReserveUnitsDto(player.getUserId(), player.getBoardId()).isEmpty(),
                 "L'unité retourne en réserve après annulation du placement");
 
-        PlayerActionDto purchase = playerActionService.getCurrentTurnActions(player.getUserId()).stream()
+        PlayerActionDto purchase = playerActionService.getCurrentTurnActions(player.getUserId(), player.getBoardId()).stream()
                 .filter(a -> a.getType() == PlayerActionType.BUY_UNIT)
                 .findFirst().orElseThrow();
-        playerActionService.undoFrom(player.getUserId(), purchase.getId());
+        playerActionService.undoFrom(player.getUserId(), player.getBoardId(), purchase.getId());
 
-        assertTrue(unitService.getReserveUnitsDto(player.getUserId()).isEmpty(),
+        assertTrue(unitService.getReserveUnitsDto(player.getUserId(), player.getBoardId()).isEmpty(),
                 "L'unité achetée est supprimée par l'annulation");
         assertEquals(10000.0, reload(player).getStats().getMoney(), 0.001,
                 "Le coût est remboursé");
@@ -191,11 +183,10 @@ class UnitRecruitmentTest {
         entityManager.flush();
         setTurn(board, 2);
 
-        UnitDto bought = unitService.buyUnitsDto(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 1))).getFirst();
+        UnitDto bought = unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()).getFirst();
 
         assertEquals(1, reserveUnitPlacer.placeAllAtHeadquarters());
-        assertTrue(unitService.getReserveUnitsDto(player.getUserId()).isEmpty());
+        assertTrue(unitService.getReserveUnitsDto(player.getUserId(), player.getBoardId()).isEmpty());
         Unit placed = entityManager.find(Unit.class, bought.getId().longValue());
         assertEquals(hqSector.getNumber(), placed.getSector().getNumber());
     }
@@ -212,10 +203,10 @@ class UnitRecruitmentTest {
         entityManager.flush();
         setTurn(board, 2);
 
-        unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)));
+        unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId());
 
         assertEquals(0, reserveUnitPlacer.placeAllAtHeadquarters());
-        assertFalse(unitService.getReserveUnitsDto(player.getUserId()).isEmpty());
+        assertFalse(unitService.getReserveUnitsDto(player.getUserId(), player.getBoardId()).isEmpty());
     }
 
     @Test
@@ -229,14 +220,13 @@ class UnitRecruitmentTest {
         entityManager.flush();
         setTurn(board, 2);
 
-        UnitDto bought = unitService.buyUnitsDto(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 1))).getFirst();
+        UnitDto bought = unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()).getFirst();
 
-        movementAdminService.resolveMovements(2);
+        movementAdminService.resolveMovements(player.getBoardId(), 2);
 
         Unit placed = entityManager.find(Unit.class, bought.getId().longValue());
         assertEquals(hqSector.getNumber(), placed.getSector().getNumber());
-        assertTrue(unitService.getReserveUnitsDto(player.getUserId()).isEmpty());
+        assertTrue(unitService.getReserveUnitsDto(player.getUserId(), player.getBoardId()).isEmpty());
     }
 
     @Test
@@ -246,20 +236,18 @@ class UnitRecruitmentTest {
         Board board = board();
         Sector sector = ownedSector(player, board);
         setTurn(board, 2);
-        UnitDto bought = unitService.buyUnitsDto(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 1))).getFirst();
+        UnitDto bought = unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()).getFirst();
 
-        turnLock.tryAcquire();
+        turnLock.tryAcquire(board.getId());
         try {
-            assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(),
-                    List.of(item("LARBIN", "LEGER", 1))));
+            assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()));
             assertThrows(IllegalStateException.class, () -> unitService.placeUnit(player.getUserId(),
                     bought.getId().longValue(), board.getId(), sector.getNumber()));
         } finally {
-            turnLock.release();
+            turnLock.release(board.getId());
         }
 
-        assertFalse(unitService.getReserveUnitsDto(player.getUserId()).isEmpty());
+        assertFalse(unitService.getReserveUnitsDto(player.getUserId(), player.getBoardId()).isEmpty());
     }
 
     @Test
@@ -269,19 +257,17 @@ class UnitRecruitmentTest {
         Board board = board();
         setTurn(board, 2);
 
-        unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 20)));
-        assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 1))));
+        unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 20)), player.getBoardId());
+        assertThrows(IllegalStateException.class, () -> unitService.buyUnits(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()));
         assertEquals(20, catalogEntry(player, "LARBIN").getPurchasedThisTurn());
 
-        PlayerActionDto lastPurchase = playerActionService.getCurrentTurnActions(player.getUserId()).stream()
+        PlayerActionDto lastPurchase = playerActionService.getCurrentTurnActions(player.getUserId(), player.getBoardId()).stream()
                 .filter(a -> a.getType() == PlayerActionType.BUY_UNIT)
                 .toList().getLast();
-        playerActionService.undoFrom(player.getUserId(), lastPurchase.getId());
+        playerActionService.undoFrom(player.getUserId(), player.getBoardId(), lastPurchase.getId());
 
         assertEquals(19, catalogEntry(player, "LARBIN").getPurchasedThisTurn());
-        assertEquals(1, unitService.buyUnitsDto(player.getUserId(),
-                List.of(item("LARBIN", "LEGER", 1))).size());
+        assertEquals(1, unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()).size());
         assertEquals(20, catalogEntry(player, "LARBIN").getPurchasedThisTurn());
     }
 
@@ -314,7 +300,7 @@ class UnitRecruitmentTest {
     }
 
     private UnitCatalogEntryDto catalogEntry(Player player, String typeName) {
-        return unitService.getCatalog(player.getUserId()).getEntries().stream()
+        return unitService.getCatalog(player.getUserId(), player.getBoardId()).getEntries().stream()
                 .filter(entry -> entry.getName().equals(typeName))
                 .findFirst().orElseThrow();
     }
@@ -346,13 +332,14 @@ class UnitRecruitmentTest {
     private void setTurn(Board board, int turn) {
         board.setCurrentTurn(turn);
         entityManager.flush();
-        turnService.publishTurn(turn);
+        turnService.publishTurn(board.getId(), turn);
     }
 
     private Player playerOfTestUser(String username) {
         User user = userRepository.findByUsername(username);
         assertNotNull(user, "L'utilisateur de test " + username + " doit exister");
-        Player player = playerService.findByUserId(user.getId());
+        Player player = playerService.findByUserId(user.getId(),
+                boardService.getAllBoards().getFirst().getId());
         assertNotNull(player, "Le joueur lié à " + username + " doit exister");
         return player;
     }

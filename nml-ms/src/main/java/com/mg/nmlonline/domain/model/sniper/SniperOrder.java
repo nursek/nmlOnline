@@ -27,6 +27,9 @@ public class SniperOrder {
     @SequenceGenerator(name = "sniper_order_seq", sequenceName = "sniper_orders_id_seq", allocationSize = 50)
     private Long id;
 
+    @Column(name = "board_id", nullable = false)
+    private Long boardId;
+
     @Column(name = "player_id", nullable = false)
     private Long playerId;
 
@@ -52,9 +55,10 @@ public class SniperOrder {
     @Column(name = "submitted_at", nullable = false)
     private Instant submittedAt;
 
-    public static SniperOrder create(Long playerId, int turn, Long unitId, int fromSectorNumber,
+    public static SniperOrder create(Long boardId, Long playerId, int turn, Long unitId, int fromSectorNumber,
                                      int targetSectorNumber) {
         SniperOrder order = new SniperOrder();
+        order.setBoardId(boardId);
         order.setPlayerId(playerId);
         order.setTurn(turn);
         order.setUnitId(unitId);

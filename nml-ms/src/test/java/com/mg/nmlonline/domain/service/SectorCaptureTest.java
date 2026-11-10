@@ -27,12 +27,15 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Capture des secteurs en fin de tour")
 class SectorCaptureTest {
+
+    private static final Long BOARD_ID = 1L;
 
     @Mock
     MovementOrderRepository orderRepository;
@@ -59,6 +62,7 @@ class SectorCaptureTest {
     @BeforeEach
     void setUp() {
         board = new Board();
+        board.setId(BOARD_ID);
         secteur1 = new Sector(1, "Départ A");
         secteur2 = new Sector(2, "Intermédiaire");
         secteur3 = new Sector(3, "Arrivée A");
@@ -77,8 +81,8 @@ class SectorCaptureTest {
         secteur4.addNeighbor(5); secteur5.addNeighbor(4);
 
         lenient().when(orderRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-        lenient().when(allianceGraph.activeAdjacency()).thenReturn(Map.of());
-        lenient().when(allianceGraph.endedAlliancesAtTurn(anyInt())).thenReturn(List.of());
+        lenient().when(allianceGraph.activeAdjacency(BOARD_ID)).thenReturn(Map.of());
+        lenient().when(allianceGraph.endedAlliancesAtTurn(eq(BOARD_ID), anyInt())).thenReturn(List.of());
     }
 
     private Unit addUnit(Sector sector, Long playerId, long id, UnitClass unitClass) {
@@ -102,9 +106,9 @@ class SectorCaptureTest {
     void uniteSurSecteurNeutre_capture() {
         secteur1.setOwnerId(JOUEUR_A);
         addUnit(secteur1, JOUEUR_A, 101L, UnitClass.TIREUR);
-        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2));
+        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2));
         ordre.setId(1L);
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordre));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordre));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -121,9 +125,9 @@ class SectorCaptureTest {
         secteur1.setOwnerId(JOUEUR_A);
         secteur2.setOwnerId(JOUEUR_B);
         addUnit(secteur1, JOUEUR_A, 101L, UnitClass.TIREUR);
-        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2));
+        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2));
         ordre.setId(1L);
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordre));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordre));
 
         service.resolveAllMovements(1, board);
 
@@ -137,9 +141,9 @@ class SectorCaptureTest {
         secteur2.setOwnerId(JOUEUR_B);
         addUnit(secteur1, JOUEUR_A, 101L, UnitClass.TIREUR);
         addUnit(secteur2, JOUEUR_B, 102L, UnitClass.TIREUR);
-        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2));
+        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2));
         ordre.setId(1L);
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordre));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordre));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -152,9 +156,9 @@ class SectorCaptureTest {
     void legerTraversantSecteurNeutre_captureALaVolee() {
         secteur1.setOwnerId(JOUEUR_A);
         addUnit(secteur1, JOUEUR_A, 101L, UnitClass.LEGER);
-        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2, 3));
+        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2, 3));
         ordre.setId(1L);
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordre));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordre));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -173,9 +177,9 @@ class SectorCaptureTest {
         qgB.setId(201L);
         qgB.setSector(secteur2);
         secteur2.getBuildings().add(qgB);
-        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2, 3));
+        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2, 3));
         ordre.setId(1L);
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordre));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordre));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -190,11 +194,11 @@ class SectorCaptureTest {
         secteur1.setOwnerId(JOUEUR_A);
         addUnit(secteur1, JOUEUR_A, 101L, UnitClass.LEGER);
         addUnit(secteur1, JOUEUR_A, 102L, UnitClass.LEGER);
-        MovementOrder ordre1 = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2, 3));
+        MovementOrder ordre1 = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2, 3));
         ordre1.setId(1L);
-        MovementOrder ordre2 = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(102L), List.of(1, 2, 3));
+        MovementOrder ordre2 = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(102L), List.of(1, 2, 3));
         ordre2.setId(2L);
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordre1, ordre2));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordre1, ordre2));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -213,9 +217,9 @@ class SectorCaptureTest {
         vehicule.setSector(secteur2);
         secteur2.getVehicles().add(vehicule);
         addUnit(secteur1, JOUEUR_A, 101L, UnitClass.LEGER);
-        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2, 3));
+        MovementOrder ordre = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2, 3));
         ordre.setId(1L);
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordre));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordre));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -237,7 +241,7 @@ class SectorCaptureTest {
         personnage.setSector(secteur5);
         secteur5.getCharacters().add(personnage);
 
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of());
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of());
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 

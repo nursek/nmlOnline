@@ -29,6 +29,9 @@ public class Alliance {
     @Column(name = "player_two_id", nullable = false)
     private Long playerTwoId;
 
+    @Column(name = "board_id", nullable = false)
+    private Long boardId;
+
     @Column(name = "created_turn", nullable = false)
     private int createdTurn;
 
@@ -41,13 +44,14 @@ public class Alliance {
     @Column(nullable = false)
     private boolean betrayal;
 
-    public static Alliance create(Long firstPlayerId, Long secondPlayerId, int turn) {
+    public static Alliance create(Long firstPlayerId, Long secondPlayerId, Long boardId, int turn) {
         if (firstPlayerId.equals(secondPlayerId)) {
             throw new IllegalArgumentException("Un joueur ne peut pas s'allier à lui-même.");
         }
         Alliance alliance = new Alliance();
         alliance.playerOneId = Math.min(firstPlayerId, secondPlayerId);
         alliance.playerTwoId = Math.max(firstPlayerId, secondPlayerId);
+        alliance.boardId = boardId;
         alliance.createdTurn = turn;
         return alliance;
     }

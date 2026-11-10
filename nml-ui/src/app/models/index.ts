@@ -6,6 +6,7 @@ export * from './sector.model';
 export * from './vehicle.model';
 export * from './building.model';
 export * from './board.model';
+export * from './instance.model';
 export * from './shop.model';
 export * from './movement.model';
 export * from './sniper-order.model';

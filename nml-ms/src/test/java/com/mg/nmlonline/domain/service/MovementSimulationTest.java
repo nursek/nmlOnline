@@ -26,6 +26,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -33,6 +34,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Simulation : résolution incrémentale multi-step")
 class MovementSimulationTest {
+
+    private static final Long BOARD_ID = 1L;
 
     @Mock
     MovementOrderRepository orderRepository;
@@ -67,6 +70,7 @@ class MovementSimulationTest {
     @BeforeEach
     void setUp() {
         board    = new Board();
+        board.setId(BOARD_ID);
         secteur1 = new Sector(1, "Zone A (départ A)");
         secteur2 = new Sector(2, "Objectif (B défend)");
         secteur3 = new Sector(3, "Zone intermédiaire");
@@ -124,20 +128,20 @@ class MovementSimulationTest {
         secteur4.getVehicles().add(vehiculeC);
 
         when(orderRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-        lenient().when(allianceGraph.activeAdjacency()).thenReturn(Map.of());
-        lenient().when(allianceGraph.endedAlliancesAtTurn(anyInt())).thenReturn(List.of());
+        lenient().when(allianceGraph.activeAdjacency(BOARD_ID)).thenReturn(Map.of());
+        lenient().when(allianceGraph.endedAlliancesAtTurn(eq(BOARD_ID), anyInt())).thenReturn(List.of());
     }
 
     @Test
     @DisplayName("Arrivée au step 2 sur les forces du step 1 : un seul conflit à 3 camps (impasse)")
     void shouldDetectStandoffWithEntitiesArrivedInPreviousStep() {
-        MovementOrder ordreA = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(UNITE_A_ID), List.of(1, 2));
+        MovementOrder ordreA = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(UNITE_A_ID), List.of(1, 2));
         ordreA.setId(1L);
 
-        MovementOrder ordreC = MovementOrder.createFootOrder(JOUEUR_C, 1, List.of(UNITE_C_ID), List.of(4, 3, 2));
+        MovementOrder ordreC = MovementOrder.createFootOrder(JOUEUR_C, BOARD_ID, 1, List.of(UNITE_C_ID), List.of(4, 3, 2));
         ordreC.setId(2L);
 
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordreA, ordreC));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordreA, ordreC));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -176,10 +180,10 @@ class MovementSimulationTest {
     @DisplayName("Véhicule seul : conflit au secteur défendu, pas de combat de transit en secteur vide")
     void vehicleOnlyArrivalGeneratesConflict() {
         // Le combat de transit ne s'applique qu'aux secteurs intermédiaires, pas à l'arrivée.
-        MovementOrder ordreC = MovementOrder.createVehicleOrder(JOUEUR_C, 1, VEHICULE_C_ID, List.of(4, 3, 2));
+        MovementOrder ordreC = MovementOrder.createVehicleOrder(JOUEUR_C, BOARD_ID, 1, VEHICULE_C_ID, List.of(4, 3, 2));
         ordreC.setId(1L);
 
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordreC));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordreC));
         when(vehicleRepository.findById(VEHICULE_C_ID)).thenReturn(Optional.of(vehiculeC));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);

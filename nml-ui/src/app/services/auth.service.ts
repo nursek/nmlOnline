@@ -76,7 +76,7 @@ export class AuthService {
         role: response.role,
       });
       this._user.set({ id: response.id, username: response.name, role: response.role });
-      void this.router.navigate([response.role === 'ADMIN' ? '/admin' : '/accueil']);
+      void this.router.navigate(['/parties']);
     } catch (error) {
       const message = this.extractErrorMessage(error);
       this._error.set(message);

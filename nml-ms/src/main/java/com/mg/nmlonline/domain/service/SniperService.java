@@ -71,22 +71,22 @@ public class SniperService {
                                   List<SniperOrder> resolvedOrders) {
     }
 
-    public DuelSupport collectDuelSupport(int turn, int targetSector, List<Long> attackerIds,
+    public DuelSupport collectDuelSupport(Long boardId, int turn, int targetSector, List<Long> attackerIds,
                                           List<Long> defenderIds, Set<Integer> battleSectors) {
         List<Unit> attackers = new ArrayList<>();
         List<Unit> defenders = new ArrayList<>();
         Map<Long, List<Unit>> independentUnits = new LinkedHashMap<>();
         Map<Long, List<SniperOrder>> independentOrders = new LinkedHashMap<>();
         List<SniperOrder> resolved = new ArrayList<>();
-        for (SniperOrder order : pendingForSector(turn, targetSector)) {
+        for (SniperOrder order : pendingForSector(boardId, turn, targetSector)) {
             Unit unit = eligibleUnit(order, battleSectors);
             if (unit == null) {
                 continue;
             }
-            if (inCamp(order.getPlayerId(), attackerIds)) {
+            if (inCamp(boardId, order.getPlayerId(), attackerIds)) {
                 attackers.add(unit);
                 resolved.add(order);
-            } else if (inCamp(order.getPlayerId(), defenderIds)) {
+            } else if (inCamp(boardId, order.getPlayerId(), defenderIds)) {
                 defenders.add(unit);
                 resolved.add(order);
             } else {
@@ -98,18 +98,18 @@ public class SniperService {
         return new DuelSupport(attackers, defenders, independents(independentUnits, independentOrders), resolved);
     }
 
-    public StandoffSupport collectStandoffSupport(int turn, int targetSector, List<List<Long>> camps,
-                                                  Set<Integer> battleSectors) {
+    public StandoffSupport collectStandoffSupport(Long boardId, int turn, int targetSector,
+                                                  List<List<Long>> camps, Set<Integer> battleSectors) {
         Map<Integer, List<Unit>> byCamp = new HashMap<>();
         Map<Long, List<Unit>> independentUnits = new LinkedHashMap<>();
         Map<Long, List<SniperOrder>> independentOrders = new LinkedHashMap<>();
         List<SniperOrder> resolved = new ArrayList<>();
-        for (SniperOrder order : pendingForSector(turn, targetSector)) {
+        for (SniperOrder order : pendingForSector(boardId, turn, targetSector)) {
             Unit unit = eligibleUnit(order, battleSectors);
             if (unit == null) {
                 continue;
             }
-            int camp = campIndex(order.getPlayerId(), camps);
+            int camp = campIndex(boardId, order.getPlayerId(), camps);
             if (camp < 0) {
                 independentUnits.computeIfAbsent(order.getPlayerId(), key -> new ArrayList<>()).add(unit);
                 independentOrders.computeIfAbsent(order.getPlayerId(), key -> new ArrayList<>()).add(order);
@@ -145,7 +145,8 @@ public class SniperService {
 
     /** Traite les ordres restants sans combat au sol : tir isolé, avec contre-tir des snipers inactifs ciblés. */
     public List<BattleReportDetailDto> resolveRemainingFire(int turn, Board board, Set<Integer> battleSectors) {
-        List<SniperOrder> pending = sniperOrderRepository.findByTurnAndStatus(turn, SniperOrderStatus.PENDING);
+        List<SniperOrder> pending =
+                sniperOrderRepository.findByBoardIdAndTurnAndStatus(board.getId(), turn, SniperOrderStatus.PENDING);
         if (pending.isEmpty()) {
             return List.of();
         }
@@ -153,7 +154,7 @@ public class SniperService {
                 .map(SniperOrder::getUnitId)
                 .collect(Collectors.toSet());
         // Un ordre RESOLVED a déjà tiré ce tour : il ne peut pas contre-tirer.
-        sniperOrderRepository.findByTurnAndStatus(turn, SniperOrderStatus.RESOLVED).stream()
+        sniperOrderRepository.findByBoardIdAndTurnAndStatus(board.getId(), turn, SniperOrderStatus.RESOLVED).stream()
                 .map(SniperOrder::getUnitId)
                 .forEach(exhaustedUnitIds::add);
         Set<Long> destroyedUnitIds = new HashSet<>();
@@ -221,7 +222,7 @@ public class SniperService {
         for (Map.Entry<Long, List<OrderContext>> group : byPlayer.entrySet()) {
             List<Unit> groupShooters = group.getValue().stream().map(OrderContext::unit).toList();
             groupShooters.forEach(shooter -> addParticipant(participantIds, shooter.getPlayerId()));
-            Set<Long> shooterSide = new HashSet<>(allianceGraph.alliedPlayerIds(group.getKey()));
+            Set<Long> shooterSide = new HashSet<>(allianceGraph.alliedPlayerIds(board.getId(), group.getKey()));
             shooterSide.add(group.getKey());
             Long ownerId = sector.getOwnerId();
             if (ownerId != null && shooterSide.contains(ownerId)) {
@@ -296,8 +297,8 @@ public class SniperService {
         List<Player> participants = participantIds.isEmpty()
                 ? List.of()
                 : playerRepository.findAllById(participantIds);
-        return battleReportService.saveRangedReport(turn, targetSectorNumber, participants, casualties,
-                experienceGains, String.join(" ; ", summaries), characterLost);
+        return battleReportService.saveRangedReport(board.getId(), turn, targetSectorNumber, participants,
+                casualties, experienceGains, String.join(" ; ", summaries), characterLost);
     }
 
     private void applyCounterCasualties(int turn, Board board, List<Unit> shooters,
@@ -403,8 +404,8 @@ public class SniperService {
     private record InvalidOrder(SniperOrder order, String reason) {
     }
 
-    private List<SniperOrder> pendingForSector(int turn, int targetSector) {
-        return sniperOrderRepository.findByTurnAndStatus(turn, SniperOrderStatus.PENDING).stream()
+    private List<SniperOrder> pendingForSector(Long boardId, int turn, int targetSector) {
+        return sniperOrderRepository.findByBoardIdAndTurnAndStatus(boardId, turn, SniperOrderStatus.PENDING).stream()
                 .filter(order -> order.getTargetSectorNumber() == targetSector)
                 .toList();
     }
@@ -438,16 +439,16 @@ public class SniperService {
         sniperOrderRepository.save(order);
     }
 
-    private boolean inCamp(Long playerId, List<Long> camp) {
+    private boolean inCamp(Long boardId, Long playerId, List<Long> camp) {
         if (camp.contains(playerId)) {
             return true;
         }
-        return camp.stream().anyMatch(campPlayerId -> allianceGraph.areAllied(campPlayerId, playerId));
+        return camp.stream().anyMatch(campPlayerId -> allianceGraph.areAllied(boardId, campPlayerId, playerId));
     }
 
-    private int campIndex(Long playerId, List<List<Long>> camps) {
+    private int campIndex(Long boardId, Long playerId, List<List<Long>> camps) {
         for (int i = 0; i < camps.size(); i++) {
-            if (inCamp(playerId, camps.get(i))) {
+            if (inCamp(boardId, playerId, camps.get(i))) {
                 return i;
             }
         }

@@ -13,23 +13,25 @@ import java.util.List;
 @Repository
 public interface MovementOrderRepository extends JpaRepository<MovementOrder, Long> {
 
-    List<MovementOrder> findByTurnAndStatus(int turn, MovementStatus status);
+    List<MovementOrder> findByBoardIdAndTurnAndStatus(Long boardId, int turn, MovementStatus status);
 
     /** IDs d'entités déjà engagées dans un ordre PENDING du tour — sert à refuser les doublons. */
     @Query("""
             select distinct e from MovementOrder o
             join o.entityIds e
-            where o.turn = :turn
+            where o.boardId = :boardId
+              and o.turn = :turn
               and o.status = com.mg.nmlonline.domain.model.movement.MovementStatus.PENDING
               and e in :entityIds
             """)
-    List<Long> findPendingEntityIds(@Param("turn") int turn,
+    List<Long> findPendingEntityIds(@Param("boardId") Long boardId,
+                                    @Param("turn") int turn,
                                     @Param("entityIds") Collection<Long> entityIds);
 
-    List<MovementOrder> findByTurn(int turn);
+    List<MovementOrder> findByBoardIdAndTurn(Long boardId, int turn);
 
-    default List<MovementOrder> findPendingByTurn(int turn) {
-        return findByTurnAndStatus(turn, MovementStatus.PENDING);
+    default List<MovementOrder> findPendingByTurn(Long boardId, int turn) {
+        return findByBoardIdAndTurnAndStatus(boardId, turn, MovementStatus.PENDING);
     }
 
     List<MovementOrder> findByPlayerIdAndTurn(Long playerId, int turn);

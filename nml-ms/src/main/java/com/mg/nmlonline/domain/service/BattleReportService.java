@@ -39,7 +39,8 @@ public class BattleReportService {
         this.objectMapper = objectMapper;
     }
 
-    public void saveDuelReport(int turn, int sectorNumber, List<Player> attackerCamp, List<Player> defenderCamp,
+    public void saveDuelReport(Long boardId, int turn, int sectorNumber, List<Player> attackerCamp,
+                               List<Player> defenderCamp,
                                CombatService.SectorBattleResult result) {
         if (!result.success()) {
             return;
@@ -74,10 +75,10 @@ public class BattleReportService {
         dto.setExperienceGains(mapExperienceGains(result.experienceGains(), names));
         dto.setForces(result.forces());
         dto.setHighlights(result.highlights());
-        persist(dto, participants.stream().map(Player::getId).toList());
+        persist(dto, participants.stream().map(Player::getId).toList(), boardId);
     }
 
-    public BattleReportDetailDto saveRangedReport(int turn, int sectorNumber, List<Player> participants,
+    public BattleReportDetailDto saveRangedReport(Long boardId, int turn, int sectorNumber, List<Player> participants,
                                                   List<CombatService.CasualtyInfo> casualties,
                                                   List<CombatService.ExperienceGain> experienceGains,
                                                   String rangedFire, Map<Long, Boolean> characterLost) {
@@ -103,11 +104,11 @@ public class BattleReportService {
                 .toList());
         dto.setCasualties(mapCasualties(casualties, names));
         dto.setExperienceGains(mapExperienceGains(experienceGains, names));
-        persist(dto, participants.stream().map(Player::getId).toList());
+        persist(dto, participants.stream().map(Player::getId).toList(), boardId);
         return dto;
     }
 
-    public void saveStandoffReport(int turn, int sectorNumber, List<Player> participants,
+    public void saveStandoffReport(Long boardId, int turn, int sectorNumber, List<Player> participants,
                                    CombatService.StandoffBattleResult result) {
         if (!result.success()) {
             return;
@@ -144,12 +145,12 @@ public class BattleReportService {
         dto.setExperienceGains(mapExperienceGains(result.experienceGains(), names));
         dto.setForces(result.forces());
         dto.setHighlights(result.highlights());
-        persist(dto, participants.stream().map(Player::getId).toList());
+        persist(dto, participants.stream().map(Player::getId).toList(), boardId);
     }
 
     @Transactional(readOnly = true)
-    public List<BattleReportDto> getReportsForUser(Long userId) {
-        Player player = playerRepository.findByUserId(userId)
+    public List<BattleReportDto> getReportsForUser(Long userId, Long boardId) {
+        Player player = playerRepository.findByUserIdAndBoardId(userId, boardId)
                 .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId));
         List<BattleReportDto> reports = new ArrayList<>();
         List<BattleReport> page = reportRepository.findByParticipantId(
@@ -258,8 +259,9 @@ public class BattleReportService {
         }).toList();
     }
 
-    private void persist(BattleReportDetailDto dto, Collection<Long> participantIds) {
+    private void persist(BattleReportDetailDto dto, Collection<Long> participantIds, Long boardId) {
         BattleReport report = new BattleReport();
+        report.setBoardId(boardId);
         report.setTurn(dto.getTurn());
         report.setSectorNumber(dto.getSectorNumber());
         report.setStandoff(dto.isStandoff());

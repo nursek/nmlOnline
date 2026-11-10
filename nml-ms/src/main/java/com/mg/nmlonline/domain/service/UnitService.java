@@ -88,9 +88,10 @@ public class UnitService {
         this.em = em;
     }
 
-    public Unit assignEquipment(Long unitId, Long userId, String equipmentName) {
-        Player player = requirePlayerByUserIdForUpdate(userId);
-        Board board = requireBoard();
+    public Unit assignEquipment(Long unitId, Long userId, String equipmentName, Long boardId) {
+        Player player = requirePlayerByUserIdForUpdate(userId, boardId);
+        Board board = boardService.getBoardById(player.getBoardId())
+                .orElseThrow(() -> new IllegalStateException("Aucun plateau disponible."));
         Unit unit = requireUnit(board, unitId);
         requireOwnedBy(unit, player);
 
@@ -118,9 +119,10 @@ public class UnitService {
         return unit;
     }
 
-    public Unit removeEquipment(Long unitId, Long userId, String equipmentName) {
-        Player player = requirePlayerByUserIdForUpdate(userId);
-        Board board = requireBoard();
+    public Unit removeEquipment(Long unitId, Long userId, String equipmentName, Long boardId) {
+        Player player = requirePlayerByUserIdForUpdate(userId, boardId);
+        Board board = boardService.getBoardById(player.getBoardId())
+                .orElseThrow(() -> new IllegalStateException("Aucun plateau disponible."));
         Unit unit = requireUnit(board, unitId);
         requireOwnedBy(unit, player);
 
@@ -147,13 +149,14 @@ public class UnitService {
         return unit;
     }
 
-    public MovementOrder placeFootOrder(Long userId, List<Long> entityIds, List<Integer> route) {
-        requireTurnOpen();
+    public MovementOrder placeFootOrder(Long userId, List<Long> entityIds, List<Integer> route, Long boardId) {
+        requireTurnOpen(boardId);
         // Verrou joueur : sérialise avec setCrew (occupant vs ordre à pied) sur le même ordre P→V.
-        Player player = requirePlayerByUserIdForUpdate(userId);
-        Board board = requireBoard();
-        int turn = turnService.getCurrentTurn();
-        List<Long> sniperOrdered = sniperOrderRepository.findPendingUnitIds(turn, entityIds);
+        Player player = requirePlayerByUserIdForUpdate(userId, boardId);
+        Board board = boardService.getBoardById(player.getBoardId())
+                .orElseThrow(() -> new IllegalStateException("Aucun plateau disponible."));
+        int turn = turnService.getCurrentTurn(boardId);
+        List<Long> sniperOrdered = sniperOrderRepository.findPendingUnitIds(boardId, turn, entityIds);
         if (!sniperOrdered.isEmpty()) {
             throw new IllegalArgumentException(
                     "Entité(s) déjà engagée(s) dans un ordre sniper en attente : " + sniperOrdered + ".");
@@ -161,21 +164,21 @@ public class UnitService {
         return movementService.placeFootOrder(player.getId(), turn, entityIds, route, board);
     }
 
-    public List<MovementOrder> getPlayerPendingOrders(Long userId) {
-        Player player = requirePlayerByUserId(userId);
-        int turn = turnService.getCurrentTurn();
+    public List<MovementOrder> getPlayerPendingOrders(Long userId, Long boardId) {
+        Player player = requirePlayerByUserId(userId, boardId);
+        int turn = turnService.getCurrentTurn(boardId);
         return movementService.getPlayerOrders(player.getId(), turn);
     }
 
-    public void cancelOrder(Long userId, Long orderId) {
-        Player player = requirePlayerByUserId(userId);
+    public void cancelOrder(Long userId, Long orderId, Long boardId) {
+        Player player = requirePlayerByUserId(userId, boardId);
         movementService.cancelOrderOrThrow(player.getId(), orderId);
     }
 
     @Transactional(readOnly = true)
-    public UnitCatalogDto getCatalog(Long userId) {
-        Player player = requirePlayerByUserId(userId);
-        int turn = turnService.getCurrentTurn();
+    public UnitCatalogDto getCatalog(Long userId, Long boardId) {
+        Player player = requirePlayerByUserId(userId, boardId);
+        int turn = turnService.getCurrentTurn(boardId);
         Map<String, Integer> purchased = purchasedByType(player.getId(), turn);
 
         UnitCatalogDto catalog = new UnitCatalogDto();
@@ -200,13 +203,13 @@ public class UnitService {
         return catalog;
     }
 
-    public List<Unit> buyUnits(Long userId, List<BuyUnitRequestDto> items) {
+    public List<Unit> buyUnits(Long userId, List<BuyUnitRequestDto> items, Long boardId) {
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("Le panier d'unités est vide");
         }
-        requireTurnOpen();
-        Player player = requirePlayerByUserIdForUpdate(userId);
-        int turn = turnService.getCurrentTurn();
+        requireTurnOpen(boardId);
+        Player player = requirePlayerByUserIdForUpdate(userId, boardId);
+        int turn = turnService.getCurrentTurn(boardId);
 
         record OrderLine(UnitType type, UnitClass unitClass, int quantity) {
         }
@@ -267,9 +270,9 @@ public class UnitService {
     }
 
     public Unit placeUnit(Long userId, Long unitId, Long boardId, int sectorNumber) {
-        requireTurnOpen();
+        requireTurnOpen(boardId);
         // Verrou joueur d'abord : sérialise avec l'undo (joueur puis unité) et évite le double placement.
-        Player player = requirePlayerByUserIdForUpdate(userId);
+        Player player = requirePlayerByUserIdForUpdate(userId, boardId);
         Unit unit = unitRepository.findById(unitId)
                 .orElseThrow(() -> new EntityNotFoundException("Unité introuvable avec l'ID " + unitId));
         if (!player.getId().equals(unit.getPlayerId())) {
@@ -293,8 +296,8 @@ public class UnitService {
     }
 
     @Transactional(readOnly = true)
-    public List<UnitDto> getReserveUnitsDto(Long userId) {
-        Player player = requirePlayerByUserId(userId);
+    public List<UnitDto> getReserveUnitsDto(Long userId, Long boardId) {
+        Player player = requirePlayerByUserId(userId, boardId);
         return unitRepository.findByPlayerIdAndSectorIsNull(player.getId()).stream()
                 .map(unitMapper::toDto)
                 .toList();
@@ -312,8 +315,8 @@ public class UnitService {
     }
 
     /** Même fermeture que la récolte : un achat pendant la résolution échapperait au placement au QG. */
-    private void requireTurnOpen() {
-        if (turnLock.isLocked()) {
+    private void requireTurnOpen(Long boardId) {
+        if (turnLock.isLocked(boardId)) {
             throw new IllegalStateException(
                     "La résolution du tour est en cours — réessayez après la fin du tour");
         }
@@ -343,49 +346,44 @@ public class UnitService {
 
     // === Mapping dans la transaction (classesSet/unitEquipments et route/entityIds sont LAZY) ===
 
-    public UnitDto assignEquipmentDto(Long unitId, Long userId, String equipmentName) {
-        return unitMapper.toDto(assignEquipment(unitId, userId, equipmentName));
+    public UnitDto assignEquipmentDto(Long unitId, Long userId, String equipmentName, Long boardId) {
+        return unitMapper.toDto(assignEquipment(unitId, userId, equipmentName, boardId));
     }
 
-    public UnitDto removeEquipmentDto(Long unitId, Long userId, String equipmentName) {
-        return unitMapper.toDto(removeEquipment(unitId, userId, equipmentName));
+    public UnitDto removeEquipmentDto(Long unitId, Long userId, String equipmentName, Long boardId) {
+        return unitMapper.toDto(removeEquipment(unitId, userId, equipmentName, boardId));
     }
 
-    public MovementOrderDto placeFootOrderDto(Long userId, List<Long> entityIds, List<Integer> route) {
-        return movementMapper.toDto(placeFootOrder(userId, entityIds, route));
+    public MovementOrderDto placeFootOrderDto(Long userId, List<Long> entityIds, List<Integer> route, Long boardId) {
+        return movementMapper.toDto(placeFootOrder(userId, entityIds, route, boardId));
     }
 
-    public List<MovementOrderDto> getPlayerPendingOrdersDto(Long userId) {
-        return getPlayerPendingOrders(userId).stream().map(movementMapper::toDto).toList();
+    public List<MovementOrderDto> getPlayerPendingOrdersDto(Long userId, Long boardId) {
+        return getPlayerPendingOrders(userId, boardId).stream().map(movementMapper::toDto).toList();
     }
 
-    public List<UnitDto> buyUnitsDto(Long userId, List<BuyUnitRequestDto> items) {
-        return buyUnits(userId, items).stream().map(unitMapper::toDto).toList();
+    public List<UnitDto> buyUnitsDto(Long userId, List<BuyUnitRequestDto> items, Long boardId) {
+        return buyUnits(userId, items, boardId).stream().map(unitMapper::toDto).toList();
     }
 
     public UnitDto placeUnitDto(Long userId, Long unitId, Long boardId, int sectorNumber) {
         return unitMapper.toDto(placeUnit(userId, unitId, boardId, sectorNumber));
     }
 
-    private Player requirePlayerByUserId(Long userId) {
-        Player player = playerService.findByUserId(userId);
+    private Player requirePlayerByUserId(Long userId, Long boardId) {
+        Player player = playerService.findByUserId(userId, boardId);
         if (player == null) {
             throw new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId);
         }
         return player;
     }
 
-    private Player requirePlayerByUserIdForUpdate(Long userId) {
-        Player player = playerService.findByUserIdForUpdate(userId);
+    private Player requirePlayerByUserIdForUpdate(Long userId, Long boardId) {
+        Player player = playerService.findByUserIdForUpdate(userId, boardId);
         if (player == null) {
             throw new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId);
         }
         return player;
-    }
-
-    private Board requireBoard() {
-        return boardService.getAllBoards().stream().findFirst()
-                .orElseThrow(() -> new IllegalStateException("Aucun plateau disponible."));
     }
 
     private Unit requireUnit(Board board, Long unitId) {

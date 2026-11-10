@@ -91,10 +91,13 @@ class CombatServiceResultLogTest {
                     .findFirst().orElseThrow();
 
             Player allyOne = new Player("AllieUn");
+            allyOne.setBoardId(board.getId());
             playerRepository.save(allyOne);
             Player allyTwo = new Player("AllieDeux");
+            allyTwo.setBoardId(board.getId());
             playerRepository.save(allyTwo);
             Player target = new Player("Cible");
+            target.setBoardId(board.getId());
             playerRepository.save(target);
             em.flush();
 

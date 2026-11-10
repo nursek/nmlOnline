@@ -10,6 +10,7 @@ import com.mg.nmlonline.api.dto.AssignEquipmentRequestDto;
 import com.mg.nmlonline.api.dto.SniperOrderDto;
 import com.mg.nmlonline.api.dto.UnitCatalogDto;
 import com.mg.nmlonline.api.dto.UnitDto;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.SniperOrderService;
 import com.mg.nmlonline.domain.service.UnitService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,29 +38,32 @@ public class UnitController {
     @GetMapping("/catalog")
     public ResponseEntity<UnitCatalogDto> getCatalog(HttpServletRequest httpRequest) {
         Long userId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(unitService.getCatalog(userId));
+        return ResponseEntity.ok(unitService.getCatalog(userId, boardId));
     }
 
     @GetMapping("/reserve")
     public ResponseEntity<List<UnitDto>> getReserveUnits(HttpServletRequest httpRequest) {
         Long userId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(unitService.getReserveUnitsDto(userId));
+        return ResponseEntity.ok(unitService.getReserveUnitsDto(userId, boardId));
     }
 
     @PostMapping("/buy-batch")
     public ResponseEntity<List<UnitDto>> buyUnitsBatch(@Valid @RequestBody BuyUnitBatchRequestDto request,
                                                        HttpServletRequest httpRequest) {
         Long userId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(unitService.buyUnitsDto(userId, request.getItems()));
+        return ResponseEntity.ok(unitService.buyUnitsDto(userId, request.getItems(), boardId));
     }
 
     @PostMapping("/{unitId}/place")
@@ -67,11 +71,11 @@ public class UnitController {
                                              @Valid @RequestBody PlaceUnitRequestDto request,
                                              HttpServletRequest httpRequest) {
         Long userId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(unitService.placeUnitDto(userId, unitId,
-                request.getBoardId(), request.getSectorNumber()));
+        return ResponseEntity.ok(unitService.placeUnitDto(userId, unitId, boardId, request.getSectorNumber()));
     }
 
     @PostMapping("/{unitId}/equipment")
@@ -79,10 +83,11 @@ public class UnitController {
                                                     @Valid @RequestBody AssignEquipmentRequestDto request,
                                                     HttpServletRequest httpRequest) {
         Long userId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        UnitDto unit = unitService.assignEquipmentDto(unitId, userId, request.getEquipmentName());
+        UnitDto unit = unitService.assignEquipmentDto(unitId, userId, request.getEquipmentName(), boardId);
         return ResponseEntity.ok(unit);
     }
 
@@ -91,10 +96,11 @@ public class UnitController {
                                                    @Valid @RequestBody RemoveEquipmentRequestDto request,
                                                    HttpServletRequest httpRequest) {
         Long userId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        UnitDto unit = unitService.removeEquipmentDto(unitId, userId, request.getEquipmentName());
+        UnitDto unit = unitService.removeEquipmentDto(unitId, userId, request.getEquipmentName(), boardId);
         return ResponseEntity.ok(unit);
     }
 
@@ -102,30 +108,33 @@ public class UnitController {
     public ResponseEntity<MovementOrderDto> placeFootOrder(@Valid @RequestBody PlaceFootOrderRequestDto request,
                                                             HttpServletRequest httpRequest) {
         Long userId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        MovementOrderDto order = unitService.placeFootOrderDto(userId, request.getEntityIds(), request.getRoute());
+        MovementOrderDto order = unitService.placeFootOrderDto(userId, request.getEntityIds(), request.getRoute(), boardId);
         return ResponseEntity.ok(order);
     }
 
     @GetMapping("/movement")
     public ResponseEntity<List<MovementOrderDto>> getMyPendingOrders(HttpServletRequest httpRequest) {
         Long userId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        List<MovementOrderDto> orders = unitService.getPlayerPendingOrdersDto(userId);
+        List<MovementOrderDto> orders = unitService.getPlayerPendingOrdersDto(userId, boardId);
         return ResponseEntity.ok(orders);
     }
 
     @DeleteMapping("/movement/{orderId}")
     public ResponseEntity<Void> cancelOrder(@PathVariable Long orderId, HttpServletRequest httpRequest) {
         Long userId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        unitService.cancelOrder(userId, orderId);
+        unitService.cancelOrder(userId, orderId, boardId);
         return ResponseEntity.noContent().build();
     }
 
@@ -137,8 +146,9 @@ public class UnitController {
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         return ResponseEntity.ok(
-                sniperOrderService.place(userId, unitId, request.getTargetSectorNumber()));
+                sniperOrderService.place(userId, boardId, unitId, request.getTargetSectorNumber()));
     }
 
     @GetMapping("/sniper-orders")
@@ -147,7 +157,8 @@ public class UnitController {
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(sniperOrderService.currentPending(userId));
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
+        return ResponseEntity.ok(sniperOrderService.currentPending(userId, boardId));
     }
 
     @DeleteMapping("/sniper-orders/{orderId}")
@@ -157,7 +168,8 @@ public class UnitController {
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        sniperOrderService.cancel(userId, orderId);
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
+        sniperOrderService.cancel(userId, boardId, orderId);
         return ResponseEntity.noContent().build();
     }
 }

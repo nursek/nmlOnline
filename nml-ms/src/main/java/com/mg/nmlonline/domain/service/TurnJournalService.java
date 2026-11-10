@@ -21,16 +21,17 @@ public class TurnJournalService {
         this.objectMapper = objectMapper;
     }
 
-    public void save(TurnJournalDto journal) {
+    public void save(Long boardId, TurnJournalDto journal) {
         TurnJournal entity = new TurnJournal();
+        entity.setBoardId(boardId);
         entity.setTurn(journal.getTurn());
         entity.setPayload(write(journal));
         repository.save(entity);
     }
 
     @Transactional(readOnly = true)
-    public TurnJournalDto findByTurn(int turn) {
-        return repository.findFirstByTurnOrderByIdDesc(turn)
+    public TurnJournalDto findByTurn(Long boardId, int turn) {
+        return repository.findFirstByBoardIdAndTurnOrderByIdDesc(boardId, turn)
                 .map(this::read)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Aucun journal archivé pour le tour " + turn));

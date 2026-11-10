@@ -185,16 +185,16 @@ public class TurnResolutionScenarioSeeder {
     }
 
     @Transactional
-    public ScenarioSummaryDto seedScenario() {
-        return withTurnLock(this::seedScenarioUnlocked);
+    public ScenarioSummaryDto seedScenario(Long boardId) {
+        return withTurnLock(boardId, () -> seedScenarioUnlocked(boardId));
     }
 
-    private ScenarioSummaryDto seedScenarioUnlocked() {
-        Board board = requireBoard();
-        int turn = turnService.getCurrentTurn();
+    private ScenarioSummaryDto seedScenarioUnlocked(Long boardId) {
+        Board board = requireBoard(boardId);
+        int turn = board.getCurrentTurn();
 
-        Player lurio = resolvePlayerByName("lurio", "lurio introuvable — vérifiez le seed démo");
-        Player cegorach = resolvePlayerByName("cegorach", "cegorach introuvable — vérifiez le seed démo");
+        Player lurio = resolvePlayerByName(board.getId(), "lurio", "lurio introuvable — vérifiez le seed démo");
+        Player cegorach = resolvePlayerByName(board.getId(), "cegorach", "cegorach introuvable — vérifiez le seed démo");
 
         Sector sDefender = requireSector(board, SECTOR_DEFENDER, "défenseur");
         int defendersAdded = ensureDefenders(sDefender, cegorach);
@@ -227,7 +227,7 @@ public class TurnResolutionScenarioSeeder {
                 ? List.of(SECTOR_ATTACKER_FROM, SECTOR_INTERMEDIATE, SECTOR_DEFENDER)
                 : List.of(SECTOR_INTERMEDIATE, SECTOR_DEFENDER);
 
-        deletePendingOrders(turn, List.of(lurio.getId(), cegorach.getId()));
+        deletePendingOrders(board.getId(), turn, List.of(lurio.getId(), cegorach.getId()));
 
         MovementOrder order = movementService.placeFootOrder(
                 lurio.getId(), turn, List.of(attackerUnitId), route, board);
@@ -250,17 +250,17 @@ public class TurnResolutionScenarioSeeder {
 
     /** Impasse : cegorach défend 32 ; imotekh (43) puis lurio (41) y arrivent au même hop, dans cet ordre d'envoi. */
     @Transactional
-    public ScenarioSummaryDto seedStandoffScenario() {
-        return withTurnLock(this::seedStandoffScenarioUnlocked);
+    public ScenarioSummaryDto seedStandoffScenario(Long boardId) {
+        return withTurnLock(boardId, () -> seedStandoffScenarioUnlocked(boardId));
     }
 
-    private ScenarioSummaryDto seedStandoffScenarioUnlocked() {
-        Board board = requireBoard();
-        int turn = turnService.getCurrentTurn();
+    private ScenarioSummaryDto seedStandoffScenarioUnlocked(Long boardId) {
+        Board board = requireBoard(boardId);
+        int turn = board.getCurrentTurn();
 
-        Player lurio = resolvePlayerByName("lurio", "lurio introuvable — vérifiez le seed démo");
-        Player imotekh = resolvePlayerByName("imotekh", "imotekh introuvable — vérifiez le seed démo");
-        Player cegorach = resolvePlayerByName("cegorach", "cegorach introuvable — vérifiez le seed démo");
+        Player lurio = resolvePlayerByName(board.getId(), "lurio", "lurio introuvable — vérifiez le seed démo");
+        Player imotekh = resolvePlayerByName(board.getId(), "imotekh", "imotekh introuvable — vérifiez le seed démo");
+        Player cegorach = resolvePlayerByName(board.getId(), "cegorach", "cegorach introuvable — vérifiez le seed démo");
 
         Sector sDefender = requireSector(board, SECTOR_DEFENDER, "défenseur");
         int defendersAdded = ensureDefenders(sDefender, cegorach);
@@ -272,7 +272,7 @@ public class TurnResolutionScenarioSeeder {
         Unit imotekhUnit = ensureAttackerUnit(sImotekhFrom, imotekh);
         entityManager.flush();
 
-        deletePendingOrders(turn, List.of(lurio.getId(), imotekh.getId(), cegorach.getId()));
+        deletePendingOrders(board.getId(), turn, List.of(lurio.getId(), imotekh.getId(), cegorach.getId()));
 
         MovementOrder imotekhOrder = movementService.placeFootOrder(
                 imotekh.getId(), turn, List.of(imotekhUnit.getId()),
@@ -311,24 +311,24 @@ public class TurnResolutionScenarioSeeder {
 
     /** Purge l'arène dédiée puis la peuple : chaque scénario est rejouable sans polluer les autres. */
     @Transactional
-    public ScenarioSummaryDto seedCombatScenario(String code) {
-        return withTurnLock(() -> seedCombatScenarioUnlocked(code));
+    public ScenarioSummaryDto seedCombatScenario(String code, Long boardId) {
+        return withTurnLock(boardId, () -> seedCombatScenarioUnlocked(code, boardId));
     }
 
-    private ScenarioSummaryDto seedCombatScenarioUnlocked(String code) {
-        Board board = requireBoard();
-        int turn = turnService.getCurrentTurn();
+    private ScenarioSummaryDto seedCombatScenarioUnlocked(String code, Long boardId) {
+        Board board = requireBoard(boardId);
+        int turn = board.getCurrentTurn();
 
         CombatScenarioDefinition definition = COMBAT_SCENARIOS.stream()
                 .filter(scenario -> scenario.code().equals(code))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Scénario inconnu : " + code));
 
-        Player attacker = resolvePlayerByName(definition.attackerName(),
+        Player attacker = resolvePlayerByName(board.getId(), definition.attackerName(),
                 definition.attackerName() + " introuvable — vérifiez le seed démo");
-        Player defender = resolveDefender(definition);
+        Player defender = resolveDefender(definition, board.getId());
         Player thirdParty = definition.thirdPartyName() == null ? null
-                : resolvePlayerByName(definition.thirdPartyName(),
+                : resolvePlayerByName(board.getId(), definition.thirdPartyName(),
                         definition.thirdPartyName() + " introuvable — vérifiez le seed démo");
 
         Sector arena = requireSector(board, definition.arenaSector(), "arène");
@@ -342,7 +342,7 @@ public class TurnResolutionScenarioSeeder {
             scenarioPlayers.add(thirdParty.getId());
         }
         resetScenarioArena(board, arena, staging, scenarioPlayers);
-        deletePendingSniperOrdersForArena(turn, arena.getNumber());
+        deletePendingSniperOrdersForArena(board.getId(), turn, arena.getNumber());
         if (MAIN_CHARACTER_SCENARIO.equals(definition.code())) {
             attachMainCharacter(defender, arena, mainCharacter);
             restoreMainCharacterHeadquarters(board, defender);
@@ -372,7 +372,7 @@ public class TurnResolutionScenarioSeeder {
         arena.recalculateMilitaryPower();
         staging.recalculateMilitaryPower();
 
-        deletePendingOrdersForArena(turn, arena.getNumber());
+        deletePendingOrdersForArena(board.getId(), turn, arena.getNumber());
 
         ScenarioSummaryDto dto = new ScenarioSummaryDto();
         dto.setTurn(turn);
@@ -544,8 +544,8 @@ public class TurnResolutionScenarioSeeder {
         staging.addUnit(shooter);
         attackers.add(shooter);
         entityManager.flush();
-        sniperOrderRepository.save(SniperOrder.create(attacker.getId(), turn, shooter.getId(),
-                staging.getNumber(), arena.getNumber()));
+        sniperOrderRepository.save(SniperOrder.create(arena.getBoard().getId(), attacker.getId(), turn,
+                shooter.getId(), staging.getNumber(), arena.getNumber()));
     }
 
     private void seedSniperStandoff(Sector arena, Sector staging, Player attacker, Player defender,
@@ -566,8 +566,8 @@ public class TurnResolutionScenarioSeeder {
         }
         entityManager.flush();
         for (Unit thirdSniper : thirdSnipers) {
-            sniperOrderRepository.save(SniperOrder.create(third.getId(), turn, thirdSniper.getId(),
-                    staging.getNumber(), arena.getNumber()));
+            sniperOrderRepository.save(SniperOrder.create(arena.getBoard().getId(), third.getId(), turn,
+                    thirdSniper.getId(), staging.getNumber(), arena.getNumber()));
         }
     }
 
@@ -575,9 +575,8 @@ public class TurnResolutionScenarioSeeder {
         purgeSector(arena);
         purgeStaging(staging, scenarioPlayers);
         arena.setOwnerAndColor(null, "#ffffff");
-        pendingCaptureRepository.findByResolvedFalseOrderByIdAsc().stream()
-                .filter(pending -> Objects.equals(pending.getBoardId(), board.getId())
-                        && pending.getSectorNumber() == arena.getNumber())
+        pendingCaptureRepository.findByBoardIdAndResolvedFalseOrderByIdAsc(board.getId()).stream()
+                .filter(pending -> pending.getSectorNumber() == arena.getNumber())
                 .forEach(pendingCaptureRepository::delete);
         entityManager.flush();
     }
@@ -636,13 +635,14 @@ public class TurnResolutionScenarioSeeder {
     }
 
     /** Défenseur de fixture (cegorach) ou propriétaire jetable d'arène, créé au premier seed. */
-    private Player resolveDefender(CombatScenarioDefinition definition) {
+    private Player resolveDefender(CombatScenarioDefinition definition, Long boardId) {
         String name = definition.defenderName();
         if (!name.startsWith(ARENA_PLAYER_PREFIX)) {
-            return resolvePlayerByName(name, name + " introuvable — vérifiez le seed démo");
+            return resolvePlayerByName(boardId, name, name + " introuvable — vérifiez le seed démo");
         }
-        return playerRepository.findByName(name).orElseGet(() -> {
+        return playerRepository.findByBoardIdAndName(boardId, name).orElseGet(() -> {
             Player player = new Player(name);
+            player.setBoardId(boardId);
             player.incrementMoney(10000);
             return playerRepository.save(player);
         });
@@ -681,8 +681,8 @@ public class TurnResolutionScenarioSeeder {
         arena.getCharacters().add(character);
     }
 
-    private void deletePendingOrdersForArena(int turn, int arenaNumber) {
-        List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(turn).stream()
+    private void deletePendingOrdersForArena(Long boardId, int turn, int arenaNumber) {
+        List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(boardId, turn).stream()
                 .filter(order -> !order.getRoute().isEmpty() && order.getRoute().getLast() == arenaNumber)
                 .toList();
         if (!pending.isEmpty()) {
@@ -690,8 +690,9 @@ public class TurnResolutionScenarioSeeder {
         }
     }
 
-    private void deletePendingSniperOrdersForArena(int turn, int arenaNumber) {
-        List<SniperOrder> pending = sniperOrderRepository.findByTurnAndStatus(turn, SniperOrderStatus.PENDING)
+    private void deletePendingSniperOrdersForArena(Long boardId, int turn, int arenaNumber) {
+        List<SniperOrder> pending = sniperOrderRepository
+                .findByBoardIdAndTurnAndStatus(boardId, turn, SniperOrderStatus.PENDING)
                 .stream()
                 .filter(order -> order.getTargetSectorNumber() == arenaNumber)
                 .toList();
@@ -757,21 +758,20 @@ public class TurnResolutionScenarioSeeder {
         return dto;
     }
 
-    private Board requireBoard() {
-        return boardRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Aucun plateau trouvé — importez d'abord un board"));
+    private Board requireBoard(Long boardId) {
+        return boardRepository.findById(boardId)
+                .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
     }
 
-    private ScenarioSummaryDto withTurnLock(Supplier<ScenarioSummaryDto> seed) {
-        if (!turnLock.tryAcquire()) {
+    private ScenarioSummaryDto withTurnLock(Long boardId, Supplier<ScenarioSummaryDto> seed) {
+        if (!turnLock.tryAcquire(boardId)) {
             throw new IllegalStateException(
                     "Une session pas-à-pas est active — finalisez ou abandonnez-la avant de re-seeder");
         }
         try {
             return seed.get();
         } finally {
-            turnLock.release();
+            turnLock.release(boardId);
         }
     }
 
@@ -812,8 +812,8 @@ public class TurnResolutionScenarioSeeder {
         return unit;
     }
 
-    private void deletePendingOrders(int turn, List<Long> playerIds) {
-        List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(turn).stream()
+    private void deletePendingOrders(Long boardId, int turn, List<Long> playerIds) {
+        List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(boardId, turn).stream()
                 .filter(o -> playerIds.contains(o.getPlayerId()))
                 .toList();
         if (!pending.isEmpty()) {
@@ -830,8 +830,8 @@ public class TurnResolutionScenarioSeeder {
                 .orElse(null);
     }
 
-    private Player resolvePlayerByName(String name, String errorMessage) {
-        return playerRepository.findByName(name)
+    private Player resolvePlayerByName(Long boardId, String name, String errorMessage) {
+        return playerRepository.findByBoardIdAndName(boardId, name)
                 .orElseThrow(() -> new IllegalStateException(errorMessage));
     }
 }

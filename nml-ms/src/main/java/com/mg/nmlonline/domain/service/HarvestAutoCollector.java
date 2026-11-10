@@ -38,9 +38,8 @@ public class HarvestAutoCollector {
         this.em = em;
     }
 
-    public boolean hasClaimedRevenue(int turn) {
-        return boardRepository.findAll().stream()
-                .findFirst()
+    public boolean hasClaimedRevenue(Long boardId, int turn) {
+        return boardRepository.findById(boardId)
                 .map(Board::getRevenueClaimedTurn)
                 .filter(claimed -> claimed == turn)
                 .isPresent();
@@ -83,7 +82,8 @@ public class HarvestAutoCollector {
         }
 
         Set<Integer> harvestedSectors = new HashSet<>();
-        for (PlayerAction action : actionRepository.findByTurnAndStatus(turnEnding, PlayerActionStatus.ACTIVE)) {
+        for (PlayerAction action : actionRepository.findByBoardIdAndTurnAndStatus(
+                board.getId(), turnEnding, PlayerActionStatus.ACTIVE)) {
             if (action.getType().isHarvest() && action.getFromSectorNumber() != null) {
                 harvestedSectors.add(action.getFromSectorNumber());
             }

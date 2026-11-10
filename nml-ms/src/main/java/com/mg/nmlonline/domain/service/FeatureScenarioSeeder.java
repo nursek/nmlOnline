@@ -41,28 +41,28 @@ public class FeatureScenarioSeeder {
     }
 
     @Transactional
-    public ScenarioSummaryDto seedAllianceScenario() {
-        Player proposer = resolvePlayer(ALLIANCE_PROPOSER);
-        Player partner = resolvePlayer(ALLIANCE_PARTNER);
+    public ScenarioSummaryDto seedAllianceScenario(Long boardId) {
+        Player proposer = resolvePlayer(boardId, ALLIANCE_PROPOSER);
+        Player partner = resolvePlayer(boardId, ALLIANCE_PARTNER);
         if (allianceRepository.findActiveBetween(proposer.getId(), partner.getId()).isPresent()) {
-            return summary("Alliance déjà active entre " + proposer.getName()
+            return summary(boardId, "Alliance déjà active entre " + proposer.getName()
                     + " et " + partner.getName() + ".");
         }
         Long proposalId = allianceService
-                .propose(requireUserId(proposer), ProposalKind.ALLIANCE, partner.getId())
+                .propose(requireUserId(proposer), boardId, ProposalKind.ALLIANCE, partner.getId())
                 .getId();
-        allianceService.accept(requireUserId(partner), proposalId);
-        return summary("Alliance formée — " + proposer.getName() + " ↔ " + partner.getName()
+        allianceService.accept(requireUserId(partner), boardId, proposalId);
+        return summary(boardId, "Alliance formée — " + proposer.getName() + " ↔ " + partner.getName()
                 + ". L'annonce sera visible au tour suivant.");
     }
 
     @Transactional
-    public ScenarioSummaryDto seedResourceSaleScenario() {
-        Player player = resolvePlayer(SALE_PLAYER);
+    public ScenarioSummaryDto seedResourceSaleScenario(Long boardId) {
+        Player player = resolvePlayer(boardId, SALE_PLAYER);
         PlayerResource resource = ensureResource(player);
         ResourceService.SaleResult sale = resourceService.sellResource(
-                resource.getId(), SALE_QUANTITY, requireUserId(player));
-        return summary("Vente seedée — " + player.getName() + " vend " + sale.quantitySold()
+                resource.getId(), SALE_QUANTITY, requireUserId(player), boardId);
+        return summary(boardId, "Vente seedée — " + player.getName() + " vend " + sale.quantitySold()
                 + " × " + sale.resourceName() + " pour " + sale.saleValue() + " $.");
     }
 
@@ -86,8 +86,8 @@ public class FeatureScenarioSeeder {
                         "Ressource " + SALE_RESOURCE + " introuvable après réapprovisionnement"));
     }
 
-    private Player resolvePlayer(String name) {
-        return playerRepository.findByName(name)
+    private Player resolvePlayer(Long boardId, String name) {
+        return playerRepository.findByBoardIdAndName(boardId, name)
                 .orElseThrow(() -> new IllegalStateException(
                         "Joueur de fixture introuvable : " + name + " (import démo requis)"));
     }
@@ -99,9 +99,9 @@ public class FeatureScenarioSeeder {
         return player.getUserId();
     }
 
-    private ScenarioSummaryDto summary(String message) {
+    private ScenarioSummaryDto summary(Long boardId, String message) {
         ScenarioSummaryDto dto = new ScenarioSummaryDto();
-        dto.setTurn(turnService.getCurrentTurn());
+        dto.setTurn(turnService.getCurrentTurn(boardId));
         dto.setMessage(message);
         return dto;
     }

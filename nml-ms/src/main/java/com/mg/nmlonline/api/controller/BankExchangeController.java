@@ -2,6 +2,7 @@ package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.CreateExchangeOfferRequestDto;
 import com.mg.nmlonline.api.dto.ExchangeOfferDto;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.ExchangeOfferService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,10 @@ public class BankExchangeController {
         this.exchangeOfferService = exchangeOfferService;
     }
 
+    private Long boardId(HttpServletRequest request) {
+        return (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
+    }
+
     private Long getAuthenticatedUserId(HttpServletRequest request) {
         return (Long) request.getAttribute("userId");
     }
@@ -32,7 +37,7 @@ public class BankExchangeController {
     public ResponseEntity<List<ExchangeOfferDto>> getOffers(HttpServletRequest request) {
         Long userId = getAuthenticatedUserId(request);
         if (userId == null) return ResponseEntity.status(401).build();
-        return ResponseEntity.ok(exchangeOfferService.getOffers(userId));
+        return ResponseEntity.ok(exchangeOfferService.getOffers(userId, boardId(request)));
     }
 
     @PostMapping
@@ -41,7 +46,7 @@ public class BankExchangeController {
             HttpServletRequest httpRequest) {
         Long userId = getAuthenticatedUserId(httpRequest);
         if (userId == null) return ResponseEntity.status(401).build();
-        return ResponseEntity.ok(exchangeOfferService.createOffer(userId, request));
+        return ResponseEntity.ok(exchangeOfferService.createOffer(userId, boardId(httpRequest), request));
     }
 
     @PostMapping("/{offerId}/accept")

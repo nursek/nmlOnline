@@ -490,6 +490,8 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 
 ## API Endpoints
 
+Every endpoint below except `/api/login`, `/api/register`, `/api/auth/*` and `/api/instances` is scoped to one game with the `X-Board-Id` header (see [Multi-instance](#multi-instance)). When the database holds a single board the header may be omitted.
+
 | Method | URL | Auth | Description |
 |--------|-----|------|-------------|
 | POST | `/api/register` | Public | Create an account |
@@ -505,7 +507,8 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 | GET | `/api/battle-reports` | Bearer | Combat reports of the authenticated player |
 | POST | `/api/players/actions/{id}/undo` | Bearer | Undo this action and all later ones (current turn, LIFO) |
 | POST | `/api/players/actions/undo-all` | Bearer | Undo all current-turn actions |
-| GET | `/api/boards` | Public | List boards |
+| GET | `/api/instances` | Bearer | Parties of the account (id, turn, role) |
+| GET | `/api/boards` | Bearer+Scope | Current board (map payload) |
 | GET | `/api/equipment?page=0&size=100` | Public | List equipment (paginated) |
 | POST | `/api/vehicles/buy-batch` | Bearer | Buy vehicles (atomic batch) |
 | GET | `/api/characters/player/{playerId}` | Bearer+Owner | Get player's character |
@@ -514,6 +517,18 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 | GET | `/api/admin/players?page=0&size=20` | Admin | List all players (paginated) |
 | POST | `/api/admin/players/import` | Admin | Import player from JSON |
 | GET | `/actuator/health` | Public | Health check |
+
+### Multi-instance
+
+A board is a game. Accounts are global (`credentials`), participations are per game
+(`players.board_id`, unique per `(board_id, name)` and `(board_id, user_id)`). After login the SPA
+loads `GET /api/instances`, the user picks a game, and the client sends `X-Board-Id` on every
+request. Orders, alliances, battle reports, statistics, exchange offers and admin audit rows all
+carry their `board_id`.
+
+There are two admin levels: the platform `ADMIN` role (`credentials.role`, creates deletes and
+imports games, manages the equipment catalogue) and per-game game masters
+(`board_admins` table → `ROLE_INSTANCE_ADMIN`, granted per request only, never in the token).
 
 ### Combat logs
 

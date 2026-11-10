@@ -31,6 +31,12 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("CombatService — expérience de combat")
 class CombatExperienceTest {
 
+    private Player newPlayer(String name) {
+        Player player = new Player(name);
+        player.setBoardId(boardRepository.findAll().getFirst().getId());
+        return player;
+    }
+
     @Autowired
     private CombatService combatService;
 
@@ -61,9 +67,9 @@ class CombatExperienceTest {
                             && s.getBuildings().isEmpty() && s.getCharacters().isEmpty())
                     .findFirst().orElseThrow();
 
-            Player attacker = new Player("AttaquantExp");
+            Player attacker = newPlayer("AttaquantExp");
             playerRepository.save(attacker);
-            Player defender = new Player("DefenseurExp");
+            Player defender = newPlayer("DefenseurExp");
             playerRepository.save(defender);
             em.flush();
 
@@ -173,8 +179,10 @@ class CombatExperienceTest {
                             && s.getBuildings().isEmpty() && s.getCharacters().isEmpty())
                     .findFirst().orElseThrow();
             Player attacker = new Player("AttaquantSniperExp");
+            attacker.setBoardId(board.getId());
             playerRepository.save(attacker);
             Player defender = new Player("DefenseurSniperExp");
+            defender.setBoardId(board.getId());
             playerRepository.save(defender);
             em.flush();
 

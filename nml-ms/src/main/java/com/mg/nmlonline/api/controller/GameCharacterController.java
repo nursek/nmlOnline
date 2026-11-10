@@ -41,7 +41,8 @@ public class GameCharacterController {
                                                                HttpServletRequest request) {
         Long authenticatedUserId = (Long) request.getAttribute("userId");
         if (authenticatedUserId == null) return ResponseEntity.status(401).build();
-        Optional<GameCharacterDto> dto = characterService.getCharacterByNameDto(name);
+        Optional<GameCharacterDto> dto = characterService.getCharacterByNameDto(
+                (Long) request.getAttribute(com.mg.nmlonline.config.BoardScopeFilter.BOARD_ID_ATTRIBUTE), name);
         if (dto.isEmpty()) return ResponseEntity.notFound().build();
         if (!authorizationService.isPlayerOwner(authenticatedUserId, dto.get().getPlayerId())) {
             return ResponseEntity.status(403).build();

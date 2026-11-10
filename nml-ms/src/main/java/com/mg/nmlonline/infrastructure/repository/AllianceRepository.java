@@ -17,21 +17,21 @@ public interface AllianceRepository extends JpaRepository<Alliance, Long> {
             + "and (a.playerOneId = :playerId or a.playerTwoId = :playerId)")
     List<Alliance> findActiveForPlayer(@Param("playerId") Long playerId);
 
-    @Query("select a from Alliance a where a.endedTurn is null")
-    List<Alliance> findAllActive();
+    @Query("select a from Alliance a where a.endedTurn is null and a.boardId = :boardId")
+    List<Alliance> findAllActiveByBoardId(@Param("boardId") Long boardId);
 
     @Query("select a from Alliance a where a.endedTurn is null "
             + "and ((a.playerOneId = :first and a.playerTwoId = :second) "
             + "or (a.playerOneId = :second and a.playerTwoId = :first))")
     Optional<Alliance> findActiveBetween(@Param("first") Long first, @Param("second") Long second);
 
-    @Query("select a from Alliance a where a.betrayal = true and a.endedTurn = :turn")
-    List<Alliance> findBetrayalsAtTurn(@Param("turn") int turn);
+    @Query("select a from Alliance a where a.betrayal = true and a.endedTurn = :turn and a.boardId = :boardId")
+    List<Alliance> findBetrayalsAtTurn(@Param("boardId") Long boardId, @Param("turn") int turn);
 
-    @Query("select a from Alliance a where a.endedTurn = :turn")
-    List<Alliance> findEndedAtTurn(@Param("turn") int turn);
+    @Query("select a from Alliance a where a.endedTurn = :turn and a.boardId = :boardId")
+    List<Alliance> findEndedAtTurn(@Param("boardId") Long boardId, @Param("turn") int turn);
 
-    List<Alliance> findAllByOrderByCreatedTurnDescIdDesc();
+    List<Alliance> findByBoardIdOrderByCreatedTurnDescIdDesc(Long boardId);
 
     /** UPDATE conditionnel : une rupture acceptée en parallèle ne peut pas être écrasée par une trahison. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)

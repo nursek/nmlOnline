@@ -52,25 +52,25 @@ public class PlayerService {
         this.entityManager = entityManager;
     }
 
-    public Page<Player> findAll(Pageable pageable) {
-        return playerRepository.findAllByOrderByNameAsc(pageable);
+    public Page<Player> findAll(Long boardId, Pageable pageable) {
+        return playerRepository.findByBoardIdOrderByNameAsc(boardId, pageable);
     }
 
     public Optional<Player> findById(Long id) {
         return playerRepository.findById(id);
     }
 
-    public Player findByName(String name) {
-        return playerRepository.findByName(name).orElse(null);
+    public Player findByName(Long boardId, String name) {
+        return playerRepository.findByBoardIdAndName(boardId, name).orElse(null);
     }
 
-    public Player findByUserId(Long userId) {
-        return playerRepository.findByUserId(userId).orElse(null);
+    public Player findByUserId(Long userId, Long boardId) {
+        return playerRepository.findByUserIdAndBoardId(userId, boardId).orElse(null);
     }
 
     /** Verrou pessimiste : sérialise les mutations d'inventaire avec les achats (anti lost-update). */
-    public Player findByUserIdForUpdate(Long userId) {
-        Player player = playerRepository.findByUserIdForUpdate(userId).orElse(null);
+    public Player findByUserIdForUpdate(Long userId, Long boardId) {
+        Player player = playerRepository.findByUserIdAndBoardIdForUpdate(userId, boardId).orElse(null);
         if (player != null) {
             player.moveInventoryToWeaponCaches();
         }
@@ -85,16 +85,16 @@ public class PlayerService {
     /** Achat atomique : valide tous les items (existence, quantité, fonds) avant d'appliquer. */
     @Transactional
     public Player buyEquipments(Long playerId, List<BuyEquipmentItemDto> items) {
-        // Un achat pendant la résolution échapperait au placement et écraserait les caches pillées.
-        if (turnLock.isLocked()) {
-            throw new IllegalStateException(
-                    "La résolution du tour est en cours — réessayez après la fin du tour");
-        }
         if (playerId == null) {
             throw new IllegalArgumentException("Player ID is required");
         }
         Player player = playerRepository.findByIdForUpdate(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Player not found"));
+        // Un achat pendant la résolution échapperait au placement et écraserait les caches pillées.
+        if (turnLock.isLocked(player.getBoardId())) {
+            throw new IllegalStateException(
+                    "La résolution du tour est en cours — réessayez après la fin du tour");
+        }
         player.moveInventoryToWeaponCaches();
 
         if (items == null || items.isEmpty()) {
@@ -203,25 +203,25 @@ public class PlayerService {
     // === Mapping dans la transaction (collections LAZY : equipments/resources/buildings/character) ===
 
     @Transactional(readOnly = true)
-    public Page<PlayerDto> findAllDto(Pageable pageable) {
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
-        return playerRepository.findAllByOrderByNameAsc(pageable)
+    public Page<PlayerDto> findAllDto(Long boardId, Pageable pageable) {
+        Board board = boardService.getBoardById(boardId).orElse(null);
+        return playerRepository.findByBoardIdOrderByNameAsc(boardId, pageable)
                 .map(p -> playerMapper.toDtoWithSectors(p, board));
     }
 
     /** Vue publique (liste des joueurs) : pas d'état privé d'autrui. */
     @Transactional(readOnly = true)
-    public Page<PlayerDto> findAllSummaryDto(Pageable pageable) {
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
-        return playerRepository.findAllByOrderByNameAsc(pageable)
+    public Page<PlayerDto> findAllSummaryDto(Long boardId, Pageable pageable) {
+        Board board = boardService.getBoardById(boardId).orElse(null);
+        return playerRepository.findByBoardIdOrderByNameAsc(boardId, pageable)
                 .map(p -> playerMapper.toSummaryDto(p, board));
     }
 
     @Transactional(readOnly = true)
-    public Optional<PlayerDto> findByNameDto(String name, Long requesterUserId) {
-        Player player = playerRepository.findByName(name).orElse(null);
+    public Optional<PlayerDto> findByNameDto(Long boardId, String name, Long requesterUserId) {
+        Player player = playerRepository.findByBoardIdAndName(boardId, name).orElse(null);
         if (player == null) return Optional.empty();
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        Board board = boardService.getBoardById(boardId).orElse(null);
         if (requesterUserId == null || !requesterUserId.equals(player.getUserId())) {
             return Optional.of(playerMapper.toSummaryDto(player, board));
         }
@@ -229,17 +229,17 @@ public class PlayerService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<PlayerDto> findByUserIdDto(Long userId) {
-        Player player = playerRepository.findByUserId(userId).orElse(null);
+    public Optional<PlayerDto> findByUserIdDto(Long userId, Long boardId) {
+        Player player = playerRepository.findByUserIdAndBoardId(userId, boardId).orElse(null);
         if (player == null) return Optional.empty();
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        Board board = boardService.getBoardById(boardId).orElse(null);
         return Optional.of(playerMapper.toDtoWithSectors(player, board));
     }
 
     @Transactional
     public PlayerDto buyEquipmentsDto(Long playerId, List<BuyEquipmentItemDto> items) {
         Player saved = buyEquipments(playerId, items);
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        Board board = boardService.getBoardById(saved.getBoardId()).orElse(null);
         return playerMapper.toDtoWithSectors(saved, board);
     }
 }

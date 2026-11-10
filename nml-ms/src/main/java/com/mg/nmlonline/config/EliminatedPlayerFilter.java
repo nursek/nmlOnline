@@ -32,7 +32,12 @@ public class EliminatedPlayerFilter extends OncePerRequestFilter {
         if (userId instanceof Long id && isMutation(request.getMethod())
                 && request.getRequestURI().startsWith("/api/")
                 && !request.getRequestURI().startsWith("/api/admin/")) {
-            Optional<Player> player = playerRepository.findByUserId(id);
+            Object boardId = request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
+            if (!(boardId instanceof Long board)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+            Optional<Player> player = playerRepository.findByUserIdAndBoardId(id, board);
             if (player.isPresent() && player.get().isEliminated()) {
                 response.setStatus(HttpStatus.CONFLICT.value());
                 response.setContentType("application/problem+json");

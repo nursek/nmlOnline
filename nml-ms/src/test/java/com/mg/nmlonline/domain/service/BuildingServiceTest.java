@@ -36,6 +36,8 @@ import static org.mockito.Mockito.*;
 @DisplayName("BuildingService")
 class BuildingServiceTest {
 
+    private static final Long BOARD_ID = 1L;
+
     @Mock
     BuildingRepository buildingRepository;
 
@@ -384,7 +386,7 @@ class BuildingServiceTest {
             Headquarters hq = new Headquarters(1L);
             hq.setLastMovedTurn(8);
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(hq));
-            when(turnService.getCurrentTurn()).thenReturn(10);
+            when(turnService.getCurrentTurn(100L)).thenReturn(10);
 
             assertThrows(IllegalStateException.class,
                     () -> buildingService.moveBuilding(50L, 100L, 3));
@@ -422,7 +424,7 @@ class BuildingServiceTest {
             Sector sector = new Sector(3, "Secteur 3");
             sector.setOwnerId(1L);
             when(boardService.getSectorFromBoard(100L, 3)).thenReturn(Optional.of(sector));
-            when(turnService.getCurrentTurn()).thenReturn(10);
+            when(turnService.getCurrentTurn(100L)).thenReturn(10);
 
             boolean result = buildingService.moveBuilding(50L, 100L, 3);
 
@@ -440,7 +442,7 @@ class BuildingServiceTest {
             Sector sector = new Sector(3, "Secteur 3");
             sector.setOwnerId(1L);
             when(boardService.getSectorFromBoard(100L, 3)).thenReturn(Optional.of(sector));
-            when(turnService.getCurrentTurn()).thenReturn(5);
+            when(turnService.getCurrentTurn(100L)).thenReturn(5);
 
             buildingService.moveBuilding(50L, 100L, 3);
 
@@ -471,10 +473,10 @@ class BuildingServiceTest {
         @DisplayName("Jette le stock de la cache, pas l'inventaire hors cache")
         void shouldDiscardCacheStock() {
             WeaponCache cache = cacheWith("Pistolet", 3);
-            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(7L, BOARD_ID)).thenReturn(Optional.of(player));
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
 
-            buildingService.discardPlayerEquipment(50L, "Pistolet", 2, 7L);
+            buildingService.discardPlayerEquipment(50L, "Pistolet", 2, 7L, BOARD_ID);
 
             assertEquals(1, cache.getStoredEquipments().getFirst().getQuantity());
             assertEquals(1, cache.getStoredEquipments().getFirst().getAvailable());
@@ -488,11 +490,11 @@ class BuildingServiceTest {
         @DisplayName("Quantité supérieure au stock de la cache : refusée sans rien jeter")
         void shouldRefuseDiscardBeyondCacheStock() {
             WeaponCache cache = cacheWith("Pistolet", 3);
-            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(7L, BOARD_ID)).thenReturn(Optional.of(player));
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
 
             assertThrows(IllegalArgumentException.class,
-                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 4, 7L));
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 4, 7L, BOARD_ID));
 
             assertEquals(3, cache.getStoredEquipments().getFirst().getQuantity());
             verify(playerRepository, never()).save(any(Player.class));
@@ -503,11 +505,11 @@ class BuildingServiceTest {
         void shouldNotDiscardInventoryStock() {
             player.addEquipmentToStack(equipmentOf("Pistolet"), 2);
             WeaponCache cache = new WeaponCache(1L);
-            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(7L, BOARD_ID)).thenReturn(Optional.of(player));
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
 
             assertThrows(IllegalArgumentException.class,
-                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 1, 7L));
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 1, 7L, BOARD_ID));
 
             assertEquals(2, player.getEquipments().getFirst().getQuantity());
             verify(playerRepository, never()).save(any(Player.class));
@@ -518,11 +520,11 @@ class BuildingServiceTest {
         void shouldRefuseDiscardOfEquippedCopy() {
             WeaponCache cache = cacheWith("Pistolet", 3);
             cache.getStoredEquipments().getFirst().setAvailable(1);
-            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(7L, BOARD_ID)).thenReturn(Optional.of(player));
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
 
             assertThrows(IllegalArgumentException.class,
-                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 2, 7L));
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 2, 7L, BOARD_ID));
 
             assertEquals(3, cache.getStoredEquipments().getFirst().getQuantity());
             assertEquals(1, cache.getStoredEquipments().getFirst().getAvailable());
@@ -532,11 +534,11 @@ class BuildingServiceTest {
         @DisplayName("Refuse une cache qui n'appartient pas au joueur")
         void shouldRefuseDiscardOnForeignCache() {
             WeaponCache cache = new WeaponCache(99L);
-            when(playerRepository.findByUserIdForUpdate(7L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(7L, BOARD_ID)).thenReturn(Optional.of(player));
             when(buildingRepository.findById(50L)).thenReturn(Optional.of(cache));
 
             assertThrows(SecurityException.class,
-                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 1, 7L));
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 1, 7L, BOARD_ID));
         }
     }
 }

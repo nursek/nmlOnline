@@ -272,7 +272,7 @@ public class CombatService {
         List<List<Long>> campIds = activeCamps.stream()
                 .map(camp -> camp.stream().map(Player::getId).toList())
                 .toList();
-        int[] targets = AllianceGraph.campTargets(campIds, allianceGraph.activeAdjacency());
+        int[] targets = AllianceGraph.campTargets(campIds, allianceGraph.activeAdjacency(board.getId()));
         for (int i = 0; i < activeCamps.size(); i++) {
             int targetIndex = targets[i];
             if (targetIndex < 0 || !activeRangedOnlyCamps.contains(targetIndex)) {
@@ -432,7 +432,7 @@ public class CombatService {
         double best = 0;
         for (Player striker : strikers) {
             for (Player target : targets) {
-                best = Math.max(best, allianceGraph.betrayalBonusPercent(turn, striker.getId(), target.getId()));
+                best = Math.max(best, allianceGraph.betrayalBonusPercent(striker.getBoardId(), turn, striker.getId(), target.getId()));
             }
         }
         return best;
@@ -532,18 +532,18 @@ public class CombatService {
             }
         }
 
-        recordCasualties(casualties);
+        recordCasualties(sector.getBoard().getId(), casualties);
         return casualties;
     }
 
-    private void recordCasualties(List<CombatEntity> casualties) {
+    private void recordCasualties(Long boardId, List<CombatEntity> casualties) {
         for (CombatEntity casualty : casualties) {
             if (casualty instanceof Unit unit) {
-                gameStatisticsService.recordUnitKill(unit.getType());
+                gameStatisticsService.recordUnitKill(boardId, unit.getType());
             } else if (casualty instanceof GameCharacter) {
-                gameStatisticsService.recordCharacterKill();
+                gameStatisticsService.recordCharacterKill(boardId);
             } else if (casualty instanceof Vehicle vehicle) {
-                gameStatisticsService.recordVehicleKill(vehicle.getVehicleType());
+                gameStatisticsService.recordVehicleKill(boardId, vehicle.getVehicleType());
             }
         }
     }

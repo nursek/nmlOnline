@@ -27,7 +27,7 @@ class OptimisticLockingTest {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
 
         Long playerId = tx.execute(status ->
-                playerRepository.findByName("TestPlayer1").orElseThrow().getId());
+                playerRepository.findByBoardIdAndName(playerRepository.findAll().getFirst().getBoardId(), "TestPlayer1").orElseThrow().getId());
         Player stale = tx.execute(status -> playerRepository.findById(playerId).orElseThrow());
 
         tx.executeWithoutResult(status -> {

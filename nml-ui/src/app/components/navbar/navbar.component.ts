@@ -17,6 +17,7 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
+import { InstanceService } from '../../services/instance.service';
 import { DevScenarioService } from '../../services/dev-scenario.service';
 import { SigilComponent } from '../../shared/sigil/sigil.component';
 import { ThemeToggleComponent } from '../../shared/theme-toggle/theme-toggle.component';
@@ -29,6 +30,7 @@ interface NavLink {
 
 const BASE_MENU_ITEMS: NavLink[] = [
   { path: '/accueil', label: 'Accueil', icon: 'home' },
+  { path: '/parties', label: 'Changer de partie', icon: 'grid_view' },
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/joueur', label: 'Mon Joueur', icon: 'person' },
   { path: '/ordres', label: 'Mes ordres', icon: 'list_alt' },
@@ -39,6 +41,7 @@ const BASE_MENU_ITEMS: NavLink[] = [
 
 const ADMIN_MENU_ITEMS: NavLink[] = [
   { path: '/accueil', label: 'Accueil', icon: 'home' },
+  { path: '/parties', label: 'Changer de partie', icon: 'grid_view' },
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' },
   { path: '/admin/tour', label: 'Gestion du tour', icon: 'event_repeat' },
@@ -372,12 +375,17 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
 })
 export class NavbarComponent {
   private readonly auth = inject(AuthService);
+  private readonly instance = inject(InstanceService);
   private readonly devScenarios = inject(DevScenarioService);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly document = inject(DOCUMENT);
 
   readonly isAuthenticated = this.auth.isAuthenticated;
   readonly isAdmin = this.auth.isAdmin;
+  readonly canAdmin = computed<boolean>(() => {
+    const role = this.instance.selectedRole();
+    return this.auth.isAdmin() || role === 'ADMIN' || role === 'MJ';
+  });
   readonly user = this.auth.user;
 
   readonly isMobile = toSignal(
@@ -390,7 +398,7 @@ export class NavbarComponent {
   readonly drawerOpen = signal(false);
 
   readonly menuItems = computed<NavLink[]>(() => {
-    if (!this.isAdmin()) {
+    if (!this.canAdmin()) {
       return BASE_MENU_ITEMS;
     }
     return this.devScenarios.available()

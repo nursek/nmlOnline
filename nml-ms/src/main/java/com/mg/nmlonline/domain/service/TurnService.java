@@ -10,6 +10,8 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Source unique de vérité du tour courant du plateau ({@link Board#getCurrentTurn()}).
@@ -29,8 +31,8 @@ public class TurnService {
     private final ReserveUnitPlacer reserveUnitPlacer;
     private final UnitRecoveryService unitRecoveryService;
 
-    // Cache du tour (évite un N+1), publié avant commit et purgé sur rollback.
-    private volatile Integer cachedTurn;
+    // Cache du tour par plateau (évite un N+1), publié avant commit et purgé sur rollback.
+    private final Map<Long, Integer> cachedTurns = new ConcurrentHashMap<>();
 
     public TurnService(BoardRepository boardRepository, MovementService movementService,
                        TurnLock turnLock, GameCharacterService characterService,
@@ -48,47 +50,32 @@ public class TurnService {
         this.unitRecoveryService = unitRecoveryService;
     }
 
-    /** Retourne 1 si aucun plateau n'existe encore. */
     @Transactional(readOnly = true)
-    public int getCurrentTurn() {
-        Integer cached = cachedTurn;
+    public int getCurrentTurn(Long boardId) {
+        Integer cached = cachedTurns.get(boardId);
         if (cached != null) {
             return cached;
         }
-        Integer turn = boardRepository.findAll().stream()
-                .findFirst()
-                .map(Board::getCurrentTurn)
-                .orElse(null);
-        if (turn == null) {
-            return 1;
-        }
-        // Verrou : un lecteur parti avant publishTurn écraserait la nouvelle valeur.
-        synchronized (this) {
-            if (cachedTurn == null) {
-                cachedTurn = turn;
-            }
-            return cachedTurn;
-        }
+        int turn = boardRepository.findById(boardId).map(Board::getCurrentTurn).orElse(1);
+        // putIfAbsent : un lecteur parti avant publishTurn ne doit pas écraser la nouvelle valeur.
+        cachedTurns.putIfAbsent(boardId, turn);
+        return cachedTurns.get(boardId);
     }
 
     /** À appeler quand le tour est muté hors de {@link #advanceTurn()} (ex. finalizeTurn). */
     public void invalidateTurnCache() {
-        synchronized (this) {
-            cachedTurn = null;
-        }
+        cachedTurns.clear();
     }
 
     /** Publie le tour cible avant commit ; le cache est purgé si la transaction échoue. */
-    public void publishTurn(int turn) {
-        synchronized (this) {
-            cachedTurn = turn;
-        }
+    public void publishTurn(Long boardId, int turn) {
+        cachedTurns.put(boardId, turn);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCompletion(int status) {
                     if (status != TransactionSynchronization.STATUS_COMMITTED) {
-                        invalidateTurnCache();
+                        cachedTurns.remove(boardId, turn);
                     }
                 }
             });
@@ -96,22 +83,20 @@ public class TurnService {
     }
 
     /** Termine le tour : résout les mouvements PENDING puis incrémente le compteur. */
-    public int advanceTurn() {
-        return advanceTurnAndReport().newTurn();
+    public int advanceTurn(Long boardId) {
+        return advanceTurnAndReport(boardId).newTurn();
     }
 
     public record TurnAdvanceResult(int newTurn, List<SectorCapture> captures) {
     }
 
-    public TurnAdvanceResult advanceTurnAndReport() {
-        if (!turnLock.tryAcquire()) {
+    public TurnAdvanceResult advanceTurnAndReport(Long boardId) {
+        if (!turnLock.tryAcquire(boardId)) {
             throw new IllegalStateException("Un advanceTurn ou une résolution pas-à-pas est déjà en cours");
         }
         try {
-            Board board = boardRepository.findAll().stream()
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("Aucun plateau trouvé pour avancer le tour"));
-
+            Board board = boardRepository.findById(boardId)
+                    .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
             int turnEnding = board.getCurrentTurn();
 
             // Avant les captures : le revenu du tour revient à son propriétaire pendant le tour.
@@ -123,38 +108,36 @@ public class TurnService {
             // Résolution des mouvements du tour qui se termine, AVANT l'incrément.
             MovementResolutionResult result = movementService.resolveAllMovements(turnEnding, board);
 
-            characterService.regenerateAllCharacters();
-            vehicleMaintenanceService.repairAllVehicles();
-            unitRecoveryService.recoverWoundedUnits(turnEnding);
+            characterService.regenerateAllCharacters(boardId);
+            vehicleMaintenanceService.repairAllVehicles(boardId);
+            unitRecoveryService.recoverWoundedUnits(turnEnding, boardId);
 
             int newTurn = turnEnding + 1;
             board.setCurrentTurn(newTurn);
             board = boardRepository.save(board);
-            publishTurn(newTurn);
+            publishTurn(boardId, newTurn);
             return new TurnAdvanceResult(board.getCurrentTurn(), result.getCaptures());
         } finally {
-            turnLock.release();
+            turnLock.release(boardId);
         }
     }
 
-    public int setCurrentTurn(int turn) {
+    public int setCurrentTurn(Long boardId, int turn) {
         if (turn < 1) {
             throw new IllegalArgumentException("Tour invalide : " + turn);
         }
-        if (!turnLock.tryAcquire()) {
+        if (!turnLock.tryAcquire(boardId)) {
             throw new IllegalStateException("Une résolution de fin de tour est déjà en cours");
         }
         try {
-            Board board = boardRepository.findAll().stream()
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Aucun plateau trouvé pour naviguer au tour " + turn));
+            Board board = boardRepository.findById(boardId)
+                    .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
             board.setCurrentTurn(turn);
             boardRepository.save(board);
-            publishTurn(turn);
+            publishTurn(boardId, turn);
             return turn;
         } finally {
-            turnLock.release();
+            turnLock.release(boardId);
         }
     }
 }

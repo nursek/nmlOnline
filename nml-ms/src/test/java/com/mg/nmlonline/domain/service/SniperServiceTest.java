@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.sniper.SniperOrder;
 import com.mg.nmlonline.domain.model.battle.RandomSource;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.when;
 class SniperServiceTest {
 
     private static final int TURN = 1;
+    private static final Long BOARD_ID = 1L;
     private static final Long SNIPER_ID = 10L;
     private static final Long PLAYER_ID = 1L;
     private static final int FROM_SECTOR = 4;
@@ -59,21 +61,25 @@ class SniperServiceTest {
         sniper = new Unit(0.0, UnitClass.SNIPER);
         sniper.setId(SNIPER_ID);
         sniper.setPlayerId(PLAYER_ID);
-        sniper.setSector(new Sector(FROM_SECTOR, "Origine"));
+        Board board = new Board();
+        board.setId(BOARD_ID);
+        Sector home = new Sector(FROM_SECTOR, "Origine");
+        board.addSector(home);
+        sniper.setSector(home);
 
-        order = SniperOrder.create(PLAYER_ID, TURN, SNIPER_ID, FROM_SECTOR, TARGET_SECTOR);
+        order = SniperOrder.create(BOARD_ID, PLAYER_ID, TURN, SNIPER_ID, FROM_SECTOR, TARGET_SECTOR);
         order.setId(99L);
-        lenient().when(sniperOrderRepository.findByTurnAndStatus(TURN, SniperOrderStatus.PENDING))
+        lenient().when(sniperOrderRepository.findByBoardIdAndTurnAndStatus(BOARD_ID, TURN, SniperOrderStatus.PENDING))
                 .thenReturn(List.of(order));
         lenient().when(unitRepository.findById(SNIPER_ID)).thenReturn(Optional.of(sniper));
-        lenient().when(allianceGraph.areAllied(any(), any())).thenReturn(false);
+        lenient().when(allianceGraph.areAllied(any(), any(), any())).thenReturn(false);
     }
 
     @Test
     @DisplayName("Soutien attaquant quand le sniper est dans le camp attaquant")
     void supportsAttackerCamp() {
         SniperService.DuelSupport support = service.collectDuelSupport(
-                TURN, TARGET_SECTOR, List.of(PLAYER_ID), List.of(2L), Set.of());
+                BOARD_ID, TURN, TARGET_SECTOR, List.of(PLAYER_ID), List.of(2L), Set.of());
 
         assertEquals(List.of(sniper), support.attackers());
         assertTrue(support.defenders().isEmpty());
@@ -84,7 +90,7 @@ class SniperServiceTest {
     @DisplayName("Soutien défenseur, y compris via une alliance, et impasse par index de camp")
     void supportsDefenderCampAndStandoff() {
         SniperService.DuelSupport support = service.collectDuelSupport(
-                TURN, TARGET_SECTOR, List.of(2L), List.of(3L), Set.of());
+                BOARD_ID, TURN, TARGET_SECTOR, List.of(2L), List.of(3L), Set.of());
         assertTrue(support.attackers().isEmpty());
         assertTrue(support.defenders().isEmpty());
         assertEquals(1, support.independents().size());
@@ -93,14 +99,14 @@ class SniperServiceTest {
         assertEquals(SniperOrderStatus.PENDING, order.getStatus(),
                 "Hors camp : rattaché comme camp indépendant, pas encore résolu");
 
-        when(allianceGraph.areAllied(2L, PLAYER_ID)).thenReturn(true);
+        when(allianceGraph.areAllied(BOARD_ID, 2L, PLAYER_ID)).thenReturn(true);
         SniperService.DuelSupport ally = service.collectDuelSupport(
-                TURN, TARGET_SECTOR, List.of(2L), List.of(3L), Set.of());
+                BOARD_ID, TURN, TARGET_SECTOR, List.of(2L), List.of(3L), Set.of());
         assertEquals(List.of(sniper), ally.attackers());
 
-        when(allianceGraph.areAllied(any(), any())).thenReturn(false);
+        when(allianceGraph.areAllied(any(), any(), any())).thenReturn(false);
         SniperService.StandoffSupport standoff = service.collectStandoffSupport(
-                TURN, TARGET_SECTOR, List.of(List.of(2L), List.of(PLAYER_ID), List.of(3L)), Set.of());
+                BOARD_ID, TURN, TARGET_SECTOR, List.of(List.of(2L), List.of(PLAYER_ID), List.of(3L)), Set.of());
         assertEquals(Map.of(1, List.of(sniper)), standoff.byCamp());
     }
 
@@ -108,7 +114,7 @@ class SniperServiceTest {
     @DisplayName("Annule quand le secteur d'origine est attaqué")
     void cancelsWhenHomeSectorIsAttacked() {
         SniperService.DuelSupport support = service.collectDuelSupport(
-                TURN, TARGET_SECTOR, List.of(PLAYER_ID), List.of(2L), Set.of(FROM_SECTOR));
+                BOARD_ID, TURN, TARGET_SECTOR, List.of(PLAYER_ID), List.of(2L), Set.of(FROM_SECTOR));
 
         assertTrue(support.attackers().isEmpty());
         assertEquals(SniperOrderStatus.CANCELLED, order.getStatus());
@@ -119,19 +125,23 @@ class SniperServiceTest {
     @Test
     @DisplayName("Annule quand l'unité a quitté son secteur ou n'est plus une sniper")
     void cancelsWhenUnitMovedOrNotSniper() {
-        sniper.setSector(new Sector(6, "Ailleurs"));
-        service.collectDuelSupport(TURN, TARGET_SECTOR, List.of(PLAYER_ID), List.of(2L), Set.of());
+        Board board = new Board();
+        board.setId(BOARD_ID);
+        Sector elsewhere = new Sector(6, "Ailleurs");
+        board.addSector(elsewhere);
+        sniper.setSector(elsewhere);
+        service.collectDuelSupport(BOARD_ID, TURN, TARGET_SECTOR, List.of(PLAYER_ID), List.of(2L), Set.of());
         assertEquals(SniperOrderStatus.CANCELLED, order.getStatus());
 
-        SniperOrder second = SniperOrder.create(PLAYER_ID, TURN, SNIPER_ID, FROM_SECTOR, TARGET_SECTOR);
-        when(sniperOrderRepository.findByTurnAndStatus(TURN, SniperOrderStatus.PENDING))
+        SniperOrder second = SniperOrder.create(BOARD_ID, PLAYER_ID, TURN, SNIPER_ID, FROM_SECTOR, TARGET_SECTOR);
+        when(sniperOrderRepository.findByBoardIdAndTurnAndStatus(BOARD_ID, TURN, SniperOrderStatus.PENDING))
                 .thenReturn(List.of(second));
         Unit notSniper = new Unit(0.0, UnitClass.LEGER);
         notSniper.setId(SNIPER_ID);
-        notSniper.setSector(new Sector(FROM_SECTOR, "Origine"));
+        notSniper.setSector(elsewhere);
         when(unitRepository.findById(SNIPER_ID)).thenReturn(Optional.of(notSniper));
 
-        service.collectDuelSupport(TURN, TARGET_SECTOR, List.of(PLAYER_ID), List.of(2L), Set.of());
+        service.collectDuelSupport(BOARD_ID, TURN, TARGET_SECTOR, List.of(PLAYER_ID), List.of(2L), Set.of());
         assertEquals(SniperOrderStatus.CANCELLED, second.getStatus());
     }
 
@@ -139,7 +149,7 @@ class SniperServiceTest {
     @DisplayName("Marque les ordres utilisés comme résolus")
     void marksResolvedOrders() {
         SniperService.DuelSupport support = service.collectDuelSupport(
-                TURN, TARGET_SECTOR, List.of(PLAYER_ID), List.of(2L), Set.of());
+                BOARD_ID, TURN, TARGET_SECTOR, List.of(PLAYER_ID), List.of(2L), Set.of());
 
         service.markResolved(support.resolvedOrders());
 
@@ -151,7 +161,7 @@ class SniperServiceTest {
     @DisplayName("Aucun ordre quand la cible ne correspond pas")
     void ignoresOrdersForOtherSectors() {
         SniperService.DuelSupport support = service.collectDuelSupport(
-                TURN, 6, List.of(PLAYER_ID), List.of(2L), Set.of());
+                BOARD_ID, TURN, 6, List.of(PLAYER_ID), List.of(2L), Set.of());
 
         assertTrue(support.attackers().isEmpty());
         assertTrue(support.defenders().isEmpty());

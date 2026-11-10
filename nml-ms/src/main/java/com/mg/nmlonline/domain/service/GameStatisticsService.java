@@ -24,29 +24,29 @@ public class GameStatisticsService {
     }
 
     @Transactional
-    public void recordUnitKill(UnitType type) {
+    public void recordUnitKill(Long boardId, UnitType type) {
         if (type == null || type == UnitType.PERSONNAGE) {
             return;
         }
-        increment("UNIT_" + type.name());
+        increment(boardId, "UNIT_" + type.name());
     }
 
     @Transactional
-    public void recordCharacterKill() {
-        increment(CHARACTER_KEY);
+    public void recordCharacterKill(Long boardId) {
+        increment(boardId, CHARACTER_KEY);
     }
 
     @Transactional
-    public void recordVehicleKill(VehicleType type) {
+    public void recordVehicleKill(Long boardId, VehicleType type) {
         if (type == null) {
             return;
         }
-        increment("VEHICLE_" + type.name());
+        increment(boardId, "VEHICLE_" + type.name());
     }
 
     @Transactional(readOnly = true)
-    public GameStatisticsDto getStatistics() {
-        Map<String, Long> counts = repository.findAll().stream()
+    public GameStatisticsDto getStatistics(Long boardId) {
+        Map<String, Long> counts = repository.findByBoardId(boardId).stream()
                 .collect(Collectors.toMap(GameStatistic::getStatKey, GameStatistic::getTotal));
         GameStatisticsDto dto = new GameStatisticsDto();
         dto.setUnits(Arrays.stream(UnitType.values())
@@ -61,9 +61,9 @@ public class GameStatisticsService {
         return dto;
     }
 
-    private void increment(String key) {
-        if (repository.increment(key) == 0) {
-            repository.saveAndFlush(new GameStatistic(key, 1));
+    private void increment(Long boardId, String key) {
+        if (repository.increment(boardId, key) == 0) {
+            repository.saveAndFlush(new GameStatistic(boardId, key, 1));
         }
     }
 

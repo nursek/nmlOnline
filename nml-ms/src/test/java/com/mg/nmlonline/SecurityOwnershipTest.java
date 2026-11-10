@@ -51,7 +51,7 @@ class SecurityOwnershipTest {
         if (user == null) {
             throw new IllegalStateException("Utilisateur de test introuvable : " + username);
         }
-        Player player = playerRepository.findByUserId(user.getId()).orElse(null);
+        Player player = playerRepository.findByUserIdAndBoardId(user.getId(), playerRepository.findAll().getFirst().getBoardId()).orElse(null);
         if (player == null) {
             throw new IllegalStateException("Joueur de test introuvable pour l'utilisateur : " + username);
         }

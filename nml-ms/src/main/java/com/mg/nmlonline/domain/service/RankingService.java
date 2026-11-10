@@ -35,12 +35,12 @@ public class RankingService {
     }
 
     @Transactional(readOnly = true)
-    public RankingsDto getRankings() {
-        Board board = boardRepository.findAll().stream().findFirst().orElse(null);
+    public RankingsDto getRankings(Long boardId) {
+        Board board = boardRepository.findById(boardId).orElse(null);
         if (board == null) {
             return emptyRankings(0);
         }
-        return buildRankings(board, playerRepository.findAll());
+        return buildRankings(board, playerRepository.findByBoardId(boardId));
     }
 
     @Transactional
@@ -49,7 +49,7 @@ public class RankingService {
         Player player = playerRepository.findByIdForUpdate(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable"));
         player.setRankingComment(comment == null || comment.isBlank() ? null : comment.trim());
-        adminAuditService.record(playerId, AdminAuditAction.RANKING_COMMENT,
+        adminAuditService.record(player.getBoardId(), playerId, AdminAuditAction.RANKING_COMMENT,
                 "Commentaire de classement mis à jour");
     }
 

@@ -25,6 +25,9 @@ public class MovementOrder {
     @Column(name = "player_id", nullable = false)
     private Long playerId;
 
+    @Column(name = "board_id", nullable = false)
+    private Long boardId;
+
     @Column(nullable = false)
     private int turn;
 
@@ -63,12 +66,14 @@ public class MovementOrder {
     @Column(name = "submitted_at", nullable = false)
     private Instant submittedAt;
 
-    public static MovementOrder createFootOrder(Long playerId, int turn, List<Long> entityIds, List<Integer> route) {
+    public static MovementOrder createFootOrder(Long playerId, Long boardId, int turn, List<Long> entityIds,
+                                                List<Integer> route) {
         if (route == null || route.size() < 2) {
             throw new IllegalArgumentException("La route doit contenir au moins 2 secteurs (départ et arrivée).");
         }
         MovementOrder order = new MovementOrder();
         order.setPlayerId(playerId);
+        order.setBoardId(boardId);
         order.setTurn(turn);
         order.setFromSectorNumber(route.getFirst());
         order.setToSectorNumber(route.getLast());
@@ -79,12 +84,14 @@ public class MovementOrder {
         return order;
     }
 
-    public static MovementOrder createVehicleOrder(Long playerId, int turn, Long vehicleId, List<Integer> route) {
+    public static MovementOrder createVehicleOrder(Long playerId, Long boardId, int turn, Long vehicleId,
+                                                   List<Integer> route) {
         if (route == null || route.size() < 2) {
             throw new IllegalArgumentException("La route doit contenir au moins 2 secteurs (départ et arrivée).");
         }
         MovementOrder order = new MovementOrder();
         order.setPlayerId(playerId);
+        order.setBoardId(boardId);
         order.setTurn(turn);
         order.setVehicleId(vehicleId);
         order.setFromSectorNumber(route.getFirst());

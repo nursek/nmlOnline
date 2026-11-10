@@ -44,7 +44,7 @@ class ResourceSaleRollbackTest {
         Long userId = user.getId();
 
         Long playerId = tx.execute(status -> {
-            Player player = playerRepository.findByUserId(userId).orElseThrow();
+            Player player = playerRepository.findByUserIdAndBoardId(userId, playerRepository.findAll().getFirst().getBoardId()).orElseThrow();
             player.addResource("Auramite", 5);
             return playerRepository.save(player).getId();
         });
@@ -66,7 +66,7 @@ class ResourceSaleRollbackTest {
 
         try {
             assertThrows(RuntimeException.class,
-                    () -> resourceService.sellResourcesBatch(userId, List.of(valid, invalid)));
+                    () -> resourceService.sellResourcesBatch(userId, playerRepository.findById(playerId).orElseThrow().getBoardId(), List.of(valid, invalid)));
 
             tx.executeWithoutResult(status -> {
                 Player reloaded = playerRepository.findById(playerId).orElseThrow();

@@ -7,7 +7,9 @@ import com.mg.nmlonline.domain.service.DemoTurnsSeeder;
 import com.mg.nmlonline.domain.service.ExchangeScenarioSeeder;
 import com.mg.nmlonline.domain.service.FeatureScenarioSeeder;
 import com.mg.nmlonline.domain.service.TurnResolutionScenarioSeeder;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.TurnService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,14 +54,14 @@ public class DevSeederController {
 
     /** Scénario hardcoded lurio→cegorach (2 hops), re-jouable. */
     @PostMapping("/seed-resolution-scenario")
-    public ResponseEntity<ScenarioSummaryDto> seedScenario() {
-        return ResponseEntity.ok(scenarioSeeder.seedScenario());
+    public ResponseEntity<ScenarioSummaryDto> seedScenario(HttpServletRequest request) {
+        return ResponseEntity.ok(scenarioSeeder.seedScenario(boardId(request)));
     }
 
     /** Impasse mexicaine : cegorach en 32, imotekh (43) et lurio (41) arrivent au même hop. */
     @PostMapping("/seed-standoff-scenario")
-    public ResponseEntity<ScenarioSummaryDto> seedStandoffScenario() {
-        return ResponseEntity.ok(scenarioSeeder.seedStandoffScenario());
+    public ResponseEntity<ScenarioSummaryDto> seedStandoffScenario(HttpServletRequest request) {
+        return ResponseEntity.ok(scenarioSeeder.seedStandoffScenario(boardId(request)));
     }
 
     /** Catalogue des scénarios de combat rejouables (arènes neutres dédiées). */
@@ -70,29 +72,34 @@ public class DevSeederController {
 
     /** Sème un scénario de combat par code : arène purgée puis peuplée, un hop à résoudre. */
     @PostMapping("/seed-combat-scenario/{code}")
-    public ResponseEntity<ScenarioSummaryDto> seedCombatScenario(@PathVariable("code") String code) {
-        return ResponseEntity.ok(scenarioSeeder.seedCombatScenario(code));
+    public ResponseEntity<ScenarioSummaryDto> seedCombatScenario(@PathVariable("code") String code,
+                                                              HttpServletRequest request) {
+        return ResponseEntity.ok(scenarioSeeder.seedCombatScenario(code, boardId(request)));
     }
 
     @PostMapping("/seed-exchange-scenario")
-    public ResponseEntity<ExchangeScenarioSummaryDto> seedExchangeScenario() {
-        return ResponseEntity.ok(exchangeScenarioSeeder.seedExchangeScenario());
+    public ResponseEntity<ExchangeScenarioSummaryDto> seedExchangeScenario(HttpServletRequest request) {
+        return ResponseEntity.ok(exchangeScenarioSeeder.seedExchangeScenario(boardId(request)));
     }
 
     @PostMapping("/seed-alliance-scenario")
-    public ResponseEntity<ScenarioSummaryDto> seedAllianceScenario() {
-        return ResponseEntity.ok(featureScenarioSeeder.seedAllianceScenario());
+    public ResponseEntity<ScenarioSummaryDto> seedAllianceScenario(HttpServletRequest request) {
+        return ResponseEntity.ok(featureScenarioSeeder.seedAllianceScenario(boardId(request)));
     }
 
     @PostMapping("/seed-resource-sale-scenario")
-    public ResponseEntity<ScenarioSummaryDto> seedResourceSaleScenario() {
-        return ResponseEntity.ok(featureScenarioSeeder.seedResourceSaleScenario());
+    public ResponseEntity<ScenarioSummaryDto> seedResourceSaleScenario(HttpServletRequest request) {
+        return ResponseEntity.ok(featureScenarioSeeder.seedResourceSaleScenario(boardId(request)));
     }
 
     /** Navigation manuelle du compteur de tour, sans résolution des mouvements. */
     @PostMapping("/turn/{turn}")
-    public Map<String, Object> navigateToTurn(@PathVariable("turn") int turn) {
-        return Map.of("currentTurn", turnService.setCurrentTurn(turn));
+    public Map<String, Object> navigateToTurn(@PathVariable("turn") int turn, HttpServletRequest request) {
+        return Map.of("currentTurn", turnService.setCurrentTurn(boardId(request), turn));
+    }
+
+    private Long boardId(HttpServletRequest request) {
+        return (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
     }
 
     /** Dev-only, jouée une seule fois : refuse une partie déjà entamée. */

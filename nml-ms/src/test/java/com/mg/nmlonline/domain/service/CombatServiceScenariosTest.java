@@ -58,6 +58,16 @@ class CombatServiceScenariosTest {
     @Autowired
     private BoardRepository boardRepository;
 
+    private Player newPlayer(String name) {
+        Player player = new Player(name);
+        player.setBoardId(boardId());
+        return player;
+    }
+
+    private Long boardId() {
+        return boardRepository.findAll().getFirst().getId();
+    }
+
     @Autowired
     private BuildingService buildingService;
 
@@ -104,10 +114,10 @@ class CombatServiceScenariosTest {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             Sector sector = pickEmptyNeutralSector(board);
 
-            Player attacker = new Player("AttaquantBtC");
+            Player attacker = newPlayer("AttaquantBtC");
             attacker.getStats().setMoney(1000.0);
             playerRepository.save(attacker);
-            Player defender = new Player("DefenseurBtC");
+            Player defender = newPlayer("DefenseurBtC");
             defender.getStats().setMoney(80000.0);
             playerRepository.save(defender);
             em.flush();
@@ -149,9 +159,9 @@ class CombatServiceScenariosTest {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             Sector sector = pickEmptyNeutralSector(board);
 
-            Player attacker = new Player("AttaquantVeh");
+            Player attacker = newPlayer("AttaquantVeh");
             playerRepository.save(attacker);
-            Player defender = new Player("DefenseurVeh");
+            Player defender = newPlayer("DefenseurVeh");
             playerRepository.save(defender);
             em.flush();
 
@@ -244,7 +254,7 @@ class CombatServiceScenariosTest {
     }
 
     private long vehicleKillCount() {
-        return gameStatisticsService.getStatistics().getVehicles().stream()
+        return gameStatisticsService.getStatistics(boardId()).getVehicles().stream()
                 .filter(entry -> "VTT_LEGER".equals(entry.getKey()))
                 .mapToLong(entry -> entry.getCount())
                 .findFirst().orElse(0);
@@ -288,9 +298,9 @@ class CombatServiceScenariosTest {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             Sector sector = pickEmptyNeutralSector(board);
 
-            Player attacker = new Player("AttaquantChar");
+            Player attacker = newPlayer("AttaquantChar");
             playerRepository.save(attacker);
-            Player defender = new Player("DefenseurChar");
+            Player defender = newPlayer("DefenseurChar");
             playerRepository.save(defender);
             em.flush();
 
@@ -422,7 +432,7 @@ class CombatServiceScenariosTest {
         });
 
         // Fin de tour : tick +50 def plafonné à baseDefense.
-        turnService.advanceTurn();
+        turnService.advanceTurn(boardId());
 
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             GameCharacter character = em.find(GameCharacter.class, w.characterId());
@@ -544,8 +554,10 @@ class CombatServiceScenariosTest {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             Sector sector = pickEmptyNeutralSector(board);
             Player attacker = new Player("AttaquantSniper");
+            attacker.setBoardId(board.getId());
             playerRepository.save(attacker);
             Player defender = new Player("DefenseurSniper");
+            defender.setBoardId(board.getId());
             playerRepository.save(defender);
             Unit attackerUnit = new Unit(0.0, UnitClass.LEGER);
             attackerUnit.setPlayerId(attacker.getId());
@@ -595,8 +607,11 @@ class CombatServiceScenariosTest {
             Sector thirdHome = empty.getLast();
 
             Player first = new Player("PremierImpasse");
+            first.setBoardId(board.getId());
             Player second = new Player("SecondImpasse");
+            second.setBoardId(board.getId());
             Player third = new Player("TiersImpasse");
+            third.setBoardId(board.getId());
             playerRepository.save(first);
             playerRepository.save(second);
             playerRepository.save(third);

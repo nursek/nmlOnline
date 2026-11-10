@@ -59,9 +59,9 @@ public class AllianceService {
     }
 
     @Transactional(readOnly = true)
-    public AllianceMeDto getMe(Long userId) {
-        Player player = requirePlayer(userId);
-        int turn = turnService.getCurrentTurn();
+    public AllianceMeDto getMe(Long userId, Long boardId) {
+        Player player = requirePlayer(userId, boardId);
+        int turn = turnService.getCurrentTurn(boardId);
 
         List<Alliance> active = allianceRepository.findActiveForPlayer(player.getId());
         List<AllianceProposal> incoming =
@@ -73,7 +73,7 @@ public class AllianceService {
         active.forEach(alliance -> otherIds.add(alliance.other(player.getId())));
         incoming.forEach(proposal -> otherIds.add(proposal.getFromPlayerId()));
         outgoing.forEach(proposal -> otherIds.add(proposal.getToPlayerId()));
-        allianceRepository.findBetrayalsAtTurn(turn).stream()
+        allianceRepository.findBetrayalsAtTurn(boardId, turn).stream()
                 .filter(alliance -> player.getId().equals(alliance.getEndedByPlayerId()))
                 .forEach(alliance -> otherIds.add(alliance.other(player.getId())));
         Map<Long, String> names = namesById(otherIds);
@@ -96,7 +96,7 @@ public class AllianceService {
         }
         incoming.forEach(proposal -> dto.getIncomingProposals().add(toProposalDto(proposal, names, "IN")));
         outgoing.forEach(proposal -> dto.getOutgoingProposals().add(toProposalDto(proposal, names, "OUT")));
-        for (Alliance betrayal : allianceRepository.findBetrayalsAtTurn(turn)) {
+        for (Alliance betrayal : allianceRepository.findBetrayalsAtTurn(boardId, turn)) {
             if (!player.getId().equals(betrayal.getEndedByPlayerId())) {
                 continue;
             }
@@ -111,9 +111,10 @@ public class AllianceService {
     }
 
     @Transactional(readOnly = true)
-    public AdminAllianceHistoryDto getHistory() {
-        List<Alliance> alliances = allianceRepository.findAllByOrderByCreatedTurnDescIdDesc();
-        List<AllianceProposal> proposals = proposalRepository.findAllByOrderByCreatedTurnDescIdDesc();
+    public AdminAllianceHistoryDto getHistory(Long boardId) {
+        List<Alliance> alliances = allianceRepository.findByBoardIdOrderByCreatedTurnDescIdDesc(boardId);
+        List<AllianceProposal> proposals = proposalRepository
+                .findByBoardIdOrderByCreatedTurnDescIdDesc(boardId);
 
         Set<Long> ids = new HashSet<>();
         for (Alliance alliance : alliances) {
@@ -157,15 +158,18 @@ public class AllianceService {
         return dto;
     }
 
-    public AllianceProposalDto propose(Long userId, ProposalKind kind, Long targetPlayerId) {
-        Player player = requirePlayer(userId);
+    public AllianceProposalDto propose(Long userId, Long boardId, ProposalKind kind, Long targetPlayerId) {
+        Player player = requirePlayer(userId, boardId);
         if (targetPlayerId == null || targetPlayerId.equals(player.getId())) {
             throw new IllegalArgumentException("Cible invalide pour la proposition.");
         }
         Player target = playerRepository.findById(targetPlayerId)
                 .orElseThrow(() -> new EntityNotFoundException("Joueur cible introuvable : " + targetPlayerId));
+        if (!target.getBoardId().equals(boardId)) {
+            throw new IllegalArgumentException("Le joueur ciblé ne joue pas dans cette partie");
+        }
         requireHeadquarters(player);
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(boardId);
 
         if (kind == ProposalKind.ALLIANCE) {
             if (allianceRepository.findActiveBetween(player.getId(), target.getId()).isPresent()) {
@@ -184,7 +188,7 @@ public class AllianceService {
         AllianceProposal proposal;
         try {
             proposal = proposalRepository.saveAndFlush(
-                    AllianceProposal.create(kind, player.getId(), target.getId(), turn));
+                    AllianceProposal.create(kind, boardId, player.getId(), target.getId(), turn));
         } catch (DataIntegrityViolationException e) {
             // Double-clic simultané : l'index unique partiel (prod) rejette le doublon au flush.
             throw new IllegalStateException("Une proposition identique est déjà en attente.");
@@ -192,14 +196,14 @@ public class AllianceService {
         return toProposalDto(proposal, Map.of(player.getId(), player.getName(), target.getId(), target.getName()), "OUT");
     }
 
-    public void accept(Long userId, Long proposalId) {
-        Player player = requirePlayer(userId);
+    public void accept(Long userId, Long boardId, Long proposalId) {
+        Player player = requirePlayer(userId, boardId);
         AllianceProposal proposal = requirePendingProposal(proposalId);
         if (!proposal.getToPlayerId().equals(player.getId())) {
             throw new SecurityException("Cette proposition ne vous est pas destinée.");
         }
         lockPlayersAscending(proposal.getFromPlayerId(), proposal.getToPlayerId());
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(boardId);
 
         if (proposal.getKind() == ProposalKind.ALLIANCE) {
             requireHeadquarters(player);
@@ -211,8 +215,8 @@ public class AllianceService {
                 throw new IllegalStateException("Une alliance est déjà active entre ces joueurs.");
             }
             allianceRepository.save(Alliance.create(
-                    proposal.getFromPlayerId(), proposal.getToPlayerId(), turn));
-            announcementRepository.save(Announcement.create(AnnouncementType.ALLIANCE_FORMED,
+                    proposal.getFromPlayerId(), proposal.getToPlayerId(), boardId, turn));
+            announcementRepository.save(Announcement.create(AnnouncementType.ALLIANCE_FORMED, boardId,
                     proposal.getFromPlayerId(), proposal.getToPlayerId(), turn));
             cancelPendingAllianceProposals(proposal.getFromPlayerId(), proposal.getToPlayerId(),
                     proposal.getId(), turn);
@@ -223,36 +227,36 @@ public class AllianceService {
                     .orElseThrow(() -> new IllegalStateException("L'alliance n'est plus active."));
             alliance.end(turn, proposal.getFromPlayerId(), false);
             allianceRepository.save(alliance);
-            announcementRepository.save(Announcement.create(AnnouncementType.ALLIANCE_BROKEN,
+            announcementRepository.save(Announcement.create(AnnouncementType.ALLIANCE_BROKEN, boardId,
                     proposal.getFromPlayerId(), proposal.getToPlayerId(), turn));
         }
         proposal.accept(turn);
         proposalRepository.save(proposal);
     }
 
-    public void decline(Long userId, Long proposalId) {
-        Player player = requirePlayer(userId);
+    public void decline(Long userId, Long boardId, Long proposalId) {
+        Player player = requirePlayer(userId, boardId);
         AllianceProposal proposal = requirePendingProposal(proposalId);
         if (!proposal.getToPlayerId().equals(player.getId())) {
             throw new SecurityException("Cette proposition ne vous est pas destinée.");
         }
-        proposal.decline(turnService.getCurrentTurn());
+        proposal.decline(turnService.getCurrentTurn(boardId));
         proposalRepository.save(proposal);
     }
 
-    public void withdraw(Long userId, Long proposalId) {
-        Player player = requirePlayer(userId);
+    public void withdraw(Long userId, Long boardId, Long proposalId) {
+        Player player = requirePlayer(userId, boardId);
         AllianceProposal proposal = requirePendingProposal(proposalId);
         if (!proposal.getFromPlayerId().equals(player.getId())) {
             throw new SecurityException("Vous n'êtes pas l'auteur de cette proposition.");
         }
-        proposal.withdraw(turnService.getCurrentTurn());
+        proposal.withdraw(turnService.getCurrentTurn(boardId));
         proposalRepository.save(proposal);
     }
 
     /** Trahison : rupture unilatérale, possible sans QG (sinon un QG détruit piégerait le joueur dans l'alliance). */
-    public void betray(Long userId, Long allianceId) {
-        Player player = requirePlayer(userId);
+    public void betray(Long userId, Long boardId, Long allianceId) {
+        Player player = requirePlayer(userId, boardId);
         Alliance alliance = allianceRepository.findById(allianceId)
                 .orElseThrow(() -> new EntityNotFoundException("Alliance introuvable : " + allianceId));
         if (!alliance.involves(player.getId())) {
@@ -263,20 +267,21 @@ public class AllianceService {
         }
         // Verrous joueurs avant la ligne alliance : même ordre que accept(), sinon deadlock au commit.
         lockPlayersAscending(alliance.getPlayerOneId(), alliance.getPlayerTwoId());
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(boardId);
         if (allianceRepository.endAsBetrayal(allianceId, turn, player.getId()) == 0) {
             throw new IllegalStateException("Cette alliance est déjà terminée.");
         }
-        announcementRepository.save(Announcement.create(AnnouncementType.BETRAYAL,
+        announcementRepository.save(Announcement.create(AnnouncementType.BETRAYAL, boardId,
                 player.getId(), alliance.other(player.getId()), turn));
         cancelPendingProposalsFor(player.getId(), turn);
     }
 
     @Transactional(readOnly = true)
-    public List<AnnouncementDto> getAnnouncements() {
-        int turn = turnService.getCurrentTurn();
+    public List<AnnouncementDto> getAnnouncements(Long boardId) {
+        int turn = turnService.getCurrentTurn(boardId);
         List<Announcement> announcements = announcementRepository
-                .findByVisibleAtTurnLessThanEqualOrderByIdDesc(turn, PageRequest.of(0, ANNOUNCEMENT_PAGE_SIZE));
+                .findByBoardIdAndVisibleAtTurnLessThanEqualOrderByIdDesc(boardId, turn,
+                        PageRequest.of(0, ANNOUNCEMENT_PAGE_SIZE));
         Set<Long> ids = new HashSet<>();
         announcements.forEach(announcement -> {
             ids.add(announcement.getActorPlayerId());
@@ -334,11 +339,11 @@ public class AllianceService {
         return proposal;
     }
 
-    private Player requirePlayer(Long userId) {
+    private Player requirePlayer(Long userId, Long boardId) {
         if (userId == null) {
             throw new SecurityException("Utilisateur non authentifié.");
         }
-        return playerRepository.findByUserId(userId)
+        return playerRepository.findByUserIdAndBoardId(userId, boardId)
                 .orElseThrow(() -> new EntityNotFoundException("Aucun joueur pour l'utilisateur " + userId));
     }
 
