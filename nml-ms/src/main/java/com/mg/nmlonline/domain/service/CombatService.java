@@ -372,7 +372,7 @@ public class CombatService {
     }
 
     /** Retire du secteur les entités engagées absentes des survivants, en gérant les FK et les flags par joueur. */
-    private List<CombatEntity> removeCasualties(Sector sector, Set<Long> beforeIds, Set<Long> survivorIds,
+    List<CombatEntity> removeCasualties(Sector sector, Set<Long> beforeIds, Set<Long> survivorIds,
                                                 Map<Long, Player> playersById,
                                                 Map<Long, Boolean> characterLost, int turn) {
         List<CombatEntity> casualties = new ArrayList<>();
@@ -560,7 +560,7 @@ public class CombatService {
         }
     }
 
-    private CasualtyInfo toCasualtyInfo(CombatEntity entity) {
+    CasualtyInfo toCasualtyInfo(CombatEntity entity) {
         if (entity instanceof Unit unit) {
             return new CasualtyInfo(entity.getPlayerId(), unit.getDisplayName(),
                     EntityCategory.INFANTRY.name(), unit.getType(), unit.getNumber(), unit.getExperience());

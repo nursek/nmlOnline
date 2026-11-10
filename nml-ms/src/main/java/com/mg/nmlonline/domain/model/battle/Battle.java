@@ -54,6 +54,8 @@ public class Battle {
     private List<Unit> rangedDefenders = new ArrayList<>();
     /** Clé = index de camp de l'impasse. */
     private Map<Integer, List<Unit>> rangedByCamp = new HashMap<>();
+    private final Set<Unit> targetedSnipers = new HashSet<>();
+    private final Set<CombatEntity> rangedDestroyed = new HashSet<>();
 
     public Battle() {
         this.randomSource = new ThreadLocalRandomSource();
@@ -203,10 +205,27 @@ public class Battle {
         printPhaseHeader("PDF");
         resolveStrikes(attackerStrikers, defenderUnits, "PDF", attackerMultiplier(),
                 attacker.getName(), defender.getName());
-        resolveRangedStrikes(rangedAttackers, defenderUnits, defender.getName());
+        resolveRangedStrikes(rangedAttackers, defenderUnits, defender.getName(), "Tir à distance");
         resolveStrikes(defenderStrikers, attackerUnits, "PDF", defenderMultiplier(),
                 defender.getName(), attacker.getName());
-        resolveRangedStrikes(rangedDefenders, attackerUnits, attacker.getName());
+        resolveRangedStrikes(rangedDefenders, attackerUnits, attacker.getName(), "Tir à distance");
+    }
+
+    /** Tir isolé, hors combat au sol : les cibles ne ripostent pas par les armes de contact. */
+    public void rangedOnlyConfiguration(List<Unit> shooters, List<CombatEntity> targets, String targetOwner) {
+        this.currentPhase = "Tir à distance";
+        collectEmbarked(targets);
+        recordEvent(BattleLogEntry.INFO,
+                "Tir à distance : " + shooters.size() + " salve(s) sur le secteur.");
+        resolveRangedStrikes(shooters, targets, targetOwner, "Tir à distance");
+    }
+
+    public void counterFireConfiguration(List<Unit> counterSnipers, List<Unit> shooters, String shooterOwner) {
+        this.currentPhase = "Contre-tir";
+        recordEvent(BattleLogEntry.INFO,
+                "Contre-tir à distance : " + counterSnipers.size() + " salve(s).");
+        List<CombatEntity> targets = new ArrayList<>(shooters);
+        resolveRangedStrikes(counterSnipers, targets, shooterOwner, "Contre-tir à distance");
     }
 
     private void endBattle(Player attacker, Player defender, List<CombatEntity> attackerUnits, List<CombatEntity> defenderUnits) {
@@ -270,7 +289,7 @@ public class Battle {
                     1 + bonusPercents[i] / 100.0, players.get(i).getName(), players.get(targetIndex).getName());
             if ("PDF".equals(damageType)) {
                 resolveRangedStrikes(rangedByCamp.getOrDefault(i, List.of()), camps.get(targetIndex),
-                        players.get(targetIndex).getName());
+                        players.get(targetIndex).getName(), "Tir à distance");
             }
         }
     }
@@ -433,7 +452,8 @@ public class Battle {
         segments.add(segment);
     }
 
-    private void resolveRangedStrikes(List<Unit> snipers, List<CombatEntity> enemies, String targetOwner) {
+    private void resolveRangedStrikes(List<Unit> snipers, List<CombatEntity> enemies, String targetOwner,
+                                      String prefix) {
         if (snipers == null || snipers.isEmpty() || enemies.isEmpty()) {
             return;
         }
@@ -461,7 +481,7 @@ public class Battle {
         if (touched - destroyed > 0) parts.add((touched - destroyed) + " cible(s) touchée(s)");
         if (dodged > 0) parts.add(dodged + " esquive(s)");
         if (missed > 0) parts.add(missed + " tir(s) raté(s)");
-        String message = "Tir à distance : " + formatPoints(totalPdf) + " PdF"
+        String message = prefix + " : " + formatPoints(totalPdf) + " PdF"
                 + (parts.isEmpty() ? "" : " — " + String.join(", ", parts));
         logger.info("      > {}", message);
         recordEvent(destroyed > 0 ? BattleLogEntry.DESTROYED
@@ -475,6 +495,7 @@ public class Battle {
         if (target == null) {
             return new RangedResult(0, 0, 0, 0);
         }
+        markTargeted(target);
         if (!SniperRules.hits(sniper, target, rand())) {
             return new RangedResult(0, 0, 0, 1);
         }
@@ -490,6 +511,7 @@ public class Battle {
             if (target == null) {
                 break;
             }
+            markTargeted(target);
             if (SniperRules.dodges(target, rand())) {
                 dodged++;
                 tracker(target).dodged = true;
@@ -504,6 +526,7 @@ public class Battle {
                 remaining -= cost;
                 markRangedDamage(target, armor + defense);
                 destroyTarget(enemies, target, new ArrayList<>(), "Tir à distance", targetOwner, "PDF", "", "");
+                rangedDestroyed.add(target);
                 destroyed++;
                 touched++;
             } else if (effective <= armor) {
@@ -525,6 +548,12 @@ public class Battle {
     private void markRangedDamage(CombatEntity target, double amount) {
         tracker(target).damaged = true;
         tracker(target).damageTaken += amount;
+    }
+
+    private void markTargeted(CombatEntity target) {
+        if (target instanceof Unit unit && unit.isSniper()) {
+            targetedSnipers.add(unit);
+        }
     }
 
     private CombatEntity rangedTarget(List<CombatEntity> enemies) {

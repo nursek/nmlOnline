@@ -1,6 +1,8 @@
 package com.mg.nmlonline.domain.model.battle;
 
 import com.mg.nmlonline.domain.model.building.Bank;
+import com.mg.nmlonline.domain.model.equipment.Equipment;
+import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -12,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -59,6 +62,21 @@ class BattleRangedTest {
         Battle battle = new Battle();
         battle.setRandom(new Random(7));
         return battle;
+    }
+
+    private Unit sniperLarbin(Long playerId, double pdf) {
+        Unit unit = new Unit(0.0, UnitClass.SNIPER);
+        unit.setPlayerId(playerId);
+        Equipment rifle = new Equipment("Fusil de test", 0, 0, 0, 0, 0,
+                Set.of(UnitClass.SNIPER), EquipmentCategory.FIREARM);
+        rifle.setAimMalusReduction(20);
+        unit.addEquipment(rifle);
+        Equipment cloak = new Equipment("Cape de test", 0, 0, 0, 0, 0,
+                Set.of(UnitClass.SNIPER), EquipmentCategory.DEFENSIVE);
+        cloak.setEnemyAimMalus(-20);
+        unit.addEquipment(cloak);
+        unit.setPdf(pdf);
+        return unit;
     }
 
     @Test
@@ -115,5 +133,26 @@ class BattleRangedTest {
 
         assertTrue(secondCamp.isEmpty());
         assertTrue(battle.getLog().stream().anyMatch(entry -> entry.message().contains("Tir à distance")));
+    }
+
+    @Test
+    @DisplayName("Tir isolé : le sniper ciblé contre-tire contre les tireurs")
+    void standaloneFireTriggersCounterFire() {
+        Unit shooter = sniperLarbin(1L, 500);
+        Unit targetSniper = sniperLarbin(2L, 500);
+        List<CombatEntity> targets = new ArrayList<>(List.of(targetSniper));
+        Battle battle = battle();
+
+        battle.rangedOnlyConfiguration(List.of(shooter), targets, "Secteur 2");
+
+        assertTrue(battle.getTargetedSnipers().contains(targetSniper));
+        assertTrue(targets.isEmpty());
+        assertTrue(battle.getRangedDestroyed().contains(targetSniper));
+
+        battle.counterFireConfiguration(List.of(targetSniper), List.of(shooter), "Secteur 1");
+
+        assertTrue(battle.getRangedDestroyed().contains(shooter));
+        assertTrue(battle.getLog().stream()
+                .anyMatch(entry -> entry.message().contains("Contre-tir à distance")));
     }
 }

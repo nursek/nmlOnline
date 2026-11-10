@@ -9,6 +9,8 @@ public class BattleReportDto {
     private int turn;
     private int sectorNumber;
     private boolean standoff;
+    private boolean ranged;
+    private String rangedFire;
     private Long winnerPlayerId;
     private String winnerName;
     private int capturedBuildings;

@@ -289,6 +289,9 @@ public class TurnResolutionOrchestrator {
             harvestAutoCollector.collectRemainingMoney(board, s.turnEnding, s.sectorOwners);
 
             MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
+            Set<Integer> battleSectors = new HashSet<>();
+            s.resolvedConflicts.forEach(resolved -> battleSectors.add(resolved.sectorNumber()));
+            sniperService.resolveRemainingFire(s.turnEnding, board, battleSectors);
             List<Player> eliminated = playerRepository.findByEliminatedTurnOrderByNameAsc(s.turnEnding);
             for (Player victim : eliminated) {
                 // Décision en session d'abord : le commit du choix peut suivre une finalisation concurrente.
