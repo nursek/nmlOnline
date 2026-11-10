@@ -178,7 +178,7 @@ export class ReglesComponent {
       nom: unitClassLabel('SNIPER'),
       effet:
         'Combat à distance : jet de HIT puis Esquive, tir de soutien pendant un combat au sol, ' +
-        "tir isolé hors combat et contre-tir. Détails d'expérience à venir.",
+        'tir isolé hors combat et contre-tir.',
       actif: true,
     },
     {

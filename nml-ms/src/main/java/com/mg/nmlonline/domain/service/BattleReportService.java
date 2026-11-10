@@ -69,8 +69,9 @@ public class BattleReportService {
     }
 
     public void saveRangedReport(int turn, int sectorNumber, List<Player> participants,
-                                 List<CombatService.CasualtyInfo> casualties, String rangedFire,
-                                 Map<Long, Boolean> characterLost) {
+                                 List<CombatService.CasualtyInfo> casualties,
+                                 List<CombatService.ExperienceGain> experienceGains,
+                                 String rangedFire, Map<Long, Boolean> characterLost) {
         if (participants == null || participants.isEmpty()) {
             return;
         }
@@ -90,7 +91,7 @@ public class BattleReportService {
                         characterLost.getOrDefault(player.getId(), false)))
                 .toList());
         dto.setCasualties(mapCasualties(casualties, names));
-        dto.setExperienceGains(List.of());
+        dto.setExperienceGains(mapExperienceGains(experienceGains, names));
         persist(dto, participants.stream().map(Player::getId).toList());
     }
 

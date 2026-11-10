@@ -11,6 +11,7 @@ import com.mg.nmlonline.domain.model.sniper.SniperOrderStatus;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
+import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.SniperOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.UnitRepository;
@@ -118,6 +119,7 @@ public class SniperService {
                 .map(SniperOrder::getUnitId)
                 .collect(Collectors.toSet());
         Set<Long> destroyedUnitIds = new HashSet<>();
+        Set<Long> awardedUnitIds = new HashSet<>();
         List<OrderContext> validOrders = new ArrayList<>();
         List<InvalidOrder> invalidOrders = new ArrayList<>();
         Map<Integer, List<OrderContext>> byTarget = new LinkedHashMap<>();
@@ -141,7 +143,8 @@ public class SniperService {
             byTarget.computeIfAbsent(order.getTargetSectorNumber(), key -> new ArrayList<>()).add(context);
         }
         byTarget.forEach((targetSector, orders) ->
-                resolveStandaloneSector(turn, board, targetSector, orders, pendingUnitIds, destroyedUnitIds));
+                resolveStandaloneSector(turn, board, targetSector, orders, pendingUnitIds,
+                        destroyedUnitIds, awardedUnitIds));
         invalidOrders.stream()
                 .filter(invalid -> !destroyedUnitIds.contains(invalid.order().getUnitId()))
                 .forEach(invalid -> cancel(invalid.order(), invalid.reason()));
@@ -150,7 +153,7 @@ public class SniperService {
 
     private void resolveStandaloneSector(int turn, Board board, int targetSectorNumber,
                                          List<OrderContext> orders, Set<Long> pendingUnitIds,
-                                         Set<Long> destroyedUnitIds) {
+                                         Set<Long> destroyedUnitIds, Set<Long> awardedUnitIds) {
         Sector sector = board.getSector(targetSectorNumber);
         if (sector == null) {
             return;
@@ -161,6 +164,7 @@ public class SniperService {
         }
         Set<Long> counteredIds = new HashSet<>();
         List<CombatService.CasualtyInfo> casualties = new ArrayList<>();
+        List<CombatService.ExperienceGain> experienceGains = new ArrayList<>();
         Set<Long> participantIds = new LinkedHashSet<>();
         Map<Long, Boolean> characterLost = new HashMap<>();
         List<String> summaries = new ArrayList<>();
@@ -210,6 +214,7 @@ public class SniperService {
             sector.recalculateMilitaryPower();
             applyCounterCasualties(turn, board, shooters, battle.getRangedDestroyed(), players,
                     characterLost, casualties, destroyedUnitIds);
+            experienceGains.addAll(awardSniperExperience(battle, awardedUnitIds));
             summaries.addAll(battle.getLog().stream()
                     .map(BattleLogEntry::message)
                     .filter(message -> message.contains("PdF"))
@@ -223,7 +228,7 @@ public class SniperService {
                 ? List.of()
                 : playerRepository.findAllById(participantIds);
         battleReportService.saveRangedReport(turn, targetSectorNumber, participants, casualties,
-                String.join(" ; ", summaries), characterLost);
+                experienceGains, String.join(" ; ", summaries), characterLost);
     }
 
     private void applyCounterCasualties(int turn, Board board, List<Unit> shooters,
@@ -270,6 +275,33 @@ public class SniperService {
                 .map(CombatEntity::getId)
                 .filter(Objects::nonNull)
                 .forEach(destroyedUnitIds::add);
+    }
+
+    private List<CombatService.ExperienceGain> awardSniperExperience(Battle battle, Set<Long> awardedUnitIds) {
+        Map<Long, Unit> candidates = new LinkedHashMap<>();
+        battle.getRangedDodgers().stream()
+                .filter(unit -> unit.getId() != null)
+                .forEach(unit -> candidates.putIfAbsent(unit.getId(), unit));
+        battle.getTargetedSnipers().stream()
+                .filter(unit -> unit.getId() != null)
+                .forEach(unit -> candidates.putIfAbsent(unit.getId(), unit));
+        List<CombatService.ExperienceGain> gains = new ArrayList<>();
+        for (Unit unit : candidates.values()) {
+            if (awardedUnitIds.contains(unit.getId()) || battle.getRangedDestroyed().contains(unit)) {
+                continue;
+            }
+            awardedUnitIds.add(unit.getId());
+            gains.add(gain(unit, 1));
+        }
+        return gains;
+    }
+
+    private CombatService.ExperienceGain gain(Unit unit, double amount) {
+        UnitType typeBefore = unit.getType();
+        double experienceBefore = unit.getExperience();
+        unit.gainExperience(amount);
+        return new CombatService.ExperienceGain(unit.getPlayerId(), unit.getId(), unit.getNumber(),
+                typeBefore, experienceBefore, amount, unit.getType(), unit.getExperience());
     }
 
     private static void attributeSniperEliminations(List<CombatEntity> casualties,

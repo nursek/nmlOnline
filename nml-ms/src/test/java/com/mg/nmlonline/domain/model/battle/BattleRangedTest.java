@@ -79,6 +79,21 @@ class BattleRangedTest {
         return unit;
     }
 
+    private Unit dodgyLarbin(Long playerId) {
+        Unit unit = new Unit(0.0, UnitClass.SNIPER);
+        unit.setPlayerId(playerId);
+        Equipment rifle = new Equipment("Fusil de test", 0, 0, 0, 0, 0,
+                Set.of(UnitClass.SNIPER), EquipmentCategory.FIREARM);
+        rifle.setAimMalusReduction(20);
+        unit.addEquipment(rifle);
+        Equipment cloak = new Equipment("Cape de test", 0, 0, 0, 0, 0,
+                Set.of(UnitClass.SNIPER), EquipmentCategory.DEFENSIVE);
+        cloak.setEnemyAimMalus(100);
+        unit.addEquipment(cloak);
+        unit.setPdf(0);
+        return unit;
+    }
+
     @Test
     @DisplayName("Soutien attaquant : PdF ajoutée en phase PdF, cible détruite, sniper hors combat")
     void attackerSupportStrikesDuringPdf() {
@@ -154,5 +169,20 @@ class BattleRangedTest {
         assertTrue(battle.getRangedDestroyed().contains(shooter));
         assertTrue(battle.getLog().stream()
                 .anyMatch(entry -> entry.message().contains("Contre-tir à distance")));
+    }
+
+    @Test
+    @DisplayName("Une cible qui esquive une salve est tracée pour l'expérience")
+    void rangedDodgeIsTracked() {
+        Unit shooter = sniperLarbin(1L, 500);
+        Unit target = dodgyLarbin(2L);
+        List<CombatEntity> targets = new ArrayList<>(List.of(target));
+        Battle battle = battle();
+
+        battle.rangedOnlyConfiguration(List.of(shooter), targets, "Secteur 2");
+
+        assertFalse(targets.isEmpty());
+        assertTrue(battle.getRangedDodgers().contains(target));
+        assertFalse(battle.getRangedDestroyed().contains(target));
     }
 }

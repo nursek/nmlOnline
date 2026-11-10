@@ -548,6 +548,10 @@ public class CombatService {
             Battle.Participation p = participation.getOrDefault(unit, Battle.Participation.NONE);
             double actions = (p.fired() ? 1 : 0) + (p.damaged() ? 0.5 : 0)
                     + (p.dodged() ? 0.5 : 0) + (p.destroyedTarget() ? 0.5 : 0);
+            if (battle.getRangedDodgers().contains(unit)
+                    || battle.getTargetedSnipers().contains(unit)) {
+                actions = Math.max(actions, 1);
+            }
             double amount = Math.min(1.0, actions) + (enemyCharacterLost ? 1 : 0);
             if (amount <= 0) {
                 continue;

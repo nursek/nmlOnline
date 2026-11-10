@@ -148,6 +148,8 @@ class SniperServiceFireTest {
         assertTrue(payload.contains("\"ranged\":true"));
         assertTrue(payload.contains("Tir à distance"));
         assertTrue(payload.contains("Contre-tir à distance"));
+        assertTrue(payload.contains("\"experienceGains\":[{"),
+                "Le sniper ciblé survivant gagne de l'expérience");
         assertTrue(playerRepository.findById(world.targetPlayerId()).isPresent());
         assertFalse(playerRepository.findById(world.targetPlayerId()).orElseThrow().isEliminated());
     }

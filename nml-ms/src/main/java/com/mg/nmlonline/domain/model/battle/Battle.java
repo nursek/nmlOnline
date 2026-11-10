@@ -54,8 +54,9 @@ public class Battle {
     private List<Unit> rangedDefenders = new ArrayList<>();
     /** Clé = index de camp de l'impasse. */
     private Map<Integer, List<Unit>> rangedByCamp = new HashMap<>();
-    private final Set<Unit> targetedSnipers = new HashSet<>();
-    private final Set<CombatEntity> rangedDestroyed = new HashSet<>();
+    private final Set<Unit> targetedSnipers = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<CombatEntity> rangedDestroyed = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<Unit> rangedDodgers = Collections.newSetFromMap(new IdentityHashMap<>());
 
     public Battle() {
         this.randomSource = new ThreadLocalRandomSource();
@@ -515,6 +516,9 @@ public class Battle {
             if (SniperRules.dodges(target, rand())) {
                 dodged++;
                 tracker(target).dodged = true;
+                if (target instanceof Unit unit) {
+                    rangedDodgers.add(unit);
+                }
                 break;
             }
             double resistance = target.getDamageReduction("PDF");
