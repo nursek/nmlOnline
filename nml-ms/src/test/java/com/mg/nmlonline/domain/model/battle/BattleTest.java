@@ -155,6 +155,24 @@ class BattleTest {
         }
 
         @Test
+        @DisplayName("Esquive 50 % : un jet au-dessus laisse passer la frappe")
+        void dodgeFailsWhenRollExceedsEvasion() {
+            Unit striker = larbin();
+            striker.setNumber(1);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            Unit dodger = larbin();
+            dodger.setNumber(2);
+            dodger.addEquipment(defensive(0, 50));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(dodger));
+            battle.setRandomSource(rolls(100, 51));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertTrue(battle.getParticipation().get(dodger).damaged(), "Jet 51 > 50 % : la frappe passe");
+            assertFalse(logContains("esquive"));
+        }
+
+        @Test
         @DisplayName("La cible la plus faible encaisse d'abord, le surplus entame la suivante")
         void surplusChainsOnWeakestInCategory() {
             Unit striker = brute();
@@ -238,6 +256,48 @@ class BattleTest {
         }
 
         @Test
+        @DisplayName("Deux catégories : jet ≤ 50 vise le véhicule, l'unité survit")
+        void categoryRollAtFiftyPicksVehicle() {
+            Unit shooter = new Unit(5, UnitClass.TIREUR);
+            shooter.setNumber(1);
+            shooter.addEquipment(firearm(100));
+            // ATK 0 : sans phase ATK, defenderUnits ne reflète que le tirage de catégorie en PDF.
+            shooter.setAttack(0);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(shooter));
+            Unit decoy = larbin();
+            decoy.setNumber(1);
+            Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, 2L);
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(decoy, vehicle));
+            battle.setRandomSource(rolls(100, 50));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertFalse(defenderUnits.contains(vehicle), "50 PdF détruisent le VTT léger (50 def)");
+            assertEquals(10.0, decoy.getDefense(), "Le LARBIN n'est pas visé");
+        }
+
+        @Test
+        @DisplayName("Deux catégories : jet > 50 vise l'unité, le véhicule encaisse le surplus")
+        void categoryRollAboveFiftyPicksUnit() {
+            Unit shooter = new Unit(5, UnitClass.TIREUR);
+            shooter.setNumber(1);
+            shooter.addEquipment(firearm(100));
+            // ATK 0 : sans phase ATK, defenderUnits ne reflète que le tirage de catégorie en PDF.
+            shooter.setAttack(0);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(shooter));
+            Unit decoy = larbin();
+            decoy.setNumber(1);
+            Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, 2L);
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(decoy, vehicle));
+            battle.setRandomSource(rolls(100, 51));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertFalse(defenderUnits.contains(decoy), "Le LARBIN (10 def) tombe en premier");
+            assertEquals(10.0, vehicle.getDefense(), "Surplus 40 sur les 50 def du VTT léger");
+        }
+
+        @Test
         @DisplayName("Véhicule sans pilote : cible passive, il ne tire pas en PdF")
         void unPilotedVehicleDoesNotFire() {
             Unit attackerUnit = larbin();
@@ -315,6 +375,40 @@ class BattleTest {
             assertEquals(2, battle.getLog().stream()
                     .filter(entry -> entry.message().contains("n'a aucune cible"))
                     .count());
+        }
+
+        @Test
+        @DisplayName("Aérien : jet ≤ 10 % touche et entame le véhicule")
+        void aerialTargetIsHitWhenRollWithinChance() {
+            Unit striker = larbin();
+            striker.setNumber(1);
+            striker.addEquipment(firearm(100));
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            Vehicle helicopter = new Vehicle(VehicleType.HELICOPTERE, 2L);
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(helicopter));
+            battle.setRandomSource(rolls(100, 10));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(115.0, helicopter.getDefense(), "10 PdF touchent l'hélicoptère");
+            assertFalse(logContains("loupe la cible aérienne"));
+        }
+
+        @Test
+        @DisplayName("Aérien : jet > 10 % loupe la cible, l'attaque est perdue")
+        void aerialTargetIsMissedAboveChance() {
+            Unit striker = larbin();
+            striker.setNumber(1);
+            striker.addEquipment(firearm(100));
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            Vehicle helicopter = new Vehicle(VehicleType.HELICOPTERE, 2L);
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(helicopter));
+            battle.setRandomSource(rolls(100, 11));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(125.0, helicopter.getDefense(), "Aucun dégât : l'attaque est perdue");
+            assertTrue(logContains("loupe la cible aérienne (jet 11 > 10 %)"));
         }
     }
 
