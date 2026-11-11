@@ -16,6 +16,7 @@ import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
+import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
@@ -29,6 +30,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -87,11 +89,14 @@ class CombatServiceScenariosTest {
 
     private Sector pickEmptyNeutralSector(Board board) {
         return board.getAllSectors().stream()
-                .filter(s -> s.isNeutral() && s.getArmySize() == 0
-                        && s.getBuildings().isEmpty() && s.getCharacters().isEmpty()
-                        && s.getVehicles().isEmpty())
+                .filter(s -> s.isNeutral() && isEmpty(s))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Aucun secteur neutre vide dans le board de démo"));
+    }
+
+    private boolean isEmpty(Sector sector) {
+        return sector.getArmySize() == 0 && sector.getBuildings().isEmpty()
+                && sector.getCharacters().isEmpty() && sector.getVehicles().isEmpty();
     }
 
     private HoldingsWorld seedDefenderHolding() {
@@ -553,6 +558,98 @@ class CombatServiceScenariosTest {
             defender.getBuildings().add(bank);
             em.flush();
             return new RangedWorld(attacker.getId(), defender.getId(), sector.getNumber(), bank.getId());
+        });
+    }
+
+    private record ThirdPartyWorld(Long firstId, Long secondId, Long thirdId, int sectorNumber,
+                                   Long secondSniperId, Long thirdSniperId, int thirdSectorNumber) {
+    }
+
+    private Unit persistentSniper(Long playerId, double pdf, String suffix) {
+        Unit sniper = new Unit(0.0, UnitClass.SNIPER);
+        sniper.setPlayerId(playerId);
+        sniper.setAttack(0);
+        sniper.setPdc(0);
+        Equipment rifle = new Equipment("Fusil" + suffix, 0, 0, 0, 0, 0,
+                Set.of(UnitClass.SNIPER), EquipmentCategory.FIREARM);
+        rifle.setAimMalusReduction(100);
+        em.persist(rifle);
+        sniper.addEquipment(rifle);
+        sniper.setType(UnitType.PERSONNAGE);
+        sniper.setPdf(pdf);
+        return sniper;
+    }
+
+    private ThirdPartyWorld seedThirdPartyStandoff() {
+        return new TransactionTemplate(txManager).execute(status -> {
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            Sector sector = pickEmptyNeutralSector(board);
+            List<Sector> empty = board.getAllSectors().stream()
+                    .filter(s -> s.getNumber() != sector.getNumber() && s.isNeutral() && isEmpty(s))
+                    .limit(2)
+                    .toList();
+            if (empty.size() < 2) {
+                throw new AssertionError("Deux secteurs neutres vides requis pour le scénario tiers");
+            }
+            Sector secondHome = empty.getFirst();
+            Sector thirdHome = empty.getLast();
+
+            Player first = new Player("PremierImpasse");
+            Player second = new Player("SecondImpasse");
+            Player third = new Player("TiersImpasse");
+            playerRepository.save(first);
+            playerRepository.save(second);
+            playerRepository.save(third);
+
+            for (Player owner : List.of(first, second)) {
+                Unit ground = new Unit(0.0, UnitClass.LEGER);
+                ground.setPlayerId(owner.getId());
+                ground.setAttack(0);
+                ground.setPdf(0);
+                ground.setPdc(0);
+                ground.setArmor(1000);
+                sector.addUnit(ground);
+            }
+
+            Unit secondSniper = persistentSniper(second.getId(), 500, "Second");
+            secondHome.addUnit(secondSniper);
+            Unit thirdSniper = persistentSniper(third.getId(), 500, "Tiers");
+            thirdHome.addUnit(thirdSniper);
+            em.flush();
+            return new ThirdPartyWorld(first.getId(), second.getId(), third.getId(), sector.getNumber(),
+                    secondSniper.getId(), thirdSniper.getId(), thirdHome.getNumber());
+        });
+    }
+
+    @Test
+    @DisplayName("Impasse à 3 camps : le sniper tiers ne peut être touché que par un sniper et disparaît de son secteur")
+    void thirdPartySniperJoinsStandoffAsRangedOnlyCamp() {
+        ThirdPartyWorld w = seedThirdPartyStandoff();
+
+        CombatService.StandoffBattleResult r = new TransactionTemplate(txManager).execute(status -> {
+            Player first = playerRepository.findById(w.firstId()).orElseThrow();
+            Player second = playerRepository.findById(w.secondId()).orElseThrow();
+            Player third = playerRepository.findById(w.thirdId()).orElseThrow();
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            Unit secondSniper = em.find(Unit.class, w.secondSniperId());
+            Unit thirdSniper = em.find(Unit.class, w.thirdSniperId());
+            return combatService.simulateSectorStandoff(
+                    List.of(List.of(first), List.of(second), List.of(third)), board, w.sectorNumber(),
+                    Map.of(1, List.of(secondSniper), 2, List.of(thirdSniper)), Set.of(2));
+        });
+
+        assertTrue(r.success());
+        assertNull(r.winner(), "Un camp sniper ne peut pas gagner l'impasse");
+        assertTrue(r.outcomes().stream()
+                        .filter(o -> o.playerId().equals(w.thirdId()))
+                        .anyMatch(o -> o.casualties() == 1),
+                () -> "outcomes=" + r.outcomes() + " casualties=" + r.casualtyDetails()
+                        + " log=" + r.battleLog());
+        assertTrue(r.casualtyDetails().stream().anyMatch(c -> c.playerId().equals(w.thirdId())));
+
+        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+            assertNull(em.find(Unit.class, w.thirdSniperId()),
+                    "Le sniper tiers détruit est retiré de son secteur d'origine");
         });
     }
 

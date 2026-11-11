@@ -7,6 +7,8 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
+import com.mg.nmlonline.domain.model.vehicle.Vehicle;
+import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +19,7 @@ import java.util.Random;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -71,26 +74,7 @@ class BattleRangedTest {
                 Set.of(UnitClass.SNIPER), EquipmentCategory.FIREARM);
         rifle.setAimMalusReduction(20);
         unit.addEquipment(rifle);
-        Equipment cloak = new Equipment("Cape de test", 0, 0, 0, 0, 0,
-                Set.of(UnitClass.SNIPER), EquipmentCategory.DEFENSIVE);
-        cloak.setEnemyAimMalus(-20);
-        unit.addEquipment(cloak);
         unit.setPdf(pdf);
-        return unit;
-    }
-
-    private Unit dodgyLarbin(Long playerId) {
-        Unit unit = new Unit(0.0, UnitClass.SNIPER);
-        unit.setPlayerId(playerId);
-        Equipment rifle = new Equipment("Fusil de test", 0, 0, 0, 0, 0,
-                Set.of(UnitClass.SNIPER), EquipmentCategory.FIREARM);
-        rifle.setAimMalusReduction(20);
-        unit.addEquipment(rifle);
-        Equipment cloak = new Equipment("Cape de test", 0, 0, 0, 0, 0,
-                Set.of(UnitClass.SNIPER), EquipmentCategory.DEFENSIVE);
-        cloak.setEnemyAimMalus(100);
-        unit.addEquipment(cloak);
-        unit.setPdf(0);
         return unit;
     }
 
@@ -172,17 +156,123 @@ class BattleRangedTest {
     }
 
     @Test
-    @DisplayName("Une cible qui esquive une salve est tracée pour l'expérience")
-    void rangedDodgeIsTracked() {
+    @DisplayName("Un survivant endommagé par un tir isolé est blessé")
+    void rangedSurvivorIsInjured() {
+        Unit shooter = sniperLarbin(1L, 5);
+        Unit target = new Unit(0.0, UnitClass.LEGER);
+        target.setPlayerId(2L);
+        target.setDefense(10);
+        target.setPdf(0);
+        target.setPdc(0);
+        Battle battle = battle();
+
+        battle.rangedOnlyConfiguration(List.of(shooter), new ArrayList<>(List.of(target)), "Secteur 2");
+
+        assertFalse(battle.getRangedDestroyed().contains(target));
+        assertTrue(target.isInjured());
+    }
+
+    @Test
+    @DisplayName("Un véhicule détruit débarque son équipage, puis la salve continue sur lui")
+    void rangedSalvoContinuesOnDisembarkedCrew() {
         Unit shooter = sniperLarbin(1L, 500);
-        Unit target = dodgyLarbin(2L);
-        List<CombatEntity> targets = new ArrayList<>(List.of(target));
+        Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, 2L);
+        Unit pilot = new Unit(0.0, UnitClass.PILOTE_DESTRUCTEUR);
+        pilot.setPlayerId(2L);
+        Unit passenger = new Unit(0.0, UnitClass.TIREUR);
+        passenger.setPlayerId(2L);
+        vehicle.assignPilot(pilot);
+        vehicle.embark(passenger);
+        List<CombatEntity> targets = new ArrayList<>(List.of(vehicle, pilot, passenger));
         Battle battle = battle();
 
         battle.rangedOnlyConfiguration(List.of(shooter), targets, "Secteur 2");
 
-        assertFalse(targets.isEmpty());
-        assertTrue(battle.getRangedDodgers().contains(target));
-        assertFalse(battle.getRangedDestroyed().contains(target));
+        assertTrue(battle.getRangedDestroyed().contains(vehicle));
+        assertTrue(battle.getRangedDestroyed().contains(pilot));
+        assertTrue(battle.getRangedDestroyed().contains(passenger));
+    }
+
+    @Test
+    @DisplayName("Impasse : un camp sniper tiers n'est pas touché par les attaques au sol")
+    void rangedOnlyCampIsNotHitByGround() {
+        Player first = player(1L, "Camp 1");
+        Player second = player(2L, "Camp 2");
+        Player third = player(3L, "Camp 3");
+        Unit firstUnit = sniper(1L, 500);
+        firstUnit.setArmor(1000);
+        Unit secondUnit = sniper(2L, 0);
+        secondUnit.setArmor(1000);
+        Unit thirdSniper = sniperLarbin(3L, 500);
+        List<CombatEntity> firstCamp = new ArrayList<>(List.of(firstUnit));
+        List<CombatEntity> secondCamp = new ArrayList<>(List.of(secondUnit));
+        List<CombatEntity> thirdCamp = new ArrayList<>(List.of(thirdSniper));
+        Battle battle = battle();
+        battle.setRangedOnlyCamps(Set.of(2));
+        battle.setRangedByCamp(Map.of(2, List.of(thirdSniper)));
+
+        battle.classicStandoffConfiguration(List.of(first, second, third),
+                List.of(firstCamp, secondCamp, thirdCamp), new int[]{1, 2, 0}, new double[]{0, 0, 0});
+
+        assertFalse(thirdCamp.isEmpty(), "Le camp sniper n'est pas une cible au sol");
+        assertFalse(battle.getRangedDestroyed().contains(thirdSniper));
+        assertNull(battle.getWinner(), "Un camp sniper ne peut pas gagner l'impasse");
+    }
+
+    @Test
+    @DisplayName("Impasse : un camp sans sniper reporte son PDF sur le camp suivant en phase PDC")
+    void standoffWithoutSniperCarriesPdfToPdc() {
+        Player first = player(1L, "A");
+        Player second = player(2L, "B");
+        Player third = player(3L, "C");
+        Unit firstUnit = unit(1L);
+        firstUnit.setDefense(1000);
+        Unit secondUnit = unit(2L);
+        secondUnit.setPdf(500);
+        secondUnit.setPdc(500);
+        secondUnit.setDefense(1000);
+        Unit thirdSniper = sniper(3L, 100);
+        thirdSniper.setDefense(1000);
+        List<CombatEntity> firstCamp = new ArrayList<>(List.of(firstUnit));
+        List<CombatEntity> secondCamp = new ArrayList<>(List.of(secondUnit));
+        List<CombatEntity> thirdCamp = new ArrayList<>(List.of(thirdSniper));
+        Battle battle = battle();
+        battle.setRangedOnlyCamps(Set.of(2));
+        battle.setRangedByCamp(Map.of(2, List.of(thirdSniper)));
+
+        battle.classicStandoffConfiguration(List.of(first, second, third),
+                List.of(firstCamp, secondCamp, thirdCamp), new int[]{1, 2, 0}, new double[]{0, 0, 0});
+
+        assertTrue(battle.getLog().stream()
+                        .anyMatch(entry -> entry.phase().contains("PDC")
+                                && entry.message().contains("touche A")),
+                "B n'a pas de sniper : son PDF non utilisé retombe sur A en phase PDC");
+    }
+
+    @Test
+    @DisplayName("Impasse : un sniper d'un autre camp peut détruire le camp sniper tiers")
+    void sniperSupportHitsRangedOnlyCamp() {
+        Player first = player(1L, "Camp 1");
+        Player second = player(2L, "Camp 2");
+        Player third = player(3L, "Camp 3");
+        Unit firstUnit = sniper(1L, 0);
+        firstUnit.setArmor(1000);
+        Unit secondUnit = sniper(2L, 0);
+        secondUnit.setArmor(1000);
+        Unit secondSniper = sniperLarbin(2L, 500);
+        Unit thirdSniper = sniperLarbin(3L, 500);
+        List<CombatEntity> firstCamp = new ArrayList<>(List.of(firstUnit));
+        List<CombatEntity> secondCamp = new ArrayList<>(List.of(secondUnit));
+        List<CombatEntity> thirdCamp = new ArrayList<>(List.of(thirdSniper));
+        Battle battle = battle();
+        battle.setRangedOnlyCamps(Set.of(2));
+        battle.setRangedByCamp(Map.of(1, List.of(secondSniper), 2, List.of(thirdSniper)));
+
+        battle.classicStandoffConfiguration(List.of(first, second, third),
+                List.of(firstCamp, secondCamp, thirdCamp), new int[]{1, 2, 0}, new double[]{0, 0, 0});
+
+        assertTrue(thirdCamp.isEmpty(), "Le sniper du camp 2 détruit le sniper tiers");
+        assertTrue(battle.getRangedDestroyed().contains(thirdSniper));
+        assertNull(battle.getWinner());
     }
 }

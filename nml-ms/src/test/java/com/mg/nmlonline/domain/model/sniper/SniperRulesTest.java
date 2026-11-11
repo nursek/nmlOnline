@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DisplayName("SniperRules — jet de HIT puis Esquive")
+@DisplayName("SniperRules — jet de HIT")
 class SniperRulesTest {
 
     private static final Long JOUEUR = 1L;
@@ -59,6 +59,8 @@ class SniperRulesTest {
         assertEquals(35, SniperRules.hitMalus(unit(UnitType.VOYOU)));
         assertEquals(50, SniperRules.hitMalus(unit(UnitType.MALFRAT)));
         assertEquals(65, SniperRules.hitMalus(unit(UnitType.BRUTE)));
+        assertEquals(35, SniperRules.hitMalus(unit(UnitType.LARBIN, defensive(15))));
+        assertEquals(100, SniperRules.hitMalus(unit(UnitType.BRUTE, defensive(50))));
         assertEquals(25, SniperRules.hitMalus(new Vehicle(VehicleType.TANK, JOUEUR)));
         assertEquals(0, SniperRules.hitMalus(new Bank(JOUEUR)));
         assertEquals(35, SniperRules.hitMalus(new GameCharacter("H", 10, 10, 10, 10, 0, 0)));
@@ -78,23 +80,12 @@ class SniperRulesTest {
         assertFalse(SniperRules.hits(sansFusil, larbin, 20));
         assertTrue(SniperRules.hits(sansFusil, larbin, 21));
 
+        Unit gilet = unit(UnitType.LARBIN, defensive(15));
+        assertFalse(SniperRules.hits(sansFusil, gilet, 35));
+        assertTrue(SniperRules.hits(sansFusil, gilet, 36));
+
         assertTrue(SniperRules.hits(sansFusil, new Bank(JOUEUR), 1));
         assertTrue(SniperRules.hits(sansFusil, new Vehicle(VehicleType.HELICOPTERE, JOUEUR), 10));
         assertFalse(SniperRules.hits(sansFusil, new Vehicle(VehicleType.HELICOPTERE, JOUEUR), 11));
-    }
-
-    @Test
-    @DisplayName("Esquive = valeur de classe + gilet, plafonnée ; non-unités à 0")
-    void dodgeChanceAddsVestAndCaps() {
-        assertEquals(20, SniperRules.dodgeChance(unit(UnitType.LARBIN)));
-        assertEquals(35, SniperRules.dodgeChance(unit(UnitType.LARBIN, defensive(15))));
-        assertEquals(65, SniperRules.dodgeChance(unit(UnitType.BRUTE)));
-        assertEquals(100, SniperRules.dodgeChance(unit(UnitType.BRUTE, defensive(50))));
-
-        assertTrue(SniperRules.dodges(unit(UnitType.LARBIN, defensive(15)), 35));
-        assertFalse(SniperRules.dodges(unit(UnitType.LARBIN, defensive(15)), 36));
-        assertEquals(0, SniperRules.dodgeChance(new Vehicle(VehicleType.TANK, JOUEUR)));
-        assertEquals(0, SniperRules.dodgeChance(new Bank(JOUEUR)));
-        assertEquals(0, SniperRules.dodgeChance(new GameCharacter("H", 10, 10, 10, 10, 0, 0)));
     }
 }

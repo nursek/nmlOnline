@@ -5,9 +5,10 @@
 > **v3** intègre les arbitrages finaux : réduction d'arme **plate**, valeurs des non-unités
 > validées, chaîne de salve confirmée, contre-tir limité au groupe tireur, élimination par le
 > personnage principal validée, action offensive nommée **Tir de précision**.
-> **v2** : le tir se résout en **jet de HIT puis jet d'Esquive** (aucun malus de dégâts), la
-> salve rejoint la **phase PdF du combat**, le sniper peut viser **tout type d'entité**, et un
-> sniper **inactif** ciblé peut **contre-tirer**.
+> **v5** : **un seul jet de HIT** ; l'Esquive séparée est supprimée. Le malus de HIT inclut le
+> Gilet de camouflage optique ; une cible touchée subit les dégâts. La salve rejoint la
+> **phase PdF du combat**, le sniper peut viser **tout type d'entité**, et un sniper **inactif**
+> ciblé peut **contre-tirer**.
 > Les données d'équipement (V32 : `aim_malus_reduction`, `enemy_aim_malus`) restent inchangées.
 
 ## 1. Acquis
@@ -18,22 +19,22 @@
 - infrastructure de tour : `MovementOrder` / `MovementService`, session de résolution
   (`TurnResolutionOrchestrator`), combats (`CombatService` → `Battle`).
 
-Manque : ordres sniper, jet de HIT, jet d'Esquive sniper, intégration PdF multi-secteurs,
-contre-tir, rapports de tir à distance, expérience associée.
+Manque : ordres sniper, jet de HIT unique, intégration PdF multi-secteurs, contre-tir,
+rapports de tir à distance, expérience associée.
 
 ## 2. Décisions intégrées
 
 | # | Décision |
 |---|---|
-| D1 | **Deux jets** : jet de HIT sniper, puis, s'il touche, jet d'Esquive de la cible. Pas de malus de dégâts : la salve passe entière ou est perdue. |
-| D2 | **Malus de HIT = valeur de la classe visée** (LARBIN 20, VOYOU 35, MALFRAT 50, BRUTE 65), **réduit à plat** par l'arme du tireur (soustraction de points). |
+| D1 | **Un seul jet** : jet de HIT sniper ; s'il touche, la cible subit les dégâts. Pas de jet d'Esquive séparé, pas de malus de dégâts. |
+| D2 | **Malus de HIT = valeur de la classe visée** (LARBIN 20, VOYOU 35, MALFRAT 50, BRUTE 65) **+ `enemy_aim_malus` du défensif** (Gilet +15), **réduit à plat** par l'arme du tireur (soustraction de points). |
 | D3 | **Portée 1** : uniquement un secteur adjacent. |
 | D4 | **Intégration à `Battle`** : la salve est un renfort de la phase PdF, les deux se produisent simultanément. Les kills à distance ne capturent pas ; le rapport ne nomme pas les unités qui ont tiré (« X PdF, à distance »). |
 | D5 | **Tout type d'entité ciblable** : unités, véhicules, bâtiments, QG, personnages. Un QG peut être détruit, jamais capturé par un tir ; un personnage principal tué élimine son joueur (règle existante). |
-| D6 | **Esquive = valeur de classe + `enemy_aim_malus`** (points) : LARBIN + gilet = 35 % d'Esquive. |
+| D6 | **Malus de HIT = valeur de classe + `enemy_aim_malus`** (points) : LARBIN + gilet = 35 % de rater. |
 | D7 | **Cumul par maximum** de catégorie (meilleure arme compatible / meilleur défensif compatible). |
 | D8 | **Surveillance** : le sniper rejoint la phase PdF de la bataille du secteur surveillé, côté défenseur, sans être ciblable ni compter dans les pertes/vainqueur. |
-| D9 | **Expérience** : +1 Exp aux unités qui esquivent et aux snipers ciblés à distance survivants ; le tireur ne gagne rien ; plafond 1 Exp/unité/tour. |
+| D9 | **Expérience** : +1 Exp aux snipers ciblés à distance survivants ; le tireur ne gagne rien pour son tir, mais +1 s'il survit au contre-tir qu'il subit ; plafond 1 Exp/unité/tour. |
 | D10 | **N'importe quel secteur voisin** est ciblable : possédé/alllié → Surveillance ; neutre/ennemi → **Tir de précision**. |
 | D11 | **Contre-tir** : un sniper inactif (aucun ordre sniper, aucun combat au sol dans son secteur, pas déjà contré) ciblé par une salve riposte vers le groupe de snipers tireur, simultanément. |
 | D12 | Valeurs des cibles non-unités validées : véhicule terrestre 25, bâtiment 0, personnage 35 ; véhicule aérien = chance de toucher classique selon le **niveau (exp) du tireur** (voir §3.1). |
@@ -43,8 +44,8 @@ contre-tir, rapports de tir à distance, expérience associée.
 ### 3.1 Jet de HIT
 
 ```
-malusHit = clamp(valeurCible − réductionArme, 0, 100)     // réduction plate, en points
-jet 1..100 ; jet <= malusHit  →  la salve rate, aucune Esquive jouée
+malusHit = clamp(valeurCible + enemyAimMalusCible − réductionArme, 0, 100)  // points
+jet 1..100 ; jet <= malusHit  →  la salve rate ; sinon la cible subit les dégâts
 ```
 
 `réductionArme` = valeur `aim_malus_reduction` du meilleur équipement à feu compatible (D7).
@@ -81,45 +82,26 @@ alors que le malus se lit `jet ≤ malus` (rate). La réduction d'arme du fusil 
 s'applique pas à ce jet : c'est la règle classique reprise telle quelle. Le type du véhicule
 aérien visé (hélicoptère / avion de transport) n'entre pas dans le calcul.
 
-### 3.2 Jet d'Esquive
-
-```
-chanceEsquive = clamp(valeurClasseCible + enemyAimMalusCible, 0, 100)   // en points
-jet 1..100 ; jet <= chanceEsquive  →  la salve est perdue
-```
-
-- `enemyAimMalusCible` = valeur `enemy_aim_malus` du meilleur défensif compatible de la cible
-  (le Gilet de camouflage optique : +15).
-- Exemple : LARBIN 20 + gilet 15 = **35 %** d'Esquive.
-- La stat `evasion` de l'unité n'est **pas** utilisée pour les tirs sniper : elle reste la
-  défense des combats classiques (le gilet garde son +10 % Esquive pour ces combats).
-- Seules les unités ont une classe ; véhicules, bâtiments et personnages ont une Esquive 0
-  (les véhicules n'ont pas d'esquive, les bâtiments sont fixes).
-
-### 3.3 Dégâts
+### 3.2 Dégâts
 
 - Une salve qui touche applique **toute la PdF** de l'unité sniper, sans malus.
 - Armure puis défense, surplus enchaîné sur la cible suivante (même logique que
-  `Battle.performStrike`) ; une Esquive arrête la salve (comportement actuel du moteur).
+  `Battle.performStrike`). Seul le jet de HIT peut faire rater la salve.
+- Un véhicule détruit débarque son équipage ; s'il reste de la PdF, la salve continue sur les
+  cibles débarquées.
 - Destruction : voir §8 (pertes, blessures, équipements, véhicules, bâtiments, QG).
 
-### 3.4 Exemples de chances de réussite
+### 3.3 Exemples de chances de toucher
 
-Sans équipement (HIT × Esquive) :
+| Cible | Chance sans équipement | Avec Enmitic Exterminator (−15) |
+|---|---|---|
+| LARBIN | 80 % | 95 % |
+| VOYOU | 65 % | 80 % |
+| MALFRAT | 50 % | 65 % |
+| BRUTE | 35 % | 50 % |
 
-| Cible | Chance de toucher une salve |
-|---|---|
-| LARBIN | 0,80 × 0,80 = **64 %** |
-| VOYOU | 0,65 × 0,65 = **42 %** |
-| MALFRAT | 0,50 × 0,50 = **25 %** |
-| BRUTE | 0,35 × 0,35 = **12 %** |
-
-Avec Enmitic Exterminator (−15 HIT) : LARBIN 76 %, VOYOU 52 %, MALFRAT 32,5 %, BRUTE 17,5 %.
-Avec Gilet de camouflage optique chez la cible (+15 Esquive) : LARBIN 52 %, VOYOU 32,5 %,
-MALFRAT 17,5 %, BRUTE 7 %.
-Le double jet rend les hauts rangs très difficiles à toucher ; c'est cohérent avec le ciblage
-« du plus faible au plus puissant » (les snipers chassent d'abord les rangs bas). À surveiller
-en équilibrage : le gilet est très fort en défense.
+Le Gilet de camouflage optique de la cible ajoute +15 au malus de HIT : LARBIN 80 % → 65 %,
+BRUTE 35 % → 20 %.
 
 ## 4. Ciblage
 
@@ -127,13 +109,13 @@ en équilibrage : le gilet est très fort en défense.
 - Ordre de ciblage : unités d'abord, de la moins expérimentée à la plus puissante
   (`Battle.EXPOSURE_ORDER`), puis véhicules, puis bâtiments (Banque, Cache, QG), puis
   personnages. Le QG devient donc attaquable une fois les autres cibles traitées (D5).
-- Le surplus de PdF enchaîne sur les cibles suivantes ; une Esquive perd la salve.
+- Le surplus de PdF enchaîne sur les cibles suivantes ; seul le jet de HIT peut faire rater la salve.
 - Seules les unités de classe `SNIPER` reçoivent un ordre sniper (pas les personnages).
 
 ## 5. Contre-tir (D11)
 
 Déclencheur : une unité sniper est **prise pour cible** par au moins une salve ennemie
-(incluse dans la chaîne de ciblage, qu'elle soit touchée ou qu'elle esquive).
+(incluse dans la chaîne de ciblage).
 
 Conditions cumulatives pour riposter :
 
@@ -148,7 +130,7 @@ Résolution :
   ordres sniper à l'origine des salves), pas les autres snipers présents dans le secteur
   d'origine ni les autres unités ; si plusieurs secteurs d'origine, le premier tir (ordre
   d'id) ;
-- mêmes jets que §3 : HIT puis Esquive, PdF complète, pas de malus de dégâts ;
+- même jet que §3 : HIT, PdF complète, pas de malus de dégâts ;
 - **simultanéité** : les salves entrantes et les contre-tirs sont résolus sur un instantané
   des combattants ; un sniper détruit par la salve riposte quand même (comme les phases
   d'impasse) ;
@@ -241,15 +223,20 @@ Au moment de `TurnResolutionOrchestrator.resolveBattle(conflictId)` :
    défend sur place (règle « Attaque sur place ») ;
 3. déterminer le camp de chaque sniper : joueur/allié dans le camp attaquant → renfort
    attaquant ; joueur/allié dans le camp défenseur (ou propriétaire du secteur) → renfort
-   défenseur ; sinon → tir indépendant contre les unités hostiles du secteur ;
+   défenseur ; sinon → **camp à distance** : le duel devient une **impasse à 3 camps**
+   A → B → C → A. A/B restent dans le secteur de l'impasse ; C n'engage que ses snipers, dans un
+   secteur voisin. B tire sur C avec ses propres snipers (dans le secteur du standoff) ; A, sans
+   sniper, ne peut pas toucher C ; C tire sur A. Sans sniper, le PDF inutilisé de B est reporté
+   sur A en phase PDC.
+   C ne gagne pas et ne capture pas ;
 4. passer ces renforts (`unit`, joueur, camp, secteur d'origine) à
    `CombatService.simulateSectorBattle` → `Battle` ;
 5. dans `Battle`, pendant la **phase PdF** du camp concerné, résoudre les salves sniper avec
-   la mécanique §3 (HIT → Esquive → dégâts), après les frappes PdF normales du camp ;
+   la mécanique §3 (HIT → dégâts), après les frappes PdF normales du camp ;
 6. les unités sniper **n'entrent pas** dans `attackerUnits` / `defenderUnits` : elles ne sont
    ni ciblables, ni comptées dans le vainqueur, ni dans les pertes, ni dans la capture ;
 7. journal : acteur générique `Tir à distance` + PdF engagée, sans nom d'unité (« Tir à
-   distance : 1 200 PdF — 3 cibles détruites, 2 esquives ») ;
+   distance : 1 200 PdF — 3 cibles détruites, 2 tirs ratés ») ;
 8. contre-tirs (§5) résolus dans la même phase sur un instantané.
 
 ### 7.2 Secteur sans combat au sol
@@ -292,9 +279,8 @@ Au moment de `TurnResolutionOrchestrator.resolveBattle(conflictId)` :
 
 ### 8.2 Expérience
 
-- +1 Exp à chaque unité qui esquive une salve sniper (y compris les non-snipers) ;
 - +1 Exp à chaque unité sniper **ciblée** à distance et survivante ;
-- le tireur ne gagne rien pour son tir ;
+- +1 Exp au tireur qui survit au **contre-tir** qu'il subit ; il ne gagne rien pour son propre tir ;
 - plafond **1 Exp par unité et par tour**, en agrégeant l'Exp déjà gagnée pendant les batailles
   (`ExperienceGain` de la session) : une unité qui a combattu au sol ne cumule pas ;
 - les gains sont ajoutés au compte-rendu du tour et au `BattleReport`.
@@ -317,17 +303,18 @@ Au moment de `TurnResolutionOrchestrator.resolveBattle(conflictId)` :
   que le tour n'est pas résolu ;
 - carte : surbrillance du secteur visé (même calque que les ordres de déplacement) ;
 - rapports : nouvelle catégorie « Tir à distance » dans la liste et le dialogue de rapport ;
-- page Règles : mise à jour dans le même lot que l'implémentation — séquence HIT/Esquive,
-  ciblage de tous les types, contre-tir, rapports, libellés Tir de précision/Surveillance.
+- page Règles : **page dédiée « Tir à distance »** (route `/regles/tir-a-distance`) — séquence
+  HIT, ciblage de tous les types, impasse à 3 camps, contre-tir, rapports, libellés
+  Tir de précision/Surveillance, blessures et expérience.
 
 ## 10. Tests
 
-- `SniperRulesTest` : malus HIT (classe, arme, plancher 0), Esquive (classe + gilet, plafond
-  100), valeurs des non-unités, chance aérienne selon l'exp du tireur, ciblage ;
+- `SniperRulesTest` : malus HIT (classe + gilet, arme, plancher 0), valeurs des non-unités,
+  chance aérienne selon l'exp du tireur, ciblage ;
 - `SniperOrderServiceTest` : ownership, classe, adjacence, double ordre, ordre de déplacement,
   annulation, rôle dérivé selon la propriété ;
 - `SniperResolutionTest` (`@EmbeddedPostgresTest`) :
-  - salve qui rate (HIT), salve qui touche puis esquive, salve qui touche et blesse/détruit ;
+  - salve qui rate (HIT), salve qui touche et blesse/détruit, véhicule détruit puis équipage ciblé ;
   - soutien attaquant dans un combat au sol : la PdF sniper s'ajoute à la phase PdF et les
     pertes comptent, sans changer la capture ;
   - surveillance d'un secteur allié attaqué : renfort défenseur non ciblable ;
@@ -335,7 +322,7 @@ Au moment de `TurnResolutionOrchestrator.resolveBattle(conflictId)` :
   - contre-tir : sniper inactif ciblé qui riposte, simultanéité, conditions d'inéligibilité
     (ordre sniper, combat au sol, déjà contré), pas de chaîne ;
   - QG détruit par un tir : bâtiment détruit, joueur non éliminé ;
-  - Exp : +1 esquive, +1 sniper ciblé, tireur à 0, plafond 1/tour ;
+  - Exp : +1 sniper ciblé, tireur à 0, plafond 1/tour ;
 - test d'orchestration : tour complet avec déplacements, combat, salves sniper et contre-tir ;
 - specs Angular : libellé Tir de précision/Surveillance, sélection des voisins, affichage des
   ordres.
@@ -346,21 +333,27 @@ Au moment de `TurnResolutionOrchestrator.resolveBattle(conflictId)` :
 |---|---|---|
 | 1 | Données d'équipement + page Règles | **fait** |
 | 2 | Ordres sniper : table, entité, API, validations, UI | poser/annuler un ordre, sans effet en jeu |
-| 3 | Mécanique HIT/Esquive + dégâts + intégration PdF des combats au sol + rapport | salves dans un combat, pertes, aucun impact capture |
+| 3 | Mécanique HIT + dégâts + intégration PdF des combats au sol + rapport | salves dans un combat, pertes, aucun impact capture |
 | 4 | Tir hors combat (rapport `RANGED`) + contre-tir | tir isolé et riposte des snipers ciblés |
 | 5 | Expérience, UI rapports, page Règles, équilibrage | fonctionnalité complète et documentée |
 
 ## 12. Pièges et invariants
 
 - **Simultanéité** : snapshot des salves et des contre-tirs avant application des dégâts, sinon
-  l'ordre de résolution avantage un camp.
+  l'ordre de résolution avantage un camp ; l'impasse à 3 camps conserve le cycle A → B → C → A.
+- **Impasse à 3 camps** : A/B combattent dans le secteur ; C est un camp sans combattant au sol
+  dans un secteur voisin ; les attaques au sol ne le touchent pas, seuls les snipers dont la cible
+  est C le peuvent ; C ne peut ni gagner ni capturer. Un camp sans sniper dont la cible est C
+  reporte son PDF inutilisé sur le camp suivant (A) en phase PDC.
+- **Blessures** : un survivant d'infanterie touché à distance (isolé ou contre-tir) est blessé en
+  fin de tour, comme après un combat classique.
 - **Ne pas polluer le combat** : les snipers renforts ne sont pas des combattants du secteur
   pour `abortIfWiped`, le vainqueur, la capture et les rapports de pertes.
 - **Pertes croisées** : un contre-tir détruit des unités dans un autre secteur ; passer par un
   helper de destruction commun (équipements, véhicules, personnages, bâtiments).
 - **QG** : destruction uniquement, jamais de capture ni d'élimination par ce chemin.
-- **Expérience** : ne pas réutiliser `awardExperience` tel quel (il récompense le tireur et
-  compte 0,5 par esquive) ; passer par le calcul sniper et plafonner à 1/tour.
+- **Expérience** : ne pas réutiliser `awardExperience` tel quel (il récompense le tireur) ;
+  passer par le calcul sniper et plafonner à 1/tour.
 - **Locks** : résolution sous `TurnLock`, session en mémoire (JVM unique) ; ne pas ouvrir de
   transaction séparée ; les entités sniper doivent être chargées dans le même contexte.
 - **Annulation « attaqué sur place »** : vérifier les conflits du hop courant et des hops

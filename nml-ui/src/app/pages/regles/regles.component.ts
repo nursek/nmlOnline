@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, viewChild, viewChildren } from '@an
 import { MatButtonModule } from '@angular/material/button';
 import { MatAccordion, MatExpansionModule, MatExpansionPanel } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
+import { RouterLink } from '@angular/router';
 import { unitClassLabel } from '../../core/labels';
 
 interface SectionRegle {
@@ -49,7 +50,7 @@ interface VehiculeDispo {
 @Component({
   selector: 'app-regles',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatExpansionModule, MatIconModule],
+  imports: [MatButtonModule, MatExpansionModule, MatIconModule, RouterLink],
   templateUrl: './regles.component.html',
   styleUrls: ['./regles.component.scss'],
 })
@@ -177,7 +178,7 @@ export class ReglesComponent {
     {
       nom: unitClassLabel('SNIPER'),
       effet:
-        'Combat à distance : jet de HIT puis Esquive, tir de soutien pendant un combat au sol, ' +
+        'Combat à distance : un seul jet de HIT, tir de soutien pendant un combat au sol, ' +
         'tir isolé hors combat et contre-tir.',
       actif: true,
     },
@@ -187,28 +188,6 @@ export class ReglesComponent {
         "Priorité de ciblage : tire d'abord sur les véhicules ennemis. Obligatoire pour piloter un véhicule avec une unité ; " +
         "les armes anti-véhicules (Gauss Cannon, Heavy Gauss Cannon, Enmitic Annihilator) doublent les dégâts contre leur catégorie de cible.",
       actif: true,
-    },
-  ];
-
-  readonly esquivesSniper: readonly { type: string; chance: number }[] = [
-    { type: 'LARBIN', chance: 20 },
-    { type: 'VOYOU', chance: 35 },
-    { type: 'MALFRAT', chance: 50 },
-    { type: 'BRUTE', chance: 65 },
-  ];
-
-  readonly modificateursViseeSniper: readonly { nom: string; effet: string }[] = [
-    {
-      nom: 'Particle Shredder',
-      effet: 'Malus de HIT réduit de 10 points (LARBIN : 20 % → 10 %).',
-    },
-    {
-      nom: 'Enmitic Exterminator',
-      effet: 'Malus de HIT réduit de 15 points (LARBIN : 20 % → 5 %).',
-    },
-    {
-      nom: 'Gilet de camouflage optique',
-      effet: 'Esquive +15 points contre les tirs sniper (LARBIN : 20 % → 35 %).',
     },
   ];
 

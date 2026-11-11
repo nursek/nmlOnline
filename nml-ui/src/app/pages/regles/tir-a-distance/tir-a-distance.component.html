@@ -1,0 +1,356 @@
+<div class="container fade-in">
+  <div class="page-header">
+    <div class="avatar">
+      <mat-icon>gps_fixed</mat-icon>
+    </div>
+    <h1 class="title">Tir à distance</h1>
+  </div>
+
+  <div class="rules-page">
+    <a mat-stroked-button class="back" routerLink="/regles">
+      <mat-icon>arrow_back</mat-icon>
+      Retour aux règles
+    </a>
+
+    <p class="text">
+      Cette page détaille les règles de la classe <strong>SNIPER</strong> : jet de
+      <strong>HIT</strong>, ciblage, actions, tir de soutien, tir isolé, impasse à trois camps,
+      contre-tir et expérience.
+    </p>
+
+    <h2><mat-icon>my_location</mat-icon>Qui peut tirer et quand</h2>
+    <ul class="rule-list">
+      <li>Seule une unité de classe <strong>SNIPER</strong> peut recevoir un ordre de tir à distance.</li>
+      <li>
+        Un ordre ne peut viser qu'un <strong>secteur adjacent</strong> au secteur d'origine de
+        l'unité.
+      </li>
+      <li>
+        L'action est déduite de la propriété du secteur cible au moment où l'ordre est posé et
+        relue à la résolution : secteur voisin <strong>neutre ou ennemi</strong> =
+        <strong>Tir de précision</strong> ; secteur <strong>possédé par le joueur ou un allié</strong>
+        = <strong>Surveillance</strong>.
+      </li>
+      <li>
+        Une unité ne peut avoir qu'un seul ordre par tour. Un ordre de déplacement ou un
+        embarquement dans un véhicule est incompatible avec un ordre de tir à distance.
+      </li>
+      <li>
+        Un sniper qui s'est <strong>déplacé</strong> pendant le tour ne peut pas effectuer de
+        <strong>tir à distance</strong> : son ordre est annulé. Il peut toujours combattre au contact
+        si son secteur est attaqué.
+      </li>
+      <li>
+        Attaqué <strong>sur place</strong> alors qu'il visait un autre secteur, il annule son
+        <strong>tir à distance</strong> pour se défendre au contact — si son secteur est déjà engagé
+        au moment de la résolution. Un combat déclenché à un hop ultérieur ne rétroagit pas : le tir
+        déjà résolu reste acquis. Le tir à distance suppose donc de rester sur place, sans
+        déplacement ni combat au contact dans son secteur.
+      </li>
+    </ul>
+
+    <h2><mat-icon>track_changes</mat-icon>Jet de HIT</h2>
+    <p class="text">
+      Un jet de 1 à 100 est effectué contre la <strong>première cible</strong> de la salve. Le tir
+      rate si le dé est <strong>inférieur ou égal au malus de HIT</strong> ; il touche si le dé est
+      supérieur au malus. C'est le <strong>seul jet</strong> : une cible touchée subit les dégâts,
+      sans second jet d'Esquive.
+    </p>
+    <div class="table-wrap">
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th>Cible</th>
+            <th>Malus de HIT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Unité LARBIN</strong></td>
+            <td>20</td>
+          </tr>
+          <tr>
+            <td><strong>Unité VOYOU</strong></td>
+            <td>35</td>
+          </tr>
+          <tr>
+            <td><strong>Unité MALFRAT</strong></td>
+            <td>50</td>
+          </tr>
+          <tr>
+            <td><strong>Unité BRUTE</strong></td>
+            <td>65</td>
+          </tr>
+          <tr>
+            <td><strong>Véhicule terrestre</strong></td>
+            <td>25</td>
+          </tr>
+          <tr>
+            <td><strong>Bâtiment (dont Banque, Cache et QG)</strong></td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td><strong>Personnage</strong></td>
+            <td>35</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="text">
+      L'arme à feu compatible du tireur réduit ce malus <strong>à plat</strong>, en points :
+      <strong>Particle Shredder</strong> −10, <strong>Enmitic Exterminator</strong> −15. Le malus ne
+      peut pas descendre sous 0. Exemple : LARBIN (20) − Particle Shredder (10) = 10 % de rater.
+    </p>
+    <p class="text">
+      Le <strong>Gilet de camouflage optique</strong> ajoute <strong>+15 au malus de HIT</strong> de
+      son porteur : LARBIN 20 → 35. Il n'y a <strong>pas de jet d'Esquive séparé</strong> ; le malus
+      de HIT est l'unique esquive naturelle du tir à distance.
+    </p>
+
+    <h3>Véhicule aérien</h3>
+    <p class="text">
+      Un véhicule aérien n'utilise pas le malus de HIT : la chance de le toucher dépend du
+      <strong>niveau (expérience) du tireur</strong>. Le dé doit être inférieur ou égal à cette
+      chance. La réduction d'arme ne s'applique pas à ce jet.
+    </p>
+    <div class="table-wrap">
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th>Niveau du tireur</th>
+            <th>Expérience</th>
+            <th>Chance de toucher</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>LARBIN</strong></td>
+            <td>0 – 1</td>
+            <td>10 %</td>
+          </tr>
+          <tr>
+            <td><strong>VOYOU</strong></td>
+            <td>2 – 4</td>
+            <td>25 %</td>
+          </tr>
+          <tr>
+            <td><strong>MALFRAT</strong></td>
+            <td>5 – 7</td>
+            <td>40 %</td>
+          </tr>
+          <tr>
+            <td><strong>BRUTE</strong></td>
+            <td>8 et plus</td>
+            <td>65 %</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="text">
+      Une arme anti-aérienne porterait cette chance à 75 % ; aucune arme compatible SNIPER ne
+      l'a aujourd'hui. Le type du véhicule aérien (hélicoptère ou avion de transport) n'entre pas
+      dans le calcul.
+    </p>
+
+    <h2><mat-icon>gps_fixed</mat-icon>Dégâts et ciblage</h2>
+    <ul class="rule-list">
+      <li>
+        Une salve qui touche applique <strong>toute la PdF</strong> de l'unité sniper, sans malus.
+      </li>
+      <li>
+        L'armure puis la défense de la cible absorbent les dégâts ; le surplus enchaîne sur la
+        cible suivante. Seul le jet de HIT peut faire rater la salve.
+      </li>
+      <li>
+        Ordre de ciblage : d'abord les <strong>unités</strong> (de la moins expérimentée à la plus
+        puissante), puis les <strong>véhicules</strong>, puis les <strong>bâtiments</strong>
+        (Banque, Cache, QG), enfin les <strong>personnages</strong>.
+      </li>
+      <li>
+        Un tir à distance ne capture jamais de secteur et ne change jamais son propriétaire. Un QG
+        peut être détruit, jamais capturé par un tir ; sa destruction n'élimine pas son propriétaire.
+      </li>
+      <li>
+        Un personnage principal tué par un tir élimine son joueur, comme en combat classique.
+      </li>
+      <li>
+        Les pertes sont retirées de leur secteur, avec leurs équipements ; les véhicules détruits
+        débarquent leur équipage. S'il reste de la puissance de frappe, la salve continue
+        immédiatement sur les cibles débarquées.
+      </li>
+    </ul>
+
+    <h2><mat-icon>explore</mat-icon>Les actions</h2>
+    <ul class="rule-list">
+      <li>
+        <strong>Tir de précision</strong> — contre un secteur voisin neutre ou ennemi. Sans combat
+        au sol sur le secteur visé, la salve frappe les entités hostiles du secteur : c'est le
+        <strong>tir isolé</strong>, sans riposte des armes de contact. Un rapport de type
+        <strong>Tir à distance</strong> est écrit : aucun vainqueur, aucune capture.
+      </li>
+      <li>
+        <strong>Surveillance</strong> — un secteur voisin possédé par le joueur ou un allié. Si ce
+        secteur est attaqué, le sniper rejoint la phase PdF du camp défenseur ; il n'est ni ciblable
+        ni compté dans le vainqueur, les pertes ou la capture.
+      </li>
+      <li>
+        <strong>Tir de soutien</strong> — lorsqu'un combat au sol a lieu sur le secteur visé et que
+        le sniper appartient à un camp (ou à un allié du camp), sa salve rejoint la phase PdF de ce
+        camp. Ses pertes comptent pour le combat, mais le sniper n'est pas ciblable et ne capture
+        pas. Le rapport de combat ne nomme pas les tireurs.
+      </li>
+      <li>
+        <strong>Tir isolé</strong> — sans combat sur le secteur visé, la salve frappe les entités
+        hostiles. Aucune troupe au sol ne riposte ; seuls les snipers inactifs peuvent contre-tirer.
+      </li>
+    </ul>
+
+    <h2><mat-icon>groups</mat-icon>Impasse à trois camps</h2>
+    <p class="text">
+      Un sniper d'un joueur qui n'est <strong>ni attaquant, ni défenseur, ni allié de l'un des
+      deux</strong> et qui vise un secteur où deux autres joueurs se battent ne voit pas son ordre
+      annulé : sa salve transforme le duel en <strong>impasse à trois camps</strong>.
+    </p>
+    <ul class="rule-list">
+      <li>
+        Le troisième joueur devient le camp <strong>C</strong> ; les camps tournent
+        <strong>A → B → C → A</strong> : A frappe B (au contact), B tire à distance sur C, C tire à
+        distance sur A.
+      </li>
+      <li>
+        C n'engage que ses snipers, dans un secteur voisin du secteur de l'impasse : son camp n'a
+        aucun combattant au sol. B peut le toucher avec ses snipers ; les attaques au sol de A ne
+        l'atteignent pas.
+      </li>
+      <li>
+        A ne peut pas contre-attaquer C : sa cible est B. Le cycle est résolu pendant la phase PdF,
+        avec le même jet de HIT qu'un tir à distance.
+      </li>
+      <li>
+        C est à la fois tireur (il tire sur A) et cible (B tire sur lui) : être ciblé par B et
+        survivre lui donne 1 Exp, pas pour son propre tir.
+      </li>
+      <li>
+        Si B n'a pas de sniper, il ne peut pas cibler C : son <strong>PDF</strong> (tir à distance
+        inutilisé) est reporté sur A en <strong>phase PDC</strong>.
+      </li>
+      <li>
+        C ne peut pas gagner l'impasse ni capturer de bâtiment : un camp sans combattant au sol ne
+        remporte pas la bataille. Ses snipers détruits sont retirés de leur secteur d'origine.
+      </li>
+      <li>
+        Si C n'a aucun sniper disponible, aucune impasse n'est créée, aucune salve n'est tirée et
+        l'ordre est annulé.
+      </li>
+    </ul>
+
+    <h2><mat-icon>swap_horiz</mat-icon>Contre-tir</h2>
+    <p class="text">
+      Un sniper pris pour cible par une salve peut riposter automatiquement s'il réunit toutes les
+      conditions suivantes :
+    </p>
+    <ul class="rule-list">
+      <li>il n'a <strong>aucun ordre de tir ce tour</strong>, qu'il soit encore en attente ou déjà résolu ;</li>
+      <li>son secteur n'est <strong>pas engagé dans un combat au sol</strong> ce tour ;</li>
+      <li>il n'a pas <strong>déjà contre-tiré</strong> ce tour.</li>
+    </ul>
+    <p class="text">
+      Le contre-tir vise uniquement les <strong>unités qui ont effectivement tiré</strong> (les
+      tireurs de la salve), avec le même jet de HIT et toute la PdF. Les salves
+      entrantes et les contre-tirs sont résolus sur le même instantané : un sniper détruit par la
+      salve riposte quand même, comme dans une phase d'impasse. Il n'y a qu'un seul contre-tir par
+      unité et par tour, et pas de chaîne : les tireurs ont un ordre, ils ne ripostent pas au
+      contre-tir.
+    </p>
+    <div class="callout">
+      <mat-icon>info</mat-icon>
+      <p>
+        Un sniper qui a déjà tiré pendant le tour — même si son ordre est déjà résolu — ne peut pas
+        contre-tirer. Il ne peut donc jamais effectuer deux tirs dans le même tour.
+      </p>
+    </div>
+
+    <h2><mat-icon>workspace_premium</mat-icon>Expérience</h2>
+    <ul class="rule-list">
+      <li>
+        Un sniper <strong>pris pour cible</strong> à distance et qui survit gagne
+        <strong>1 Exp</strong>.
+      </li>
+      <li>
+        Un sniper qui <strong>tire</strong> et qui survit au <strong>contre-tir</strong> qu'il subit
+        gagne <strong>1 Exp</strong>.
+      </li>
+      <li>Le tireur ne gagne rien pour son propre tir.</li>
+      <li>Le gain est plafonné à <strong>1 Exp par unité et par tour</strong>.</li>
+      <li>Les gains sont inscrits dans le rapport de tir à distance et dans le compte-rendu du tour.</li>
+    </ul>
+
+    <h2><mat-icon>shield</mat-icon>Blessures après un tir</h2>
+    <p class="text">
+      Une unité d'infanterie qui survit à un tir isolé ou à un contre-tir avec une défense entamée
+      est <strong>blessée en fin de tour</strong>, comme après un combat classique ; elle est soignée
+      par le circuit de récupération habituel. Les personnages et bâtiments endommagés régénèrent
+      selon les règles existantes.
+    </p>
+
+    <h2><mat-icon>military_tech</mat-icon>Équipement de visée</h2>
+    <div class="table-wrap">
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th>Équipement</th>
+            <th>Effet</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Particle Shredder</strong></td>
+            <td>Réduit le malus de HIT de 10 points (LARBIN : 20 → 10).</td>
+          </tr>
+          <tr>
+            <td><strong>Enmitic Exterminator</strong></td>
+            <td>Réduit le malus de HIT de 15 points (LARBIN : 20 → 5).</td>
+          </tr>
+          <tr>
+            <td><strong>Gilet de camouflage optique</strong></td>
+            <td>Ajoute 15 points au malus de HIT contre son porteur (LARBIN : 20 → 35).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="text">
+      Le cumul se fait par <strong>maximum</strong> : la meilleure arme à feu compatible pour la
+      réduction du malus de HIT, le meilleur défensif compatible pour le malus de HIT du porteur.
+    </p>
+    <div class="callout">
+      <mat-icon>info</mat-icon>
+      <p>
+        Une arme à distance peut aussi être utilisée comme une arme à feu classique pour attaquer
+        physiquement un secteur ; les bonus et malus de visée ne s'appliquent alors pas.
+      </p>
+    </div>
+
+    <h2><mat-icon>cancel</mat-icon>Annulations</h2>
+    <ul class="rule-list">
+      <li>
+        Unité détruite, absente, <strong>déplacée</strong> ou embarquée : l'ordre est annulé ; un
+        sniper déplacé ne peut pas tirer à distance ce tour.
+      </li>
+      <li>
+        Secteur d'origine <strong>déjà engagé</strong> dans un combat au moment de la résolution
+        (hop courant ou antérieur) : le <strong>tir à distance</strong> est annulé et le sniper se
+        défend au contact. Un combat déclenché à un hop ultérieur ne peut plus l'annuler : le tir
+        déjà résolu reste acquis.
+      </li>
+      <li>
+        Secteur cible devenu allié pour un tir offensif : le rôle est réévalué en Surveillance au
+        moment de la résolution, sans tir ami.
+      </li>
+      <li>Aucun hostile dans le secteur cible : l'ordre est résolu sans effet.</li>
+      <li>
+        Un ordre ciblant un secteur où un combat est résolu mais où le sniper n'appartient à aucun
+        camp déclenche l'impasse à trois camps décrite plus haut.
+      </li>
+    </ul>
+  </div>
+</div>

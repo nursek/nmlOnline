@@ -64,6 +64,14 @@ export const routes: Routes = [
     canActivate: [authGuard, playerGuard],
   },
   {
+    path: 'regles/tir-a-distance',
+    loadComponent: () =>
+      import('./pages/regles/tir-a-distance/tir-a-distance.component').then(
+        (m) => m.TirADistanceComponent,
+      ),
+    canActivate: [authGuard],
+  },
+  {
     path: 'regles',
     loadComponent: () => import('./pages/regles/regles.component').then((m) => m.ReglesComponent),
     canActivate: [authGuard],

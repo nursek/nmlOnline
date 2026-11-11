@@ -23,6 +23,10 @@
       <div class="toc-actions">
         <button mat-stroked-button type="button" (click)="toutDeplier()">Tout déplier</button>
         <button mat-stroked-button type="button" (click)="toutReplier()">Tout replier</button>
+        <a mat-stroked-button class="toc-page" routerLink="/regles/tir-a-distance">
+          <mat-icon>gps_fixed</mat-icon>
+          Page Tir à distance
+        </a>
       </div>
     </aside>
 
@@ -174,112 +178,15 @@
             </table>
           </div>
           <p class="text">
-            <strong>Sniper.</strong> Un sniper est spécialisé dans le combat à distance. Lorsqu'il
-            attaque à distance, il prend pour cible, comme dans un combat classique, les unités
-            adverses de la plus faible à la plus puissante. Chaque salve subit d'abord un
-            <strong>jet de HIT</strong>, puis la cible peut <strong>esquiver</strong> ; les deux
-            valeurs de base dépendent de son type :
+            <strong>Sniper.</strong> Un sniper combat à distance : un seul jet de
+            <strong>HIT</strong>, tir de précision, surveillance, tir de soutien pendant un combat
+            au sol, tir isolé, impasse à trois camps et contre-tir. Le détail complet (valeurs,
+            cibles, expérience et blessures) est sur la page dédiée.
           </p>
-          <div class="table-wrap">
-            <table class="rules-table">
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Malus de HIT</th>
-                  <th>Esquive</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (esquive of esquivesSniper; track esquive.type) {
-                  <tr>
-                    <td>
-                      <strong>{{ esquive.type }}</strong>
-                    </td>
-                    <td>{{ esquive.chance }} %</td>
-                    <td>{{ esquive.chance }} %</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <p class="text">
-            Le <strong>jet de HIT</strong> rate si le dé (1–100) est inférieur ou égal au malus ;
-            l'arme du tireur réduit ce malus à plat (—10 points pour le Particle Shredder, —15
-            pour l'Enmitic Exterminator). Si le tir touche, l'<strong>esquive</strong> annule la
-            salve si le dé est inférieur ou égal à la valeur de classe ; le Gilet de camouflage
-            optique ajoute +15 points à cette esquive. Une cible qui esquive gagne
-            <strong>1 Exp</strong> en fin de combat ; un sniper ne gagne de l'expérience que s'il
-            est lui-même pris pour cible à distance et qu'il survit. Le tireur ne gagne rien pour
-            son tir, et le gain est plafonné à <strong>1 Exp par unité et par tour</strong>.
-          </p>
-          <ul class="rule-list">
-            <li>
-              <strong>Choix de l'action</strong> — un secteur voisin neutre ou ennemi donne un
-              <strong>Tir de précision</strong> ; un secteur possédé par le joueur ou un allié
-              donne une <strong>Surveillance</strong>.
-            </li>
-            <li>
-              <strong>Déplacement et tir</strong> — un sniper ne peut pas se déplacer vers un
-              secteur puis tirer à distance sur un autre secteur dans le même tour.
-            </li>
-            <li>
-              <strong>Attaque sur place</strong> — attaqué là où il se trouve alors qu'il visait un
-              autre secteur, un sniper annule son tir à distance pour se défendre.
-            </li>
-            <li>
-              <strong>Tir de soutien</strong> — lorsqu'un combat a lieu sur le secteur visé, la
-              salve rejoint la phase PdF du camp du sniper : ses pertes comptent pour le combat,
-              mais le sniper n'est pas ciblable et ne capture pas le secteur. Le rapport de combat
-              ne nomme pas les unités qui ont tiré.
-            </li>
-            <li>
-              <strong>Tir isolé</strong> — sans combat sur le secteur visé, la salve frappe les
-              unités hostiles du secteur, sans riposte des armes de contact et sans capture. Le
-              rapport de secteur indique « X PdF, à distance », sans nommer les tireurs.
-            </li>
-            <li>
-              <strong>Surveillance</strong> — s'il n'effectue aucune autre action, un sniper peut
-              « surveiller » un secteur qui vous appartient ou appartient à un allié. Lorsqu'il
-              couvre à distance des unités attaquant un secteur, il intervient en même temps que
-              les autres unités, pendant la phase PdF (armes à feu).
-            </li>
-            <li>
-              <strong>Contre-tir</strong> — un sniper qui n'a pas tiré et qui n'est pas engagé dans
-              un combat au sol riposte automatiquement à une salve ennemie, contre les snipers qui
-              ont tiré.
-            </li>
-          </ul>
-          <p class="text">
-            <strong>Malus de visée.</strong> Le malus de HIT et l'Esquive à distance sont modifiés
-            par l'équipement sniper :
-          </p>
-          <div class="table-wrap">
-            <table class="rules-table">
-              <thead>
-                <tr>
-                  <th>Équipement</th>
-                  <th>Effet</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (visee of modificateursViseeSniper; track visee.nom) {
-                  <tr>
-                    <td>
-                      <strong>{{ visee.nom }}</strong>
-                    </td>
-                    <td>{{ visee.effet }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <div class="callout">
-            <mat-icon>info</mat-icon>
-            <p>
-              Une arme à distance peut être utilisée comme une arme à feu classique pour attaquer
-              physiquement un secteur ; les bonus et malus de visée ne s'appliquent alors pas.
-            </p>
-          </div>
+          <a mat-stroked-button routerLink="/regles/tir-a-distance">
+            <mat-icon>gps_fixed</mat-icon>
+            Voir la page « Tir à distance »
+          </a>
         </mat-expansion-panel>
 
         <mat-expansion-panel id="recrutement" class="rule-panel">
@@ -543,9 +450,9 @@
               cumule pas entre armes (le meilleur bonus l'emporte).
             </li>
             <li>
-              <strong>Visée</strong> — les équipements sniper modifient le jet de HIT et l'Esquive
-              à distance : Particle Shredder et Enmitic Exterminator réduisent le malus de HIT, le
-              Gilet de camouflage optique augmente l'Esquive contre les tirs sniper (voir Classes).
+              <strong>Visée</strong> — les équipements sniper modifient le jet de HIT : Particle
+              Shredder et Enmitic Exterminator réduisent le malus de HIT, le Gilet de camouflage
+              optique ajoute 15 au malus de HIT contre son porteur (voir Classes).
             </li>
           </ul>
           <p class="text">

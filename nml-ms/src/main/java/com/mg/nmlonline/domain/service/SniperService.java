@@ -55,16 +55,23 @@ public class SniperService {
         this.battleReportService = battleReportService;
     }
 
-    public record DuelSupport(List<Unit> attackers, List<Unit> defenders, List<SniperOrder> resolvedOrders) {
+    public record IndependentSupport(Long playerId, List<Unit> units, List<SniperOrder> orders) {
     }
 
-    public record StandoffSupport(Map<Integer, List<Unit>> byCamp, List<SniperOrder> resolvedOrders) {
+    public record DuelSupport(List<Unit> attackers, List<Unit> defenders,
+                              List<IndependentSupport> independents, List<SniperOrder> resolvedOrders) {
+    }
+
+    public record StandoffSupport(Map<Integer, List<Unit>> byCamp, List<IndependentSupport> independents,
+                                  List<SniperOrder> resolvedOrders) {
     }
 
     public DuelSupport collectDuelSupport(int turn, int targetSector, List<Long> attackerIds,
                                           List<Long> defenderIds, Set<Integer> battleSectors) {
         List<Unit> attackers = new ArrayList<>();
         List<Unit> defenders = new ArrayList<>();
+        Map<Long, List<Unit>> independentUnits = new LinkedHashMap<>();
+        Map<Long, List<SniperOrder>> independentOrders = new LinkedHashMap<>();
         List<SniperOrder> resolved = new ArrayList<>();
         for (SniperOrder order : pendingForSector(turn, targetSector)) {
             Unit unit = eligibleUnit(order, battleSectors);
@@ -77,14 +84,20 @@ public class SniperService {
             } else if (inCamp(order.getPlayerId(), defenderIds)) {
                 defenders.add(unit);
                 resolved.add(order);
+            } else {
+                independentUnits.computeIfAbsent(order.getPlayerId(), key -> new ArrayList<>()).add(unit);
+                independentOrders.computeIfAbsent(order.getPlayerId(), key -> new ArrayList<>()).add(order);
+                resolved.add(order);
             }
         }
-        return new DuelSupport(attackers, defenders, resolved);
+        return new DuelSupport(attackers, defenders, independents(independentUnits, independentOrders), resolved);
     }
 
     public StandoffSupport collectStandoffSupport(int turn, int targetSector, List<List<Long>> camps,
                                                   Set<Integer> battleSectors) {
         Map<Integer, List<Unit>> byCamp = new HashMap<>();
+        Map<Long, List<Unit>> independentUnits = new LinkedHashMap<>();
+        Map<Long, List<SniperOrder>> independentOrders = new LinkedHashMap<>();
         List<SniperOrder> resolved = new ArrayList<>();
         for (SniperOrder order : pendingForSector(turn, targetSector)) {
             Unit unit = eligibleUnit(order, battleSectors);
@@ -93,12 +106,23 @@ public class SniperService {
             }
             int camp = campIndex(order.getPlayerId(), camps);
             if (camp < 0) {
+                independentUnits.computeIfAbsent(order.getPlayerId(), key -> new ArrayList<>()).add(unit);
+                independentOrders.computeIfAbsent(order.getPlayerId(), key -> new ArrayList<>()).add(order);
+                resolved.add(order);
                 continue;
             }
             byCamp.computeIfAbsent(camp, key -> new ArrayList<>()).add(unit);
             resolved.add(order);
         }
-        return new StandoffSupport(byCamp, resolved);
+        return new StandoffSupport(byCamp, independents(independentUnits, independentOrders), resolved);
+    }
+
+    private List<IndependentSupport> independents(Map<Long, List<Unit>> unitsByPlayer,
+                                                  Map<Long, List<SniperOrder>> ordersByPlayer) {
+        List<IndependentSupport> independents = new ArrayList<>();
+        unitsByPlayer.forEach((playerId, units) ->
+                independents.add(new IndependentSupport(playerId, units, ordersByPlayer.get(playerId))));
+        return independents;
     }
 
     public void markResolved(Collection<SniperOrder> orders) {
@@ -115,9 +139,13 @@ public class SniperService {
         if (pending.isEmpty()) {
             return;
         }
-        Set<Long> pendingUnitIds = pending.stream()
+        Set<Long> exhaustedUnitIds = pending.stream()
                 .map(SniperOrder::getUnitId)
                 .collect(Collectors.toSet());
+        // Un ordre RESOLVED a déjà tiré ce tour : il ne peut pas contre-tirer.
+        sniperOrderRepository.findByTurnAndStatus(turn, SniperOrderStatus.RESOLVED).stream()
+                .map(SniperOrder::getUnitId)
+                .forEach(exhaustedUnitIds::add);
         Set<Long> destroyedUnitIds = new HashSet<>();
         Set<Long> awardedUnitIds = new HashSet<>();
         List<OrderContext> validOrders = new ArrayList<>();
@@ -143,7 +171,7 @@ public class SniperService {
             byTarget.computeIfAbsent(order.getTargetSectorNumber(), key -> new ArrayList<>()).add(context);
         }
         byTarget.forEach((targetSector, orders) ->
-                resolveStandaloneSector(turn, board, targetSector, orders, pendingUnitIds,
+                resolveStandaloneSector(turn, board, targetSector, orders, exhaustedUnitIds,
                         destroyedUnitIds, awardedUnitIds));
         invalidOrders.stream()
                 .filter(invalid -> !destroyedUnitIds.contains(invalid.order().getUnitId()))
@@ -152,7 +180,7 @@ public class SniperService {
     }
 
     private void resolveStandaloneSector(int turn, Board board, int targetSectorNumber,
-                                         List<OrderContext> orders, Set<Long> pendingUnitIds,
+                                         List<OrderContext> orders, Set<Long> exhaustedUnitIds,
                                          Set<Long> destroyedUnitIds, Set<Long> awardedUnitIds) {
         Sector sector = board.getSector(targetSectorNumber);
         if (sector == null) {
@@ -171,55 +199,79 @@ public class SniperService {
         addParticipant(participantIds, sector.getOwnerId());
         sector.getCombatEntities().forEach(entity -> addParticipant(participantIds, entity.getPlayerId()));
 
+        List<Map.Entry<Long, List<OrderContext>>> firingGroups = new ArrayList<>();
+        Set<Long> firingSides = new HashSet<>();
+        List<Unit> shooters = new ArrayList<>();
         for (Map.Entry<Long, List<OrderContext>> group : byPlayer.entrySet()) {
-            List<Unit> shooters = group.getValue().stream().map(OrderContext::unit).toList();
-            shooters.forEach(shooter -> addParticipant(participantIds, shooter.getPlayerId()));
+            List<Unit> groupShooters = group.getValue().stream().map(OrderContext::unit).toList();
+            groupShooters.forEach(shooter -> addParticipant(participantIds, shooter.getPlayerId()));
             Set<Long> shooterSide = new HashSet<>(allianceGraph.alliedPlayerIds(group.getKey()));
             shooterSide.add(group.getKey());
             Long ownerId = sector.getOwnerId();
             if (ownerId != null && shooterSide.contains(ownerId)) {
                 continue;
             }
-            List<CombatEntity> targets = sector.getCombatEntities().stream()
-                    .filter(entity -> !entity.isDestroyed())
-                    .filter(entity -> entity.getPlayerId() == null
-                            || !shooterSide.contains(entity.getPlayerId()))
-                    .collect(Collectors.toCollection(ArrayList::new));
-            if (targets.isEmpty()) {
-                continue;
-            }
-            Set<Long> beforeIds = targets.stream().map(CombatEntity::getId).collect(Collectors.toSet());
-            Battle battle = new Battle();
-            battle.rangedOnlyConfiguration(shooters, targets, sector.getName());
-            Set<Long> survivorIds = targets.stream().map(CombatEntity::getId).collect(Collectors.toSet());
-
-            List<Unit> counterSnipers = battle.getTargetedSnipers().stream()
-                    .filter(Unit::isSniper)
-                    .filter(sniper -> sniper.getSector() != null
-                            && sniper.getSector().getNumber() == targetSectorNumber)
-                    .filter(sniper -> sniper.getId() != null && !counteredIds.contains(sniper.getId()))
-                    .filter(sniper -> !pendingUnitIds.contains(sniper.getId()))
-                    .toList();
-            if (!counterSnipers.isEmpty()) {
-                counterSnipers.forEach(sniper -> counteredIds.add(sniper.getId()));
-                battle.counterFireConfiguration(counterSnipers, shooters, sector.getName());
-            }
-
-            Map<Long, Player> players = loadPlayers(participantIds);
-            List<CombatEntity> targetCasualties = combatService.removeCasualties(
-                    sector, beforeIds, survivorIds, players, characterLost, turn);
-            attributeSniperEliminations(targetCasualties, players, group.getKey());
-            collectDestroyed(targetCasualties, destroyedUnitIds);
-            casualties.addAll(toCasualties(targetCasualties));
-            sector.recalculateMilitaryPower();
-            applyCounterCasualties(turn, board, shooters, battle.getRangedDestroyed(), players,
-                    characterLost, casualties, destroyedUnitIds);
-            experienceGains.addAll(awardSniperExperience(battle, awardedUnitIds));
-            summaries.addAll(battle.getLog().stream()
-                    .map(BattleLogEntry::message)
-                    .filter(message -> message.contains("PdF"))
-                    .toList());
+            firingGroups.add(group);
+            firingSides.addAll(shooterSide);
+            shooters.addAll(groupShooters);
         }
+        if (firingGroups.isEmpty()) {
+            return;
+        }
+        // Les salves de tous les joueurs du même secteur arrivent ensemble : une seule résolution.
+        List<CombatEntity> targets = sector.getCombatEntities().stream()
+                .filter(entity -> !entity.isDestroyed())
+                .filter(entity -> entity.getPlayerId() == null
+                        || !firingSides.contains(entity.getPlayerId()))
+                .collect(Collectors.toCollection(ArrayList::new));
+        if (targets.isEmpty()) {
+            return;
+        }
+        Set<Long> beforeIds = targets.stream().map(CombatEntity::getId).collect(Collectors.toSet());
+        Battle battle = new Battle();
+        battle.rangedOnlyConfiguration(shooters, targets, sector.getName());
+        Set<Long> survivorIds = targets.stream().map(CombatEntity::getId).collect(Collectors.toSet());
+
+        List<Unit> counterSnipers = battle.getTargetedSnipers().stream()
+                .filter(Unit::isSniper)
+                .filter(sniper -> sniper.getSector() != null
+                        && sniper.getSector().getNumber() == targetSectorNumber)
+                .filter(sniper -> sniper.getId() != null && !counteredIds.contains(sniper.getId()))
+                .filter(sniper -> !exhaustedUnitIds.contains(sniper.getId()))
+                .toList();
+        if (!counterSnipers.isEmpty()) {
+            counterSnipers.forEach(sniper -> counteredIds.add(sniper.getId()));
+            battle.counterFireConfiguration(counterSnipers, shooters, sector.getName());
+        }
+
+        Map<Long, Player> players = loadPlayers(participantIds);
+        List<CombatEntity> targetCasualties = combatService.removeCasualties(
+                sector, beforeIds, survivorIds, players, characterLost, turn);
+        Set<Long> shooterPlayerIds = firingGroups.stream().map(Map.Entry::getKey).collect(Collectors.toSet());
+        // Salves combinées : avec plusieurs tireurs, le tireur létal n'est pas identifiable, le MJ arbitre.
+        if (shooterPlayerIds.size() == 1) {
+            attributeSniperEliminations(targetCasualties, players, shooterPlayerIds.iterator().next());
+        }
+        collectDestroyed(targetCasualties, destroyedUnitIds);
+        casualties.addAll(toCasualties(targetCasualties));
+        targets.stream()
+                .filter(Unit.class::isInstance)
+                .map(Unit.class::cast)
+                .forEach(unit -> unit.recordCombatParticipation(turn));
+        shooters.stream()
+                .filter(shooter -> !battle.getRangedDestroyed().contains(shooter))
+                .forEach(shooter -> shooter.recordCombatParticipation(turn));
+        for (CombatEntity survivor : targets) {
+            combatService.regenerateAfterBattle(survivor);
+        }
+        sector.recalculateMilitaryPower();
+        applyCounterCasualties(turn, board, shooters, battle.getRangedDestroyed(), players,
+                characterLost, casualties, destroyedUnitIds);
+        experienceGains.addAll(awardSniperExperience(battle, awardedUnitIds));
+        summaries.addAll(battle.getLog().stream()
+                .map(BattleLogEntry::message)
+                .filter(message -> message.contains("PdF"))
+                .toList());
 
         if (summaries.isEmpty() && casualties.isEmpty()) {
             return;
@@ -279,9 +331,6 @@ public class SniperService {
 
     private List<CombatService.ExperienceGain> awardSniperExperience(Battle battle, Set<Long> awardedUnitIds) {
         Map<Long, Unit> candidates = new LinkedHashMap<>();
-        battle.getRangedDodgers().stream()
-                .filter(unit -> unit.getId() != null)
-                .forEach(unit -> candidates.putIfAbsent(unit.getId(), unit));
         battle.getTargetedSnipers().stream()
                 .filter(unit -> unit.getId() != null)
                 .forEach(unit -> candidates.putIfAbsent(unit.getId(), unit));

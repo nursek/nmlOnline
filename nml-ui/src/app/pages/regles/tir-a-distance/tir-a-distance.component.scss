@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.rules-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.back {
+  margin-bottom: 16px;
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 28px 0 12px;
+  font-size: 1.1rem;
+}
+
+h2 mat-icon {
+  color: var(--accent);
+}

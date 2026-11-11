@@ -16,13 +16,14 @@ public final class SniperRules {
             if (unit.getType() == null) {
                 return 0;
             }
-            return switch (unit.getType()) {
+            int base = switch (unit.getType()) {
                 case LARBIN -> 20;
                 case VOYOU -> 35;
                 case MALFRAT -> 50;
                 case BRUTE -> 65;
                 case PERSONNAGE -> 35;
             };
+            return clamp(base + (int) Math.round(unit.getEnemyAimMalus()));
         }
         if (target instanceof Vehicle) {
             return 25;
@@ -43,24 +44,6 @@ public final class SniperRules {
         }
         int malus = clamp(hitMalus(target) - (int) Math.round(shooter.getAimMalusReduction()));
         return jet > malus;
-    }
-
-    public static int dodgeChance(CombatEntity target) {
-        if (!(target instanceof Unit unit) || unit.getType() == null) {
-            return 0;
-        }
-        int base = switch (unit.getType()) {
-            case LARBIN -> 20;
-            case VOYOU -> 35;
-            case MALFRAT -> 50;
-            case BRUTE -> 65;
-            case PERSONNAGE -> 0;
-        };
-        return clamp(base + (int) Math.round(unit.getEnemyAimMalus()));
-    }
-
-    public static boolean dodges(CombatEntity target, int jet) {
-        return jet <= dodgeChance(target);
     }
 
     private static int clamp(int value) {

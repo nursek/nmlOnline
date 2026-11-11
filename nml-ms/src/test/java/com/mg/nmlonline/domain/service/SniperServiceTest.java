@@ -84,7 +84,11 @@ class SniperServiceTest {
                 TURN, TARGET_SECTOR, List.of(2L), List.of(3L), Set.of());
         assertTrue(support.attackers().isEmpty());
         assertTrue(support.defenders().isEmpty());
-        assertEquals(SniperOrderStatus.PENDING, order.getStatus(), "Hors camp : ordre laissé en attente");
+        assertEquals(1, support.independents().size());
+        assertEquals(PLAYER_ID, support.independents().getFirst().playerId());
+        assertTrue(support.resolvedOrders().contains(order));
+        assertEquals(SniperOrderStatus.PENDING, order.getStatus(),
+                "Hors camp : rattaché comme camp indépendant, pas encore résolu");
 
         when(allianceGraph.areAllied(2L, PLAYER_ID)).thenReturn(true);
         SniperService.DuelSupport ally = service.collectDuelSupport(

@@ -30,8 +30,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -200,11 +202,17 @@ public class CombatService {
 
     /** L'unique camp avec des combattants hors bâtiments l'emporte et capture les bâtiments des autres. */
     public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber) {
-        return simulateSectorStandoff(playerCamps, board, sectorNumber, Map.of());
+        return simulateSectorStandoff(playerCamps, board, sectorNumber, Map.of(), Set.of());
     }
 
     public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber,
                                                        Map<Integer, List<Unit>> rangedByCamp) {
+        return simulateSectorStandoff(playerCamps, board, sectorNumber, rangedByCamp, Set.of());
+    }
+
+    public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber,
+                                                       Map<Integer, List<Unit>> rangedByCamp,
+                                                       Set<Integer> rangedOnlyCamps) {
         if (playerCamps == null || playerCamps.size() < 3 || board == null) {
             return failedStandoff("Paramètres invalides");
         }
@@ -216,17 +224,28 @@ public class CombatService {
         List<List<Player>> activeCamps = new ArrayList<>();
         List<List<CombatEntity>> camps = new ArrayList<>();
         Map<Integer, List<Unit>> activeRangedByCamp = new HashMap<>();
+        Set<Integer> activeRangedOnlyCamps = new HashSet<>();
+        Map<Integer, List<CombatEntity>> rangedOnlyBefore = new LinkedHashMap<>();
         for (int i = 0; i < playerCamps.size(); i++) {
             List<Player> camp = playerCamps.get(i);
             camp.forEach(player -> playerStatsService.updateCombatStats(player, board));
-            List<CombatEntity> fighters = collectBattleParticipants(sector, idsOf(camp));
-            if (!fighters.isEmpty()) {
-                if (rangedByCamp != null && rangedByCamp.containsKey(i)) {
-                    activeRangedByCamp.put(activeCamps.size(), rangedByCamp.get(i));
-                }
-                activeCamps.add(camp);
-                camps.add(fighters);
+            boolean rangedOnly = rangedOnlyCamps != null && rangedOnlyCamps.contains(i);
+            List<CombatEntity> fighters = rangedOnly
+                    ? new ArrayList<>(rangedByCamp != null
+                            ? rangedByCamp.getOrDefault(i, List.of()) : List.of())
+                    : collectBattleParticipants(sector, idsOf(camp));
+            if (fighters.isEmpty()) {
+                continue;
             }
+            if (rangedOnly) {
+                activeRangedOnlyCamps.add(activeCamps.size());
+                rangedOnlyBefore.put(activeCamps.size(), new ArrayList<>(fighters));
+            }
+            if (rangedByCamp != null && rangedByCamp.containsKey(i)) {
+                activeRangedByCamp.put(activeCamps.size(), rangedByCamp.get(i));
+            }
+            activeCamps.add(camp);
+            camps.add(fighters);
         }
         if (activeCamps.size() < 3) {
             return failedStandoff("Impasse incomplète au secteur " + sectorNumber
@@ -241,6 +260,23 @@ public class CombatService {
                 .map(camp -> camp.stream().map(Player::getId).toList())
                 .toList();
         int[] targets = AllianceGraph.campTargets(campIds, allianceGraph.activeAdjacency());
+        for (int i = 0; i < activeCamps.size(); i++) {
+            int targetIndex = targets[i];
+            if (targetIndex < 0 || !activeRangedOnlyCamps.contains(targetIndex)) {
+                continue;
+            }
+            List<Unit> ownSnipers = camps.get(i).stream()
+                    .filter(Unit.class::isInstance)
+                    .map(Unit.class::cast)
+                    .filter(Unit::isSniper)
+                    .toList();
+            if (ownSnipers.isEmpty()) {
+                continue;
+            }
+            List<Unit> merged = new ArrayList<>(activeRangedByCamp.getOrDefault(i, List.of()));
+            ownSnipers.stream().filter(sniper -> !merged.contains(sniper)).forEach(merged::add);
+            activeRangedByCamp.put(i, merged);
+        }
         double[] bonuses = new double[activeCamps.size()];
         for (int i = 0; i < activeCamps.size(); i++) {
             if (targets[i] >= 0) {
@@ -251,6 +287,7 @@ public class CombatService {
         Battle battle = new Battle();
         battle.setRandomSource(randomSource);
         battle.setRangedByCamp(activeRangedByCamp);
+        battle.setRangedOnlyCamps(activeRangedOnlyCamps);
         battle.classicStandoffConfiguration(activeCamps.stream().map(List::getFirst).toList(), camps, targets, bonuses);
         camps.forEach(camp -> recordCombatParticipation(turn, camp));
 
@@ -261,8 +298,9 @@ public class CombatService {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toMap(Player::getId, player -> player, (a, b) -> a));
         Map<Long, Boolean> characterLost = new HashMap<>();
-        List<CombatEntity> casualties =
-                removeCasualties(sector, beforeIds, survivorIds, playersById, characterLost, turn);
+        List<CombatEntity> casualties = new ArrayList<>(
+                removeCasualties(sector, beforeIds, survivorIds, playersById, characterLost, turn));
+        applyRangedOnlyCasualties(rangedOnlyBefore, camps, playersById, characterLost, casualties, turn);
 
         for (List<CombatEntity> camp : camps) {
             for (CombatEntity entity : camp) {
@@ -303,6 +341,7 @@ public class CombatService {
         List<StandoffBattleResult.PlayerOutcome> outcomes = new ArrayList<>();
         for (int i = 0; i < activeCamps.size(); i++) {
             List<CombatEntity> camp = camps.get(i);
+            boolean rangedOnly = activeRangedOnlyCamps.contains(i);
             for (Player player : activeCamps.get(i)) {
                 List<CombatEntity> playerFighters = camp.stream()
                         .filter(e -> player.getId().equals(e.getPlayerId()))
@@ -312,7 +351,8 @@ public class CombatService {
                         (int) casualties.stream().filter(e -> player.getId().equals(e.getPlayerId())).count(),
                         (int) playerFighters.stream().filter(CombatEntity::isInjured).count(),
                         characterLost.getOrDefault(player.getId(), false),
-                        playerFighters.stream().noneMatch(e -> e.getEntityCategory() != EntityCategory.BUILDING)));
+                        !rangedOnly && playerFighters.stream()
+                                .noneMatch(e -> e.getEntityCategory() != EntityCategory.BUILDING)));
             }
         }
 
@@ -332,6 +372,35 @@ public class CombatService {
 
         return new StandoffBattleResult(true, "Impasse mexicaine terminée au secteur " + sectorNumber,
                 winner, capturedBuildings, outcomes, casualtyDetails, experienceGains, List.copyOf(battle.getLog()));
+    }
+
+    /** Retire les snipers des camps à distance de leur secteur d'origine (ils ne sont pas dans le secteur combattu). */
+    private void applyRangedOnlyCasualties(Map<Integer, List<CombatEntity>> rangedOnlyBefore,
+                                           List<List<CombatEntity>> camps,
+                                           Map<Long, Player> playersById,
+                                           Map<Long, Boolean> characterLost,
+                                           List<CombatEntity> casualties, int turn) {
+        Set<Long> afterIds = camps.stream()
+                .flatMap(Collection::stream)
+                .map(CombatEntity::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Sector, Set<Long>> beforeBySector = new LinkedHashMap<>();
+        for (List<CombatEntity> before : rangedOnlyBefore.values()) {
+            for (CombatEntity entity : before) {
+                Sector home = entity.getSector();
+                if (home == null || entity.getId() == null) {
+                    continue;
+                }
+                beforeBySector.computeIfAbsent(home, key -> new HashSet<>()).add(entity.getId());
+            }
+        }
+        for (Map.Entry<Sector, Set<Long>> entry : beforeBySector.entrySet()) {
+            List<CombatEntity> lost = removeCasualties(entry.getKey(), entry.getValue(), afterIds,
+                    playersById, characterLost, turn);
+            casualties.addAll(lost);
+            entry.getKey().recalculateMilitaryPower();
+        }
     }
 
     /** Bonus de trahison : actif si un membre du camp est le traître et un membre du camp adverse sa victime. */
@@ -529,7 +598,7 @@ public class CombatService {
                 .forEach(unit -> unit.recordCombatParticipation(turn));
     }
 
-    private void regenerateAfterBattle(CombatEntity entity) {
+    void regenerateAfterBattle(CombatEntity entity) {
         if (entity.getEntityCategory() == EntityCategory.BUILDING) {
             entity.recalculateBaseStats();
         } else if (entity.getEntityCategory() == EntityCategory.CHARACTER) {
@@ -548,8 +617,7 @@ public class CombatService {
             Battle.Participation p = participation.getOrDefault(unit, Battle.Participation.NONE);
             double actions = (p.fired() ? 1 : 0) + (p.damaged() ? 0.5 : 0)
                     + (p.dodged() ? 0.5 : 0) + (p.destroyedTarget() ? 0.5 : 0);
-            if (battle.getRangedDodgers().contains(unit)
-                    || battle.getTargetedSnipers().contains(unit)) {
+            if (battle.getTargetedSnipers().contains(unit)) {
                 actions = Math.max(actions, 1);
             }
             double amount = Math.min(1.0, actions) + (enemyCharacterLost ? 1 : 0);
