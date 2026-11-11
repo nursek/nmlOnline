@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.BattleReportDto;
 import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.PendingEliminationDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
@@ -593,6 +594,7 @@ public class TurnResolutionOrchestrator {
                     return logEntry;
                 })
                 .toList());
+        dto.setForces(rb.forces());
         dto.setEliminatedPlayers(rb.eliminatedPlayers().stream()
                 .map(elimination -> {
                     ResolvedBattleDto.EliminatedPlayerDto eliminated =
@@ -682,7 +684,8 @@ public class TurnResolutionOrchestrator {
                                   boolean defenderHeadquartersCaptured,
                                   List<EliminatedPlayer> eliminatedPlayers,
                                   List<CombatService.StandoffBattleResult.PlayerOutcome> outcomes,
-                                  List<BattleLogEntry> battleLog) {
+                                  List<BattleLogEntry> battleLog,
+                                  List<BattleReportDto.PlayerForceDto> forces) {
 
         private record EliminatedPlayer(Long playerId, String playerName, String cause) {
         }
@@ -711,7 +714,8 @@ public class TurnResolutionOrchestrator {
                     r.attackerCasualties().size(), r.defenderCasualties().size(),
                     r.attackerInjured().size(), r.defenderInjured().size(),
                     r.capturedBuildings(), r.attackerCharacterLost(), r.defenderCharacterLost(),
-                    r.defenderHeadquartersCaptured(), eliminations(combatants), null, r.battleLog());
+                    r.defenderHeadquartersCaptured(), eliminations(combatants), null, r.battleLog(),
+                    r.forces());
         }
 
         static ResolvedBattle standoff(int sectorNumber, List<List<Player>> camps,
@@ -729,7 +733,7 @@ public class TurnResolutionOrchestrator {
                     null, null, r.success(), r.message(),
                     r.winner() != null ? r.winner().getId() : null,
                     0, 0, 0, 0, r.capturedBuildings(), false, false, false,
-                    eliminations(combatants), r.outcomes(), r.battleLog());
+                    eliminations(combatants), r.outcomes(), r.battleLog(), r.forces());
         }
     }
 }

@@ -19,6 +19,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -71,6 +72,12 @@ class CombatServiceResultLogTest {
         assertTrue(messages.stream().anyMatch(message -> message.startsWith("Pertes Cible")),
                 "Les pertes de la cible restent séparées");
         assertFalse(messages.stream().anyMatch(message -> message.contains("Unique id")));
+
+        assertEquals(3, result.forces().size());
+        assertEquals("ATTAQUANT", result.forces().getFirst().getSide());
+        assertEquals(1, result.forces().getFirst().getInfantry().size());
+        assertEquals(1, result.forces().get(1).getInfantry().size());
+        assertEquals("DEFENSEUR", result.forces().get(2).getSide());
     }
 
     private World seed() {

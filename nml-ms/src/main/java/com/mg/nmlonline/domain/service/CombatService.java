@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.BattleReportDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
@@ -111,6 +112,10 @@ public class CombatService {
         attackerFighters.forEach(u -> beforeIds.add(u.getId()));
         defenderFighters.forEach(u -> beforeIds.add(u.getId()));
 
+        List<BattleReportDto.PlayerForceDto> forces = new ArrayList<>();
+        forces.addAll(BattleForcesBuilder.build(attackerCamp, attackerFighters, "ATTAQUANT"));
+        forces.addAll(BattleForcesBuilder.build(defenderCamp, defenderFighters, "DEFENSEUR"));
+
         int turn = board.getCurrentTurn();
         List<Player> campPlayers = new ArrayList<>(attackerCamp);
         campPlayers.addAll(defenderCamp);
@@ -200,7 +205,7 @@ public class CombatService {
         return new SectorBattleResult(true, "Bataille terminée au secteur " + sectorNumber,
                 attackerCasualties, defenderCasualties, attackerInjured, defenderInjured, winner,
                 capturedBuildings, attackerCharacterLost, defenderCharacterLost, defenderHeadquartersCaptured,
-                casualtyDetails, experienceGains, List.copyOf(battle.getLog()));
+                casualtyDetails, experienceGains, List.copyOf(battle.getLog()), forces);
     }
 
     /** L'unique camp avec des combattants hors bâtiments l'emporte et capture les bâtiments des autres. */
@@ -285,6 +290,11 @@ public class CombatService {
             if (targets[i] >= 0) {
                 bonuses[i] = campBonusPercent(turn, activeCamps.get(i), activeCamps.get(targets[i]));
             }
+        }
+
+        List<BattleReportDto.PlayerForceDto> forces = new ArrayList<>();
+        for (int i = 0; i < activeCamps.size(); i++) {
+            forces.addAll(BattleForcesBuilder.build(activeCamps.get(i), camps.get(i), "CAMP_" + (i + 1)));
         }
 
         Battle battle = new Battle();
@@ -375,7 +385,8 @@ public class CombatService {
                 capture != null && capture.headquartersCaptured());
 
         return new StandoffBattleResult(true, "Impasse mexicaine terminée au secteur " + sectorNumber,
-                winner, capturedBuildings, outcomes, casualtyDetails, experienceGains, List.copyOf(battle.getLog()));
+                winner, capturedBuildings, outcomes, casualtyDetails, experienceGains, List.copyOf(battle.getLog()),
+                forces);
     }
 
     /** Retire les snipers des camps à distance de leur secteur d'origine (ils ne sont pas dans le secteur combattu). */
@@ -800,11 +811,12 @@ public class CombatService {
 
     private SectorBattleResult failedResult(String message) {
         return new SectorBattleResult(false, message, List.of(), List.of(), List.of(), List.of(), null,
-                0, false, false, false, List.of(), List.of(), List.of());
+                0, false, false, false, List.of(), List.of(), List.of(), List.of());
     }
 
     private StandoffBattleResult failedStandoff(String message) {
-        return new StandoffBattleResult(false, message, null, 0, List.of(), List.of(), List.of(), List.of());
+        return new StandoffBattleResult(false, message, null, 0, List.of(), List.of(), List.of(), List.of(),
+                List.of());
     }
 
     public record SectorBattleResult(boolean success, String message, List<CombatEntity> attackerCasualties,
@@ -813,12 +825,14 @@ public class CombatService {
                                      boolean attackerCharacterLost, boolean defenderCharacterLost,
                                      boolean defenderHeadquartersCaptured,
                                      List<CasualtyInfo> casualtyDetails, List<ExperienceGain> experienceGains,
-                                     List<BattleLogEntry> battleLog) {
+                                     List<BattleLogEntry> battleLog,
+                                     List<BattleReportDto.PlayerForceDto> forces) {
     }
 
     public record StandoffBattleResult(boolean success, String message, Player winner, int capturedBuildings,
                                        List<PlayerOutcome> outcomes, List<CasualtyInfo> casualtyDetails,
-                                       List<ExperienceGain> experienceGains, List<BattleLogEntry> battleLog) {
+                                       List<ExperienceGain> experienceGains, List<BattleLogEntry> battleLog,
+                                       List<BattleReportDto.PlayerForceDto> forces) {
 
         public record PlayerOutcome(Long playerId, int casualties, int injured, boolean characterLost,
                                     boolean eliminated) {

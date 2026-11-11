@@ -8,6 +8,7 @@ import java.util.List;
 public class BattleReportDto {
     private int turn;
     private int sectorNumber;
+    private String kind;
     private boolean standoff;
     private boolean ranged;
     private String rangedFire;
@@ -17,6 +18,7 @@ public class BattleReportDto {
     private List<CampDto> camps;
     private List<CasualtyDto> casualties;
     private List<ExperienceGainDto> experienceGains;
+    private List<PlayerForceDto> forces;
 
     @Data
     public static class CampDto {
@@ -49,5 +51,38 @@ public class BattleReportDto {
         private double gained;
         private String typeAfter;
         private double experienceAfter;
+    }
+
+    @Data
+    public static class PlayerForceDto {
+        private Long playerId;
+        private String playerName;
+        private String side;
+        private List<UnitForceDto> characters;
+        private List<VehicleForceDto> vehicles;
+        private List<UnitForceDto> infantry;
+        private List<BuildingForceDto> buildings;
+    }
+
+    @Data
+    public static class UnitForceDto {
+        private Integer number;
+        private String type;
+        private String displayName;
+        private Double experience;
+        private boolean injured;
+    }
+
+    @Data
+    public static class VehicleForceDto {
+        private String displayName;
+        private boolean aerial;
+        private List<UnitForceDto> crew;
+    }
+
+    @Data
+    public static class BuildingForceDto {
+        private String displayName;
+        private String category;
     }
 }

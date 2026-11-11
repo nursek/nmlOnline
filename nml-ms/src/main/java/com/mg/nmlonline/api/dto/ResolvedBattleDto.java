@@ -27,6 +27,7 @@ public class ResolvedBattleDto {
     private boolean defenderHeadquartersCaptured;
     private List<EliminatedPlayerDto> eliminatedPlayers;
     private List<BattleLogEntryDto> battleLog;
+    private List<BattleReportDto.PlayerForceDto> forces;
 
     @Data
     public static class EliminatedPlayerDto {
