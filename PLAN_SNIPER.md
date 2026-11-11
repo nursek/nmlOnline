@@ -9,7 +9,7 @@
 > Gilet de camouflage optique ; une cible touchée subit les dégâts. La salve rejoint la
 > **phase PdF du combat**, le sniper peut viser **tout type d'entité**, et un sniper **inactif**
 > ciblé peut **contre-tirer**.
-> Les données d'équipement (V32 : `aim_malus_reduction`, `enemy_aim_malus`) restent inchangées.
+> Les données d'équipement (V33 : `aim_malus_reduction`, `enemy_aim_malus`) restent inchangées.
 
 ## 1. Acquis
 
@@ -141,7 +141,7 @@ Résolution :
 
 ### 6.1 Ordres sniper
 
-Migration `V33__sniper_orders.sql` :
+Migration `V34__sniper_orders.sql` :
 
 ```sql
 CREATE SEQUENCE public.sniper_orders_id_seq START WITH 1 INCREMENT BY 50;
