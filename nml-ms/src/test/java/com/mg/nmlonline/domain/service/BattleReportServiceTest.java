@@ -1,7 +1,10 @@
 package com.mg.nmlonline.domain.service;
 
 import tools.jackson.databind.json.JsonMapper;
+import com.mg.nmlonline.api.dto.BattleHighlightDto;
+import com.mg.nmlonline.api.dto.BattleReportDetailDto;
 import com.mg.nmlonline.api.dto.BattleReportDto;
+import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
 import com.mg.nmlonline.domain.model.battle.BattleReport;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.UnitType;
@@ -17,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -54,7 +58,7 @@ class BattleReportServiceTest {
                 List.of(new CombatService.CasualtyInfo(2L, "Heros", "CHARACTER", null, null, null)),
                 List.of(new CombatService.ExperienceGain(1L, 10L, 3, UnitType.LARBIN, 1.0, 2.0,
                         UnitType.VOYOU, 3.0)),
-                List.of());
+                List.of(), List.of(), List.of());
 
         service.saveDuelReport(7, 32, List.of(attacker), List.of(defender), result);
 
@@ -105,7 +109,7 @@ class BattleReportServiceTest {
                         new CombatService.StandoffBattleResult.PlayerOutcome(3L, 1, 0, false, true)),
                 List.of(new CombatService.CasualtyInfo(2L, "Brute", "INFANTRY", UnitType.LARBIN, 2, 3.0)),
                 List.of(),
-                List.of());
+                List.of(), List.of(), List.of());
 
         service.saveStandoffReport(12, 32, List.of(premier, deuxieme, troisieme), result);
 
@@ -131,5 +135,106 @@ class BattleReportServiceTest {
         assertTrue(dto.getCamps().get(1).isCharacterLost());
         assertEquals(1, dto.getCasualties().size());
         assertEquals("Imotekh", dto.getCasualties().getFirst().getPlayerName());
+    }
+
+    @Test
+    @DisplayName("Le payload v2 garde forces et points clés pour l'admin, la vue joueur ne les expose pas")
+    void playerViewDropsAdminDetail() {
+        Player attacker = new Player("Attaquant");
+        attacker.setId(1L);
+        Player defender = new Player("Defenseur");
+        defender.setId(2L);
+
+        BattleReportDto.PlayerForceDto force = new BattleReportDto.PlayerForceDto();
+        force.setPlayerId(1L);
+        force.setPlayerName("Attaquant");
+        force.setSide("ATTAQUANT");
+
+        CombatService.SectorBattleResult result = new CombatService.SectorBattleResult(
+                true, "Bataille terminée", List.of(), List.of(), List.of(), List.of(),
+                attacker, 0, false, false, false,
+                List.of(), List.of(),
+                List.of(new BattleLogEntry("PDF", BattleLogEntry.DAMAGE, "jet secret 42")),
+                List.of(force),
+                List.of(highlight("CHARACTER_LOST", BattleHighlights.PUBLIC, "Personnage perdu : Defenseur"),
+                        highlight("CRIT", BattleHighlights.ADMIN, "2 coups critiques")));
+
+        service.saveDuelReport(7, 32, List.of(attacker), List.of(defender), result);
+
+        ArgumentCaptor<BattleReport> captor = ArgumentCaptor.forClass(BattleReport.class);
+        verify(reportRepository).save(captor.capture());
+        BattleReportDetailDto detail = service.readPayload(captor.getValue());
+        assertEquals(2, detail.getSchemaVersion());
+        assertEquals("ASSAUT", detail.getKind());
+        assertEquals(1, detail.getForces().size());
+        assertEquals(2, detail.getHighlights().size());
+        assertFalse(JsonMapper.builder().build().writeValueAsString(detail).contains("jet secret"),
+                "Le déroulé n'est pas persisté dans le rapport, le journal du tour le porte");
+
+        BattleReportDto playerView = service.toPlayerReport(detail);
+        assertEquals("ASSAUT", playerView.getKind());
+        assertEquals(1, playerView.getForces().size());
+        assertEquals(1, playerView.getHighlights().size(), "Seuls les points clés publics sont projetés");
+        assertEquals("Personnage perdu : Defenseur", playerView.getHighlights().getFirst().getMessage());
+
+        String json = JsonMapper.builder().build().writeValueAsString(playerView);
+        assertFalse(json.contains("battleLog"), "La vue joueur ne contient pas le déroulé");
+        assertFalse(json.contains("jet secret"), "La vue joueur ne contient pas les messages admin");
+        assertFalse(json.contains("coups critiques"), "La vue joueur ne contient pas les points clés admin");
+        assertFalse(json.contains("stats"), "La vue joueur ne contient pas les statistiques");
+        assertFalse(json.contains("equipments"), "La vue joueur ne contient pas les équipements");
+    }
+
+    private static BattleHighlightDto highlight(String kind, String visibility, String message) {
+        BattleHighlightDto highlight = new BattleHighlightDto();
+        highlight.setKind(kind);
+        highlight.setPriority(1);
+        highlight.setVisibility(visibility);
+        highlight.setMessage(message);
+        return highlight;
+    }
+
+    @Test
+    @DisplayName("Le tir à distance renvoie le détail destiné au journal")
+    void rangedReportReturnsDetail() {
+        Player shooter = new Player("Sniper");
+        shooter.setId(1L);
+
+        BattleReportDetailDto detail = service.saveRangedReport(5, 15, List.of(shooter),
+                List.of(new CombatService.CasualtyInfo(2L, "Brute", "INFANTRY", UnitType.LARBIN, 1, 1.0)),
+                List.of(), "2 cible(s) touchée(s)", Map.of());
+
+        assertNotNull(detail);
+        assertEquals("TIR", detail.getKind());
+        assertEquals(2, detail.getSchemaVersion());
+        assertEquals(15, detail.getSectorNumber());
+        assertEquals(1, detail.getCasualties().size());
+    }
+
+    @Test
+    @DisplayName("Un rapport v1 archivé reste lisible et projeté sans déroulé")
+    void legacyPayloadStaysReadable() {
+        BattleReportDto legacy = new BattleReportDto();
+        legacy.setTurn(3);
+        legacy.setSectorNumber(12);
+        BattleReportDto.CampDto camp = new BattleReportDto.CampDto();
+        camp.setPlayerId(1L);
+        camp.setPlayerName("Ancien");
+        legacy.setCamps(List.of(camp));
+
+        BattleReport report = new BattleReport();
+        report.setPayload(JsonMapper.builder().build().writeValueAsString(legacy));
+
+        BattleReportDetailDto detail = service.readPayload(report);
+        assertEquals(1, detail.getSchemaVersion());
+        assertEquals("ASSAUT", detail.getKind());
+        assertEquals(3, detail.getTurn());
+        assertEquals(12, detail.getSectorNumber());
+        assertEquals("Ancien", detail.getCamps().getFirst().getPlayerName());
+
+        BattleReportDto playerView = service.toPlayerReport(detail);
+        assertEquals(3, playerView.getTurn());
+        assertEquals("Ancien", playerView.getCamps().getFirst().getPlayerName());
+        assertNull(playerView.getForces());
     }
 }

@@ -443,6 +443,8 @@ class TurnResolutionScenariosTest {
         assertTrue(report.getBattleLog().stream()
                         .anyMatch(e -> "État initial".equals(e.getPhase()) && e.getMessage().contains("Atk")),
                 "Le journal expose l'état initial des camps avec leurs statistiques");
+        assertNotNull(report.getForces());
+        assertFalse(report.getHighlights().isEmpty(), "La session admin expose les points clés");
         assertTrue(report.getBattleLog().stream()
                         .anyMatch(e -> ("DAMAGE".equals(e.getOutcome()) || "DESTROYED".equals(e.getOutcome()))
                                 && e.getMessage().contains(" · ")),
@@ -951,6 +953,11 @@ class TurnResolutionScenariosTest {
                         .anyMatch(report -> report.getSectorNumber() == 15
                                 && report.getPayload().contains("\"ranged\":true")),
                 "Le tir isolé produit un rapport de tir à distance dans l'arène 15");
+
+        TurnJournalDto journal = turnJournalService.findByTurn(finalized.getTurnEnding());
+        assertFalse(journal.getRangedCombats().isEmpty(), "Le journal archive le tir isolé");
+        assertEquals("TIR", journal.getRangedCombats().getFirst().getKind());
+        assertEquals(journal.getRangedCombats().size(), journal.getSummary().getRangedCombats());
     }
 
     @Test

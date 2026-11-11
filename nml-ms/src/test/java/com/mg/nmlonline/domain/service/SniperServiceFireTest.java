@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
+import com.mg.nmlonline.api.dto.BattleReportDetailDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
@@ -134,10 +135,10 @@ class SniperServiceFireTest {
         });
     }
 
-    private void resolve(Long targetSector) {
-        new TransactionTemplate(txManager).executeWithoutResult(status -> {
+    private List<BattleReportDetailDto> resolve(Long targetSector) {
+        return new TransactionTemplate(txManager).execute(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-            sniperService.resolveRemainingFire(board.getCurrentTurn(), board, Set.of());
+            return sniperService.resolveRemainingFire(board.getCurrentTurn(), board, Set.of());
         });
     }
 
@@ -265,8 +266,11 @@ class SniperServiceFireTest {
     void standaloneFireTriggersCounterAndWritesReport() throws Exception {
         FireWorld world = seedStandaloneFire(false, false);
 
-        resolve(world.targetSector());
+        List<BattleReportDetailDto> details = resolve(world.targetSector());
 
+        assertFalse(details.isEmpty(), "Le tir isolé expose son détail pour le journal");
+        assertEquals("TIR", details.getFirst().getKind());
+        assertEquals(2, details.getFirst().getSchemaVersion());
         SniperOrder order = sniperOrderRepository.findById(world.shooterOrderId()).orElseThrow();
         assertEquals(SniperOrderStatus.RESOLVED, order.getStatus());
         JsonNode report = reportJson(world);

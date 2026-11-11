@@ -1,5 +1,5 @@
-import type { ResolvedBattle, TurnFinalizeResult } from '../../models';
-import { buildTurnExport, formatBattleLog } from './turn-export.helpers';
+import type { BattleReport, ResolvedBattle, TurnFinalizeResult } from '../../models';
+import { buildTurnExport, formatBattleLog, formatTurnLog } from './turn-export.helpers';
 
 function battle(overrides: Partial<ResolvedBattle> = {}): ResolvedBattle {
   return {
@@ -29,6 +29,33 @@ function battle(overrides: Partial<ResolvedBattle> = {}): ResolvedBattle {
       { phase: 'ATK', outcome: 'DESTROYED', message: 'Alice · X détruit Bob · Y' },
     ],
     ...overrides,
+  };
+}
+
+function rangedReport(): BattleReport {
+  return {
+    turn: 12,
+    sectorNumber: 15,
+    kind: 'TIR',
+    standoff: false,
+    ranged: true,
+    rangedFire: '2 cible(s) touchée(s)',
+    winnerPlayerId: null,
+    winnerName: null,
+    capturedBuildings: 0,
+    camps: [],
+    casualties: [
+      {
+        playerId: 2,
+        playerName: 'Bob',
+        label: 'BRUTE n°1',
+        category: 'INFANTRY',
+        unitType: 'BRUTE',
+        unitNumber: 1,
+        experience: 2,
+      },
+    ],
+    experienceGains: [],
   };
 }
 
@@ -97,5 +124,82 @@ describe('formatBattleLog', () => {
     expect(text.indexOf('=== ATK ===')).toBeGreaterThan(text.indexOf('=== PDF ==='));
     expect(text).toContain('[DAMAGE] Alice · X touche Bob · Y');
     expect(text).toContain('[DESTROYED] Alice · X détruit Bob · Y');
+  });
+
+  it('ajoute les points clés et les forces par joueur', () => {
+    const text = formatBattleLog(
+      battle({
+        highlights: [
+          { kind: 'CRIT', priority: 2, visibility: 'ADMIN', message: '2 coups critiques' },
+        ],
+        forces: [
+          {
+            playerId: 1,
+            playerName: 'Alice',
+            side: 'ATTAQUANT',
+            characters: [],
+            vehicles: [
+              {
+                displayName: 'Rhino',
+                aerial: false,
+                crew: [
+                  {
+                    number: 1,
+                    type: 'VOYOU',
+                    displayName: 'VOYOU n°1',
+                    experience: 2,
+                    injured: false,
+                  },
+                ],
+              },
+            ],
+            infantry: [
+              {
+                number: 2,
+                type: 'VOYOU',
+                displayName: 'VOYOU n°2',
+                experience: 4,
+                injured: false,
+              },
+            ],
+            buildings: [],
+          },
+        ],
+      }),
+      12,
+    );
+
+    expect(text).toContain('Points clés');
+    expect(text).toContain('2 coups critiques [debug]');
+    expect(text).toContain('Forces en présence');
+    expect(text).toContain('Véhicule : Rhino — équipage : VOYOU n°1');
+    expect(text).toContain('Infanterie : VOYOU n°2 (4 Exp)');
+  });
+});
+
+describe('formatTurnLog', () => {
+  it('ajoute les tirs isolés et nomme les véhicules de transit', () => {
+    const exported = buildTurnExport({
+      turn: 12,
+      battles: [battle()],
+      finalizeResult: finalizedTurn(),
+    });
+    exported.transitCombats = [
+      {
+        sectorNumber: 7,
+        vehicleId: 3,
+        vehicleName: 'Rhino',
+        vehicleType: 'VTT_BLINDE',
+        vehicleFired: true,
+      },
+    ];
+    exported.rangedCombats = [rangedReport()];
+
+    const text = formatTurnLog(exported);
+
+    expect(text).toContain('Tirs isolés : 1');
+    expect(text).toContain('Rhino (VTT_BLINDE)');
+    expect(text).toContain('=== Tirs isolés ===');
+    expect(text).toContain('BRUTE n°1');
   });
 });

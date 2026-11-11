@@ -1,7 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
+import com.mg.nmlonline.api.dto.BattleReportDetailDto;
 import com.mg.nmlonline.api.dto.BattleReportDto;
 import com.mg.nmlonline.domain.model.battle.BattleReport;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -11,6 +10,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,6 +22,10 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class BattleReportService {
+
+    private static final int SCHEMA_VERSION = 2;
+    private static final int LEGACY_SCHEMA_VERSION = 1;
+    private static final int MAX_REPORTS_PER_PLAYER = 100;
 
     private final BattleReportRepository reportRepository;
     private final PlayerRepository playerRepository;
@@ -44,7 +49,9 @@ public class BattleReportService {
         Map<Long, String> names = participants.stream()
                 .collect(Collectors.toMap(Player::getId, Player::getName, (a, b) -> a));
 
-        BattleReportDto dto = new BattleReportDto();
+        BattleReportDetailDto dto = new BattleReportDetailDto();
+        dto.setSchemaVersion(SCHEMA_VERSION);
+        dto.setKind("ASSAUT");
         dto.setTurn(turn);
         dto.setSectorNumber(sectorNumber);
         dto.setStandoff(false);
@@ -65,19 +72,23 @@ public class BattleReportService {
 
         dto.setCasualties(mapCasualties(result.casualtyDetails(), names));
         dto.setExperienceGains(mapExperienceGains(result.experienceGains(), names));
+        dto.setForces(result.forces());
+        dto.setHighlights(result.highlights());
         persist(dto, participants.stream().map(Player::getId).toList());
     }
 
-    public void saveRangedReport(int turn, int sectorNumber, List<Player> participants,
-                                 List<CombatService.CasualtyInfo> casualties,
-                                 List<CombatService.ExperienceGain> experienceGains,
-                                 String rangedFire, Map<Long, Boolean> characterLost) {
+    public BattleReportDetailDto saveRangedReport(int turn, int sectorNumber, List<Player> participants,
+                                                  List<CombatService.CasualtyInfo> casualties,
+                                                  List<CombatService.ExperienceGain> experienceGains,
+                                                  String rangedFire, Map<Long, Boolean> characterLost) {
         if (participants == null || participants.isEmpty()) {
-            return;
+            return null;
         }
         Map<Long, String> names = participants.stream()
                 .collect(Collectors.toMap(Player::getId, Player::getName, (a, b) -> a));
-        BattleReportDto dto = new BattleReportDto();
+        BattleReportDetailDto dto = new BattleReportDetailDto();
+        dto.setSchemaVersion(SCHEMA_VERSION);
+        dto.setKind("TIR");
         dto.setTurn(turn);
         dto.setSectorNumber(sectorNumber);
         dto.setStandoff(false);
@@ -93,6 +104,7 @@ public class BattleReportService {
         dto.setCasualties(mapCasualties(casualties, names));
         dto.setExperienceGains(mapExperienceGains(experienceGains, names));
         persist(dto, participants.stream().map(Player::getId).toList());
+        return dto;
     }
 
     public void saveStandoffReport(int turn, int sectorNumber, List<Player> participants,
@@ -105,7 +117,9 @@ public class BattleReportService {
         Map<Long, Player> playersById = participants.stream()
                 .collect(Collectors.toMap(Player::getId, player -> player, (a, b) -> a));
 
-        BattleReportDto dto = new BattleReportDto();
+        BattleReportDetailDto dto = new BattleReportDetailDto();
+        dto.setSchemaVersion(SCHEMA_VERSION);
+        dto.setKind("IMPASSE");
         dto.setTurn(turn);
         dto.setSectorNumber(sectorNumber);
         dto.setStandoff(true);
@@ -128,10 +142,10 @@ public class BattleReportService {
                 .toList());
         dto.setCasualties(mapCasualties(result.casualtyDetails(), names));
         dto.setExperienceGains(mapExperienceGains(result.experienceGains(), names));
+        dto.setForces(result.forces());
+        dto.setHighlights(result.highlights());
         persist(dto, participants.stream().map(Player::getId).toList());
     }
-
-    private static final int MAX_REPORTS_PER_PLAYER = 100;
 
     @Transactional(readOnly = true)
     public List<BattleReportDto> getReportsForUser(Long userId) {
@@ -141,9 +155,64 @@ public class BattleReportService {
         List<BattleReport> page = reportRepository.findByParticipantId(
                 player.getId(), PageRequest.of(0, MAX_REPORTS_PER_PLAYER));
         for (BattleReport report : page) {
-            reports.add(readPayload(report));
+            reports.add(toPlayerReport(readPayload(report)));
         }
         return reports;
+    }
+
+    BattleReportDetailDto readPayload(BattleReport report) {
+        try {
+            BattleReportDetailDto detail =
+                    objectMapper.readValue(report.getPayload(), BattleReportDetailDto.class);
+            if (detail.getSchemaVersion() == 0) {
+                return fromLegacy(objectMapper.readValue(report.getPayload(), BattleReportDto.class));
+            }
+            return detail;
+        } catch (JacksonException e) {
+            throw new IllegalStateException("Rapport de combat " + report.getId() + " illisible", e);
+        }
+    }
+
+    BattleReportDto toPlayerReport(BattleReportDetailDto detail) {
+        BattleReportDto dto = new BattleReportDto();
+        dto.setTurn(detail.getTurn());
+        dto.setSectorNumber(detail.getSectorNumber());
+        dto.setKind(detail.getKind());
+        dto.setStandoff(detail.isStandoff());
+        dto.setRanged(detail.isRanged());
+        dto.setRangedFire(detail.getRangedFire());
+        dto.setWinnerPlayerId(detail.getWinnerPlayerId());
+        dto.setWinnerName(detail.getWinnerName());
+        dto.setCapturedBuildings(detail.getCapturedBuildings());
+        dto.setCamps(detail.getCamps());
+        dto.setCasualties(detail.getCasualties());
+        dto.setExperienceGains(detail.getExperienceGains());
+        dto.setForces(detail.getForces());
+        dto.setHighlights(detail.getHighlights() == null ? List.of()
+                : detail.getHighlights().stream()
+                        .filter(highlight -> BattleHighlights.PUBLIC.equals(highlight.getVisibility()))
+                        .toList());
+        return dto;
+    }
+
+    private BattleReportDetailDto fromLegacy(BattleReportDto legacy) {
+        BattleReportDetailDto detail = new BattleReportDetailDto();
+        detail.setSchemaVersion(LEGACY_SCHEMA_VERSION);
+        detail.setKind(legacy.isStandoff() ? "IMPASSE" : legacy.isRanged() ? "TIR" : "ASSAUT");
+        detail.setTurn(legacy.getTurn());
+        detail.setSectorNumber(legacy.getSectorNumber());
+        detail.setStandoff(legacy.isStandoff());
+        detail.setRanged(legacy.isRanged());
+        detail.setRangedFire(legacy.getRangedFire());
+        detail.setWinnerPlayerId(legacy.getWinnerPlayerId());
+        detail.setWinnerName(legacy.getWinnerName());
+        detail.setCapturedBuildings(legacy.getCapturedBuildings());
+        detail.setCamps(legacy.getCamps());
+        detail.setCasualties(legacy.getCasualties());
+        detail.setExperienceGains(legacy.getExperienceGains());
+        detail.setForces(legacy.getForces());
+        detail.setHighlights(legacy.getHighlights());
+        return detail;
     }
 
     private BattleReportDto.CampDto camp(Player player, boolean eliminated, boolean characterLost) {
@@ -189,7 +258,7 @@ public class BattleReportService {
         }).toList();
     }
 
-    private void persist(BattleReportDto dto, Collection<Long> participantIds) {
+    private void persist(BattleReportDetailDto dto, Collection<Long> participantIds) {
         BattleReport report = new BattleReport();
         report.setTurn(dto.getTurn());
         report.setSectorNumber(dto.getSectorNumber());
@@ -201,19 +270,11 @@ public class BattleReportService {
         reportRepository.save(report);
     }
 
-    private String writePayload(BattleReportDto dto) {
+    private String writePayload(BattleReportDetailDto dto) {
         try {
             return objectMapper.writeValueAsString(dto);
-            } catch (JacksonException e) {
-                throw new IllegalStateException("Sérialisation du rapport de combat impossible", e);
-            }
-    }
-
-    private BattleReportDto readPayload(BattleReport report) {
-        try {
-            return objectMapper.readValue(report.getPayload(), BattleReportDto.class);
-            } catch (JacksonException e) {
-                throw new IllegalStateException("Rapport de combat " + report.getId() + " illisible", e);
-            }
+        } catch (JacksonException e) {
+            throw new IllegalStateException("Sérialisation du rapport de combat impossible", e);
+        }
     }
 }

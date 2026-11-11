@@ -6,6 +6,7 @@ public record BattleLogEntry(String phase, String outcome, String message) {
     public static final String DODGE = "DODGE";
     public static final String MISS = "MISS";
     public static final String DAMAGE = "DAMAGE";
+    public static final String CRIT = "CRIT";
     public static final String DESTROYED = "DESTROYED";
     public static final String WINNER = "WINNER";
     public static final String LOSS = "LOSS";

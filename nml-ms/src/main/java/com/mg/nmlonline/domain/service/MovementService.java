@@ -408,8 +408,10 @@ public class MovementService {
                     Vehicle vehicle = vehicleRepository.findById(order.getVehicleId()).orElse(null);
                     if (vehicle == null) continue;
 
-                    ctx.transitCombats.add(
-                            new TransitCombatResult(targetNum, vehicle.getId(), vehicle.firesInTransit()));
+                    ctx.transitCombats.add(new TransitCombatResult(targetNum, vehicle.getId(),
+                            vehicle.firesInTransit(), vehicle.getDisplayName(),
+                            vehicle.getVehicleType() != null ? vehicle.getVehicleType().name() : null,
+                            vehicle.getPlayerId()));
                     // TODO : appeler CombatService ici pour résolution réelle du combat de transit
                     if (vehicle.isDestroyed()) {
                         for (CombatEntity occupant : vehicle.disembarkAll()) {
