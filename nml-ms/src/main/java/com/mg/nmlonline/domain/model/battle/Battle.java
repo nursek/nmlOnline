@@ -5,12 +5,14 @@ import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
 import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
+import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.domain.model.unit.EntityCategory;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
+import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.sniper.SniperRules;
 import lombok.AllArgsConstructor;
@@ -50,6 +52,7 @@ public class Battle {
     private final Set<CombatEntity> embarked = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Map<CombatEntity, Vehicle> carriedBy = new IdentityHashMap<>();
 
+    private Map<Long, String> participantNames = Map.of();
     private List<Unit> rangedAttackers = new ArrayList<>();
     private List<Unit> rangedDefenders = new ArrayList<>();
     /** Clé = index de camp de l'impasse. */
@@ -110,14 +113,85 @@ public class Battle {
         log.add(new BattleLogEntry(phase, outcome, message));
     }
 
-    private void recordInitialState(Player player, List<CombatEntity> units) {
-        if (units.isEmpty()) {
-            return;
-        }
-        recordEvent(BattleLogEntry.INFO, player.getName() + " engage " + units.size() + " entité(s) :");
+    private void recordInitialState(String side, Player leader, List<CombatEntity> units) {
+        Map<Long, List<CombatEntity>> byOwner = new LinkedHashMap<>();
         for (CombatEntity entity : units) {
-            recordEvent(BattleLogEntry.INFO, "  " + entity);
+            if (embarked.contains(entity)) {
+                continue;
+            }
+            Long ownerId = entity.getPlayerId() != null ? entity.getPlayerId() : leader.getId();
+            byOwner.computeIfAbsent(ownerId, key -> new ArrayList<>()).add(entity);
         }
+        byOwner.forEach((ownerId, owned) -> recordPlayerForces(side, ownerName(ownerId, leader), owned));
+    }
+
+    private String ownerName(Long playerId, Player fallback) {
+        if (playerId == null) {
+            return fallback.getName();
+        }
+        String name = participantNames.get(playerId);
+        return name != null ? name : fallback.getName();
+    }
+
+    private void recordPlayerForces(String side, String name, List<CombatEntity> entities) {
+        recordEvent(BattleLogEntry.INFO, side + " — " + name + " (" + entities.size() + " entité(s)) :");
+        for (EntityCategory category : List.of(EntityCategory.CHARACTER, EntityCategory.VEHICLE,
+                EntityCategory.INFANTRY, EntityCategory.BUILDING)) {
+            List<CombatEntity> group = entities.stream()
+                    .filter(entity -> entity.getEntityCategory() == category)
+                    .toList();
+            if (group.isEmpty()) {
+                continue;
+            }
+            recordEvent(BattleLogEntry.INFO, "  " + categoryLabel(category) + " :");
+            group.forEach(this::recordEntity);
+        }
+    }
+
+    private void recordEntity(CombatEntity entity) {
+        recordEvent(BattleLogEntry.INFO, "    " + entityLabel(entity));
+        if (entity instanceof Vehicle vehicle) {
+            List<String> crew = vehicle.getAllOccupants().stream()
+                    .map(CombatEntity::getDisplayName)
+                    .toList();
+            if (!crew.isEmpty()) {
+                recordEvent(BattleLogEntry.INFO, "      Équipage : " + String.join(", ", crew));
+            }
+        }
+    }
+
+    private static String entityLabel(CombatEntity entity) {
+        if (entity.getEntityCategory() == EntityCategory.BUILDING) {
+            return entity.getDisplayName();
+        }
+        if (entity instanceof Unit unit && unit.getType() != UnitType.PERSONNAGE) {
+            String equipment = unit.getEquipments().stream()
+                    .map(Equipment::getName)
+                    .collect(Collectors.joining(", "));
+            String label = unit.getDisplayName() + " (" + formatNumber(unit.getExperience()) + " Exp) — "
+                    + unit.getStatsSummary();
+            return equipment.isEmpty() ? label : label + " · " + equipment;
+        }
+        if (entity instanceof Vehicle vehicle) {
+            return vehicle.getDisplayName() + " — " + vehicle.getStatsSummary()
+                    + (vehicle.isAerial() ? " (aérien)" : "");
+        }
+        return entity.getDisplayName() + " — " + entity.getStatsSummary();
+    }
+
+    private static String categoryLabel(EntityCategory category) {
+        return switch (category) {
+            case CHARACTER -> "Personnages";
+            case VEHICLE -> "Véhicules";
+            case INFANTRY -> "Infanterie";
+            case BUILDING -> "Bâtiments";
+        };
+    }
+
+    private static String formatNumber(double value) {
+        return Math.abs(value - Math.rint(value)) < 0.005
+                ? String.valueOf((long) Math.rint(value))
+                : String.format(Locale.ROOT, "%.1f", value);
     }
 
     private static void logUnit(CombatEntity unit) {
@@ -140,13 +214,12 @@ public class Battle {
         logger.info("\n=== Début du combat entre {} et {} ===", attacker.getName(), defender.getName());
 
         this.currentPhase = "État initial";
-        recordInitialState(attacker, attackerUnits);
-        recordInitialState(defender, defenderUnits);
-        this.currentPhase = "Combat";
-        recordEvent(BattleLogEntry.INFO, "Début du combat : " + attacker.getName() + " attaque " + defender.getName());
-
         collectEmbarked(attackerUnits);
         collectEmbarked(defenderUnits);
+        recordInitialState("Attaquant", attacker, attackerUnits);
+        recordInitialState("Défenseur", defender, defenderUnits);
+        this.currentPhase = "Combat";
+        recordEvent(BattleLogEntry.INFO, "Début du combat : " + attacker.getName() + " attaque " + defender.getName());
 
         pdfPhase(attacker, defender, attackerUnits, defenderUnits);
         if (abortIfWiped(attacker, defender, attackerUnits, defenderUnits)) return;
@@ -256,8 +329,8 @@ public class Battle {
         logger.info("\n=== Impasse mexicaine à {} camps ===", n);
         this.currentPhase = "État initial";
         for (int i = 0; i < n; i++) {
-            recordInitialState(players.get(i), camps.get(i));
             collectEmbarked(camps.get(i));
+            recordInitialState("Camp " + (i + 1), players.get(i), camps.get(i));
         }
         this.currentPhase = "Combat";
         recordEvent(BattleLogEntry.INFO, "Impasse mexicaine à " + n + " camps : "

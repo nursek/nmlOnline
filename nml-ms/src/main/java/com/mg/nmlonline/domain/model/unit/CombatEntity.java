@@ -112,5 +112,11 @@ public abstract class CombatEntity {
         if (armor > 0) sb.append(" + ").append(formatStat(armor)).append(" Arm");
         if (evasion > 0) sb.append(". Esquive : ").append((int) Math.ceil(evasion)).append(" %");
     }
+
+    public String getStatsSummary() {
+        StringBuilder sb = new StringBuilder();
+        buildStatsString(sb);
+        return sb.toString();
+    }
 }
 
