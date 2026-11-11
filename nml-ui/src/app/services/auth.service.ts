@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
-import { InstanceService, routeForInstance } from './instance.service';
+import { InstanceService } from './instance.service';
 import { LoginRequest, User } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 
@@ -51,8 +51,8 @@ export class AuthService {
       const user = this.tokenService.getUser();
       if (token && user) {
         this._user.set(user);
-        // Les guards attendent l'initialisation : la liste des parties doit être prête avant la 1re navigation.
-        await this.instance.ensureLoaded().catch(() => []);
+        // Chargement de fond : le menu compte et le garde restent utilisables sans bloquer le boot.
+        void this.instance.ensureLoaded().catch(() => undefined);
       } else {
         this.tokenService.clearAuth();
         this._user.set(null);
@@ -82,14 +82,14 @@ export class AuthService {
       this._user.set({ id: response.id, username: response.name, role: response.role });
       this.instance.clear();
       this.instance.invalidate();
-      const instances = await this.instance.load().catch(() => []);
+      // Une liste indisponible ne doit pas annuler une authentification réussie : /parties propose de réessayer.
+      const instances = await this.instance.ensureLoaded().catch(() => []);
       const mine = instances.filter((candidate) => candidate.participant);
       if (mine.length === 1) {
-        this.instance.select(mine[0]);
-        await this.router.navigate([routeForInstance(mine[0])]);
-      } else {
-        await this.router.navigate(['/parties']);
+        this.instance.enter(mine[0]);
+        return;
       }
+      void this.router.navigate(['/parties']).catch(() => undefined);
     } catch (error) {
       const message = this.extractErrorMessage(error);
       this._error.set(message);

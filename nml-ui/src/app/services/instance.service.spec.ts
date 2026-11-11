@@ -38,7 +38,6 @@ describe('InstanceService (partie sélectionnée et en-tête X-Board-Id)', () =>
     await loading;
 
     expect(service.instances().length).toBe(2);
-    expect(service.myInstances().length).toBe(2);
     expect(service.selected()).toBeNull();
 
     service.select(instance(9, 'Nurio'));
@@ -51,7 +50,7 @@ describe('InstanceService (partie sélectionnée et en-tête X-Board-Id)', () =>
     expect(service.selected()).toBeNull();
   });
 
-  it('ne compte que les parties où le compte joue, pas celles ouvertes par le rôle admin', async () => {
+  it('ne relance pas le chargement quand la liste est déjà connue', async () => {
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -67,7 +66,6 @@ describe('InstanceService (partie sélectionnée et en-tête X-Board-Id)', () =>
       ]);
     await first;
     expect(service.instances().length).toBe(2);
-    expect(service.myInstances().map((candidate) => candidate.id)).toEqual([7]);
 
     await service.ensureLoaded();
     http.expectNone(`${environment.apiBaseUrl}/instances`);
@@ -100,5 +98,70 @@ describe('InstanceService (partie sélectionnée et en-tête X-Board-Id)', () =>
     expect(unscoped.request.headers.get('X-Board-Id')).toBeNull();
     unscoped.flush([]);
     http.verify();
+  });
+
+  it('ignore un chargement devenu obsolète après invalidate', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(InstanceService);
+    const http = TestBed.inject(HttpTestingController);
+    const url = `${environment.apiBaseUrl}/instances`;
+
+    const stale = service.load();
+    service.invalidate();
+    const fresh = service.load();
+    const [first, second] = http.match(url);
+
+    first.flush([instance(1, 'Ancienne')]);
+    await stale;
+    expect(service.instances()).toEqual([]);
+
+    second.flush([instance(2, 'Nouvelle')]);
+    await fresh;
+    expect(service.instances().map((candidate) => candidate.id)).toEqual([2]);
+  });
+
+  it("signale l'échec de chargement et retente au prochain appel", async () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(InstanceService);
+    const http = TestBed.inject(HttpTestingController);
+    const url = `${environment.apiBaseUrl}/instances`;
+
+    const failing = service.load();
+    http.expectOne(url).flush('boom', { status: 500, statusText: 'Server Error' });
+    await expect(failing).rejects.toBeDefined();
+    expect(service.error()).toBe('Impossible de charger vos parties.');
+    expect(service.loading()).toBe(false);
+    expect(service.instances()).toEqual([]);
+
+    const retry = service.ensureLoaded();
+    http.expectOne(url).flush([instance(7, 'Lurio')]);
+    await retry;
+    expect(service.error()).toBeNull();
+    expect(service.instances().length).toBe(1);
+  });
+
+  it('relance une requête après invalidate même si un chargement est en cours', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(InstanceService);
+    const http = TestBed.inject(HttpTestingController);
+    const url = `${environment.apiBaseUrl}/instances`;
+
+    const stale = service.ensureLoaded();
+    service.invalidate();
+    const fresh = service.ensureLoaded();
+    const [first, second] = http.match(url);
+
+    first.flush([instance(1, 'Compte précédent')]);
+    await stale;
+    second.flush([instance(2, 'Compte courant')]);
+    await fresh;
+
+    expect(service.instances().map((candidate) => candidate.id)).toEqual([2]);
   });
 });

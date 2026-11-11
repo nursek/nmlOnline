@@ -986,3 +986,11 @@ textarea:focus-visible,
     cursor: pointer;
   }
 }
+
+.account-menu {
+  margin-top: 14px;
+}
+
+.cdk-overlay-container {
+  z-index: 1100;
+}

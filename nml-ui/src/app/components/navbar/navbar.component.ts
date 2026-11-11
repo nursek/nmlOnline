@@ -122,7 +122,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
                 <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
               </button>
 
-              <mat-menu #userMenu="matMenu">
+              <mat-menu #userMenu="matMenu" class="account-menu">
                 @if (canSwitchInstance()) {
                   <button mat-menu-item (click)="switchInstance()">
                     <mat-icon>grid_view</mat-icon>
@@ -394,11 +394,7 @@ export class NavbarComponent {
     return this.auth.isAdmin() || role === 'ADMIN' || role === 'MJ';
   });
   readonly user = this.auth.user;
-  readonly canSwitchInstance = computed(
-    () =>
-      this.instance.myInstances().length > 1 ||
-      (this.auth.isAdmin() && this.instance.instances().length > 1),
-  );
+  readonly canSwitchInstance = computed(() => this.instance.instances().length > 1);
 
   readonly isMobile = toSignal(
     this.breakpointObserver

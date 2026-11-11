@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -243,7 +244,27 @@ class InstanceAccessTest {
                 .andExpect(jsonPath("$[0].id").value(firstBoardId))
                 .andExpect(jsonPath("$[0].participant").value(true));
 
+        User delegated = createUser("mj_sans_joueur");
+        boardAdminRepository.save(new BoardAdmin(secondBoard.getId(), delegated.getId()));
+        mockMvc.perform(get("/api/instances")
+                        .header("Authorization", "Bearer " + jwtService.generateToken(delegated, 3_600_000L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].participant").value(true))
+                .andExpect(jsonPath("$[0].role").value("MJ"));
+
+        String adminToken = jwtService.generateToken(
+                userRepository.findByUsername(TestDataInitializer.ADMIN), 3_600_000L);
+        mockMvc.perform(get("/api/instances").header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[?(@.id == " + secondBoard.getId() + ")].participant")
+                        .value(hasItem(false)))
+                .andExpect(jsonPath("$[?(@.id == " + secondBoard.getId() + ")].role")
+                        .value(hasItem("ADMIN")));
+
         playerRepository.deleteById(solo.getId());
+        userRepository.deleteById(delegated.getId());
     }
 
     private Board createBoard(String name) {

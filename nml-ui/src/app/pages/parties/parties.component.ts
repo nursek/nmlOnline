@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
-import { InstanceService, routeForInstance } from '../../services/instance.service';
+import { InstanceService } from '../../services/instance.service';
 import { GameInstance } from '../../models';
 
 @Component({
@@ -11,10 +11,14 @@ import { GameInstance } from '../../models';
   template: `
     <section class="parties">
       <h1>Choisir une partie</h1>
-      @if (instanceService.loading()) {
+      @if (instanceService.loading() && instanceService.instances().length === 0) {
         <p>Chargement des parties…</p>
+      } @else if (instanceService.error(); as error) {
+        <p class="warn">{{ error }}</p>
+        <button mat-stroked-button (click)="retry()">Réessayer</button>
       } @else if (instanceService.instances().length === 0) {
         <p>Aucune partie ne vous est attribuée. Contactez l'organisateur.</p>
+        <button mat-stroked-button (click)="retry()">Actualiser</button>
       } @else {
         <div class="grid">
           @for (instance of instanceService.instances(); track instance.id) {
@@ -71,9 +75,15 @@ import { GameInstance } from '../../models';
 export class PartiesComponent {
   readonly instanceService = inject(InstanceService);
 
+  constructor() {
+    void this.instanceService.refresh().catch(() => undefined);
+  }
+
+  retry(): void {
+    void this.instanceService.refresh().catch(() => undefined);
+  }
+
   join(instance: GameInstance): void {
-    this.instanceService.select(instance);
-    // Rechargement complet : tous les services racine (carte, joueurs, stats) sont liés à la partie.
-    window.location.assign(routeForInstance(instance));
+    this.instanceService.enter(instance);
   }
 }

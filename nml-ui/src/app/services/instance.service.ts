@@ -14,47 +14,75 @@ export class InstanceService {
 
   private readonly _instances = signal<GameInstance[]>([]);
   private readonly _loading = signal(false);
+  private readonly _error = signal<string | null>(null);
   private readonly _selectedId = signal<number | null>(readStoredId());
   private readonly _selectedRole = signal<InstanceRole | null>(readStoredRole());
   private loaded = false;
+  private generation = 0;
   private pendingLoad: Promise<GameInstance[]> | null = null;
 
   readonly instances = this._instances.asReadonly();
   readonly loading = this._loading.asReadonly();
+  readonly error = this._error.asReadonly();
   readonly selectedId = this._selectedId.asReadonly();
   readonly selectedRole = this._selectedRole.asReadonly();
   readonly selected = computed(
     () => this.instances().find((instance) => instance.id === this._selectedId()) ?? null,
   );
-  readonly myInstances = computed(() => this.instances().filter((instance) => instance.participant));
 
   /** Charge la liste une seule fois : le login tranche la route avant la première navigation. */
   async ensureLoaded(): Promise<GameInstance[]> {
     if (this.loaded) return this._instances();
     if (this.pendingLoad) return this.pendingLoad;
-    this.pendingLoad = this.load().finally(() => {
-      this.pendingLoad = null;
+    const pending = this.load().finally(() => {
+      if (this.pendingLoad === pending) this.pendingLoad = null;
     });
-    return this.pendingLoad;
+    this.pendingLoad = pending;
+    return pending;
   }
 
+  // httpResource n'expose pas de promesse, or la route post-login exige la liste avant navigation.
   async load(): Promise<GameInstance[]> {
+    const generation = this.generation;
     this._loading.set(true);
+    this._error.set(null);
     try {
       const instances = await firstValueFrom(
         this.http.get<GameInstance[]>(`${environment.apiBaseUrl}/instances`),
       );
-      this._instances.set(instances);
-      this.loaded = true;
+      if (generation === this.generation) {
+        this._instances.set(instances);
+        this.loaded = true;
+      }
       return instances;
+    } catch (error) {
+      if (generation === this.generation) {
+        this.loaded = false;
+        this._error.set('Impossible de charger vos parties.');
+      }
+      throw error;
     } finally {
       this._loading.set(false);
     }
   }
 
+  async refresh(): Promise<GameInstance[]> {
+    this.invalidate();
+    return this.ensureLoaded();
+  }
+
   invalidate(): void {
+    this.generation++;
     this.loaded = false;
+    this.pendingLoad = null;
     this._instances.set([]);
+    this._error.set(null);
+  }
+
+  enter(instance: GameInstance, target = routeForInstance(instance)): void {
+    // Rechargement complet : les ressources racine et les httpResource ne se rechargent pas en SPA.
+    this.select(instance);
+    window.location.assign(target);
   }
 
   select(instance: GameInstance): void {
@@ -76,7 +104,6 @@ export class InstanceService {
   }
 }
 
-/** Route d'entrée d'une partie : l'admin/MJ arrive dans l'administration. */
 export function routeForInstance(instance: GameInstance): string {
   const admin = instance.role === 'ADMIN' || instance.role === 'MJ';
   return admin ? '/admin' : '/accueil';
