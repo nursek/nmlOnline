@@ -74,6 +74,7 @@ public class BattleReportService {
         dto.setCasualties(mapCasualties(result.casualtyDetails(), names));
         dto.setExperienceGains(mapExperienceGains(result.experienceGains(), names));
         dto.setForces(result.forces());
+        dto.setHighlights(result.highlights());
         dto.setBattleLog(toLog(result.battleLog()));
         persist(dto, participants.stream().map(Player::getId).toList());
     }
@@ -144,6 +145,7 @@ public class BattleReportService {
         dto.setCasualties(mapCasualties(result.casualtyDetails(), names));
         dto.setExperienceGains(mapExperienceGains(result.experienceGains(), names));
         dto.setForces(result.forces());
+        dto.setHighlights(result.highlights());
         dto.setBattleLog(toLog(result.battleLog()));
         persist(dto, participants.stream().map(Player::getId).toList());
     }
@@ -189,6 +191,10 @@ public class BattleReportService {
         dto.setCasualties(detail.getCasualties());
         dto.setExperienceGains(detail.getExperienceGains());
         dto.setForces(detail.getForces());
+        dto.setHighlights(detail.getHighlights() == null ? List.of()
+                : detail.getHighlights().stream()
+                        .filter(highlight -> BattleHighlights.PUBLIC.equals(highlight.getVisibility()))
+                        .toList());
         return dto;
     }
 
@@ -208,6 +214,7 @@ public class BattleReportService {
         detail.setCasualties(legacy.getCasualties());
         detail.setExperienceGains(legacy.getExperienceGains());
         detail.setForces(legacy.getForces());
+        detail.setHighlights(legacy.getHighlights());
         return detail;
     }
 

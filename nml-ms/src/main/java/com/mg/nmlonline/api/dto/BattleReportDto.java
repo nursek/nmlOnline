@@ -19,6 +19,7 @@ public class BattleReportDto {
     private List<CasualtyDto> casualties;
     private List<ExperienceGainDto> experienceGains;
     private List<PlayerForceDto> forces;
+    private List<BattleHighlightDto> highlights;
 
     @Data
     public static class CampDto {

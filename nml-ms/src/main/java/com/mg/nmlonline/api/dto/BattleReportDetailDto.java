@@ -20,6 +20,7 @@ public class BattleReportDetailDto {
     private List<BattleReportDto.CasualtyDto> casualties;
     private List<BattleReportDto.ExperienceGainDto> experienceGains;
     private List<BattleReportDto.PlayerForceDto> forces;
+    private List<BattleHighlightDto> highlights;
     private List<LogEntryDto> battleLog;
 
     @Data

@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.BattleHighlightDto;
 import com.mg.nmlonline.api.dto.BattleReportDto;
 import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.PendingEliminationDto;
@@ -595,6 +596,7 @@ public class TurnResolutionOrchestrator {
                 })
                 .toList());
         dto.setForces(rb.forces());
+        dto.setHighlights(rb.highlights());
         dto.setEliminatedPlayers(rb.eliminatedPlayers().stream()
                 .map(elimination -> {
                     ResolvedBattleDto.EliminatedPlayerDto eliminated =
@@ -685,7 +687,8 @@ public class TurnResolutionOrchestrator {
                                   List<EliminatedPlayer> eliminatedPlayers,
                                   List<CombatService.StandoffBattleResult.PlayerOutcome> outcomes,
                                   List<BattleLogEntry> battleLog,
-                                  List<BattleReportDto.PlayerForceDto> forces) {
+                                  List<BattleReportDto.PlayerForceDto> forces,
+                                  List<BattleHighlightDto> highlights) {
 
         private record EliminatedPlayer(Long playerId, String playerName, String cause) {
         }
@@ -715,7 +718,7 @@ public class TurnResolutionOrchestrator {
                     r.attackerInjured().size(), r.defenderInjured().size(),
                     r.capturedBuildings(), r.attackerCharacterLost(), r.defenderCharacterLost(),
                     r.defenderHeadquartersCaptured(), eliminations(combatants), null, r.battleLog(),
-                    r.forces());
+                    r.forces(), r.highlights());
         }
 
         static ResolvedBattle standoff(int sectorNumber, List<List<Player>> camps,
@@ -733,7 +736,7 @@ public class TurnResolutionOrchestrator {
                     null, null, r.success(), r.message(),
                     r.winner() != null ? r.winner().getId() : null,
                     0, 0, 0, 0, r.capturedBuildings(), false, false, false,
-                    eliminations(combatants), r.outcomes(), r.battleLog(), r.forces());
+                    eliminations(combatants), r.outcomes(), r.battleLog(), r.forces(), r.highlights());
         }
     }
 }

@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { ResolvedBattle } from '../../models';
+import { highlightIcon, highlightTone, sideLabel } from '../../core/battle-report-labels';
+import { BattlePlayerForce, ResolvedBattle } from '../../models';
 import { groupBattleLog } from './turn-export.helpers';
 
 @Component({
@@ -41,6 +42,40 @@ import { groupBattleLog } from './turn-export.helpers';
           <span class="winner none">Aucun vainqueur</span>
         }
       </div>
+
+      @if (battle.highlights?.length) {
+        <div class="section">
+          <h3>Points clés</h3>
+          <ul class="highlight-list">
+            @for (highlight of battle.highlights; track $index) {
+              <li [class]="'highlight ' + highlightTone(highlight.kind)">
+                <mat-icon>{{ highlightIcon(highlight.kind) }}</mat-icon>
+                <span>{{ highlight.message }}</span>
+                @if (highlight.visibility === 'ADMIN') {
+                  <em class="admin-badge">debug</em>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (battle.forces?.length) {
+        <div class="section">
+          <h3>Forces en présence</h3>
+          <div class="forces">
+            @for (force of battle.forces; track force.playerId) {
+              <article class="force">
+                <header>
+                  <strong>{{ force.playerName ?? '#' + force.playerId }}</strong>
+                  <span class="side">{{ sideLabel(force.side) }}</span>
+                </header>
+                <p>{{ forceSummary(force) }}</p>
+              </article>
+            }
+          </div>
+        </div>
+      }
 
       @for (group of groups(); track $index) {
         <div class="phase">
@@ -117,6 +152,91 @@ import { groupBattleLog } from './turn-export.helpers';
         color: var(--muted);
         font-weight: 400;
       }
+      .section {
+        margin-bottom: 1rem;
+      }
+      .section h3 {
+        margin: 0 0 0.35rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--ink-3);
+      }
+      .highlight-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .highlight {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.86rem;
+        color: var(--ink);
+      }
+      .highlight mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        color: var(--ink-3);
+      }
+      .highlight.character_lost,
+      .highlight.heavy_losses {
+        color: var(--danger-deep);
+        font-weight: 600;
+      }
+      .highlight.winner,
+      .highlight.promotion {
+        color: var(--forest);
+        font-weight: 600;
+      }
+      .admin-badge {
+        margin-left: auto;
+        padding: 0 0.3rem;
+        border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+        border-radius: var(--r-xs);
+        color: var(--muted);
+        font-size: 0.7rem;
+        font-style: normal;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .forces {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 0.5rem;
+      }
+      .force {
+        padding: 0.4rem 0.6rem;
+        border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+        border-radius: var(--r-sm);
+      }
+      .force header {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.88rem;
+      }
+      .force .side {
+        margin-left: auto;
+        color: var(--cobalt-deep);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .force p {
+        margin: 0.2rem 0 0;
+        color: var(--ink-3);
+        font-size: 0.82rem;
+      }
+      .entry.crit {
+        color: var(--rust);
+        font-weight: 600;
+      }
       .phase {
         margin-bottom: 0.9rem;
       }
@@ -163,6 +283,27 @@ import { groupBattleLog } from './turn-export.helpers';
 export class CombatLogDialogComponent {
   readonly dialogRef = inject(MatDialogRef<CombatLogDialogComponent>);
   readonly battle = inject<ResolvedBattle>(MAT_DIALOG_DATA);
+
+  readonly highlightIcon = highlightIcon;
+  readonly highlightTone = highlightTone;
+  readonly sideLabel = sideLabel;
+
+  forceSummary(force: BattlePlayerForce): string {
+    const parts: string[] = [];
+    if (force.characters.length) {
+      parts.push(`Personnages : ${force.characters.map((unit) => unit.displayName).join(', ')}`);
+    }
+    if (force.vehicles.length) {
+      parts.push(`Véhicules : ${force.vehicles.map((vehicle) => vehicle.displayName).join(', ')}`);
+    }
+    if (force.infantry.length) {
+      parts.push(`Infanterie : ${force.infantry.map((unit) => unit.displayName).join(', ')}`);
+    }
+    if (force.buildings.length) {
+      parts.push(`Bâtiments : ${force.buildings.map((building) => building.displayName).join(', ')}`);
+    }
+    return parts.join(' · ');
+  }
 
   readonly groups = computed(() => groupBattleLog(this.battle.battleLog));
 

@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import tools.jackson.databind.json.JsonMapper;
+import com.mg.nmlonline.api.dto.BattleHighlightDto;
 import com.mg.nmlonline.api.dto.BattleReportDetailDto;
 import com.mg.nmlonline.api.dto.BattleReportDto;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
@@ -56,7 +57,7 @@ class BattleReportServiceTest {
                 List.of(new CombatService.CasualtyInfo(2L, "Heros", "CHARACTER", null, null, null)),
                 List.of(new CombatService.ExperienceGain(1L, 10L, 3, UnitType.LARBIN, 1.0, 2.0,
                         UnitType.VOYOU, 3.0)),
-                List.of(), List.of());
+                List.of(), List.of(), List.of());
 
         service.saveDuelReport(7, 32, List.of(attacker), List.of(defender), result);
 
@@ -107,7 +108,7 @@ class BattleReportServiceTest {
                         new CombatService.StandoffBattleResult.PlayerOutcome(3L, 1, 0, false, true)),
                 List.of(new CombatService.CasualtyInfo(2L, "Brute", "INFANTRY", UnitType.LARBIN, 2, 3.0)),
                 List.of(),
-                List.of(), List.of());
+                List.of(), List.of(), List.of());
 
         service.saveStandoffReport(12, 32, List.of(premier, deuxieme, troisieme), result);
 
@@ -153,7 +154,9 @@ class BattleReportServiceTest {
                 attacker, 0, false, false, false,
                 List.of(), List.of(),
                 List.of(new BattleLogEntry("PDF", BattleLogEntry.DAMAGE, "jet secret 42")),
-                List.of(force));
+                List.of(force),
+                List.of(highlight("CHARACTER_LOST", BattleHighlights.PUBLIC, "Personnage perdu : Defenseur"),
+                        highlight("CRIT", BattleHighlights.ADMIN, "2 coups critiques")));
 
         service.saveDuelReport(7, 32, List.of(attacker), List.of(defender), result);
 
@@ -164,16 +167,29 @@ class BattleReportServiceTest {
         assertEquals("ASSAUT", detail.getKind());
         assertEquals(1, detail.getBattleLog().size());
         assertEquals(1, detail.getForces().size());
+        assertEquals(2, detail.getHighlights().size());
 
         BattleReportDto playerView = service.toPlayerReport(detail);
         assertEquals("ASSAUT", playerView.getKind());
         assertEquals(1, playerView.getForces().size());
+        assertEquals(1, playerView.getHighlights().size(), "Seuls les points clés publics sont projetés");
+        assertEquals("Personnage perdu : Defenseur", playerView.getHighlights().getFirst().getMessage());
 
         String json = JsonMapper.builder().build().writeValueAsString(playerView);
         assertFalse(json.contains("battleLog"), "La vue joueur ne contient pas le déroulé");
         assertFalse(json.contains("jet secret"), "La vue joueur ne contient pas les messages admin");
+        assertFalse(json.contains("coups critiques"), "La vue joueur ne contient pas les points clés admin");
         assertFalse(json.contains("stats"), "La vue joueur ne contient pas les statistiques");
         assertFalse(json.contains("equipments"), "La vue joueur ne contient pas les équipements");
+    }
+
+    private static BattleHighlightDto highlight(String kind, String visibility, String message) {
+        BattleHighlightDto highlight = new BattleHighlightDto();
+        highlight.setKind(kind);
+        highlight.setPriority(1);
+        highlight.setVisibility(visibility);
+        highlight.setMessage(message);
+        return highlight;
     }
 
     @Test

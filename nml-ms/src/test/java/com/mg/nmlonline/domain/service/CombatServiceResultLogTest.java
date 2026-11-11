@@ -78,6 +78,8 @@ class CombatServiceResultLogTest {
         assertEquals(1, result.forces().getFirst().getInfantry().size());
         assertEquals(1, result.forces().get(1).getInfantry().size());
         assertEquals("DEFENSEUR", result.forces().get(2).getSide());
+        assertEquals("WINNER", result.highlights().getFirst().getKind());
+        assertFalse(result.highlights().isEmpty());
     }
 
     private World seed() {

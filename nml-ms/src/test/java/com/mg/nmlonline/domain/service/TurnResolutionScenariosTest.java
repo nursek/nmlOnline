@@ -443,6 +443,8 @@ class TurnResolutionScenariosTest {
         assertTrue(report.getBattleLog().stream()
                         .anyMatch(e -> "État initial".equals(e.getPhase()) && e.getMessage().contains("Atk")),
                 "Le journal expose l'état initial des camps avec leurs statistiques");
+        assertNotNull(report.getForces());
+        assertFalse(report.getHighlights().isEmpty(), "La session admin expose les points clés");
         assertTrue(report.getBattleLog().stream()
                         .anyMatch(e -> ("DAMAGE".equals(e.getOutcome()) || "DESTROYED".equals(e.getOutcome()))
                                 && e.getMessage().contains(" · ")),

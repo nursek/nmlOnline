@@ -632,6 +632,8 @@ class BattleTest {
 
             assertEquals(50.0, hq.getDefense(), "100 ATK × 1,5 = 150 face à 200 def");
             assertTrue(logContains("critique (jet 10 ≤ 10 %) : 100 → 150 ATK"));
+            assertTrue(battle.getLog().stream()
+                    .anyMatch(entry -> BattleLogEntry.CRIT.equals(entry.outcome())));
         }
 
         @Test

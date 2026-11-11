@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.BattleHighlightDto;
 import com.mg.nmlonline.api.dto.BattleReportDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Building;
@@ -202,10 +203,14 @@ public class CombatService {
                                 filteredGains(experienceGains, defenderIds))),
                 capturedBuildings, defenderHeadquartersCaptured);
 
+        List<BattleHighlightDto> highlights = BattleHighlights.build(forces, casualtyDetails, experienceGains,
+                winner != null ? winner.getName() : null, defenderHeadquartersCaptured, capturedBuildings,
+                List.copyOf(battle.getLog()));
+
         return new SectorBattleResult(true, "Bataille terminée au secteur " + sectorNumber,
                 attackerCasualties, defenderCasualties, attackerInjured, defenderInjured, winner,
                 capturedBuildings, attackerCharacterLost, defenderCharacterLost, defenderHeadquartersCaptured,
-                casualtyDetails, experienceGains, List.copyOf(battle.getLog()), forces);
+                casualtyDetails, experienceGains, List.copyOf(battle.getLog()), forces, highlights);
     }
 
     /** L'unique camp avec des combattants hors bâtiments l'emporte et capture les bâtiments des autres. */
@@ -384,9 +389,13 @@ public class CombatService {
         appendResultLog(battle, resultCamps, capturedBuildings,
                 capture != null && capture.headquartersCaptured());
 
+        List<BattleHighlightDto> highlights = BattleHighlights.build(forces, casualtyDetails, experienceGains,
+                winner != null ? winner.getName() : null, capture != null && capture.headquartersCaptured(),
+                capturedBuildings, List.copyOf(battle.getLog()));
+
         return new StandoffBattleResult(true, "Impasse mexicaine terminée au secteur " + sectorNumber,
                 winner, capturedBuildings, outcomes, casualtyDetails, experienceGains, List.copyOf(battle.getLog()),
-                forces);
+                forces, highlights);
     }
 
     /** Retire les snipers des camps à distance de leur secteur d'origine (ils ne sont pas dans le secteur combattu). */
@@ -811,12 +820,12 @@ public class CombatService {
 
     private SectorBattleResult failedResult(String message) {
         return new SectorBattleResult(false, message, List.of(), List.of(), List.of(), List.of(), null,
-                0, false, false, false, List.of(), List.of(), List.of(), List.of());
+                0, false, false, false, List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     private StandoffBattleResult failedStandoff(String message) {
         return new StandoffBattleResult(false, message, null, 0, List.of(), List.of(), List.of(), List.of(),
-                List.of());
+                List.of(), List.of());
     }
 
     public record SectorBattleResult(boolean success, String message, List<CombatEntity> attackerCasualties,
@@ -826,13 +835,15 @@ public class CombatService {
                                      boolean defenderHeadquartersCaptured,
                                      List<CasualtyInfo> casualtyDetails, List<ExperienceGain> experienceGains,
                                      List<BattleLogEntry> battleLog,
-                                     List<BattleReportDto.PlayerForceDto> forces) {
+                                     List<BattleReportDto.PlayerForceDto> forces,
+                                     List<BattleHighlightDto> highlights) {
     }
 
     public record StandoffBattleResult(boolean success, String message, Player winner, int capturedBuildings,
                                        List<PlayerOutcome> outcomes, List<CasualtyInfo> casualtyDetails,
                                        List<ExperienceGain> experienceGains, List<BattleLogEntry> battleLog,
-                                       List<BattleReportDto.PlayerForceDto> forces) {
+                                       List<BattleReportDto.PlayerForceDto> forces,
+                                       List<BattleHighlightDto> highlights) {
 
         public record PlayerOutcome(Long playerId, int casualties, int injured, boolean characterLost,
                                     boolean eliminated) {

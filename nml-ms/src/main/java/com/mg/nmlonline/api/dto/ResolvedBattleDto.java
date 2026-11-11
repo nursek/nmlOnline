@@ -28,6 +28,7 @@ public class ResolvedBattleDto {
     private List<EliminatedPlayerDto> eliminatedPlayers;
     private List<BattleLogEntryDto> battleLog;
     private List<BattleReportDto.PlayerForceDto> forces;
+    private List<BattleHighlightDto> highlights;
 
     @Data
     public static class EliminatedPlayerDto {

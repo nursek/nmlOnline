@@ -427,7 +427,7 @@ public class Battle {
             return 1.0;
         }
         double criticalMultiplier = striker.getCriticalMultiplier();
-        recordEvent(BattleLogEntry.INFO, actorLabel(striker, strikerOwner) + " critique (jet " + roll + " ≤ "
+        recordEvent(BattleLogEntry.CRIT, actorLabel(striker, strikerOwner) + " critique (jet " + roll + " ≤ "
                 + formatPoints(chance * 100) + " %) : " + formatPoints(base) + " → "
                 + formatPoints(base * criticalMultiplier) + " " + damageType);
         return criticalMultiplier;
