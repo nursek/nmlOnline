@@ -12,6 +12,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map } from 'rxjs/operators';
@@ -62,6 +63,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
     MatIconModule,
     MatMenuModule,
     MatListModule,
+    MatDividerModule,
     SigilComponent,
     ThemeToggleComponent,
   ],
@@ -128,6 +130,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
                     <mat-icon>grid_view</mat-icon>
                     <span>Changer de partie</span>
                   </button>
+                  <mat-divider />
                 }
                 <button mat-menu-item (click)="logout()">
                   <mat-icon>logout</mat-icon>
