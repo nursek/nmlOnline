@@ -26,9 +26,7 @@ export class InstanceService {
   readonly selected = computed(
     () => this.instances().find((instance) => instance.id === this._selectedId()) ?? null,
   );
-  readonly soleInstance = computed(() =>
-    this.instances().length === 1 ? this.instances()[0] : null,
-  );
+  readonly myInstances = computed(() => this.instances().filter((instance) => instance.participant));
 
   /** Charge la liste une seule fois : le login tranche la route avant la première navigation. */
   async ensureLoaded(): Promise<GameInstance[]> {

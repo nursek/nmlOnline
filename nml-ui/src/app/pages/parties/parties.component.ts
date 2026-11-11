@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { InstanceService, routeForInstance } from '../../services/instance.service';
@@ -71,19 +70,6 @@ import { GameInstance } from '../../models';
 })
 export class PartiesComponent {
   readonly instanceService = inject(InstanceService);
-  private readonly router = inject(Router);
-  private redirected = false;
-
-  constructor() {
-    // Une seule partie : elle se choisit toute seule, l'écran ne sert que s'il y a un choix.
-    effect(() => {
-      const sole = this.instanceService.soleInstance();
-      if (sole === null || this.redirected) return;
-      this.redirected = true;
-      this.instanceService.select(sole);
-      void this.router.navigate([routeForInstance(sole)]);
-    });
-  }
 
   join(instance: GameInstance): void {
     this.instanceService.select(instance);

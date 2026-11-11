@@ -9,4 +9,6 @@ export interface GameInstance {
   playerName: string | null;
   eliminated: boolean;
   role: InstanceRole | null;
+  /** Joueur ou MJ dans cette partie, indépendamment du rôle plateforme. */
+  participant: boolean;
 }

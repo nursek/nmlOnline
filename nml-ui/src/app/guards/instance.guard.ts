@@ -17,16 +17,18 @@ export const instanceGuard: CanActivateFn = async (): Promise<boolean | UrlTree>
     // Liste indisponible : on garde la partie déjà choisie plutôt que de bloquer la navigation.
   }
 
-  if (available.length === 1) {
-    instance.select(available[0]);
+  const selectedId = instance.selectedId();
+  if (selectedId !== null && available.some((candidate) => candidate.id === selectedId)) {
     return true;
   }
 
-  const selectedId = instance.selectedId();
-  if (selectedId === null) return router.createUrlTree(['/parties']);
-  if (available.length > 0 && !available.some((candidate) => candidate.id === selectedId)) {
-    instance.clear();
-    return router.createUrlTree(['/parties']);
+  const mine = available.filter((candidate) => candidate.participant);
+  if (mine.length === 1) {
+    instance.select(mine[0]);
+    return true;
   }
-  return true;
+
+  if (selectedId === null) return router.createUrlTree(['/parties']);
+  instance.clear();
+  return router.createUrlTree(['/parties']);
 };

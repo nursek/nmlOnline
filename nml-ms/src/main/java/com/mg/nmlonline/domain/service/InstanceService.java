@@ -39,11 +39,12 @@ public class InstanceService {
                 : playerRepository.findByUserIdAndBoardId(userId, board.getId()).orElse(null);
         boolean gameMaster = userId != null && boardAdminRepository.existsByBoardIdAndUserId(board.getId(), userId);
         String role = platformAdmin ? "ADMIN" : gameMaster ? "MJ" : player != null ? "PLAYER" : null;
+        boolean participant = player != null || gameMaster;
         long playerCount = playerRepository.countByBoardId(board.getId());
         return new InstanceDto(board.getId(), board.getName(), board.getCurrentTurn(), playerCount,
                 player == null ? null : player.getId(),
                 player == null ? null : player.getName(),
                 player != null && player.isEliminated(),
-                role);
+                role, participant);
     }
 }

@@ -83,9 +83,10 @@ export class AuthService {
       this.instance.clear();
       this.instance.invalidate();
       const instances = await this.instance.load().catch(() => []);
-      if (instances.length === 1) {
-        this.instance.select(instances[0]);
-        await this.router.navigate([routeForInstance(instances[0])]);
+      const mine = instances.filter((candidate) => candidate.participant);
+      if (mine.length === 1) {
+        this.instance.select(mine[0]);
+        await this.router.navigate([routeForInstance(mine[0])]);
       } else {
         await this.router.navigate(['/parties']);
       }

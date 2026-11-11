@@ -228,6 +228,24 @@ class InstanceAccessTest {
         secondBoard = null;
     }
 
+    @Test
+    @DisplayName("la liste des parties ne contient que celles du compte connecté")
+    void instanceListIsScopedToTheAccount() throws Exception {
+        Long firstBoardId = boardRepository.findAll().getFirst().getId();
+        secondBoard = createBoard("Partie non jouée");
+        gameMaster = createUser("solo_player");
+        Player solo = createPlayer("Solo", gameMaster.getId(), firstBoardId);
+        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+
+        mockMvc.perform(get("/api/instances").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(firstBoardId))
+                .andExpect(jsonPath("$[0].participant").value(true));
+
+        playerRepository.deleteById(solo.getId());
+    }
+
     private Board createBoard(String name) {
         Board board = new Board();
         board.setName(name);

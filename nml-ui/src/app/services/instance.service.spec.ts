@@ -16,6 +16,7 @@ function instance(id: number, name: string): GameInstance {
     playerName: name,
     eliminated: false,
     role: 'PLAYER',
+    participant: true,
   };
 }
 
@@ -37,7 +38,7 @@ describe('InstanceService (partie sélectionnée et en-tête X-Board-Id)', () =>
     await loading;
 
     expect(service.instances().length).toBe(2);
-    expect(service.soleInstance()).toBeNull();
+    expect(service.myInstances().length).toBe(2);
     expect(service.selected()).toBeNull();
 
     service.select(instance(9, 'Nurio'));
@@ -50,7 +51,7 @@ describe('InstanceService (partie sélectionnée et en-tête X-Board-Id)', () =>
     expect(service.selected()).toBeNull();
   });
 
-  it('expose la partie unique et évite un second appel quand elle est déjà chargée', async () => {
+  it('ne compte que les parties où le compte joue, pas celles ouvertes par le rôle admin', async () => {
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -58,9 +59,15 @@ describe('InstanceService (partie sélectionnée et en-tête X-Board-Id)', () =>
     const http = TestBed.inject(HttpTestingController);
 
     const first = service.ensureLoaded();
-    http.expectOne(`${environment.apiBaseUrl}/instances`).flush([instance(7, 'Lurio')]);
+    http
+      .expectOne(`${environment.apiBaseUrl}/instances`)
+      .flush([
+        instance(7, 'Lurio'),
+        { ...instance(9, 'AdminSeulement'), participant: false, role: 'ADMIN' },
+      ]);
     await first;
-    expect(service.soleInstance()?.id).toBe(7);
+    expect(service.instances().length).toBe(2);
+    expect(service.myInstances().map((candidate) => candidate.id)).toEqual([7]);
 
     await service.ensureLoaded();
     http.expectNone(`${environment.apiBaseUrl}/instances`);

@@ -394,7 +394,11 @@ export class NavbarComponent {
     return this.auth.isAdmin() || role === 'ADMIN' || role === 'MJ';
   });
   readonly user = this.auth.user;
-  readonly canSwitchInstance = computed(() => this.instance.instances().length > 1);
+  readonly canSwitchInstance = computed(
+    () =>
+      this.instance.myInstances().length > 1 ||
+      (this.auth.isAdmin() && this.instance.instances().length > 1),
+  );
 
   readonly isMobile = toSignal(
     this.breakpointObserver
