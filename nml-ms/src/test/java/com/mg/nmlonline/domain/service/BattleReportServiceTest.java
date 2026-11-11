@@ -138,7 +138,7 @@ class BattleReportServiceTest {
     }
 
     @Test
-    @DisplayName("Le payload v2 garde le déroulé pour l'admin, la vue joueur ne l'expose pas")
+    @DisplayName("Le payload v2 garde forces et points clés pour l'admin, la vue joueur ne les expose pas")
     void playerViewDropsAdminDetail() {
         Player attacker = new Player("Attaquant");
         attacker.setId(1L);
@@ -166,9 +166,10 @@ class BattleReportServiceTest {
         BattleReportDetailDto detail = service.readPayload(captor.getValue());
         assertEquals(2, detail.getSchemaVersion());
         assertEquals("ASSAUT", detail.getKind());
-        assertEquals(1, detail.getBattleLog().size());
         assertEquals(1, detail.getForces().size());
         assertEquals(2, detail.getHighlights().size());
+        assertFalse(JsonMapper.builder().build().writeValueAsString(detail).contains("jet secret"),
+                "Le déroulé n'est pas persisté dans le rapport, le journal du tour le porte");
 
         BattleReportDto playerView = service.toPlayerReport(detail);
         assertEquals("ASSAUT", playerView.getKind());

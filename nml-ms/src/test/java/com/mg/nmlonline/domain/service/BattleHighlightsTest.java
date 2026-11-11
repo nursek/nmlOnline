@@ -51,6 +51,44 @@ class BattleHighlightsTest {
     }
 
     @Test
+    @DisplayName("L'équipage embarqué compte dans l'effectif des pertes lourdes")
+    void crewCountsInEngaged() {
+        BattleReportDto.VehicleForceDto vehicle = vehicle("Rhino");
+        vehicle.setCrew(List.of(unit("VOYOU n°1"), unit("VOYOU n°2")));
+        BattleReportDto.PlayerForceDto force =
+                force(1L, "Lurio", "ATTAQUANT", List.of(), List.of(vehicle));
+
+        List<BattleHighlightDto> highlights = BattleHighlights.build(
+                List.of(force),
+                List.of(new CombatService.CasualtyInfo(1L, "Rhino", "VEHICLE", null, null, null),
+                        new CombatService.CasualtyInfo(1L, "VOYOU n°1", "INFANTRY", null, null, null),
+                        new CombatService.CasualtyInfo(1L, "VOYOU n°2", "INFANTRY", null, null, null)),
+                List.of(), "Lurio", false, 0, List.of());
+
+        assertTrue(highlights.stream().anyMatch(highlight ->
+                        "HEAVY_LOSSES".equals(highlight.getKind())
+                                && "Pertes lourdes : Lurio (3/3)".equals(highlight.getMessage())),
+                "Le dénominateur inclut le véhicule et ses deux occupants");
+    }
+
+    @Test
+    @DisplayName("Un véhicule détruit dont l'équipage survit ne déclenche pas de pertes lourdes")
+    void survivingCrewIsNotHeavyLoss() {
+        BattleReportDto.VehicleForceDto vehicle = vehicle("Rhino");
+        vehicle.setCrew(List.of(unit("VOYOU n°1"), unit("VOYOU n°2")));
+        BattleReportDto.PlayerForceDto force =
+                force(1L, "Lurio", "ATTAQUANT", List.of(), List.of(vehicle));
+
+        List<BattleHighlightDto> highlights = BattleHighlights.build(
+                List.of(force),
+                List.of(new CombatService.CasualtyInfo(1L, "Rhino", "VEHICLE", null, null, null)),
+                List.of(), "Lurio", false, 0, List.of());
+
+        assertFalse(highlights.stream().anyMatch(highlight -> "HEAVY_LOSSES".equals(highlight.getKind())),
+                "1 perte sur 3 entités engagées reste sous le seuil de 50 %");
+    }
+
+    @Test
     @DisplayName("Aucun point clé de mécanique n'est public")
     void criticalsStayAdmin() {
         List<BattleHighlightDto> highlights = BattleHighlights.build(

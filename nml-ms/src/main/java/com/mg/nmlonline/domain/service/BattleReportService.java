@@ -2,7 +2,6 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.BattleReportDetailDto;
 import com.mg.nmlonline.api.dto.BattleReportDto;
-import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
 import com.mg.nmlonline.domain.model.battle.BattleReport;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.BattleReportRepository;
@@ -75,7 +74,6 @@ public class BattleReportService {
         dto.setExperienceGains(mapExperienceGains(result.experienceGains(), names));
         dto.setForces(result.forces());
         dto.setHighlights(result.highlights());
-        dto.setBattleLog(toLog(result.battleLog()));
         persist(dto, participants.stream().map(Player::getId).toList());
     }
 
@@ -105,7 +103,6 @@ public class BattleReportService {
                 .toList());
         dto.setCasualties(mapCasualties(casualties, names));
         dto.setExperienceGains(mapExperienceGains(experienceGains, names));
-        dto.setBattleLog(List.of());
         persist(dto, participants.stream().map(Player::getId).toList());
         return dto;
     }
@@ -147,7 +144,6 @@ public class BattleReportService {
         dto.setExperienceGains(mapExperienceGains(result.experienceGains(), names));
         dto.setForces(result.forces());
         dto.setHighlights(result.highlights());
-        dto.setBattleLog(toLog(result.battleLog()));
         persist(dto, participants.stream().map(Player::getId).toList());
     }
 
@@ -258,19 +254,6 @@ public class BattleReportService {
             dto.setGained(gain.gained());
             dto.setTypeAfter(gain.typeAfter().name());
             dto.setExperienceAfter(gain.experienceAfter());
-            return dto;
-        }).toList();
-    }
-
-    private static List<BattleReportDetailDto.LogEntryDto> toLog(List<BattleLogEntry> entries) {
-        if (entries == null) {
-            return List.of();
-        }
-        return entries.stream().map(entry -> {
-            BattleReportDetailDto.LogEntryDto dto = new BattleReportDetailDto.LogEntryDto();
-            dto.setPhase(entry.phase());
-            dto.setOutcome(entry.outcome());
-            dto.setMessage(entry.message());
             return dto;
         }).toList();
     }

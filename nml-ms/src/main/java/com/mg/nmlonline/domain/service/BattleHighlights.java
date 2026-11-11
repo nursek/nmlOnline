@@ -75,7 +75,10 @@ public final class BattleHighlights {
     }
 
     private static int engaged(BattleReportDto.PlayerForceDto force) {
-        return size(force.getCharacters()) + size(force.getVehicles())
+        int crew = force.getVehicles() == null ? 0 : force.getVehicles().stream()
+                .mapToInt(vehicle -> size(vehicle.getCrew()))
+                .sum();
+        return size(force.getCharacters()) + size(force.getVehicles()) + crew
                 + size(force.getInfantry()) + size(force.getBuildings());
     }
 

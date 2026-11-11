@@ -21,12 +21,4 @@ public class BattleReportDetailDto {
     private List<BattleReportDto.ExperienceGainDto> experienceGains;
     private List<BattleReportDto.PlayerForceDto> forces;
     private List<BattleHighlightDto> highlights;
-    private List<LogEntryDto> battleLog;
-
-    @Data
-    public static class LogEntryDto {
-        private String phase;
-        private String outcome;
-        private String message;
-    }
 }
