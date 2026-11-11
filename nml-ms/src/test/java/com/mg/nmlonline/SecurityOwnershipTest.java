@@ -5,6 +5,7 @@ import com.mg.nmlonline.config.TestDataInitializer;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.JwtService;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,9 @@ class SecurityOwnershipTest {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private BoardRepository boardRepository;
+
     private static final long TOKEN_TTL_MS = 3_600_000;
 
     private String tokenFor(String username) {
@@ -46,12 +50,16 @@ class SecurityOwnershipTest {
         return jwtService.generateToken(user, TOKEN_TTL_MS);
     }
 
+    private Long boardId() {
+        return boardRepository.findAll().getFirst().getId();
+    }
+
     private Long playerIdForUser(String username) {
         User user = userRepository.findByUsername(username);
         if (user == null) {
             throw new IllegalStateException("Utilisateur de test introuvable : " + username);
         }
-        Player player = playerRepository.findByUserIdAndBoardId(user.getId(), playerRepository.findAll().getFirst().getBoardId()).orElse(null);
+        Player player = playerRepository.findByUserIdAndBoardId(user.getId(), boardId()).orElse(null);
         if (player == null) {
             throw new IllegalStateException("Joueur de test introuvable pour l'utilisateur : " + username);
         }
@@ -95,7 +103,8 @@ class SecurityOwnershipTest {
         String token = tokenFor(TestDataInitializer.USER_1);
 
         mockMvc.perform(get("/api/admin/players")
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(boardId())))
                 .andExpect(status().isForbidden());
     }
 
@@ -104,7 +113,8 @@ class SecurityOwnershipTest {
         String token = tokenFor(TestDataInitializer.USER_1);
 
         mockMvc.perform(get("/api/players/TestPlayer1")
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(boardId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stats.money").exists());
     }
@@ -114,7 +124,8 @@ class SecurityOwnershipTest {
         String token = tokenFor(TestDataInitializer.USER_1);
 
         mockMvc.perform(get("/api/players/TestPlayer2")
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(boardId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sectorCount").exists())
                 .andExpect(jsonPath("$.stats.money").doesNotExist());
@@ -138,7 +149,8 @@ class SecurityOwnershipTest {
         Long otherPlayerId = playerIdForUser(TestDataInitializer.USER_2);
 
         mockMvc.perform(get("/api/characters/player/" + otherPlayerId)
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(boardId())))
                 .andExpect(status().isForbidden());
     }
 
@@ -148,7 +160,8 @@ class SecurityOwnershipTest {
         Long otherPlayerId = playerIdForUser(TestDataInitializer.USER_2);
 
         mockMvc.perform(get("/api/buildings/headquarters/" + otherPlayerId)
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(boardId())))
                 .andExpect(status().isForbidden());
     }
 }

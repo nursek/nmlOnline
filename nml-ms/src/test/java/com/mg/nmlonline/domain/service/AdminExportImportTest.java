@@ -2,6 +2,8 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.domain.service.PlayerImportService.PlayerDTO;
 import org.junit.jupiter.api.DisplayName;
@@ -29,8 +31,11 @@ class AdminExportImportTest {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private BoardRepository boardRepository;
+
     private Long boardId() {
-        return playerRepository.findAll().getFirst().getBoardId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     @Autowired

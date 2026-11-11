@@ -1,0 +1,12 @@
+{
+  "name": "imotekh",
+  "race": "NECRONS",
+  "money": 30000,
+  "sectors": [
+    { "sectorNumber": 11 },
+    { "sectorNumber": 12 }
+  ],
+  "buildings": [
+    { "type": "HEADQUARTERS", "sectorNumber": 11 }
+  ]
+}

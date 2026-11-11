@@ -39,10 +39,11 @@ public class BoardAssetStorageService {
     private final String urlPrefix;
 
     public BoardAssetStorageService(@Value("${app.boards.storage-dir:./target/board-assets}") String storageDir) {
-        this.storageDir = Path.of(storageDir);
+        // Absolu + normalisé : le write compare à ce chemin après normalize (sinon "./target/..." échoue).
+        this.storageDir = Path.of(storageDir).toAbsolutePath().normalize();
         // URL servie par static-locations=file:/app/static/ → /boards/...
         this.urlPrefix = "/boards/";
-        logger.info("BoardAssetStorageService initialisé sur {}", this.storageDir.toAbsolutePath());
+        logger.info("BoardAssetStorageService initialisé sur {}", this.storageDir);
     }
 
     public String storeImage(MultipartFile file) throws IOException {

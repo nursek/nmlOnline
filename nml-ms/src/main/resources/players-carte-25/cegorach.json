@@ -1,0 +1,12 @@
+{
+  "name": "cegorach",
+  "race": "ORKS",
+  "money": 30000,
+  "sectors": [
+    { "sectorNumber": 1 },
+    { "sectorNumber": 2 }
+  ],
+  "buildings": [
+    { "type": "HEADQUARTERS", "sectorNumber": 1 }
+  ]
+}

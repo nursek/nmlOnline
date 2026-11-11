@@ -2,6 +2,7 @@ package com.mg.nmlonline;
 
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.JwtService;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,8 @@ class ProdBootParityTest {
     private JwtService jwtService;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private BoardRepository boardRepository;
 
     @DynamicPropertySource
     static void prodConfiguration(DynamicPropertyRegistry registry) {
@@ -67,7 +70,10 @@ class ProdBootParityTest {
         User admin = userRepository.findByUsername("admin");
         String token = jwtService.generateToken(admin, TOKEN_TTL_MS);
 
-        mockMvc.perform(get("/api/admin/players").header("Authorization", "Bearer " + token))
+        Long boardId = boardRepository.findAll().getFirst().getId();
+        mockMvc.perform(get("/api/admin/players")
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(boardId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(greaterThan(0)));
     }

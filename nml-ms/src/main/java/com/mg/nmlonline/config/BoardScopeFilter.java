@@ -48,6 +48,11 @@ public class BoardScopeFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
+        // Sans authentification, Spring Security tranche (401) : un 400 sur l'en-tête serait trompeur.
+        if (request.getAttribute("userId") == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         String raw = request.getHeader("X-Board-Id");
         Long boardId;
         if (raw == null || raw.isBlank()) {

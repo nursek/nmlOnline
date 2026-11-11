@@ -5,6 +5,8 @@ import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.domain.model.alliance.Alliance;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.AllianceRepository;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FeatureScenarioSeederTest {
 
     private Long boardId() {
-        return playerRepository.findAll().getFirst().getBoardId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     @Autowired
@@ -34,6 +36,9 @@ class FeatureScenarioSeederTest {
 
     @Autowired
     private PlayerRepository playerRepository;
+
+    @Autowired
+    private BoardRepository boardRepository;
 
     @Autowired
     private AllianceRepository allianceRepository;

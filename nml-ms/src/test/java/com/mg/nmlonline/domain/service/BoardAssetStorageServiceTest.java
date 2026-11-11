@@ -6,6 +6,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,6 +49,21 @@ class BoardAssetStorageServiceTest {
                         + "<use xlink:href=\"#path1\"/></svg>").getBytes(StandardCharsets.UTF_8));
 
         BoardAssetStorageService.StoredSvg stored = service().storeSvg(clean);
+
+        assertEquals(1, stored.sectorCount());
+        assertTrue(stored.url().startsWith("/boards/"));
+    }
+
+    @Test
+    void storeSvgAcceptsRelativeStorageDir() throws Exception {
+        // Régression : "./target/..." + target.normalize() faisait échouer startsWith("Nom de fichier invalide").
+        BoardAssetStorageService relative = new BoardAssetStorageService(
+                "./target/test-board-assets-" + UUID.randomUUID());
+        MockMultipartFile clean = new MockMultipartFile("svgOverlay", "map.svg", "image/svg+xml",
+                ("<svg xmlns=\"http://www.w3.org/2000/svg\">"
+                        + "<path id=\"path1\" d=\"M0 0\"/></svg>").getBytes(StandardCharsets.UTF_8));
+
+        BoardAssetStorageService.StoredSvg stored = relative.storeSvg(clean);
 
         assertEquals(1, stored.sectorCount());
         assertTrue(stored.url().startsWith("/boards/"));

@@ -1,0 +1,12 @@
+{
+  "name": "nursek",
+  "race": "ORKS",
+  "money": 30000,
+  "sectors": [
+    { "sectorNumber": 9 },
+    { "sectorNumber": 10 }
+  ],
+  "buildings": [
+    { "type": "HEADQUARTERS", "sectorNumber": 9 }
+  ]
+}

@@ -3,6 +3,8 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.AdminAuditEntryDto;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,10 +35,13 @@ class AdminAuditServiceTest {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private BoardRepository boardRepository;
+
     private Player player;
 
     private Long boardId() {
-        return playerRepository.findAll().getFirst().getBoardId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     @BeforeEach

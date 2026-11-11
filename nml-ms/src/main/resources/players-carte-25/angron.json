@@ -1,0 +1,12 @@
+{
+  "name": "angron",
+  "race": "ORKS",
+  "money": 30000,
+  "sectors": [
+    { "sectorNumber": 5 },
+    { "sectorNumber": 6 }
+  ],
+  "buildings": [
+    { "type": "HEADQUARTERS", "sectorNumber": 5 }
+  ]
+}

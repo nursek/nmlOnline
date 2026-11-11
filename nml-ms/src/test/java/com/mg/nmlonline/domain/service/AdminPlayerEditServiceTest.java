@@ -36,6 +36,8 @@ import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PendingCaptureRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerActionRepository;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.UnitRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
@@ -62,7 +64,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class AdminPlayerEditServiceTest {
 
     private Long boardId() {
-        return playerRepository.findAll().getFirst().getBoardId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     @Autowired
@@ -70,6 +72,9 @@ class AdminPlayerEditServiceTest {
 
     @Autowired
     private PlayerRepository playerRepository;
+
+    @Autowired
+    private BoardRepository boardRepository;
 
     @Autowired
     private UnitRepository unitRepository;
@@ -115,7 +120,7 @@ class AdminPlayerEditServiceTest {
 
     @BeforeEach
     void setUp() {
-        player = playerRepository.findByBoardIdAndName(playerRepository.findAll().getFirst().getBoardId(), "lurio")
+        player = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "lurio")
                 .orElseThrow(() -> new IllegalStateException("Fixture lurio absente"));
         board = boardService.getAllBoards().stream().findFirst()
                 .orElseThrow(() -> new IllegalStateException("Board de test absent"));
@@ -776,7 +781,7 @@ class AdminPlayerEditServiceTest {
         entityManager.flush();
         assertEquals("lurio-admin", player.getName());
 
-        String otherName = playerRepository.findAll().stream()
+        String otherName = playerRepository.findByBoardId(player.getBoardId()).stream()
                 .filter(candidate -> !candidate.getId().equals(player.getId()))
                 .map(Player::getName)
                 .findFirst().orElseThrow();
@@ -809,7 +814,7 @@ class AdminPlayerEditServiceTest {
     void updateCharacterRejectsDuplicateName() {
         GameCharacter character = player.getCharacter();
         assertNotNull(character);
-        String otherName = playerRepository.findAll().stream()
+        String otherName = playerRepository.findByBoardId(player.getBoardId()).stream()
                 .filter(candidate -> !candidate.getId().equals(player.getId()))
                 .map(Player::getCharacter)
                 .filter(Objects::nonNull)
@@ -848,7 +853,7 @@ class AdminPlayerEditServiceTest {
     @Test
     @DisplayName("Secteur : réassignation à un joueur puis neutralisation")
     void reassignSectorMovesOwnerAndStats() {
-        Player target = playerRepository.findByBoardIdAndName(playerRepository.findAll().getFirst().getBoardId(), "cegorach").orElseThrow();
+        Player target = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "cegorach").orElseThrow();
         service.reassignSector(board.getId(), 41, target.getId());
         entityManager.flush();
 
@@ -871,7 +876,7 @@ class AdminPlayerEditServiceTest {
                 board.getId(), 41, board.getCurrentTurn(), List.of(player.getId()));
         pendingCaptureRepository.save(pending);
         entityManager.flush();
-        Player target = playerRepository.findByBoardIdAndName(playerRepository.findAll().getFirst().getBoardId(), "cegorach").orElseThrow();
+        Player target = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "cegorach").orElseThrow();
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.reassignSector(board.getId(), 41, target.getId()));
@@ -880,7 +885,7 @@ class AdminPlayerEditServiceTest {
     @Test
     @DisplayName("Secteur : réassignation refusée vers un joueur éliminé")
     void reassignSectorRejectsEliminatedTarget() {
-        Player target = playerRepository.findByBoardIdAndName(playerRepository.findAll().getFirst().getBoardId(), "cegorach").orElseThrow();
+        Player target = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "cegorach").orElseThrow();
         target.setEliminated(true);
         playerRepository.save(target);
         entityManager.flush();
@@ -965,7 +970,7 @@ class AdminPlayerEditServiceTest {
                 board.getId(), 41, board.getCurrentTurn() - 1, List.of(player.getId()));
         pendingCaptureRepository.save(pending);
         entityManager.flush();
-        Player target = playerRepository.findByBoardIdAndName(playerRepository.findAll().getFirst().getBoardId(), "cegorach").orElseThrow();
+        Player target = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "cegorach").orElseThrow();
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.reassignSector(board.getId(), 41, target.getId()));

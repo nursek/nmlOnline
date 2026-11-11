@@ -6,6 +6,8 @@ import com.mg.nmlonline.domain.model.bank.ExchangeOffer;
 import com.mg.nmlonline.domain.model.bank.ExchangeOfferStatus;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.ExchangeOfferRepository;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,10 +37,13 @@ class ExchangeOfferLifecycleTest {
     PlayerRepository playerRepository;
 
     @Autowired
+    private BoardRepository boardRepository;
+
+    @Autowired
     TurnService turnService;
 
     private Long boardId() {
-        return playerRepository.findAll().getFirst().getBoardId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     @Test
@@ -79,7 +84,7 @@ class ExchangeOfferLifecycleTest {
         assertEquals(1, accepted.getResources().size());
         assertEquals(1000.0, accepted.getMoney());
 
-        Player receiver = playerRepository.findByBoardIdAndName(playerRepository.findAll().getFirst().getBoardId(), "nursek").orElseThrow();
+        Player receiver = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "nursek").orElseThrow();
         assertTrue(receiver.getResourceQuantity("Auramite") >= 2, "Les ressources acceptées sont transférées");
 
         long offersAfterFirst = exchangeOfferRepository.count();

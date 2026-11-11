@@ -255,9 +255,10 @@ class InstanceAccessTest {
 
         String adminToken = jwtService.generateToken(
                 userRepository.findByUsername(TestDataInitializer.ADMIN), 3_600_000L);
+        int boardCount = (int) boardRepository.count();
         mockMvc.perform(get("/api/instances").header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$.length()").value(boardCount))
                 .andExpect(jsonPath("$[?(@.id == " + secondBoard.getId() + ")].participant")
                         .value(hasItem(false)))
                 .andExpect(jsonPath("$[?(@.id == " + secondBoard.getId() + ")].role")
