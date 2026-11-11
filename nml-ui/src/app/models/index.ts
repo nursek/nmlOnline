@@ -11,6 +11,7 @@ export * from './movement.model';
 export * from './sniper-order.model';
 export * from './movement-resolution.model';
 export * from './turn-resolution.model';
+export * from './turn-journal.model';
 export * from './player-action.model';
 export * from './battle-report.model';
 export * from './dev-seed.model';

@@ -5,6 +5,7 @@ import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
+import com.mg.nmlonline.api.dto.TurnJournalDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
 import com.mg.nmlonline.domain.model.board.Board;
@@ -33,6 +34,7 @@ import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.SniperOrderRepository;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -85,6 +87,9 @@ class TurnResolutionScenariosTest {
 
     @Autowired
     private SniperOrderRepository sniperOrderRepository;
+
+    @Autowired
+    private TurnJournalService turnJournalService;
 
     @Autowired
     private EntityManager em;
@@ -704,6 +709,22 @@ class TurnResolutionScenariosTest {
 
         TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
         assertTrue(fin.getEliminatedPlayers().contains("arene-batiments"));
+
+        TurnJournalDto journal = turnJournalService.findByTurn(fin.getTurnEnding());
+        assertTrue(journal.isFinalized());
+        assertEquals(fin.getTurnEnding(), journal.getTurn());
+        assertEquals(1, journal.getSummary().getBattles());
+        assertEquals(fin.getCapturedSectors().size(), journal.getCaptures().size());
+        assertEquals(fin.getEliminatedPlayers(), journal.getEliminatedPlayers());
+        assertEquals(1, journal.getBattles().size());
+        assertFalse(journal.getBattles().getFirst().getBattleLog().isEmpty(),
+                "Le journal archivé conserve le détail du combat");
+        assertTrue(journal.getBattles().getFirst().getBattleLog().stream()
+                        .anyMatch(entry -> entry.getMessage().contains("quartier général capturé")),
+                "Le bilan du QG capturé est archivé");
+        assertThrows(EntityNotFoundException.class,
+                () -> turnJournalService.findByTurn(fin.getTurnEnding() + 100),
+                "Aucun journal pour un tour non finalisé");
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             assertTrue(board.getSector(5).getBuildings().isEmpty(),

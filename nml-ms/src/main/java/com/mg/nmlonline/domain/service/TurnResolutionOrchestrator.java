@@ -4,13 +4,16 @@ import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.PendingEliminationDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.SectorCaptureDto;
+import com.mg.nmlonline.api.dto.TransitCombatResultDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
+import com.mg.nmlonline.api.dto.TurnJournalDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
 import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
 import com.mg.nmlonline.domain.model.movement.SectorCapture;
 import com.mg.nmlonline.domain.model.movement.SectorConflict;
+import com.mg.nmlonline.domain.model.movement.TransitCombatResult;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -20,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,6 +62,7 @@ public class TurnResolutionOrchestrator {
     private final UnitRecoveryService unitRecoveryService;
     private final PlayerEliminationService playerEliminationService;
     private final SniperService sniperService;
+    private final TurnJournalService turnJournalService;
 
     private static final long SESSION_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
 
@@ -77,7 +82,8 @@ public class TurnResolutionOrchestrator {
                                       ReserveUnitPlacer reserveUnitPlacer,
                                       UnitRecoveryService unitRecoveryService,
                                       PlayerEliminationService playerEliminationService,
-                                      SniperService sniperService) {
+                                      SniperService sniperService,
+                                      TurnJournalService turnJournalService) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
@@ -92,6 +98,7 @@ public class TurnResolutionOrchestrator {
         this.unitRecoveryService = unitRecoveryService;
         this.playerEliminationService = playerEliminationService;
         this.sniperService = sniperService;
+        this.turnJournalService = turnJournalService;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -362,7 +369,8 @@ public class TurnResolutionOrchestrator {
             dto.setResolvedOrders(result.getResolved().size());
             dto.setBlockedOrders(result.getBlocked().size());
             dto.setConflictsResolved(s.resolvedConflicts.size());
-            dto.setTransitCombats(result.getTransitCombats().size());
+            dto.setTransitCombatsCount(result.getTransitCombats().size());
+            dto.setTransitCombats(toTransitDtoList(result.getTransitCombats()));
             dto.setCapturedSectors(toCaptureDtoList(captures));
             dto.setEliminatedPlayers(eliminated.stream().map(Player::getName).toList());
             String eliminatedSuffix = eliminated.isEmpty() ? ""
@@ -372,11 +380,37 @@ public class TurnResolutionOrchestrator {
                     ? "Tour " + newTurn + " démarré." + eliminatedSuffix
                     : "Tour " + newTurn + " démarré — " + captures.size() + " secteur(s) capturé(s)."
                             + eliminatedSuffix);
+            turnJournalService.save(buildTurnJournal(s, dto));
             return dto;
         } finally {
             turnLock.release();
             this.session = null;
         }
+    }
+
+    private TurnJournalDto buildTurnJournal(Session s, TurnFinalizeResultDto finalize) {
+        Function<Long, String> names = resolveNamesForSession(s);
+        List<ResolvedBattleDto> battles = s.resolvedConflicts.stream()
+                .map(rb -> toBattleDto(rb, names))
+                .toList();
+        TurnJournalDto.SummaryDto summary = new TurnJournalDto.SummaryDto();
+        summary.setBattles(battles.size());
+        summary.setResolvedOrders(finalize.getResolvedOrders());
+        summary.setBlockedOrders(finalize.getBlockedOrders());
+        summary.setCaptures(finalize.getCapturedSectors().size());
+        summary.setEliminatedPlayers(finalize.getEliminatedPlayers().size());
+        summary.setTransitCombats(finalize.getTransitCombatsCount());
+
+        TurnJournalDto journal = new TurnJournalDto();
+        journal.setTurn(s.turnEnding);
+        journal.setExportedAt(Instant.now().toString());
+        journal.setFinalized(true);
+        journal.setSummary(summary);
+        journal.setBattles(battles);
+        journal.setCaptures(finalize.getCapturedSectors());
+        journal.setTransitCombats(finalize.getTransitCombats());
+        journal.setEliminatedPlayers(finalize.getEliminatedPlayers());
+        return journal;
     }
 
     /** Abandon soft : libère le verrou sans rollback des entités déplacées ni des combats résolus. */
@@ -524,6 +558,18 @@ public class TurnResolutionOrchestrator {
                     dto.setPlayerId(capture.playerId());
                     dto.setPlayerName(names.apply(capture.playerId()));
                     dto.setOnTheFly(capture.onTheFly());
+                    return dto;
+                })
+                .toList();
+    }
+
+    private List<TransitCombatResultDto> toTransitDtoList(List<TransitCombatResult> combats) {
+        return combats.stream()
+                .map(combat -> {
+                    TransitCombatResultDto dto = new TransitCombatResultDto();
+                    dto.setSectorNumber(combat.sectorNumber());
+                    dto.setVehicleId(combat.vehicleId());
+                    dto.setVehicleFired(combat.vehicleFired());
                     return dto;
                 })
                 .toList();

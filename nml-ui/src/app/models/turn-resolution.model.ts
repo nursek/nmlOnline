@@ -1,7 +1,7 @@
 // Mirror des DTO backend de la résolution pas-à-pas par hop
 // (TurnResolutionStateDto, PendingConflictDto, ResolvedBattleDto, TurnFinalizeResultDto).
 
-import type { SectorCapture } from './movement-resolution.model';
+import type { SectorCapture, TransitCombatResult } from './movement-resolution.model';
 
 export interface PendingConflictParticipant {
   playerId: number;
@@ -97,7 +97,8 @@ export interface TurnFinalizeResult {
   resolvedOrders: number;
   blockedOrders: number;
   conflictsResolved: number;
-  transitCombats: number;
+  transitCombatsCount: number;
+  transitCombats: TransitCombatResult[];
   capturedSectors: SectorCapture[];
   eliminatedPlayers: string[] | null;
   message: string | null;
