@@ -325,18 +325,6 @@ public class AllianceService {
         proposalRepository.saveAll(pending);
     }
 
-    private Alliance requireActiveMember(Long playerId, Long allianceId) {
-        Alliance alliance = allianceRepository.findById(allianceId)
-                .orElseThrow(() -> new EntityNotFoundException("Alliance introuvable : " + allianceId));
-        if (!alliance.involves(playerId)) {
-            throw new SecurityException("Vous ne faites pas partie de cette alliance.");
-        }
-        if (!alliance.isActive()) {
-            throw new IllegalStateException("Cette alliance est terminée.");
-        }
-        return alliance;
-    }
-
     private AllianceProposal requirePendingProposal(Long proposalId) {
         AllianceProposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new EntityNotFoundException("Proposition introuvable : " + proposalId));
