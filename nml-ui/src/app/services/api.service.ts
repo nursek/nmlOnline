@@ -32,7 +32,6 @@ import {
   AllianceMe,
   AllianceProposal,
   ProposalKind,
-  AllianceMessage,
   Announcement,
   PendingCapture,
   AdminAuditEntry,
@@ -615,16 +614,6 @@ export class ApiService {
 
   betrayAlliance(allianceId: number): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/alliances/${allianceId}/betray`, {});
-  }
-
-  getAllianceMessages(allianceId: number): Observable<AllianceMessage[]> {
-    return this.http.get<AllianceMessage[]>(`${this.baseUrl}/alliances/${allianceId}/messages`);
-  }
-
-  postAllianceMessage(allianceId: number, body: string): Observable<AllianceMessage> {
-    return this.http.post<AllianceMessage>(`${this.baseUrl}/alliances/${allianceId}/messages`, {
-      body,
-    });
   }
 
   getAnnouncements(): Observable<Announcement[]> {

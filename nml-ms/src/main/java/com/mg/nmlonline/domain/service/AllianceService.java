@@ -2,18 +2,15 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.AdminAllianceHistoryDto;
 import com.mg.nmlonline.api.dto.AllianceMeDto;
-import com.mg.nmlonline.api.dto.AllianceMessageDto;
 import com.mg.nmlonline.api.dto.AllianceProposalDto;
 import com.mg.nmlonline.api.dto.AnnouncementDto;
 import com.mg.nmlonline.domain.model.alliance.Alliance;
-import com.mg.nmlonline.domain.model.alliance.AllianceMessage;
 import com.mg.nmlonline.domain.model.alliance.AllianceProposal;
 import com.mg.nmlonline.domain.model.alliance.Announcement;
 import com.mg.nmlonline.domain.model.alliance.AnnouncementType;
 import com.mg.nmlonline.domain.model.alliance.ProposalKind;
 import com.mg.nmlonline.domain.model.alliance.ProposalStatus;
 import com.mg.nmlonline.domain.model.player.Player;
-import com.mg.nmlonline.infrastructure.repository.AllianceMessageRepository;
 import com.mg.nmlonline.infrastructure.repository.AllianceProposalRepository;
 import com.mg.nmlonline.infrastructure.repository.AllianceRepository;
 import com.mg.nmlonline.infrastructure.repository.AnnouncementRepository;
@@ -35,12 +32,10 @@ import java.util.stream.Collectors;
 @Transactional
 public class AllianceService {
 
-    private static final int MESSAGE_PAGE_SIZE = 200;
     private static final int ANNOUNCEMENT_PAGE_SIZE = 50;
 
     private final AllianceRepository allianceRepository;
     private final AllianceProposalRepository proposalRepository;
-    private final AllianceMessageRepository messageRepository;
     private final AnnouncementRepository announcementRepository;
     private final PlayerRepository playerRepository;
     private final BuildingService buildingService;
@@ -49,7 +44,6 @@ public class AllianceService {
 
     public AllianceService(AllianceRepository allianceRepository,
                            AllianceProposalRepository proposalRepository,
-                           AllianceMessageRepository messageRepository,
                            AnnouncementRepository announcementRepository,
                            PlayerRepository playerRepository,
                            BuildingService buildingService,
@@ -57,7 +51,6 @@ public class AllianceService {
                            AllianceGraph allianceGraph) {
         this.allianceRepository = allianceRepository;
         this.proposalRepository = proposalRepository;
-        this.messageRepository = messageRepository;
         this.announcementRepository = announcementRepository;
         this.playerRepository = playerRepository;
         this.buildingService = buildingService;
@@ -280,49 +273,6 @@ public class AllianceService {
     }
 
     @Transactional(readOnly = true)
-    public List<AllianceMessageDto> getMessages(Long userId, Long allianceId) {
-        Player player = requirePlayer(userId);
-        Alliance alliance = requireActiveMember(player.getId(), allianceId);
-        Map<Long, String> names = namesById(Set.of(alliance.getPlayerOneId(), alliance.getPlayerTwoId()));
-        List<AllianceMessage> messages = new ArrayList<>(messageRepository.findByAllianceIdOrderByIdDesc(
-                allianceId, PageRequest.of(0, MESSAGE_PAGE_SIZE)));
-        List<AllianceMessageDto> dtos = new ArrayList<>();
-        for (int i = messages.size() - 1; i >= 0; i--) {
-            AllianceMessage message = messages.get(i);
-            AllianceMessageDto dto = new AllianceMessageDto();
-            dto.setId(message.getId());
-            dto.setSenderPlayerId(message.getSenderPlayerId());
-            dto.setSenderName(names.get(message.getSenderPlayerId()));
-            dto.setBody(message.getBody());
-            dto.setTurn(message.getTurn());
-            dto.setCreatedAt(message.getCreatedAt());
-            dtos.add(dto);
-        }
-        return dtos;
-    }
-
-    public AllianceMessageDto postMessage(Long userId, Long allianceId, String body) {
-        Player player = requirePlayer(userId);
-        requireActiveMember(player.getId(), allianceId);
-        if (body == null || body.isBlank()) {
-            throw new IllegalArgumentException("Le message est vide.");
-        }
-        if (body.length() > 1000) {
-            throw new IllegalArgumentException("Le message dépasse 1000 caractères.");
-        }
-        AllianceMessage message = messageRepository.save(AllianceMessage.create(
-                allianceId, player.getId(), body.trim(), turnService.getCurrentTurn()));
-        AllianceMessageDto dto = new AllianceMessageDto();
-        dto.setId(message.getId());
-        dto.setSenderPlayerId(player.getId());
-        dto.setSenderName(player.getName());
-        dto.setBody(message.getBody());
-        dto.setTurn(message.getTurn());
-        dto.setCreatedAt(message.getCreatedAt());
-        return dto;
-    }
-
-    @Transactional(readOnly = true)
     public List<AnnouncementDto> getAnnouncements() {
         int turn = turnService.getCurrentTurn();
         List<Announcement> announcements = announcementRepository
@@ -373,18 +323,6 @@ public class AllianceService {
             proposal.withdraw(turn);
         }
         proposalRepository.saveAll(pending);
-    }
-
-    private Alliance requireActiveMember(Long playerId, Long allianceId) {
-        Alliance alliance = allianceRepository.findById(allianceId)
-                .orElseThrow(() -> new EntityNotFoundException("Alliance introuvable : " + allianceId));
-        if (!alliance.involves(playerId)) {
-            throw new SecurityException("Vous ne faites pas partie de cette alliance.");
-        }
-        if (!alliance.isActive()) {
-            throw new IllegalStateException("Cette alliance est terminée.");
-        }
-        return alliance;
     }
 
     private AllianceProposal requirePendingProposal(Long proposalId) {

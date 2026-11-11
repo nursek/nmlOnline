@@ -2,12 +2,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
-import {
-  AllianceMe,
-  AllianceMessage,
-  Announcement,
-  ProposalKind,
-} from '../models';
+import { AllianceMe, Announcement, ProposalKind } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 
 @Injectable({ providedIn: 'root' })
@@ -16,13 +11,11 @@ export class AllianceStateService {
   private readonly auth = inject(AuthService);
 
   private readonly _me = signal<AllianceMe | null>(null);
-  private readonly _messages = signal<AllianceMessage[]>([]);
   private readonly _announcements = signal<Announcement[]>([]);
   private readonly _loading = signal(false);
   private readonly _error = signal<string | null>(null);
 
   readonly me = this._me.asReadonly();
-  readonly messages = this._messages.asReadonly();
   readonly announcements = this._announcements.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
@@ -41,7 +34,6 @@ export class AllianceStateService {
 
   reset(): void {
     this._me.set(null);
-    this._messages.set([]);
     this._announcements.set([]);
     this._error.set(null);
   }
@@ -55,14 +47,6 @@ export class AllianceStateService {
       this._error.set(httpErrorMessage(error, "Erreur lors du chargement de l'alliance"));
     } finally {
       this._loading.set(false);
-    }
-  }
-
-  async refreshMe(): Promise<void> {
-    try {
-      this._me.set(await firstValueFrom(this.api.getAllianceMe()));
-    } catch {
-      // Rafraîchissement silencieux du dialogue : la prochaine action remontera l'erreur.
     }
   }
 
@@ -84,27 +68,6 @@ export class AllianceStateService {
 
   async betray(allianceId: number): Promise<boolean> {
     return this.run(() => this.api.betrayAlliance(allianceId), 'Alliance trahie');
-  }
-
-  async loadMessages(allianceId: number): Promise<void> {
-    this._error.set(null);
-    try {
-      this._messages.set(await firstValueFrom(this.api.getAllianceMessages(allianceId)));
-    } catch (error) {
-      this._error.set(httpErrorMessage(error, 'Erreur lors du chargement du chat'));
-    }
-  }
-
-  async sendMessage(allianceId: number, body: string): Promise<boolean> {
-    if (!body.trim()) return false;
-    try {
-      await firstValueFrom(this.api.postAllianceMessage(allianceId, body.trim()));
-      await this.loadMessages(allianceId);
-      return true;
-    } catch (error) {
-      this._error.set(httpErrorMessage(error, "Erreur lors de l'envoi du message"));
-      return false;
-    }
   }
 
   async loadAnnouncements(): Promise<void> {

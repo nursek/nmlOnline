@@ -40,15 +40,6 @@ export interface AllianceProposal {
   direction: 'IN' | 'OUT';
 }
 
-export interface AllianceMessage {
-  id: number;
-  senderPlayerId: number;
-  senderName: string;
-  body: string;
-  turn: number;
-  createdAt: string;
-}
-
 export interface AdminAllianceEntry {
   id: number;
   playerOneId: number;
