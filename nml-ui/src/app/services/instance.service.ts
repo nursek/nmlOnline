@@ -1,8 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { httpResource } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { GameInstance, InstanceRole } from '../models';
 import { environment } from '../../environments/environment';
-import { AuthService } from './auth.service';
 
 const ID_KEY = 'instanceId';
 const ROLE_KEY = 'instanceRole';
@@ -10,25 +10,54 @@ const ROLE_KEY = 'instanceRole';
 /** Partie sélectionnée après login : deux onglets peuvent jouer deux parties (sessionStorage). */
 @Injectable({ providedIn: 'root' })
 export class InstanceService {
-  private readonly auth = inject(AuthService);
+  private readonly http = inject(HttpClient);
 
+  private readonly _instances = signal<GameInstance[]>([]);
+  private readonly _loading = signal(false);
   private readonly _selectedId = signal<number | null>(readStoredId());
   private readonly _selectedRole = signal<InstanceRole | null>(readStoredRole());
+  private loaded = false;
+  private pendingLoad: Promise<GameInstance[]> | null = null;
+
+  readonly instances = this._instances.asReadonly();
+  readonly loading = this._loading.asReadonly();
   readonly selectedId = this._selectedId.asReadonly();
   readonly selectedRole = this._selectedRole.asReadonly();
-
-  private readonly instancesRef = httpResource<GameInstance[]>(() =>
-    this.auth.user() ? { url: `${environment.apiBaseUrl}/instances` } : undefined,
-  );
-
-  readonly instances = computed(() => this.instancesRef.value() ?? []);
   readonly selected = computed(
     () => this.instances().find((instance) => instance.id === this._selectedId()) ?? null,
   );
   readonly soleInstance = computed(() =>
     this.instances().length === 1 ? this.instances()[0] : null,
   );
-  readonly loading = computed(() => this.instancesRef.isLoading());
+
+  /** Charge la liste une seule fois : le login tranche la route avant la première navigation. */
+  async ensureLoaded(): Promise<GameInstance[]> {
+    if (this.loaded) return this._instances();
+    if (this.pendingLoad) return this.pendingLoad;
+    this.pendingLoad = this.load().finally(() => {
+      this.pendingLoad = null;
+    });
+    return this.pendingLoad;
+  }
+
+  async load(): Promise<GameInstance[]> {
+    this._loading.set(true);
+    try {
+      const instances = await firstValueFrom(
+        this.http.get<GameInstance[]>(`${environment.apiBaseUrl}/instances`),
+      );
+      this._instances.set(instances);
+      this.loaded = true;
+      return instances;
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  invalidate(): void {
+    this.loaded = false;
+    this._instances.set([]);
+  }
 
   select(instance: GameInstance): void {
     sessionStorage.setItem(ID_KEY, String(instance.id));
@@ -47,10 +76,12 @@ export class InstanceService {
     this._selectedId.set(null);
     this._selectedRole.set(null);
   }
+}
 
-  reload(): void {
-    this.instancesRef.reload();
-  }
+/** Route d'entrée d'une partie : l'admin/MJ arrive dans l'administration. */
+export function routeForInstance(instance: GameInstance): string {
+  const admin = instance.role === 'ADMIN' || instance.role === 'MJ';
+  return admin ? '/admin' : '/accueil';
 }
 
 function readStoredId(): number | null {

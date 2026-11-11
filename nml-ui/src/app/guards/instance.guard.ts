@@ -10,10 +10,20 @@ export const instanceGuard: CanActivateFn = async (): Promise<boolean | UrlTree>
   const instance = inject(InstanceService);
 
   await waitForInitialization(auth);
+  let available = instance.instances();
+  try {
+    available = await instance.ensureLoaded();
+  } catch {
+    // Liste indisponible : on garde la partie déjà choisie plutôt que de bloquer la navigation.
+  }
+
+  if (available.length === 1) {
+    instance.select(available[0]);
+    return true;
+  }
+
   const selectedId = instance.selectedId();
   if (selectedId === null) return router.createUrlTree(['/parties']);
-
-  const available = instance.instances();
   if (available.length > 0 && !available.some((candidate) => candidate.id === selectedId)) {
     instance.clear();
     return router.createUrlTree(['/parties']);

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/cor
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
-import { InstanceService } from '../../services/instance.service';
+import { InstanceService, routeForInstance } from '../../services/instance.service';
 import { GameInstance } from '../../models';
 
 @Component({
@@ -81,18 +81,13 @@ export class PartiesComponent {
       if (sole === null || this.redirected) return;
       this.redirected = true;
       this.instanceService.select(sole);
-      void this.router.navigate([targetOf(sole)]);
+      void this.router.navigate([routeForInstance(sole)]);
     });
   }
 
   join(instance: GameInstance): void {
     this.instanceService.select(instance);
     // Rechargement complet : tous les services racine (carte, joueurs, stats) sont liés à la partie.
-    window.location.assign(targetOf(instance));
+    window.location.assign(routeForInstance(instance));
   }
-}
-
-function targetOf(instance: GameInstance): string {
-  const admin = instance.role === 'ADMIN' || instance.role === 'MJ';
-  return admin ? '/admin' : '/accueil';
 }

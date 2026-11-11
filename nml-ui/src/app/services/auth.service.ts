@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
+import { InstanceService, routeForInstance } from './instance.service';
 import { LoginRequest, User } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 
@@ -19,6 +20,7 @@ export class AuthService {
   private readonly api = inject(ApiService);
   private readonly tokenService = inject(TokenService);
   private readonly router = inject(Router);
+  private readonly instance = inject(InstanceService);
 
   // Reactive state — restored from session storage on first instantiation.
   private readonly _user = signal<User | null>(this.tokenService.getUser());
@@ -49,6 +51,8 @@ export class AuthService {
       const user = this.tokenService.getUser();
       if (token && user) {
         this._user.set(user);
+        // Les guards attendent l'initialisation : la liste des parties doit être prête avant la 1re navigation.
+        await this.instance.ensureLoaded().catch(() => []);
       } else {
         this.tokenService.clearAuth();
         this._user.set(null);
@@ -76,7 +80,15 @@ export class AuthService {
         role: response.role,
       });
       this._user.set({ id: response.id, username: response.name, role: response.role });
-      void this.router.navigate(['/parties']);
+      this.instance.clear();
+      this.instance.invalidate();
+      const instances = await this.instance.load().catch(() => []);
+      if (instances.length === 1) {
+        this.instance.select(instances[0]);
+        await this.router.navigate([routeForInstance(instances[0])]);
+      } else {
+        await this.router.navigate(['/parties']);
+      }
     } catch (error) {
       const message = this.extractErrorMessage(error);
       this._error.set(message);
@@ -100,6 +112,8 @@ export class AuthService {
   /** Clear local auth state (no HTTP). Used by the 401 interceptor path. */
   clear(): void {
     this.tokenService.clearAuth();
+    this.instance.clear();
+    this.instance.invalidate();
     this._user.set(null);
     this._error.set(null);
   }
