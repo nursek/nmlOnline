@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -190,6 +191,23 @@ class BattleReportServiceTest {
         highlight.setVisibility(visibility);
         highlight.setMessage(message);
         return highlight;
+    }
+
+    @Test
+    @DisplayName("Le tir à distance renvoie le détail destiné au journal")
+    void rangedReportReturnsDetail() {
+        Player shooter = new Player("Sniper");
+        shooter.setId(1L);
+
+        BattleReportDetailDto detail = service.saveRangedReport(5, 15, List.of(shooter),
+                List.of(new CombatService.CasualtyInfo(2L, "Brute", "INFANTRY", UnitType.LARBIN, 1, 1.0)),
+                List.of(), "2 cible(s) touchée(s)", Map.of());
+
+        assertNotNull(detail);
+        assertEquals("TIR", detail.getKind());
+        assertEquals(2, detail.getSchemaVersion());
+        assertEquals(15, detail.getSectorNumber());
+        assertEquals(1, detail.getCasualties().size());
     }
 
     @Test

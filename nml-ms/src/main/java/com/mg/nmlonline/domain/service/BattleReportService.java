@@ -79,12 +79,12 @@ public class BattleReportService {
         persist(dto, participants.stream().map(Player::getId).toList());
     }
 
-    public void saveRangedReport(int turn, int sectorNumber, List<Player> participants,
-                                 List<CombatService.CasualtyInfo> casualties,
-                                 List<CombatService.ExperienceGain> experienceGains,
-                                 String rangedFire, Map<Long, Boolean> characterLost) {
+    public BattleReportDetailDto saveRangedReport(int turn, int sectorNumber, List<Player> participants,
+                                                  List<CombatService.CasualtyInfo> casualties,
+                                                  List<CombatService.ExperienceGain> experienceGains,
+                                                  String rangedFire, Map<Long, Boolean> characterLost) {
         if (participants == null || participants.isEmpty()) {
-            return;
+            return null;
         }
         Map<Long, String> names = participants.stream()
                 .collect(Collectors.toMap(Player::getId, Player::getName, (a, b) -> a));
@@ -107,6 +107,7 @@ public class BattleReportService {
         dto.setExperienceGains(mapExperienceGains(experienceGains, names));
         dto.setBattleLog(List.of());
         persist(dto, participants.stream().map(Player::getId).toList());
+        return dto;
     }
 
     public void saveStandoffReport(int turn, int sectorNumber, List<Player> participants,

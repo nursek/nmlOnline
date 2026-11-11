@@ -1,3 +1,4 @@
+import { sideLabel } from '../../core/battle-report-labels';
 import type { BattleLogEntry, ResolvedBattle, TurnExport, TurnFinalizeResult } from '../../models';
 
 export type ExportFormat = 'json' | 'log';
@@ -98,6 +99,40 @@ export function formatBattleLog(battle: ResolvedBattle, turn?: number): string {
         `(${eliminationCauseLabel(elimination.cause)})`,
     );
   }
+  const highlights = battle.highlights ?? [];
+  if (highlights.length) {
+    lines.push('', 'Points clés');
+    for (const highlight of highlights) {
+      const debug = highlight.visibility === 'ADMIN' ? ' [debug]' : '';
+      lines.push(`- ${highlight.message}${debug}`);
+    }
+  }
+  const forces = battle.forces ?? [];
+  if (forces.length) {
+    lines.push('', 'Forces en présence');
+    for (const force of forces) {
+      lines.push(`- ${force.playerName ?? '#' + force.playerId} (${sideLabel(force.side)})`);
+      for (const character of force.characters) {
+        lines.push(`    Personnage : ${character.displayName}`);
+      }
+      for (const vehicle of force.vehicles) {
+        const crew = vehicle.crew.length
+          ? ` — équipage : ${vehicle.crew.map((member) => member.displayName).join(', ')}`
+          : '';
+        lines.push(
+          `    Véhicule : ${vehicle.displayName}${vehicle.aerial ? ' (aérien)' : ''}${crew}`,
+        );
+      }
+      for (const unit of force.infantry) {
+        const experience = unit.experience === null ? '' : ` (${unit.experience} Exp)`;
+        const injured = unit.injured ? ' [blessé]' : '';
+        lines.push(`    Infanterie : ${unit.displayName}${experience}${injured}`);
+      }
+      for (const building of force.buildings) {
+        lines.push(`    Bâtiment : ${building.displayName}`);
+      }
+    }
+  }
   for (const group of groupBattleLog(battle.battleLog)) {
     lines.push('', `=== ${group.phase} ===`);
     for (const entry of group.entries) {
@@ -123,9 +158,11 @@ export function formatTurnLog(data: TurnExport): string {
   if (data.summary.blockedOrders !== null) {
     summary.push(`Ordres bloqués : ${data.summary.blockedOrders}`);
   }
+  const rangedCombats = data.rangedCombats ?? [];
   summary.push(
     `Captures : ${data.summary.captures}`,
     `Éliminés : ${data.summary.eliminatedPlayers}`,
+    `Tirs isolés : ${data.summary.rangedCombats ?? rangedCombats.length}`,
     `Combats de transit : ${data.summary.transitCombats}`,
   );
   lines.push(summary.join(' | '));
@@ -148,10 +185,22 @@ export function formatTurnLog(data: TurnExport): string {
   if (data.transitCombats.length) {
     lines.push('', '=== Combats de transit ===');
     for (const combat of data.transitCombats) {
+      const name = combat.vehicleName ?? `véhicule #${combat.vehicleId}`;
+      const type = combat.vehicleType ? ` (${combat.vehicleType})` : '';
       lines.push(
-        `- Secteur ${combat.sectorNumber} : véhicule #${combat.vehicleId} ` +
+        `- Secteur ${combat.sectorNumber} : ${name}${type} ` +
           `(${combat.vehicleFired ? 'a tiré' : 'passif'})`,
       );
+    }
+  }
+
+  if (rangedCombats.length) {
+    lines.push('', '=== Tirs isolés ===');
+    for (const combat of rangedCombats) {
+      const losses = combat.casualties.map((casualty) => casualty.label).join(', ');
+      const detail = losses === '' ? 'aucune perte' : losses;
+      const fire = combat.rangedFire ? ` — ${combat.rangedFire}` : '';
+      lines.push(`- Secteur ${combat.sectorNumber} : ${detail}${fire}`);
     }
   }
 

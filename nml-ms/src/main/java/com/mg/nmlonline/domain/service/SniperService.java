@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.BattleReportDetailDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.battle.Battle;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
@@ -143,10 +144,10 @@ public class SniperService {
     }
 
     /** Traite les ordres restants sans combat au sol : tir isolé, avec contre-tir des snipers inactifs ciblés. */
-    public void resolveRemainingFire(int turn, Board board, Set<Integer> battleSectors) {
+    public List<BattleReportDetailDto> resolveRemainingFire(int turn, Board board, Set<Integer> battleSectors) {
         List<SniperOrder> pending = sniperOrderRepository.findByTurnAndStatus(turn, SniperOrderStatus.PENDING);
         if (pending.isEmpty()) {
-            return;
+            return List.of();
         }
         Set<Long> exhaustedUnitIds = pending.stream()
                 .map(SniperOrder::getUnitId)
@@ -179,21 +180,27 @@ public class SniperService {
             validOrders.add(context);
             byTarget.computeIfAbsent(order.getTargetSectorNumber(), key -> new ArrayList<>()).add(context);
         }
-        byTarget.forEach((targetSector, orders) ->
-                resolveStandaloneSector(turn, board, targetSector, orders, exhaustedUnitIds,
-                        destroyedUnitIds, awardedUnitIds));
+        List<BattleReportDetailDto> reports = new ArrayList<>();
+        byTarget.forEach((targetSector, orders) -> {
+            BattleReportDetailDto report = resolveStandaloneSector(turn, board, targetSector, orders,
+                    exhaustedUnitIds, destroyedUnitIds, awardedUnitIds);
+            if (report != null) {
+                reports.add(report);
+            }
+        });
         invalidOrders.stream()
                 .filter(invalid -> !destroyedUnitIds.contains(invalid.order().getUnitId()))
                 .forEach(invalid -> cancel(invalid.order(), invalid.reason()));
         markResolvedGroup(validOrders, destroyedUnitIds);
+        return reports;
     }
 
-    private void resolveStandaloneSector(int turn, Board board, int targetSectorNumber,
-                                         List<OrderContext> orders, Set<Long> exhaustedUnitIds,
-                                         Set<Long> destroyedUnitIds, Set<Long> awardedUnitIds) {
+    private BattleReportDetailDto resolveStandaloneSector(int turn, Board board, int targetSectorNumber,
+                                                          List<OrderContext> orders, Set<Long> exhaustedUnitIds,
+                                                          Set<Long> destroyedUnitIds, Set<Long> awardedUnitIds) {
         Sector sector = board.getSector(targetSectorNumber);
         if (sector == null) {
-            return;
+            return null;
         }
         Map<Long, List<OrderContext>> byPlayer = new LinkedHashMap<>();
         for (OrderContext context : orders) {
@@ -225,7 +232,7 @@ public class SniperService {
             shooters.addAll(groupShooters);
         }
         if (firingGroups.isEmpty()) {
-            return;
+            return null;
         }
         // Les salves de tous les joueurs du même secteur arrivent ensemble : une seule résolution.
         List<CombatEntity> targets = sector.getCombatEntities().stream()
@@ -234,7 +241,7 @@ public class SniperService {
                         || !firingSides.contains(entity.getPlayerId()))
                 .collect(Collectors.toCollection(ArrayList::new));
         if (targets.isEmpty()) {
-            return;
+            return null;
         }
         Set<Long> beforeIds = targets.stream().map(CombatEntity::getId).collect(Collectors.toSet());
         Battle battle = new Battle();
@@ -284,12 +291,12 @@ public class SniperService {
                 .toList());
 
         if (summaries.isEmpty() && casualties.isEmpty()) {
-            return;
+            return null;
         }
         List<Player> participants = participantIds.isEmpty()
                 ? List.of()
                 : playerRepository.findAllById(participantIds);
-        battleReportService.saveRangedReport(turn, targetSectorNumber, participants, casualties,
+        return battleReportService.saveRangedReport(turn, targetSectorNumber, participants, casualties,
                 experienceGains, String.join(" ; ", summaries), characterLost);
     }
 

@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.BattleHighlightDto;
+import com.mg.nmlonline.api.dto.BattleReportDetailDto;
 import com.mg.nmlonline.api.dto.BattleReportDto;
 import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.PendingEliminationDto;
@@ -347,7 +348,8 @@ public class TurnResolutionOrchestrator {
             MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
             Set<Integer> battleSectors = new HashSet<>();
             s.resolvedConflicts.forEach(resolved -> battleSectors.add(resolved.sectorNumber()));
-            sniperService.resolveRemainingFire(s.turnEnding, board, battleSectors);
+            List<BattleReportDetailDto> rangedCombats =
+                    sniperService.resolveRemainingFire(s.turnEnding, board, battleSectors);
             List<Player> eliminated = playerRepository.findByEliminatedTurnOrderByNameAsc(s.turnEnding);
             for (Player victim : eliminated) {
                 // Décision en session d'abord : le commit du choix peut suivre une finalisation concurrente.
@@ -382,7 +384,7 @@ public class TurnResolutionOrchestrator {
                     ? "Tour " + newTurn + " démarré." + eliminatedSuffix
                     : "Tour " + newTurn + " démarré — " + captures.size() + " secteur(s) capturé(s)."
                             + eliminatedSuffix);
-            turnJournalService.save(buildTurnJournal(s, dto));
+            turnJournalService.save(buildTurnJournal(s, dto, rangedCombats));
             return dto;
         } finally {
             turnLock.release();
@@ -390,13 +392,15 @@ public class TurnResolutionOrchestrator {
         }
     }
 
-    private TurnJournalDto buildTurnJournal(Session s, TurnFinalizeResultDto finalize) {
+    private TurnJournalDto buildTurnJournal(Session s, TurnFinalizeResultDto finalize,
+                                            List<BattleReportDetailDto> rangedCombats) {
         Function<Long, String> names = resolveNamesForSession(s);
         List<ResolvedBattleDto> battles = s.resolvedConflicts.stream()
                 .map(rb -> toBattleDto(rb, names))
                 .toList();
         TurnJournalDto.SummaryDto summary = new TurnJournalDto.SummaryDto();
         summary.setBattles(battles.size());
+        summary.setRangedCombats(rangedCombats.size());
         summary.setResolvedOrders(finalize.getResolvedOrders());
         summary.setBlockedOrders(finalize.getBlockedOrders());
         summary.setCaptures(finalize.getCapturedSectors().size());
@@ -409,6 +413,7 @@ public class TurnResolutionOrchestrator {
         journal.setFinalized(true);
         journal.setSummary(summary);
         journal.setBattles(battles);
+        journal.setRangedCombats(rangedCombats);
         journal.setCaptures(finalize.getCapturedSectors());
         journal.setTransitCombats(finalize.getTransitCombats());
         journal.setEliminatedPlayers(finalize.getEliminatedPlayers());
@@ -571,6 +576,9 @@ public class TurnResolutionOrchestrator {
                     TransitCombatResultDto dto = new TransitCombatResultDto();
                     dto.setSectorNumber(combat.sectorNumber());
                     dto.setVehicleId(combat.vehicleId());
+                    dto.setVehicleName(combat.vehicleName());
+                    dto.setVehicleType(combat.vehicleType());
+                    dto.setOwnerPlayerId(combat.ownerPlayerId());
                     dto.setVehicleFired(combat.vehicleFired());
                     return dto;
                 })

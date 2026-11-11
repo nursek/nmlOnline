@@ -30,6 +30,9 @@ export interface SectorConflict {
 export interface TransitCombatResult {
   sectorNumber: number;
   vehicleId: number;
+  vehicleName?: string | null;
+  vehicleType?: string | null;
+  ownerPlayerId?: number | null;
   vehicleFired: boolean;
 }
 
