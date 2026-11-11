@@ -68,6 +68,33 @@ public class BattleReportService {
         persist(dto, participants.stream().map(Player::getId).toList());
     }
 
+    public void saveRangedReport(int turn, int sectorNumber, List<Player> participants,
+                                 List<CombatService.CasualtyInfo> casualties,
+                                 List<CombatService.ExperienceGain> experienceGains,
+                                 String rangedFire, Map<Long, Boolean> characterLost) {
+        if (participants == null || participants.isEmpty()) {
+            return;
+        }
+        Map<Long, String> names = participants.stream()
+                .collect(Collectors.toMap(Player::getId, Player::getName, (a, b) -> a));
+        BattleReportDto dto = new BattleReportDto();
+        dto.setTurn(turn);
+        dto.setSectorNumber(sectorNumber);
+        dto.setStandoff(false);
+        dto.setRanged(true);
+        dto.setRangedFire(rangedFire);
+        dto.setWinnerPlayerId(null);
+        dto.setWinnerName(null);
+        dto.setCapturedBuildings(0);
+        dto.setCamps(participants.stream()
+                .map(player -> camp(player, false,
+                        characterLost.getOrDefault(player.getId(), false)))
+                .toList());
+        dto.setCasualties(mapCasualties(casualties, names));
+        dto.setExperienceGains(mapExperienceGains(experienceGains, names));
+        persist(dto, participants.stream().map(Player::getId).toList());
+    }
+
     public void saveStandoffReport(int turn, int sectorNumber, List<Player> participants,
                                    CombatService.StandoffBattleResult result) {
         if (!result.success()) {

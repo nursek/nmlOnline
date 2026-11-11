@@ -226,6 +226,10 @@ public class Unit extends CombatEntity {
         return classesSet != null && !classesSet.isEmpty();
     }
 
+    public boolean isSniper() {
+        return classesSet != null && classesSet.contains(UnitClass.SNIPER);
+    }
+
     /** Max de secteurs parcourus par tour = max parmi les classes (LEGER=2, autres=1) ; sans classe ⇒ 1. */
     public int getMaxMovementHops() {
         if (classesSet == null || classesSet.isEmpty()) return 1;
@@ -437,6 +441,26 @@ public class Unit extends CombatEntity {
                 .filter(equipment -> equipment.getCategory() == EquipmentCategory.FIREARM)
                 .filter(equipment -> equipment.getVehicleBonusTarget() == scope)
                 .mapToDouble(Equipment::getVehicleBonus)
+                .max()
+                .orElse(0);
+    }
+
+    /** Réduction de malus de visée du meilleur équipement à feu compatible (points de pourcentage). */
+    public double getAimMalusReduction() {
+        return getEquipmentsForCalculation().stream()
+                .filter(this::isEquipmentCompatible)
+                .filter(equipment -> equipment.getCategory() == EquipmentCategory.FIREARM)
+                .mapToDouble(Equipment::getAimMalusReduction)
+                .max()
+                .orElse(0);
+    }
+
+    /** Malus de visée infligé aux snipers adverses par le meilleur défensif compatible (points). */
+    public double getEnemyAimMalus() {
+        return getEquipmentsForCalculation().stream()
+                .filter(this::isEquipmentCompatible)
+                .filter(equipment -> equipment.getCategory() == EquipmentCategory.DEFENSIVE)
+                .mapToDouble(Equipment::getEnemyAimMalus)
                 .max()
                 .orElse(0);
     }

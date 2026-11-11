@@ -19,6 +19,8 @@ import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.sniper.SniperOrder;
+import com.mg.nmlonline.domain.model.sniper.SniperOrderStatus;
 import com.mg.nmlonline.domain.model.unit.EntityCategory;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -29,6 +31,7 @@ import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.GameCharacterRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.SniperOrderRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Scénarios de fin de tour sur PostgreSQL réel, orchestrateur + seeder : conflit résolu manuellement,
  * vainqueur d'une bataille intermédiaire, anéantissement mutuel, cascades FK (Phase 2/3), impasse
- * mexicaine 3 camps, scénario Lurio→Cegorach 2 hops, catalogue des 11 arènes de combat et leurs
+ * mexicaine 3 camps, scénario Lurio→Cegorach 2 hops, catalogue des arènes de combat et leurs
  * résolutions de bout en bout. Déterministe (pas d'évasion), un contexte Spring neuf par test.
  */
 @EmbeddedPostgresTest
@@ -79,6 +82,9 @@ class TurnResolutionScenariosTest {
 
     @Autowired
     private BattleReportRepository battleReportRepository;
+
+    @Autowired
+    private SniperOrderRepository sniperOrderRepository;
 
     @Autowired
     private EntityManager em;
@@ -523,7 +529,13 @@ class TurnResolutionScenariosTest {
     void listCombatScenarios_exposeLeCatalogue() {
         var scenarios = seeder.listCombatScenarios();
 
-        assertEquals(11, scenarios.size());
+        assertEquals(13, scenarios.size());
+        assertTrue(scenarios.stream().anyMatch(s -> "SNIPER_RANGED".equals(s.getCode())
+                && s.getArenaSector() == 15 && s.getStagingSector() == 4 && s.isStandalone()),
+                "Le scénario sniper isolé ne demande aucun hop");
+        assertTrue(scenarios.stream().anyMatch(s -> "SNIPER_STANDOFF".equals(s.getCode())
+                        && s.getArenaSector() == 16 && s.getStagingSector() == 14 && !s.isStandalone()),
+                "Le scénario sniper tiers se résout après un hop");
         assertTrue(scenarios.stream().anyMatch(s -> "CREW_DISEMBARK".equals(s.getCode())
                 && s.getArenaSector() == 24 && s.getStagingSector() == 19));
         assertTrue(scenarios.stream().anyMatch(s -> "BLDG_CAPTURE".equals(s.getCode())
@@ -567,7 +579,7 @@ class TurnResolutionScenariosTest {
 
     @Test
     @Transactional
-    @DisplayName("Les 10 scénarios coexistent : arène, défenseur attendu et ordre PENDING pour chacun")
+    @DisplayName("Les 13 scénarios coexistent : arène, défenseur attendu et ordre PENDING pour chacun")
     void allCombatScenarios_coexistent() {
         var scenarios = seeder.listCombatScenarios();
         for (var scenario : scenarios) {
@@ -601,8 +613,21 @@ class TurnResolutionScenariosTest {
         assertTrue(board.getSector(32).getCharacters().isEmpty(),
                 "Cegorach a quitté son secteur 32 pour l'arène");
 
-        assertEquals(11, movementOrderRepository.findPendingByTurn(turnService.getCurrentTurn()).size(),
-                "Chaque scénario dépose son propre ordre PENDING");
+        assertEquals(4, board.getSector(4).getUnits().size(),
+                "Départ partagé : les 3 attaquants de BLDG_CAPTURE et le tireur de SNIPER_RANGED");
+        assertEquals(7, board.getSector(14).getUnits().size(),
+                "Départ partagé : 3 attaquants d'AERIAL_HIT, 2 d'IMOTEKH et 2 snipers de TRAZYN");
+        assertEquals(3, board.getSector(32).getBuildings().size(),
+                "Les bâtiments de cegorach en 32 restent intacts");
+        assertEquals(4, board.getSector(13).getUnits().size(), "L'armée de lurio en 13 reste intacte");
+        assertEquals(3, board.getSector(13).getBuildings().size(),
+                "Les bâtiments de lurio en 13 restent intacts");
+        assertEquals(3, sniperOrderRepository.findByTurnAndStatus(
+                        turnService.getCurrentTurn(), SniperOrderStatus.PENDING).size(),
+                "Les 3 tirs des scénarios sniper restent en attente");
+
+        assertEquals(12, movementOrderRepository.findPendingByTurn(turnService.getCurrentTurn()).size(),
+                "Chaque scénario avec hop dépose son propre ordre PENDING (le tir isolé n'en a pas)");
     }
 
     @Test
@@ -890,5 +915,47 @@ class TurnResolutionScenariosTest {
 
         GameCharacter colosse = gameCharacterRepository.findByName("Colosse d'arène").orElseThrow();
         assertEquals(100.0, colosse.getDefense(), "100 → 60 après 40 dégâts, +50 plafonnés à la base 100");
+    }
+
+    @Test
+    @DisplayName("Scénario sniper isolé : finalisation directe et rapport RANGED")
+    void sniperRangedScenario_resolvesAtFinalize() {
+        seeder.seedCombatScenario("SNIPER_RANGED");
+
+        orchestrator.startSession();
+        TurnFinalizeResultDto finalized = orchestrator.finalizeTurn();
+
+        assertTrue(finalized.getNewTurn() > 1);
+        assertTrue(battleReportRepository.findAll().stream()
+                        .anyMatch(report -> report.getSectorNumber() == 15
+                                && report.getPayload().contains("\"ranged\":true")),
+                "Le tir isolé produit un rapport de tir à distance dans l'arène 15");
+    }
+
+    @Test
+    @DisplayName("Scénario sniper tiers : un hop, impasse à 3 camps et ordres sniper résolus")
+    void sniperStandoffScenario_resolvesAsThreeCamps() {
+        seeder.seedCombatScenario("SNIPER_STANDOFF");
+        assertEquals(2, sniperOrderRepository.findAll().size(),
+                "Le seed dépose les deux tirs des snipers de Trazyn ; ceux de Cegorach sont en 16, sans ordre");
+
+        orchestrator.startSession();
+        PendingConflictDto conflict = orchestrator.advanceHop().getPendingConflicts().getFirst();
+        ResolvedBattleDto report = orchestrator.resolveBattle(conflict.getConflictId());
+
+        assertTrue(report.isSuccess());
+        assertTrue(report.isStandoff(), "Le duel devient une impasse à 3 camps");
+        assertTrue(report.getBattleLog().stream()
+                .anyMatch(entry -> entry.getMessage().contains("Tir à distance")));
+        List<SniperOrder> orders = sniperOrderRepository.findByTurnAndStatus(
+                turnService.getCurrentTurn(), SniperOrderStatus.RESOLVED);
+        assertEquals(1, orders.size(), () -> "Seul le sniper survivant de Trazyn résout son tir — ordres="
+                + sniperOrderRepository.findAll().stream()
+                        .map(order -> order.getPlayerId() + "/" + order.getUnitId() + "/"
+                                + order.getStatus() + "/" + order.getFromSectorNumber() + "→"
+                                + order.getTargetSectorNumber())
+                        .toList());
+        assertEquals(1, sniperOrderRepository.findAll().size(),
+                "L'ordre du sniper détruit disparaît avec son unité (FK CASCADE)");
     }
 }

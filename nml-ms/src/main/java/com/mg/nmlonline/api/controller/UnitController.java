@@ -1,13 +1,16 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.BuyUnitBatchRequestDto;
+import com.mg.nmlonline.api.dto.CreateSniperOrderRequestDto;
 import com.mg.nmlonline.api.dto.MovementOrderDto;
 import com.mg.nmlonline.api.dto.PlaceFootOrderRequestDto;
 import com.mg.nmlonline.api.dto.PlaceUnitRequestDto;
 import com.mg.nmlonline.api.dto.RemoveEquipmentRequestDto;
 import com.mg.nmlonline.api.dto.AssignEquipmentRequestDto;
+import com.mg.nmlonline.api.dto.SniperOrderDto;
 import com.mg.nmlonline.api.dto.UnitCatalogDto;
 import com.mg.nmlonline.api.dto.UnitDto;
+import com.mg.nmlonline.domain.service.SniperOrderService;
 import com.mg.nmlonline.domain.service.UnitService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -24,9 +27,11 @@ import java.util.List;
 public class UnitController {
 
     private final UnitService unitService;
+    private final SniperOrderService sniperOrderService;
 
-    public UnitController(UnitService unitService) {
+    public UnitController(UnitService unitService, SniperOrderService sniperOrderService) {
         this.unitService = unitService;
+        this.sniperOrderService = sniperOrderService;
     }
 
     @GetMapping("/catalog")
@@ -121,6 +126,38 @@ public class UnitController {
             return ResponseEntity.status(401).build();
         }
         unitService.cancelOrder(userId, orderId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{unitId}/sniper-orders")
+    public ResponseEntity<SniperOrderDto> placeSniperOrder(@PathVariable Long unitId,
+                                                           @Valid @RequestBody CreateSniperOrderRequestDto request,
+                                                           HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(
+                sniperOrderService.place(userId, unitId, request.getTargetSectorNumber()));
+    }
+
+    @GetMapping("/sniper-orders")
+    public ResponseEntity<List<SniperOrderDto>> getMySniperOrders(HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(sniperOrderService.currentPending(userId));
+    }
+
+    @DeleteMapping("/sniper-orders/{orderId}")
+    public ResponseEntity<Void> cancelSniperOrder(@PathVariable Long orderId,
+                                                  HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        sniperOrderService.cancel(userId, orderId);
         return ResponseEntity.noContent().build();
     }
 }

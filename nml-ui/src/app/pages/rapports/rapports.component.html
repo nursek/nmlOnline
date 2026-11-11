@@ -28,9 +28,14 @@
             @if (report.standoff) {
               <span class="standoff-badge">Impasse mexicaine</span>
             }
+            @if (report.ranged) {
+              <span class="standoff-badge">Tir à distance</span>
+            }
           </mat-panel-title>
           <mat-panel-description>
-            @if (report.winnerName) {
+            @if (report.ranged) {
+              {{ report.rangedFire }}
+            } @else if (report.winnerName) {
               Victoire de {{ report.winnerName }}
             } @else {
               Aucun vainqueur

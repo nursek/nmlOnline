@@ -154,6 +154,12 @@ export function equipmentBonusSummary(eq: Equipment): string {
       `${formatPercent(eq.vehicleBonus ?? 0)} vs ${vehicleTargetLabel(eq.vehicleBonusTarget)}`,
     );
   }
+  if ((eq.aimMalusReduction ?? 0) > 0) {
+    parts.push(`Malus de visée -${formatNumber(eq.aimMalusReduction ?? 0)} %`);
+  }
+  if ((eq.enemyAimMalus ?? 0) > 0) {
+    parts.push(`Malus de visée adverse +${formatNumber(eq.enemyAimMalus ?? 0)} %`);
+  }
   return parts.join(' ; ');
 }
 

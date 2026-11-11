@@ -2,6 +2,8 @@ export interface BattleReport {
   turn: number;
   sectorNumber: number;
   standoff: boolean;
+  ranged?: boolean;
+  rangedFire?: string | null;
   winnerPlayerId: number | null;
   winnerName: string | null;
   capturedBuildings: number;

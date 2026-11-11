@@ -11,6 +11,8 @@ export interface Equipment {
   evasionBonus: number;
   vehicleBonus?: number;
   vehicleBonusTarget?: string | null;
+  aimMalusReduction?: number;
+  enemyAimMalus?: number;
   compatibleClass: UnitClass[];
   category: string;
 }

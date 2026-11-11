@@ -13,4 +13,5 @@ public class CombatScenarioDto {
     private int arenaSector;
     private int stagingSector;
     private boolean eliminatesPlayer;
+    private boolean standalone;
 }

@@ -6,6 +6,7 @@ import {
   LoginRequest,
   Player,
   MovementOrder,
+  SniperOrder,
   MovementResolutionResult,
   TurnResolutionState,
   TurnFinalizeResult,
@@ -522,6 +523,20 @@ export class ApiService {
 
   cancelMovementOrder(orderId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/units/movement/${orderId}`);
+  }
+
+  placeSniperOrder(unitId: number, targetSectorNumber: number): Observable<SniperOrder> {
+    return this.http.post<SniperOrder>(`${this.baseUrl}/units/${unitId}/sniper-orders`, {
+      targetSectorNumber,
+    });
+  }
+
+  getPlayerSniperOrders(): Observable<SniperOrder[]> {
+    return this.http.get<SniperOrder[]>(`${this.baseUrl}/units/sniper-orders`);
+  }
+
+  cancelSniperOrder(orderId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/units/sniper-orders/${orderId}`);
   }
 
   getPlayerActions(): Observable<PlayerAction[]> {

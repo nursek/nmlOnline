@@ -1,4 +1,4 @@
-@if (loading() && !orders().length) {
+@if ((loading() || sniperLoading()) && !orders().length && !sniperOrders().length) {
   <div class="loading-container" role="status" aria-label="Chargement">
     <mat-spinner diameter="60"></mat-spinner>
   </div>
@@ -18,6 +18,9 @@
       <h1 class="title">Mes ordres</h1>
       <div class="header-actions">
         <span class="count-pill">{{ orders().length }} ordre(s)</span>
+        @if (sniperOrders().length) {
+          <span class="count-pill">{{ sniperOrders().length }} ordre(s) sniper</span>
+        }
         <span class="count-pill">{{ entityCount() }} entité(s)</span>
         <span class="count-pill">Puissance {{ globalPower() | number: '1.0-1' }}</span>
         <button mat-icon-button (click)="refresh()" matTooltip="Rafraîchir" [disabled]="busy()">
@@ -26,7 +29,7 @@
       </div>
     </div>
 
-    @if (orders().length === 0) {
+    @if (orders().length === 0 && sniperOrders().length === 0) {
       <mat-card class="card">
         <mat-card-content>
           <div class="empty-state">
@@ -36,7 +39,43 @@
         </mat-card-content>
       </mat-card>
     } @else {
-      <mat-accordion multi class="orders-list">
+      @if (sniperOrders().length) {
+        <mat-card class="card">
+          <mat-card-header>
+            <mat-card-title class="panel-title">
+              <mat-icon>gps_fixed</mat-icon>
+              Tir de précision &amp; surveillance
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @for (o of sniperOrders(); track o.id) {
+              <div class="order-block">
+                <div class="order-head">
+                  <mat-icon class="entity-icon">my_location</mat-icon>
+                  <span class="entity-name">{{ unitLabel(o.unitId) }}</span>
+                  <span class="order-seg">Secteur {{ o.fromSectorNumber }}</span>
+                  <mat-icon class="order-arrow">arrow_forward</mat-icon>
+                  <span class="order-seg order-seg-to">Secteur {{ o.targetSectorNumber }}</span>
+                  <span class="badge">{{ sniperActionLabel(o.action) }}</span>
+                  <span class="status-badge status-{{ o.status }}">{{ o.status }}</span>
+                  <button
+                    mat-icon-button
+                    color="warn"
+                    [disabled]="busy()"
+                    (click)="cancelSniperOrder(o.id)"
+                    matTooltip="Annuler l'ordre sniper"
+                  >
+                    <mat-icon>cancel</mat-icon>
+                  </button>
+                </div>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
+
+      @if (orders().length) {
+        <mat-accordion multi class="orders-list">
         @for (g of groups(); track g.toSectorNumber) {
           <mat-expansion-panel class="order-panel">
             <mat-expansion-panel-header>
@@ -153,6 +192,7 @@
           </mat-expansion-panel>
         }
       </mat-accordion>
+      }
     }
   </div>
 }

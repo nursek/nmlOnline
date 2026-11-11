@@ -23,6 +23,10 @@
       <div class="toc-actions">
         <button mat-stroked-button type="button" (click)="toutDeplier()">Tout déplier</button>
         <button mat-stroked-button type="button" (click)="toutReplier()">Tout replier</button>
+        <a mat-stroked-button class="toc-page" routerLink="/regles/tir-a-distance">
+          <mat-icon>gps_fixed</mat-icon>
+          Page Tir à distance
+        </a>
       </div>
     </aside>
 
@@ -173,6 +177,16 @@
               </tbody>
             </table>
           </div>
+          <p class="text">
+            <strong>Sniper.</strong> Un sniper combat à distance : un seul jet de
+            <strong>HIT</strong>, tir de précision, surveillance, tir de soutien pendant un combat
+            au sol, tir isolé, impasse à trois camps et contre-tir. Le détail complet (valeurs,
+            cibles, expérience et blessures) est sur la page dédiée.
+          </p>
+          <a mat-stroked-button routerLink="/regles/tir-a-distance">
+            <mat-icon>gps_fixed</mat-icon>
+            Voir la page « Tir à distance »
+          </a>
         </mat-expansion-panel>
 
         <mat-expansion-panel id="recrutement" class="rule-panel">
@@ -434,6 +448,11 @@
               Cannon, Enmitic Annihilator) infligent des dégâts doublés contre leur catégorie de
               cible : véhicules terrestres ou aériens. Le bonus s'applique aux tirs PdF et ne se
               cumule pas entre armes (le meilleur bonus l'emporte).
+            </li>
+            <li>
+              <strong>Visée</strong> — les équipements sniper modifient le jet de HIT : Particle
+              Shredder et Enmitic Exterminator réduisent le malus de HIT, le Gilet de camouflage
+              optique ajoute 15 au malus de HIT contre son porteur (voir Classes).
             </li>
           </ul>
           <p class="text">

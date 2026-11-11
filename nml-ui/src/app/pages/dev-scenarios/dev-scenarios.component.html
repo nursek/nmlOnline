@@ -29,7 +29,8 @@
           <h2>Combat</h2>
           <p>
             Arènes neutres dédiées, purgées puis peuplées à chaque seed. Un seul hop à résoudre dans
-            <strong>Gestion du tour</strong>.
+            <strong>Gestion du tour</strong> ; les scénarios marqués « sans hop » se résolvent à la
+            finalisation.
           </p>
         </div>
       </header>
@@ -45,6 +46,9 @@
                 <h3>{{ scenario.label }}</h3>
                 <span class="card-meta">
                   Arène {{ scenario.arenaSector }} · départ {{ scenario.stagingSector }}
+                  @if (scenario.standalone) {
+                    · sans hop
+                  }
                 </span>
               </div>
               @if (scenario.eliminatesPlayer) {

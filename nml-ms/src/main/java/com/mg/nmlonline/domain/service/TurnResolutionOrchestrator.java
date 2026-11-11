@@ -13,6 +13,7 @@ import com.mg.nmlonline.domain.model.movement.SectorCapture;
 import com.mg.nmlonline.domain.model.movement.SectorConflict;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,9 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -54,6 +57,7 @@ public class TurnResolutionOrchestrator {
     private final ReserveUnitPlacer reserveUnitPlacer;
     private final UnitRecoveryService unitRecoveryService;
     private final PlayerEliminationService playerEliminationService;
+    private final SniperService sniperService;
 
     private static final long SESSION_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
 
@@ -72,7 +76,8 @@ public class TurnResolutionOrchestrator {
                                       VehicleMaintenanceService vehicleMaintenanceService,
                                       ReserveUnitPlacer reserveUnitPlacer,
                                       UnitRecoveryService unitRecoveryService,
-                                      PlayerEliminationService playerEliminationService) {
+                                      PlayerEliminationService playerEliminationService,
+                                      SniperService sniperService) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
@@ -86,6 +91,7 @@ public class TurnResolutionOrchestrator {
         this.reserveUnitPlacer = reserveUnitPlacer;
         this.unitRecoveryService = unitRecoveryService;
         this.playerEliminationService = playerEliminationService;
+        this.sniperService = sniperService;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -145,25 +151,60 @@ public class TurnResolutionOrchestrator {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Conflit " + conflictId + " introuvable ou déjà résolu"));
         Board board = loadBoard();
-        Map<Long, Player> locked = lockPlayers(pc.camps);
+        Set<Integer> battleSectors = new HashSet<>();
+        s.resolvedConflicts.forEach(resolved -> battleSectors.add(resolved.sectorNumber()));
+        s.pendingConflicts.forEach(pending -> battleSectors.add(pending.sectorNumber));
 
         ResolvedBattle rb;
+        Map<Long, Player> locked;
         if (pc.standoff) {
-            List<List<Player>> camps = pc.camps.stream()
-                    .map(camp -> camp.stream().map(locked::get).toList())
-                    .toList();
-            CombatService.StandoffBattleResult r =
-                    combatService.simulateSectorStandoff(camps, board, pc.sectorNumber);
+            SniperService.StandoffSupport support = sniperService.collectStandoffSupport(
+                    s.turnEnding, pc.sectorNumber, pc.camps, battleSectors);
+            List<List<Long>> campIds = campsWithIndependents(pc.camps, support.independents());
+            locked = lockPlayers(campIds);
+            List<List<Player>> camps = toPlayerCamps(campIds, locked);
+            Map<Integer, List<Unit>> byCamp = new HashMap<>(support.byCamp());
+            Set<Integer> rangedOnly = attachIndependents(pc.camps.size(), support.independents(), byCamp);
+            CombatService.StandoffBattleResult r = combatService.simulateSectorStandoff(
+                    camps, board, pc.sectorNumber, byCamp, rangedOnly);
             battleReportService.saveStandoffReport(s.turnEnding, pc.sectorNumber,
                     camps.stream().flatMap(List::stream).toList(), r);
+            if (r.success()) {
+                sniperService.markResolved(support.resolvedOrders());
+            }
             rb = ResolvedBattle.standoff(pc.sectorNumber, camps, r);
         } else {
-            List<Player> attackerCamp = pc.camps.get(0).stream().map(locked::get).toList();
-            List<Player> defenderCamp = pc.camps.get(1).stream().map(locked::get).toList();
-            CombatService.SectorBattleResult r =
-                    combatService.simulateSectorBattle(attackerCamp, defenderCamp, board, pc.sectorNumber);
-            battleReportService.saveDuelReport(s.turnEnding, pc.sectorNumber, attackerCamp, defenderCamp, r);
-            rb = ResolvedBattle.duel(pc.sectorNumber, attackerCamp, defenderCamp, r);
+            SniperService.DuelSupport support = sniperService.collectDuelSupport(
+                    s.turnEnding, pc.sectorNumber, pc.camps.get(0), pc.camps.get(1), battleSectors);
+            if (support.independents().isEmpty()) {
+                locked = lockPlayers(pc.camps);
+                List<Player> attackerCamp = pc.camps.get(0).stream().map(locked::get).toList();
+                List<Player> defenderCamp = pc.camps.get(1).stream().map(locked::get).toList();
+                CombatService.SectorBattleResult r =
+                        combatService.simulateSectorBattle(attackerCamp, defenderCamp, board, pc.sectorNumber,
+                                support.attackers(), support.defenders());
+                battleReportService.saveDuelReport(s.turnEnding, pc.sectorNumber, attackerCamp, defenderCamp, r);
+                if (r.success()) {
+                    sniperService.markResolved(support.resolvedOrders());
+                }
+                rb = ResolvedBattle.duel(pc.sectorNumber, attackerCamp, defenderCamp, r);
+            } else {
+                List<List<Long>> campIds = campsWithIndependents(pc.camps, support.independents());
+                locked = lockPlayers(campIds);
+                List<List<Player>> camps = toPlayerCamps(campIds, locked);
+                Map<Integer, List<Unit>> byCamp = new HashMap<>();
+                byCamp.put(0, support.attackers());
+                byCamp.put(1, support.defenders());
+                Set<Integer> rangedOnly = attachIndependents(pc.camps.size(), support.independents(), byCamp);
+                CombatService.StandoffBattleResult r = combatService.simulateSectorStandoff(
+                        camps, board, pc.sectorNumber, byCamp, rangedOnly);
+                battleReportService.saveStandoffReport(s.turnEnding, pc.sectorNumber,
+                        camps.stream().flatMap(List::stream).toList(), r);
+                if (r.success()) {
+                    sniperService.markResolved(support.resolvedOrders());
+                }
+                rb = ResolvedBattle.standoff(pc.sectorNumber, camps, r);
+            }
         }
 
         if (!rb.winningCampPlayerIds().isEmpty()) {
@@ -175,6 +216,31 @@ public class TurnResolutionOrchestrator {
         clearHeadquartersEliminationPending(s, locked);
         registerPendingEliminations(s, rb, locked);
         return toBattleDto(rb, resolveNames(rb));
+    }
+
+    private static List<List<Long>> campsWithIndependents(List<List<Long>> camps,
+                                                          List<SniperService.IndependentSupport> independents) {
+        List<List<Long>> all = new ArrayList<>(camps);
+        independents.forEach(support -> all.add(List.of(support.playerId())));
+        return all;
+    }
+
+    private static List<List<Player>> toPlayerCamps(List<List<Long>> campIds, Map<Long, Player> locked) {
+        return campIds.stream()
+                .map(camp -> camp.stream().map(locked::get).toList())
+                .toList();
+    }
+
+    private static Set<Integer> attachIndependents(int baseCampCount,
+                                                   List<SniperService.IndependentSupport> independents,
+                                                   Map<Integer, List<Unit>> byCamp) {
+        Set<Integer> rangedOnly = new HashSet<>();
+        for (int i = 0; i < independents.size(); i++) {
+            int campIndex = baseCampCount + i;
+            rangedOnly.add(campIndex);
+            byCamp.put(campIndex, independents.get(i).units());
+        }
+        return rangedOnly;
     }
 
     /** La capture du QG remplace une élimination par mort de personnage : l'attribution MJ devient inutile. */
@@ -270,6 +336,9 @@ public class TurnResolutionOrchestrator {
             harvestAutoCollector.collectRemainingMoney(board, s.turnEnding, s.sectorOwners);
 
             MovementResolutionResult result = movementService.finalizeResolution(board, s.ctx);
+            Set<Integer> battleSectors = new HashSet<>();
+            s.resolvedConflicts.forEach(resolved -> battleSectors.add(resolved.sectorNumber()));
+            sniperService.resolveRemainingFire(s.turnEnding, board, battleSectors);
             List<Player> eliminated = playerRepository.findByEliminatedTurnOrderByNameAsc(s.turnEnding);
             for (Player victim : eliminated) {
                 // Décision en session d'abord : le commit du choix peut suivre une finalisation concurrente.
