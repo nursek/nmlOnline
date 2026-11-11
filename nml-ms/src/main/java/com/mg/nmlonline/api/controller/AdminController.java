@@ -9,6 +9,7 @@ import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.api.dto.RankingCommentRequestDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
+import com.mg.nmlonline.api.dto.TurnJournalDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.service.AdminService;
@@ -18,6 +19,7 @@ import com.mg.nmlonline.domain.service.ExchangeOfferService;
 import com.mg.nmlonline.domain.service.MovementAdminService;
 import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.RankingService;
+import com.mg.nmlonline.domain.service.TurnJournalService;
 import com.mg.nmlonline.domain.service.TurnResolutionOrchestrator;
 import com.mg.nmlonline.domain.service.TurnService;
 import jakarta.validation.Valid;
@@ -51,6 +53,7 @@ public class AdminController {
     private final RankingService rankingService;
     private final ExchangeOfferService exchangeOfferService;
     private final AllianceService allianceService;
+    private final TurnJournalService turnJournalService;
 
     public AdminController(AdminService adminService,
                            PlayerService playerService,
@@ -60,7 +63,8 @@ public class AdminController {
                            TurnResolutionOrchestrator turnResolutionOrchestrator,
                            RankingService rankingService,
                            ExchangeOfferService exchangeOfferService,
-                           AllianceService allianceService) {
+                           AllianceService allianceService,
+                           TurnJournalService turnJournalService) {
         this.adminService = adminService;
         this.playerService = playerService;
         this.boardAssetStorageService = boardAssetStorageService;
@@ -70,6 +74,7 @@ public class AdminController {
         this.rankingService = rankingService;
         this.exchangeOfferService = exchangeOfferService;
         this.allianceService = allianceService;
+        this.turnJournalService = turnJournalService;
     }
 
     @GetMapping("/players")
@@ -219,6 +224,12 @@ public class AdminController {
     @PostMapping("/turn/resolve/finalize")
     public TurnFinalizeResultDto finalizeResolution() {
         return turnResolutionOrchestrator.finalizeTurn();
+    }
+
+    /** Journal complet d'un tour finalisé (404 si aucun archivage pour ce tour). */
+    @GetMapping("/turn-journals/{turn}")
+    public TurnJournalDto getTurnJournal(@PathVariable int turn) {
+        return turnJournalService.findByTurn(turn);
     }
 
     /**

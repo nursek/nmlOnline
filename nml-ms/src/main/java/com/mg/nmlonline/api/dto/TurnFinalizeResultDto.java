@@ -11,7 +11,8 @@ public class TurnFinalizeResultDto {
     private int resolvedOrders;
     private int blockedOrders;
     private int conflictsResolved;
-    private int transitCombats;
+    private int transitCombatsCount;
+    private List<TransitCombatResultDto> transitCombats;
     private List<SectorCaptureDto> capturedSectors;
     private List<String> eliminatedPlayers;
     private String message;

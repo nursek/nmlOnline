@@ -3,11 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { ResolvedBattle } from '../../models';
-
-interface LogGroup {
-  phase: string;
-  entries: { outcome: string; message: string }[];
-}
+import { groupBattleLog } from './turn-export.helpers';
 
 @Component({
   selector: 'app-combat-log-dialog',
@@ -168,18 +164,7 @@ export class CombatLogDialogComponent {
   readonly dialogRef = inject(MatDialogRef<CombatLogDialogComponent>);
   readonly battle = inject<ResolvedBattle>(MAT_DIALOG_DATA);
 
-  readonly groups = computed<LogGroup[]>(() => {
-    const groups: LogGroup[] = [];
-    for (const entry of this.battle.battleLog ?? []) {
-      let group = groups.at(-1);
-      if (!group || group.phase !== entry.phase) {
-        group = { phase: entry.phase, entries: [] };
-        groups.push(group);
-      }
-      group.entries.push({ outcome: entry.outcome, message: entry.message });
-    }
-    return groups;
-  });
+  readonly groups = computed(() => groupBattleLog(this.battle.battleLog));
 
   close(): void {
     this.dialogRef.close();

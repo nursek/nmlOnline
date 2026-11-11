@@ -10,6 +10,7 @@ import {
   MovementResolutionResult,
   TurnResolutionState,
   TurnFinalizeResult,
+  TurnExport,
   ResolvedBattle,
   ScenarioSummary,
   CombatScenarioInfo,
@@ -380,6 +381,10 @@ export class ApiService {
 
   adminAbortResolution(): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/admin/turn/resolve`);
+  }
+
+  adminGetTurnJournal(turn: number): Observable<TurnExport> {
+    return this.http.get<TurnExport>(`${this.baseUrl}/admin/turn-journals/${turn}`);
   }
 
   // Scénario de test pas-à-pas (dev uniquement). En prod, le contrôleur
