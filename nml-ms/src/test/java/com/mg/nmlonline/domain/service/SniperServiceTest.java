@@ -2,6 +2,7 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.sniper.SniperOrder;
+import com.mg.nmlonline.domain.model.battle.RandomSource;
 import com.mg.nmlonline.domain.model.sniper.SniperOrderStatus;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
@@ -44,6 +45,8 @@ class SniperServiceTest {
     private UnitRepository unitRepository;
     @Mock
     private AllianceGraph allianceGraph;
+    @Mock
+    private RandomSource randomSource;
 
     @InjectMocks
     private SniperService service;

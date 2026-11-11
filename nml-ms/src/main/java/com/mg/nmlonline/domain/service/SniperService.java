@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.battle.Battle;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
+import com.mg.nmlonline.domain.model.battle.RandomSource;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -40,19 +41,22 @@ public class SniperService {
     private final PlayerRepository playerRepository;
     private final CombatService combatService;
     private final BattleReportService battleReportService;
+    private final RandomSource randomSource;
 
     public SniperService(SniperOrderRepository sniperOrderRepository,
                          UnitRepository unitRepository,
                          AllianceGraph allianceGraph,
                          PlayerRepository playerRepository,
                          CombatService combatService,
-                         BattleReportService battleReportService) {
+                         BattleReportService battleReportService,
+                         RandomSource randomSource) {
         this.sniperOrderRepository = sniperOrderRepository;
         this.unitRepository = unitRepository;
         this.allianceGraph = allianceGraph;
         this.playerRepository = playerRepository;
         this.combatService = combatService;
         this.battleReportService = battleReportService;
+        this.randomSource = randomSource;
     }
 
     public record IndependentSupport(Long playerId, List<Unit> units, List<SniperOrder> orders) {
@@ -129,8 +133,13 @@ public class SniperService {
         if (orders == null || orders.isEmpty()) {
             return;
         }
-        orders.forEach(SniperOrder::resolve);
-        sniperOrderRepository.saveAll(orders);
+        // Les unités détruites emportent leurs ordres (FK CASCADE) : flusher avant de filtrer les orphelins.
+        sniperOrderRepository.flush();
+        List<SniperOrder> alive = orders.stream()
+                .filter(order -> unitRepository.findById(order.getUnitId()).isPresent())
+                .toList();
+        alive.forEach(SniperOrder::resolve);
+        sniperOrderRepository.saveAll(alive);
     }
 
     /** Traite les ordres restants sans combat au sol : tir isolé, avec contre-tir des snipers inactifs ciblés. */
@@ -229,6 +238,7 @@ public class SniperService {
         }
         Set<Long> beforeIds = targets.stream().map(CombatEntity::getId).collect(Collectors.toSet());
         Battle battle = new Battle();
+        battle.setRandomSource(randomSource);
         battle.rangedOnlyConfiguration(shooters, targets, sector.getName());
         Set<Long> survivorIds = targets.stream().map(CombatEntity::getId).collect(Collectors.toSet());
 

@@ -949,11 +949,13 @@ class TurnResolutionScenariosTest {
                 .anyMatch(entry -> entry.getMessage().contains("Tir à distance")));
         List<SniperOrder> orders = sniperOrderRepository.findByTurnAndStatus(
                 turnService.getCurrentTurn(), SniperOrderStatus.RESOLVED);
-        assertEquals(2, orders.size(), () -> "Les deux tirs d'Imotekh sont résolus — ordres="
+        assertEquals(1, orders.size(), () -> "Seul le sniper survivant de Trazyn résout son tir — ordres="
                 + sniperOrderRepository.findAll().stream()
                         .map(order -> order.getPlayerId() + "/" + order.getUnitId() + "/"
                                 + order.getStatus() + "/" + order.getFromSectorNumber() + "→"
                                 + order.getTargetSectorNumber())
                         .toList());
+        assertEquals(1, sniperOrderRepository.findAll().size(),
+                "L'ordre du sniper détruit disparaît avec son unité (FK CASCADE)");
     }
 }
