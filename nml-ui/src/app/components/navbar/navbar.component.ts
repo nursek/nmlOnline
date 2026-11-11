@@ -7,11 +7,11 @@ import {
   signal,
 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatListModule } from '@angular/material/list';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { map } from 'rxjs/operators';
@@ -30,7 +30,6 @@ interface NavLink {
 
 const BASE_MENU_ITEMS: NavLink[] = [
   { path: '/accueil', label: 'Accueil', icon: 'home' },
-  { path: '/parties', label: 'Changer de partie', icon: 'grid_view' },
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/joueur', label: 'Mon Joueur', icon: 'person' },
   { path: '/ordres', label: 'Mes ordres', icon: 'list_alt' },
@@ -41,7 +40,6 @@ const BASE_MENU_ITEMS: NavLink[] = [
 
 const ADMIN_MENU_ITEMS: NavLink[] = [
   { path: '/accueil', label: 'Accueil', icon: 'home' },
-  { path: '/parties', label: 'Changer de partie', icon: 'grid_view' },
   { path: '/carte', label: 'Carte', icon: 'map' },
   { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' },
   { path: '/admin/tour', label: 'Gestion du tour', icon: 'event_repeat' },
@@ -62,7 +60,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
-    MatChipsModule,
+    MatMenuModule,
     MatListModule,
     SigilComponent,
     ThemeToggleComponent,
@@ -109,30 +107,33 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
 
           <div class="spacer"></div>
 
-          <!-- User info -->
           <div class="user-section">
             <app-theme-toggle />
 
             @if (user(); as user) {
-              @if (user.username) {
-                <mat-chip-set>
-                  <mat-chip class="user-chip" highlighted>
-                    <mat-icon matChipAvatar>person</mat-icon>
-                    {{ user.username }}
-                  </mat-chip>
-                </mat-chip-set>
-              }
-            }
+              <button
+                mat-button
+                class="user-chip"
+                [matMenuTriggerFor]="userMenu"
+                [attr.aria-label]="'Compte de ' + user.username"
+              >
+                <mat-icon>person</mat-icon>
+                <span class="user-name">{{ user.username }}</span>
+                <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+              </button>
 
-            @if (!isMobile()) {
-              <button mat-stroked-button color="warn" (click)="logout()">
-                <mat-icon>logout</mat-icon>
-                Déconnexion
-              </button>
-            } @else {
-              <button mat-icon-button color="warn" (click)="logout()" aria-label="Déconnexion">
-                <mat-icon>logout</mat-icon>
-              </button>
+              <mat-menu #userMenu="matMenu">
+                @if (canSwitchInstance()) {
+                  <button mat-menu-item (click)="switchInstance()">
+                    <mat-icon>grid_view</mat-icon>
+                    <span>Changer de partie</span>
+                  </button>
+                }
+                <button mat-menu-item (click)="logout()">
+                  <mat-icon>logout</mat-icon>
+                  <span>Déconnexion</span>
+                </button>
+              </mat-menu>
             }
           </div>
         </div>
@@ -287,11 +288,16 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
       }
 
       .user-chip {
-        // Material pose ses jetons « highlighted » en (0,3,0) : !important requis.
-        --mat-chip-elevated-container-color: var(--accent-tint) !important;
-        --mat-chip-label-text-color: var(--accent-ink) !important;
-        --mat-chip-outline-color: var(--accent-line) !important;
-        --mat-chip-elevated-selected-container-color: var(--accent-tint) !important;
+        background: var(--accent-tint);
+        color: var(--accent-ink);
+        border-radius: 999px;
+      }
+
+      .user-name {
+        max-width: 12rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .mobile-drawer-backdrop {
@@ -376,6 +382,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
 export class NavbarComponent {
   private readonly auth = inject(AuthService);
   private readonly instance = inject(InstanceService);
+  private readonly router = inject(Router);
   private readonly devScenarios = inject(DevScenarioService);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly document = inject(DOCUMENT);
@@ -387,6 +394,7 @@ export class NavbarComponent {
     return this.auth.isAdmin() || role === 'ADMIN' || role === 'MJ';
   });
   readonly user = this.auth.user;
+  readonly canSwitchInstance = computed(() => this.instance.instances().length > 1);
 
   readonly isMobile = toSignal(
     this.breakpointObserver
@@ -413,6 +421,11 @@ export class NavbarComponent {
       const body = this.document.body;
       body.style.overflow = locked ? 'hidden' : '';
     });
+  }
+
+  switchInstance(): void {
+    this.drawerOpen.set(false);
+    void this.router.navigate(['/parties']);
   }
 
   toggleDrawer(): void {

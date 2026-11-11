@@ -72,10 +72,33 @@ describe('InstanceService (partie sélectionnée et en-tête X-Board-Id)', () =>
     expect(scoped.request.headers.get('X-Board-Id')).toBe('42');
     scoped.flush({});
 
-    client.get(`/instances`).subscribe();
-    const unscoped = http.expectOne(`/instances`);
+    client.get(`${environment.apiBaseUrl}/instances`).subscribe();
+    const unscoped = http.expectOne(`${environment.apiBaseUrl}/instances`);
     expect(unscoped.request.headers.get('X-Board-Id')).toBeNull();
     unscoped.flush([]);
     http.verify();
+  });
+
+  it("n'expose une partie unique que s'il n'y a pas de choix", async () => {
+    const user = signal<User | null>({ id: 1, username: 'lurio' });
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
+        { provide: AuthService, useValue: { user: user.asReadonly() } },
+      ],
+    });
+    const service = TestBed.inject(InstanceService);
+    const http = TestBed.inject(HttpTestingController);
+    const appRef = TestBed.inject(ApplicationRef);
+
+    TestBed.tick();
+    http.expectOne(`${environment.apiBaseUrl}/instances`).flush([instance(7, 'Lurio')]);
+    await appRef.whenStable();
+    expect(service.soleInstance()?.id).toBe(7);
+
+    http.expectNone(`${environment.apiBaseUrl}/instances`);
+    service.select(instance(7, 'Lurio'));
+    expect(service.soleInstance()).not.toBeNull();
   });
 });

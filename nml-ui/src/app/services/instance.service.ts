@@ -25,6 +25,9 @@ export class InstanceService {
   readonly selected = computed(
     () => this.instances().find((instance) => instance.id === this._selectedId()) ?? null,
   );
+  readonly soleInstance = computed(() =>
+    this.instances().length === 1 ? this.instances()[0] : null,
+  );
   readonly loading = computed(() => this.instancesRef.isLoading());
 
   select(instance: GameInstance): void {

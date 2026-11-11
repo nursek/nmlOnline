@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { InstanceService } from '../../services/instance.service';
@@ -70,10 +71,28 @@ import { GameInstance } from '../../models';
 })
 export class PartiesComponent {
   readonly instanceService = inject(InstanceService);
+  private readonly router = inject(Router);
+  private redirected = false;
+
+  constructor() {
+    // Une seule partie : elle se choisit toute seule, l'écran ne sert que s'il y a un choix.
+    effect(() => {
+      const sole = this.instanceService.soleInstance();
+      if (sole === null || this.redirected) return;
+      this.redirected = true;
+      this.instanceService.select(sole);
+      void this.router.navigate([targetOf(sole)]);
+    });
+  }
+
   join(instance: GameInstance): void {
     this.instanceService.select(instance);
     // Rechargement complet : tous les services racine (carte, joueurs, stats) sont liés à la partie.
-    const admin = instance.role === 'ADMIN' || instance.role === 'MJ';
-    window.location.assign(admin ? '/admin' : '/accueil');
+    window.location.assign(targetOf(instance));
   }
+}
+
+function targetOf(instance: GameInstance): string {
+  const admin = instance.role === 'ADMIN' || instance.role === 'MJ';
+  return admin ? '/admin' : '/accueil';
 }
