@@ -124,7 +124,8 @@ public class AdminController {
     }
 
     /**
-     * Import upsert par nom. Avec password : crée/met à jour un compte User (hash+pepper).
+     * Import upsert par nom. Avec password : crée le compte User s'il est absent ; un compte existant est lié
+     * sans toucher à son mot de passe (jamais de reset via l'import), et un compte ADMIN est refusé.
      * Sans password : joueur seul (compte géré par ailleurs en dev).
      */
     @PostMapping(value = "/players/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

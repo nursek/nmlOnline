@@ -16,13 +16,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -266,6 +270,39 @@ class InstanceAccessTest {
 
         playerRepository.deleteById(solo.getId());
         userRepository.deleteById(delegated.getId());
+    }
+
+    @Test
+    @DisplayName("un MJ ne peut pas réinitialiser le mot de passe d'un compte privilégié via l'import")
+    void gameMasterCannotResetPrivilegedPasswordThroughImport() throws Exception {
+        secondBoard = createBoard("Partie import");
+        gameMaster = createUser("mj_import");
+        boardAdminRepository.save(new BoardAdmin(secondBoard.getId(), gameMaster.getId()));
+
+        User reserved = new User();
+        reserved.setUsername("compte_reserve_import");
+        reserved.setPassword("hash-avant");
+        reserved.setRole("ADMIN");
+        User savedReserved = userRepository.save(reserved);
+        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+
+        try {
+            mockMvc.perform(multipart("/api/admin/players/import")
+                            .file(new MockMultipartFile("file", "joueur.json",
+                                    MediaType.APPLICATION_JSON_VALUE,
+                                    "{\"name\":\"compte_reserve_import\"}".getBytes()))
+                            .param("password", "pwned")
+                            .header("Authorization", "Bearer " + token)
+                            .header("X-Board-Id", String.valueOf(secondBoard.getId())))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.detail").value(
+                            "Le compte 'compte_reserve_import' est réservé et ne peut pas être lié à un joueur"));
+
+            assertEquals("hash-avant",
+                    userRepository.findByUsername("compte_reserve_import").getPassword());
+        } finally {
+            userRepository.deleteById(savedReserved.getId());
+        }
     }
 
     private Board createBoard(String name) {

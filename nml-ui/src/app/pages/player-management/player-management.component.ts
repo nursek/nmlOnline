@@ -91,7 +91,8 @@ export class PlayerManagementComponent {
       // pas assez de valeur pour un composant dédié. Upgrade: dialog custom si
       // on veut validation/policy de mot de passe (longueur min, confirmation).
       const password = window.prompt(
-        `Mot de passe pour le compte lié au joueur "${file.name.replace(/\.json$/i, '')}" ?\n` +
+        `Mot de passe du compte pour le joueur "${file.name.replace(/\.json$/i, '')}" ?\n` +
+          "(Créé s'il n'existe pas, inchangé s'il existe.)\n" +
           '(Laisser vide = importer sans compte de connexion.)',
         '',
       );
