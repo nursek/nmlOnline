@@ -85,28 +85,23 @@ class SectorHarvestTest {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
         double moneyBefore = player.getStats().getMoney();
 
-        assertThrows(IllegalStateException.class, () -> playerActionService.harvest(player.getUserId(),
-                PlayerActionType.HARVEST_MONEY, List.of(1)), "Aucune récolte au tour 1");
+        assertThrows(IllegalStateException.class, () -> playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_MONEY, List.of(1)), "Aucune récolte au tour 1");
 
         Board board = turnTwoBoard();
         Sector moneySector = ownedSector(board, player, 1, 100.0, "Auramite");
         Sector resourceSector = ownedSector(board, player, 2, 200.0, "Adamentium");
 
-        assertThrows(SecurityException.class, () -> playerActionService.harvest(player.getUserId(),
-                PlayerActionType.HARVEST_MONEY, List.of(3)), "Secteur non possédé");
+        assertThrows(SecurityException.class, () -> playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_MONEY, List.of(3)), "Secteur non possédé");
 
-        playerActionService.harvest(player.getUserId(),
-                PlayerActionType.HARVEST_MONEY, List.of(moneySector.getNumber()));
-        List<PlayerActionDto> actions = playerActionService.harvest(player.getUserId(),
-                PlayerActionType.HARVEST_RESOURCE, List.of(resourceSector.getNumber()));
+        playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_MONEY, List.of(moneySector.getNumber()));
+        List<PlayerActionDto> actions = playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_RESOURCE, List.of(resourceSector.getNumber()));
 
         assertEquals(2, actions.size());
         assertEquals(moneyBefore + 100.0, player.getStats().getMoney(), 0.001);
         assertEquals(1, player.getResourceQuantity("Adamentium"));
         assertEquals(0, player.getResourceQuantity("Auramite"));
 
-        assertThrows(IllegalStateException.class, () -> playerActionService.harvest(player.getUserId(),
-                PlayerActionType.HARVEST_RESOURCE, List.of(moneySector.getNumber())));
+        assertThrows(IllegalStateException.class, () -> playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_RESOURCE, List.of(moneySector.getNumber())));
     }
 
     @Test
@@ -116,20 +111,20 @@ class SectorHarvestTest {
         Board board = turnTwoBoard();
         Sector sector = ownedSector(board, player, 4, 100.0, "Auramite");
 
-        playerActionService.harvest(player.getUserId(), PlayerActionType.HARVEST_RESOURCE, List.of(4));
+        playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_RESOURCE, List.of(4));
         assertEquals(1, player.getResourceQuantity("Auramite"));
 
-        Long actionId = playerActionService.getCurrentTurnActions(player.getUserId()).getFirst().getId();
-        playerActionService.undoFrom(player.getUserId(), actionId);
+        Long actionId = playerActionService.getCurrentTurnActions(player.getUserId(), player.getBoardId()).getFirst().getId();
+        playerActionService.undoFrom(player.getUserId(), player.getBoardId(), actionId);
         assertEquals(0, player.getResourceQuantity("Auramite"));
 
-        playerActionService.harvest(player.getUserId(), PlayerActionType.HARVEST_RESOURCE, List.of(4));
+        playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_RESOURCE, List.of(4));
         Player receiver = playerOfTestUser(TestDataInitializer.USER_2);
         assertTrue(resourceService.transferResource(player, receiver, "Auramite", 1));
 
-        Long secondActionId = playerActionService.getCurrentTurnActions(player.getUserId()).getFirst().getId();
+        Long secondActionId = playerActionService.getCurrentTurnActions(player.getUserId(), player.getBoardId()).getFirst().getId();
         assertThrows(PlayerActionUndoException.class,
-                () -> playerActionService.undoFrom(player.getUserId(), secondActionId));
+                () -> playerActionService.undoFrom(player.getUserId(), player.getBoardId(), secondActionId));
     }
 
     @Test
@@ -141,7 +136,7 @@ class SectorHarvestTest {
         ownedSector(board, player, 5, 100.0, "Auramite");
         Sector resourceSector = ownedSector(board, player, 6, 200.0, "Adamentium");
 
-        playerActionService.harvest(player.getUserId(), PlayerActionType.HARVEST_RESOURCE,
+        playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_RESOURCE,
                 List.of(resourceSector.getNumber()));
 
         harvestAutoCollector.collectRemainingMoney(board, 1);
@@ -180,11 +175,11 @@ class SectorHarvestTest {
         ownedSector(board, player, 9, 100.0, "Auramite");
         double before = player.getStats().getMoney();
 
-        movementAdminService.resolveMovements(2);
+        movementAdminService.resolveMovements(player.getBoardId(), 2);
         assertEquals(before + 100.0, player.getStats().getMoney(), 0.001);
         assertEquals(2, board.getRevenueClaimedTurn().intValue(), "Le claim du tour est persisté sur le plateau");
 
-        turnService.advanceTurnAndReport();
+        turnService.advanceTurnAndReport(player.getBoardId());
         assertEquals(before + 100.0, player.getStats().getMoney(), 0.001,
                 "Le claim du raccourci ne doit pas être versé une seconde fois");
     }
@@ -196,14 +191,14 @@ class SectorHarvestTest {
         Board board = turnTwoBoard();
         ownedSector(board, player, 11, 100.0, "Auramite");
 
-        playerActionService.harvest(player.getUserId(), PlayerActionType.HARVEST_MONEY, List.of(11));
+        playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_MONEY, List.of(11));
         double afterHarvest = player.getStats().getMoney();
-        Long actionId = playerActionService.getCurrentTurnActions(player.getUserId()).getFirst().getId();
+        Long actionId = playerActionService.getCurrentTurnActions(player.getUserId(), player.getBoardId()).getFirst().getId();
 
-        movementAdminService.resolveMovements(2);
+        movementAdminService.resolveMovements(player.getBoardId(), 2);
 
         assertThrows(HarvestClosedException.class,
-                () -> playerActionService.undoFrom(player.getUserId(), actionId));
+                () -> playerActionService.undoFrom(player.getUserId(), player.getBoardId(), actionId));
         assertEquals(afterHarvest, player.getStats().getMoney(), 0.001, "L'argent récolté reste crédité");
     }
 
@@ -214,13 +209,13 @@ class SectorHarvestTest {
         Board board = turnTwoBoard();
         ownedSector(board, player, 10, 100.0, "Auramite");
 
-        playerActionService.harvest(player.getUserId(), PlayerActionType.HARVEST_MONEY, List.of(10));
-        Long actionId = playerActionService.getCurrentTurnActions(player.getUserId()).getFirst().getId();
+        playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_MONEY, List.of(10));
+        Long actionId = playerActionService.getCurrentTurnActions(player.getUserId(), player.getBoardId()).getFirst().getId();
 
         player.getStats().setMoney(0);
 
         assertThrows(PlayerActionUndoException.class,
-                () -> playerActionService.undoFrom(player.getUserId(), actionId));
+                () -> playerActionService.undoFrom(player.getUserId(), player.getBoardId(), actionId));
     }
 
     @Test
@@ -230,10 +225,9 @@ class SectorHarvestTest {
         Board board = turnTwoBoard();
         ownedSector(board, player, 3, 100.0, "Auramite");
 
-        movementAdminService.resolveMovements(2);
+        movementAdminService.resolveMovements(player.getBoardId(), 2);
 
-        assertThrows(HarvestClosedException.class, () -> playerActionService.harvest(player.getUserId(),
-                PlayerActionType.HARVEST_MONEY, List.of(3)));
+        assertThrows(HarvestClosedException.class, () -> playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_MONEY, List.of(3)));
     }
 
     @Test
@@ -244,7 +238,7 @@ class SectorHarvestTest {
         Board board = turnTwoBoard();
         ownedSector(board, player, 5, 100.0, "Auramite");
 
-        TurnService.TurnAdvanceResult result = turnService.advanceTurnAndReport();
+        TurnService.TurnAdvanceResult result = turnService.advanceTurnAndReport(player.getBoardId());
 
         assertEquals(before + 100.0, player.getStats().getMoney(), 0.001);
         assertEquals(3, result.newTurn());
@@ -262,15 +256,14 @@ class SectorHarvestTest {
         entityManager.flush();
         double before = player.getStats().getMoney();
 
-        movementAdminService.resolveMovements(2);
+        movementAdminService.resolveMovements(player.getBoardId(), 2);
 
         board.getSector(3).setOwnerId(player.getId());
         entityManager.flush();
 
-        assertThrows(HarvestClosedException.class, () -> playerActionService.harvest(player.getUserId(),
-                PlayerActionType.HARVEST_MONEY, List.of(3)));
+        assertThrows(HarvestClosedException.class, () -> playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_MONEY, List.of(3)));
 
-        turnService.advanceTurnAndReport();
+        turnService.advanceTurnAndReport(player.getBoardId());
         assertEquals(before, player.getStats().getMoney(), 0.001,
                 "Le capturant ne touche pas le revenu du tour résolu");
     }
@@ -282,19 +275,18 @@ class SectorHarvestTest {
         Board board = turnTwoBoard();
         ownedSector(board, player, 8, 100.0, "Auramite");
 
-        turnLock.tryAcquire();
+        turnLock.tryAcquire(board.getId());
         try {
-            assertThrows(HarvestClosedException.class, () -> playerActionService.harvest(player.getUserId(),
-                    PlayerActionType.HARVEST_MONEY, List.of(8)));
+            assertThrows(HarvestClosedException.class, () -> playerActionService.harvest(player.getUserId(), player.getBoardId(), PlayerActionType.HARVEST_MONEY, List.of(8)));
         } finally {
-            turnLock.release();
+            turnLock.release(board.getId());
         }
     }
 
     private Board turnTwoBoard() {
         Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
         board.setCurrentTurn(2);
-        turnService.publishTurn(2);
+        turnService.publishTurn(board.getId(), 2);
         return board;
     }
 
@@ -310,7 +302,8 @@ class SectorHarvestTest {
     private Player playerOfTestUser(String username) {
         User user = userRepository.findByUsername(username);
         assertNotNull(user, "L'utilisateur de test " + username + " doit exister");
-        Player player = playerService.findByUserId(user.getId());
+        Player player = playerService.findByUserId(user.getId(),
+                boardService.getAllBoards().getFirst().getId());
         assertNotNull(player, "Le joueur lié à " + username + " doit exister");
         return player;
     }

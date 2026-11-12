@@ -8,7 +8,9 @@ import com.mg.nmlonline.api.dto.ResourceSaleResponseDto;
 import com.mg.nmlonline.api.dto.SellResourceBatchRequestDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.PlayerService;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.ResourceService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -33,14 +35,16 @@ public class PlayerController {
     }
 
     @GetMapping
-    public Page<PlayerDto> findAll(Pageable pageable) {
-        return playerService.findAllSummaryDto(pageable);
+    public Page<PlayerDto> findAll(Pageable pageable, HttpServletRequest request) {
+        return playerService.findAllSummaryDto(
+                (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE), pageable);
     }
 
     @GetMapping("/me/status")
     public PlayerStatusDto myStatus(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
-        Player player = playerService.findByUserId(userId);
+        Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
+        Player player = playerService.findByUserId(userId, boardId);
         if (player == null) {
             return new PlayerStatusDto(false, null, null, null);
         }
@@ -53,10 +57,11 @@ public class PlayerController {
     @GetMapping("/me")
     public ResponseEntity<PlayerDto> me(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
+        Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (userId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return playerService.findByUserIdDto(userId)
+        return playerService.findByUserIdDto(userId, boardId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -64,7 +69,8 @@ public class PlayerController {
     @GetMapping("/{name}")
     public ResponseEntity<PlayerDto> findByName(@PathVariable String name, HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
-        return playerService.findByNameDto(name, userId)
+        Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
+        return playerService.findByNameDto(boardId, name, userId)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -72,12 +78,13 @@ public class PlayerController {
     @PostMapping("/resources/{playerResourceId}/sell")
     public ResponseEntity<ResourceSaleResponseDto> sellResource(@PathVariable Long playerResourceId, @RequestParam("quantity") int quantity, HttpServletRequest request) {
         Long authenticatedUserId = (Long) request.getAttribute("userId");
+        Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401)
                     .body(new ResourceSaleResponseDto("User not authenticated", 0, null, 0));
         }
         try {
-            ResourceService.SaleResult result = resourceService.sellResource(playerResourceId, quantity, authenticatedUserId);
+            ResourceService.SaleResult result = resourceService.sellResource(playerResourceId, quantity, authenticatedUserId, boardId);
             ResourceSaleResponseDto response = new ResourceSaleResponseDto(
                 "Resource sold successfully",
                 result.saleValue(),
@@ -96,12 +103,13 @@ public class PlayerController {
     public ResponseEntity<ResourceBatchSaleResponseDto> sellResourcesBatch(@Valid @RequestBody SellResourceBatchRequestDto requestDto,
                                                                            HttpServletRequest request) {
         Long authenticatedUserId = (Long) request.getAttribute("userId");
+        Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401)
                     .body(new ResourceBatchSaleResponseDto("User not authenticated", 0, List.of()));
         }
         try {
-            List<ResourceService.SaleResult> results = resourceService.sellResourcesBatch(authenticatedUserId, requestDto.getItems());
+            List<ResourceService.SaleResult> results = resourceService.sellResourcesBatch(authenticatedUserId, boardId, requestDto.getItems());
             List<ResourceSaleResponseDto> sales = results.stream()
                     .map(r -> new ResourceSaleResponseDto(
                             "Resource sold successfully",
@@ -123,10 +131,11 @@ public class PlayerController {
     public ResponseEntity<PlayerDto> buyEquipments(@RequestBody List<BuyEquipmentItemDto> items,
                                                    HttpServletRequest request) {
         Long authenticatedUserId = (Long) request.getAttribute("userId");
+        Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
-        Player player = playerService.findByUserId(authenticatedUserId);
+        Player player = playerService.findByUserId(authenticatedUserId, boardId);
         if (player == null) {
             return ResponseEntity.notFound().build();
         }

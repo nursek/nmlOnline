@@ -57,6 +57,8 @@ export class DevScenariosComponent {
     CHAR_KILL: 'person_off',
     MAIN_CHARACTER_ELIMINATION: 'dangerous',
     CHAR_REGEN: 'healing',
+    SNIPER_RANGED: 'gps_fixed',
+    SNIPER_STANDOFF: 'groups',
   };
 
   constructor() {

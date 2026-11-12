@@ -2,6 +2,7 @@ package com.mg.nmlonline.config;
 
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
@@ -26,6 +27,7 @@ class EliminatedPlayerFilterTest {
 
     private Result perform(String method, String uri, Long userId) throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest(method, uri);
+        request.setAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE, 1L);
         if (userId != null) {
             request.setAttribute("userId", userId);
         }
@@ -55,7 +57,7 @@ class EliminatedPlayerFilterTest {
 
     @Test
     void blocksMutationsOfEliminatedPlayers() throws Exception {
-        when(playerRepository.findByUserId(1L)).thenReturn(Optional.of(eliminatedPlayer()));
+        when(playerRepository.findByUserIdAndBoardId(1L, 1L)).thenReturn(Optional.of(eliminatedPlayer()));
 
         assertBlocked("POST", "/api/units/orders");
         assertBlocked("PUT", "/api/vehicles/1/crew");
@@ -65,8 +67,8 @@ class EliminatedPlayerFilterTest {
 
     @Test
     void letsEliminatedPlayersReadAndLetsActivePlayersAct() throws Exception {
-        when(playerRepository.findByUserId(1L)).thenReturn(Optional.of(eliminatedPlayer()));
-        when(playerRepository.findByUserId(2L)).thenReturn(Optional.of(new Player("Actif")));
+        when(playerRepository.findByUserIdAndBoardId(1L, 1L)).thenReturn(Optional.of(eliminatedPlayer()));
+        when(playerRepository.findByUserIdAndBoardId(2L, 1L)).thenReturn(Optional.of(new Player("Actif")));
 
         assertPassed("GET", "/api/players/me", 1L);
         assertPassed("POST", "/api/units/orders", 2L);
@@ -75,7 +77,7 @@ class EliminatedPlayerFilterTest {
 
     @Test
     void ignoresAdminEndpoints() throws Exception {
-        when(playerRepository.findByUserId(1L)).thenReturn(Optional.of(eliminatedPlayer()));
+        when(playerRepository.findByUserIdAndBoardId(1L, 1L)).thenReturn(Optional.of(eliminatedPlayer()));
 
         assertPassed("POST", "/api/admin/turn/next", 1L);
     }

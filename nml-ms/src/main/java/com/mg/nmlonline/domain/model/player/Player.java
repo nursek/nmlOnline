@@ -43,11 +43,14 @@ public class Player {
     @Version
     private Long version;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
-    @Column(name = "user_id", unique = true)
+    @Column(name = "user_id")
     private Long userId;
+
+    @Column(name = "board_id", nullable = false)
+    private Long boardId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "race")

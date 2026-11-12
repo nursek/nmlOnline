@@ -209,14 +209,84 @@
         </div>
       }
     </section>
+
+    @if (isSniper()) {
+      <section class="udd-move-section">
+        <h3><mat-icon>gps_fixed</mat-icon> Ordre sniper</h3>
+        <div class="udd-move">
+          <div class="udd-move-from">
+            <span class="udd-label">Depuis</span>
+            <span class="udd-pill">Secteur {{ data.sectorNumber }}</span>
+          </div>
+          <mat-icon class="udd-arrow">arrow_forward</mat-icon>
+          <mat-form-field appearance="outline" class="udd-move-to">
+            <mat-label>Vers</mat-label>
+            <mat-select [value]="sniperTarget()" (valueChange)="sniperTarget.set($event)">
+              @for (n of sniperTargets(); track $index) {
+                <mat-option [value]="n">
+                  Secteur {{ n }} — {{ sniperActionLabel(sniperActionFor(n)) }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="udd-move-hint">
+          {{ sniperTargets().length }} secteur(s) adjacent(s). Tir de précision sur un secteur
+          neutre ou ennemi ; surveillance sur un secteur possédé ou allié.
+        </div>
+
+        @if (pendingSniperOrdersForUnit().length) {
+          <div class="udd-move-pending">
+            <div class="udd-subhead">Ordres sniper en attente</div>
+            @for (o of pendingSniperOrdersForUnit(); track o.id) {
+              <div class="udd-pending-row">
+                <span
+                  >Secteur {{ o.fromSectorNumber }} → {{ o.targetSectorNumber }} —
+                  {{ sniperActionLabel(o.action) }} ({{ o.status }})</span
+                >
+                <button
+                  mat-icon-button
+                  color="warn"
+                  [disabled]="busy()"
+                  (click)="cancelSniperOrder(o.id)"
+                >
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
     <button mat-button (click)="close()">Fermer</button>
+    @if (isSniper()) {
+      <button
+        mat-raised-button
+        color="accent"
+        [disabled]="
+          busy() ||
+          sniperTarget() === null ||
+          pendingSniperOrdersForUnit().length > 0 ||
+          pendingOrdersForUnit().length > 0
+        "
+        (click)="submitSniperOrder()"
+      >
+        <mat-icon>gps_fixed</mat-icon>
+        {{ sniperActionLabel(selectedSniperAction()) }}
+      </button>
+    }
     <button
       mat-raised-button
       color="primary"
-      [disabled]="busy() || targetSector() === null || pendingOrdersForUnit().length > 0"
+      [disabled]="
+        busy() ||
+        targetSector() === null ||
+        pendingOrdersForUnit().length > 0 ||
+        pendingSniperOrdersForUnit().length > 0
+      "
       (click)="submitMove()"
     >
       <mat-icon>directions_walk</mat-icon>

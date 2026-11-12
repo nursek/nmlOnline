@@ -26,6 +26,8 @@ import static org.mockito.Mockito.when;
 @DisplayName("RankingService")
 class RankingServiceTest {
 
+    private static final Long BOARD_ID = 1L;
+
     @Mock
     private PlayerRepository playerRepository;
     @Mock
@@ -47,9 +49,9 @@ class RankingServiceTest {
         Board board = new Board();
         board.addSector(new Sector(1, "Secteur 1"));
         board.setCurrentTurn(1);
-        when(boardRepository.findAll()).thenReturn(List.of(board));
+        when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
 
-        RankingsDto rankings = rankingService.getRankings();
+        RankingsDto rankings = rankingService.getRankings(BOARD_ID);
 
         assertEquals(1, rankings.getTurn());
         assertTrue(rankings.getMilitary().isEmpty());
@@ -76,10 +78,10 @@ class RankingServiceTest {
         bob.setId(2L);
         bob.getStats().setMoney(500_000.0);
 
-        when(boardRepository.findAll()).thenReturn(List.of(board));
-        when(playerRepository.findAll()).thenReturn(List.of(bob, alice));
+        when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+        when(playerRepository.findByBoardId(BOARD_ID)).thenReturn(List.of(bob, alice));
 
-        RankingsDto rankings = rankingService.getRankings();
+        RankingsDto rankings = rankingService.getRankings(BOARD_ID);
 
         assertEquals(2, rankings.getTurn());
         assertEquals(List.of("Alice", "Bob"), names(rankings.getMilitary()));
@@ -99,10 +101,10 @@ class RankingServiceTest {
         Player anne = new Player("Anne");
         anne.setId(2L);
 
-        when(boardRepository.findAll()).thenReturn(List.of(board));
-        when(playerRepository.findAll()).thenReturn(List.of(zoe, anne));
+        when(boardRepository.findById(BOARD_ID)).thenReturn(Optional.of(board));
+        when(playerRepository.findByBoardId(BOARD_ID)).thenReturn(List.of(zoe, anne));
 
-        RankingsDto rankings = rankingService.getRankings();
+        RankingsDto rankings = rankingService.getRankings(BOARD_ID);
 
         assertEquals(List.of("Anne", "Zoe"), names(rankings.getMilitary()));
         assertEquals(List.of("Anne", "Zoe"), names(rankings.getEconomic()));

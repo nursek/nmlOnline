@@ -1,5 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.BattleHighlightDto;
+import com.mg.nmlonline.api.dto.BattleReportDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
@@ -17,6 +19,7 @@ import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.unit.UnitType;
 import com.mg.nmlonline.domain.model.battle.Battle;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
+import com.mg.nmlonline.domain.model.battle.RandomSource;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import jakarta.persistence.EntityManager;
@@ -29,8 +32,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,6 +61,9 @@ public class CombatService {
     private PlayerRepository playerRepository;
 
     @Autowired
+    private RandomSource randomSource;
+
+    @Autowired
     private EntityManager em;
 
     public Optional<Sector> findSectorWithArmy(Player player, Board board) {
@@ -74,11 +82,12 @@ public class CombatService {
      */
     public SectorBattleResult simulateSectorBattle(List<Player> attackerCamp, List<Player> defenderCamp,
                                                    Board board, int sectorNumber) {
-        return simulateSectorBattle(attackerCamp, defenderCamp, board, sectorNumber, Set.of());
+        return simulateSectorBattle(attackerCamp, defenderCamp, board, sectorNumber, List.of(), List.of(), Set.of());
     }
 
     public SectorBattleResult simulateSectorBattle(List<Player> attackerCamp, List<Player> defenderCamp,
                                                    Board board, int sectorNumber,
+                                                   List<Unit> rangedAttackers, List<Unit> rangedDefenders,
                                                    Set<Long> transitEntityIds) {
         if (attackerCamp == null || attackerCamp.isEmpty() || defenderCamp == null || defenderCamp.isEmpty()
                 || board == null) {
@@ -105,10 +114,20 @@ public class CombatService {
         attackerFighters.forEach(u -> beforeIds.add(u.getId()));
         defenderFighters.forEach(u -> beforeIds.add(u.getId()));
 
+        List<BattleReportDto.PlayerForceDto> forces = new ArrayList<>();
+        forces.addAll(BattleForcesBuilder.build(attackerCamp, attackerFighters, "ATTAQUANT"));
+        forces.addAll(BattleForcesBuilder.build(defenderCamp, defenderFighters, "DEFENSEUR"));
+
         int turn = board.getCurrentTurn();
+        List<Player> campPlayers = new ArrayList<>(attackerCamp);
+        campPlayers.addAll(defenderCamp);
         Battle battle = new Battle();
+        battle.setRandomSource(randomSource);
+        battle.setParticipantNames(namesById(campPlayers));
         battle.setAttackerBonusPercent(campBonusPercent(turn, attackerCamp, defenderCamp));
         battle.setDefenderBonusPercent(campBonusPercent(turn, defenderCamp, attackerCamp));
+        battle.setRangedAttackers(rangedAttackers != null ? rangedAttackers : List.of());
+        battle.setRangedDefenders(rangedDefenders != null ? rangedDefenders : List.of());
         markDefenseHalved(battle, transitEntityIds, attackerFighters);
         markDefenseHalved(battle, transitEntityIds, defenderFighters);
         battle.classicCombatConfiguration(attackerCamp.getFirst(), defenderCamp.getFirst(),
@@ -179,26 +198,43 @@ public class CombatService {
                 winner != null ? winner.getName() : "aucun");
 
         appendResultLog(battle,
-                List.of(new ResultCamp(campLabel(attackerCamp), attackerFighters,
+                List.of(new ResultCamp(campLabel(attackerCamp), attackerCamp, attackerFighters,
                                 filteredDetails(casualtyDetails, attackerIds),
                                 filteredGains(experienceGains, attackerIds)),
-                        new ResultCamp(campLabel(defenderCamp), defenderFighters,
+                        new ResultCamp(campLabel(defenderCamp), defenderCamp, defenderFighters,
                                 filteredDetails(casualtyDetails, defenderIds),
                                 filteredGains(experienceGains, defenderIds))),
                 capturedBuildings, defenderHeadquartersCaptured);
 
+        List<BattleHighlightDto> highlights = BattleHighlights.build(forces, casualtyDetails, experienceGains,
+                winner != null ? winner.getName() : null, defenderHeadquartersCaptured, capturedBuildings,
+                List.copyOf(battle.getLog()));
+
         return new SectorBattleResult(true, "Bataille terminée au secteur " + sectorNumber,
                 attackerCasualties, defenderCasualties, attackerInjured, defenderInjured, winner,
                 capturedBuildings, attackerCharacterLost, defenderCharacterLost, defenderHeadquartersCaptured,
-                casualtyDetails, experienceGains, List.copyOf(battle.getLog()));
+                casualtyDetails, experienceGains, List.copyOf(battle.getLog()), forces, highlights);
     }
 
     /** L'unique camp avec des combattants hors bâtiments l'emporte et capture les bâtiments des autres. */
     public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber) {
-        return simulateSectorStandoff(playerCamps, board, sectorNumber, Set.of());
+        return simulateSectorStandoff(playerCamps, board, sectorNumber, Map.of(), Set.of(), Set.of());
     }
 
     public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber,
+                                                       Map<Integer, List<Unit>> rangedByCamp) {
+        return simulateSectorStandoff(playerCamps, board, sectorNumber, rangedByCamp, Set.of(), Set.of());
+    }
+
+    public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber,
+                                                       Map<Integer, List<Unit>> rangedByCamp,
+                                                       Set<Integer> rangedOnlyCamps) {
+        return simulateSectorStandoff(playerCamps, board, sectorNumber, rangedByCamp, rangedOnlyCamps, Set.of());
+    }
+
+    public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber,
+                                                       Map<Integer, List<Unit>> rangedByCamp,
+                                                       Set<Integer> rangedOnlyCamps,
                                                        Set<Long> transitEntityIds) {
         if (playerCamps == null || playerCamps.size() < 3 || board == null) {
             return failedStandoff("Paramètres invalides");
@@ -210,13 +246,29 @@ public class CombatService {
 
         List<List<Player>> activeCamps = new ArrayList<>();
         List<List<CombatEntity>> camps = new ArrayList<>();
-        for (List<Player> camp : playerCamps) {
+        Map<Integer, List<Unit>> activeRangedByCamp = new HashMap<>();
+        Set<Integer> activeRangedOnlyCamps = new HashSet<>();
+        Map<Integer, List<CombatEntity>> rangedOnlyBefore = new LinkedHashMap<>();
+        for (int i = 0; i < playerCamps.size(); i++) {
+            List<Player> camp = playerCamps.get(i);
             camp.forEach(player -> playerStatsService.updateCombatStats(player, board));
-            List<CombatEntity> fighters = collectBattleParticipants(sector, idsOf(camp));
-            if (!fighters.isEmpty()) {
-                activeCamps.add(camp);
-                camps.add(fighters);
+            boolean rangedOnly = rangedOnlyCamps != null && rangedOnlyCamps.contains(i);
+            List<CombatEntity> fighters = rangedOnly
+                    ? new ArrayList<>(rangedByCamp != null
+                            ? rangedByCamp.getOrDefault(i, List.of()) : List.of())
+                    : collectBattleParticipants(sector, idsOf(camp));
+            if (fighters.isEmpty()) {
+                continue;
             }
+            if (rangedOnly) {
+                activeRangedOnlyCamps.add(activeCamps.size());
+                rangedOnlyBefore.put(activeCamps.size(), new ArrayList<>(fighters));
+            }
+            if (rangedByCamp != null && rangedByCamp.containsKey(i)) {
+                activeRangedByCamp.put(activeCamps.size(), rangedByCamp.get(i));
+            }
+            activeCamps.add(camp);
+            camps.add(fighters);
         }
         if (activeCamps.size() < 3) {
             return failedStandoff("Impasse incomplète au secteur " + sectorNumber
@@ -230,7 +282,24 @@ public class CombatService {
         List<List<Long>> campIds = activeCamps.stream()
                 .map(camp -> camp.stream().map(Player::getId).toList())
                 .toList();
-        int[] targets = AllianceGraph.campTargets(campIds, allianceGraph.activeAdjacency());
+        int[] targets = AllianceGraph.campTargets(campIds, allianceGraph.activeAdjacency(board.getId()));
+        for (int i = 0; i < activeCamps.size(); i++) {
+            int targetIndex = targets[i];
+            if (targetIndex < 0 || !activeRangedOnlyCamps.contains(targetIndex)) {
+                continue;
+            }
+            List<Unit> ownSnipers = camps.get(i).stream()
+                    .filter(Unit.class::isInstance)
+                    .map(Unit.class::cast)
+                    .filter(Unit::isSniper)
+                    .toList();
+            if (ownSnipers.isEmpty()) {
+                continue;
+            }
+            List<Unit> merged = new ArrayList<>(activeRangedByCamp.getOrDefault(i, List.of()));
+            ownSnipers.stream().filter(sniper -> !merged.contains(sniper)).forEach(merged::add);
+            activeRangedByCamp.put(i, merged);
+        }
         double[] bonuses = new double[activeCamps.size()];
         for (int i = 0; i < activeCamps.size(); i++) {
             if (targets[i] >= 0) {
@@ -238,7 +307,16 @@ public class CombatService {
             }
         }
 
+        List<BattleReportDto.PlayerForceDto> forces = new ArrayList<>();
+        for (int i = 0; i < activeCamps.size(); i++) {
+            forces.addAll(BattleForcesBuilder.build(activeCamps.get(i), camps.get(i), "CAMP_" + (i + 1)));
+        }
+
         Battle battle = new Battle();
+        battle.setRandomSource(randomSource);
+        battle.setParticipantNames(namesById(activeCamps.stream().flatMap(Collection::stream).toList()));
+        battle.setRangedByCamp(activeRangedByCamp);
+        battle.setRangedOnlyCamps(activeRangedOnlyCamps);
         camps.forEach(camp -> markDefenseHalved(battle, transitEntityIds, camp));
         battle.classicStandoffConfiguration(activeCamps.stream().map(List::getFirst).toList(), camps, targets, bonuses);
         camps.forEach(camp -> recordCombatParticipation(turn, camp));
@@ -250,8 +328,9 @@ public class CombatService {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toMap(Player::getId, player -> player, (a, b) -> a));
         Map<Long, Boolean> characterLost = new HashMap<>();
-        List<CombatEntity> casualties =
-                removeCasualties(sector, beforeIds, survivorIds, playersById, characterLost, turn);
+        List<CombatEntity> casualties = new ArrayList<>(
+                removeCasualties(sector, beforeIds, survivorIds, playersById, characterLost, turn));
+        applyRangedOnlyCasualties(rangedOnlyBefore, camps, playersById, characterLost, casualties, turn);
 
         for (List<CombatEntity> camp : camps) {
             for (CombatEntity entity : camp) {
@@ -292,6 +371,7 @@ public class CombatService {
         List<StandoffBattleResult.PlayerOutcome> outcomes = new ArrayList<>();
         for (int i = 0; i < activeCamps.size(); i++) {
             List<CombatEntity> camp = camps.get(i);
+            boolean rangedOnly = activeRangedOnlyCamps.contains(i);
             for (Player player : activeCamps.get(i)) {
                 List<CombatEntity> playerFighters = camp.stream()
                         .filter(e -> player.getId().equals(e.getPlayerId()))
@@ -301,7 +381,8 @@ public class CombatService {
                         (int) casualties.stream().filter(e -> player.getId().equals(e.getPlayerId())).count(),
                         (int) playerFighters.stream().filter(CombatEntity::isInjured).count(),
                         characterLost.getOrDefault(player.getId(), false),
-                        playerFighters.stream().noneMatch(e -> e.getEntityCategory() != EntityCategory.BUILDING)));
+                        !rangedOnly && playerFighters.stream()
+                                .noneMatch(e -> e.getEntityCategory() != EntityCategory.BUILDING)));
             }
         }
 
@@ -312,15 +393,49 @@ public class CombatService {
         List<ResultCamp> resultCamps = new ArrayList<>();
         for (int i = 0; i < activeCamps.size(); i++) {
             Set<Long> campPlayerIds = new HashSet<>(campIds.get(i));
-            resultCamps.add(new ResultCamp(campLabel(activeCamps.get(i)), camps.get(i),
+            resultCamps.add(new ResultCamp(campLabel(activeCamps.get(i)), activeCamps.get(i), camps.get(i),
                     filteredDetails(casualtyDetails, campPlayerIds),
                     filteredGains(experienceGains, campPlayerIds)));
         }
         appendResultLog(battle, resultCamps, capturedBuildings,
                 capture != null && capture.headquartersCaptured());
 
+        List<BattleHighlightDto> highlights = BattleHighlights.build(forces, casualtyDetails, experienceGains,
+                winner != null ? winner.getName() : null, capture != null && capture.headquartersCaptured(),
+                capturedBuildings, List.copyOf(battle.getLog()));
+
         return new StandoffBattleResult(true, "Impasse mexicaine terminée au secteur " + sectorNumber,
-                winner, capturedBuildings, outcomes, casualtyDetails, experienceGains, List.copyOf(battle.getLog()));
+                winner, capturedBuildings, outcomes, casualtyDetails, experienceGains, List.copyOf(battle.getLog()),
+                forces, highlights);
+    }
+
+    /** Retire les snipers des camps à distance de leur secteur d'origine (ils ne sont pas dans le secteur combattu). */
+    private void applyRangedOnlyCasualties(Map<Integer, List<CombatEntity>> rangedOnlyBefore,
+                                           List<List<CombatEntity>> camps,
+                                           Map<Long, Player> playersById,
+                                           Map<Long, Boolean> characterLost,
+                                           List<CombatEntity> casualties, int turn) {
+        Set<Long> afterIds = camps.stream()
+                .flatMap(Collection::stream)
+                .map(CombatEntity::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Sector, Set<Long>> beforeBySector = new LinkedHashMap<>();
+        for (List<CombatEntity> before : rangedOnlyBefore.values()) {
+            for (CombatEntity entity : before) {
+                Sector home = entity.getSector();
+                if (home == null || entity.getId() == null) {
+                    continue;
+                }
+                beforeBySector.computeIfAbsent(home, key -> new HashSet<>()).add(entity.getId());
+            }
+        }
+        for (Map.Entry<Sector, Set<Long>> entry : beforeBySector.entrySet()) {
+            List<CombatEntity> lost = removeCasualties(entry.getKey(), entry.getValue(), afterIds,
+                    playersById, characterLost, turn);
+            casualties.addAll(lost);
+            entry.getKey().recalculateMilitaryPower();
+        }
     }
 
     /** Bonus de trahison : actif si un membre du camp est le traître et un membre du camp adverse sa victime. */
@@ -328,7 +443,7 @@ public class CombatService {
         double best = 0;
         for (Player striker : strikers) {
             for (Player target : targets) {
-                best = Math.max(best, allianceGraph.betrayalBonusPercent(turn, striker.getId(), target.getId()));
+                best = Math.max(best, allianceGraph.betrayalBonusPercent(striker.getBoardId(), turn, striker.getId(), target.getId()));
             }
         }
         return best;
@@ -356,12 +471,16 @@ public class CombatService {
         return camp.stream().map(Player::getName).collect(Collectors.joining(" + "));
     }
 
+    private static Map<Long, String> namesById(Collection<Player> players) {
+        return players.stream().collect(Collectors.toMap(Player::getId, Player::getName, (a, b) -> a));
+    }
+
     private static Set<Long> idsOf(Collection<Player> camp) {
         return camp.stream().map(Player::getId).collect(Collectors.toSet());
     }
 
     /** Retire du secteur les entités engagées absentes des survivants, en gérant les FK et les flags par joueur. */
-    private List<CombatEntity> removeCasualties(Sector sector, Set<Long> beforeIds, Set<Long> survivorIds,
+    List<CombatEntity> removeCasualties(Sector sector, Set<Long> beforeIds, Set<Long> survivorIds,
                                                 Map<Long, Player> playersById,
                                                 Map<Long, Boolean> characterLost, int turn) {
         List<CombatEntity> casualties = new ArrayList<>();
@@ -424,18 +543,18 @@ public class CombatService {
             }
         }
 
-        recordCasualties(casualties);
+        recordCasualties(sector.getBoard().getId(), casualties);
         return casualties;
     }
 
-    private void recordCasualties(List<CombatEntity> casualties) {
+    private void recordCasualties(Long boardId, List<CombatEntity> casualties) {
         for (CombatEntity casualty : casualties) {
             if (casualty instanceof Unit unit) {
-                gameStatisticsService.recordUnitKill(unit.getType());
+                gameStatisticsService.recordUnitKill(boardId, unit.getType());
             } else if (casualty instanceof GameCharacter) {
-                gameStatisticsService.recordCharacterKill();
+                gameStatisticsService.recordCharacterKill(boardId);
             } else if (casualty instanceof Vehicle vehicle) {
-                gameStatisticsService.recordVehicleKill(vehicle.getVehicleType());
+                gameStatisticsService.recordVehicleKill(boardId, vehicle.getVehicleType());
             }
         }
     }
@@ -527,7 +646,7 @@ public class CombatService {
                 .forEach(unit -> unit.recordCombatParticipation(turn));
     }
 
-    private void regenerateAfterBattle(CombatEntity entity) {
+    void regenerateAfterBattle(CombatEntity entity) {
         if (entity.getEntityCategory() == EntityCategory.BUILDING) {
             entity.recalculateBaseStats();
         } else if (entity.getEntityCategory() == EntityCategory.CHARACTER) {
@@ -546,6 +665,9 @@ public class CombatService {
             Battle.Participation p = participation.getOrDefault(unit, Battle.Participation.NONE);
             double actions = (p.fired() ? 1 : 0) + (p.damaged() ? 0.5 : 0)
                     + (p.dodged() ? 0.5 : 0) + (p.destroyedTarget() ? 0.5 : 0);
+            if (battle.getTargetedSnipers().contains(unit)) {
+                actions = Math.max(actions, 1);
+            }
             double amount = Math.min(1.0, actions) + (enemyCharacterLost ? 1 : 0);
             if (amount <= 0) {
                 continue;
@@ -558,7 +680,7 @@ public class CombatService {
         }
     }
 
-    private CasualtyInfo toCasualtyInfo(CombatEntity entity) {
+    CasualtyInfo toCasualtyInfo(CombatEntity entity) {
         if (entity instanceof Unit unit) {
             return new CasualtyInfo(entity.getPlayerId(), unit.getDisplayName(),
                     EntityCategory.INFANTRY.name(), unit.getType(), unit.getNumber(), unit.getExperience());
@@ -571,40 +693,66 @@ public class CombatService {
                                  boolean headquartersCaptured) {
         appendResult(battle, BattleLogEntry.INFO, "=== Bilan du combat ===");
         for (ResultCamp camp : camps) {
-            String name = camp.label();
-            if (camp.survivors().isEmpty()) {
-                appendResult(battle, BattleLogEntry.LOSS, name + " : aucun survivant");
-            } else {
-                appendResult(battle, BattleLogEntry.INFO,
-                        "Survivants " + name + " (" + camp.survivors().size() + ") :");
-                for (CombatEntity survivor : camp.survivors()) {
-                    appendResult(battle, BattleLogEntry.INFO, "  " + survivor);
-                }
-            }
-            if (!camp.casualties().isEmpty()) {
-                String labels = camp.casualties().stream()
-                        .map(casualty -> casualty.label() + (casualty.experience() != null
-                                ? " (" + formatExperience(casualty.experience()) + " Exp)" : ""))
-                        .collect(Collectors.joining(", "));
-                appendResult(battle, BattleLogEntry.LOSS, "Pertes " + name + " : " + labels);
-            }
-            if (camp.casualties().stream()
-                    .anyMatch(casualty -> EntityCategory.CHARACTER.name().equals(casualty.category()))) {
-                appendResult(battle, BattleLogEntry.LOSS, "Personnage perdu : " + name);
-            }
-            for (ExperienceGain gain : camp.gains()) {
-                appendResult(battle, BattleLogEntry.GAIN,
-                        "Expérience " + name + " : " + gain.typeBefore() + " n°" + gain.unitNumber()
-                                + " " + formatExperience(gain.experienceBefore()) + " Exp + "
-                                + formatExperience(gain.gained()) + " → " + gain.typeAfter()
-                                + " (" + formatExperience(gain.experienceAfter()) + " Exp)"
-                                + participationSummary(battle, camp, gain));
+            appendResult(battle, BattleLogEntry.INFO, "Camp " + camp.label() + " : "
+                    + camp.survivors().size() + " survivant(s), " + camp.casualties().size() + " perte(s)");
+            for (Player player : camp.players()) {
+                appendPlayerResult(battle, player, camp);
             }
         }
         if (capturedBuildings > 0) {
             appendResult(battle, BattleLogEntry.INFO, capturedBuildings + " bâtiment(s) capturé(s)"
                     + (headquartersCaptured ? " — quartier général capturé" : ""));
         }
+    }
+
+    private void appendPlayerResult(Battle battle, Player player, ResultCamp camp) {
+        List<CombatEntity> survivors = camp.survivors().stream()
+                .filter(entity -> player.getId().equals(entity.getPlayerId()))
+                .toList();
+        List<CasualtyInfo> casualties = camp.casualties().stream()
+                .filter(casualty -> player.getId().equals(casualty.playerId()))
+                .toList();
+        List<ExperienceGain> gains = camp.gains().stream()
+                .filter(gain -> player.getId().equals(gain.playerId()))
+                .toList();
+        if (survivors.isEmpty() && casualties.isEmpty() && gains.isEmpty()) {
+            return;
+        }
+        if (survivors.isEmpty()) {
+            appendResult(battle, BattleLogEntry.LOSS, player.getName() + " : aucun survivant");
+        } else {
+            appendResult(battle, BattleLogEntry.INFO,
+                    "Survivants " + player.getName() + " (" + survivors.size() + ") :");
+            for (CombatEntity survivor : survivors) {
+                appendResult(battle, BattleLogEntry.INFO, "  " + survivorLabel(survivor));
+            }
+        }
+        if (!casualties.isEmpty()) {
+            String labels = casualties.stream()
+                    .map(casualty -> casualty.label() + (casualty.experience() != null
+                            ? " (" + formatExperience(casualty.experience()) + " Exp)" : ""))
+                    .collect(Collectors.joining(", "));
+            appendResult(battle, BattleLogEntry.LOSS, "Pertes " + player.getName() + " : " + labels);
+        }
+        if (casualties.stream()
+                .anyMatch(casualty -> EntityCategory.CHARACTER.name().equals(casualty.category()))) {
+            appendResult(battle, BattleLogEntry.LOSS, "Personnage perdu : " + player.getName());
+        }
+        for (ExperienceGain gain : gains) {
+            appendResult(battle, BattleLogEntry.GAIN,
+                    "Expérience " + player.getName() + " : " + gain.typeBefore() + " n°" + gain.unitNumber()
+                            + " " + formatExperience(gain.experienceBefore()) + " Exp + "
+                            + formatExperience(gain.gained()) + " → " + gain.typeAfter()
+                            + " (" + formatExperience(gain.experienceAfter()) + " Exp)"
+                            + participationSummary(battle, camp, gain));
+        }
+    }
+
+    private static String survivorLabel(CombatEntity entity) {
+        if (entity instanceof Unit unit) {
+            return unit.getDisplayName() + " (" + formatExperience(unit.getExperience()) + " Exp)";
+        }
+        return entity.getDisplayName();
     }
 
     private void appendResult(Battle battle, String outcome, String message) {
@@ -645,7 +793,7 @@ public class CombatService {
                 : String.format("%.1f", value);
     }
 
-    private record ResultCamp(String label, List<CombatEntity> survivors,
+    private record ResultCamp(String label, List<Player> players, List<CombatEntity> survivors,
                               List<CasualtyInfo> casualties, List<ExperienceGain> gains) {
     }
 
@@ -692,11 +840,12 @@ public class CombatService {
 
     private SectorBattleResult failedResult(String message) {
         return new SectorBattleResult(false, message, List.of(), List.of(), List.of(), List.of(), null,
-                0, false, false, false, List.of(), List.of(), List.of());
+                0, false, false, false, List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     private StandoffBattleResult failedStandoff(String message) {
-        return new StandoffBattleResult(false, message, null, 0, List.of(), List.of(), List.of(), List.of());
+        return new StandoffBattleResult(false, message, null, 0, List.of(), List.of(), List.of(), List.of(),
+                List.of(), List.of());
     }
 
     public record SectorBattleResult(boolean success, String message, List<CombatEntity> attackerCasualties,
@@ -705,12 +854,16 @@ public class CombatService {
                                      boolean attackerCharacterLost, boolean defenderCharacterLost,
                                      boolean defenderHeadquartersCaptured,
                                      List<CasualtyInfo> casualtyDetails, List<ExperienceGain> experienceGains,
-                                     List<BattleLogEntry> battleLog) {
+                                     List<BattleLogEntry> battleLog,
+                                     List<BattleReportDto.PlayerForceDto> forces,
+                                     List<BattleHighlightDto> highlights) {
     }
 
     public record StandoffBattleResult(boolean success, String message, Player winner, int capturedBuildings,
                                        List<PlayerOutcome> outcomes, List<CasualtyInfo> casualtyDetails,
-                                       List<ExperienceGain> experienceGains, List<BattleLogEntry> battleLog) {
+                                       List<ExperienceGain> experienceGains, List<BattleLogEntry> battleLog,
+                                       List<BattleReportDto.PlayerForceDto> forces,
+                                       List<BattleHighlightDto> highlights) {
 
         public record PlayerOutcome(Long playerId, int casualties, int injured, boolean characterLost,
                                     boolean eliminated) {

@@ -3,6 +3,8 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.AdminAuditEntryDto;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,11 +35,18 @@ class AdminAuditServiceTest {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private BoardRepository boardRepository;
+
     private Player player;
+
+    private Long boardId() {
+        return DemoFixtures.mainBoardId(boardRepository);
+    }
 
     @BeforeEach
     void setUp() {
-        player = playerRepository.findByName("lurio")
+        player = playerRepository.findByBoardIdAndName(boardId(), "lurio")
                 .orElseThrow(() -> new IllegalStateException("Fixture lurio absente"));
     }
 
@@ -46,7 +55,7 @@ class AdminAuditServiceTest {
     void mutationRecordsAuditEntry() {
         editService.setMoney(player.getId(), 1234.5);
 
-        Page<AdminAuditEntryDto> history = auditService.getHistory(
+        Page<AdminAuditEntryDto> history = auditService.getHistory(player.getBoardId(),
                 player.getId(), PageRequest.of(0, 10));
 
         assertEquals(1, history.getTotalElements());
@@ -64,7 +73,7 @@ class AdminAuditServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> editService.removeResource(player.getId(), "Caisse d'armes", 100_000));
 
-        Page<AdminAuditEntryDto> history = auditService.getHistory(
+        Page<AdminAuditEntryDto> history = auditService.getHistory(player.getBoardId(),
                 player.getId(), PageRequest.of(0, 10));
 
         assertEquals(0, history.getTotalElements());
@@ -77,14 +86,15 @@ class AdminAuditServiceTest {
             editService.setMoney(player.getId(), i);
         }
 
-        Page<AdminAuditEntryDto> first = auditService.getHistory(
+        Page<AdminAuditEntryDto> first = auditService.getHistory(player.getBoardId(),
                 player.getId(), PageRequest.of(0, 10));
-        Page<AdminAuditEntryDto> second = auditService.getHistory(
+        Page<AdminAuditEntryDto> second = auditService.getHistory(player.getBoardId(),
                 player.getId(), PageRequest.of(1, 10));
 
         assertEquals(25, first.getTotalElements());
         assertEquals(10, first.getContent().size());
         assertEquals(10, second.getContent().size());
-        assertEquals(25, auditService.getHistory(null, PageRequest.of(0, 100)).getTotalElements());
+        assertEquals(25, auditService.getHistory(player.getBoardId(), null, PageRequest.of(0, 100))
+                .getTotalElements());
     }
 }

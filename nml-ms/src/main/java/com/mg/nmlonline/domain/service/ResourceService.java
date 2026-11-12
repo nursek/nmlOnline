@@ -5,6 +5,7 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import jakarta.persistence.EntityNotFoundException;
 import com.mg.nmlonline.infrastructure.repository.PlayerResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
 import org.springframework.stereotype.Service;
@@ -79,14 +80,14 @@ public class ResourceService {
     }
 
     @Transactional
-    public SaleResult sellResource(Long resourceId, int quantity, Long userId) {
+    public SaleResult sellResource(Long resourceId, int quantity, Long userId, Long boardId) {
         if (quantity < 1 || quantity > SALE_MULTIPLIERS.length) {
             throw new IllegalArgumentException(
                     "La quantité à vendre doit être comprise entre 1 et " + SALE_MULTIPLIERS.length);
         }
 
-        Player player = playerRepository.findByUserIdForUpdate(userId)
-                .orElseThrow(() -> new RuntimeException("Joueur introuvable : " + userId));
+        Player player = playerRepository.findByUserIdAndBoardIdForUpdate(userId, boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable : " + userId));
 
         PlayerResource playerResource = playerResourceRepository.findById(resourceId)
                 .orElseThrow(() -> new RuntimeException("Resource not found"));
@@ -127,14 +128,14 @@ public class ResourceService {
     }
 
     @Transactional
-    public List<SaleResult> sellResourcesBatch(Long userId, List<SellResourceBatchItemDto> items) {
+    public List<SaleResult> sellResourcesBatch(Long userId, Long boardId, List<SellResourceBatchItemDto> items) {
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("Le panier de vente est vide");
         }
 
         List<SaleResult> results = new ArrayList<>();
         for (SellResourceBatchItemDto item : items) {
-            results.add(sellResource(item.getPlayerResourceId(), item.getQuantity(), userId));
+            results.add(sellResource(item.getPlayerResourceId(), item.getQuantity(), userId, boardId));
         }
 
         return results;

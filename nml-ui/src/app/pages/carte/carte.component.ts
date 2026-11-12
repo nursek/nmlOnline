@@ -34,6 +34,7 @@ import { characterStats } from '../../core/stats';
 import { VehicleImageService } from '../../core/vehicle-image.service';
 import type { OptimizedImage } from '../../core/optimized-image';
 import { ActiveBoardService } from '../../services/active-board.service';
+import { InstanceService } from '../../services/instance.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
@@ -118,6 +119,7 @@ export class CarteComponent {
   readonly overlayOffsetX = MAP_THEME.overlay.offsetX;
 
   private readonly activeBoard = inject(ActiveBoardService);
+  private readonly instances = inject(InstanceService);
   private readonly playerDirectory = inject(PlayerDirectoryService);
   private readonly allianceState = inject(AllianceStateService);
   private readonly auth = inject(AuthService);
@@ -840,6 +842,7 @@ export class CarteComponent {
           // Le détail ouvert porte l'ancienne géométrie du secteur.
           this.selectedSector.set(null);
           this.activeBoard.reload();
+          void this.instances.refresh().catch(() => undefined);
         } catch (error) {
           this.snackBar.open(
             httpErrorMessage(error, "Erreur lors de l'import du board"),

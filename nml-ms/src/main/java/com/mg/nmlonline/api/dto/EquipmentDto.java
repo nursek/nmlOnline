@@ -23,4 +23,6 @@ public class EquipmentDto {
     private String category;
     private Map<String, String> displayNames;
     private Map<String, String> displayDescriptions;
+    private double aimMalusReduction;
+    private double enemyAimMalus;
 }

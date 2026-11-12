@@ -1,7 +1,9 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.AdminAuditEntryDto;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.AdminAuditService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,10 +26,12 @@ public class AdminAuditController {
     @GetMapping
     public Page<AdminAuditEntryDto> getHistory(
             @RequestParam(required = false) Long playerId,
+            HttpServletRequest request,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         int safeSize = Math.min(Math.max(size, 1), 100);
-        return adminAuditService.getHistory(playerId,
+        return adminAuditService.getHistory(
+                (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE), playerId,
                 PageRequest.of(Math.max(page, 0), safeSize));
     }
 }

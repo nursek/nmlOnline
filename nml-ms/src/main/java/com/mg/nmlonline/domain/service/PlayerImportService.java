@@ -71,8 +71,9 @@ public class PlayerImportService {
     }
 
     /** Joueur sans équipements : ajouter via importEquipments après persistance, secteurs via importSectors. */
-    public Player importPlayer(PlayerDTO dto) {
+    public Player importPlayer(PlayerDTO dto, Long boardId) {
         Player player = new Player(dto.name);
+        player.setBoardId(boardId);
         player.getStats().setMoney(dto.money);
         player.initializeStartingMoney();
         if (dto.race != null && !dto.race.isBlank()) {

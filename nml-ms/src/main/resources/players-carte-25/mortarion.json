@@ -1,0 +1,12 @@
+{
+  "name": "mortarion",
+  "race": "ORKS",
+  "money": 30000,
+  "sectors": [
+    { "sectorNumber": 3 },
+    { "sectorNumber": 4 }
+  ],
+  "buildings": [
+    { "type": "HEADQUARTERS", "sectorNumber": 3 }
+  ]
+}

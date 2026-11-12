@@ -12,6 +12,7 @@ export interface CombatScenarioInfo {
   arenaSector: number;
   stagingSector: number;
   eliminatesPlayer: boolean;
+  standalone: boolean;
 }
 
 export interface ScenarioUnit {

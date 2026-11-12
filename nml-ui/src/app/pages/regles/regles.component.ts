@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, viewChild, viewChildren } from '@an
 import { MatButtonModule } from '@angular/material/button';
 import { MatAccordion, MatExpansionModule, MatExpansionPanel } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
+import { RouterLink } from '@angular/router';
 import { unitClassLabel } from '../../core/labels';
 import { SALE_MAX_QUANTITY, SALE_MULTIPLIERS, saleValue } from '../../core/sale-multiplier';
 
@@ -79,7 +80,7 @@ function formatNombre(valeur: number): string {
 @Component({
   selector: 'app-regles',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatExpansionModule, MatIconModule],
+  imports: [MatButtonModule, MatExpansionModule, MatIconModule, RouterLink],
   templateUrl: './regles.component.html',
   styleUrls: ['./regles.component.scss'],
 })
@@ -202,10 +203,17 @@ export class ReglesComponent {
     },
     {
       nom: unitClassLabel('TIREUR'),
-      effet: 'Critique défini (10 %, dégâts ×1,5) mais jamais appliqué en combat.',
-      actif: false,
+      effet:
+        'À chaque phase de tir (PdF, PdC, ATK), 10 % de chances de voir ses dégâts multipliés par 1,5 pour la phase.',
+      actif: true,
     },
-    { nom: unitClassLabel('SNIPER'), effet: 'Aucun effet de combat implémenté.', actif: false },
+    {
+      nom: unitClassLabel('SNIPER'),
+      effet:
+        'Combat à distance : un seul jet de HIT, tir de soutien pendant un combat au sol, ' +
+        'tir isolé hors combat et contre-tir.',
+      actif: true,
+    },
     {
       nom: unitClassLabel('PILOTE_DESTRUCTEUR'),
       effet:

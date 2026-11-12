@@ -6,9 +6,11 @@ import {
   LoginRequest,
   Player,
   MovementOrder,
+  SniperOrder,
   MovementResolutionResult,
   TurnResolutionState,
   TurnFinalizeResult,
+  TurnExport,
   ResolvedBattle,
   ScenarioSummary,
   CombatScenarioInfo,
@@ -32,7 +34,6 @@ import {
   AllianceMe,
   AllianceProposal,
   ProposalKind,
-  AllianceMessage,
   Announcement,
   PendingCapture,
   AdminAuditEntry,
@@ -382,6 +383,10 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/admin/turn/resolve`);
   }
 
+  adminGetTurnJournal(turn: number): Observable<TurnExport> {
+    return this.http.get<TurnExport>(`${this.baseUrl}/admin/turn-journals/${turn}`);
+  }
+
   // Scénario de test pas-à-pas (dev uniquement). En prod, le contrôleur
   // @Profile("dev") n'est pas enregistré → ces endpoints renvoient 404 (probe
   // servant à cacher le bouton UI côté frontend).
@@ -525,6 +530,20 @@ export class ApiService {
     return this.http.delete<void>(`${this.baseUrl}/units/movement/${orderId}`);
   }
 
+  placeSniperOrder(unitId: number, targetSectorNumber: number): Observable<SniperOrder> {
+    return this.http.post<SniperOrder>(`${this.baseUrl}/units/${unitId}/sniper-orders`, {
+      targetSectorNumber,
+    });
+  }
+
+  getPlayerSniperOrders(): Observable<SniperOrder[]> {
+    return this.http.get<SniperOrder[]>(`${this.baseUrl}/units/sniper-orders`);
+  }
+
+  cancelSniperOrder(orderId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/units/sniper-orders/${orderId}`);
+  }
+
   getPlayerActions(): Observable<PlayerAction[]> {
     return this.http.get<PlayerAction[]>(`${this.baseUrl}/players/actions`);
   }
@@ -615,16 +634,6 @@ export class ApiService {
 
   betrayAlliance(allianceId: number): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/alliances/${allianceId}/betray`, {});
-  }
-
-  getAllianceMessages(allianceId: number): Observable<AllianceMessage[]> {
-    return this.http.get<AllianceMessage[]>(`${this.baseUrl}/alliances/${allianceId}/messages`);
-  }
-
-  postAllianceMessage(allianceId: number, body: string): Observable<AllianceMessage> {
-    return this.http.post<AllianceMessage>(`${this.baseUrl}/alliances/${allianceId}/messages`, {
-      body,
-    });
   }
 
   getAnnouncements(): Observable<Announcement[]> {

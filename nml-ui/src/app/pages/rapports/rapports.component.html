@@ -25,19 +25,115 @@
           <mat-panel-title>
             <span class="sector">Secteur {{ report.sectorNumber }}</span>
             <span class="turn">Tour {{ report.turn }}</span>
-            @if (report.standoff) {
-              <span class="standoff-badge">Impasse mexicaine</span>
-            }
+            <span class="kind-badge">{{ kindLabel(report.kind) }}</span>
           </mat-panel-title>
           <mat-panel-description>
             @if (report.winnerName) {
               Victoire de {{ report.winnerName }}
+            } @else if (report.ranged) {
+              Tir à distance
             } @else {
               Aucun vainqueur
             }
           </mat-panel-description>
         </mat-expansion-panel-header>
 
+        <div class="outcome" [class.none]="!report.winnerName && report.kind !== 'TIR'">
+          @if (report.kind === 'TIR') {
+            <mat-icon>my_location</mat-icon>
+            <span>Tir à distance</span>
+            @if (report.rangedFire) {
+              <span class="outcome-detail">{{ report.rangedFire }}</span>
+            }
+          } @else {
+            <mat-icon>{{ report.winnerName ? 'emoji_events' : 'remove_circle_outline' }}</mat-icon>
+            <span>{{ report.winnerName ? 'Vainqueur : ' + report.winnerName : 'Aucun vainqueur' }}</span>
+          }
+          @if (report.capturedBuildings > 0) {
+            <span class="outcome-detail">{{ report.capturedBuildings }} bâtiment(s) capturé(s)</span>
+          }
+        </div>
+
+        @if (report.highlights?.length) {
+          <h3>Points clés</h3>
+          <ul class="highlight-list">
+            @for (highlight of report.highlights; track $index) {
+              <li [class]="'highlight ' + highlightTone(highlight.kind)">
+                <mat-icon>{{ highlightIcon(highlight.kind) }}</mat-icon>
+                <span>{{ highlight.message }}</span>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (report.forces?.length) {
+          <h3>Forces en présence</h3>
+          <div class="forces">
+            @for (force of report.forces; track force.playerId) {
+              <article class="force">
+                <header>
+                  <span class="force-name">{{ force.playerName ?? '#' + force.playerId }}</span>
+                  <span class="side">{{ sideLabel(force.side) }}</span>
+                </header>
+                @if (force.characters.length) {
+                  <div class="force-group">
+                    <span class="group-label">Personnages</span>
+                    @for (character of force.characters; track $index) {
+                      <span class="unit" [class.injured]="character.injured">
+                        {{ character.displayName }}
+                        @if (character.injured) {
+                          <em>blessé</em>
+                        }
+                      </span>
+                    }
+                  </div>
+                }
+                @if (force.vehicles.length) {
+                  <div class="force-group">
+                    <span class="group-label">Véhicules</span>
+                    @for (vehicle of force.vehicles; track $index) {
+                      <span class="unit">
+                        {{ vehicle.displayName }}
+                        @if (vehicle.aerial) {
+                          <em>aérien</em>
+                        }
+                        @if (vehicle.crew.length) {
+                          <small>équipage : {{ crewNames(vehicle.crew) }}</small>
+                        }
+                      </span>
+                    }
+                  </div>
+                }
+                @if (force.infantry.length) {
+                  <div class="force-group">
+                    <span class="group-label">Infanterie</span>
+                    @for (unit of force.infantry; track $index) {
+                      <span class="unit" [class.injured]="unit.injured">
+                        {{ unit.displayName }}
+                        @if (unit.experience !== null) {
+                          <small>{{ unit.experience | exp }} Exp</small>
+                        }
+                        @if (unit.injured) {
+                          <em>blessé</em>
+                        }
+                      </span>
+                    }
+                  </div>
+                }
+                @if (force.buildings.length) {
+                  <div class="force-group">
+                    <span class="group-label">Bâtiments</span>
+                    @for (building of force.buildings; track $index) {
+                      <span class="unit">{{ building.displayName }}</span>
+                    }
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        }
+
+        <h3>Camps</h3>
         <div class="camps">
           @for (camp of report.camps; track camp.playerId) {
             <span class="camp" [class.eliminated]="camp.eliminated">
@@ -71,10 +167,6 @@
           </ul>
         } @else {
           <p class="none">Aucune perte.</p>
-        }
-
-        @if (report.capturedBuildings > 0) {
-          <p class="capture">{{ report.capturedBuildings }} bâtiment(s) capturé(s).</p>
         }
 
         <h3>Expérience gagnée</h3>

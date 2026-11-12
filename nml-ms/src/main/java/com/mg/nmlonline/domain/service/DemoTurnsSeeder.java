@@ -45,6 +45,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 public class DemoTurnsSeeder {
 
+    // Scénario scripté pour la carte de démo principale uniquement.
+    private static final String DEMO_BOARD_NAME = "Carte Principale";
     private static final int FIRST_DEMO_TURN = 1;
     private static final int SALE_BATCH_MAX = 9;
     private static final int MIN_SALE_QUANTITY = 5;
@@ -176,15 +178,21 @@ public class DemoTurnsSeeder {
         this.txTemplate = new TransactionTemplate(txManager);
     }
 
-    public ScenarioSummaryDto playDemoTurns() {
-        int turn = turnService.getCurrentTurn();
+    public ScenarioSummaryDto playDemoTurns(Long boardId) {
+        Board board = requireBoard();
+        if (!board.getId().equals(boardId)) {
+            throw new IllegalArgumentException("La démo scriptée se joue sur « " + DEMO_BOARD_NAME
+                    + " » (X-Board-Id=" + board.getId() + "), pas sur la partie sélectionnée.");
+        }
+        int turn = board.getCurrentTurn();
         // Le journal d'actions est la marque d'une partie déjà jouée : la navigation dev vers le tour 1 le laisse intact.
-        if (turn != FIRST_DEMO_TURN || playerActionRepository.count() > 0) {
+        long existingActions = playerActionRepository.countByBoardId(board.getId());
+        if (turn != FIRST_DEMO_TURN || existingActions > 0) {
             throw new IllegalStateException("La démo se joue une fois, depuis une partie vierge (tour courant : "
-                    + turn + ", actions existantes : " + playerActionRepository.count()
+                    + turn + ", actions existantes : " + existingActions
                     + "). En dev, redémarrez le backend : la base repart vierge avec l'import démo.");
         }
-        if (turnLock.isLocked()) {
+        if (turnLock.isLocked(board.getId())) {
             throw new IllegalStateException(
                     "Une résolution est en cours — finalisez-la ou abandonnez-la avant de jouer la démo.");
         }
@@ -234,32 +242,33 @@ public class DemoTurnsSeeder {
     }
 
     private TurnFinalizeResultDto resolveTurn(List<String> log) {
+        Long boardId = requireBoard().getId();
         try {
-            TurnResolutionStateDto state = orchestrator.startSession();
+            TurnResolutionStateDto state = orchestrator.startSession(boardId);
             while (!state.isCanFinalize()) {
                 if (!state.getPendingEliminations().isEmpty()) {
                     for (PendingEliminationDto pending : state.getPendingEliminations()) {
                         Long killerId = pending.getParticipants().isEmpty() ? null
                                 : pending.getParticipants().getFirst().getPlayerId();
-                        state = orchestrator.resolveElimination(pending.getVictimPlayerId(), killerId);
+                        state = orchestrator.resolveElimination(boardId, pending.getVictimPlayerId(), killerId);
                     }
                     continue;
                 }
                 if (state.getPendingConflicts().isEmpty()) {
-                    state = orchestrator.advanceHop();
+                    state = orchestrator.advanceHop(boardId);
                     continue;
                 }
                 PendingConflictDto conflict = state.getPendingConflicts().getFirst();
-                ResolvedBattleDto battle = orchestrator.resolveBattle(conflict.getConflictId());
+                ResolvedBattleDto battle = orchestrator.resolveBattle(boardId, conflict.getConflictId());
                 log.add("Secteur " + battle.getSectorNumber() + " : "
                         + (battle.getWinnerName() != null ? battle.getWinnerName() + " l'emporte" : "aucun vainqueur")
                         + (battle.isStandoff() ? " (impasse)" : "") + ".");
-                state = orchestrator.getState();
+                state = orchestrator.getState(boardId);
             }
-            return orchestrator.finalizeTurn();
+            return orchestrator.finalizeTurn(boardId);
         } catch (RuntimeException e) {
             // Sans abort, une session à moitié résolue garderait le verrou de tour jusqu'au prochain démarrage.
-            orchestrator.abort();
+            orchestrator.abort(boardId);
             throw e;
         }
     }
@@ -288,7 +297,7 @@ public class DemoTurnsSeeder {
         SellResourceBatchItemDto item = new SellResourceBatchItemDto();
         item.setPlayerResourceId(plan.resourceId());
         item.setQuantity(plan.quantity());
-        resourceService.sellResourcesBatch(plan.userId(), List.of(item));
+        resourceService.sellResourcesBatch(plan.userId(), requireBoard().getId(), List.of(item));
     }
 
     private void executeHarvest(String playerName, List<String> issues) {
@@ -306,7 +315,7 @@ public class DemoTurnsSeeder {
             return;
         }
         try {
-            playerActionService.harvest(plan.userId(), PlayerActionType.HARVEST_RESOURCE, plan.sectors());
+            playerActionService.harvest(plan.userId(), requireBoard().getId(), PlayerActionType.HARVEST_RESOURCE, plan.sectors());
         } catch (RuntimeException e) {
             issues.add("Récolte impossible pour " + playerName + " (" + e.getMessage() + ")");
         }
@@ -362,7 +371,7 @@ public class DemoTurnsSeeder {
         int failed = 0;
         for (EquipOrder order : plan.equips()) {
             try {
-                unitService.assignEquipment(order.unitId(), plan.userId(), order.equipmentName());
+                unitService.assignEquipment(order.unitId(), plan.userId(), order.equipmentName(), requireBoard().getId());
             } catch (RuntimeException ignored) {
                 // Emplacement pris ou exemplaire manquant : on passe à l'ordre suivant.
                 failed++;
@@ -417,7 +426,7 @@ public class DemoTurnsSeeder {
             item.setUnitClass(UnitClass.LEGER.name());
             item.setQuantity(count);
             try {
-                freshUnits.put(playerName, unitService.buyUnits(player.getUserId(), List.of(item)).stream()
+                freshUnits.put(playerName, unitService.buyUnits(player.getUserId(), List.of(item), requireBoard().getId()).stream()
                         .map(Unit::getId)
                         .toList()
                         .iterator());
@@ -470,7 +479,8 @@ public class DemoTurnsSeeder {
             return;
         }
         try {
-            unitService.placeFootOrder(plan.userId(), plan.entityIds(), List.of(move.from(), move.to()));
+            unitService.placeFootOrder(plan.userId(), plan.entityIds(), List.of(move.from(), move.to()),
+                    requireBoard().getId());
             usedEntities.addAll(plan.entityIds());
         } catch (RuntimeException e) {
             issues.add("Ordre " + move.player() + " " + move.from() + "→" + move.to() + " sauté");
@@ -504,19 +514,20 @@ public class DemoTurnsSeeder {
     private void formAlliance(String proposerName, String partnerName) {
         Player proposer = requirePlayer(proposerName);
         Player partner = requirePlayer(partnerName);
+        Long boardId = requireBoard().getId();
         Long proposalId = allianceService
-                .propose(proposer.getUserId(), ProposalKind.ALLIANCE, partner.getId())
+                .propose(proposer.getUserId(), boardId, ProposalKind.ALLIANCE, partner.getId())
                 .getId();
-        allianceService.accept(partner.getUserId(), proposalId);
+        allianceService.accept(partner.getUserId(), boardId, proposalId);
     }
 
     private Player requirePlayer(String name) {
-        return playerRepository.findByName(name).orElseThrow(() -> new IllegalStateException(
+        return playerRepository.findByBoardIdAndName(requireBoard().getId(), name).orElseThrow(() -> new IllegalStateException(
                 name + " introuvable — vérifiez l'import des données de démo"));
     }
 
     private Board requireBoard() {
-        return boardRepository.findAll().stream().findFirst()
-                .orElseThrow(() -> new IllegalStateException("Aucun plateau trouvé — importez d'abord un board"));
+        return boardRepository.findByName(DEMO_BOARD_NAME).orElseThrow(() -> new IllegalStateException(
+                "Plateau de démo « " + DEMO_BOARD_NAME + " » introuvable — import démo désactivé ?"));
     }
 }

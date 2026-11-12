@@ -27,14 +27,16 @@ public interface ExchangeOfferRepository extends JpaRepository<ExchangeOffer, Lo
     List<ExchangeOffer> findBySenderPlayerIdOrReceiverPlayerIdOrderByCreatedAtDesc(Long senderPlayerId,
                                                                                    Long receiverPlayerId);
 
-    Page<ExchangeOffer> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    Page<ExchangeOffer> findByBoardIdOrderByCreatedAtDesc(Long boardId, Pageable pageable);
 
-    Page<ExchangeOffer> findByStatusOrderByCreatedAtDesc(ExchangeOfferStatus status, Pageable pageable);
+    Page<ExchangeOffer> findByBoardIdAndStatusOrderByCreatedAtDesc(Long boardId, ExchangeOfferStatus status,
+                                                                  Pageable pageable);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE ExchangeOffer o SET o.status = :expired, o.resolvedTurn = :turn "
-            + "WHERE o.status = :pending AND o.expiresTurn <= :turn")
-    int expirePendingOffers(@Param("pending") ExchangeOfferStatus pending,
+            + "WHERE o.boardId = :boardId AND o.status = :pending AND o.expiresTurn <= :turn")
+    int expirePendingOffers(@Param("boardId") Long boardId,
+                            @Param("pending") ExchangeOfferStatus pending,
                             @Param("expired") ExchangeOfferStatus expired,
                             @Param("turn") int turn);
 }

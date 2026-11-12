@@ -11,7 +11,9 @@ import { Unit } from '../../models';
 import { characterStats } from '../../core/stats';
 import { ExpPipe } from '../../shared/exp.pipe';
 import { MovementStateService } from '../../services/movement-state.service';
+import { SniperOrderStateService } from '../../services/sniper-order-state.service';
 import { PlayerService } from '../../services/player.service';
+import { sniperActionLabel } from '../../core/labels';
 import {
   totalsStats,
   unitClassCodes,
@@ -44,12 +46,15 @@ import { groupOrders } from './ordres.helpers';
 })
 export class OrdresComponent {
   private readonly movementState = inject(MovementStateService);
+  private readonly sniperState = inject(SniperOrderStateService);
   private readonly playerService = inject(PlayerService);
   private readonly snackBar = inject(MatSnackBar);
 
   readonly orders = this.movementState.orders;
   readonly loading = this.movementState.loading;
-  readonly error = this.movementState.error;
+  readonly error = computed(() => this.movementState.error() ?? this.sniperState.error());
+  readonly sniperOrders = this.sniperState.orders;
+  readonly sniperLoading = this.sniperState.loading;
   readonly busy = signal(false);
 
   readonly player = this.playerService.player;
@@ -64,6 +69,7 @@ export class OrdresComponent {
 
   constructor() {
     void this.movementState.loadOrders();
+    void this.sniperState.loadOrders();
     void this.playerService.loadCurrent();
   }
 
@@ -73,6 +79,15 @@ export class OrdresComponent {
   readonly totalsStats = totalsStats;
   readonly unitClassCodes = unitClassCodes;
   readonly unitEquipLabel = (unit: Unit): string => unitEquipmentLabel(unit, this.player()?.race);
+  readonly sniperActionLabel = sniperActionLabel;
+
+  unitLabel(unitId: number): string {
+    for (const sector of this.player()?.sectors ?? []) {
+      const unit = sector.army?.find((u) => u.id === unitId);
+      if (unit) return `${unit.type.name} n°${unit.number}`;
+    }
+    return `Unité #${unitId}`;
+  }
 
   async cancelOrder(orderId: number): Promise<void> {
     if (this.busy()) return;
@@ -85,7 +100,19 @@ export class OrdresComponent {
     }
   }
 
+  async cancelSniperOrder(orderId: number): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
+    try {
+      const ok = await this.sniperState.cancelOrder(orderId);
+      if (ok) this.snackBar.open('Ordre sniper annulé', 'OK', { duration: 2500 });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   async refresh(): Promise<void> {
     await this.movementState.loadOrders();
+    await this.sniperState.loadOrders();
   }
 }

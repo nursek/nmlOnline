@@ -1,12 +1,16 @@
 package com.mg.nmlonline;
 
+import com.mg.nmlonline.domain.model.building.BuildingType;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.statistics.GameStatistic;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.UserService;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
+import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import com.mg.nmlonline.infrastructure.repository.GameStatisticRepository;
+import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerResourceRepository;
 import com.mg.nmlonline.infrastructure.repository.SectorRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
@@ -49,11 +53,30 @@ class DemoDataRebootTest {
 
         try (ConfigurableApplicationContext first = boot(jdbcUrl)) {
             assertTrue(first.getBean(EquipmentRepository.class).findByName("Gauss Blaster").isPresent());
+            assertEquals(2, first.getBean(BoardRepository.class).count(),
+                    "la démo importe la partie principale et la carte 6 joueurs");
+            Long arcsBoardId = first.getBean(BoardRepository.class).findByName("Carte 6 Joueurs (Arcs)")
+                    .orElseThrow().getId();
+            assertEquals(6, first.getBean(PlayerRepository.class).findByBoardId(arcsBoardId).size(),
+                    "les comptes existants rejoignent la carte arcs en tant que joueurs");
+            assertEquals("Carte Principale", first.getBean(BoardRepository.class).findAll().getFirst().getName(),
+                    "le plateau historique reste le premier (findAll trié par id)");
+            User lurioUser = first.getBean(UserRepository.class).findByUsername("lurio");
+            Player arcsLurio = first.getBean(PlayerRepository.class)
+                    .findByBoardIdAndName(arcsBoardId, "lurio").orElseThrow();
+            assertEquals(lurioUser.getId(), arcsLurio.getUserId(), "le même compte joue la carte arcs");
+            assertEquals(2, first.getBean(SectorRepository.class).findByOwnerId(arcsLurio.getId()).size(),
+                    "les fixtures arcs attribuent 2 secteurs par joueur");
+            assertEquals(30000.0, arcsLurio.getStats().getMoney(), "dotation arcs");
+            assertTrue(first.getBean(BuildingRepository.class)
+                    .findByPlayerIdAndBuildingType(arcsLurio.getId(), BuildingType.HEADQUARTERS).isPresent(),
+                    "un QG par joueur arcs");
 
             User trazynUser = first.getBean(UserRepository.class).findByUsername("trazyn");
             assertNotNull(trazynUser, "l'import de démo doit créer le compte manquant");
             assertTrue(first.getBean(UserService.class).checkPassword("trazyn", trazynUser.getPassword()));
-            first.getBean(GameStatisticRepository.class).save(new GameStatistic("UNIT_LARBIN", 42));
+            Long boardId = first.getBean(BoardRepository.class).findAll().getFirst().getId();
+            first.getBean(GameStatisticRepository.class).save(new GameStatistic(boardId, "UNIT_LARBIN", 42));
             assertEquals(1, first.getBean(GameStatisticRepository.class).count());
         }
 
@@ -63,11 +86,16 @@ class DemoDataRebootTest {
             assertEquals(0, second.getBean(GameStatisticRepository.class).count(),
                     "Le reset démo purge les compteurs de pertes");
 
-            Player trazyn = second.getBean(PlayerService.class).findByName("trazyn");
+            Player trazyn = second.getBean(PlayerService.class)
+                    .findByName(second.getBean(BoardRepository.class).findAll().getFirst().getId(), "trazyn");
             assertNotNull(trazyn);
             assertEquals(second.getBean(UserRepository.class).findByUsername("trazyn").getId(), trazyn.getUserId());
             assertFalse(second.getBean(VehicleRepository.class).findByPlayerId(trazyn.getId()).isEmpty());
             assertFalse(second.getBean(SectorRepository.class).findByOwnerId(trazyn.getId()).isEmpty());
+            Long secondArcsBoardId = second.getBean(BoardRepository.class)
+                    .findByName("Carte 6 Joueurs (Arcs)").orElseThrow().getId();
+            assertEquals(6, second.getBean(PlayerRepository.class).findByBoardId(secondArcsBoardId).size(),
+                    "le second démarrage réimporte aussi la carte arcs");
         }
     }
 

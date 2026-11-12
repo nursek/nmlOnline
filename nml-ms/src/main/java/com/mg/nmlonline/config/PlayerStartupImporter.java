@@ -13,15 +13,30 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Slf4j
 @Component
+@Order(2)
 public class PlayerStartupImporter implements ApplicationRunner {
+
+    private record DemoGame(String boardName, String boardPath, List<String> players) {
+    }
+
+    static final DemoGame MAIN_GAME = new DemoGame("Carte Principale", "boards/board.json", List.of(
+            "players/lurio.json", "players/nursek.json", "players/mortarion.json", "players/angron.json",
+            "players/cegorach.json", "players/imotekh.json", "players/trazyn.json"));
+
+    static final DemoGame ARCS_GAME = new DemoGame("Carte 6 Joueurs (Arcs)", "boards/carte-25.json", List.of(
+            "players-carte-25/lurio.json", "players-carte-25/nursek.json", "players-carte-25/mortarion.json",
+            "players-carte-25/angron.json", "players-carte-25/cegorach.json", "players-carte-25/imotekh.json"));
 
     private final PlayerImportService playerImportService;
     private final PlayerService playerService;
@@ -32,30 +47,6 @@ public class PlayerStartupImporter implements ApplicationRunner {
 
     @Value("${app.import-demo-data:true}")
     private boolean importDemoData;
-
-    @Value("classpath:boards/board.json")
-    private Resource boardResource;
-
-    @Value("classpath:players/lurio.json")
-    private Resource player1;
-
-    @Value("classpath:players/nursek.json")
-    private Resource player2;
-
-    @Value("classpath:players/mortarion.json")
-    private Resource player3;
-
-    @Value("classpath:players/angron.json")
-    private Resource player4;
-
-    @Value("classpath:players/cegorach.json")
-    private Resource player5;
-
-    @Value("classpath:players/imotekh.json")
-    private Resource player6;
-
-    @Value("classpath:players/trazyn.json")
-    private Resource player7;
 
     public PlayerStartupImporter(PlayerImportService playerImportService,
                                  PlayerService playerService,
@@ -81,44 +72,47 @@ public class PlayerStartupImporter implements ApplicationRunner {
             return;
         }
 
-        Board board = importBoard();
-        if (board == null) {
-            log.error("Impossible d'importer le Board ! Arrêt de l'import.");
-            return;
-        }
-        log.info("Board importé en mémoire avec {} secteurs neutres", board.getAllSectors().size());
-
-        // Persister le board avant les joueurs : sinon les @ManyToOne sector (FK composite
-        // board_id+sector_number, sans cascade) pointent vers des secteurs transients → Hibernate écrit la FK à NULL.
-        board = boardService.saveBoard(board, "Carte Principale");
-        log.info("Board neutre persisté avec {} secteurs (board_id={})", board.getAllSectors().size(), board.getId());
-
-        importIfPresent(player1, board);
-        importIfPresent(player2, board);
-        importIfPresent(player3, board);
-        importIfPresent(player4, board);
-        importIfPresent(player5, board);
-        importIfPresent(player6, board);
-        importIfPresent(player7, board);
-
-        log.info("Sauvegarde finale du Board (merge) avec {} secteurs...", board.getAllSectors().size());
-        boardService.save(board);
-        long ownedCount = board.getAllSectors().stream().filter(s -> !s.isNeutral()).count();
-        log.info("✅ Board sauvegardé : {} secteurs neutres + {} secteurs de players",
-                 board.getAllSectors().size() - ownedCount, ownedCount);
+        importGame(MAIN_GAME);
+        importGame(ARCS_GAME);
 
         log.info("=== Import des données terminé ===");
     }
 
-    private Board importBoard() {
+    private void importGame(DemoGame game) {
+        Board board = importBoard(game.boardPath());
+        if (board == null) {
+            log.error("Impossible d'importer le plateau {} ! Partie ignorée.", game.boardPath());
+            return;
+        }
+        log.info("Board '{}' importé en mémoire avec {} secteurs neutres",
+                game.boardName(), board.getAllSectors().size());
+
+        // Persister le board avant les joueurs : sinon les @ManyToOne sector (FK composite
+        // board_id+sector_number, sans cascade) pointent vers des secteurs transients → Hibernate écrit la FK à NULL.
+        board = boardService.saveBoard(board, game.boardName());
+        log.info("Board neutre persisté avec {} secteurs (board_id={})", board.getAllSectors().size(), board.getId());
+
+        for (String player : game.players()) {
+            importIfPresent(new ClassPathResource(player), board);
+        }
+
+        log.info("Sauvegarde finale du Board (merge) avec {} secteurs...", board.getAllSectors().size());
+        boardService.save(board);
+        long ownedCount = board.getAllSectors().stream().filter(s -> !s.isNeutral()).count();
+        log.info("✅ Board '{}' sauvegardé : {} secteurs neutres + {} secteurs de players",
+                game.boardName(), board.getAllSectors().size() - ownedCount, ownedCount);
+    }
+
+    private Board importBoard(String path) {
+        Resource resource = new ClassPathResource(path);
         try {
-            if (boardResource == null || !boardResource.exists()) {
-                log.warn("Fichier board.json non trouvé");
+            if (!resource.exists()) {
+                log.warn("Fichier {} introuvable", path);
                 return null;
             }
 
-            try (InputStream is = boardResource.getInputStream()) {
-                log.info("Import du Board depuis : {}", boardResource.getFilename());
+            try (InputStream is = resource.getInputStream()) {
+                log.info("Import du Board depuis : {}", resource.getFilename());
 
                 Board board = boardImportService.importBoardFromJson(new String(is.readAllBytes(), StandardCharsets.UTF_8));
                 log.info("Board importé en mémoire avec {} secteurs", board.getAllSectors().size());
@@ -126,12 +120,13 @@ public class PlayerStartupImporter implements ApplicationRunner {
                 return board;
             }
         } catch (Exception e) {
-            log.error("Échec import board.json : {}", e.getMessage(), e);
+            log.error("Échec import de {} : {}", path, e.getMessage(), e);
             return null;
         }
     }
 
-    public void importIfPresent(Resource resource, Board board) {
+    private void importIfPresent(Resource resource, Board board) {
+
         try {
             if (resource == null || !resource.exists()) {
                 log.warn("Ressource non trouvée : {}", resource);
@@ -144,12 +139,12 @@ public class PlayerStartupImporter implements ApplicationRunner {
                 PlayerImportService.PlayerDTO dto = playerImportService.parse(
                         new String(is.readAllBytes(), StandardCharsets.UTF_8));
 
-                Player player = playerImportService.importPlayer(dto);
+                Player player = playerImportService.importPlayer(dto, board.getId());
 
                 if (player != null) {
                     // Réimporter = remplacer, pas fusionner : une fusion duplique l'armée, et les
                     // doublons n'ont plus d'équipement (stock du joueur déjà consommé).
-                    Player existingPlayer = playerService.findByName(player.getName());
+                    Player existingPlayer = playerService.findByName(board.getId(), player.getName());
                     if (existingPlayer != null) {
                         log.info("Joueur {} déjà existant, remplacement...", player.getName());
                         playerService.delete(existingPlayer.getId());

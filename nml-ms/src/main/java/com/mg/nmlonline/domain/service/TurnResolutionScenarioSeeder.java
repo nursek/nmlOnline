@@ -11,6 +11,8 @@ import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.sniper.SniperOrder;
+import com.mg.nmlonline.domain.model.sniper.SniperOrderStatus;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
@@ -21,13 +23,16 @@ import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PendingCaptureRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.SniperOrderRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /** Dev-only, idempotent : purge les PENDING du tour et n'ajoute que les unités manquantes. */
@@ -46,47 +51,50 @@ public class TurnResolutionScenarioSeeder {
 
     private record CombatScenarioDefinition(String code, String label, String description,
                                             List<String> observations, int arenaSector, int stagingSector,
-                                            String defenderName, boolean eliminatesPlayer) {
+                                            String attackerName, String defenderName, String thirdPartyName,
+                                            boolean eliminatesPlayer) {
     }
 
     private static final String ARENA_PLAYER_PREFIX = "arene-";
 
-    /** Arènes neutres dédiées : tout ce qui s'y trouve est purgé au seed, aucun fixture n'y place d'entité. */
+    private static final Set<String> STANDALONE_SCENARIOS = Set.of("SNIPER_RANGED");
+
+    /** Arènes neutres dédiées, vidées au seed ; un départ partagé n'est purgé que des unités du scénario. */
     private static final List<CombatScenarioDefinition> COMBAT_SCENARIOS = List.of(
             new CombatScenarioDefinition("MIXED_5050", "Infanterie vs véhicules (50/50)",
                     "3 BRUTEs de lurio attaquent 2 LARBINs et un VTT léger sans pilote de cegorach.",
                     List.of("Tirage 50/50 par attaque entre véhicules et unités",
                             "Le VTT sans pilote est une cible passive qui ne tire pas",
                             "Le surplus d'une frappe enchaîne sur la cible suivante"),
-                    21, 36, "cegorach", false),
+                    21, 36, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("DESTRUCTOR_VS_TANK", "Pilote destructeur vs Tank",
                     "2 MALFRATs PILOTE_DESTRUCTEUR au Gauss Cannon attaquent un Tank piloté et 2 LARBINs.",
                     List.of("Ciblage prioritaire du Tank malgré les LARBINs exposés",
                             "Gauss Cannon : bonus anti-véhicule ×2 puis résistance du Tank −50 %",
                             "Le Tank endommagé répare 50 défense en fin de tour s'il survit"),
-                    42, 37, "cegorach", false),
+                    42, 37, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("CREW_PROTECTED", "Équipage protégé",
                     "3 LARBINs au Gauss Flayer attaquent un VTT blindé piloté avec un passager armé.",
                     List.of("Les tirs de l'équipage sont tracés « (à bord de VTT blindé) »",
                             "Pilote et passager restent intouchables tant que le véhicule vit",
                             "Les attaquants ne touchent que le véhicule en PdF"),
-                    35, 22, "cegorach", false),
+                    35, 22, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("CREW_DISEMBARK", "Véhicule détruit, équipage débarqué",
                     "2 MALFRATs PILOTE_DESTRUCTEUR au Gauss Cannon détruisent un VTT léger piloté par un BRUTE.",
                     List.of("Le véhicule explose en PdF, l'équipage débarque et devient ciblable",
                             "Le surplus de la même frappe entame le pilote fraîchement débarqué"),
-                    24, 19, "cegorach", false),
+                    24, 19, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("AERIAL_HIT", "Aérien, jets de toucher",
                     "3 LARBINs au Tesla Carbine attaquent un hélicoptère piloté.",
                     List.of("L'aérien n'est ciblable qu'en PdF",
                             "Chaque LARBIN n'a que 10 % de toucher (le jet est affiché)",
                             "L'hélicoptère riposte à 75 % avec 250 PdF"),
-                    18, 14, "cegorach", false),
+                    18, 14, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("AERIAL_ANTI_AIR", "Aérien, arme anti-aérienne",
                     "3 BRUTEs PILOTE_DESTRUCTEUR au Heavy Gauss Cannon attaquent un hélicoptère piloté.",
                     List.of("Heavy Gauss Cannon : 75 % de toucher contre l'aérien",
                             "Dégâts doublés contre l'aérien, armure +200 % sur le tireur"),
-                    28, 17, "cegorach", false),
+                    28, 17, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("BLDG_CAPTURE", "Élimination — QG capturé",
                     "3 VOYOUs MASTODONTE au Bouclier balistique capturent la Banque, le Cache et le QG du joueur d'arène.",
                     List.of("La Banque et le Cache ripostent en phase Bâtiments secondaires, le QG en phase QG",
@@ -94,19 +102,19 @@ public class TurnResolutionScenarioSeeder {
                             "Un QG seulement détruit, non capturé, reste reconstructible",
                             "Banque et Cache pillés, puis tous les bâtiments supprimés à la finalisation",
                             "Le secteur bascule au vainqueur"),
-                    5, 4, "arene-batiments", true),
+                    5, 4, "lurio", "arene-batiments", null, true),
             new CombatScenarioDefinition("BLDG_DESTROY", "Bâtiments détruits",
                     "4 BRUTEs MASTODONTE lourdement blindés rasent la Banque, le Cache puis le QG.",
                     List.of("Ordre d'exposition : Banque → Cache → QG, le surplus enchaîne",
                             "Banque et Cache détruites ne sont pas capturées",
                             "Le QG est capturé même détruit : son propriétaire est éliminé"),
-                    23, 29, "arene-ruines", true),
+                    23, 29, "lurio", "arene-ruines", null, true),
             new CombatScenarioDefinition("CHAR_KILL", "Personnage secondaire éliminé",
                     "2 MALFRATs tuent le LARBIN d'arène puis son personnage secondaire, ciblé en dernier.",
                     List.of("Le LARBIN encaisse avant le personnage (exposition : unités → personnages)",
                             "Le personnage secondaire n'est pas le personnage principal : pas d'élimination du joueur",
                             "Personnage perdu : +1 Exp à chaque unité survivante (lignes Expérience du bilan)"),
-                    9, 7, "arene-personnages", false),
+                    9, 7, "lurio", "arene-personnages", null, false),
             new CombatScenarioDefinition("MAIN_CHARACTER_ELIMINATION",
                     "Élimination — Cegorach tué par lurio",
                     "4 BRUTEs de lurio tuent le personnage principal de cegorach dans l'arène 43, loin de son QG.",
@@ -115,19 +123,36 @@ public class TurnResolutionScenarioSeeder {
                             "Esquive neutralisée dans l'arène pour garantir la mort",
                             "Après finalisation, ses unités et bâtiments ont disparu et ses actions sont refusées",
                             "Re-seed : cegorach redevient actif avec un nouveau personnage principal"),
-                    43, 38, "cegorach", true),
+                    43, 38, "lurio", "cegorach", null, true),
             new CombatScenarioDefinition("CHAR_REGEN", "Personnage blessé, régénération",
                     "1 MALFRAT entame le personnage sans le tuer : il riposte en phase Personnages.",
                     List.of("Le personnage ne frappe qu'en phase Personnages, avec son Attaque seule",
                             "Aucun camp anéanti : pas de vainqueur, le secteur reste neutre",
                             "Après finalisation du tour, sa défense remonte de 50 (plafonnée à sa base)"),
-                    12, 31, "arene-colosse", false));
+                    12, 31, "lurio", "arene-colosse", null, false),
+            new CombatScenarioDefinition("SNIPER_RANGED", "Sniper — tir isolé et contre-tir",
+                    "Un sniper d'imotekh vise le sniper de cegorach dans l'arène 15, sans combat au sol.",
+                    List.of("Jet de HIT unique : la cible sniper peut riposter si elle survit",
+                            "Rapport « Tir à distance » : aucun vainqueur, aucune capture",
+                            "La cible MALFRAT est visée par la salve ; le BRUTE tireur n'est crédité que s'il est visé par le contre-tir",
+                            "Exp : cible survivante + tireur survivant au contre-tir ; blessure si défense entamée",
+                            "Finalisation directe, sans hop"),
+                    15, 4, "imotekh", "cegorach", null, false),
+            new CombatScenarioDefinition("SNIPER_STANDOFF", "Sniper — impasse à 3 camps",
+                    "Imotekh et Cegorach s'affrontent en 16 : Imotekh a 2 fantassins, Cegorach 2 snipers. Trazyn tire depuis 14 et force une impasse à 3 camps.",
+                    List.of("Imotekh a 2 fantassins (aucun sniper) ; Cegorach a 2 snipers en 16 ; Trazyn a 2 snipers en 14",
+                            "A → B → C → A : Imotekh attaque les snipers de Cegorach ; Cegorach tire à distance sur Trazyn (16→14) ; Trazyn tire sur Imotekh (14→16)",
+                            "Les attaques au sol d'Imotekh ne peuvent pas toucher Trazyn ; Cegorach le peut avec ses snipers",
+                            "Sans snipers, Cegorach ne pourrait pas cibler Trazyn : son PDF serait reporté sur Imotekh en phase PDC",
+                            "C ne gagne pas et ne capture pas ; ses pertes sont retirées de son secteur"),
+                    16, 14, "imotekh", "cegorach", "trazyn", false));
 
     private final BoardRepository boardRepository;
     private final PlayerRepository playerRepository;
     private final MovementOrderRepository movementOrderRepository;
     private final EquipmentRepository equipmentRepository;
     private final PendingCaptureRepository pendingCaptureRepository;
+    private final SniperOrderRepository sniperOrderRepository;
     private final MovementService movementService;
     private final TurnService turnService;
     private final TurnLock turnLock;
@@ -138,6 +163,7 @@ public class TurnResolutionScenarioSeeder {
                                         MovementOrderRepository movementOrderRepository,
                                         EquipmentRepository equipmentRepository,
                                         PendingCaptureRepository pendingCaptureRepository,
+                                        SniperOrderRepository sniperOrderRepository,
                                         MovementService movementService,
                                         TurnService turnService,
                                         TurnLock turnLock,
@@ -147,6 +173,7 @@ public class TurnResolutionScenarioSeeder {
         this.movementOrderRepository = movementOrderRepository;
         this.equipmentRepository = equipmentRepository;
         this.pendingCaptureRepository = pendingCaptureRepository;
+        this.sniperOrderRepository = sniperOrderRepository;
         this.movementService = movementService;
         this.turnService = turnService;
         this.turnLock = turnLock;
@@ -158,16 +185,16 @@ public class TurnResolutionScenarioSeeder {
     }
 
     @Transactional
-    public ScenarioSummaryDto seedScenario() {
-        return withTurnLock(this::seedScenarioUnlocked);
+    public ScenarioSummaryDto seedScenario(Long boardId) {
+        return withTurnLock(boardId, () -> seedScenarioUnlocked(boardId));
     }
 
-    private ScenarioSummaryDto seedScenarioUnlocked() {
-        Board board = requireBoard();
-        int turn = turnService.getCurrentTurn();
+    private ScenarioSummaryDto seedScenarioUnlocked(Long boardId) {
+        Board board = requireBoard(boardId);
+        int turn = board.getCurrentTurn();
 
-        Player lurio = resolvePlayerByName("lurio", "lurio introuvable — vérifiez le seed démo");
-        Player cegorach = resolvePlayerByName("cegorach", "cegorach introuvable — vérifiez le seed démo");
+        Player lurio = resolvePlayerByName(board.getId(), "lurio", "lurio introuvable — vérifiez le seed démo");
+        Player cegorach = resolvePlayerByName(board.getId(), "cegorach", "cegorach introuvable — vérifiez le seed démo");
 
         Sector sDefender = requireSector(board, SECTOR_DEFENDER, "défenseur");
         int defendersAdded = ensureDefenders(sDefender, cegorach);
@@ -200,7 +227,7 @@ public class TurnResolutionScenarioSeeder {
                 ? List.of(SECTOR_ATTACKER_FROM, SECTOR_INTERMEDIATE, SECTOR_DEFENDER)
                 : List.of(SECTOR_INTERMEDIATE, SECTOR_DEFENDER);
 
-        deletePendingOrders(turn, List.of(lurio.getId(), cegorach.getId()));
+        deletePendingOrders(board.getId(), turn, List.of(lurio.getId(), cegorach.getId()));
 
         MovementOrder order = movementService.placeFootOrder(
                 lurio.getId(), turn, List.of(attackerUnitId), route, board);
@@ -223,17 +250,17 @@ public class TurnResolutionScenarioSeeder {
 
     /** Impasse : cegorach défend 32 ; imotekh (43) puis lurio (41) y arrivent au même hop, dans cet ordre d'envoi. */
     @Transactional
-    public ScenarioSummaryDto seedStandoffScenario() {
-        return withTurnLock(this::seedStandoffScenarioUnlocked);
+    public ScenarioSummaryDto seedStandoffScenario(Long boardId) {
+        return withTurnLock(boardId, () -> seedStandoffScenarioUnlocked(boardId));
     }
 
-    private ScenarioSummaryDto seedStandoffScenarioUnlocked() {
-        Board board = requireBoard();
-        int turn = turnService.getCurrentTurn();
+    private ScenarioSummaryDto seedStandoffScenarioUnlocked(Long boardId) {
+        Board board = requireBoard(boardId);
+        int turn = board.getCurrentTurn();
 
-        Player lurio = resolvePlayerByName("lurio", "lurio introuvable — vérifiez le seed démo");
-        Player imotekh = resolvePlayerByName("imotekh", "imotekh introuvable — vérifiez le seed démo");
-        Player cegorach = resolvePlayerByName("cegorach", "cegorach introuvable — vérifiez le seed démo");
+        Player lurio = resolvePlayerByName(board.getId(), "lurio", "lurio introuvable — vérifiez le seed démo");
+        Player imotekh = resolvePlayerByName(board.getId(), "imotekh", "imotekh introuvable — vérifiez le seed démo");
+        Player cegorach = resolvePlayerByName(board.getId(), "cegorach", "cegorach introuvable — vérifiez le seed démo");
 
         Sector sDefender = requireSector(board, SECTOR_DEFENDER, "défenseur");
         int defendersAdded = ensureDefenders(sDefender, cegorach);
@@ -245,7 +272,7 @@ public class TurnResolutionScenarioSeeder {
         Unit imotekhUnit = ensureAttackerUnit(sImotekhFrom, imotekh);
         entityManager.flush();
 
-        deletePendingOrders(turn, List.of(lurio.getId(), imotekh.getId(), cegorach.getId()));
+        deletePendingOrders(board.getId(), turn, List.of(lurio.getId(), imotekh.getId(), cegorach.getId()));
 
         MovementOrder imotekhOrder = movementService.placeFootOrder(
                 imotekh.getId(), turn, List.of(imotekhUnit.getId()),
@@ -277,34 +304,45 @@ public class TurnResolutionScenarioSeeder {
             dto.setArenaSector(definition.arenaSector());
             dto.setStagingSector(definition.stagingSector());
             dto.setEliminatesPlayer(definition.eliminatesPlayer());
+            dto.setStandalone(STANDALONE_SCENARIOS.contains(definition.code()));
             return dto;
         }).toList();
     }
 
     /** Purge l'arène dédiée puis la peuple : chaque scénario est rejouable sans polluer les autres. */
     @Transactional
-    public ScenarioSummaryDto seedCombatScenario(String code) {
-        return withTurnLock(() -> seedCombatScenarioUnlocked(code));
+    public ScenarioSummaryDto seedCombatScenario(String code, Long boardId) {
+        return withTurnLock(boardId, () -> seedCombatScenarioUnlocked(code, boardId));
     }
 
-    private ScenarioSummaryDto seedCombatScenarioUnlocked(String code) {
-        Board board = requireBoard();
-        int turn = turnService.getCurrentTurn();
+    private ScenarioSummaryDto seedCombatScenarioUnlocked(String code, Long boardId) {
+        Board board = requireBoard(boardId);
+        int turn = board.getCurrentTurn();
 
         CombatScenarioDefinition definition = COMBAT_SCENARIOS.stream()
                 .filter(scenario -> scenario.code().equals(code))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Scénario inconnu : " + code));
 
-        Player lurio = resolvePlayerByName("lurio", "lurio introuvable — vérifiez le seed démo");
-        Player defender = resolveDefender(definition);
+        Player attacker = resolvePlayerByName(board.getId(), definition.attackerName(),
+                definition.attackerName() + " introuvable — vérifiez le seed démo");
+        Player defender = resolveDefender(definition, board.getId());
+        Player thirdParty = definition.thirdPartyName() == null ? null
+                : resolvePlayerByName(board.getId(), definition.thirdPartyName(),
+                        definition.thirdPartyName() + " introuvable — vérifiez le seed démo");
 
         Sector arena = requireSector(board, definition.arenaSector(), "arène");
         Sector staging = requireSector(board, definition.stagingSector(), "départ attaquant");
         GameCharacter mainCharacter = MAIN_CHARACTER_SCENARIO.equals(definition.code())
                 ? detachMainCharacter(defender) : null;
         resetArenaDefender(defender, arena);
-        resetScenarioArena(board, arena, staging);
+        Set<Long> scenarioPlayers = new HashSet<>();
+        scenarioPlayers.add(attacker.getId());
+        if (thirdParty != null) {
+            scenarioPlayers.add(thirdParty.getId());
+        }
+        resetScenarioArena(board, arena, staging, scenarioPlayers);
+        deletePendingSniperOrdersForArena(board.getId(), turn, arena.getNumber());
         if (MAIN_CHARACTER_SCENARIO.equals(definition.code())) {
             attachMainCharacter(defender, arena, mainCharacter);
             restoreMainCharacterHeadquarters(board, defender);
@@ -312,18 +350,21 @@ public class TurnResolutionScenarioSeeder {
 
         List<Unit> attackers = new ArrayList<>();
         switch (definition.code()) {
-            case "MIXED_5050" -> seedMixedFiftyFifty(arena, staging, lurio, defender, attackers);
-            case "DESTRUCTOR_VS_TANK" -> seedDestructorVsTank(arena, staging, lurio, defender, attackers);
-            case "CREW_PROTECTED" -> seedCrewProtected(arena, staging, lurio, defender, attackers);
-            case "CREW_DISEMBARK" -> seedCrewDisembark(arena, staging, lurio, defender, attackers);
-            case "AERIAL_HIT" -> seedAerialHit(arena, staging, lurio, defender, attackers);
-            case "AERIAL_ANTI_AIR" -> seedAerialAntiAir(arena, staging, lurio, defender, attackers);
-            case "BLDG_CAPTURE" -> seedBuildingCapture(arena, staging, lurio, defender, attackers);
-            case "BLDG_DESTROY" -> seedBuildingDestroy(arena, staging, lurio, defender, attackers);
-            case "CHAR_KILL" -> seedCharacterKill(arena, staging, lurio, defender, attackers);
+            case "MIXED_5050" -> seedMixedFiftyFifty(arena, staging, attacker, defender, attackers);
+            case "DESTRUCTOR_VS_TANK" -> seedDestructorVsTank(arena, staging, attacker, defender, attackers);
+            case "CREW_PROTECTED" -> seedCrewProtected(arena, staging, attacker, defender, attackers);
+            case "CREW_DISEMBARK" -> seedCrewDisembark(arena, staging, attacker, defender, attackers);
+            case "AERIAL_HIT" -> seedAerialHit(arena, staging, attacker, defender, attackers);
+            case "AERIAL_ANTI_AIR" -> seedAerialAntiAir(arena, staging, attacker, defender, attackers);
+            case "BLDG_CAPTURE" -> seedBuildingCapture(arena, staging, attacker, defender, attackers);
+            case "BLDG_DESTROY" -> seedBuildingDestroy(arena, staging, attacker, defender, attackers);
+            case "CHAR_KILL" -> seedCharacterKill(arena, staging, attacker, defender, attackers);
             case "MAIN_CHARACTER_ELIMINATION" ->
-                    seedMainCharacterElimination(staging, lurio, attackers);
-            case "CHAR_REGEN" -> seedCharacterRegen(arena, staging, lurio, defender, attackers);
+                    seedMainCharacterElimination(staging, attacker, attackers);
+            case "CHAR_REGEN" -> seedCharacterRegen(arena, staging, attacker, defender, attackers);
+            case "SNIPER_RANGED" -> seedSniperRanged(arena, staging, attacker, defender, attackers, turn);
+            case "SNIPER_STANDOFF" -> seedSniperStandoff(arena, staging, attacker, defender, thirdParty,
+                    attackers, turn);
             default -> throw new IllegalArgumentException("Scénario inconnu : " + definition.code());
         }
         entityManager.flush();
@@ -331,23 +372,30 @@ public class TurnResolutionScenarioSeeder {
         arena.recalculateMilitaryPower();
         staging.recalculateMilitaryPower();
 
-        deletePendingOrdersForArena(turn, arena.getNumber());
-        MovementOrder order = movementService.placeFootOrder(
-                lurio.getId(), turn, attackers.stream().map(Unit::getId).toList(),
-                List.of(staging.getNumber(), arena.getNumber()), board);
+        deletePendingOrdersForArena(board.getId(), turn, arena.getNumber());
 
         ScenarioSummaryDto dto = new ScenarioSummaryDto();
         dto.setTurn(turn);
         dto.setScenarioCode(definition.code());
         dto.setObservations(definition.observations());
-        dto.setAttacker(actor(lurio));
+        dto.setAttacker(actor(attacker));
         dto.setDefender(actor(defender));
         dto.setAttackerUnit(unit(attackers.getFirst(), staging.getNumber()));
-        dto.setRoute(new ArrayList<>(order.getRoute()));
-        dto.setOrderId(order.getId());
-        dto.setMessage(definition.label() + " — " + definition.description()
-                + " Démarrez la session puis 1 hop : un conflit à résoudre en secteur "
-                + definition.arenaSector() + ".");
+        if (STANDALONE_SCENARIOS.contains(definition.code())) {
+            dto.setRoute(List.of());
+            dto.setMessage(definition.label() + " — " + definition.description()
+                    + " Démarrez la session puis finalisez directement (aucun hop) : le tir isolé,"
+                    + " le contre-tir et l'expérience sont résolus à la finalisation.");
+        } else {
+            MovementOrder order = movementService.placeFootOrder(
+                    attacker.getId(), turn, attackers.stream().map(Unit::getId).toList(),
+                    List.of(staging.getNumber(), arena.getNumber()), board);
+            dto.setRoute(new ArrayList<>(order.getRoute()));
+            dto.setOrderId(order.getId());
+            dto.setMessage(definition.label() + " — " + definition.description()
+                    + " Démarrez la session puis 1 hop : un conflit à résoudre en secteur "
+                    + definition.arenaSector() + ".");
+        }
         return dto;
     }
 
@@ -486,13 +534,49 @@ public class TurnResolutionScenarioSeeder {
         placeAttacker(staging, attackers, combatUnit(attacker, 5.0, UnitClass.TIREUR));
     }
 
-    private void resetScenarioArena(Board board, Sector arena, Sector staging) {
+    private void seedSniperRanged(Sector arena, Sector staging, Player attacker, Player defender,
+                                  List<Unit> attackers, int turn) {
+        Unit target = combatUnit(defender, 5.0, UnitClass.SNIPER,
+                "Synaptic Disintegrator", "Gilet de camouflage optique");
+        arena.addUnit(target);
+        Unit shooter = combatUnit(attacker, 8.0, UnitClass.SNIPER,
+                "Synaptic Disintegrator", "Gilet de camouflage optique");
+        staging.addUnit(shooter);
+        attackers.add(shooter);
+        entityManager.flush();
+        sniperOrderRepository.save(SniperOrder.create(arena.getBoard().getId(), attacker.getId(), turn,
+                shooter.getId(), staging.getNumber(), arena.getNumber()));
+    }
+
+    private void seedSniperStandoff(Sector arena, Sector staging, Player attacker, Player defender,
+                                    Player third, List<Unit> attackers, int turn) {
+        for (int i = 0; i < 2; i++) {
+            placeAttacker(staging, attackers, combatUnit(attacker, 0.0, UnitClass.TIREUR, "Gauss Flayer"));
+        }
+        for (int i = 0; i < 2; i++) {
+            arena.addUnit(combatUnit(defender, 8.0, UnitClass.SNIPER,
+                    "Synaptic Disintegrator", "Gilet de camouflage optique"));
+        }
+        List<Unit> thirdSnipers = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            Unit thirdSniper = combatUnit(third, 8.0, UnitClass.SNIPER,
+                    "Synaptic Disintegrator", "Gilet de camouflage optique");
+            staging.addUnit(thirdSniper);
+            thirdSnipers.add(thirdSniper);
+        }
+        entityManager.flush();
+        for (Unit thirdSniper : thirdSnipers) {
+            sniperOrderRepository.save(SniperOrder.create(arena.getBoard().getId(), third.getId(), turn,
+                    thirdSniper.getId(), staging.getNumber(), arena.getNumber()));
+        }
+    }
+
+    private void resetScenarioArena(Board board, Sector arena, Sector staging, Set<Long> scenarioPlayers) {
         purgeSector(arena);
-        purgeSector(staging);
+        purgeStaging(staging, scenarioPlayers);
         arena.setOwnerAndColor(null, "#ffffff");
-        pendingCaptureRepository.findByResolvedFalseOrderByIdAsc().stream()
-                .filter(pending -> Objects.equals(pending.getBoardId(), board.getId())
-                        && pending.getSectorNumber() == arena.getNumber())
+        pendingCaptureRepository.findByBoardIdAndResolvedFalseOrderByIdAsc(board.getId()).stream()
+                .filter(pending -> pending.getSectorNumber() == arena.getNumber())
                 .forEach(pendingCaptureRepository::delete);
         entityManager.flush();
     }
@@ -540,14 +624,25 @@ public class TurnResolutionScenarioSeeder {
         sector.getUnits().clear();
     }
 
+    /** Un départ peut être partagé : ne retirer que les unités du scénario, jamais celles d'un autre. */
+    private void purgeStaging(Sector staging, Set<Long> playerIds) {
+        for (Unit unit : new ArrayList<>(staging.getUnits())) {
+            if (playerIds.contains(unit.getPlayerId())) {
+                entityManager.remove(unit);
+                staging.getUnits().remove(unit);
+            }
+        }
+    }
+
     /** Défenseur de fixture (cegorach) ou propriétaire jetable d'arène, créé au premier seed. */
-    private Player resolveDefender(CombatScenarioDefinition definition) {
+    private Player resolveDefender(CombatScenarioDefinition definition, Long boardId) {
         String name = definition.defenderName();
         if (!name.startsWith(ARENA_PLAYER_PREFIX)) {
-            return resolvePlayerByName(name, name + " introuvable — vérifiez le seed démo");
+            return resolvePlayerByName(boardId, name, name + " introuvable — vérifiez le seed démo");
         }
-        return playerRepository.findByName(name).orElseGet(() -> {
+        return playerRepository.findByBoardIdAndName(boardId, name).orElseGet(() -> {
             Player player = new Player(name);
+            player.setBoardId(boardId);
             player.incrementMoney(10000);
             return playerRepository.save(player);
         });
@@ -586,12 +681,23 @@ public class TurnResolutionScenarioSeeder {
         arena.getCharacters().add(character);
     }
 
-    private void deletePendingOrdersForArena(int turn, int arenaNumber) {
-        List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(turn).stream()
+    private void deletePendingOrdersForArena(Long boardId, int turn, int arenaNumber) {
+        List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(boardId, turn).stream()
                 .filter(order -> !order.getRoute().isEmpty() && order.getRoute().getLast() == arenaNumber)
                 .toList();
         if (!pending.isEmpty()) {
             movementOrderRepository.deleteAll(pending);
+        }
+    }
+
+    private void deletePendingSniperOrdersForArena(Long boardId, int turn, int arenaNumber) {
+        List<SniperOrder> pending = sniperOrderRepository
+                .findByBoardIdAndTurnAndStatus(boardId, turn, SniperOrderStatus.PENDING)
+                .stream()
+                .filter(order -> order.getTargetSectorNumber() == arenaNumber)
+                .toList();
+        if (!pending.isEmpty()) {
+            sniperOrderRepository.deleteAll(pending);
         }
     }
 
@@ -652,21 +758,20 @@ public class TurnResolutionScenarioSeeder {
         return dto;
     }
 
-    private Board requireBoard() {
-        return boardRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Aucun plateau trouvé — importez d'abord un board"));
+    private Board requireBoard(Long boardId) {
+        return boardRepository.findById(boardId)
+                .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
     }
 
-    private ScenarioSummaryDto withTurnLock(Supplier<ScenarioSummaryDto> seed) {
-        if (!turnLock.tryAcquire()) {
+    private ScenarioSummaryDto withTurnLock(Long boardId, Supplier<ScenarioSummaryDto> seed) {
+        if (!turnLock.tryAcquire(boardId)) {
             throw new IllegalStateException(
                     "Une session pas-à-pas est active — finalisez ou abandonnez-la avant de re-seeder");
         }
         try {
             return seed.get();
         } finally {
-            turnLock.release();
+            turnLock.release(boardId);
         }
     }
 
@@ -707,8 +812,8 @@ public class TurnResolutionScenarioSeeder {
         return unit;
     }
 
-    private void deletePendingOrders(int turn, List<Long> playerIds) {
-        List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(turn).stream()
+    private void deletePendingOrders(Long boardId, int turn, List<Long> playerIds) {
+        List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(boardId, turn).stream()
                 .filter(o -> playerIds.contains(o.getPlayerId()))
                 .toList();
         if (!pending.isEmpty()) {
@@ -725,8 +830,8 @@ public class TurnResolutionScenarioSeeder {
                 .orElse(null);
     }
 
-    private Player resolvePlayerByName(String name, String errorMessage) {
-        return playerRepository.findByName(name)
+    private Player resolvePlayerByName(Long boardId, String name, String errorMessage) {
+        return playerRepository.findByBoardIdAndName(boardId, name)
                 .orElseThrow(() -> new IllegalStateException(errorMessage));
     }
 }

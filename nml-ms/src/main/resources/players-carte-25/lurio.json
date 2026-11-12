@@ -1,0 +1,12 @@
+{
+  "name": "lurio",
+  "race": "ORKS",
+  "money": 30000,
+  "sectors": [
+    { "sectorNumber": 7 },
+    { "sectorNumber": 8 }
+  ],
+  "buildings": [
+    { "type": "HEADQUARTERS", "sectorNumber": 7 }
+  ]
+}

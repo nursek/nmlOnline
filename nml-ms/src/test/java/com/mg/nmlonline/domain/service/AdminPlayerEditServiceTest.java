@@ -36,6 +36,8 @@ import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PendingCaptureRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerActionRepository;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.UnitRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
@@ -61,11 +63,18 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @DisplayName("AdminPlayerEditService — édition complète d'un joueur, invariants d'intégrité")
 class AdminPlayerEditServiceTest {
 
+    private Long boardId() {
+        return DemoFixtures.mainBoardId(boardRepository);
+    }
+
     @Autowired
     private AdminPlayerEditService service;
 
     @Autowired
     private PlayerRepository playerRepository;
+
+    @Autowired
+    private BoardRepository boardRepository;
 
     @Autowired
     private UnitRepository unitRepository;
@@ -111,7 +120,7 @@ class AdminPlayerEditServiceTest {
 
     @BeforeEach
     void setUp() {
-        player = playerRepository.findByName("lurio")
+        player = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "lurio")
                 .orElseThrow(() -> new IllegalStateException("Fixture lurio absente"));
         board = boardService.getAllBoards().stream().findFirst()
                 .orElseThrow(() -> new IllegalStateException("Board de test absent"));
@@ -343,7 +352,7 @@ class AdminPlayerEditServiceTest {
         service.addVehicles(player.getId(), "VTT_LEGER", 1, 41);
         entityManager.flush();
         Vehicle vehicle = vehicleRepository.findByPlayerId(player.getId()).getFirst();
-        MovementOrder order = MovementOrder.createVehicleOrder(player.getId(),
+        MovementOrder order = MovementOrder.createVehicleOrder(player.getId(), board.getId(),
                 board.getCurrentTurn(), vehicle.getId(), List.of(41, 13));
         movementOrderRepository.save(order);
         entityManager.flush();
@@ -546,6 +555,8 @@ class AdminPlayerEditServiceTest {
                 player.getId(), turn, unit.getId(), "LARBIN", 100, 0);
         PlayerAction otherAction = PlayerAction.sellResource(
                 player.getId(), turn, "Caisse d'armes", 1, 10);
+        unitAction.setBoardId(boardId());
+        otherAction.setBoardId(boardId());
         playerActionRepository.saveAll(List.of(unitAction, otherAction));
         entityManager.flush();
 
@@ -566,6 +577,7 @@ class AdminPlayerEditServiceTest {
                 .findFirst().orElseThrow();
         PlayerAction action = PlayerAction.equipUnit(
                 player.getId(), board.getCurrentTurn(), unit.getId(), "Tesla Carbine");
+        action.setBoardId(boardId());
         playerActionRepository.save(action);
         entityManager.flush();
 
@@ -632,12 +644,12 @@ class AdminPlayerEditServiceTest {
     @Test
     @DisplayName("Édition admin refusée pendant la résolution du tour")
     void mutationsRejectedWhileTurnLocked() {
-        assertTrue(turnLock.tryAcquire());
+        assertTrue(turnLock.tryAcquire(player.getBoardId()));
         try {
             assertThrows(IllegalStateException.class, () -> service.addUnits(
                     player.getId(), "LARBIN", List.of("LEGER"), 1, 41));
         } finally {
-            turnLock.release();
+            turnLock.release(player.getBoardId());
         }
     }
 
@@ -769,7 +781,7 @@ class AdminPlayerEditServiceTest {
         entityManager.flush();
         assertEquals("lurio-admin", player.getName());
 
-        String otherName = playerRepository.findAll().stream()
+        String otherName = playerRepository.findByBoardId(player.getBoardId()).stream()
                 .filter(candidate -> !candidate.getId().equals(player.getId()))
                 .map(Player::getName)
                 .findFirst().orElseThrow();
@@ -802,7 +814,7 @@ class AdminPlayerEditServiceTest {
     void updateCharacterRejectsDuplicateName() {
         GameCharacter character = player.getCharacter();
         assertNotNull(character);
-        String otherName = playerRepository.findAll().stream()
+        String otherName = playerRepository.findByBoardId(player.getBoardId()).stream()
                 .filter(candidate -> !candidate.getId().equals(player.getId()))
                 .map(Player::getCharacter)
                 .filter(Objects::nonNull)
@@ -841,8 +853,8 @@ class AdminPlayerEditServiceTest {
     @Test
     @DisplayName("Secteur : réassignation à un joueur puis neutralisation")
     void reassignSectorMovesOwnerAndStats() {
-        Player target = playerRepository.findByName("cegorach").orElseThrow();
-        service.reassignSector(41, target.getId());
+        Player target = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "cegorach").orElseThrow();
+        service.reassignSector(board.getId(), 41, target.getId());
         entityManager.flush();
 
         Sector sector = board.getSector(41);
@@ -851,7 +863,7 @@ class AdminPlayerEditServiceTest {
         assertTrue(board.getSectorsByOwner(target.getId()).contains(sector));
         assertFalse(board.getSectorsByOwner(player.getId()).contains(sector));
 
-        service.reassignSector(41, null);
+        service.reassignSector(board.getId(), 41, null);
         entityManager.flush();
         assertNull(sector.getOwnerId());
         assertEquals("#ffffff", sector.getColor());
@@ -864,22 +876,22 @@ class AdminPlayerEditServiceTest {
                 board.getId(), 41, board.getCurrentTurn(), List.of(player.getId()));
         pendingCaptureRepository.save(pending);
         entityManager.flush();
-        Player target = playerRepository.findByName("cegorach").orElseThrow();
+        Player target = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "cegorach").orElseThrow();
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.reassignSector(41, target.getId()));
+                () -> service.reassignSector(board.getId(), 41, target.getId()));
     }
 
     @Test
     @DisplayName("Secteur : réassignation refusée vers un joueur éliminé")
     void reassignSectorRejectsEliminatedTarget() {
-        Player target = playerRepository.findByName("cegorach").orElseThrow();
+        Player target = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "cegorach").orElseThrow();
         target.setEliminated(true);
         playerRepository.save(target);
         entityManager.flush();
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.reassignSector(41, target.getId()));
+                () -> service.reassignSector(board.getId(), 41, target.getId()));
     }
 
     @Test
@@ -958,10 +970,10 @@ class AdminPlayerEditServiceTest {
                 board.getId(), 41, board.getCurrentTurn() - 1, List.of(player.getId()));
         pendingCaptureRepository.save(pending);
         entityManager.flush();
-        Player target = playerRepository.findByName("cegorach").orElseThrow();
+        Player target = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "cegorach").orElseThrow();
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.reassignSector(41, target.getId()));
+                () -> service.reassignSector(board.getId(), 41, target.getId()));
     }
 
     @Test
@@ -1121,7 +1133,7 @@ class AdminPlayerEditServiceTest {
         entityManager.flush();
         assertEquals(valueBefore + 1600.0, player.getStats().getTotalEquipmentValue(), 0.001);
 
-        unitService.assignEquipment(unit.getId(), player.getUserId(), "Tesla Carbine");
+        unitService.assignEquipment(unit.getId(), player.getUserId(), "Tesla Carbine", boardId());
         entityManager.flush();
 
         assertTrue(unit.getEquipments().stream()
@@ -1167,12 +1179,12 @@ class AdminPlayerEditServiceTest {
         WeaponCache cache = player.getUsableWeaponCaches().getFirst();
         playerService.buyEquipments(player.getId(), List.of(buyItem("Gauss Destructor", 1)));
         entityManager.flush();
-        assertFalse(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty());
+        assertFalse(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty());
 
         service.removeCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 1);
         entityManager.flush();
 
-        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty(),
+        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty(),
                 "L'achat annulé par le MJ ne doit pas bloquer l'annulation du reste du tour");
     }
 
@@ -1183,12 +1195,12 @@ class AdminPlayerEditServiceTest {
         WeaponCache cache = player.getUsableWeaponCaches().getFirst();
         playerService.buyEquipments(player.getId(), List.of(buyItem("Gauss Destructor", 1)));
         entityManager.flush();
-        assertFalse(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty());
+        assertFalse(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty());
 
         service.deleteBuilding(player.getId(), cache.getId());
         entityManager.flush();
 
-        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty(),
+        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty(),
                 "Le contenu supprimé avec la cache ne doit pas bloquer l'annulation du tour");
     }
 
@@ -1229,7 +1241,7 @@ class AdminPlayerEditServiceTest {
                         && candidate.getSector().getNumber() == 41)
                 .findFirst().orElseThrow();
         service.addCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 2);
-        unitService.assignEquipment(unit.getId(), player.getUserId(), "Tesla Carbine");
+        unitService.assignEquipment(unit.getId(), player.getUserId(), "Tesla Carbine", boardId());
         entityManager.flush();
 
         assertThrows(IllegalArgumentException.class,
@@ -1314,9 +1326,11 @@ class AdminPlayerEditServiceTest {
 
         PlayerAction action = PlayerAction.setVehicleCrew(
                 player.getId(), board.getCurrentTurn(), vehicle.getId(), null, "");
+        action.setBoardId(boardId());
         playerActionRepository.save(action);
         PlayerAction placement = PlayerAction.placeVehicle(player.getId(), board.getCurrentTurn(),
                 vehicle.getId(), board.getId(), vehicle.getSector().getNumber());
+        placement.setBoardId(boardId());
         playerActionRepository.save(placement);
         entityManager.flush();
 
@@ -1340,6 +1354,7 @@ class AdminPlayerEditServiceTest {
 
         PlayerAction placement = PlayerAction.placeUnit(
                 player.getId(), board.getCurrentTurn(), pilot.getId(), board.getId(), 41);
+        placement.setBoardId(boardId());
         playerActionRepository.save(placement);
         entityManager.flush();
 
@@ -1347,7 +1362,7 @@ class AdminPlayerEditServiceTest {
         entityManager.flush();
 
         assertThrows(PlayerActionUndoException.class,
-                () -> playerActionService.undoFrom(player.getUserId(), placement.getId()));
+                () -> playerActionService.undoFrom(player.getUserId(), boardId(), placement.getId()));
         assertEquals(pilot.getId(), vehicle.getPilot().getId());
         assertNotNull(pilot.getSector());
     }
@@ -1363,6 +1378,7 @@ class AdminPlayerEditServiceTest {
 
         PlayerAction passengerPlacement = PlayerAction.placeUnit(
                 player.getId(), board.getCurrentTurn(), passenger.getId(), board.getId(), 41);
+        passengerPlacement.setBoardId(boardId());
         playerActionRepository.save(passengerPlacement);
         entityManager.flush();
 
@@ -1371,7 +1387,7 @@ class AdminPlayerEditServiceTest {
         entityManager.flush();
 
         assertThrows(PlayerActionUndoException.class,
-                () -> playerActionService.undoFrom(player.getUserId(), passengerPlacement.getId()));
+                () -> playerActionService.undoFrom(player.getUserId(), boardId(), passengerPlacement.getId()));
         assertEquals(1, vehicle.getPassengerCount());
         assertNotNull(passenger.getSector());
     }

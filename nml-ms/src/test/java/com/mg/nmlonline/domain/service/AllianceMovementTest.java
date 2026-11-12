@@ -36,6 +36,8 @@ import static org.mockito.Mockito.when;
 @DisplayName("Mouvement allié : conflits de rupture et capture de camp")
 class AllianceMovementTest {
 
+    private static final Long BOARD_ID = 1L;
+
     @Mock
     MovementOrderRepository orderRepository;
 
@@ -60,6 +62,7 @@ class AllianceMovementTest {
     @BeforeEach
     void setUp() {
         board = new Board();
+        board.setId(BOARD_ID);
         secteur1 = new Sector(1, "Cantonnement");
         secteur2 = new Sector(2, "Ailleurs");
         board.addSector(secteur1);
@@ -68,8 +71,8 @@ class AllianceMovementTest {
         secteur2.addNeighbor(1);
 
         lenient().when(orderRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-        lenient().when(orderRepository.findPendingByTurn(1)).thenReturn(List.of());
-        lenient().when(allianceGraph.activeAdjacency()).thenReturn(Map.of());
+        lenient().when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of());
+        lenient().when(allianceGraph.activeAdjacency(BOARD_ID)).thenReturn(Map.of());
     }
 
     private void addUnit(Sector sector, Long playerId, long id) {
@@ -81,13 +84,13 @@ class AllianceMovementTest {
     }
 
     private Alliance endedAllianceAtTurnOne() {
-        Alliance alliance = Alliance.create(JOUEUR_A, JOUEUR_B, 0);
+        Alliance alliance = Alliance.create(JOUEUR_A, JOUEUR_B, BOARD_ID, 0);
         alliance.end(1, JOUEUR_A, true);
         return alliance;
     }
 
     private void allyAWithB() {
-        lenient().when(allianceGraph.activeAdjacency())
+        lenient().when(allianceGraph.activeAdjacency(BOARD_ID))
                 .thenReturn(Map.of(JOUEUR_A, Set.of(JOUEUR_B), JOUEUR_B, Set.of(JOUEUR_A)));
     }
 
@@ -96,7 +99,7 @@ class AllianceMovementTest {
     void colocatedExAlliesFightWithoutOrders() {
         addUnit(secteur1, JOUEUR_A, 101L);
         addUnit(secteur1, JOUEUR_B, 102L);
-        when(allianceGraph.endedAlliancesAtTurn(1)).thenReturn(List.of(endedAllianceAtTurnOne()));
+        when(allianceGraph.endedAlliancesAtTurn(BOARD_ID, 1)).thenReturn(List.of(endedAllianceAtTurnOne()));
 
         MovementResolutionResult result = service.resolveAllMovements(1, board);
 
@@ -113,9 +116,9 @@ class AllianceMovementTest {
         addUnit(secteur1, JOUEUR_B, 102L);
         addUnit(secteur1, 3L, 103L);
         addUnit(secteur1, 4L, 104L);
-        Alliance second = Alliance.create(3L, 4L, 0);
+        Alliance second = Alliance.create(3L, 4L, BOARD_ID, 0);
         second.end(1, 3L, true);
-        when(allianceGraph.endedAlliancesAtTurn(1))
+        when(allianceGraph.endedAlliancesAtTurn(BOARD_ID, 1))
                 .thenReturn(List.of(endedAllianceAtTurnOne(), second));
 
         MovementResolutionResult result = service.resolveAllMovements(1, board);
@@ -134,7 +137,7 @@ class AllianceMovementTest {
         vehicle.setId(201L);
         vehicle.setSector(secteur1);
         secteur1.getVehicles().add(vehicle);
-        when(allianceGraph.endedAlliancesAtTurn(1)).thenReturn(List.of(endedAllianceAtTurnOne()));
+        when(allianceGraph.endedAlliancesAtTurn(BOARD_ID, 1)).thenReturn(List.of(endedAllianceAtTurnOne()));
 
         MovementResolutionResult result = service.resolveAllMovements(1, board);
 
@@ -149,7 +152,7 @@ class AllianceMovementTest {
     void separatedExAlliesDoNotFight() {
         addUnit(secteur1, JOUEUR_A, 101L);
         addUnit(secteur2, JOUEUR_B, 102L);
-        when(allianceGraph.endedAlliancesAtTurn(1)).thenReturn(List.of(endedAllianceAtTurnOne()));
+        when(allianceGraph.endedAlliancesAtTurn(BOARD_ID, 1)).thenReturn(List.of(endedAllianceAtTurnOne()));
 
         MovementResolutionResult result = service.resolveAllMovements(1, board);
 
@@ -161,7 +164,7 @@ class AllianceMovementTest {
     void noRuptureNoSpontaneousConflict() {
         addUnit(secteur1, JOUEUR_A, 101L);
         addUnit(secteur1, JOUEUR_B, 102L);
-        when(allianceGraph.endedAlliancesAtTurn(1)).thenReturn(List.of());
+        when(allianceGraph.endedAlliancesAtTurn(BOARD_ID, 1)).thenReturn(List.of());
 
         MovementResolutionResult result = service.resolveAllMovements(1, board);
 

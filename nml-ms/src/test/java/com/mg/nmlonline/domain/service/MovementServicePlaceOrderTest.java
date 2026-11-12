@@ -44,12 +44,15 @@ class MovementServicePlaceOrderTest {
     private static final Long UNITE_2_ID = 102L;
     private static final Long VEHICULE_ID = 201L;
 
+    private static final Long BOARD_ID = 1L;
+
     private Board board;
     private Vehicle vehicule;
 
     @BeforeEach
     void setUp() {
         board = new Board();
+        board.setId(BOARD_ID);
         Sector depart = new Sector(1, "Départ");
         Sector arrivee = new Sector(2, "Arrivée");
         Sector etape = new Sector(3, "Étape");
@@ -86,7 +89,7 @@ class MovementServicePlaceOrderTest {
     @Test
     @DisplayName("Un ordre groupé conserve toutes les entités ciblées")
     void shouldKeepAllEntityIdsInOneOrder() {
-        when(orderRepository.findPendingEntityIds(eq(1), any())).thenReturn(List.of());
+        when(orderRepository.findPendingEntityIds(eq(BOARD_ID), eq(1), any())).thenReturn(List.of());
         when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         MovementOrder ordre = service.placeFootOrder(
@@ -109,7 +112,7 @@ class MovementServicePlaceOrderTest {
     @Test
     @DisplayName("Refuse une entité déjà engagée dans un ordre en attente")
     void shouldRejectEntityAlreadyInPendingOrder() {
-        when(orderRepository.findPendingEntityIds(1, List.of(UNITE_1_ID, UNITE_2_ID)))
+        when(orderRepository.findPendingEntityIds(eq(BOARD_ID), eq(1), eq(List.of(UNITE_1_ID, UNITE_2_ID))))
                 .thenReturn(List.of(UNITE_1_ID));
 
         IllegalArgumentException erreur = assertThrows(IllegalArgumentException.class, () ->
@@ -121,7 +124,7 @@ class MovementServicePlaceOrderTest {
     @Test
     @DisplayName("Refuse une entité qui est dans un véhicule")
     void shouldRejectEntityInVehicle() {
-        when(orderRepository.findPendingEntityIds(eq(1), any())).thenReturn(List.of());
+        when(orderRepository.findPendingEntityIds(eq(BOARD_ID), eq(1), any())).thenReturn(List.of());
         when(vehicleRepository.existsByPilot_Id(UNITE_1_ID)).thenReturn(true);
 
         IllegalArgumentException erreur = assertThrows(IllegalArgumentException.class, () ->
@@ -133,7 +136,7 @@ class MovementServicePlaceOrderTest {
     @Test
     @DisplayName("Refuse un passager de véhicule")
     void shouldRejectVehiclePassenger() {
-        when(orderRepository.findPendingEntityIds(eq(1), any())).thenReturn(List.of());
+        when(orderRepository.findPendingEntityIds(eq(BOARD_ID), eq(1), any())).thenReturn(List.of());
         when(vehicleRepository.existsByPilot_Id(UNITE_1_ID)).thenReturn(false);
         when(vehicleRepository.existsByPassengers_Id(UNITE_1_ID)).thenReturn(true);
 
@@ -200,7 +203,7 @@ class MovementServicePlaceOrderTest {
     void shouldRejectSecondPendingOrder() {
         when(vehicleRepository.findByIdForUpdate(VEHICULE_ID)).thenReturn(Optional.of(vehicule));
         when(orderRepository.findByVehicleIdAndTurnAndStatus(VEHICULE_ID, 1, MovementStatus.PENDING))
-                .thenReturn(List.of(MovementOrder.createVehicleOrder(JOUEUR, 1, VEHICULE_ID, List.of(1, 2))));
+                .thenReturn(List.of(MovementOrder.createVehicleOrder(JOUEUR, BOARD_ID, 1, VEHICULE_ID, List.of(1, 2))));
 
         IllegalStateException erreur = assertThrows(IllegalStateException.class,
                 () -> service.placeVehicleOrder(JOUEUR, 1, VEHICULE_ID, List.of(1, 2), board));

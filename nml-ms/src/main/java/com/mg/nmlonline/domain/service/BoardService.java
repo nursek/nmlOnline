@@ -111,6 +111,11 @@ public class BoardService {
         }
 
         Board board = boardOpt.get();
+        if (playerId != null && playerRepository.findById(playerId)
+                .map(player -> !boardId.equals(player.getBoardId()))
+                .orElse(true)) {
+            return false;
+        }
         try {
             board.assignOwner(sectorNumber, playerId, colorHex);
             boardRepository.save(board);
@@ -134,31 +139,28 @@ public class BoardService {
 
     // Mapping dans la transaction (sectorsList et sous-collections sont LAZY).
 
-    public List<BoardDto> getAllBoardsDto(Long requesterUserId, boolean seeAll) {
-        SectorMapper.Visibility visibility = visibilityFor(requesterUserId, seeAll);
-        return getAllBoards().stream().map(board -> boardMapper.toPublicDto(board, visibility)).toList();
+    public List<BoardDto> getAllBoardsDto(Long boardId, Long requesterUserId, boolean seeAll) {
+        return getBoardById(boardId)
+                .map(board -> List.of(boardMapper.toPublicDto(board,
+                        visibilityFor(board.getId(), requesterUserId, seeAll))))
+                .orElseGet(List::of);
     }
 
     public Optional<BoardDto> getBoardByIdDto(Long id, Long requesterUserId, boolean seeAll) {
-        SectorMapper.Visibility visibility = visibilityFor(requesterUserId, seeAll);
+        SectorMapper.Visibility visibility = visibilityFor(id, requesterUserId, seeAll);
         return getBoardById(id).map(board -> boardMapper.toPublicDto(board, visibility));
     }
 
-    public Optional<BoardDto> getBoardByNameDto(String name, Long requesterUserId, boolean seeAll) {
-        SectorMapper.Visibility visibility = visibilityFor(requesterUserId, seeAll);
-        return getBoardByName(name).map(board -> boardMapper.toPublicDto(board, visibility));
-    }
-
-    private SectorMapper.Visibility visibilityFor(Long requesterUserId, boolean seeAll) {
+    private SectorMapper.Visibility visibilityFor(Long boardId, Long requesterUserId, boolean seeAll) {
         if (seeAll) {
             return SectorMapper.Visibility.admin();
         }
         if (requesterUserId == null) {
             return SectorMapper.Visibility.none();
         }
-        return playerRepository.findByUserId(requesterUserId)
+        return playerRepository.findByUserIdAndBoardId(requesterUserId, boardId)
                 .map(player -> new SectorMapper.Visibility(
-                        player.getId(), allianceGraph.alliedPlayerIds(player.getId()), false,
+                        player.getId(), allianceGraph.alliedPlayerIds(player.getBoardId(), player.getId()), false,
                         player.getRace()))
                 .orElseGet(SectorMapper.Visibility::none);
     }

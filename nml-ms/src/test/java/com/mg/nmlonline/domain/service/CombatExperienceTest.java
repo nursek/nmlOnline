@@ -31,6 +31,12 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("CombatService — expérience de combat")
 class CombatExperienceTest {
 
+    private Player newPlayer(String name) {
+        Player player = new Player(name);
+        player.setBoardId(boardRepository.findAll().getFirst().getId());
+        return player;
+    }
+
     @Autowired
     private CombatService combatService;
 
@@ -50,6 +56,9 @@ class CombatExperienceTest {
                          Long attackerLarbinId, Long attackerBruteId) {
     }
 
+    private record SniperWorld(Long attackerId, Long defenderId, int sectorNumber, Long defenderUnitId) {
+    }
+
     private World seed(boolean withEnemyCharacter) {
         return new TransactionTemplate(txManager).execute(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
@@ -58,9 +67,9 @@ class CombatExperienceTest {
                             && s.getBuildings().isEmpty() && s.getCharacters().isEmpty())
                     .findFirst().orElseThrow();
 
-            Player attacker = new Player("AttaquantExp");
+            Player attacker = newPlayer("AttaquantExp");
             playerRepository.save(attacker);
-            Player defender = new Player("DefenseurExp");
+            Player defender = newPlayer("DefenseurExp");
             playerRepository.save(defender);
             em.flush();
 
@@ -160,5 +169,71 @@ class CombatExperienceTest {
                         .anyMatch(casualty -> "CHARACTER".equals(casualty.category())
                                 && "HerosExp".equals(casualty.label())),
                 "Le personnage est listé dans les pertes");
+    }
+
+    private SniperWorld seedSniperTarget() {
+        return new TransactionTemplate(txManager).execute(status -> {
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            Sector sector = board.getAllSectors().stream()
+                    .filter(s -> s.isNeutral() && s.getArmySize() == 0
+                            && s.getBuildings().isEmpty() && s.getCharacters().isEmpty())
+                    .findFirst().orElseThrow();
+            Player attacker = new Player("AttaquantSniperExp");
+            attacker.setBoardId(board.getId());
+            playerRepository.save(attacker);
+            Player defender = new Player("DefenseurSniperExp");
+            defender.setBoardId(board.getId());
+            playerRepository.save(defender);
+            em.flush();
+
+            Unit attackerUnit = new Unit(0.0, UnitClass.LEGER);
+            attackerUnit.setPlayerId(attacker.getId());
+            attackerUnit.setAttack(0);
+            attackerUnit.setPdf(0);
+            attackerUnit.setPdc(0);
+            sector.addUnit(attackerUnit);
+
+            Equipment cloak = new Equipment("GiletExp", 100, 0, 0, 0, 0,
+                    Set.of(UnitClass.SNIPER), EquipmentCategory.DEFENSIVE);
+            cloak.setEnemyAimMalus(100);
+            em.persist(cloak);
+            Unit defenderUnit = new Unit(0.0, UnitClass.SNIPER);
+            defenderUnit.setPlayerId(defender.getId());
+            defenderUnit.setAttack(0);
+            defenderUnit.setPdf(0);
+            defenderUnit.setPdc(0);
+            defenderUnit.setDefense(10);
+            defenderUnit.addEquipment(cloak);
+            sector.addUnit(defenderUnit);
+
+            em.flush();
+            return new SniperWorld(attacker.getId(), defender.getId(), sector.getNumber(),
+                    defenderUnit.getId());
+        });
+    }
+
+    @Test
+    @DisplayName("Sniper ciblé à distance et survivant : 1 Exp, plafonné à la participation")
+    void sniperTargetedAtRangeGainsExperience() {
+        SniperWorld w = seedSniperTarget();
+        Unit support = new Unit(0.0, UnitClass.SNIPER);
+        support.setPlayerId(w.attackerId());
+        support.setAttack(0);
+        support.setPdf(500);
+        support.setPdc(0);
+
+        CombatService.SectorBattleResult r = new TransactionTemplate(txManager).execute(status -> {
+            Player attacker = playerRepository.findById(w.attackerId()).orElseThrow();
+            Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
+            Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+            return combatService.simulateSectorBattle(List.of(attacker), List.of(defender), board,
+                    w.sectorNumber(), List.of(support), List.of(), Set.of());
+        });
+
+        assertTrue(r.success());
+        CombatService.ExperienceGain gain = gainOf(r, w.defenderUnitId());
+        assertEquals(1.0, gain.gained(), "Ciblé à distance et survivant : 1 Exp");
+        assertEquals(UnitType.LARBIN, gain.typeBefore());
+        assertEquals(1.0, gain.experienceAfter());
     }
 }

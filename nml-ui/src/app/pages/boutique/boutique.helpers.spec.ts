@@ -192,6 +192,27 @@ describe('boutique.helpers — résumés compacts', () => {
     expect(equipmentBonusSummary(eq('Y', 1, 'MELEE', 'LEGER'))).toBe('');
   });
 
+  it('résumé des modificateurs de visée sniper', () => {
+    expect(
+      equipmentBonusSummary(
+        eq('Particle Shredder', 1800, 'FIREARM', 'SNIPER', {
+          pdfBonus: 300,
+          armBonus: 50,
+          aimMalusReduction: 10,
+        }),
+      ),
+    ).toBe('+300 % Pdf ; +50 % Arm ; Malus de visée -10 %');
+    expect(
+      equipmentBonusSummary(
+        eq('Gilet de camouflage optique', 2500, 'DEFENSIVE', 'SNIPER', {
+          armBonus: 125,
+          evasionBonus: 10,
+          enemyAimMalus: 15,
+        }),
+      ),
+    ).toBe('+125 % Arm ; +10 % Esquive ; Malus de visée adverse +15 %');
+  });
+
   it('résumé véhicule : « Nom (Véhicule) : Pdf ; Def. coût ₡. »', () => {
     expect(vehicleSummary(vt('VTT léger', 4000, 0, 50))).toBe(
       'VTT léger (Véhicule) : 50 Def. 4000 ₡.',

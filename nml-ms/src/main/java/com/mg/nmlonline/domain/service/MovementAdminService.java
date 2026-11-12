@@ -69,23 +69,43 @@ public class MovementAdminService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdminMovementOrderDto> getOrdersForTurn(int turn, MovementStatus status) {
+    public List<AdminMovementOrderDto> getOrdersForTurn(Long boardId, int turn, MovementStatus status) {
         List<MovementOrder> orders = status != null
-                ? orderRepository.findByTurnAndStatus(turn, status)
-                : orderRepository.findByTurn(turn);
+                ? orderRepository.findByBoardIdAndTurnAndStatus(boardId, turn, status)
+                : orderRepository.findByBoardIdAndTurn(boardId, turn);
         Function<Long, String> names = resolveNames(collectPlayerIds(orders));
         return orders.stream()
                 .map(o -> movementMapper.toAdminDto(o, names.apply(o.getPlayerId())))
                 .toList();
     }
 
+    /** Application des mouvements sans incrément de tour (outil admin). */
+    @Transactional
+    public MovementResolutionResultDto resolveMovements(Long boardId, int turn) {
+        if (!turnLock.tryAcquire(boardId)) {
+            throw new IllegalStateException("Une résolution de fin de tour est déjà en cours");
+        }
+        try {
+            Board board = boardRepository.findById(boardId)
+                    .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
+            harvestAutoCollector.collectRemainingMoney(board, turn, HarvestAutoCollector.ownersBySector(board));
+            reserveUnitPlacer.placeAllAtHeadquarters();
+            MovementResolutionResult result = movementService.resolveAllMovements(turn, board);
+            Function<Long, String> names = resolveNames(collectPlayerIds(result));
+            return movementMapper.toResolutionDto(result, turn, names);
+        } finally {
+            turnLock.release(boardId);
+        }
+    }
+
     /** Aperçu (dry-run) : calcule les conflits sans persister, via rollback de transaction REQUIRES_NEW. */
-    public MovementResolutionResultDto previewMovements(int turn) {
+    public MovementResolutionResultDto previewMovements(Long boardId, int turn) {
         DefaultTransactionDefinition def = new DefaultTransactionDefinition(
                 TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         TransactionStatus status = txManager.getTransaction(def);
         try {
-            Board board = loadBoard();
+            Board board = boardRepository.findById(boardId)
+                    .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
             // Même placement qu'à l'application : l'aperçu doit refléter la défense réelle du QG.
             reserveUnitPlacer.placeAllAtHeadquarters();
             MovementResolutionResult result = movementService.resolveAllMovements(turn, board);
@@ -97,31 +117,6 @@ public class MovementAdminService {
         }
     }
 
-    @Transactional
-    public MovementResolutionResultDto resolveMovements(int turn) {
-        if (!turnLock.tryAcquire()) {
-            throw new IllegalStateException("Une résolution de fin de tour est déjà en cours");
-        }
-        try {
-            Board board = loadBoard();
-            // Revenus figés avant les mouvements : le claim par tour empêche un second versement à /turn/next.
-            harvestAutoCollector.collectRemainingMoney(board, turn, HarvestAutoCollector.ownersBySector(board));
-            // Les recrues non déployées rejoignent le QG avant la résolution, comme à /turn/next.
-            reserveUnitPlacer.placeAllAtHeadquarters();
-            MovementResolutionResult result = movementService.resolveAllMovements(turn, board);
-            Function<Long, String> names = resolveNames(collectPlayerIds(result));
-            return movementMapper.toResolutionDto(result, turn, names);
-        } finally {
-            turnLock.release();
-        }
-    }
-
-    private Board loadBoard() {
-        return boardRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "Aucun plateau trouvé pour résoudre les mouvements"));
-    }
 
     private Set<Long> collectPlayerIds(MovementResolutionResult result) {
         Set<Long> ids = new HashSet<>();

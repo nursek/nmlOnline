@@ -25,9 +25,12 @@ import type { OptimizedImage } from '../../core/optimized-image';
 import { PlayerService } from '../../services/player.service';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { MovementStateService } from '../../services/movement-state.service';
+import { SniperOrderStateService } from '../../services/sniper-order-state.service';
+import { AllianceStateService } from '../../services/alliance-state.service';
 import { UnitSlotPickerComponent, UnitSlotPickerData } from './unit-slot-picker.component';
 import { ExpPipe } from '../../shared/exp.pipe';
-import { findRoute, reachableTargets, unitMaxHops } from '../../core/movement.helpers';
+import { findRoute, reachableTargets, sectorKind, unitMaxHops } from '../../core/movement.helpers';
+import { sniperActionLabel as sniperActionLabelFor } from '../../core/labels';
 
 export interface UnitDetailDialogData {
   /** Snapshot initial — l'unité live est re-résolue depuis PlayerService.player(). */
@@ -65,6 +68,8 @@ export class UnitDetailDialogComponent {
   readonly data: UnitDetailDialogData = inject(MAT_DIALOG_DATA);
   private readonly playerService = inject(PlayerService);
   private readonly movementState = inject(MovementStateService);
+  private readonly sniperState = inject(SniperOrderStateService);
+  private readonly allianceState = inject(AllianceStateService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
 
@@ -84,11 +89,13 @@ export class UnitDetailDialogComponent {
       this.imgError.set(false);
     });
     void this.movementState.loadOrders();
+    void this.sniperState.loadOrders();
   }
 
   readonly imgError = signal(false);
   readonly busy = signal(false);
   readonly targetSector = signal<number | null>(null);
+  readonly sniperTarget = signal<number | null>(null);
 
   /** Unité live re-lue depuis le player signal (rafraîchi après équipement). */
   readonly unit = computed<Unit>(() => {
@@ -167,6 +174,38 @@ export class UnitDetailDialogComponent {
     this.movementState.orders().filter((o) => (o.entityIds ?? []).includes(this.unit()?.id ?? -1)),
   );
 
+  readonly isSniper = computed(() =>
+    (this.unit()?.classes ?? []).some((classe) => classe.name === 'SNIPER'),
+  );
+
+  /** Secteurs voisins : cible d'un Tir de précision ou d'une Surveillance. */
+  readonly sniperTargets = computed<number[]>(() =>
+    reachableTargets(this.allSectors(), this.data.sectorNumber, 1),
+  );
+
+  readonly pendingSniperOrdersForUnit = computed(() =>
+    this.sniperState.orders().filter((order) => order.unitId === this.unit()?.id),
+  );
+
+  sniperActionFor(sectorNumber: number): string {
+    const sector = this.allSectors().find((s) => s.number === sectorNumber) ?? null;
+    const kind = sectorKind(
+      sector,
+      this.player()?.id ?? null,
+      this.allianceState.alliedPlayerIds(),
+    );
+    return kind === 'own' || kind === 'ally' ? 'SURVEILLANCE' : 'TIR_PRECISION';
+  }
+
+  readonly selectedSniperAction = computed<string>(() => {
+    const target = this.sniperTarget();
+    return target === null ? 'TIR_PRECISION' : this.sniperActionFor(target);
+  });
+
+  sniperActionLabel(action: string): string {
+    return sniperActionLabelFor(action);
+  }
+
   equipmentLabel(eq: Equipment): string {
     return equipmentLabelFor(eq, this.player()?.race);
   }
@@ -185,7 +224,7 @@ export class UnitDetailDialogComponent {
   }
 
   async submitMove(): Promise<void> {
-    if (this.pendingOrdersForUnit().length > 0) {
+    if (this.pendingOrdersForUnit().length > 0 || this.pendingSniperOrdersForUnit().length > 0) {
       this.snackBar.open('Cette unité a déjà un ordre en attente', 'Fermer', { duration: 3000 });
       return;
     }
@@ -219,6 +258,42 @@ export class UnitDetailDialogComponent {
     this.busy.set(true);
     try {
       await this.movementState.cancelOrder(orderId);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async submitSniperOrder(): Promise<void> {
+    if (this.pendingOrdersForUnit().length > 0 || this.pendingSniperOrdersForUnit().length > 0) {
+      this.snackBar.open('Cette unité a déjà un ordre en attente', 'Fermer', { duration: 3000 });
+      return;
+    }
+    const target = this.sniperTarget();
+    if (target === null) return;
+    this.busy.set(true);
+    try {
+      const order = await this.sniperState.placeOrder(this.unit().id, target);
+      if (order) {
+        this.snackBar.open(
+          `${this.sniperActionLabel(order.action)} : secteur ${this.data.sectorNumber} -> ${target}`,
+          'OK',
+          { duration: 2500 },
+        );
+        this.sniperTarget.set(null);
+      } else {
+        const err = this.sniperState.error();
+        if (err) this.snackBar.open(err, 'Fermer', { duration: 5000 });
+      }
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async cancelSniperOrder(orderId: number): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
+    try {
+      await this.sniperState.cancelOrder(orderId);
     } finally {
       this.busy.set(false);
     }

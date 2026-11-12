@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.domain.model.alliance.PendingCapture;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PendingCaptureRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
@@ -79,8 +80,12 @@ class PendingCaptureServiceTest {
         pending.setId(11L);
         when(repository.findById(11L)).thenReturn(Optional.of(pending));
         when(boardRepository.findById(7L)).thenReturn(Optional.of(board));
+        Player candidate = new Player("Candidat");
+        candidate.setId(42L);
+        candidate.setBoardId(7L);
+        when(playerRepository.findById(42L)).thenReturn(Optional.of(candidate));
 
-        service.resolve(11L, 42L);
+        service.resolve(7L, 11L, 42L);
 
         assertEquals(42L, board.getSector(1).getOwnerId());
         assertEquals("#123456", board.getSector(1).getColor(), "La couleur vient d'un autre secteur du joueur");
@@ -96,7 +101,7 @@ class PendingCaptureServiceTest {
         pending.setResolved(true);
         when(repository.findById(11L)).thenReturn(Optional.of(pending));
 
-        assertThrows(IllegalStateException.class, () -> service.resolve(11L, 42L));
+        assertThrows(IllegalStateException.class, () -> service.resolve(7L, 11L, 42L));
     }
 
     @Test
@@ -105,7 +110,7 @@ class PendingCaptureServiceTest {
         PendingCapture pending = PendingCapture.create(7L, 1, 3, List.of(42L));
         when(repository.findById(11L)).thenReturn(Optional.of(pending));
 
-        service.dismiss(11L);
+        service.dismiss(7L, 11L);
 
         assertTrue(pending.isResolved());
         verify(repository).save(pending);

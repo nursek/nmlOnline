@@ -30,6 +30,8 @@ import static org.mockito.Mockito.*;
 @DisplayName("PlayerService — Achat d'équipements")
 class PlayerServiceTest {
 
+    private static final Long BOARD_ID = 1L;
+
     @Mock
     PlayerRepository playerRepository;
 
@@ -286,9 +288,9 @@ class PlayerServiceTest {
     void shouldMoveLegacyInventoryOnLock() {
         player.addEquipmentToStack(equipment("Pistolet", 500), 1);
         WeaponCache cache = cache(10L, 0);
-        when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+        when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
 
-        assertSame(player, playerService.findByUserIdForUpdate(10L));
+        assertSame(player, playerService.findByUserIdForUpdate(10L, BOARD_ID));
 
         assertTrue(player.getEquipments().isEmpty());
         assertEquals(1, cache.getTotalStoredCount());
@@ -326,7 +328,11 @@ class PlayerServiceTest {
     @Test
     @DisplayName("Achat refusé pendant la résolution du tour")
     void shouldRejectPurchaseDuringTurnResolution() {
-        when(turnLock.isLocked()).thenReturn(true);
+        Player player = new Player("Buyer");
+        player.setId(1L);
+        player.setBoardId(1L);
+        when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+        when(turnLock.isLocked(1L)).thenReturn(true);
 
         assertThrows(IllegalStateException.class,
                 () -> playerService.buyEquipments(1L, List.of(item("Pistolet", 1))));
