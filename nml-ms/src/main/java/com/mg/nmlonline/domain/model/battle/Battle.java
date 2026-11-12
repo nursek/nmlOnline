@@ -48,6 +48,7 @@ public class Battle {
     private final Map<CombatEntity, Tracker> trackers = new IdentityHashMap<>();
     private final Set<CombatEntity> embarked = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Map<CombatEntity, Vehicle> carriedBy = new IdentityHashMap<>();
+    private final Set<CombatEntity> defenseHalved = Collections.newSetFromMap(new IdentityHashMap<>());
 
     public Battle() {
         this.random = new Random();
@@ -75,6 +76,18 @@ public class Battle {
         Map<CombatEntity, Participation> result = new IdentityHashMap<>();
         trackers.forEach((entity, tracker) -> result.put(entity, tracker.snapshot()));
         return result;
+    }
+
+    public void markDefenseHalved(Collection<CombatEntity> entities) {
+        defenseHalved.addAll(entities);
+    }
+
+    private void recordDefenseHalved() {
+        if (defenseHalved.isEmpty()) {
+            return;
+        }
+        recordEvent(BattleLogEntry.INFO, "Malus de transit : Défense et Armure divisées par deux pour "
+                + defenseHalved.size() + " unité(s) (1er secteur d'un double déplacement).");
     }
 
     private int rand() {
@@ -135,6 +148,7 @@ public class Battle {
         recordInitialState(defender, defenderUnits);
         this.currentPhase = "Combat";
         recordEvent(BattleLogEntry.INFO, "Début du combat : " + attacker.getName() + " attaque " + defender.getName());
+        recordDefenseHalved();
 
         collectEmbarked(attackerUnits);
         collectEmbarked(defenderUnits);
@@ -222,6 +236,7 @@ public class Battle {
         recordEvent(BattleLogEntry.INFO, "Impasse mexicaine à " + n + " camps : "
                 + players.stream().map(Player::getName).collect(Collectors.joining(" → "))
                 + " → " + players.getFirst().getName());
+        recordDefenseHalved();
 
         standoffPhase("Impasse — PDF", "PDF", players, camps, targets, bonusPercents, e -> true);
         standoffPhase("Impasse — Bâtiments secondaires", "ATK", players, camps, targets, bonusPercents, Battle::isSecondaryBuilding);
@@ -313,6 +328,9 @@ public class Battle {
             double gross = remaining * (1 + bonus / 100);
             double resistance = target.getDamageReduction(damageType);
             double effective = gross * (1 - resistance);
+            boolean transitMalus = defenseHalved.contains(target);
+            // Dégâts doublés = défenses halvées, sans muter les stats persistées.
+            double impact = transitMalus ? effective * 2 : effective;
             double armor = target.getArmor();
             double defense = target.getDefense();
             String bonusText = bonus > 0
@@ -323,35 +341,39 @@ public class Battle {
                     ? ", résistance " + formatPoints(resistance * 100) + " % (" + formatPoints(gross)
                             + " → " + formatPoints(effective) + ")"
                     : "";
+            String transitText = transitMalus ? ", Défense et Armure divisées par deux (transit)" : "";
 
             tracker(striker).fired = true;
-            if (armor + defense <= effective) {
-                double cost = (armor + defense) / (1 - resistance);
+            if (armor + defense <= impact) {
+                double absorbed = transitMalus ? (armor + defense) / 2 : armor + defense;
+                double cost = absorbed / (1 - resistance);
                 // Reste en points de base : le bonus anti-véhicule ne doit pas être réappliqué au surplus enchaîné.
                 remaining -= cost / (1 + bonus / 100);
                 tracker(striker).destroyedTarget = true;
-                tracker(striker).damageDealt += armor + defense;
+                tracker(striker).damageDealt += absorbed;
                 tracker(target).damaged = true;
-                tracker(target).damageTaken += armor + defense;
-                destroyTarget(enemies, target, segments, actor, targetOwner, damageType, bonusText, resistanceText);
-            } else if (effective <= armor) {
-                target.setArmor(armor - effective);
-                tracker(striker).damageDealt += effective;
+                tracker(target).damageTaken += absorbed;
+                destroyTarget(enemies, target, segments, actor, targetOwner, damageType, bonusText,
+                        resistanceText + transitText);
+            } else if (impact <= armor) {
+                target.setArmor(armor - impact);
+                tracker(striker).damageDealt += impact;
                 tracker(target).damaged = true;
-                tracker(target).damageTaken += effective;
+                tracker(target).damageTaken += impact;
                 remaining = 0;
                 segments.add(actor + " touche " + targetLabel(targetOwner, target) + " : armure "
-                        + formatPoints(armor) + " → " + formatPoints(target.getArmor()) + bonusText + resistanceText);
+                        + formatPoints(armor) + " → " + formatPoints(target.getArmor()) + bonusText
+                        + resistanceText + transitText);
             } else {
                 target.setArmor(0);
-                target.setDefense(Math.max(0, defense - (effective - armor)));
-                tracker(striker).damageDealt += effective;
+                target.setDefense(Math.max(0, defense - (impact - armor)));
+                tracker(striker).damageDealt += impact;
                 tracker(target).damaged = true;
-                tracker(target).damageTaken += effective;
+                tracker(target).damageTaken += impact;
                 remaining = 0;
                 segments.add(actor + " touche " + targetLabel(targetOwner, target) + " : armure "
                         + formatPoints(armor) + " → 0, défense " + formatPoints(defense) + " → "
-                        + formatPoints(target.getDefense()) + bonusText + resistanceText);
+                        + formatPoints(target.getDefense()) + bonusText + resistanceText + transitText);
             }
         }
 

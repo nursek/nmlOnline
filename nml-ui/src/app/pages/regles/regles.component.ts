@@ -191,7 +191,8 @@ export class ReglesComponent {
   readonly classes: readonly ClasseUnite[] = [
     {
       nom: unitClassLabel('LEGER'),
-      effet: 'Peut parcourir 2 secteurs par tour au lieu de 1.',
+      effet:
+        'Peut parcourir 2 secteurs par tour au lieu de 1. Attaquée dans le secteur intermédiaire, sa Défense et son Armure sont divisées par deux.',
       actif: true,
     },
     {

@@ -221,7 +221,8 @@ describe('boutique.helpers — résumés compacts', () => {
 
     it('dérive les effets des champs du DTO, cumulés dans l’ordre', () => {
       expect(unitClassBonusSummary(uc('LEGER', { maxMovementHops: 2 }))).toBe(
-        'Peut parcourir 2 secteurs par tour.',
+        'Peut parcourir 2 secteurs par tour. ' +
+          'Défense et Armure divisées par deux dans le secteur intermédiaire.',
       );
       expect(
         unitClassBonusSummary(
@@ -233,7 +234,11 @@ describe('boutique.helpers — résumés compacts', () => {
       ).toBe('Critique : 10 % de chances, dégâts ×1,5.');
       expect(
         unitClassBonusSummary(uc('HYBRIDE', { maxMovementHops: 2, damageReductionPdf: 0.25 })),
-      ).toBe('Peut parcourir 2 secteurs par tour. Réduit de 25 % les dégâts PdF et PdC reçus.');
+      ).toBe(
+        'Peut parcourir 2 secteurs par tour. ' +
+          'Défense et Armure divisées par deux dans le secteur intermédiaire. ' +
+          'Réduit de 25 % les dégâts PdF et PdC reçus.',
+      );
     });
 
     it('texte dédié pour PILOTE_DESTRUCTEUR, sinon « Aucun effet de combat. »', () => {

@@ -8,6 +8,7 @@ import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
+import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
 import com.mg.nmlonline.domain.model.movement.SectorCapture;
 import com.mg.nmlonline.domain.model.movement.SectorConflict;
@@ -21,9 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -146,6 +149,7 @@ public class TurnResolutionOrchestrator {
                         "Conflit " + conflictId + " introuvable ou déjà résolu"));
         Board board = loadBoard();
         Map<Long, Player> locked = lockPlayers(pc.camps);
+        Set<Long> transitEntityIds = inTransitEntityIds(s.ctx);
 
         ResolvedBattle rb;
         if (pc.standoff) {
@@ -153,7 +157,7 @@ public class TurnResolutionOrchestrator {
                     .map(camp -> camp.stream().map(locked::get).toList())
                     .toList();
             CombatService.StandoffBattleResult r =
-                    combatService.simulateSectorStandoff(camps, board, pc.sectorNumber);
+                    combatService.simulateSectorStandoff(camps, board, pc.sectorNumber, transitEntityIds);
             battleReportService.saveStandoffReport(s.turnEnding, pc.sectorNumber,
                     camps.stream().flatMap(List::stream).toList(), r);
             rb = ResolvedBattle.standoff(pc.sectorNumber, camps, r);
@@ -161,7 +165,8 @@ public class TurnResolutionOrchestrator {
             List<Player> attackerCamp = pc.camps.get(0).stream().map(locked::get).toList();
             List<Player> defenderCamp = pc.camps.get(1).stream().map(locked::get).toList();
             CombatService.SectorBattleResult r =
-                    combatService.simulateSectorBattle(attackerCamp, defenderCamp, board, pc.sectorNumber);
+                    combatService.simulateSectorBattle(attackerCamp, defenderCamp, board, pc.sectorNumber,
+                            transitEntityIds);
             battleReportService.saveDuelReport(s.turnEnding, pc.sectorNumber, attackerCamp, defenderCamp, r);
             rb = ResolvedBattle.duel(pc.sectorNumber, attackerCamp, defenderCamp, r);
         }
@@ -245,6 +250,28 @@ public class TurnResolutionOrchestrator {
                     .orElseThrow(() -> new IllegalStateException("Joueur " + id + " introuvable")));
         }
         return players;
+    }
+
+    private Set<Long> inTransitEntityIds(MovementService.ResolutionContext ctx) {
+        int step = ctx.getCurrentStep();
+        if (step < 1) {
+            return Set.of();
+        }
+        Set<Long> ids = new HashSet<>();
+        for (MovementOrder order : ctx.getActiveOrders()) {
+            if (!order.isFootMovement() || ctx.getStoppedIds().contains(order.getId())) {
+                continue;
+            }
+            if (step >= order.getHopCount()) {
+                continue;
+            }
+            Integer position = ctx.getCurrentPosition().get(order.getId());
+            if (!Integer.valueOf(order.getRoute().get(step)).equals(position)) {
+                continue;
+            }
+            ids.addAll(order.getEntityIds());
+        }
+        return ids;
     }
 
     /** Finalise le tour (ordres RESOLVED + incrémentation), libère le verrou. Nécessite tous hops + batailles résolus. */

@@ -74,6 +74,12 @@ public class CombatService {
      */
     public SectorBattleResult simulateSectorBattle(List<Player> attackerCamp, List<Player> defenderCamp,
                                                    Board board, int sectorNumber) {
+        return simulateSectorBattle(attackerCamp, defenderCamp, board, sectorNumber, Set.of());
+    }
+
+    public SectorBattleResult simulateSectorBattle(List<Player> attackerCamp, List<Player> defenderCamp,
+                                                   Board board, int sectorNumber,
+                                                   Set<Long> transitEntityIds) {
         if (attackerCamp == null || attackerCamp.isEmpty() || defenderCamp == null || defenderCamp.isEmpty()
                 || board == null) {
             return failedResult("Paramètres invalides");
@@ -103,6 +109,8 @@ public class CombatService {
         Battle battle = new Battle();
         battle.setAttackerBonusPercent(campBonusPercent(turn, attackerCamp, defenderCamp));
         battle.setDefenderBonusPercent(campBonusPercent(turn, defenderCamp, attackerCamp));
+        markDefenseHalved(battle, transitEntityIds, attackerFighters);
+        markDefenseHalved(battle, transitEntityIds, defenderFighters);
         battle.classicCombatConfiguration(attackerCamp.getFirst(), defenderCamp.getFirst(),
                 attackerFighters, defenderFighters);
         recordCombatParticipation(turn, attackerFighters);
@@ -187,6 +195,11 @@ public class CombatService {
 
     /** L'unique camp avec des combattants hors bâtiments l'emporte et capture les bâtiments des autres. */
     public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber) {
+        return simulateSectorStandoff(playerCamps, board, sectorNumber, Set.of());
+    }
+
+    public StandoffBattleResult simulateSectorStandoff(List<List<Player>> playerCamps, Board board, int sectorNumber,
+                                                       Set<Long> transitEntityIds) {
         if (playerCamps == null || playerCamps.size() < 3 || board == null) {
             return failedStandoff("Paramètres invalides");
         }
@@ -226,6 +239,7 @@ public class CombatService {
         }
 
         Battle battle = new Battle();
+        camps.forEach(camp -> markDefenseHalved(battle, transitEntityIds, camp));
         battle.classicStandoffConfiguration(activeCamps.stream().map(List::getFirst).toList(), camps, targets, bonuses);
         camps.forEach(camp -> recordCombatParticipation(turn, camp));
 
@@ -461,6 +475,15 @@ public class CombatService {
     }
 
     private record CaptureReport(int capturedBuildings, boolean headquartersCaptured) {
+    }
+
+    private void markDefenseHalved(Battle battle, Set<Long> transitEntityIds, List<CombatEntity> fighters) {
+        if (transitEntityIds.isEmpty()) {
+            return;
+        }
+        battle.markDefenseHalved(fighters.stream()
+                .filter(entity -> transitEntityIds.contains(entity.getId()))
+                .toList());
     }
 
     /** Inclut les véhicules et l'équipage embarqué (protégé tant que son véhicule vit). */
