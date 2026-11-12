@@ -3,6 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatAccordion, MatExpansionModule, MatExpansionPanel } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 import { unitClassLabel } from '../../core/labels';
+import { SALE_MAX_QUANTITY, SALE_MULTIPLIERS, saleValue } from '../../core/sale-multiplier';
 
 interface SectionRegle {
   id: string;
@@ -46,6 +47,35 @@ interface VehiculeDispo {
   dispo: number;
 }
 
+interface RessourceJeu {
+  nom: string;
+  valeur: string;
+  venteMax: string;
+}
+
+interface PalierVente {
+  quantite: number;
+  coefficient: string;
+  rendement: string;
+}
+
+// ponytail: catalogue figé (resources.csv) ; passer par l'API publique s'il devient éditable.
+const RESSOURCES = [
+  { nom: "Caisse d'armes", valeur: 600 },
+  { nom: 'Prométhéum', valeur: 800 },
+  { nom: 'Plastacier', valeur: 1000 },
+  { nom: 'Adamentium', valeur: 1100 },
+  { nom: 'Conteneur blindé', valeur: 1400 },
+  { nom: 'Auramite', valeur: 1700 },
+  { nom: 'Noctilithe', valeur: 2000 },
+] as const;
+
+const NOMBRE_FR = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 3 });
+
+function formatNombre(valeur: number): string {
+  return NOMBRE_FR.format(valeur);
+}
+
 @Component({
   selector: 'app-regles',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,6 +94,7 @@ export class ReglesComponent {
     { id: 'vehicules', label: 'Véhicules', icon: 'directions_car' },
     { id: 'batiments', label: 'Bâtiments', icon: 'apartment' },
     { id: 'economie', label: 'Économie et échange', icon: 'payments' },
+    { id: 'ressources', label: 'Ressources', icon: 'diamond' },
     { id: 'boutique', label: 'Boutique et équipements', icon: 'shopping_bag' },
     { id: 'recolte', label: 'Récolte des revenus', icon: 'agriculture' },
     { id: 'combat', label: 'Affrontements', icon: 'sports_esports' },
@@ -202,6 +233,20 @@ export class ReglesComponent {
     { nom: 'Hélicoptère de combat', dispo: 8 },
     { nom: 'Avion de transport', dispo: 12 },
   ];
+
+  readonly maxVente = SALE_MAX_QUANTITY;
+
+  readonly ressources: readonly RessourceJeu[] = RESSOURCES.map(({ nom, valeur }) => ({
+    nom,
+    valeur: formatNombre(valeur),
+    venteMax: formatNombre(saleValue(valeur, SALE_MAX_QUANTITY)),
+  }));
+
+  readonly ventes: readonly PalierVente[] = SALE_MULTIPLIERS.map((coefficient, index) => ({
+    quantite: index + 1,
+    coefficient: formatNombre(coefficient),
+    rendement: formatNombre(coefficient / (index + 1)),
+  }));
 
   private readonly panneaux = viewChildren(MatExpansionPanel);
   private readonly accordeon = viewChild(MatAccordion);

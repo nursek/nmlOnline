@@ -379,9 +379,8 @@
           </p>
           <ul class="rule-list">
             <li>
-              <strong>Vente de ressources</strong> — 1 à 9 unités par vente ; le prix dépend de la
-              quantité vendue d'un seul coup, en multiples de la valeur de base de la ressource : ×1
-              (1), ×3 (2), ×6 (3), ×9 (4), ×13 (5), ×19,5 (6), ×24,5 (7), ×33 (8), ×45 (9).
+              <strong>Vente de ressources</strong> — 1 à {{ maxVente }} unités par vente, au barème
+              du panneau <strong>Ressources</strong> ; le produit est crédité immédiatement.
             </li>
             <li>
               <strong>Échange</strong> — un joueur peut proposer une offre d'argent et/ou de
@@ -397,6 +396,73 @@
             <p>
               À venir : les revenus des secteurs et la vampirisation des banques capturées sont
               affichés mais pas encore crédités automatiquement.
+            </p>
+          </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="ressources" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title><mat-icon>diamond</mat-icon>Ressources</mat-panel-title>
+          </mat-expansion-panel-header>
+          <p class="text">
+            Chaque secteur est associé à une ressource, récoltable à raison d'<strong>une unité par
+            tour</strong> (voir Récolte des revenus). Les ressources se stockent dans l'inventaire du
+            joueur ou dans sa banque et n'ont d'autre usage que la <strong>vente</strong> et
+            l'<strong>échange</strong>.
+          </p>
+          <div class="table-wrap">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Ressource</th>
+                  <th>Valeur de base</th>
+                  <th>Vente de {{ maxVente }} unités</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ressource of ressources; track ressource.nom) {
+                  <tr>
+                    <td>
+                      <strong>{{ ressource.nom }}</strong>
+                    </td>
+                    <td>{{ ressource.valeur }} ₡</td>
+                    <td>{{ ressource.venteMax }} ₡</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="text">
+            Une vente porte sur <strong>1 à {{ maxVente }} unités</strong> d'une même ressource. Le
+            prix du lot vaut <code>valeur de base × coefficient</code> ; le gain par unité, exprimé
+            en multiples de la valeur de base, progresse avec la taille du lot.
+          </p>
+          <div class="table-wrap">
+            <table class="rules-table">
+              <thead>
+                <tr>
+                  <th>Unités vendues d'un coup</th>
+                  <th>Coefficient</th>
+                  <th>Gain par unité</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (vente of ventes; track vente.quantite) {
+                  <tr>
+                    <td>{{ vente.quantite }}</td>
+                    <td>×{{ vente.coefficient }}</td>
+                    <td>×{{ vente.rendement }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <mat-icon>savings</mat-icon>
+            <p>
+              Vendre un lot de {{ maxVente }} unités maximise le gain par unité ; à l'unité, la
+              vente ne rapporte que la valeur de base. Le produit de la vente est crédité
+              immédiatement.
             </p>
           </div>
         </mat-expansion-panel>
