@@ -40,13 +40,13 @@ class PreparationPhaseFilterTest {
         assertEquals(409, perform("POST", "/api/players/equipment/buy", 1L).getStatus());
         assertEquals(409, perform("POST", "/api/units/buy-batch", 1L).getStatus());
         assertEquals(409, perform("PUT", "/api/buildings/3/move", 1L).getStatus());
+        assertEquals(409, perform("POST", "/api/bank/offers", 1L).getStatus());
     }
 
     @Test
     void allowsPreparationSocialAndAdminRoutes() throws Exception {
         assertEquals(200, perform("POST", "/api/preparation/units", 1L).getStatus());
         assertEquals(200, perform("POST", "/api/alliances/proposals", 1L).getStatus());
-        assertEquals(200, perform("POST", "/api/bank/offers", 1L).getStatus());
         assertEquals(200, perform("POST", "/api/admin/players/template", 1L).getStatus());
         assertEquals(200, perform("GET", "/api/players/me", 1L).getStatus());
     }

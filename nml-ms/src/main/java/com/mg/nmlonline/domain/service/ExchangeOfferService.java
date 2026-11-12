@@ -50,6 +50,17 @@ public class ExchangeOfferService {
     }
 
     public ExchangeOfferDto createOffer(Long userId, Long boardId, CreateExchangeOfferRequestDto request) {
+        return createOffer(userId, boardId, request, true);
+    }
+
+    /** Scénario de démo : peut créer une offre avant le tour 2 sans ouvrir le garde-fou joueur. */
+    ExchangeOfferDto createOfferForScenario(Long userId, Long boardId,
+                                            CreateExchangeOfferRequestDto request) {
+        return createOffer(userId, boardId, request, false);
+    }
+
+    private ExchangeOfferDto createOffer(Long userId, Long boardId,
+                                         CreateExchangeOfferRequestDto request, boolean enforceTurn) {
         if (request == null || request.receiverPlayerId() == null) {
             throw new IllegalArgumentException("Destinataire manquant");
         }
@@ -58,6 +69,9 @@ public class ExchangeOfferService {
         }
 
         int turn = turnService.getCurrentTurn(boardId);
+        if (enforceTurn && turn < 2) {
+            throw new IllegalStateException("Les échanges sont ouverts à partir du tour 2");
+        }
         // Purge avant comptage : une offre expirée ne doit plus consommer un emplacement.
         exchangeOfferRepository.expirePendingOffers(boardId, ExchangeOfferStatus.PENDING,
                 ExchangeOfferStatus.EXPIRED, turn);

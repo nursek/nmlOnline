@@ -13,7 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Tour 0 : seules la préparation, les échanges/alliances et les actions admin sont ouvertes.
+ * Tour 0 : seules la préparation, les alliances et les actions admin sont ouvertes.
  * Les autres mutations (achat, ordre, récolte, déplacement) seraient jouées hors tour.
  */
 @Component
@@ -61,7 +61,6 @@ public class PreparationPhaseFilter extends OncePerRequestFilter {
                 || path.startsWith("/api/admin/")
                 || path.startsWith("/api/preparation/")
                 || path.startsWith("/api/alliances/")
-                || path.startsWith("/api/bank/offers")
                 || path.equals("/api/boards")
                 || path.startsWith("/api/boards/")) {
             return true;

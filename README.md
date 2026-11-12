@@ -544,12 +544,13 @@ is never stored as a MJ; with no MJ nominated, the platform admin manages the ga
 starts the game (`POST /api/admin/board/start`), which sets `started_at` and moves the board to
 turn 1.
 
-During turn 0, only the setup actions and social routes (alliances, bank offers) are open:
-purchases, orders, movement, harvest and normal unit deployment are rejected by
-`PreparationPhaseFilter`. Players place their character, buildings and units themselves; an
-element left unplaced at start falls back to the player's first sector, and remaining units are
-classified `LEGER` and join the HQ reserve. Accounts can only be linked, and starting sectors
-changed, while the board is still in preparation.
+During turn 0, only the setup actions, alliances and sector notes are open:
+purchases, orders, movement, harvest, exchanges and normal unit deployment are rejected by
+`PreparationPhaseFilter`. Players place their character, buildings and units themselves through
+the preparation endpoints; an element left unplaced at start falls back to the player's first
+sector, and remaining units are classified `LEGER` and join the HQ reserve. Accounts can only be
+linked, and starting sectors changed, while the board is still in preparation. Exchange offers
+also stay closed until turn 2.
 
 Ready-to-use players are created by `POST /api/admin/players/template`; accounts are linked with
 `PUT /api/admin/players/{id}/account` (platform `ADMIN` only). Registration is invitation-only in
