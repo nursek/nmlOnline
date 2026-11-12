@@ -8,12 +8,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class SpaForwardController {
 
     @GetMapping({
+            "/accueil",
+            "/accueil/**",
+            "/parties",
+            "/parties/**",
             "/carte",
             "/carte/**",
             "/joueur",
             "/joueur/**",
             "/boutique",
             "/boutique/**",
+            "/ordres",
+            "/ordres/**",
+            "/rapports",
+            "/rapports/**",
             "/regles",
             "/regles/**",
             "/login",
