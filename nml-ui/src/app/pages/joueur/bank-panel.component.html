@@ -50,13 +50,15 @@
       </div>
 
       <div class="building-actions">
-        <button mat-stroked-button color="primary" (click)="exchange.emit()">
-          <mat-icon>swap_horiz</mat-icon>
-          Échange
-          @if (pendingOffers() > 0) {
-            ({{ pendingOffers() }})
-          }
-        </button>
+        @if ((currentTurn() ?? 0) >= 2) {
+          <button mat-stroked-button color="primary" (click)="exchange.emit()">
+            <mat-icon>swap_horiz</mat-icon>
+            Échange
+            @if (pendingOffers() > 0) {
+              ({{ pendingOffers() }})
+            }
+          </button>
+        }
         <button
           mat-stroked-button
           color="primary"

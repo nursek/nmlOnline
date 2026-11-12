@@ -56,11 +56,11 @@ public class ExchangeScenarioSeeder {
         ensureEarnedMoney(secondSender, ACCEPTED_MONEY);
         ensureResource(secondSender, "Auramite", 2);
 
-        ExchangeOfferDto pending = exchangeOfferService.createOffer(requireUserId(sender), boardId,
+        ExchangeOfferDto pending = exchangeOfferService.createOfferForScenario(requireUserId(sender), boardId,
                 new CreateExchangeOfferRequestDto(receiver.getId(), PENDING_MONEY,
                         List.of(new ExchangeOfferItemDto("Caisse d'armes", 3))));
 
-        ExchangeOfferDto created = exchangeOfferService.createOffer(requireUserId(secondSender), boardId,
+        ExchangeOfferDto created = exchangeOfferService.createOfferForScenario(requireUserId(secondSender), boardId,
                 new CreateExchangeOfferRequestDto(secondReceiver.getId(), ACCEPTED_MONEY,
                         List.of(new ExchangeOfferItemDto("Auramite", 2))));
         exchangeOfferService.acceptOffer(requireUserId(secondReceiver), created.id());

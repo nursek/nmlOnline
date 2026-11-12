@@ -98,6 +98,24 @@ class GameSetupServiceTest {
     }
 
     @Test
+    @DisplayName("Les 100 unités peuvent être placées et classées pendant le tour 0")
+    void allStartingUnitsCanBePlacedDuringPreparation() {
+        String boardName = "Préparation " + UUID.randomUUID();
+        Board board = boardService.saveBoard(board(boardName), boardName);
+        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
+                new AdminTemplatePlayerRequestDto("ToutesUnites" + UUID.randomUUID(), "ORKS",
+                        List.of(1), null));
+        User account = createAccount();
+        adminService.linkAccount(dto.getId(), account.getUsername());
+
+        preparationService.distributeUnits(account.getId(), board.getId(), 1, 100, List.of("LEGER"));
+        assertEquals(0, unitRepository.findByPlayerIdAndSectorIsNull(dto.getId()).size());
+
+        gameSetupService.startGame(board.getId());
+        assertEquals(0, unitRepository.findByPlayerIdAndSectorIsNull(dto.getId()).size());
+    }
+
+    @Test
     @DisplayName("Le démarrage refuse un joueur sans compte relié")
     void startRefusesUnlinkedPlayer() {
         String boardName = "Préparation " + UUID.randomUUID();
