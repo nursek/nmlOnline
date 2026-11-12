@@ -7,6 +7,8 @@ import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,8 +34,11 @@ class MovementAdminServiceTest {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private BoardRepository boardRepository;
+
     private Long boardId() {
-        return playerRepository.findAll().getFirst().getBoardId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     // destination inexistante (99999) pour bloquer l'ordre de façon déterministe.
@@ -70,7 +75,7 @@ class MovementAdminServiceTest {
     @DisplayName("getOrdersForTurn enrichit chaque ordre du nom du joueur")
     void getOrdersForTurnResolvesPlayerName() {
         int turn = turnService.getCurrentTurn(boardId());
-        Player player = playerRepository.findByBoardIdAndName(playerRepository.findAll().getFirst().getBoardId(), "nursek").orElseThrow();
+        Player player = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "nursek").orElseThrow();
         MovementOrder order = MovementOrder.createFootOrder(
                 player.getId(), boardId(), turn, List.of(999L), List.of(2, 99999));
         MovementOrder saved = movementOrderRepository.save(order);

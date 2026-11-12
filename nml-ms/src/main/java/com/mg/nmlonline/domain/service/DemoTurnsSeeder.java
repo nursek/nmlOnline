@@ -45,6 +45,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 public class DemoTurnsSeeder {
 
+    // Scénario scripté pour la carte de démo principale uniquement.
+    private static final String DEMO_BOARD_NAME = "Carte Principale";
     private static final int FIRST_DEMO_TURN = 1;
     private static final int SALE_BATCH_MAX = 9;
     private static final int MIN_SALE_QUANTITY = 5;
@@ -176,15 +178,21 @@ public class DemoTurnsSeeder {
         this.txTemplate = new TransactionTemplate(txManager);
     }
 
-    public ScenarioSummaryDto playDemoTurns() {
-        int turn = requireBoard().getCurrentTurn();
+    public ScenarioSummaryDto playDemoTurns(Long boardId) {
+        Board board = requireBoard();
+        if (!board.getId().equals(boardId)) {
+            throw new IllegalArgumentException("La démo scriptée se joue sur « " + DEMO_BOARD_NAME
+                    + " » (X-Board-Id=" + board.getId() + "), pas sur la partie sélectionnée.");
+        }
+        int turn = board.getCurrentTurn();
         // Le journal d'actions est la marque d'une partie déjà jouée : la navigation dev vers le tour 1 le laisse intact.
-        if (turn != FIRST_DEMO_TURN || playerActionRepository.count() > 0) {
+        long existingActions = playerActionRepository.countByBoardId(board.getId());
+        if (turn != FIRST_DEMO_TURN || existingActions > 0) {
             throw new IllegalStateException("La démo se joue une fois, depuis une partie vierge (tour courant : "
-                    + turn + ", actions existantes : " + playerActionRepository.count()
+                    + turn + ", actions existantes : " + existingActions
                     + "). En dev, redémarrez le backend : la base repart vierge avec l'import démo.");
         }
-        if (turnLock.isLocked(requireBoard().getId())) {
+        if (turnLock.isLocked(board.getId())) {
             throw new IllegalStateException(
                     "Une résolution est en cours — finalisez-la ou abandonnez-la avant de jouer la démo.");
         }
@@ -519,7 +527,7 @@ public class DemoTurnsSeeder {
     }
 
     private Board requireBoard() {
-        return boardRepository.findAll().stream().findFirst()
-                .orElseThrow(() -> new IllegalStateException("Aucun plateau trouvé — importez d'abord un board"));
+        return boardRepository.findByName(DEMO_BOARD_NAME).orElseThrow(() -> new IllegalStateException(
+                "Plateau de démo « " + DEMO_BOARD_NAME + " » introuvable — import démo désactivé ?"));
     }
 }

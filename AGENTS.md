@@ -116,9 +116,10 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
 
 ## Données prod
 
-Source de vérité = la DB. `boards/board.json` et `players/*.json` sont des fixtures de démo
-classpath, lues si `app.import-demo-data=true` (défaut dev/test). En prod, l'admin crée
-plateau et joueurs par l'API.
+Source de vérité = la DB. En démo (`app.import-demo-data=true`, défaut dev/test),
+`PlayerStartupImporter` importe les `DemoGame` : carte principale (`boards/board.json`,
+`players/*.json`) **et** carte 6 joueurs (`boards/carte-25.json`, `players-carte-25/*.json`).
+En prod, l'admin crée plateau et joueurs par l'API.
 
 Import et suppression sont **par partie** : `importPlayer(..., boardId)` rattache la participation,
 et `AdminService.deleteBoard` supprime les participations (cascades JPA) sans jamais toucher aux

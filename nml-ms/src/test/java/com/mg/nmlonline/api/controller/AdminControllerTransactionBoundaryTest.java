@@ -4,6 +4,8 @@ import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.config.TestDataInitializer;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.JwtService;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.UnitRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
@@ -47,8 +49,11 @@ class AdminControllerTransactionBoundaryTest {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private BoardRepository boardRepository;
+
     private Long boardId() {
-        return playerRepository.findAll().getFirst().getBoardId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     @Autowired
@@ -63,7 +68,7 @@ class AdminControllerTransactionBoundaryTest {
 
     @Test
     void getPlayerForEdit() throws Exception {
-        Long playerId = playerRepository.findAll().getFirst().getId();
+        Long playerId = playerRepository.findByBoardId(boardId()).getFirst().getId();
         mockMvc.perform(get("/api/admin/players/{id}", playerId).header("Authorization", bearer(TestDataInitializer.ADMIN))
                         .header("X-Board-Id", String.valueOf(boardId())))
                 .andExpect(status().isOk());
@@ -85,7 +90,7 @@ class AdminControllerTransactionBoundaryTest {
 
     @Test
     void rejectNegativeMoney() throws Exception {
-        Long playerId = playerRepository.findAll().getFirst().getId();
+        Long playerId = playerRepository.findByBoardId(boardId()).getFirst().getId();
         mockMvc.perform(put("/api/admin/players/{id}/money", playerId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"amount\":-1}")
@@ -96,7 +101,7 @@ class AdminControllerTransactionBoundaryTest {
 
     @Test
     void rejectResourceQuantityAboveCap() throws Exception {
-        Long playerId = playerRepository.findAll().getFirst().getId();
+        Long playerId = playerRepository.findByBoardId(boardId()).getFirst().getId();
         mockMvc.perform(post("/api/admin/players/{id}/resources", playerId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Caisse d'armes\",\"quantity\":1001}")

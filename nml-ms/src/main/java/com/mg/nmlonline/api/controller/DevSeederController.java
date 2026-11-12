@@ -104,7 +104,7 @@ public class DevSeederController {
 
     /** Dev-only, jouée une seule fois : refuse une partie déjà entamée. */
     @PostMapping("/play-demo-turns")
-    public ResponseEntity<ScenarioSummaryDto> playDemoTurns() {
-        return ResponseEntity.ok(demoTurnsSeeder.playDemoTurns());
+    public ResponseEntity<ScenarioSummaryDto> playDemoTurns(HttpServletRequest request) {
+        return ResponseEntity.ok(demoTurnsSeeder.playDemoTurns(boardId(request)));
     }
 }

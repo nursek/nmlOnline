@@ -48,27 +48,88 @@ import { GameInstance } from '../../models';
     </section>
   `,
   styles: `
+    :host {
+      display: block;
+    }
     .parties {
-      padding: 1.5rem;
+      box-sizing: border-box;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      justify-content: safe center;
+      gap: 2.25rem;
+      padding: 3rem 1.5rem;
+    }
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(1.7rem, 1.35rem + 1.5vw, 2.4rem);
+      letter-spacing: 0.08em;
+    }
+    h1::after {
+      content: '';
+      display: block;
+      width: 4.5rem;
+      height: 3px;
+      margin: 0.9rem auto 0;
+      background: var(--accent);
     }
     .grid {
+      width: 100%;
+      max-width: 62rem;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(17rem, 21rem));
+      justify-content: center;
+      gap: 1.25rem;
     }
     .card {
-      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 1rem 1.15rem 0.9rem;
+      text-align: left;
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-pop);
     }
     .card.selected {
-      outline: 2px solid var(--mat-sys-primary, #6750a4);
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .card mat-card-title {
+      margin-bottom: 0.4rem;
+    }
+    .card mat-card-content p {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .card mat-card-content p + p {
+      margin-top: 0.3rem;
+    }
+    .card mat-card-actions {
+      margin-top: auto;
+      padding: 0.85rem 0 0;
     }
     .role {
-      margin-left: auto;
-      font-size: 0.75rem;
+      align-self: flex-end;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
       opacity: 0.7;
     }
+    .card mat-card-content p.warn {
+      color: var(--danger);
+    }
     .warn {
-      color: #b3261e;
+      color: var(--danger);
+      text-align: center;
     }
   `,
 })

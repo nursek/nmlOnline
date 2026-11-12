@@ -98,7 +98,7 @@ class TurnResolutionOrchestratorStepsTest {
     // Doit être appelée dans une méthode @Transactional (les tests le sont par défaut via la classe).
     private Scenario setupBruteVsLarbinOrder() {
         Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-        List<Player> players = playerRepository.findAll();
+        List<Player> players = playerRepository.findByBoardId(board.getId());
         Player attacker = players.get(0);
         Player defender = players.stream()
                 .filter(p -> !p.getId().equals(attacker.getId()))
@@ -412,7 +412,7 @@ class TurnResolutionOrchestratorStepsTest {
         void healingTimeline_plafonneeADeuxTours() {
             turnService.setCurrentTurn(boardId(), 2);
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-            List<Player> players = playerRepository.findAll();
+            List<Player> players = playerRepository.findByBoardId(board.getId());
             Player attacker = players.getFirst();
             Player defender = players.stream()
                     .filter(p -> !p.getId().equals(attacker.getId()))

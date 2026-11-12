@@ -115,7 +115,7 @@ class TurnResolutionScenariosTest {
     @Transactional
     void battleWinnerKeepsIntermediateSectorAfterMovingOn() {
         Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-        List<Player> players = playerRepository.findAll();
+        List<Player> players = playerRepository.findByBoardId(board.getId());
         Player attacker = players.get(0);
         Player defender = players.stream()
                 .filter(p -> !p.getId().equals(attacker.getId()))
@@ -175,7 +175,7 @@ class TurnResolutionScenariosTest {
     @Transactional
     void mutualAnnihilationLeavesSectorNeutral() {
         Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-        List<Player> players = playerRepository.findAll();
+        List<Player> players = playerRepository.findByBoardId(board.getId());
         Player attacker = players.get(0);
         Player defender = players.stream()
                 .filter(p -> !p.getId().equals(attacker.getId()))
@@ -229,7 +229,7 @@ class TurnResolutionScenariosTest {
         // Pas de @Transactional sur ce test : setup commité pour que l'orchestrateur voie les données.
         Long ueId = new TransactionTemplate(txManager).execute(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-            List<Player> players = playerRepository.findAll();
+            List<Player> players = playerRepository.findByBoardId(board.getId());
             Player attacker = players.get(0);
             Player defender = players.stream()
                     .filter(p -> !p.getId().equals(attacker.getId())).findFirst().orElseThrow();
@@ -842,7 +842,7 @@ class TurnResolutionScenariosTest {
         assertFalse(pendingState.isCanFinalize(), "Finalisation bloquée tant que le tueur n'est pas choisi");
         assertThrows(IllegalStateException.class, () -> orchestrator.finalizeTurn(boardId()));
 
-        Long outsiderId = playerRepository.findAll().stream()
+        Long outsiderId = playerRepository.findByBoardId(boardId()).stream()
                 .map(Player::getId)
                 .filter(id -> !id.equals(defenderId) && !id.equals(attackerId))
                 .findFirst().orElseThrow();

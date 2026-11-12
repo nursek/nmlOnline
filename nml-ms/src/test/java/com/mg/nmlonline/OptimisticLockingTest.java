@@ -1,6 +1,7 @@
 package com.mg.nmlonline;
 
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,13 +22,17 @@ class OptimisticLockingTest {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private BoardRepository boardRepository;
+
     @Test
     @DisplayName("Enregistrer un Player avec une version périmée est rejeté")
     void stalePlayerSaveIsRejected() {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
 
+        Long boardId = DemoFixtures.mainBoardId(boardRepository);
         Long playerId = tx.execute(status ->
-                playerRepository.findByBoardIdAndName(playerRepository.findAll().getFirst().getBoardId(), "TestPlayer1").orElseThrow().getId());
+                playerRepository.findByBoardIdAndName(boardId, "TestPlayer1").orElseThrow().getId());
         Player stale = tx.execute(status -> playerRepository.findById(playerId).orElseThrow());
 
         tx.executeWithoutResult(status -> {
