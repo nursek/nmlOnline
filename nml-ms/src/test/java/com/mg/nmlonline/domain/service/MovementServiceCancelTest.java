@@ -37,7 +37,7 @@ class MovementServiceCancelTest {
     private static final Long ORDER_ID = 777L;
 
     private MovementOrder pendingOrder(Long playerId) {
-        return MovementOrder.createFootOrder(playerId, 1, List.of(1L), List.of(2, 3));
+        return MovementOrder.createFootOrder(playerId, 1L, 1, List.of(1L), List.of(2, 3));
     }
 
     @Test

@@ -225,7 +225,8 @@ function extractSectors(svgContent, numSamples) {
   while ((pathMatch = pathPattern.exec(svgContent)) !== null) {
     const pathElement = pathMatch[0];
     const idMatch = pathElement.match(/id="([^"]+)"/);
-    const dMatch = pathElement.match(/d="([^"]+)"/);
+    // \b : sans lui, id="path1" contient d="path1" quand id précède d.
+    const dMatch = pathElement.match(/\bd="([^"]+)"/);
     if (!idMatch || !dMatch) continue;
 
     const id = idMatch[1];

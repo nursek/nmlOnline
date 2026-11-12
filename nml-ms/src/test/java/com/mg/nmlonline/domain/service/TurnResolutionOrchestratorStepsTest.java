@@ -47,6 +47,10 @@ class TurnResolutionOrchestratorStepsTest {
     @Autowired
     private BoardRepository boardRepository;
 
+    private Long boardId() {
+        return boardRepository.findAll().getFirst().getId();
+    }
+
     @Autowired
     private PlayerRepository playerRepository;
 
@@ -67,7 +71,7 @@ class TurnResolutionOrchestratorStepsTest {
 
     @AfterEach
     void releaseLock() {
-        orchestrator.abort();
+        orchestrator.abort(boardId());
         turnService.invalidateTurnCache();
         Mockito.reset(movementService);
     }
@@ -94,7 +98,7 @@ class TurnResolutionOrchestratorStepsTest {
     // Doit être appelée dans une méthode @Transactional (les tests le sont par défaut via la classe).
     private Scenario setupBruteVsLarbinOrder() {
         Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-        List<Player> players = playerRepository.findAll();
+        List<Player> players = playerRepository.findByBoardId(board.getId());
         Player attacker = players.get(0);
         Player defender = players.stream()
                 .filter(p -> !p.getId().equals(attacker.getId()))
@@ -121,10 +125,10 @@ class TurnResolutionOrchestratorStepsTest {
         Long bruteId = brute.getId();
         assertNotNull(bruteId);
 
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(boardId());
         orderRepository_deletePending(turn);
         MovementOrder order = MovementOrder.createFootOrder(
-                attackerId, turn, List.of(bruteId), List.of(s1.getNumber(), s2.getNumber()));
+                attackerId, boardId(), turn, List.of(bruteId), List.of(s1.getNumber(), s2.getNumber()));
         movementOrderRepository.save(order);
         em.flush();
 
@@ -132,7 +136,7 @@ class TurnResolutionOrchestratorStepsTest {
     }
 
     private void orderRepository_deletePending(int turn) {
-        List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(turn);
+        List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(boardId(), turn);
         if (!pending.isEmpty()) {
             movementOrderRepository.deleteAll(pending);
             em.flush();
@@ -148,9 +152,9 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("start : prépare les ordres, verrouille le tour et expose maxSteps")
         void start_prepareLesOrdresEtVerrouilleLeTour() {
             Scenario sc = setupBruteVsLarbinOrder();
-            int turn = turnService.getCurrentTurn();
+            int turn = turnService.getCurrentTurn(boardId());
 
-            TurnResolutionStateDto state = orchestrator.startSession();
+            TurnResolutionStateDto state = orchestrator.startSession(boardId());
 
             assertTrue(state.isActive());
             assertEquals(turn, state.getTurnEnding());
@@ -164,9 +168,9 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("start : échoue (409) si une session est déjà active")
         void start_echoueSiUneSessionEstDejaActive() {
             setupBruteVsLarbinOrder();
-            orchestrator.startSession();
+            orchestrator.startSession(boardId());
 
-            assertThrows(IllegalStateException.class, orchestrator::startSession,
+            assertThrows(IllegalStateException.class, () -> orchestrator.startSession(boardId()),
                     "Un 2e start doit lever IllegalStateException (→ 409)");
         }
 
@@ -175,16 +179,16 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("Le verrou bloque advanceTurn et setCurrentTurn pendant une session")
         void turnLockBlocksManualTurnChanges() {
             setupBruteVsLarbinOrder();
-            orchestrator.startSession();
+            orchestrator.startSession(boardId());
 
-            assertThrows(IllegalStateException.class, turnService::advanceTurn);
-            assertThrows(IllegalStateException.class, () -> turnService.setCurrentTurn(2));
+            assertThrows(IllegalStateException.class, () -> turnService.advanceTurn(boardId()));
+            assertThrows(IllegalStateException.class, () -> turnService.setCurrentTurn(boardId(), 2));
         }
 
         @Test
         @DisplayName("getState sans session active renvoie active=false")
         void getStateSansSession_renvoieActiveFalse() {
-            TurnResolutionStateDto state = orchestrator.getState();
+            TurnResolutionStateDto state = orchestrator.getState(boardId());
 
             assertFalse(state.isActive());
         }
@@ -199,9 +203,9 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("advanceHop : déplace les unités et expose les conflits du hop courant")
         void advanceHop_deplaceLesUnitesEtExposeLesConflits() {
             Scenario sc = setupBruteVsLarbinOrder();
-            orchestrator.startSession();
+            orchestrator.startSession(boardId());
 
-            TurnResolutionStateDto state = orchestrator.advanceHop();
+            TurnResolutionStateDto state = orchestrator.advanceHop(boardId());
 
             assertEquals(1, state.getCurrentStep());
             assertEquals(1, state.getPendingConflicts().size(),
@@ -218,10 +222,10 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("advanceHop : refusé (409) tant que des conflits sont en attente")
         void advanceHop_refuseTantQueDesConflitsSontEnAttente() {
             setupBruteVsLarbinOrder();
-            orchestrator.startSession();
-            orchestrator.advanceHop();
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
 
-            assertThrows(IllegalStateException.class, orchestrator::advanceHop,
+            assertThrows(IllegalStateException.class, () -> orchestrator.advanceHop(boardId()),
                     "Avancer au hop suivant doit échouer tant qu'une bataille est en attente");
         }
 
@@ -230,12 +234,12 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("advanceHop : refusé (409) après le dernier hop")
         void advanceHop_apresLeDernierHop_echoue() {
             setupBruteVsLarbinOrder();
-            orchestrator.startSession();
-            orchestrator.advanceHop();
-            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
-            orchestrator.resolveBattle(conflictId);
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
+            int conflictId = orchestrator.getState(boardId()).getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(boardId(), conflictId);
 
-            assertThrows(IllegalStateException.class, orchestrator::advanceHop,
+            assertThrows(IllegalStateException.class, () -> orchestrator.advanceHop(boardId()),
                     "Avancer au-delà du dernier hop doit échouer (maxSteps atteint)");
         }
 
@@ -243,20 +247,20 @@ class TurnResolutionOrchestratorStepsTest {
         @Transactional
         @DisplayName("advanceHop : un ordre annulé entre deux hops ne déplace plus l'unité")
         void advanceHop_ordreAnnuleEntreHops_neDeplacePlusLUnite() {
-            ScenarioSummaryDto seed = seeder.seedScenario();
+            ScenarioSummaryDto seed = seeder.seedScenario(boardId());
             Long attackerId = seed.getAttacker().getId();
             Long attackerUnitId = seed.getAttackerUnit().getId();
-            int turn = turnService.getCurrentTurn();
+            int turn = turnService.getCurrentTurn(boardId());
 
-            orchestrator.startSession();
-            orchestrator.advanceHop();
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
 
             // cancelOrderOrThrow ne prend pas le TurnLock : permet d'annuler entre deux hops.
-            List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(turn);
+            List<MovementOrder> pending = movementOrderRepository.findPendingByTurn(boardId(), turn);
             assertFalse(pending.isEmpty(), "Prérequis : l'ordre du seeder est PENDING");
             movementService.cancelOrderOrThrow(attackerId, pending.get(0).getId());
 
-            TurnResolutionStateDto state = orchestrator.advanceHop();
+            TurnResolutionStateDto state = orchestrator.advanceHop(boardId());
             assertEquals(2, state.getCurrentStep(), "Le hop 2 s'exécute (maxSteps atteint)");
 
             em.flush();
@@ -280,11 +284,11 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("resolveBattle : applique les pertes et persiste les survivants")
         void resolveBattle_appliqueLesPertesEtPersisteLesSurvivants() {
             Scenario sc = setupBruteVsLarbinOrder();
-            orchestrator.startSession();
-            orchestrator.advanceHop();
-            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
+            int conflictId = orchestrator.getState(boardId()).getPendingConflicts().get(0).getConflictId();
 
-            ResolvedBattleDto report = orchestrator.resolveBattle(conflictId);
+            ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflictId);
 
             assertTrue(report.isSuccess());
             assertEquals(sc.toSector, report.getSectorNumber());
@@ -307,9 +311,9 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("resolveBattle : avec un conflictId introuvable → 404 (IllegalArgumentException)")
         void resolveBattle_avecIdIntrouvable_renvoie404() {
             setupBruteVsLarbinOrder();
-            orchestrator.startSession();
+            orchestrator.startSession(boardId());
 
-            assertThrows(IllegalArgumentException.class, () -> orchestrator.resolveBattle(99999),
+            assertThrows(IllegalArgumentException.class, () -> orchestrator.resolveBattle(boardId(), 99999),
                     "Un conflictId inexistant doit lever IllegalArgumentException (→ 404)");
         }
     }
@@ -323,26 +327,26 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("finalizeTurn : incrémente le tour et libère le verrou")
         void finalizeTurn_incrementeLeTourEtLibereLeVerrou() {
             setupBruteVsLarbinOrder();
-            int turnBefore = turnService.getCurrentTurn();
-            orchestrator.startSession();
-            orchestrator.advanceHop();
-            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
-            orchestrator.resolveBattle(conflictId);
+            int turnBefore = turnService.getCurrentTurn(boardId());
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
+            int conflictId = orchestrator.getState(boardId()).getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(boardId(), conflictId);
 
-            TurnFinalizeResultDto result = orchestrator.finalizeTurn();
+            TurnFinalizeResultDto result = orchestrator.finalizeTurn(boardId());
 
             assertEquals(turnBefore + 1, result.getNewTurn());
             assertTrue(result.getResolvedOrders() >= 1, "L'ordre attaquant est marqué résolu");
-            assertFalse(orchestrator.getState().isActive(), "La session est fermée après finalize");
+            assertFalse(orchestrator.getState(boardId()).isActive(), "La session est fermée après finalize");
         }
 
         @Test
         @Transactional
         @DisplayName("finalizeTurn : guérit un blessé au tour suivant, sauf s'il a combattu")
         void finalizeTurn_soigneUnBlesseSaufSilACambatte() {
-            turnService.setCurrentTurn(2);
+            turnService.setCurrentTurn(boardId(), 2);
             Scenario sc = setupBruteVsLarbinOrder();
-            int turnBefore = turnService.getCurrentTurn();
+            int turnBefore = turnService.getCurrentTurn(boardId());
 
             Unit combatWounded = em.find(Unit.class, sc.bruteId);
             combatWounded.setInjured(true);
@@ -358,12 +362,12 @@ class TurnResolutionOrchestratorStepsTest {
             em.flush();
             Long idleId = idleWounded.getId();
 
-            orchestrator.startSession();
-            orchestrator.advanceHop();
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
             double idleSectorAtkBefore = idleSector.getStats().getTotalAtk();
-            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
-            orchestrator.resolveBattle(conflictId);
-            orchestrator.finalizeTurn();
+            int conflictId = orchestrator.getState(boardId()).getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(boardId(), conflictId);
+            orchestrator.finalizeTurn(boardId());
 
             em.flush();
             em.clear();
@@ -383,15 +387,15 @@ class TurnResolutionOrchestratorStepsTest {
         @Transactional
         @DisplayName("finalizeTurn : le blessé du tour ne guérit pas à la fin du même tour")
         void finalizeTurn_blessePendantLaBataille_resteBlesse() {
-            turnService.setCurrentTurn(2);
+            turnService.setCurrentTurn(boardId(), 2);
             Scenario sc = setupBruteVsLarbinOrder();
-            int turnBefore = turnService.getCurrentTurn();
+            int turnBefore = turnService.getCurrentTurn(boardId());
 
-            orchestrator.startSession();
-            orchestrator.advanceHop();
-            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
-            orchestrator.resolveBattle(conflictId);
-            orchestrator.finalizeTurn();
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
+            int conflictId = orchestrator.getState(boardId()).getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(boardId(), conflictId);
+            orchestrator.finalizeTurn(boardId());
 
             em.flush();
             em.clear();
@@ -406,9 +410,9 @@ class TurnResolutionOrchestratorStepsTest {
         @Transactional
         @DisplayName("timeline : soin au plus tard deux tours après la blessure")
         void healingTimeline_plafonneeADeuxTours() {
-            turnService.setCurrentTurn(2);
+            turnService.setCurrentTurn(boardId(), 2);
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-            List<Player> players = playerRepository.findAll();
+            List<Player> players = playerRepository.findByBoardId(board.getId());
             Player attacker = players.getFirst();
             Player defender = players.stream()
                     .filter(p -> !p.getId().equals(attacker.getId()))
@@ -431,8 +435,8 @@ class TurnResolutionOrchestratorStepsTest {
                 assertTrue(combatService.simulateSectorBattle(
                         List.of(attacker), List.of(defender), board, sector.getNumber()).success());
 
-                orchestrator.startSession();
-                orchestrator.finalizeTurn();
+                orchestrator.startSession(boardId());
+                orchestrator.finalizeTurn(boardId());
                 em.flush();
 
                 if (turn < 4) {
@@ -452,9 +456,9 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("finalizeTurn : refusé (409) tant que des hops restent")
         void finalizeTurn_tantQueDesHopsRestent_echoue() {
             setupBruteVsLarbinOrder();
-            orchestrator.startSession();
+            orchestrator.startSession(boardId());
 
-            assertThrows(IllegalStateException.class, orchestrator::finalizeTurn,
+            assertThrows(IllegalStateException.class, () -> orchestrator.finalizeTurn(boardId()),
                     "Finaliser sans avoir avancé tous les hops doit échouer");
         }
 
@@ -463,10 +467,10 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("finalizeTurn : refusé (409) tant qu'une bataille est en attente")
         void finalizeTurn_tantQueDesBataillesSontEnAttente_echoue() {
             setupBruteVsLarbinOrder();
-            orchestrator.startSession();
-            orchestrator.advanceHop();
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
 
-            assertThrows(IllegalStateException.class, orchestrator::finalizeTurn,
+            assertThrows(IllegalStateException.class, () -> orchestrator.finalizeTurn(boardId()),
                     "Finaliser avec une bataille en attente doit échouer");
         }
 
@@ -475,15 +479,15 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("finalizeTurn : invalide le cache du tour courant de TurnService")
         void finalizeTurn_invalideLeCacheDuTourCourant() {
             setupBruteVsLarbinOrder();
-            int turnBefore = turnService.getCurrentTurn();
-            orchestrator.startSession();
-            orchestrator.advanceHop();
-            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
-            orchestrator.resolveBattle(conflictId);
+            int turnBefore = turnService.getCurrentTurn(boardId());
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
+            int conflictId = orchestrator.getState(boardId()).getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(boardId(), conflictId);
 
-            orchestrator.finalizeTurn();
+            orchestrator.finalizeTurn(boardId());
 
-            assertEquals(turnBefore + 1, turnService.getCurrentTurn(),
+            assertEquals(turnBefore + 1, turnService.getCurrentTurn(boardId()),
                     "Le cache du tour doit être invalidé après finalizeTurn "
                             + "→ getCurrentTurn retourne le nouveau tour");
         }
@@ -493,21 +497,21 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("finalizeTurn : libère le verrou même sur exception après les gardes")
         void finalizeTurn_libereLeVerrouSurExceptionApresLesGardes() {
             setupBruteVsLarbinOrder();
-            orchestrator.startSession();
-            orchestrator.advanceHop();
-            int conflictId = orchestrator.getState().getPendingConflicts().get(0).getConflictId();
-            orchestrator.resolveBattle(conflictId);
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
+            int conflictId = orchestrator.getState(boardId()).getPendingConflicts().get(0).getConflictId();
+            orchestrator.resolveBattle(boardId(), conflictId);
 
             // Simule une erreur DB après les gardes : avant le fix, le verrou restait acquis.
             Mockito.doThrow(new RuntimeException("Simulated DB error"))
                     .when(movementService).finalizeResolution(any(), any());
 
-            assertThrows(RuntimeException.class, orchestrator::finalizeTurn,
+            assertThrows(RuntimeException.class, () -> orchestrator.finalizeTurn(boardId()),
                     "finalizeTurn doit propager l'exception");
 
-            assertFalse(turnLock.isLocked(),
+            assertFalse(turnLock.isLocked(boardId()),
                     "Le verrou doit être libéré même sur exception (try/finally)");
-            assertFalse(orchestrator.getState().isActive(),
+            assertFalse(orchestrator.getState(boardId()).isActive(),
                     "La session doit être fermée même sur exception (try/finally)");
         }
     }
@@ -521,12 +525,12 @@ class TurnResolutionOrchestratorStepsTest {
         @DisplayName("abort : libère le verrou sans rollback des positions déjà déplacées")
         void abort_libereLeVerrouSansRollbackDesPositions() {
             Scenario sc = setupBruteVsLarbinOrder();
-            orchestrator.startSession();
-            orchestrator.advanceHop();
+            orchestrator.startSession(boardId());
+            orchestrator.advanceHop(boardId());
 
-            orchestrator.abort();
+            orchestrator.abort(boardId());
 
-            assertFalse(orchestrator.getState().isActive(), "Session fermée");
+            assertFalse(orchestrator.getState(boardId()).isActive(), "Session fermée");
             // abort soft : pas de rollback des positions déjà déplacées (vérifié après reload DB).
             em.flush();
             em.clear();
@@ -539,7 +543,7 @@ class TurnResolutionOrchestratorStepsTest {
         @Test
         @DisplayName("abort sans session active est idempotent (no-op)")
         void abort_sansSessionActive_estIdempotent() {
-            assertDoesNotThrow(() -> orchestrator.abort());
+            assertDoesNotThrow(() -> orchestrator.abort(boardId()));
         }
     }
 }

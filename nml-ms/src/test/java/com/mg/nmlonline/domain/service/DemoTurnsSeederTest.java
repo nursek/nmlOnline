@@ -1,8 +1,11 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
+import com.mg.nmlonline.domain.model.action.PlayerAction;
 import com.mg.nmlonline.domain.model.action.PlayerActionStatus;
+import com.mg.nmlonline.domain.model.action.PlayerActionType;
 import com.mg.nmlonline.infrastructure.repository.AllianceRepository;
 import com.mg.nmlonline.infrastructure.repository.AnnouncementRepository;
 import com.mg.nmlonline.infrastructure.repository.BattleReportRepository;
@@ -10,6 +13,7 @@ import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PendingCaptureRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerActionRepository;
+import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,6 +55,13 @@ class DemoTurnsSeederTest {
     private BoardRepository boardRepository;
 
     @Autowired
+    private PlayerRepository playerRepository;
+
+    private Long boardId() {
+        return DemoFixtures.mainBoardId(boardRepository);
+    }
+
+    @Autowired
     private PlatformTransactionManager txManager;
 
     @Autowired
@@ -71,7 +82,7 @@ class DemoTurnsSeederTest {
     // Base partagée par toute la suite : la démo committe ventes/ordres/rapports, il faut les purger.
     @AfterEach
     void cleanUpSharedDatabase() {
-        orchestrator.abort();
+        orchestrator.abort(boardId());
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             playerActionRepository.deleteAll();
             movementOrderRepository.deleteAll();
@@ -91,10 +102,10 @@ class DemoTurnsSeederTest {
     @Test
     @DisplayName("les tours 1 et 2 joués mènent au tour 3, puis la démo refuse de rejouer")
     void playDemoTurns_vaJusquAuTour3_etRefuseDeRejouer() {
-        ScenarioSummaryDto report = seeder.playDemoTurns();
+        ScenarioSummaryDto report = seeder.playDemoTurns(boardId());
 
         assertEquals(3, report.getTurn(), "La démo joue les tours 1 et 2");
-        assertEquals(turnService.getCurrentTurn(), report.getTurn());
+        assertEquals(turnService.getCurrentTurn(boardId()), report.getTurn());
         assertTrue(report.getMessage().contains("capture(s) au tour 1"),
                 "Le rapport compte les captures : " + report.getMessage());
         assertTrue(battleReportRepository.count() >= 1,
@@ -107,11 +118,39 @@ class DemoTurnsSeederTest {
                 .getAllSectors().stream().filter(sector -> !sector.isNeutral()).count());
         assertTrue(captured >= 35,
                 "La vague de conquêtes des deux tours couvre presque la carte, got " + captured);
-        assertTrue(playerActionRepository.findByTurnAndStatus(3, PlayerActionStatus.ACTIVE).isEmpty(),
+        assertTrue(playerActionRepository.findByBoardIdAndTurnAndStatus(
+                        boardId(), 3, PlayerActionStatus.ACTIVE).isEmpty(),
                 "Le tour 3 reste vierge : la démo ne joue que deux tours");
 
-        IllegalStateException replay = assertThrows(IllegalStateException.class, seeder::playDemoTurns);
+        IllegalStateException replay = assertThrows(IllegalStateException.class, () -> seeder.playDemoTurns(boardId()));
         assertTrue(replay.getMessage().contains("partie vierge"),
                 "Le refus explique qu'il faut une partie vierge : " + replay.getMessage());
+    }
+
+    @Test
+    @DisplayName("refuse une partie autre que la carte de démo scriptée")
+    void playDemoTurns_refuseUneAutrePartie() {
+        Long arcsBoardId = boardRepository.findByName("Carte 6 Joueurs (Arcs)").orElseThrow().getId();
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> seeder.playDemoTurns(arcsBoardId));
+        assertTrue(error.getMessage().contains("Carte Principale"), error.getMessage());
+    }
+
+    @Test
+    @DisplayName("une action sur une autre partie ne bloque pas la démo scriptée")
+    void playDemoTurns_ignoreLesActionsDesAutresParties() {
+        Long arcsBoardId = boardRepository.findByName("Carte 6 Joueurs (Arcs)").orElseThrow().getId();
+        PlayerAction foreignAction = new PlayerAction();
+        foreignAction.setPlayerId(playerRepository.findByBoardId(arcsBoardId).getFirst().getId());
+        foreignAction.setBoardId(arcsBoardId);
+        foreignAction.setTurn(1);
+        foreignAction.setType(PlayerActionType.HARVEST_RESOURCE);
+        new TransactionTemplate(txManager).executeWithoutResult(status -> playerActionRepository.save(foreignAction));
+
+        ScenarioSummaryDto report = seeder.playDemoTurns(boardId());
+
+        assertEquals(3, report.getTurn());
+        assertTrue(playerActionRepository.countByBoardId(boardId()) > 0);
     }
 }

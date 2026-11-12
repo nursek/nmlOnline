@@ -20,11 +20,14 @@ public class SecurityConfig {
 
     private final CorsConfigurationSource corsConfigurationSource;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final BoardScopeFilter boardScopeFilter;
 
     public SecurityConfig(CorsConfigurationSource corsConfigurationSource,
-                          JwtAuthenticationFilter jwtAuthenticationFilter) {
+                          JwtAuthenticationFilter jwtAuthenticationFilter,
+                          BoardScopeFilter boardScopeFilter) {
         this.corsConfigurationSource = corsConfigurationSource;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.boardScopeFilter = boardScopeFilter;
     }
 
     @Bean
@@ -55,7 +58,7 @@ public class SecurityConfig {
                         "/*.woff2",
                         "/assets/**"
                 ).permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "INSTANCE_ADMIN")
                 .requestMatchers("/api/**").authenticated()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
@@ -70,6 +73,7 @@ public class SecurityConfig {
         );
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(boardScopeFilter, JwtAuthenticationFilter.class);
 
         // API stateless JWT (bearer header, pas de session) : CSRF conservé hors /api/**.
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"));

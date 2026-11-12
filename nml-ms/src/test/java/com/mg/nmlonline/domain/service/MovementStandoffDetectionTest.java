@@ -24,12 +24,15 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Détection : cercle d'impasse et ancrage du défenseur")
 class MovementStandoffDetectionTest {
+
+    private static final Long BOARD_ID = 1L;
 
     @Mock
     MovementOrderRepository orderRepository;
@@ -57,6 +60,7 @@ class MovementStandoffDetectionTest {
     @BeforeEach
     void setUp() {
         board = new Board();
+        board.setId(BOARD_ID);
         secteur1 = new Sector(1, "Départ A");
         secteur2 = new Sector(2, "Objectif");
         secteur3 = new Sector(3, "Départ B");
@@ -72,8 +76,8 @@ class MovementStandoffDetectionTest {
         secteur2.addNeighbor(4); secteur4.addNeighbor(2);
 
         lenient().when(orderRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-        lenient().when(allianceGraph.activeAdjacency()).thenReturn(Map.of());
-        lenient().when(allianceGraph.endedAlliancesAtTurn(anyInt())).thenReturn(List.of());
+        lenient().when(allianceGraph.activeAdjacency(BOARD_ID)).thenReturn(Map.of());
+        lenient().when(allianceGraph.endedAlliancesAtTurn(eq(BOARD_ID), anyInt())).thenReturn(List.of());
     }
 
     private void addUnit(Sector sector, Long playerId, long id) {
@@ -92,17 +96,17 @@ class MovementStandoffDetectionTest {
         addUnit(secteur4, JOUEUR_C, 103L);
 
         Instant t0 = Instant.parse("2026-01-01T10:00:00Z");
-        MovementOrder ordreA = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2));
+        MovementOrder ordreA = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2));
         ordreA.setId(10L);
         ordreA.setSubmittedAt(t0.plusSeconds(10));
-        MovementOrder ordreB = MovementOrder.createFootOrder(JOUEUR_B, 1, List.of(102L), List.of(3, 2));
+        MovementOrder ordreB = MovementOrder.createFootOrder(JOUEUR_B, BOARD_ID, 1, List.of(102L), List.of(3, 2));
         ordreB.setId(11L);
         ordreB.setSubmittedAt(t0);
-        MovementOrder ordreC = MovementOrder.createFootOrder(JOUEUR_C, 1, List.of(103L), List.of(4, 2));
+        MovementOrder ordreC = MovementOrder.createFootOrder(JOUEUR_C, BOARD_ID, 1, List.of(103L), List.of(4, 2));
         ordreC.setId(12L);
         ordreC.setSubmittedAt(t0.plusSeconds(30));
 
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordreA, ordreB, ordreC));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordreA, ordreB, ordreC));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -121,14 +125,14 @@ class MovementStandoffDetectionTest {
         addUnit(secteur4, JOUEUR_C, 103L);
 
         Instant t0 = Instant.parse("2026-01-01T10:00:00Z");
-        MovementOrder ordreA = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2));
+        MovementOrder ordreA = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2));
         ordreA.setId(10L);
         ordreA.setSubmittedAt(t0);
-        MovementOrder ordreC = MovementOrder.createFootOrder(JOUEUR_C, 1, List.of(103L), List.of(4, 2));
+        MovementOrder ordreC = MovementOrder.createFootOrder(JOUEUR_C, BOARD_ID, 1, List.of(103L), List.of(4, 2));
         ordreC.setId(11L);
         ordreC.setSubmittedAt(t0.plusSeconds(5));
 
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordreA, ordreC));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordreA, ordreC));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -145,10 +149,10 @@ class MovementStandoffDetectionTest {
         addUnit(secteur2, JOUEUR_B, 102L);
         addUnit(secteur1, JOUEUR_A, 101L);
 
-        MovementOrder ordreA = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2));
+        MovementOrder ordreA = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2));
         ordreA.setId(10L);
 
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordreA));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordreA));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -167,16 +171,16 @@ class MovementStandoffDetectionTest {
         addUnit(secteur2, JOUEUR_D, 104L);
 
         Instant t0 = Instant.parse("2026-01-01T10:00:00Z");
-        MovementOrder ordreA = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2));
+        MovementOrder ordreA = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2));
         ordreA.setId(10L);
         ordreA.setSubmittedAt(t0);
-        MovementOrder ordreC = MovementOrder.createFootOrder(JOUEUR_C, 1, List.of(103L), List.of(3, 2));
+        MovementOrder ordreC = MovementOrder.createFootOrder(JOUEUR_C, BOARD_ID, 1, List.of(103L), List.of(3, 2));
         ordreC.setId(11L);
         ordreC.setSubmittedAt(t0.plusSeconds(5));
-        MovementOrder ordreD = MovementOrder.createFootOrder(JOUEUR_D, 1, List.of(104L), List.of(2, 3));
+        MovementOrder ordreD = MovementOrder.createFootOrder(JOUEUR_D, BOARD_ID, 1, List.of(104L), List.of(2, 3));
         ordreD.setId(12L);
 
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(ordreA, ordreC, ordreD));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(ordreA, ordreC, ordreD));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -196,14 +200,14 @@ class MovementStandoffDetectionTest {
         addUnit(secteur1, JOUEUR_A, 105L);
         addUnit(secteur2, JOUEUR_C, 103L);
 
-        MovementOrder croisementA = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(3, 2));
+        MovementOrder croisementA = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(3, 2));
         croisementA.setId(10L);
-        MovementOrder arriveeA = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(105L), List.of(1, 2));
+        MovementOrder arriveeA = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(105L), List.of(1, 2));
         arriveeA.setId(11L);
-        MovementOrder croisementC = MovementOrder.createFootOrder(JOUEUR_C, 1, List.of(103L), List.of(2, 3));
+        MovementOrder croisementC = MovementOrder.createFootOrder(JOUEUR_C, BOARD_ID, 1, List.of(103L), List.of(2, 3));
         croisementC.setId(12L);
 
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(croisementA, arriveeA, croisementC));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(croisementA, arriveeA, croisementC));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 
@@ -223,16 +227,16 @@ class MovementStandoffDetectionTest {
         addUnit(secteur3, JOUEUR_C, 103L);
 
         Instant t0 = Instant.parse("2026-01-01T10:00:00Z");
-        MovementOrder arriveeA = MovementOrder.createFootOrder(JOUEUR_A, 1, List.of(101L), List.of(1, 2));
+        MovementOrder arriveeA = MovementOrder.createFootOrder(JOUEUR_A, BOARD_ID, 1, List.of(101L), List.of(1, 2));
         arriveeA.setId(10L);
         arriveeA.setSubmittedAt(t0);
-        MovementOrder croisementC = MovementOrder.createFootOrder(JOUEUR_C, 1, List.of(103L), List.of(3, 2));
+        MovementOrder croisementC = MovementOrder.createFootOrder(JOUEUR_C, BOARD_ID, 1, List.of(103L), List.of(3, 2));
         croisementC.setId(11L);
         croisementC.setSubmittedAt(t0.plusSeconds(5));
-        MovementOrder departB = MovementOrder.createFootOrder(JOUEUR_B, 1, List.of(106L), List.of(2, 3));
+        MovementOrder departB = MovementOrder.createFootOrder(JOUEUR_B, BOARD_ID, 1, List.of(106L), List.of(2, 3));
         departB.setId(12L);
 
-        when(orderRepository.findPendingByTurn(1)).thenReturn(List.of(arriveeA, croisementC, departB));
+        when(orderRepository.findPendingByTurn(BOARD_ID, 1)).thenReturn(List.of(arriveeA, croisementC, departB));
 
         MovementResolutionResult resultat = service.resolveAllMovements(1, board);
 

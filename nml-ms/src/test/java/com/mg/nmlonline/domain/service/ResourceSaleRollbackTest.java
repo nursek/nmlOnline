@@ -6,6 +6,8 @@ import com.mg.nmlonline.config.TestDataInitializer;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.user.User;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +31,9 @@ class ResourceSaleRollbackTest {
     private PlayerRepository playerRepository;
 
     @Autowired
+    private BoardRepository boardRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -44,7 +49,7 @@ class ResourceSaleRollbackTest {
         Long userId = user.getId();
 
         Long playerId = tx.execute(status -> {
-            Player player = playerRepository.findByUserId(userId).orElseThrow();
+            Player player = playerRepository.findByUserIdAndBoardId(userId, DemoFixtures.mainBoardId(boardRepository)).orElseThrow();
             player.addResource("Auramite", 5);
             return playerRepository.save(player).getId();
         });
@@ -66,7 +71,7 @@ class ResourceSaleRollbackTest {
 
         try {
             assertThrows(RuntimeException.class,
-                    () -> resourceService.sellResourcesBatch(userId, List.of(valid, invalid)));
+                    () -> resourceService.sellResourcesBatch(userId, playerRepository.findById(playerId).orElseThrow().getBoardId(), List.of(valid, invalid)));
 
             tx.executeWithoutResult(status -> {
                 Player reloaded = playerRepository.findById(playerId).orElseThrow();

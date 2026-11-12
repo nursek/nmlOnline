@@ -29,7 +29,7 @@ public class SectorNoteService {
     }
 
     public Map<Integer, String> getNotes(Long userId, Long boardId) {
-        Player player = requirePlayer(userId);
+        Player player = requirePlayer(userId, boardId);
         Map<Integer, String> notes = new HashMap<>();
         for (SectorNote sectorNote : sectorNoteRepository.findByPlayerIdAndBoardId(player.getId(), boardId)) {
             notes.put(sectorNote.getSectorNumber(), sectorNote.getNote());
@@ -38,7 +38,7 @@ public class SectorNoteService {
     }
 
     public void saveNote(Long userId, Long boardId, int sectorNumber, String note) {
-        Player player = requirePlayer(userId);
+        Player player = requirePlayer(userId, boardId);
         if (!sectorRepository.existsById(new Sector.SectorId(boardId, sectorNumber))) {
             throw new IllegalArgumentException("Secteur introuvable");
         }
@@ -51,11 +51,11 @@ public class SectorNoteService {
         sectorNoteRepository.save(new SectorNote(player.getId(), boardId, sectorNumber, cleaned));
     }
 
-    private Player requirePlayer(Long userId) {
+    private Player requirePlayer(Long userId, Long boardId) {
         if (userId == null) {
             throw new SecurityException("Utilisateur non authentifié");
         }
-        return playerRepository.findByUserId(userId)
+        return playerRepository.findByUserIdAndBoardId(userId, boardId)
                 .orElseThrow(() -> new SecurityException("Aucun joueur associé à ce compte"));
     }
 }

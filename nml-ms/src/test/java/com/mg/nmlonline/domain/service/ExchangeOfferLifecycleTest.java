@@ -6,6 +6,8 @@ import com.mg.nmlonline.domain.model.bank.ExchangeOffer;
 import com.mg.nmlonline.domain.model.bank.ExchangeOfferStatus;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.ExchangeOfferRepository;
+import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,15 +37,22 @@ class ExchangeOfferLifecycleTest {
     PlayerRepository playerRepository;
 
     @Autowired
+    private BoardRepository boardRepository;
+
+    @Autowired
     TurnService turnService;
+
+    private Long boardId() {
+        return DemoFixtures.mainBoardId(boardRepository);
+    }
 
     @Test
     @DisplayName("Accepter une offre expirée l'a marque EXPIRED en base")
     void expiredOfferIsPersistedWhenAcceptFails() {
-        Player sender = playerRepository.findByName("lurio").orElseThrow();
-        Player receiver = playerRepository.findByName("cegorach").orElseThrow();
-        int turn = turnService.getCurrentTurn();
-        ExchangeOffer offer = new ExchangeOffer(sender.getId(), receiver.getId(), 0.0, turn - 1, turn);
+        Player sender = playerRepository.findByBoardIdAndName(boardId(), "lurio").orElseThrow();
+        Player receiver = playerRepository.findByBoardIdAndName(boardId(), "cegorach").orElseThrow();
+        int turn = turnService.getCurrentTurn(boardId());
+        ExchangeOffer offer = new ExchangeOffer(boardId(), sender.getId(), receiver.getId(), 0.0, turn - 1, turn);
         exchangeOfferRepository.saveAndFlush(offer);
 
         try {
@@ -61,7 +70,7 @@ class ExchangeOfferLifecycleTest {
     @Transactional
     @DisplayName("Seed une offre en attente et un échange accepté, re-jouable sans doublon")
     void shouldSeedPendingAndAcceptedOffersIdempotently() {
-        ExchangeScenarioSummaryDto first = seeder.seedExchangeScenario();
+        ExchangeScenarioSummaryDto first = seeder.seedExchangeScenario(boardId());
 
         assertNotNull(first.pendingOfferId());
         assertNotNull(first.acceptedOfferId());
@@ -75,18 +84,18 @@ class ExchangeOfferLifecycleTest {
         assertEquals(1, accepted.getResources().size());
         assertEquals(1000.0, accepted.getMoney());
 
-        Player receiver = playerRepository.findByName("nursek").orElseThrow();
+        Player receiver = playerRepository.findByBoardIdAndName(DemoFixtures.mainBoardId(boardRepository), "nursek").orElseThrow();
         assertTrue(receiver.getResourceQuantity("Auramite") >= 2, "Les ressources acceptées sont transférées");
 
         long offersAfterFirst = exchangeOfferRepository.count();
 
-        ExchangeScenarioSummaryDto second = seeder.seedExchangeScenario();
+        ExchangeScenarioSummaryDto second = seeder.seedExchangeScenario(boardId());
 
         assertNotEquals(first.pendingOfferId(), second.pendingOfferId());
 
         // 6 seeds = 12 « Or » demandés pour 10 disponibles au départ : couvre l'épuisement de la ressource.
         for (int i = 0; i < 4; i++) {
-            seeder.seedExchangeScenario();
+            seeder.seedExchangeScenario(boardId());
         }
 
         assertEquals(offersAfterFirst, exchangeOfferRepository.count(), "Pas de doublon après re-seed");

@@ -24,6 +24,8 @@ import static org.mockito.Mockito.when;
 @DisplayName("GameStatisticsService — compteurs de pertes")
 class GameStatisticsServiceTest {
 
+    private static final Long BOARD_ID = 1L;
+
     @Mock
     private GameStatisticRepository repository;
 
@@ -33,26 +35,26 @@ class GameStatisticsServiceTest {
     @Test
     @DisplayName("incrémente par type et expose toutes les catégories de pertes")
     void incrementsAndBuildsStatistics() {
-        when(repository.increment("UNIT_LARBIN")).thenReturn(1);
-        when(repository.increment("CHARACTER")).thenReturn(1);
-        when(repository.increment("VEHICLE_TANK")).thenReturn(1);
-        when(repository.findAll()).thenReturn(List.of(
-                new GameStatistic("UNIT_LARBIN", 2),
-                new GameStatistic("UNIT_VOYOU", 1),
-                new GameStatistic("CHARACTER", 1),
-                new GameStatistic("VEHICLE_TANK", 3)));
+        when(repository.increment(BOARD_ID, "UNIT_LARBIN")).thenReturn(1);
+        when(repository.increment(BOARD_ID, "CHARACTER")).thenReturn(1);
+        when(repository.increment(BOARD_ID, "VEHICLE_TANK")).thenReturn(1);
+        when(repository.findByBoardId(BOARD_ID)).thenReturn(List.of(
+                new GameStatistic(BOARD_ID, "UNIT_LARBIN", 2),
+                new GameStatistic(BOARD_ID, "UNIT_VOYOU", 1),
+                new GameStatistic(BOARD_ID, "CHARACTER", 1),
+                new GameStatistic(BOARD_ID, "VEHICLE_TANK", 3)));
 
-        service.recordUnitKill(UnitType.LARBIN);
-        service.recordUnitKill(UnitType.PERSONNAGE);
-        service.recordCharacterKill();
-        service.recordVehicleKill(VehicleType.TANK);
+        service.recordUnitKill(BOARD_ID, UnitType.LARBIN);
+        service.recordUnitKill(BOARD_ID, UnitType.PERSONNAGE);
+        service.recordCharacterKill(BOARD_ID);
+        service.recordVehicleKill(BOARD_ID, VehicleType.TANK);
 
-        verify(repository).increment("UNIT_LARBIN");
-        verify(repository).increment("CHARACTER");
-        verify(repository).increment("VEHICLE_TANK");
-        verify(repository, never()).increment("UNIT_PERSONNAGE");
+        verify(repository).increment(BOARD_ID, "UNIT_LARBIN");
+        verify(repository).increment(BOARD_ID, "CHARACTER");
+        verify(repository).increment(BOARD_ID, "VEHICLE_TANK");
+        verify(repository, never()).increment(BOARD_ID, "UNIT_PERSONNAGE");
 
-        GameStatisticsDto statistics = service.getStatistics();
+        GameStatisticsDto statistics = service.getStatistics(BOARD_ID);
 
         assertEquals(List.of("LARBIN", "VOYOU", "MALFRAT", "BRUTE"),
                 statistics.getUnits().stream().map(GameStatisticsDto.Entry::getKey).toList());
@@ -68,9 +70,9 @@ class GameStatisticsServiceTest {
     @Test
     @DisplayName("crée le compteur absent avant de l'incrémenter")
     void createsMissingCounter() {
-        when(repository.increment("UNIT_LARBIN")).thenReturn(0);
+        when(repository.increment(BOARD_ID, "UNIT_LARBIN")).thenReturn(0);
 
-        service.recordUnitKill(UnitType.LARBIN);
+        service.recordUnitKill(BOARD_ID, UnitType.LARBIN);
 
         verify(repository).saveAndFlush(argThat(statistic ->
                 "UNIT_LARBIN".equals(statistic.getStatKey()) && statistic.getTotal() == 1));

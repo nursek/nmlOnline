@@ -18,6 +18,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatMenuModule } from '@angular/material/menu';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { TurnManagementService } from '../../services/turn-management.service';
 import { ConflictPreviewService } from '../../services/conflict-preview.service';
@@ -25,6 +26,16 @@ import { DevScenarioService } from '../../services/dev-scenario.service';
 import { ApiService } from '../../services/api.service';
 import { PendingCapture, ResolvedBattle } from '../../models';
 import { CombatLogDialogComponent } from './combat-log-dialog.component';
+import { downloadJson, downloadText } from '../../core/download-file';
+import { httpErrorMessage } from '../../core/http-error.interceptor';
+import {
+  buildBattleExport,
+  buildTurnExport,
+  eliminationCauseLabel,
+  formatBattleLog,
+  formatTurnLog,
+} from './turn-export.helpers';
+import type { ExportFormat } from './turn-export.helpers';
 
 @Component({
   selector: 'app-turn-management',
@@ -41,6 +52,7 @@ import { CombatLogDialogComponent } from './combat-log-dialog.component';
     MatFormFieldModule,
     MatInputModule,
     MatDialogModule,
+    MatMenuModule,
   ],
   templateUrl: './turn-management.component.html',
   styleUrls: ['./turn-management.component.scss'],
@@ -55,6 +67,9 @@ export class TurnManagementComponent {
 
   readonly pendingCaptures = signal<PendingCapture[]>([]);
   readonly targetTurn = signal<number | null>(null);
+  readonly archiveTurn = signal<number | null>(null);
+  readonly archiveLoading = signal(false);
+  private archiveTurnTouched = false;
 
   readonly state = this.turnManagement.state;
   readonly busy = this.turnManagement.busy;
@@ -66,6 +81,7 @@ export class TurnManagementComponent {
   readonly currentTurn = this.turnManagement.currentTurn;
   readonly navigating = this.turnManagement.navigating;
   readonly devScenarioAvailable = this.devScenarios.available;
+  readonly causeLabel = eliminationCauseLabel;
 
   readonly previewReport = this.preview.report;
   readonly previewing = this.preview.previewing;
@@ -124,6 +140,13 @@ export class TurnManagementComponent {
         this.turnManagement.clearFinalizeResult();
       }
     });
+    effect(() => {
+      const turn = this.currentTurn();
+      if (turn === null || this.archiveTurnTouched) {
+        return;
+      }
+      this.archiveTurn.set(Math.max(1, turn - 1));
+    });
   }
 
   onStart(): void {
@@ -159,6 +182,67 @@ export class TurnManagementComponent {
     this.dialog.open(CombatLogDialogComponent, { data: report, width: '720px' });
   }
 
+  onDownloadBattle(battle: ResolvedBattle, format: ExportFormat): void {
+    const turn = this.state()?.turnEnding;
+    if (!turn) {
+      return;
+    }
+    const base = `combat-tour-${turn}-secteur-${battle.sectorNumber}`;
+    if (format === 'json') {
+      downloadJson(`${base}.json`, buildBattleExport(battle, turn));
+    } else {
+      downloadText(`${base}.log`, formatBattleLog(battle, turn));
+    }
+  }
+
+  onDownloadTurn(format: ExportFormat): void {
+    const session = this.state();
+    if (!session?.active) {
+      return;
+    }
+    const data = buildTurnExport({
+      turn: session.turnEnding,
+      battles: session.resolvedConflicts,
+      finalizeResult: null,
+      transitCombatsCount: session.transitCombatsCount,
+    });
+    const base = `tour-${session.turnEnding}-batailles`;
+    if (format === 'json') {
+      downloadJson(`${base}.json`, data);
+    } else {
+      downloadText(`${base}.log`, formatTurnLog(data));
+    }
+  }
+
+  onArchiveTurnChange(value: string): void {
+    const parsed = Number.parseInt(value, 10);
+    this.archiveTurnTouched = true;
+    this.archiveTurn.set(Number.isNaN(parsed) ? null : parsed);
+  }
+
+  async onDownloadArchive(format: ExportFormat): Promise<void> {
+    const turn = this.archiveTurn();
+    if (turn === null || turn < 1) {
+      return;
+    }
+    this.archiveLoading.set(true);
+    try {
+      const journal = await firstValueFrom(this.api.adminGetTurnJournal(turn));
+      const base = `tour-${journal.turn}-batailles`;
+      if (format === 'json') {
+        downloadJson(`${base}.json`, journal);
+      } else {
+        downloadText(`${base}.log`, formatTurnLog(journal));
+      }
+    } catch (error) {
+      this.snackBar.open(httpErrorMessage(error, "Erreur lors du chargement de l'archive"), 'OK', {
+        duration: 4000,
+      });
+    } finally {
+      this.archiveLoading.set(false);
+    }
+  }
+
   eliminationsLabel(report: ResolvedBattle): string {
     return (report.eliminatedPlayers ?? [])
       .map(
@@ -166,17 +250,6 @@ export class TurnManagementComponent {
           `${player.playerName ?? '#' + player.playerId} (${this.causeLabel(player.cause)})`,
       )
       .join(', ');
-  }
-
-  causeLabel(cause: string): string {
-    switch (cause) {
-      case 'HEADQUARTERS_CAPTURED':
-        return 'QG capturé';
-      case 'MAIN_CHARACTER_KILLED':
-        return 'personnage principal tué';
-      default:
-        return cause;
-    }
   }
 
   onFinalize(): void {

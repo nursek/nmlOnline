@@ -14,7 +14,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class GameCharacter extends CombatEntity {
 
-    @Column(name = "character_name", length = 100, unique = true)
+    @Column(name = "character_name", length = 100)
     private String name;
 
     @Column(name = "base_attack")

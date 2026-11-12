@@ -1,0 +1,340 @@
+{
+  "name": "Carte 6 Joueurs (Arcs)",
+  "mapImageUrl": "/assets/maps/carte-25-fond.png",
+  "svgOverlayUrl": "/assets/maps/carte-25-overlay.svg",
+  "sectors": [
+    {
+      "number": 1,
+      "name": "Secteur 1",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        2,
+        16,
+        17,
+        24,
+        25
+      ],
+      "resource": "Prométhéum"
+    },
+    {
+      "number": 2,
+      "name": "Secteur 2",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        1,
+        13
+      ],
+      "resource": "Plastacier"
+    },
+    {
+      "number": 3,
+      "name": "Secteur 3",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        4,
+        16,
+        17,
+        18,
+        25
+      ],
+      "resource": "Prométhéum"
+    },
+    {
+      "number": 4,
+      "name": "Secteur 4",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        3,
+        13,
+        14
+      ],
+      "resource": "Plastacier"
+    },
+    {
+      "number": 5,
+      "name": "Secteur 5",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        6,
+        18,
+        19,
+        20,
+        25
+      ],
+      "resource": "Prométhéum"
+    },
+    {
+      "number": 6,
+      "name": "Secteur 6",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        5,
+        14
+      ],
+      "resource": "Plastacier"
+    },
+    {
+      "number": 7,
+      "name": "Secteur 7",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        8,
+        19,
+        20,
+        21,
+        25
+      ],
+      "resource": "Prométhéum"
+    },
+    {
+      "number": 8,
+      "name": "Secteur 8",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        7,
+        14,
+        15
+      ],
+      "resource": "Plastacier"
+    },
+    {
+      "number": 9,
+      "name": "Secteur 9",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        10,
+        21,
+        22,
+        23,
+        25
+      ],
+      "resource": "Prométhéum"
+    },
+    {
+      "number": 10,
+      "name": "Secteur 10",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        9,
+        15
+      ],
+      "resource": "Plastacier"
+    },
+    {
+      "number": 11,
+      "name": "Secteur 11",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        12,
+        22,
+        23,
+        24,
+        25
+      ],
+      "resource": "Prométhéum"
+    },
+    {
+      "number": 12,
+      "name": "Secteur 12",
+      "income": 2000,
+      "army": [],
+      "neighbors": [
+        11,
+        13,
+        15
+      ],
+      "resource": "Plastacier"
+    },
+    {
+      "number": 13,
+      "name": "Secteur 13",
+      "income": 3000,
+      "army": [],
+      "neighbors": [
+        2,
+        4,
+        12,
+        17,
+        24
+      ],
+      "resource": "Noctilithe"
+    },
+    {
+      "number": 14,
+      "name": "Secteur 14",
+      "income": 3000,
+      "army": [],
+      "neighbors": [
+        4,
+        6,
+        8,
+        18,
+        20
+      ],
+      "resource": "Noctilithe"
+    },
+    {
+      "number": 15,
+      "name": "Secteur 15",
+      "income": 3000,
+      "army": [],
+      "neighbors": [
+        8,
+        10,
+        12,
+        21,
+        23
+      ],
+      "resource": "Noctilithe"
+    },
+    {
+      "number": 16,
+      "name": "Secteur 16",
+      "income": 2200,
+      "army": [],
+      "neighbors": [
+        1,
+        3,
+        17,
+        25
+      ],
+      "resource": "Adamentium"
+    },
+    {
+      "number": 17,
+      "name": "Secteur 17",
+      "income": 2200,
+      "army": [],
+      "neighbors": [
+        1,
+        3,
+        13,
+        16
+      ],
+      "resource": "Adamentium"
+    },
+    {
+      "number": 18,
+      "name": "Secteur 18",
+      "income": 2500,
+      "army": [],
+      "neighbors": [
+        3,
+        5,
+        14,
+        25
+      ],
+      "resource": "Auramite"
+    },
+    {
+      "number": 19,
+      "name": "Secteur 19",
+      "income": 2200,
+      "army": [],
+      "neighbors": [
+        5,
+        7,
+        20,
+        25
+      ],
+      "resource": "Adamentium"
+    },
+    {
+      "number": 20,
+      "name": "Secteur 20",
+      "income": 2200,
+      "army": [],
+      "neighbors": [
+        5,
+        7,
+        14,
+        19
+      ],
+      "resource": "Adamentium"
+    },
+    {
+      "number": 21,
+      "name": "Secteur 21",
+      "income": 2500,
+      "army": [],
+      "neighbors": [
+        7,
+        9,
+        15,
+        25
+      ],
+      "resource": "Auramite"
+    },
+    {
+      "number": 22,
+      "name": "Secteur 22",
+      "income": 2200,
+      "army": [],
+      "neighbors": [
+        9,
+        11,
+        23,
+        25
+      ],
+      "resource": "Adamentium"
+    },
+    {
+      "number": 23,
+      "name": "Secteur 23",
+      "income": 2200,
+      "army": [],
+      "neighbors": [
+        9,
+        11,
+        15,
+        22
+      ],
+      "resource": "Adamentium"
+    },
+    {
+      "number": 24,
+      "name": "Secteur 24",
+      "income": 2500,
+      "army": [],
+      "neighbors": [
+        1,
+        11,
+        13,
+        25
+      ],
+      "resource": "Auramite"
+    },
+    {
+      "number": 25,
+      "name": "Cité Centrale",
+      "income": 4000,
+      "army": [],
+      "neighbors": [
+        1,
+        3,
+        5,
+        7,
+        9,
+        11,
+        16,
+        18,
+        19,
+        21,
+        22,
+        24
+      ],
+      "resource": "Noctilithe"
+    }
+  ]
+}

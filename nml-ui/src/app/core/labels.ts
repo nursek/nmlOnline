@@ -26,6 +26,11 @@ export const UNIT_CLASS_ORDER: Readonly<Record<string, number>> = {
   PILOTE_DESTRUCTEUR: 4,
 };
 
+export const SNIPER_ACTION_LABELS: Readonly<Record<string, string>> = {
+  TIR_PRECISION: 'Tir de précision',
+  SURVEILLANCE: 'Surveillance',
+};
+
 export function equipmentCategoryLabel(category: string | null | undefined): string {
   if (!category) return '';
   return EQUIPMENT_CATEGORY_LABELS[category] ?? category;
@@ -38,4 +43,9 @@ export function unitClassLabel(name: string | null | undefined): string {
 
 export function vehicleTargetLabel(target: string | null | undefined): string {
   return target === 'AERIAL' ? 'véhicules aériens' : 'véhicules terrestres';
+}
+
+export function sniperActionLabel(action: string | null | undefined): string {
+  if (!action) return '';
+  return SNIPER_ACTION_LABELS[action] ?? action;
 }

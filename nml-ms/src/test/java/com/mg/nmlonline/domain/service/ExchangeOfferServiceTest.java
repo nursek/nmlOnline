@@ -54,6 +54,8 @@ class ExchangeOfferServiceTest {
     @InjectMocks
     ExchangeOfferService exchangeOfferService;
 
+    private static final Long BOARD_ID = 1L;
+
     private Player sender;
     private Player receiver;
 
@@ -62,15 +64,17 @@ class ExchangeOfferServiceTest {
         sender = new Player("Sender");
         sender.setId(1L);
         sender.setUserId(11L);
+        sender.setBoardId(BOARD_ID);
         sender.getStats().setMoney(1000.0);
 
         receiver = new Player("Receiver");
         receiver.setId(2L);
         receiver.setUserId(22L);
+        receiver.setBoardId(BOARD_ID);
     }
 
     private ExchangeOffer offerOf(double money, int createdTurn, int expiresTurn) {
-        ExchangeOffer offer = new ExchangeOffer(1L, 2L, money, createdTurn, expiresTurn);
+        ExchangeOffer offer = new ExchangeOffer(BOARD_ID, 1L, 2L, money, createdTurn, expiresTurn);
         offer.setId(10L);
         return offer;
     }
@@ -82,10 +86,10 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Auto-échange refusé")
         void shouldRejectSelfOffer() {
-            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
 
             assertThrows(IllegalArgumentException.class,
-                    () -> exchangeOfferService.createOffer(11L,
+                    () -> exchangeOfferService.createOffer(11L, BOARD_ID,
                             new CreateExchangeOfferRequestDto(1L, 10.0, List.of())));
 
             verify(exchangeOfferRepository, never()).save(any());
@@ -94,14 +98,14 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Quatrième offre en attente refusée")
         void shouldRejectWhenTooManyPendingOffers() {
-            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
             when(exchangeOfferRepository.countBySenderPlayerIdAndStatus(1L, ExchangeOfferStatus.PENDING))
                     .thenReturn(3L);
 
             assertThrows(IllegalStateException.class,
-                    () -> exchangeOfferService.createOffer(11L,
+                    () -> exchangeOfferService.createOffer(11L, BOARD_ID,
                             new CreateExchangeOfferRequestDto(2L, 10.0, List.of())));
 
             verify(exchangeOfferRepository, never()).save(any());
@@ -110,15 +114,15 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Succès : statut PENDING et expiration au tour suivant")
         void shouldCreateOfferExpiringNextTurn() {
-            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
             when(resourceRepository.findByName("Auramite")).thenReturn(Optional.of(new Resource("Auramite", 10.0)));
-            when(turnService.getCurrentTurn()).thenReturn(4);
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(4);
             when(exchangeOfferRepository.save(any(ExchangeOffer.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
-            ExchangeOfferDto dto = exchangeOfferService.createOffer(11L,
+            ExchangeOfferDto dto = exchangeOfferService.createOffer(11L, BOARD_ID,
                     new CreateExchangeOfferRequestDto(2L, 250.0,
                             List.of(new ExchangeOfferItemDto("Auramite", 5))));
 
@@ -134,12 +138,12 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Offre vide refusée")
         void shouldRejectEmptyOffer() {
-            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
 
             assertThrows(IllegalArgumentException.class,
-                    () -> exchangeOfferService.createOffer(11L,
+                    () -> exchangeOfferService.createOffer(11L, BOARD_ID,
                             new CreateExchangeOfferRequestDto(2L, 0.0, List.of())));
         }
 
@@ -150,19 +154,19 @@ class ExchangeOfferServiceTest {
             senderHighId.setId(9L);
             senderHighId.setUserId(11L);
             senderHighId.getStats().setMoney(1000.0);
-            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(senderHighId));
+            when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(senderHighId));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
             when(playerRepository.findByIdForUpdate(9L)).thenReturn(Optional.of(senderHighId));
-            when(turnService.getCurrentTurn()).thenReturn(4);
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(4);
             when(exchangeOfferRepository.save(any(ExchangeOffer.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
-            exchangeOfferService.createOffer(11L,
+            exchangeOfferService.createOffer(11L, BOARD_ID,
                     new CreateExchangeOfferRequestDto(2L, 10.0, List.of()));
 
             InOrder inOrder = inOrder(exchangeOfferRepository, playerRepository);
             inOrder.verify(exchangeOfferRepository).expirePendingOffers(
-                    ExchangeOfferStatus.PENDING, ExchangeOfferStatus.EXPIRED, 4);
+                    BOARD_ID, ExchangeOfferStatus.PENDING, ExchangeOfferStatus.EXPIRED, 4);
             inOrder.verify(playerRepository).findByIdForUpdate(2L);
             inOrder.verify(playerRepository).findByIdForUpdate(9L);
             inOrder.verify(exchangeOfferRepository).countBySenderPlayerIdAndStatus(
@@ -181,7 +185,7 @@ class ExchangeOfferServiceTest {
             offer.getResources().add(new ExchangeOfferResource("Auramite", 10));
             sender.addResource("Auramite", 50);
             when(exchangeOfferRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(offer));
-            when(turnService.getCurrentTurn()).thenReturn(1);
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(1);
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
 
@@ -199,7 +203,7 @@ class ExchangeOfferServiceTest {
         void shouldKeepOfferPendingWhenSenderHasInsufficientFunds() {
             ExchangeOffer offer = offerOf(2000.0, 1, 2);
             when(exchangeOfferRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(offer));
-            when(turnService.getCurrentTurn()).thenReturn(1);
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(1);
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
 
@@ -216,7 +220,7 @@ class ExchangeOfferServiceTest {
         void shouldExpireOfferOnAccept() {
             ExchangeOffer offer = offerOf(100.0, 1, 2);
             when(exchangeOfferRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(offer));
-            when(turnService.getCurrentTurn()).thenReturn(2);
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(2);
 
             assertThrows(IllegalStateException.class,
                     () -> exchangeOfferService.acceptOffer(22L, 10L));
@@ -229,7 +233,7 @@ class ExchangeOfferServiceTest {
         void shouldRejectAcceptByNonReceiver() {
             ExchangeOffer offer = offerOf(100.0, 1, 2);
             when(exchangeOfferRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(offer));
-            when(turnService.getCurrentTurn()).thenReturn(1);
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(1);
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
 
@@ -248,12 +252,12 @@ class ExchangeOfferServiceTest {
         @DisplayName("Offre refusée tant que la dotation n'est pas dépensée")
         void shouldRefuseOfferFromStartingMoney() {
             sender.initializeStartingMoney();
-            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
 
             assertThrows(IllegalArgumentException.class,
-                    () -> exchangeOfferService.createOffer(11L,
+                    () -> exchangeOfferService.createOffer(11L, BOARD_ID,
                             new CreateExchangeOfferRequestDto(2L, 500.0, List.of())));
 
             verify(exchangeOfferRepository, never()).save(any());
@@ -264,21 +268,21 @@ class ExchangeOfferServiceTest {
         void shouldCapOfferToEarnedMoney() {
             sender.initializeStartingMoney();
             sender.incrementMoney(400.0);
-            when(playerRepository.findByUserId(11L)).thenReturn(Optional.of(sender));
+            when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
             when(exchangeOfferRepository.countBySenderPlayerIdAndStatus(1L, ExchangeOfferStatus.PENDING))
                     .thenReturn(0L);
-            when(turnService.getCurrentTurn()).thenReturn(2);
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(2);
             when(exchangeOfferRepository.save(any(ExchangeOffer.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
-            ExchangeOfferDto dto = exchangeOfferService.createOffer(11L,
+            ExchangeOfferDto dto = exchangeOfferService.createOffer(11L, BOARD_ID,
                     new CreateExchangeOfferRequestDto(2L, 400.0, List.of()));
 
             assertEquals(400.0, dto.money());
             assertThrows(IllegalArgumentException.class,
-                    () -> exchangeOfferService.createOffer(11L,
+                    () -> exchangeOfferService.createOffer(11L, BOARD_ID,
                             new CreateExchangeOfferRequestDto(2L, 500.0, List.of())));
         }
 
@@ -288,7 +292,7 @@ class ExchangeOfferServiceTest {
             ExchangeOffer offer = offerOf(100.0, 1, 2);
             sender.initializeStartingMoney();
             when(exchangeOfferRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(offer));
-            when(turnService.getCurrentTurn()).thenReturn(1);
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(1);
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
 
@@ -309,24 +313,24 @@ class ExchangeOfferServiceTest {
         void shouldListAllOffersWithNamesAndFilter() {
             ExchangeOffer offer = offerOf(100.0, 1, 2);
             Pageable pageable = PageRequest.of(0, 20);
-            when(turnService.getCurrentTurn()).thenReturn(1);
-            when(exchangeOfferRepository.findAllByOrderByCreatedAtDesc(pageable))
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(1);
+            when(exchangeOfferRepository.findByBoardIdOrderByCreatedAtDesc(BOARD_ID, pageable))
                     .thenReturn(new PageImpl<>(List.of(offer)));
             when(playerRepository.findAllById(any())).thenReturn(List.of(sender, receiver));
 
-            Page<ExchangeOfferDto> page = exchangeOfferService.getAllOffers(null, pageable);
+            Page<ExchangeOfferDto> page = exchangeOfferService.getAllOffers(BOARD_ID, null, pageable);
 
             assertEquals(1, page.getTotalElements());
             assertEquals("Sender", page.getContent().getFirst().senderName());
             assertEquals("Receiver", page.getContent().getFirst().receiverName());
             verify(exchangeOfferRepository).expirePendingOffers(
-                    ExchangeOfferStatus.PENDING, ExchangeOfferStatus.EXPIRED, 1);
+                    BOARD_ID, ExchangeOfferStatus.PENDING, ExchangeOfferStatus.EXPIRED, 1);
 
-            when(exchangeOfferRepository.findByStatusOrderByCreatedAtDesc(
-                    ExchangeOfferStatus.ACCEPTED, pageable))
+            when(exchangeOfferRepository.findByBoardIdAndStatusOrderByCreatedAtDesc(
+                    BOARD_ID, ExchangeOfferStatus.ACCEPTED, pageable))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            assertTrue(exchangeOfferService.getAllOffers("ACCEPTED", pageable).isEmpty());
+            assertTrue(exchangeOfferService.getAllOffers(BOARD_ID, "ACCEPTED", pageable).isEmpty());
         }
     }
 
@@ -338,7 +342,7 @@ class ExchangeOfferServiceTest {
         void shouldCancelAndDecline() {
             ExchangeOffer toCancel = offerOf(100.0, 1, 2);
             when(exchangeOfferRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(toCancel));
-            when(turnService.getCurrentTurn()).thenReturn(1);
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(1);
             when(playerRepository.findById(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findById(2L)).thenReturn(Optional.of(receiver));
 

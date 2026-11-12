@@ -26,6 +26,8 @@ import static org.mockito.Mockito.*;
 @DisplayName("ResourceService")
 class ResourceServiceTest {
 
+    private static final Long BOARD_ID = 1L;
+
     @Mock
     ResourceRepository resourceRepository;
 
@@ -113,20 +115,20 @@ class ResourceServiceTest {
         @Test
         @DisplayName("Joueur introuvable est rejeté")
         void shouldRejectUnknownPlayer() {
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.empty());
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.empty());
 
             assertThrows(RuntimeException.class,
-                    () -> resourceService.sellResource(7L, 1, 10L));
+                    () -> resourceService.sellResource(7L, 1, 10L, BOARD_ID));
         }
 
         @Test
         @DisplayName("Ressource introuvable est rejetée")
         void shouldRejectUnknownResource() {
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.empty());
 
             assertThrows(RuntimeException.class,
-                    () -> resourceService.sellResource(7L, 1, 10L));
+                    () -> resourceService.sellResource(7L, 1, 10L, BOARD_ID));
         }
 
         @Test
@@ -137,11 +139,11 @@ class ResourceServiceTest {
             PlayerResource pr = new PlayerResource("Auramite", 5);
             pr.setPlayer(other);
 
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
 
             assertThrows(SecurityException.class,
-                    () -> resourceService.sellResource(7L, 1, 10L));
+                    () -> resourceService.sellResource(7L, 1, 10L, BOARD_ID));
         }
 
         @Test
@@ -150,32 +152,32 @@ class ResourceServiceTest {
             PlayerResource stored = new PlayerResource("Auramite", 5);
             stored.setPlayer(player);
 
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(stored));
 
             assertThrows(SecurityException.class,
-                    () -> resourceService.sellResource(7L, 1, 10L));
+                    () -> resourceService.sellResource(7L, 1, 10L, BOARD_ID));
         }
 
         @Test
         @DisplayName("Quantité insuffisante est rejetée")
         void shouldRejectInsufficientQuantity() {
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(ownedResource("Auramite", 5)));
 
             assertThrows(IllegalArgumentException.class,
-                    () -> resourceService.sellResource(7L, 6, 10L));
+                    () -> resourceService.sellResource(7L, 6, 10L, BOARD_ID));
         }
 
         @Test
         @DisplayName("Vente partielle crédite le prix exact et conserve le stack")
         void shouldSellPartialQuantity() {
             PlayerResource pr = ownedResource("Auramite", 5);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
             when(resourceRepository.findByName("Auramite")).thenReturn(Optional.of(new Resource("Auramite", 1700.0)));
 
-            ResourceService.SaleResult result = resourceService.sellResource(7L, 2, 10L);
+            ResourceService.SaleResult result = resourceService.sellResource(7L, 2, 10L, BOARD_ID);
 
             assertEquals("Auramite", result.resourceName());
             assertEquals(2, result.quantitySold());
@@ -191,11 +193,11 @@ class ResourceServiceTest {
         @DisplayName("Vente totale supprime le stack")
         void shouldDeleteStackWhenQuantityReachesZero() {
             PlayerResource pr = ownedResource("Auramite", 5);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(pr));
             when(resourceRepository.findByName("Auramite")).thenReturn(Optional.of(new Resource("Auramite", 1700.0)));
 
-            ResourceService.SaleResult result = resourceService.sellResource(7L, 5, 10L);
+            ResourceService.SaleResult result = resourceService.sellResource(7L, 5, 10L, BOARD_ID);
 
             assertEquals(22100.0, result.saleValue());
             assertEquals(0, pr.getQuantity());
@@ -206,11 +208,11 @@ class ResourceServiceTest {
         @DisplayName("Quantité hors bornes [1, 9] est rejetée avant tout accès base")
         void shouldRejectQuantityOutsideOneToNine() {
             assertThrows(IllegalArgumentException.class,
-                    () -> resourceService.sellResource(7L, 0, 10L));
+                    () -> resourceService.sellResource(7L, 0, 10L, BOARD_ID));
             assertThrows(IllegalArgumentException.class,
-                    () -> resourceService.sellResource(7L, 10, 10L));
+                    () -> resourceService.sellResource(7L, 10, 10L, BOARD_ID));
             assertThrows(IllegalArgumentException.class,
-                    () -> resourceService.sellResource(7L, -1, 10L));
+                    () -> resourceService.sellResource(7L, -1, 10L, BOARD_ID));
         }
     }
 
@@ -222,9 +224,9 @@ class ResourceServiceTest {
         @DisplayName("Panier vide est rejeté")
         void shouldRejectEmptyCart() {
             assertThrows(IllegalArgumentException.class,
-                    () -> resourceService.sellResourcesBatch(10L, List.of()));
+                    () -> resourceService.sellResourcesBatch(10L, BOARD_ID, List.of()));
             assertThrows(IllegalArgumentException.class,
-                    () -> resourceService.sellResourcesBatch(10L, null));
+                    () -> resourceService.sellResourcesBatch(10L, BOARD_ID, null));
         }
 
         @Test
@@ -232,7 +234,7 @@ class ResourceServiceTest {
         void shouldSellBatch() {
             PlayerResource gold = ownedResource("Auramite", 5);
             PlayerResource ivory = ownedResource("Adamentium", 3);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
             when(playerResourceRepository.findById(7L)).thenReturn(Optional.of(gold));
             when(playerResourceRepository.findById(8L)).thenReturn(Optional.of(ivory));
             when(resourceRepository.findByName("Auramite")).thenReturn(Optional.of(new Resource("Auramite", 1700.0)));
@@ -246,7 +248,7 @@ class ResourceServiceTest {
             second.setQuantity(1);
 
             List<ResourceService.SaleResult> results =
-                    resourceService.sellResourcesBatch(10L, List.of(first, second));
+                    resourceService.sellResourcesBatch(10L, BOARD_ID, List.of(first, second));
 
             assertEquals(2, results.size());
             assertEquals(7200.0, player.getStats().getMoney());

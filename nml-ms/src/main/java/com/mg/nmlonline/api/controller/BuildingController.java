@@ -2,6 +2,7 @@ package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.BuildingDto;
 import com.mg.nmlonline.domain.service.AuthorizationService;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.BuildingService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -93,7 +94,8 @@ public class BuildingController {
         if (userId == null) return ResponseEntity.status(401).build();
         if (!authorizationService.isBuildingOwner(userId, buildingId)) return ResponseEntity.status(403).build();
 
-        buildingService.moveBuilding(buildingId, request.boardId(), request.newSectorNumber());
+        buildingService.moveBuilding(buildingId, (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE),
+                request.newSectorNumber());
         return ResponseEntity.ok().build();
     }
 
@@ -106,7 +108,8 @@ public class BuildingController {
         if (userId == null) return ResponseEntity.status(401).build();
         if (!authorizationService.isBuildingOwner(userId, buildingId)) return ResponseEntity.status(403).build();
 
-        buildingService.discardPlayerEquipment(buildingId, request.equipmentName(), request.quantity(), userId);
+        buildingService.discardPlayerEquipment(buildingId, request.equipmentName(), request.quantity(), userId,
+                (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE));
         return ResponseEntity.ok().build();
     }
 

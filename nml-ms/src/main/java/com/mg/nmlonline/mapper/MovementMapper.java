@@ -107,6 +107,9 @@ public class MovementMapper {
             TransitCombatResultDto dto = new TransitCombatResultDto();
             dto.setSectorNumber(t.sectorNumber());
             dto.setVehicleId(t.vehicleId());
+            dto.setVehicleName(t.vehicleName());
+            dto.setVehicleType(t.vehicleType());
+            dto.setOwnerPlayerId(t.ownerPlayerId());
             dto.setVehicleFired(t.vehicleFired());
             list.add(dto);
         }

@@ -5,6 +5,7 @@ import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
+import com.mg.nmlonline.api.dto.TurnJournalDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
 import com.mg.nmlonline.domain.model.board.Board;
@@ -19,6 +20,8 @@ import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
+import com.mg.nmlonline.domain.model.sniper.SniperOrder;
+import com.mg.nmlonline.domain.model.sniper.SniperOrderStatus;
 import com.mg.nmlonline.domain.model.unit.EntityCategory;
 import com.mg.nmlonline.domain.model.unit.GameCharacter;
 import com.mg.nmlonline.domain.model.unit.Unit;
@@ -29,7 +32,9 @@ import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.GameCharacterRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.SniperOrderRepository;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Scénarios de fin de tour sur PostgreSQL réel, orchestrateur + seeder : conflit résolu manuellement,
  * vainqueur d'une bataille intermédiaire, anéantissement mutuel, cascades FK (Phase 2/3), impasse
- * mexicaine 3 camps, scénario Lurio→Cegorach 2 hops, catalogue des 11 arènes de combat et leurs
+ * mexicaine 3 camps, scénario Lurio→Cegorach 2 hops, catalogue des arènes de combat et leurs
  * résolutions de bout en bout. Déterministe (pas d'évasion), un contexte Spring neuf par test.
  */
 @EmbeddedPostgresTest
@@ -71,6 +76,10 @@ class TurnResolutionScenariosTest {
     @Autowired
     private BoardRepository boardRepository;
 
+    private Long boardId() {
+        return boardRepository.findAll().getFirst().getId();
+    }
+
     @Autowired
     private GameCharacterRepository gameCharacterRepository;
 
@@ -79,6 +88,12 @@ class TurnResolutionScenariosTest {
 
     @Autowired
     private BattleReportRepository battleReportRepository;
+
+    @Autowired
+    private SniperOrderRepository sniperOrderRepository;
+
+    @Autowired
+    private TurnJournalService turnJournalService;
 
     @Autowired
     private EntityManager em;
@@ -90,9 +105,9 @@ class TurnResolutionScenariosTest {
     void releaseLockAndCleanPendingOrders() {
         // Libère le verrou si une assertion a échoué avant finalizeTurn, et purge un ordre PENDING
         // qu'un test non transactionnel interrompu aurait laissé.
-        orchestrator.abort();
+        orchestrator.abort(boardId());
         movementOrderRepository.deleteAll(
-                movementOrderRepository.findPendingByTurn(turnService.getCurrentTurn()));
+                movementOrderRepository.findPendingByTurn(boardId(), turnService.getCurrentTurn(boardId())));
     }
 
     @Test
@@ -100,7 +115,7 @@ class TurnResolutionScenariosTest {
     @Transactional
     void battleWinnerKeepsIntermediateSectorAfterMovingOn() {
         Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-        List<Player> players = playerRepository.findAll();
+        List<Player> players = playerRepository.findByBoardId(board.getId());
         Player attacker = players.get(0);
         Player defender = players.stream()
                 .filter(p -> !p.getId().equals(attacker.getId()))
@@ -120,29 +135,29 @@ class TurnResolutionScenariosTest {
         contested.addUnit(larbin);
         em.flush();
 
-        int turn = turnService.getCurrentTurn();
-        movementOrderRepository.deleteAll(movementOrderRepository.findPendingByTurn(turn));
+        int turn = turnService.getCurrentTurn(boardId());
+        movementOrderRepository.deleteAll(movementOrderRepository.findPendingByTurn(boardId(), turn));
         em.flush();
 
-        MovementOrder order = MovementOrder.createFootOrder(attacker.getId(), turn, List.of(leger.getId()),
+        MovementOrder order = MovementOrder.createFootOrder(attacker.getId(), boardId(), turn, List.of(leger.getId()),
                 List.of(departure.getNumber(), contested.getNumber(), destination.getNumber()));
         movementOrderRepository.save(order);
         em.flush();
 
-        orchestrator.startSession();
-        TurnResolutionStateDto state = orchestrator.advanceHop();
+        orchestrator.startSession(boardId());
+        TurnResolutionStateDto state = orchestrator.advanceHop(boardId());
         assertEquals(1, state.getPendingConflicts().size(), "Conflit attendu au secteur intermédiaire");
         PendingConflictDto conflict = state.getPendingConflicts().getFirst();
         assertEquals(contested.getNumber(), conflict.getSectorNumber());
-        ResolvedBattleDto report = orchestrator.resolveBattle(conflict.getConflictId());
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflict.getConflictId());
         assertTrue(report.isSuccess());
         assertEquals(attacker.getId(), report.getWinnerId(), "Le LEGER anéantit le LARBIN");
         assertFalse(battleReportRepository.findByParticipantId(defender.getId(), Pageable.unpaged()).isEmpty(),
                 "Un rapport de combat est persisté pour les joueurs impliqués");
 
-        state = orchestrator.advanceHop();
+        state = orchestrator.advanceHop(boardId());
         assertEquals(2, state.getCurrentStep(), "Le LEGER repart vers le secteur 14");
-        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn(boardId());
 
         em.flush();
         em.clear();
@@ -160,7 +175,7 @@ class TurnResolutionScenariosTest {
     @Transactional
     void mutualAnnihilationLeavesSectorNeutral() {
         Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-        List<Player> players = playerRepository.findAll();
+        List<Player> players = playerRepository.findByBoardId(board.getId());
         Player attacker = players.get(0);
         Player defender = players.stream()
                 .filter(p -> !p.getId().equals(attacker.getId()))
@@ -182,23 +197,23 @@ class TurnResolutionScenariosTest {
         s2.addUnit(defenseur);
         em.flush();
 
-        int turn = turnService.getCurrentTurn();
-        movementOrderRepository.deleteAll(movementOrderRepository.findPendingByTurn(turn));
+        int turn = turnService.getCurrentTurn(boardId());
+        movementOrderRepository.deleteAll(movementOrderRepository.findPendingByTurn(boardId(), turn));
         em.flush();
 
-        MovementOrder order = MovementOrder.createFootOrder(attacker.getId(), turn, List.of(attaquant.getId()),
+        MovementOrder order = MovementOrder.createFootOrder(attacker.getId(), boardId(), turn, List.of(attaquant.getId()),
                 List.of(s1.getNumber(), s2.getNumber()));
         movementOrderRepository.save(order);
         em.flush();
 
-        orchestrator.startSession();
-        TurnResolutionStateDto state = orchestrator.advanceHop();
-        ResolvedBattleDto report = orchestrator.resolveBattle(state.getPendingConflicts().getFirst().getConflictId());
+        orchestrator.startSession(boardId());
+        TurnResolutionStateDto state = orchestrator.advanceHop(boardId());
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), state.getPendingConflicts().getFirst().getConflictId());
         assertEquals(defender.getId(), report.getWinnerId(), "Les deux camps sont anéantis : le défenseur est vainqueur");
         assertEquals(1, report.getAttackerCasualties());
         assertEquals(1, report.getDefenderCasualties());
 
-        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn(boardId());
 
         em.flush();
         em.clear();
@@ -214,7 +229,7 @@ class TurnResolutionScenariosTest {
         // Pas de @Transactional sur ce test : setup commité pour que l'orchestrateur voie les données.
         Long ueId = new TransactionTemplate(txManager).execute(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
-            List<Player> players = playerRepository.findAll();
+            List<Player> players = playerRepository.findByBoardId(board.getId());
             Player attacker = players.get(0);
             Player defender = players.stream()
                     .filter(p -> !p.getId().equals(attacker.getId())).findFirst().orElseThrow();
@@ -246,22 +261,22 @@ class TurnResolutionScenariosTest {
             Long innerUeId = larbin.getUnitEquipments().get(0).getId();
             assertNotNull(innerUeId);
 
-            int turn = turnService.getCurrentTurn();
-            movementOrderRepository.deleteAll(movementOrderRepository.findPendingByTurn(turn));
+            int turn = turnService.getCurrentTurn(boardId());
+            movementOrderRepository.deleteAll(movementOrderRepository.findPendingByTurn(boardId(), turn));
             em.flush();
 
             MovementOrder order = MovementOrder.createFootOrder(
-                    attacker.getId(), turn, List.of(brute.getId()),
+                    attacker.getId(), boardId(), turn, List.of(brute.getId()),
                     List.of(s1.getNumber(), s2.getNumber()));
             movementOrderRepository.save(order);
             em.flush();
             return innerUeId;
         });
 
-        orchestrator.startSession();
-        TurnResolutionStateDto state = orchestrator.advanceHop();
+        orchestrator.startSession(boardId());
+        TurnResolutionStateDto state = orchestrator.advanceHop(boardId());
         int conflictId = state.getPendingConflicts().get(0).getConflictId();
-        ResolvedBattleDto report = orchestrator.resolveBattle(conflictId);
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflictId);
 
         assertTrue(report.isSuccess());
         assertEquals(1, report.getDefenderCasualties(),
@@ -281,20 +296,20 @@ class TurnResolutionScenariosTest {
     @DisplayName("seed + 2 hops : l'unité LEGER atteint le secteur 32 et émet un PendingConflict")
     @Transactional
     void lurioVsCegorach_deuxHops_deplacent_attaquant_vers_32_et_cree_conflit() {
-        ScenarioSummaryDto seed = seeder.seedScenario();
+        ScenarioSummaryDto seed = seeder.seedScenario(boardId());
         em.flush();
         Long lurioId = seed.getAttacker().getId();
         Long cegorachId = seed.getDefender().getId();
         Long attackerUnitId = seed.getAttackerUnit().getId();
         assertNotNull(attackerUnitId, "Le seeder doit identifier l'unité attaquante");
 
-        TurnResolutionStateDto state = orchestrator.startSession();
+        TurnResolutionStateDto state = orchestrator.startSession(boardId());
         assertTrue(state.isActive(), "La session doit être active après start");
         assertEquals(0, state.getCurrentStep(), "Aucun hop après start");
         assertEquals(2, state.getMaxSteps(), "La route [41, 13, 32] fait 2 hops");
         assertTrue(state.isCanAdvance(), "On peut avancer tant qu'aucun conflit n'est en attente");
 
-        state = orchestrator.advanceHop();
+        state = orchestrator.advanceHop(boardId());
         assertEquals(1, state.getCurrentStep());
         assertTrue(state.getPendingConflicts().isEmpty(),
                 "Secteur 13 = lurio : arrivée sans ennemi → pas de conflit");
@@ -309,7 +324,7 @@ class TurnResolutionScenariosTest {
                         .filter(u -> attackerUnitId.equals(u.getId())).count(),
                 "L'unité attaquante est arrivée en secteur 13 après le hop 1");
 
-        state = orchestrator.advanceHop();
+        state = orchestrator.advanceHop(boardId());
         assertEquals(2, state.getCurrentStep(), "maxSteps atteint");
         assertEquals(1, state.getPendingConflicts().size(),
                 "Un conflit attendu : l'attaquant arrive sur cegorach en 32");
@@ -323,19 +338,19 @@ class TurnResolutionScenariosTest {
     @Test
     @DisplayName("resolveBattle sur l'attaquant équipé MOVED détruit proprement (régression du fix Phase 3)")
     void lurioVsCegorach_resolveBattle_surAttaquantEquipeDeplace_detruitProprementPhase3() {
-        ScenarioSummaryDto seed = seeder.seedScenario();
+        ScenarioSummaryDto seed = seeder.seedScenario(boardId());
         Long lurioId = seed.getAttacker().getId();
         Long cegorachId = seed.getDefender().getId();
         Long attackerUnitId = seed.getAttackerUnit().getId();
         assertNotNull(attackerUnitId);
-        orchestrator.startSession();
-        orchestrator.advanceHop();
-        TurnResolutionStateDto state = orchestrator.advanceHop();
+        orchestrator.startSession(boardId());
+        orchestrator.advanceHop(boardId());
+        TurnResolutionStateDto state = orchestrator.advanceHop(boardId());
         assertEquals(1, state.getPendingConflicts().size(),
                 "Prérequis : un conflit émis en secteur 32 avant resolveBattle");
         int conflictId = state.getPendingConflicts().getFirst().getConflictId();
 
-        ResolvedBattleDto report = orchestrator.resolveBattle(conflictId);
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflictId);
         assertTrue(report.isSuccess(), "Le combat se déroule (les deux camps sont présents)");
         assertEquals(32, report.getSectorNumber());
         assertEquals(1, report.getAttackerCasualties(),
@@ -389,7 +404,7 @@ class TurnResolutionScenariosTest {
     @Transactional
     @DisplayName("seed + 1 hop : un seul conflit impasse ordonné [défenseur, imotekh, lurio] puis résolution")
     void seedStandoff_puisHop_puisResolution() {
-        ScenarioSummaryDto seed = seeder.seedStandoffScenario();
+        ScenarioSummaryDto seed = seeder.seedStandoffScenario(boardId());
         em.flush();
 
         assertTrue(seed.isStandoff(), "Le seeder doit marquer le scénario comme impasse");
@@ -398,10 +413,10 @@ class TurnResolutionScenariosTest {
         Long imotekhId = seed.getOrders().get(0).getPlayerId();
         Long lurioId = seed.getOrders().get(1).getPlayerId();
 
-        TurnResolutionStateDto state = orchestrator.startSession();
+        TurnResolutionStateDto state = orchestrator.startSession(boardId());
         assertEquals(1, state.getMaxSteps(), "Les deux routes [43,32] et [41,32] font 1 hop");
 
-        state = orchestrator.advanceHop();
+        state = orchestrator.advanceHop(boardId());
 
         assertEquals(1, state.getPendingConflicts().size(), "Un unique conflit groupé pour le secteur");
         PendingConflictDto pc = state.getPendingConflicts().getFirst();
@@ -414,7 +429,7 @@ class TurnResolutionScenariosTest {
         assertNotNull(pc.getParticipants().get(1).getSubmittedAt());
         assertNotNull(pc.getParticipants().get(2).getSubmittedAt());
 
-        ResolvedBattleDto report = orchestrator.resolveBattle(pc.getConflictId());
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), pc.getConflictId());
 
         assertTrue(report.isSuccess());
         assertTrue(report.isStandoff());
@@ -432,6 +447,8 @@ class TurnResolutionScenariosTest {
         assertTrue(report.getBattleLog().stream()
                         .anyMatch(e -> "État initial".equals(e.getPhase()) && e.getMessage().contains("Atk")),
                 "Le journal expose l'état initial des camps avec leurs statistiques");
+        assertNotNull(report.getForces());
+        assertFalse(report.getHighlights().isEmpty(), "La session admin expose les points clés");
         assertTrue(report.getBattleLog().stream()
                         .anyMatch(e -> ("DAMAGE".equals(e.getOutcome()) || "DESTROYED".equals(e.getOutcome()))
                                 && e.getMessage().contains(" · ")),
@@ -440,9 +457,9 @@ class TurnResolutionScenariosTest {
                         .anyMatch(e -> "Résultat".equals(e.getPhase()) && e.getMessage().startsWith("Pertes")),
                 "Le journal se termine par le bilan des pertes");
 
-        assertEquals(0, orchestrator.getState().getPendingConflicts().size());
-        assertTrue(orchestrator.getState().isCanFinalize());
-        assertNotNull(orchestrator.finalizeTurn());
+        assertEquals(0, orchestrator.getState(boardId()).getPendingConflicts().size());
+        assertTrue(orchestrator.getState(boardId()).isCanFinalize());
+        assertNotNull(orchestrator.finalizeTurn(boardId()));
 
         em.flush();
         em.clear();
@@ -467,9 +484,9 @@ class TurnResolutionScenariosTest {
     @Transactional
     @DisplayName("seedScenario crée un ordre PENDING route [41, 13, 32] et l'idempotence évite les doublons")
     void seedScenario_creeUnOrdreValideUnSeederNeDoublePas() {
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(boardId());
 
-        ScenarioSummaryDto result = seeder.seedScenario();
+        ScenarioSummaryDto result = seeder.seedScenario(boardId());
 
         assertEquals(turn, result.getTurn());
         assertEquals(List.of(41, 13, 32), result.getRoute());
@@ -484,7 +501,7 @@ class TurnResolutionScenariosTest {
                 "Exactement un ordre PENDING pour lurio après seed");
         assertEquals(List.of(41, 13, 32), createdOrders.get(0).getRoute());
 
-        ScenarioSummaryDto secondCall = seeder.seedScenario();
+        ScenarioSummaryDto secondCall = seeder.seedScenario(boardId());
         var stillPending = movementOrderRepository.findByPlayerIdAndTurnAndStatus(
                 secondCall.getAttacker().getId(), turn, MovementStatus.PENDING);
         assertEquals(1, stillPending.size(),
@@ -497,7 +514,7 @@ class TurnResolutionScenariosTest {
     @Transactional
     @DisplayName("Re-seed sans attaquant éligible en 41 : la route repart de 13 au lieu d'échouer sur 41")
     void reseedWithAttackerInIntermediateSectorUsesRemainingRoute() {
-        ScenarioSummaryDto first = seeder.seedScenario();
+        ScenarioSummaryDto first = seeder.seedScenario(boardId());
         Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
         List<Unit> movers = board.getSector(41).getUnits().stream()
                 .filter(u -> first.getAttacker().getId().equals(u.getPlayerId()))
@@ -508,7 +525,7 @@ class TurnResolutionScenariosTest {
             board.getSector(13).addUnit(unit);
         });
 
-        ScenarioSummaryDto reseed = seeder.seedScenario();
+        ScenarioSummaryDto reseed = seeder.seedScenario(boardId());
 
         assertEquals(List.of(13, 32), reseed.getRoute());
         assertEquals(13, reseed.getAttackerUnit().getFromSector());
@@ -523,7 +540,13 @@ class TurnResolutionScenariosTest {
     void listCombatScenarios_exposeLeCatalogue() {
         var scenarios = seeder.listCombatScenarios();
 
-        assertEquals(11, scenarios.size());
+        assertEquals(13, scenarios.size());
+        assertTrue(scenarios.stream().anyMatch(s -> "SNIPER_RANGED".equals(s.getCode())
+                && s.getArenaSector() == 15 && s.getStagingSector() == 4 && s.isStandalone()),
+                "Le scénario sniper isolé ne demande aucun hop");
+        assertTrue(scenarios.stream().anyMatch(s -> "SNIPER_STANDOFF".equals(s.getCode())
+                        && s.getArenaSector() == 16 && s.getStagingSector() == 14 && !s.isStandalone()),
+                "Le scénario sniper tiers se résout après un hop");
         assertTrue(scenarios.stream().anyMatch(s -> "CREW_DISEMBARK".equals(s.getCode())
                 && s.getArenaSector() == 24 && s.getStagingSector() == 19));
         assertTrue(scenarios.stream().anyMatch(s -> "BLDG_CAPTURE".equals(s.getCode())
@@ -540,7 +563,7 @@ class TurnResolutionScenariosTest {
     @Transactional
     @DisplayName("seedCombatScenario : arène purgée et neutre, participants exacts, re-seed sans doublon")
     void seedCombatScenario_purgeEtRejoue() {
-        ScenarioSummaryDto first = seeder.seedCombatScenario("CREW_DISEMBARK");
+        ScenarioSummaryDto first = seeder.seedCombatScenario("CREW_DISEMBARK", boardId());
 
         assertEquals("CREW_DISEMBARK", first.getScenarioCode());
         assertEquals(List.of(19, 24), first.getRoute());
@@ -555,7 +578,7 @@ class TurnResolutionScenariosTest {
         assertEquals(1, arena.getUnits().size(), "Seul le pilote embarqué défend l'arène");
         assertEquals(2, staging.getUnits().size(), "Les deux attaquants attendent en 19");
 
-        seeder.seedCombatScenario("CREW_DISEMBARK");
+        seeder.seedCombatScenario("CREW_DISEMBARK", boardId());
 
         assertEquals(1, movementOrderRepository.findByPlayerIdAndTurnAndStatus(
                         first.getAttacker().getId(), first.getTurn(), MovementStatus.PENDING).size(),
@@ -567,11 +590,11 @@ class TurnResolutionScenariosTest {
 
     @Test
     @Transactional
-    @DisplayName("Les 10 scénarios coexistent : arène, défenseur attendu et ordre PENDING pour chacun")
+    @DisplayName("Les 13 scénarios coexistent : arène, défenseur attendu et ordre PENDING pour chacun")
     void allCombatScenarios_coexistent() {
         var scenarios = seeder.listCombatScenarios();
         for (var scenario : scenarios) {
-            seeder.seedCombatScenario(scenario.getCode());
+            seeder.seedCombatScenario(scenario.getCode(), boardId());
         }
 
         var board = boardRepository.findAll().stream().findFirst().orElseThrow();
@@ -601,23 +624,37 @@ class TurnResolutionScenariosTest {
         assertTrue(board.getSector(32).getCharacters().isEmpty(),
                 "Cegorach a quitté son secteur 32 pour l'arène");
 
-        assertEquals(11, movementOrderRepository.findPendingByTurn(turnService.getCurrentTurn()).size(),
-                "Chaque scénario dépose son propre ordre PENDING");
+        assertEquals(4, board.getSector(4).getUnits().size(),
+                "Départ partagé : les 3 attaquants de BLDG_CAPTURE et le tireur de SNIPER_RANGED");
+        assertEquals(7, board.getSector(14).getUnits().size(),
+                "Départ partagé : 3 attaquants d'AERIAL_HIT, 2 d'IMOTEKH et 2 snipers de TRAZYN");
+        assertEquals(3, board.getSector(32).getBuildings().size(),
+                "Les bâtiments de cegorach en 32 restent intacts");
+        assertEquals(4, board.getSector(13).getUnits().size(), "L'armée de lurio en 13 reste intacte");
+        assertEquals(3, board.getSector(13).getBuildings().size(),
+                "Les bâtiments de lurio en 13 restent intacts");
+        assertEquals(3, sniperOrderRepository.findByBoardIdAndTurnAndStatus(
+                        boardId(), turnService.getCurrentTurn(boardId()), SniperOrderStatus.PENDING).size(),
+                "Les 3 tirs des scénarios sniper restent en attente");
+
+        assertEquals(12, movementOrderRepository.findPendingByTurn(
+                        boardId(), turnService.getCurrentTurn(boardId())).size(),
+                "Chaque scénario avec hop dépose son propre ordre PENDING (le tir isolé n'en a pas)");
     }
 
     @Test
     @DisplayName("Scénario équipage : 1 hop puis résolution, le journal trace l'équipage débarqué")
     void crewDisembarkScenario_resolvesWithDisembarkLog() {
-        seeder.seedCombatScenario("CREW_DISEMBARK");
+        seeder.seedCombatScenario("CREW_DISEMBARK", boardId());
 
-        orchestrator.startSession();
-        TurnResolutionStateDto state = orchestrator.advanceHop();
+        orchestrator.startSession(boardId());
+        TurnResolutionStateDto state = orchestrator.advanceHop(boardId());
 
         assertEquals(1, state.getPendingConflicts().size(), "Un conflit attendu après le hop");
         PendingConflictDto conflict = state.getPendingConflicts().getFirst();
         assertEquals(24, conflict.getSectorNumber(), "Le conflit se résout dans l'arène du scénario");
 
-        ResolvedBattleDto report = orchestrator.resolveBattle(conflict.getConflictId());
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflict.getConflictId());
 
         assertTrue(report.isSuccess());
         assertTrue(report.getBattleLog().stream()
@@ -629,7 +666,7 @@ class TurnResolutionScenariosTest {
     @Test
     @DisplayName("Scénario capture : Banque/Cache/QG capturés, cache vidée vers lurio, secteur attribué")
     void buildingCaptureScenario_resolvesWithCapturesAndSectorTransfer() {
-        ScenarioSummaryDto seed = seeder.seedCombatScenario("BLDG_CAPTURE");
+        ScenarioSummaryDto seed = seeder.seedCombatScenario("BLDG_CAPTURE", boardId());
         Long lurioId = seed.getAttacker().getId();
         Long arenaOwnerId = new TransactionTemplate(txManager).execute(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
@@ -638,11 +675,11 @@ class TurnResolutionScenariosTest {
         double arenaOwnerMoneyBefore = new TransactionTemplate(txManager).execute(status ->
                 playerRepository.findById(arenaOwnerId).orElseThrow().getStats().getMoney());
 
-        orchestrator.startSession();
-        PendingConflictDto conflict = orchestrator.advanceHop().getPendingConflicts().getFirst();
+        orchestrator.startSession(boardId());
+        PendingConflictDto conflict = orchestrator.advanceHop(boardId()).getPendingConflicts().getFirst();
         assertEquals(5, conflict.getSectorNumber());
 
-        ResolvedBattleDto report = orchestrator.resolveBattle(conflict.getConflictId());
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflict.getConflictId());
 
         assertTrue(report.isSuccess());
         assertEquals(3, report.getCapturedBuildings(), "Banque, Cache et QG capturés");
@@ -677,8 +714,24 @@ class TurnResolutionScenariosTest {
         double lurioMoneyBeforeFinalize = new TransactionTemplate(txManager).execute(status ->
                 playerRepository.findById(lurioId).orElseThrow().getStats().getMoney());
 
-        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn(boardId());
         assertTrue(fin.getEliminatedPlayers().contains("arene-batiments"));
+
+        TurnJournalDto journal = turnJournalService.findByTurn(boardId(), fin.getTurnEnding());
+        assertTrue(journal.isFinalized());
+        assertEquals(fin.getTurnEnding(), journal.getTurn());
+        assertEquals(1, journal.getSummary().getBattles());
+        assertEquals(fin.getCapturedSectors().size(), journal.getCaptures().size());
+        assertEquals(fin.getEliminatedPlayers(), journal.getEliminatedPlayers());
+        assertEquals(1, journal.getBattles().size());
+        assertFalse(journal.getBattles().getFirst().getBattleLog().isEmpty(),
+                "Le journal archivé conserve le détail du combat");
+        assertTrue(journal.getBattles().getFirst().getBattleLog().stream()
+                        .anyMatch(entry -> entry.getMessage().contains("quartier général capturé")),
+                "Le bilan du QG capturé est archivé");
+        assertThrows(EntityNotFoundException.class,
+                () -> turnJournalService.findByTurn(boardId(), fin.getTurnEnding() + 100),
+                "Aucun journal pour un tour non finalisé");
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             assertTrue(board.getSector(5).getBuildings().isEmpty(),
@@ -694,12 +747,12 @@ class TurnResolutionScenariosTest {
     @Test
     @DisplayName("Scénario destruction : Banque et Cache rasées non capturées, QG capturé même détruit")
     void buildingDestroyScenario_onlyHeadquartersCaptured() {
-        ScenarioSummaryDto seed = seeder.seedCombatScenario("BLDG_DESTROY");
+        ScenarioSummaryDto seed = seeder.seedCombatScenario("BLDG_DESTROY", boardId());
         Long lurioId = seed.getAttacker().getId();
 
-        orchestrator.startSession();
-        PendingConflictDto conflict = orchestrator.advanceHop().getPendingConflicts().getFirst();
-        ResolvedBattleDto report = orchestrator.resolveBattle(conflict.getConflictId());
+        orchestrator.startSession(boardId());
+        PendingConflictDto conflict = orchestrator.advanceHop(boardId()).getPendingConflicts().getFirst();
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflict.getConflictId());
 
         assertTrue(report.isSuccess());
         assertEquals(1, report.getCapturedBuildings(), "Seul le QG est capturé");
@@ -714,7 +767,7 @@ class TurnResolutionScenariosTest {
 
         double lurioMoneyBeforeFinalize = new TransactionTemplate(txManager).execute(status ->
                 playerRepository.findById(lurioId).orElseThrow().getStats().getMoney());
-        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn(boardId());
 
         assertTrue(fin.getEliminatedPlayers().contains("arene-ruines"),
                 "La capture d'un QG détruit élimine son propriétaire");
@@ -730,11 +783,11 @@ class TurnResolutionScenariosTest {
     @Test
     @DisplayName("Scénario personnage : mort du personnage, perte signalée et +1 Exp de bonus")
     void characterKillScenario_losesCharacterAndGrantsExperience() {
-        ScenarioSummaryDto seed = seeder.seedCombatScenario("CHAR_KILL");
+        ScenarioSummaryDto seed = seeder.seedCombatScenario("CHAR_KILL", boardId());
 
-        orchestrator.startSession();
-        PendingConflictDto conflict = orchestrator.advanceHop().getPendingConflicts().getFirst();
-        ResolvedBattleDto report = orchestrator.resolveBattle(conflict.getConflictId());
+        orchestrator.startSession(boardId());
+        PendingConflictDto conflict = orchestrator.advanceHop(boardId()).getPendingConflicts().getFirst();
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflict.getConflictId());
 
         assertTrue(report.isSuccess());
         assertTrue(report.isDefenderCharacterLost());
@@ -754,25 +807,25 @@ class TurnResolutionScenariosTest {
     @Test
     @DisplayName("Scénario élimination : lurio tue Cegorach ; le MJ attribue, lurio récupère le secteur du QG nu")
     void mainCharacterEliminationScenario_eliminatesCegorach() {
-        ScenarioSummaryDto seed = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION");
+        ScenarioSummaryDto seed = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION", boardId());
         Long defenderId = seed.getDefender().getId();
         Long attackerId = seed.getAttacker().getId();
         assertEquals("cegorach", seed.getDefender().getName());
 
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
-            GameCharacter character = gameCharacterRepository.findByName("Cegorach").orElseThrow();
+            GameCharacter character = gameCharacterRepository.findByBoardIdAndName(boardId(), "Cegorach").orElseThrow();
             assertEquals(43, character.getSector().getNumber(), "Cegorach combat dans l'arène");
             assertEquals(0.0, character.getEvasion(), "Esquive neutralisée pour un résultat déterministe");
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             assertEquals(defenderId, board.getSector(32).getOwnerId(), "Son QG reste à cegorach avant le combat");
         });
 
-        int battleTurn = turnService.getCurrentTurn();
-        orchestrator.startSession();
-        PendingConflictDto conflict = orchestrator.advanceHop().getPendingConflicts().getFirst();
+        int battleTurn = turnService.getCurrentTurn(boardId());
+        orchestrator.startSession(boardId());
+        PendingConflictDto conflict = orchestrator.advanceHop(boardId()).getPendingConflicts().getFirst();
         assertEquals(43, conflict.getSectorNumber());
 
-        ResolvedBattleDto report = orchestrator.resolveBattle(conflict.getConflictId());
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflict.getConflictId());
 
         assertTrue(report.isSuccess());
         assertTrue(report.isDefenderCharacterLost());
@@ -780,27 +833,27 @@ class TurnResolutionScenariosTest {
         assertEquals(defenderId, report.getEliminatedPlayers().getFirst().getPlayerId());
         assertEquals("MAIN_CHARACTER_KILLED", report.getEliminatedPlayers().getFirst().getCause());
 
-        TurnResolutionStateDto pendingState = orchestrator.getState();
+        TurnResolutionStateDto pendingState = orchestrator.getState(boardId());
         assertEquals(1, pendingState.getPendingEliminations().size(),
                 "La mort du personnage est attribuée par le MJ");
         assertEquals(defenderId, pendingState.getPendingEliminations().getFirst().getVictimPlayerId());
         assertTrue(pendingState.getPendingEliminations().getFirst().getParticipants().stream()
                 .anyMatch(participant -> attackerId.equals(participant.getPlayerId())));
         assertFalse(pendingState.isCanFinalize(), "Finalisation bloquée tant que le tueur n'est pas choisi");
-        assertThrows(IllegalStateException.class, () -> orchestrator.finalizeTurn());
+        assertThrows(IllegalStateException.class, () -> orchestrator.finalizeTurn(boardId()));
 
-        Long outsiderId = playerRepository.findAll().stream()
+        Long outsiderId = playerRepository.findByBoardId(boardId()).stream()
                 .map(Player::getId)
                 .filter(id -> !id.equals(defenderId) && !id.equals(attackerId))
                 .findFirst().orElseThrow();
         assertThrows(IllegalArgumentException.class,
-                () -> orchestrator.resolveElimination(defenderId, outsiderId),
+                () -> orchestrator.resolveElimination(boardId(), defenderId, outsiderId),
                 "Un tueur qui n'a pas participé au combat est refusé");
 
-        TurnResolutionStateDto resolvedState = orchestrator.resolveElimination(defenderId, attackerId);
+        TurnResolutionStateDto resolvedState = orchestrator.resolveElimination(boardId(), defenderId, attackerId);
         assertTrue(resolvedState.getPendingEliminations().isEmpty());
 
-        TurnFinalizeResultDto fin = orchestrator.finalizeTurn();
+        TurnFinalizeResultDto fin = orchestrator.finalizeTurn(boardId());
         assertTrue(fin.getEliminatedPlayers().contains("cegorach"));
         assertTrue(fin.getMessage().contains("éliminé"));
 
@@ -811,7 +864,7 @@ class TurnResolutionScenariosTest {
             assertEquals(battleTurn, defender.getEliminatedTurn());
             assertEquals(attackerId, defender.getEliminatedByPlayerId());
             assertNull(defender.getCharacter(), "Le personnage principal est détaché avant le DELETE");
-            assertNull(gameCharacterRepository.findByName("Cegorach").orElse(null));
+            assertNull(gameCharacterRepository.findByBoardIdAndName(boardId(), "Cegorach").orElse(null));
             assertTrue(defender.getBuildings().isEmpty(), "Tous ses bâtiments s'évaporent");
             assertTrue(defender.getEquipments().isEmpty(), "Son équipement s'évapore");
             assertTrue(defender.getResources().isEmpty(), "Son butin s'évapore");
@@ -826,7 +879,7 @@ class TurnResolutionScenariosTest {
             assertTrue(board.getSector(27).getUnits().isEmpty());
         });
 
-        ScenarioSummaryDto reseeded = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION");
+        ScenarioSummaryDto reseeded = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION", boardId());
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Player defender = playerRepository.findById(reseeded.getDefender().getId()).orElseThrow();
             assertFalse(defender.isEliminated(), "Re-seed : cegorach redevient actif");
@@ -847,7 +900,7 @@ class TurnResolutionScenariosTest {
     @Test
     @DisplayName("Re-seed : un QG déplacé hors de son secteur d'origine n'est pas dupliqué")
     void reseedDoesNotDuplicateHeadquartersMovedOutOfDefaultSector() {
-        Long defenderId = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION").getDefender().getId();
+        Long defenderId = seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION", boardId()).getDefender().getId();
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             Headquarters headquarters = board.getSector(32).getBuildings().stream()
@@ -858,7 +911,7 @@ class TurnResolutionScenariosTest {
             headquarters.setSector(board.getSector(27));
         });
 
-        seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION");
+        seeder.seedCombatScenario("MAIN_CHARACTER_ELIMINATION", boardId());
 
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             Long count = em.createQuery(
@@ -872,11 +925,11 @@ class TurnResolutionScenariosTest {
     @Test
     @DisplayName("Scénario régénération : aucun vainqueur, le personnage récupère 50 défense à la finalisation")
     void characterRegenScenario_regeneratesAfterFinalize() {
-        seeder.seedCombatScenario("CHAR_REGEN");
+        seeder.seedCombatScenario("CHAR_REGEN", boardId());
 
-        orchestrator.startSession();
-        PendingConflictDto conflict = orchestrator.advanceHop().getPendingConflicts().getFirst();
-        ResolvedBattleDto report = orchestrator.resolveBattle(conflict.getConflictId());
+        orchestrator.startSession(boardId());
+        PendingConflictDto conflict = orchestrator.advanceHop(boardId()).getPendingConflicts().getFirst();
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflict.getConflictId());
 
         assertTrue(report.isSuccess());
         assertNull(report.getWinnerId(), "Personnage survivant : pas de vainqueur");
@@ -886,9 +939,56 @@ class TurnResolutionScenariosTest {
                                 && entry.getPhase().contains("Personnages")),
                 "Le personnage riposte en phase Personnages");
 
-        orchestrator.finalizeTurn();
+        orchestrator.finalizeTurn(boardId());
 
-        GameCharacter colosse = gameCharacterRepository.findByName("Colosse d'arène").orElseThrow();
+        GameCharacter colosse = gameCharacterRepository.findByBoardIdAndName(boardId(), "Colosse d'arène").orElseThrow();
         assertEquals(100.0, colosse.getDefense(), "100 → 60 après 40 dégâts, +50 plafonnés à la base 100");
+    }
+
+    @Test
+    @DisplayName("Scénario sniper isolé : finalisation directe et rapport RANGED")
+    void sniperRangedScenario_resolvesAtFinalize() {
+        seeder.seedCombatScenario("SNIPER_RANGED", boardId());
+
+        orchestrator.startSession(boardId());
+        TurnFinalizeResultDto finalized = orchestrator.finalizeTurn(boardId());
+
+        assertTrue(finalized.getNewTurn() > 1);
+        assertTrue(battleReportRepository.findAll().stream()
+                        .anyMatch(report -> report.getSectorNumber() == 15
+                                && report.getPayload().contains("\"ranged\":true")),
+                "Le tir isolé produit un rapport de tir à distance dans l'arène 15");
+
+        TurnJournalDto journal = turnJournalService.findByTurn(boardId(), finalized.getTurnEnding());
+        assertFalse(journal.getRangedCombats().isEmpty(), "Le journal archive le tir isolé");
+        assertEquals("TIR", journal.getRangedCombats().getFirst().getKind());
+        assertEquals(journal.getRangedCombats().size(), journal.getSummary().getRangedCombats());
+    }
+
+    @Test
+    @DisplayName("Scénario sniper tiers : un hop, impasse à 3 camps et ordres sniper résolus")
+    void sniperStandoffScenario_resolvesAsThreeCamps() {
+        seeder.seedCombatScenario("SNIPER_STANDOFF", boardId());
+        assertEquals(2, sniperOrderRepository.findAll().size(),
+                "Le seed dépose les deux tirs des snipers de Trazyn ; ceux de Cegorach sont en 16, sans ordre");
+
+        orchestrator.startSession(boardId());
+        PendingConflictDto conflict = orchestrator.advanceHop(boardId()).getPendingConflicts().getFirst();
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflict.getConflictId());
+
+        assertTrue(report.isSuccess());
+        assertTrue(report.isStandoff(), "Le duel devient une impasse à 3 camps");
+        assertTrue(report.getBattleLog().stream()
+                .anyMatch(entry -> entry.getMessage().contains("Tir à distance")));
+        List<SniperOrder> orders = sniperOrderRepository.findByBoardIdAndTurnAndStatus(
+                boardId(), turnService.getCurrentTurn(boardId()), SniperOrderStatus.RESOLVED);
+        assertEquals(1, orders.size(), () -> "Seul le sniper survivant de Trazyn résout son tir — ordres="
+                + sniperOrderRepository.findAll().stream()
+                        .map(order -> order.getPlayerId() + "/" + order.getUnitId() + "/"
+                                + order.getStatus() + "/" + order.getFromSectorNumber() + "→"
+                                + order.getTargetSectorNumber())
+                        .toList());
+        assertEquals(1, sniperOrderRepository.findAll().size(),
+                "L'ordre du sniper détruit disparaît avec son unité (FK CASCADE)");
     }
 }

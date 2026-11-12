@@ -25,9 +25,9 @@ public class AllianceGraph {
     }
 
     /** Adjacence joueur → alliés actifs. Chargée à chaque appel : volume faible, pas de cache à invalider. */
-    public Map<Long, Set<Long>> activeAdjacency() {
+    public Map<Long, Set<Long>> activeAdjacency(Long boardId) {
         Map<Long, Set<Long>> adjacency = new HashMap<>();
-        for (Alliance alliance : allianceRepository.findAllActive()) {
+        for (Alliance alliance : allianceRepository.findAllActiveByBoardId(boardId)) {
             adjacency.computeIfAbsent(alliance.getPlayerOneId(), key -> new HashSet<>())
                     .add(alliance.getPlayerTwoId());
             adjacency.computeIfAbsent(alliance.getPlayerTwoId(), key -> new HashSet<>())
@@ -36,17 +36,17 @@ public class AllianceGraph {
         return adjacency;
     }
 
-    public Set<Long> alliedPlayerIds(Long playerId) {
-        return activeAdjacency().getOrDefault(playerId, Set.of());
+    public Set<Long> alliedPlayerIds(Long boardId, Long playerId) {
+        return activeAdjacency(boardId).getOrDefault(playerId, Set.of());
     }
 
-    public boolean areAllied(Long firstPlayerId, Long secondPlayerId) {
-        return alliedPlayerIds(firstPlayerId).contains(secondPlayerId);
+    public boolean areAllied(Long boardId, Long firstPlayerId, Long secondPlayerId) {
+        return alliedPlayerIds(boardId, firstPlayerId).contains(secondPlayerId);
     }
 
     /** Bonus de trahison du briseur contre la victime, actif uniquement le tour de la trahison ; sans plafond. */
-    public double betrayalBonusPercent(int turn, Long breakerPlayerId, Long victimPlayerId) {
-        return allianceRepository.findBetrayalsAtTurn(turn).stream()
+    public double betrayalBonusPercent(Long boardId, int turn, Long breakerPlayerId, Long victimPlayerId) {
+        return allianceRepository.findBetrayalsAtTurn(boardId, turn).stream()
                 .filter(alliance -> breakerPlayerId.equals(alliance.getEndedByPlayerId()))
                 .filter(alliance -> alliance.involves(breakerPlayerId) && alliance.involves(victimPlayerId))
                 .mapToDouble(Alliance::betrayalBonusPercent)
@@ -54,8 +54,8 @@ public class AllianceGraph {
                 .orElse(0);
     }
 
-    public List<Alliance> endedAlliancesAtTurn(int turn) {
-        return allianceRepository.findEndedAtTurn(turn);
+    public List<Alliance> endedAlliancesAtTurn(Long boardId, int turn) {
+        return allianceRepository.findEndedAtTurn(boardId, turn);
     }
 
     /**

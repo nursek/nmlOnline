@@ -986,3 +986,57 @@ textarea:focus-visible,
     cursor: pointer;
   }
 }
+
+.account-menu {
+  --mat-menu-container-shape: var(--r-md);
+  --mat-menu-item-label-text-font: var(--font-sans);
+  --mat-menu-item-label-text-size: 0.86rem;
+  margin-top: 8px;
+  min-width: 15rem;
+  padding: 6px;
+  border-radius: var(--r-md);
+  background-image:
+    linear-gradient(180deg, color-mix(in srgb, var(--ink) 5%, transparent), transparent 45%),
+    linear-gradient(180deg, var(--surface-2), var(--surface));
+
+  .mat-mdc-menu-content {
+    padding: 0;
+  }
+
+  .mat-mdc-menu-item {
+    min-height: 42px;
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    transition: background-color 0.15s ease;
+
+    mat-icon {
+      margin-right: 10px;
+      color: var(--accent);
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: var(--accent-tint);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+  }
+
+  .mat-mdc-menu-item + .mat-mdc-menu-item {
+    margin-top: 2px;
+  }
+
+  .mat-divider {
+    margin: 4px 10px;
+    border-top-color: var(--line-2);
+  }
+}
+
+.cdk-overlay-container {
+  z-index: 1100;
+}

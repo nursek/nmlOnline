@@ -274,6 +274,25 @@
       <strong>{{ state()?.transitCombatsCount }}</strong>
       @if (state()?.allDone) {
         <span class="done-badge">Terminé — prêt à finaliser</span>
+        <button
+          mat-stroked-button
+          color="accent"
+          [matMenuTriggerFor]="turnExportMenu"
+          matTooltip="Captures, éliminés et combats de transit sont ajoutés après la finalisation"
+        >
+          <mat-icon>download</mat-icon>
+          Journal du tour
+        </button>
+        <mat-menu #turnExportMenu="matMenu">
+          <button mat-menu-item (click)="onDownloadTurn('json')">
+            <mat-icon>data_object</mat-icon>
+            JSON complet
+          </button>
+          <button mat-menu-item (click)="onDownloadTurn('log')">
+            <mat-icon>description</mat-icon>
+            Journal texte (.log)
+          </button>
+        </mat-menu>
       }
     </div>
   }
@@ -477,6 +496,25 @@
                   Détail
                 </button>
               }
+              <button
+                mat-icon-button
+                class="export-button"
+                [matMenuTriggerFor]="battleExportMenu"
+                [attr.aria-label]="'Télécharger le combat du secteur ' + b.sectorNumber"
+                matTooltip="Télécharger ce combat"
+              >
+                <mat-icon>download</mat-icon>
+              </button>
+              <mat-menu #battleExportMenu="matMenu">
+                <button mat-menu-item (click)="onDownloadBattle(b, 'json')">
+                  <mat-icon>data_object</mat-icon>
+                  JSON complet
+                </button>
+                <button mat-menu-item (click)="onDownloadBattle(b, 'log')">
+                  <mat-icon>description</mat-icon>
+                  Journal texte (.log)
+                </button>
+              </mat-menu>
               @if (b.eliminatedPlayers?.length) {
                 <span class="eliminated-note">
                   <mat-icon>dangerous</mat-icon>
@@ -530,4 +568,50 @@
       </button>
     </div>
   }
+
+  <mat-card class="turn-archives">
+    <h2>
+      <mat-icon>archive</mat-icon>
+      Archives des tours
+    </h2>
+    <div class="archive-controls">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Tour</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1"
+          [value]="archiveTurn() ?? ''"
+          (input)="onArchiveTurnChange($any($event.target).value)"
+        />
+      </mat-form-field>
+      <button
+        mat-flat-button
+        color="primary"
+        [matMenuTriggerFor]="archiveMenu"
+        [disabled]="archiveLoading() || !archiveTurn()"
+      >
+        @if (archiveLoading()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>download</mat-icon>
+        }
+        Télécharger
+      </button>
+      <mat-menu #archiveMenu="matMenu">
+        <button mat-menu-item (click)="onDownloadArchive('json')">
+          <mat-icon>data_object</mat-icon>
+          JSON complet
+        </button>
+        <button mat-menu-item (click)="onDownloadArchive('log')">
+          <mat-icon>description</mat-icon>
+          Journal texte (.log)
+        </button>
+      </mat-menu>
+    </div>
+    <p class="hint">
+      Journal complet archivé à la finalisation : batailles et journaux, captures, éliminés et
+      combats de transit.
+    </p>
+  </mat-card>
 </section>

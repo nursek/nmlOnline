@@ -31,6 +31,9 @@ public class ExchangeOffer {
     @SequenceGenerator(name = "exchange_offer_seq", sequenceName = "exchange_offers_id_seq", allocationSize = 50)
     private Long id;
 
+    @Column(name = "board_id", nullable = false)
+    private Long boardId;
+
     @Column(name = "sender_player_id", nullable = false)
     private Long senderPlayerId;
 
@@ -59,8 +62,9 @@ public class ExchangeOffer {
     @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExchangeOfferResource> resources = new ArrayList<>();
 
-    public ExchangeOffer(Long senderPlayerId, Long receiverPlayerId, double money,
+    public ExchangeOffer(Long boardId, Long senderPlayerId, Long receiverPlayerId, double money,
                          int createdTurn, int expiresTurn) {
+        this.boardId = boardId;
         this.senderPlayerId = senderPlayerId;
         this.receiverPlayerId = receiverPlayerId;
         this.money = money;

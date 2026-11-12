@@ -22,7 +22,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   const token = tokenService.getAccessToken();
-  const authReq = token ? addTokenToRequest(req, token) : req;
+  const scopedReq = addInstanceToRequest(req);
+  const authReq = token ? addTokenToRequest(scopedReq, token) : scopedReq;
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -47,6 +48,15 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
  */
 function isAuthRequest(url: string): boolean {
   return url.includes('/auth/refresh') || url.includes('/login') || url.includes('/register');
+}
+
+/** Lu en sessionStorage : évite une dépendance circulaire avec HttpClient. */
+function addInstanceToRequest(req: HttpRequest<unknown>): HttpRequest<unknown> {
+  if (!req.url.startsWith('/api/') || req.url.includes('/instances')) {
+    return req;
+  }
+  const instanceId = sessionStorage.getItem('instanceId');
+  return instanceId ? req.clone({ setHeaders: { 'X-Board-Id': instanceId } }) : req;
 }
 
 function addTokenToRequest(req: HttpRequest<unknown>, token: string): HttpRequest<unknown> {

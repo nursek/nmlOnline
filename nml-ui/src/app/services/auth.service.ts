@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
+import { InstanceService } from './instance.service';
 import { LoginRequest, User } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 
@@ -19,6 +20,7 @@ export class AuthService {
   private readonly api = inject(ApiService);
   private readonly tokenService = inject(TokenService);
   private readonly router = inject(Router);
+  private readonly instance = inject(InstanceService);
 
   // Reactive state — restored from session storage on first instantiation.
   private readonly _user = signal<User | null>(this.tokenService.getUser());
@@ -49,6 +51,8 @@ export class AuthService {
       const user = this.tokenService.getUser();
       if (token && user) {
         this._user.set(user);
+        // Chargement de fond : le menu compte et le garde restent utilisables sans bloquer le boot.
+        void this.instance.ensureLoaded().catch(() => undefined);
       } else {
         this.tokenService.clearAuth();
         this._user.set(null);
@@ -76,7 +80,16 @@ export class AuthService {
         role: response.role,
       });
       this._user.set({ id: response.id, username: response.name, role: response.role });
-      void this.router.navigate([response.role === 'ADMIN' ? '/admin' : '/accueil']);
+      this.instance.clear();
+      this.instance.invalidate();
+      // Une liste indisponible ne doit pas annuler une authentification réussie : /parties propose de réessayer.
+      const instances = await this.instance.ensureLoaded().catch(() => []);
+      const mine = instances.filter((candidate) => candidate.participant);
+      if (mine.length === 1) {
+        this.instance.enter(mine[0]);
+        return;
+      }
+      void this.router.navigate(['/parties']).catch(() => undefined);
     } catch (error) {
       const message = this.extractErrorMessage(error);
       this._error.set(message);
@@ -100,6 +113,8 @@ export class AuthService {
   /** Clear local auth state (no HTTP). Used by the 401 interceptor path. */
   clear(): void {
     this.tokenService.clearAuth();
+    this.instance.clear();
+    this.instance.invalidate();
     this._user.set(null);
     this._error.set(null);
   }

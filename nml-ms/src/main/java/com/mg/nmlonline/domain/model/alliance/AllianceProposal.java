@@ -29,6 +29,9 @@ public class AllianceProposal {
     @Column(nullable = false, length = 20)
     private ProposalKind kind;
 
+    @Column(name = "board_id", nullable = false)
+    private Long boardId;
+
     @Column(name = "from_player_id", nullable = false)
     private Long fromPlayerId;
 
@@ -45,11 +48,13 @@ public class AllianceProposal {
     @Column(name = "resolved_turn")
     private Integer resolvedTurn;
 
-    public static AllianceProposal create(ProposalKind kind, Long fromPlayerId, Long toPlayerId, int turn) {
+    public static AllianceProposal create(ProposalKind kind, Long boardId, Long fromPlayerId, Long toPlayerId,
+                                         int turn) {
         if (fromPlayerId.equals(toPlayerId)) {
             throw new IllegalArgumentException("Un joueur ne peut pas se proposer une alliance à lui-même.");
         }
         AllianceProposal proposal = new AllianceProposal();
+        proposal.boardId = boardId;
         proposal.kind = kind;
         proposal.fromPlayerId = fromPlayerId;
         proposal.toPlayerId = toPlayerId;

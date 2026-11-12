@@ -20,12 +20,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Tests déterministes : évasion 0 ou 100, aucune cible aérienne sauf mention, Random seedé injecté par sécurité. */
+/** Tests déterministes : jets scriptés (100 = pas de critique), évasion 0 ou 100, aucune cible aérienne sauf mention. */
 @DisplayName("Battle — Moteur de combat individuel")
 class BattleTest {
 
@@ -36,11 +35,16 @@ class BattleTest {
     @BeforeEach
     void setUp() {
         battle = new Battle();
-        battle.setRandom(new Random(42));
+        battle.setRandomSource(() -> 100);
         attacker = new Player("Attaquant");
         attacker.setId(1L);
         defender = new Player("Defenseur");
         defender.setId(2L);
+    }
+
+    private static RandomSource rolls(int... values) {
+        int[] index = {0};
+        return () -> index[0] < values.length ? values[index[0]++] : 100;
     }
 
     private Unit larbin() {
@@ -151,6 +155,24 @@ class BattleTest {
         }
 
         @Test
+        @DisplayName("Esquive 50 % : un jet au-dessus laisse passer la frappe")
+        void dodgeFailsWhenRollExceedsEvasion() {
+            Unit striker = larbin();
+            striker.setNumber(1);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            Unit dodger = larbin();
+            dodger.setNumber(2);
+            dodger.addEquipment(defensive(0, 50));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(dodger));
+            battle.setRandomSource(rolls(100, 51));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertTrue(battle.getParticipation().get(dodger).damaged(), "Jet 51 > 50 % : la frappe passe");
+            assertFalse(logContains("esquive"));
+        }
+
+        @Test
         @DisplayName("La cible la plus faible encaisse d'abord, le surplus entame la suivante")
         void surplusChainsOnWeakestInCategory() {
             Unit striker = brute();
@@ -234,6 +256,48 @@ class BattleTest {
         }
 
         @Test
+        @DisplayName("Deux catégories : jet ≤ 50 vise le véhicule, l'unité survit")
+        void categoryRollAtFiftyPicksVehicle() {
+            Unit shooter = new Unit(5, UnitClass.TIREUR);
+            shooter.setNumber(1);
+            shooter.addEquipment(firearm(100));
+            // ATK 0 : sans phase ATK, defenderUnits ne reflète que le tirage de catégorie en PDF.
+            shooter.setAttack(0);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(shooter));
+            Unit decoy = larbin();
+            decoy.setNumber(1);
+            Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, 2L);
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(decoy, vehicle));
+            battle.setRandomSource(rolls(100, 50));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertFalse(defenderUnits.contains(vehicle), "50 PdF détruisent le VTT léger (50 def)");
+            assertEquals(10.0, decoy.getDefense(), "Le LARBIN n'est pas visé");
+        }
+
+        @Test
+        @DisplayName("Deux catégories : jet > 50 vise l'unité, le véhicule encaisse le surplus")
+        void categoryRollAboveFiftyPicksUnit() {
+            Unit shooter = new Unit(5, UnitClass.TIREUR);
+            shooter.setNumber(1);
+            shooter.addEquipment(firearm(100));
+            // ATK 0 : sans phase ATK, defenderUnits ne reflète que le tirage de catégorie en PDF.
+            shooter.setAttack(0);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(shooter));
+            Unit decoy = larbin();
+            decoy.setNumber(1);
+            Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, 2L);
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(decoy, vehicle));
+            battle.setRandomSource(rolls(100, 51));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertFalse(defenderUnits.contains(decoy), "Le LARBIN (10 def) tombe en premier");
+            assertEquals(10.0, vehicle.getDefense(), "Surplus 40 sur les 50 def du VTT léger");
+        }
+
+        @Test
         @DisplayName("Véhicule sans pilote : cible passive, il ne tire pas en PdF")
         void unPilotedVehicleDoesNotFire() {
             Unit attackerUnit = larbin();
@@ -311,6 +375,40 @@ class BattleTest {
             assertEquals(2, battle.getLog().stream()
                     .filter(entry -> entry.message().contains("n'a aucune cible"))
                     .count());
+        }
+
+        @Test
+        @DisplayName("Aérien : jet ≤ 10 % touche et entame le véhicule")
+        void aerialTargetIsHitWhenRollWithinChance() {
+            Unit striker = larbin();
+            striker.setNumber(1);
+            striker.addEquipment(firearm(100));
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            Vehicle helicopter = new Vehicle(VehicleType.HELICOPTERE, 2L);
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(helicopter));
+            battle.setRandomSource(rolls(100, 10));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(115.0, helicopter.getDefense(), "10 PdF touchent l'hélicoptère");
+            assertFalse(logContains("loupe la cible aérienne"));
+        }
+
+        @Test
+        @DisplayName("Aérien : jet > 10 % loupe la cible, l'attaque est perdue")
+        void aerialTargetIsMissedAboveChance() {
+            Unit striker = larbin();
+            striker.setNumber(1);
+            striker.addEquipment(firearm(100));
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            Vehicle helicopter = new Vehicle(VehicleType.HELICOPTERE, 2L);
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(helicopter));
+            battle.setRandomSource(rolls(100, 11));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(125.0, helicopter.getDefense(), "Aucun dégât : l'attaque est perdue");
+            assertTrue(logContains("loupe la cible aérienne (jet 11 > 10 %)"));
         }
     }
 
@@ -512,6 +610,108 @@ class BattleTest {
             assertTrue(log.stream().anyMatch(e -> BattleLogEntry.DESTROYED.equals(e.outcome())
                     && e.message().contains("Attaquant · BRUTE n°1 détruit Defenseur · LARBIN n°1")));
             assertTrue(log.stream().anyMatch(e -> BattleLogEntry.WINNER.equals(e.outcome())));
+        }
+    }
+
+    @Nested
+    @DisplayName("Coups critiques")
+    class CriticalTests {
+
+        @Test
+        @DisplayName("TIREUR : jet ≤ 10 multiplie les dégâts par 1,5 et le journalise")
+        void tireurCritMultipliesDamage() {
+            Unit striker = brute();
+            striker.setNumber(1);
+            battle.setRandomSource(rolls(10));
+            Headquarters hq = new Headquarters(1L);
+            hq.setPlayerId(1L);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(hq));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(50.0, hq.getDefense(), "100 ATK × 1,5 = 150 face à 200 def");
+            assertTrue(logContains("critique (jet 10 ≤ 10 %) : 100 → 150 ATK"));
+            assertTrue(battle.getLog().stream()
+                    .anyMatch(entry -> BattleLogEntry.CRIT.equals(entry.outcome())));
+        }
+
+        @Test
+        @DisplayName("TIREUR : jet > 10 conserve les dégâts normaux")
+        void tireurWithoutCritDealsNormalDamage() {
+            Unit striker = brute();
+            striker.setNumber(1);
+            battle.setRandomSource(rolls(11));
+            Headquarters hq = new Headquarters(1L);
+            hq.setPlayerId(1L);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(hq));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(100.0, hq.getDefense(), "Sans critique : 100 ATK face à 200 def");
+            assertFalse(logContains("critique"));
+        }
+
+        @Test
+        @DisplayName("Critique : un seul jet par phase, le surplus part de la base boostée (150)")
+        void critSurplusChainsFromBoostedBase() {
+            Unit striker = brute();
+            striker.setNumber(1);
+            battle.setRandomSource(rolls(1, 1));
+            Unit larbin = larbin();
+            larbin.setNumber(1);
+            Headquarters hq = new Headquarters(1L);
+            hq.setPlayerId(1L);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(larbin, hq));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertSame(hq, defenderUnits.getFirst(), "Le LARBIN tombe, le QG reste");
+            assertEquals(60.0, hq.getDefense(),
+                    "Surplus 150 − 10 = 140 contre 200 def");
+        }
+
+        @Test
+        @DisplayName("Un TIREUR tire un critique par phase : PDF critique, PDC non")
+        void critIsRolledOncePerPhase() {
+            Unit striker = new Unit(8, UnitClass.TIREUR);
+            striker.setNumber(1);
+            striker.setPdf(100);
+            striker.setPdc(100);
+            striker.setAttack(0);
+            battle.setRandomSource(rolls(1, 100));
+            Headquarters hq = new Headquarters(1L);
+            hq.setPlayerId(1L);
+            hq.setDefense(400);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(hq));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(150.0, hq.getDefense(), "400 − 150 (PDF crit) − 100 (PDC sans crit)");
+            assertEquals(1, battle.getLog().stream()
+                    .filter(entry -> entry.message().contains("critique"))
+                    .count());
+        }
+
+        @Test
+        @DisplayName("Sans classe critique, aucun jet n'est consommé")
+        void noRollWithoutCriticalClass() {
+            Unit striker = new Unit(8, UnitClass.LEGER);
+            striker.setNumber(1);
+            battle.setRandomSource(() -> {
+                throw new AssertionError("Jet inattendu : le LEGER n'a pas de critique");
+            });
+            Headquarters hq = new Headquarters(1L);
+            hq.setPlayerId(1L);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(hq));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertEquals(100.0, hq.getDefense());
         }
     }
 

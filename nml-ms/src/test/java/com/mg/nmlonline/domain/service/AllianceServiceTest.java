@@ -7,6 +7,7 @@ import com.mg.nmlonline.api.dto.AllianceProposalDto;
 import com.mg.nmlonline.domain.model.alliance.ProposalKind;
 import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.BuildingRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +38,9 @@ class AllianceServiceTest {
     private PlayerRepository playerRepository;
 
     @Autowired
+    private BoardRepository boardRepository;
+
+    @Autowired
     private BuildingRepository buildingRepository;
 
     @Autowired
@@ -45,9 +49,14 @@ class AllianceServiceTest {
     @Autowired
     private AllianceGraph allianceGraph;
 
+    private Long boardId() {
+        return boardRepository.findAll().getFirst().getId();
+    }
+
     private Player createPlayer(String name) {
         Player player = new Player(name);
         player.setUserId(USER_SEQ.incrementAndGet());
+        player.setBoardId(boardId());
         player = playerRepository.save(player);
         buildingService.createInitialBuildings(player);
         return playerRepository.save(player);
@@ -56,12 +65,13 @@ class AllianceServiceTest {
     private Player createPlayerWithoutHeadquarters(String name) {
         Player player = new Player(name);
         player.setUserId(USER_SEQ.incrementAndGet());
+        player.setBoardId(boardId());
         return playerRepository.save(player);
     }
 
     private AllianceProposalDto ally(Player first, Player second) {
-        AllianceProposalDto proposal = allianceService.propose(first.getUserId(), ProposalKind.ALLIANCE, second.getId());
-        allianceService.accept(second.getUserId(), proposal.getId());
+        AllianceProposalDto proposal = allianceService.propose(first.getUserId(), boardId(), ProposalKind.ALLIANCE, second.getId());
+        allianceService.accept(second.getUserId(), boardId(), proposal.getId());
         return proposal;
     }
 
@@ -72,18 +82,18 @@ class AllianceServiceTest {
         Player b = createPlayer("AllianceB" + USER_SEQ.get());
         ally(a, b);
 
-        AllianceMeDto me = allianceService.getMe(a.getUserId());
+        AllianceMeDto me = allianceService.getMe(a.getUserId(), boardId());
         assertEquals(1, me.getAlliances().size());
         assertEquals(b.getId(), me.getAlliances().getFirst().getAllyPlayerId());
         assertTrue(me.isHeadquartersOperational());
 
-        assertTrue(allianceService.getAnnouncements().stream()
+        assertTrue(allianceService.getAnnouncements(boardId()).stream()
                         .noneMatch(announcement -> announcement.getActorPlayerId().equals(a.getId())),
                 "Annonce invisible le tour de l'acceptation");
 
-        turnService.advanceTurn();
+        turnService.advanceTurn(boardId());
 
-        assertTrue(allianceService.getAnnouncements().stream()
+        assertTrue(allianceService.getAnnouncements(boardId()).stream()
                         .anyMatch(announcement -> "ALLIANCE_FORMED".equals(announcement.getType())
                                 && announcement.getActorPlayerId().equals(a.getId())
                                 && announcement.getTargetPlayerId().equals(b.getId())),
@@ -96,23 +106,23 @@ class AllianceServiceTest {
         Player traitor = createPlayer("Traitre" + USER_SEQ.get());
         Player victim = createPlayer("Victime" + USER_SEQ.get());
         ally(traitor, victim);
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(boardId());
 
-        assertEquals(0, allianceGraph.betrayalBonusPercent(turn, traitor.getId(), victim.getId()));
+        assertEquals(0, allianceGraph.betrayalBonusPercent(boardId(), turn, traitor.getId(), victim.getId()));
 
-        Long allianceId = allianceService.getMe(traitor.getUserId()).getAlliances().getFirst().getId();
-        allianceService.betray(traitor.getUserId(), allianceId);
+        Long allianceId = allianceService.getMe(traitor.getUserId(), boardId()).getAlliances().getFirst().getId();
+        allianceService.betray(traitor.getUserId(), boardId(), allianceId);
 
-        assertEquals(15, allianceGraph.betrayalBonusPercent(turn, traitor.getId(), victim.getId()));
-        assertFalse(allianceGraph.areAllied(traitor.getId(), victim.getId()));
-        assertTrue(allianceService.getMe(traitor.getUserId()).getAlliances().isEmpty());
-        assertEquals(15, allianceService.getMe(traitor.getUserId()).getActiveBetrayalBonuses().getFirst().getBonusPercent());
+        assertEquals(15, allianceGraph.betrayalBonusPercent(boardId(), turn, traitor.getId(), victim.getId()));
+        assertFalse(allianceGraph.areAllied(boardId(), traitor.getId(), victim.getId()));
+        assertTrue(allianceService.getMe(traitor.getUserId(), boardId()).getAlliances().isEmpty());
+        assertEquals(15, allianceService.getMe(traitor.getUserId(), boardId()).getActiveBetrayalBonuses().getFirst().getBonusPercent());
 
-        int nextTurn = turnService.advanceTurn();
-        assertEquals(0, allianceGraph.betrayalBonusPercent(nextTurn, traitor.getId(), victim.getId()),
+        int nextTurn = turnService.advanceTurn(boardId());
+        assertEquals(0, allianceGraph.betrayalBonusPercent(boardId(), nextTurn, traitor.getId(), victim.getId()),
                 "Le bonus s'éteint avec le tour de la trahison");
         assertThrows(IllegalStateException.class,
-                () -> allianceService.betray(traitor.getUserId(), allianceId));
+                () -> allianceService.betray(traitor.getUserId(), boardId(), allianceId));
     }
 
     @Test
@@ -121,12 +131,12 @@ class AllianceServiceTest {
         Player traitor = createPlayer("TraitreLong" + USER_SEQ.get());
         Player victim = createPlayer("VictimeLong" + USER_SEQ.get());
         ally(traitor, victim);
-        turnService.advanceTurn();
+        turnService.advanceTurn(boardId());
 
-        Long allianceId = allianceService.getMe(traitor.getUserId()).getAlliances().getFirst().getId();
-        allianceService.betray(traitor.getUserId(), allianceId);
+        Long allianceId = allianceService.getMe(traitor.getUserId(), boardId()).getAlliances().getFirst().getId();
+        allianceService.betray(traitor.getUserId(), boardId(), allianceId);
 
-        assertEquals(25, allianceGraph.betrayalBonusPercent(turnService.getCurrentTurn(),
+        assertEquals(25, allianceGraph.betrayalBonusPercent(boardId(), turnService.getCurrentTurn(boardId()),
                 traitor.getId(), victim.getId()));
     }
 
@@ -136,16 +146,16 @@ class AllianceServiceTest {
         Player a = createPlayer("RuptureA" + USER_SEQ.get());
         Player b = createPlayer("RuptureB" + USER_SEQ.get());
         ally(a, b);
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(boardId());
 
-        AllianceProposalDto rupture = allianceService.propose(a.getUserId(), ProposalKind.RUPTURE, b.getId());
-        assertTrue(allianceService.getMe(b.getUserId()).getIncomingProposals().stream()
+        AllianceProposalDto rupture = allianceService.propose(a.getUserId(), boardId(), ProposalKind.RUPTURE, b.getId());
+        assertTrue(allianceService.getMe(b.getUserId(), boardId()).getIncomingProposals().stream()
                 .anyMatch(proposal -> "RUPTURE".equals(proposal.getKind())));
-        allianceService.accept(b.getUserId(), rupture.getId());
+        allianceService.accept(b.getUserId(), boardId(), rupture.getId());
 
-        assertTrue(allianceService.getMe(a.getUserId()).getAlliances().isEmpty());
-        assertEquals(0, allianceGraph.betrayalBonusPercent(turn, a.getId(), b.getId()));
-        assertEquals(0, allianceGraph.betrayalBonusPercent(turn, b.getId(), a.getId()));
+        assertTrue(allianceService.getMe(a.getUserId(), boardId()).getAlliances().isEmpty());
+        assertEquals(0, allianceGraph.betrayalBonusPercent(boardId(), turn, a.getId(), b.getId()));
+        assertEquals(0, allianceGraph.betrayalBonusPercent(boardId(), turn, b.getId(), a.getId()));
     }
 
     @Test
@@ -155,7 +165,7 @@ class AllianceServiceTest {
         Player target = createPlayer("CibleQg" + USER_SEQ.get());
 
         assertThrows(IllegalStateException.class,
-                () -> allianceService.propose(noHeadquarters.getUserId(), ProposalKind.ALLIANCE, target.getId()));
+                () -> allianceService.propose(noHeadquarters.getUserId(), boardId(), ProposalKind.ALLIANCE, target.getId()));
     }
 
     @Test
@@ -170,9 +180,9 @@ class AllianceServiceTest {
         buildingRepository.save(headquarters);
 
         AllianceProposalDto rupture = allianceService.propose(
-                requester.getUserId(), ProposalKind.RUPTURE, accepter.getId());
+                requester.getUserId(), boardId(), ProposalKind.RUPTURE, accepter.getId());
         assertThrows(IllegalStateException.class,
-                () -> allianceService.accept(accepter.getUserId(), rupture.getId()));
+                () -> allianceService.accept(accepter.getUserId(), boardId(), rupture.getId()));
     }
 
     @Test
@@ -181,30 +191,30 @@ class AllianceServiceTest {
         Player traitor = createPlayer("HistTraitre" + USER_SEQ.get());
         Player victim = createPlayer("HistVictime" + USER_SEQ.get());
         ally(traitor, victim);
-        Long betrayedId = allianceService.getMe(traitor.getUserId()).getAlliances().getFirst().getId();
-        allianceService.betray(traitor.getUserId(), betrayedId);
+        Long betrayedId = allianceService.getMe(traitor.getUserId(), boardId()).getAlliances().getFirst().getId();
+        allianceService.betray(traitor.getUserId(), boardId(), betrayedId);
 
         Player rupturer = createPlayer("HistRuptA" + USER_SEQ.get());
         Player ruptured = createPlayer("HistRuptB" + USER_SEQ.get());
         ally(rupturer, ruptured);
         AllianceProposalDto rupture = allianceService.propose(
-                rupturer.getUserId(), ProposalKind.RUPTURE, ruptured.getId());
-        allianceService.accept(ruptured.getUserId(), rupture.getId());
+                rupturer.getUserId(), boardId(), ProposalKind.RUPTURE, ruptured.getId());
+        allianceService.accept(ruptured.getUserId(), boardId(), rupture.getId());
 
         Player proposer = createPlayer("HistPropA" + USER_SEQ.get());
         Player target = createPlayer("HistPropB" + USER_SEQ.get());
         AllianceProposalDto pending = allianceService.propose(
-                proposer.getUserId(), ProposalKind.ALLIANCE, target.getId());
+                proposer.getUserId(), boardId(), ProposalKind.ALLIANCE, target.getId());
         AllianceProposalDto later = allianceService.propose(
-                rupturer.getUserId(), ProposalKind.ALLIANCE, target.getId());
+                rupturer.getUserId(), boardId(), ProposalKind.ALLIANCE, target.getId());
 
-        AdminAllianceHistoryDto history = allianceService.getHistory();
+        AdminAllianceHistoryDto history = allianceService.getHistory(boardId());
 
         AdminAllianceHistoryDto.AllianceEntryDto betrayal = allianceEntry(history, traitor, victim);
         assertTrue(betrayal.isBetrayal());
         assertEquals(traitor.getId(), betrayal.getEndedByPlayerId());
         assertEquals(traitor.getName(), betrayal.getEndedByName());
-        assertEquals(turnService.getCurrentTurn(), betrayal.getEndedTurn());
+        assertEquals(turnService.getCurrentTurn(boardId()), betrayal.getEndedTurn());
 
         AdminAllianceHistoryDto.AllianceEntryDto ruptureEntry = allianceEntry(history, rupturer, ruptured);
         assertFalse(ruptureEntry.isBetrayal());

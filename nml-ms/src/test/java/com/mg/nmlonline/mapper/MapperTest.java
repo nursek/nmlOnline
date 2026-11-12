@@ -36,36 +36,56 @@ class MapperTest {
         @Test
         @DisplayName("Un bonus négatif ou une cible inconnue est rejeté, une valeur valide est conservée")
         void rejectsNegativeBonusAndUnknownTarget() {
-            EquipmentDto negative = new EquipmentDto("Arme", 100, 0, 0, 0, 0, -50, "GROUND", null, "FIREARM", null, null);
+            EquipmentDto negative = new EquipmentDto("Arme", 100, 0, 0, 0, 0, -50, "GROUND", null, "FIREARM", null, null, 0, 0);
             assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(negative));
 
-            EquipmentDto unknownTarget = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 100, "SOUS_MARIN", null, "FIREARM", null, null);
+            EquipmentDto unknownTarget = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 100, "SOUS_MARIN", null, "FIREARM", null, null, 0, 0);
             assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(unknownTarget));
 
-            EquipmentDto valid = new EquipmentDto("Arme", 100, 50, 0, 0, 0, 100, "AERIAL", null, "FIREARM", null, null);
+            EquipmentDto valid = new EquipmentDto("Arme", 100, 50, 0, 0, 0, 100, "AERIAL", null, "FIREARM", null, null, 0, 0);
             Equipment equipment = mapper.toDomain(valid);
             assertEquals(100, equipment.getVehicleBonus());
             assertEquals(VehicleBonusTarget.AERIAL, equipment.getVehicleBonusTarget());
         }
 
         @Test
+        @DisplayName("Les modificateurs de visée hors bornes sont rejetés, les valeurs valides font l'aller-retour")
+        void validatesAimMalus() {
+            EquipmentDto negative = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null,
+                    "FIREARM", null, null, -1, 0);
+            assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(negative));
+
+            EquipmentDto tooHigh = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null,
+                    "FIREARM", null, null, 0, 101);
+            assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(tooHigh));
+
+            EquipmentDto valid = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null,
+                    "FIREARM", null, null, 10, 15);
+            Equipment equipment = mapper.toDomain(valid);
+            assertEquals(10, equipment.getAimMalusReduction());
+            assertEquals(15, equipment.getEnemyAimMalus());
+            assertEquals(10, mapper.toDto(equipment).getAimMalusReduction());
+            assertEquals(15, mapper.toDto(equipment).getEnemyAimMalus());
+        }
+
+        @Test
         @DisplayName("Les libellés par race font l'aller-retour, casse ignorée, race inconnue rejetée")
         void mapsDisplayNamesByRace() {
             EquipmentDto dto = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null, "FIREARM",
-                    Map.of("orks", "Truc"), null);
+                    Map.of("orks", "Truc"), null, 0, 0);
             Equipment equipment = mapper.toDomain(dto);
             assertEquals("Truc", equipment.getDisplayNames().get(PlayerRace.ORKS));
             assertEquals("Truc", mapper.toDto(equipment).getDisplayNames().get("ORKS"));
 
             EquipmentDto unknown = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null, "FIREARM",
-                    Map.of("SOUS_MARIN", "Truc"), null);
+                    Map.of("SOUS_MARIN", "Truc"), null, 0, 0);
             assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(unknown));
 
             Map<String, String> badLabels = new HashMap<>();
             badLabels.put("ORKS", null);
             badLabels.put("NECRONS", " ");
             EquipmentDto badLabel = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null, "FIREARM",
-                    badLabels, null);
+                    badLabels, null, 0, 0);
             assertThrows(IllegalArgumentException.class, () -> mapper.toDomain(badLabel));
         }
 
@@ -76,7 +96,7 @@ class MapperTest {
             descriptions.put("necrons", "Une lame née du vide.");
             descriptions.put("ORKS", " ");
             EquipmentDto dto = new EquipmentDto("Arme", 100, 0, 0, 0, 0, 0, "GROUND", null, "FIREARM",
-                    null, descriptions);
+                    null, descriptions, 0, 0);
             Equipment equipment = mapper.toDomain(dto);
             assertEquals("Une lame née du vide.", equipment.getDisplayDescriptions().get(PlayerRace.NECRONS));
             assertEquals(1, equipment.getDisplayDescriptions().size());
@@ -100,14 +120,12 @@ class MapperTest {
 
         @BeforeEach
         void setUp() {
-            buildingMapper = new BuildingMapper(equipmentMapper, turnService);
+            buildingMapper = new BuildingMapper(equipmentMapper);
         }
 
         @Test
         @DisplayName("Banque 75 % et QG 25 % de la fortune du propriétaire")
         void shouldSplitOwnerWealthBetweenBankAndHeadquarters() {
-            when(turnService.getCurrentTurn()).thenReturn(3);
-
             BuildingDto bank = buildingMapper.toDto(new Bank(1L), 10000.0);
             BuildingDto hq = buildingMapper.toDto(new Headquarters(1L), 10000.0);
 
@@ -118,8 +136,6 @@ class MapperTest {
         @Test
         @DisplayName("Sans propriétaire : aucune part de fortune calculée")
         void shouldNotComputeWealthWithoutOwner() {
-            when(turnService.getCurrentTurn()).thenReturn(3);
-
             BuildingDto bank = buildingMapper.toDto(new Bank(1L));
             BuildingDto hq = buildingMapper.toDto(new Headquarters(1L));
 

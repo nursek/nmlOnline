@@ -18,5 +18,5 @@ public interface AllianceProposalRepository extends JpaRepository<AlliancePropos
     List<AllianceProposal> findByFromPlayerIdAndToPlayerIdAndKindAndStatus(
             Long fromPlayerId, Long toPlayerId, ProposalKind kind, ProposalStatus status);
 
-    List<AllianceProposal> findAllByOrderByCreatedTurnDescIdDesc();
+    List<AllianceProposal> findByBoardIdOrderByCreatedTurnDescIdDesc(Long boardId);
 }

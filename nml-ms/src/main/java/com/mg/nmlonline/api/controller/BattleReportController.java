@@ -1,6 +1,7 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.BattleReportDto;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.BattleReportService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,7 @@ public class BattleReportController {
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(battleReportService.getReportsForUser(userId));
+        return ResponseEntity.ok(battleReportService.getReportsForUser(userId,
+                (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE)));
     }
 }

@@ -71,13 +71,13 @@ public class MovementService {
 
         Sector fromSector = board.getSector(from);
         validateEntitiesInSector(fromSector, entityIds, playerId);
-        validateNotAlreadyOrdered(turn, entityIds);
+        validateNotAlreadyOrdered(board.getId(), turn, entityIds);
         validateNotInVehicle(entityIds);
 
         int hops = route.size() - 1;
         validateFootHops(fromSector, entityIds, playerId, hops);
 
-        MovementOrder order = MovementOrder.createFootOrder(playerId, turn, entityIds, route);
+        MovementOrder order = MovementOrder.createFootOrder(playerId, board.getId(), turn, entityIds, route);
         return orderRepository.save(order);
     }
 
@@ -127,7 +127,7 @@ public class MovementService {
                     + "mais la route en demande " + hops + ".");
         }
 
-        MovementOrder order = MovementOrder.createVehicleOrder(playerId, turn, vehicleId, route);
+        MovementOrder order = MovementOrder.createVehicleOrder(playerId, board.getId(), turn, vehicleId, route);
         return orderRepository.save(order);
     }
     
@@ -213,7 +213,7 @@ public class MovementService {
         ResolutionContext ctx = new ResolutionContext(turn);
         // Détecté même sans ordre de mouvement : une rupture seule déclenche le combat des co-localisés.
         ctx.conflicts.addAll(ruptureConflicts(turn, board));
-        List<MovementOrder> pendingOrders = orderRepository.findPendingByTurn(turn);
+        List<MovementOrder> pendingOrders = orderRepository.findPendingByTurn(board.getId(), turn);
         if (pendingOrders.isEmpty()) {
             return ctx;
         }
@@ -243,13 +243,13 @@ public class MovementService {
 
     /** Tour de rupture/trahison : les ex-alliés co-localisés règlent leurs comptes (ce tour uniquement). */
     private List<SectorConflict> ruptureConflicts(int turn, Board board) {
-        List<Alliance> endedAlliances = allianceGraph.endedAlliancesAtTurn(turn);
+        List<Alliance> endedAlliances = allianceGraph.endedAlliancesAtTurn(board.getId(), turn);
         if (endedAlliances.isEmpty()) {
             return List.of();
         }
         List<SectorConflict> conflicts = new ArrayList<>();
         Set<Integer> conflictedSectors = new HashSet<>();
-        Map<Long, Set<Long>> allies = allianceGraph.activeAdjacency();
+        Map<Long, Set<Long>> allies = allianceGraph.activeAdjacency(board.getId());
         for (Alliance ended : endedAlliances) {
             for (Sector sector : board.getAllSectors()) {
                 // Plusieurs alliances rompues le même tour : un seul conflit par secteur, tous camps confondus.
@@ -400,7 +400,7 @@ public class MovementService {
                     if (!order.isVehicleMovement() || crossingIds.contains(order.getId())) continue;
                     // Un allié stationnaire n'est pas un défenseur hostile : pas de combat de transit.
                     boolean hostileDefenders = defenderPlayerIds.stream()
-                            .anyMatch(pid -> !allianceGraph.areAllied(pid, order.getPlayerId()));
+                            .anyMatch(pid -> !allianceGraph.areAllied(board.getId(), pid, order.getPlayerId()));
                     if (!hostileDefenders) continue;
                     List<Integer> route = order.getRoute();
                     if (step == route.size() - 1) continue; // Destination finale, pas un transit
@@ -408,8 +408,10 @@ public class MovementService {
                     Vehicle vehicle = vehicleRepository.findById(order.getVehicleId()).orElse(null);
                     if (vehicle == null) continue;
 
-                    ctx.transitCombats.add(
-                            new TransitCombatResult(targetNum, vehicle.getId(), vehicle.firesInTransit()));
+                    ctx.transitCombats.add(new TransitCombatResult(targetNum, vehicle.getId(),
+                            vehicle.firesInTransit(), vehicle.getDisplayName(),
+                            vehicle.getVehicleType() != null ? vehicle.getVehicleType().name() : null,
+                            vehicle.getPlayerId()));
                     // TODO : appeler CombatService ici pour résolution réelle du combat de transit
                     if (vehicle.isDestroyed()) {
                         for (CombatEntity occupant : vehicle.disembarkAll()) {
@@ -495,7 +497,7 @@ public class MovementService {
         List<Long> survivors = winningCamp.stream()
                 .filter(playerId -> hasSurvivingCapturingEntity(sector, playerId))
                 .toList();
-        if (sector.getOwnerId() != null && isFriendlyToAny(survivors, sector.getOwnerId())) {
+        if (sector.getOwnerId() != null && isFriendlyToAny(board, survivors, sector.getOwnerId())) {
             return;
         }
         if (survivors.size() == 1) {
@@ -507,7 +509,7 @@ public class MovementService {
 
     /** Une entité non alliée non détruite tient le terrain : elle garde le secteur, pas de capture à la volée. */
     private boolean holdsForeignEntity(Sector sector, Collection<Long> friendlyPlayerIds) {
-        Map<Long, Set<Long>> allies = allianceGraph.activeAdjacency();
+        Map<Long, Set<Long>> allies = allianceGraph.activeAdjacency(sector.getBoard().getId());
         return sector.getCombatEntities().stream()
                 .filter(e -> !e.isDestroyed())
                 .filter(e -> e.getPlayerId() != null && !friendlyPlayerIds.contains(e.getPlayerId()))
@@ -541,10 +543,10 @@ public class MovementService {
         if (presentPlayers.isEmpty() || !hasCapturingEntity) return;
 
         List<Long> ordered = presentPlayers.stream().sorted().toList();
-        List<List<Long>> camps = AllianceGraph.camps(ordered, allianceGraph.activeAdjacency());
+        List<List<Long>> camps = AllianceGraph.camps(ordered, allianceGraph.activeAdjacency(board.getId()));
         if (camps.size() != 1) return;
         List<Long> camp = camps.getFirst();
-        if (sector.getOwnerId() != null && isFriendlyToAny(camp, sector.getOwnerId())) return;
+        if (sector.getOwnerId() != null && isFriendlyToAny(board, camp, sector.getOwnerId())) return;
 
         if (camp.size() == 1) {
             capture(board, sector, camp.getFirst(), false, ctx);
@@ -553,14 +555,14 @@ public class MovementService {
         }
     }
 
-    private boolean isFriendlyToAny(List<Long> camp, Long ownerId) {
+    private boolean isFriendlyToAny(Board board, List<Long> camp, Long ownerId) {
         if (camp.contains(ownerId)) return true;
-        return camp.stream().anyMatch(playerId -> allianceGraph.areAllied(ownerId, playerId));
+        return camp.stream().anyMatch(playerId -> allianceGraph.areAllied(board.getId(), ownerId, playerId));
     }
 
     private void capture(Board board, Sector sector, Long playerId, boolean onTheFly, ResolutionContext ctx) {
         if (sector.isOwnedBy(playerId)) return;
-        if (sector.getOwnerId() != null && allianceGraph.areAllied(sector.getOwnerId(), playerId)) return;
+        if (sector.getOwnerId() != null && allianceGraph.areAllied(board.getId(), sector.getOwnerId(), playerId)) return;
         sector.setOwnerAndColor(playerId, playerColor(board, playerId));
         ctx.captures.put(sector.getNumber(), new SectorCapture(sector.getNumber(), playerId, onTheFly));
     }
@@ -618,7 +620,7 @@ public class MovementService {
         if (arrivals.isEmpty()) {
             return List.of();
         }
-        Map<Long, Set<Long>> allies = allianceGraph.activeAdjacency();
+        Map<Long, Set<Long>> allies = allianceGraph.activeAdjacency(targetSector.getBoard().getId());
         // Duel : [arrivant, défenseur] comme avant ; impasse : défenseurs puis arrivants (ronde).
         List<Long> arrivalsFirst = new ArrayList<>(arrivals);
         arrivalsFirst.addAll(stationary);
@@ -766,8 +768,8 @@ public class MovementService {
         }
     }
 
-    private void validateNotAlreadyOrdered(int turn, List<Long> entityIds) {
-        List<Long> alreadyOrdered = orderRepository.findPendingEntityIds(turn, entityIds);
+    private void validateNotAlreadyOrdered(Long boardId, int turn, List<Long> entityIds) {
+        List<Long> alreadyOrdered = orderRepository.findPendingEntityIds(boardId, turn, entityIds);
         if (!alreadyOrdered.isEmpty()) {
             throw new IllegalArgumentException(
                     "Entité(s) déjà engagée(s) dans un ordre en attente : " + alreadyOrdered + ".");

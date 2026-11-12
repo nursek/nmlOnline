@@ -9,7 +9,7 @@ import java.util.List;
 @Repository
 public interface PendingCaptureRepository extends JpaRepository<PendingCapture, Long> {
 
-    List<PendingCapture> findByResolvedFalseOrderByIdAsc();
+    List<PendingCapture> findByBoardIdAndResolvedFalseOrderByIdAsc(Long boardId);
 
     boolean existsByBoardIdAndSectorNumberAndTurnAndResolvedFalse(Long boardId, int sectorNumber, int turn);
 

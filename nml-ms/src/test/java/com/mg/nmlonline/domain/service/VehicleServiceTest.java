@@ -31,6 +31,8 @@ import static org.mockito.Mockito.*;
 @DisplayName("VehicleService")
 class VehicleServiceTest {
 
+    private static final Long BOARD_ID = 1L;
+
     @Mock
     PlayerRepository playerRepository;
 
@@ -92,61 +94,61 @@ class VehicleServiceTest {
         @DisplayName("Type null, vide ou invalide est rejeté")
         void shouldRejectInvalidType() {
             assertThrows(IllegalArgumentException.class,
-                    () -> vehicleService.buyVehicle(10L, null, 1));
+                    () -> vehicleService.buyVehicle(10L, null, 1, BOARD_ID));
             assertThrows(IllegalArgumentException.class,
-                    () -> vehicleService.buyVehicle(10L, "  ", 1));
+                    () -> vehicleService.buyVehicle(10L, "  ", 1, BOARD_ID));
             assertThrows(IllegalArgumentException.class,
-                    () -> vehicleService.buyVehicle(10L, "SOUS_MARIN", 1));
+                    () -> vehicleService.buyVehicle(10L, "SOUS_MARIN", 1, BOARD_ID));
         }
 
         @Test
         @DisplayName("Quantité < 1 est rejetée")
         void shouldRejectQuantityBelowOne() {
             assertThrows(IllegalArgumentException.class,
-                    () -> vehicleService.buyVehicle(10L, "TANK", 0));
+                    () -> vehicleService.buyVehicle(10L, "TANK", 0, BOARD_ID));
         }
 
         @Test
         @DisplayName("Véhicule indisponible avant son tour d'ouverture est rejeté (unitaire et lot)")
         void shouldRejectBeforeAvailabilityTurn() {
-            when(turnService.getCurrentTurn()).thenReturn(7);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(7);
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
 
             assertThrows(IllegalStateException.class,
-                    () -> vehicleService.buyVehicle(10L, "TANK", 1));
+                    () -> vehicleService.buyVehicle(10L, "TANK", 1, BOARD_ID));
             assertThrows(IllegalStateException.class,
-                    () -> vehicleService.buyVehiclesBatch(10L, List.of(item("TANK", 1))));
+                    () -> vehicleService.buyVehiclesBatch(10L, List.of(item("TANK", 1)), BOARD_ID));
         }
 
         @Test
         @DisplayName("Joueur introuvable est rejeté")
         void shouldRejectUnknownPlayer() {
-            when(turnService.getCurrentTurn()).thenReturn(12);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.empty());
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(12);
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.empty());
 
             assertThrows(RuntimeException.class,
-                    () -> vehicleService.buyVehicle(10L, "TANK", 1));
+                    () -> vehicleService.buyVehicle(10L, "TANK", 1, BOARD_ID));
         }
 
         @Test
         @DisplayName("Fonds insuffisants lèvent InsufficientFundsException")
         void shouldThrowWhenInsufficientFunds() {
             player.getStats().setMoney(5000.0);
-            when(turnService.getCurrentTurn()).thenReturn(12);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(12);
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
 
             assertThrows(InsufficientFundsException.class,
-                    () -> vehicleService.buyVehicle(10L, "TANK", 1));
+                    () -> vehicleService.buyVehicle(10L, "TANK", 1, BOARD_ID));
         }
 
         @Test
         @DisplayName("Achat réussi crée les véhicules et débite le coût")
         void shouldCreateVehiclesAndDebitCost() {
-            when(turnService.getCurrentTurn()).thenReturn(12);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(12);
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            List<Vehicle> created = vehicleService.buyVehicle(10L, "VTT_LEGER", 2);
+            List<Vehicle> created = vehicleService.buyVehicle(10L, "VTT_LEGER", 2, BOARD_ID);
 
             assertEquals(2, created.size());
             assertEquals(2000.0, player.getStats().getMoney());
@@ -160,12 +162,12 @@ class VehicleServiceTest {
         void shouldPinSequentialDebitBehavior() {
             // En test unitaire (pas de tx), l'argent reste débité après l'exception ; en prod le rollback @Transactional annule tout.
             player.getStats().setMoney(9000.0);
-            when(turnService.getCurrentTurn()).thenReturn(12);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(12);
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
             assertThrows(InsufficientFundsException.class,
-                    () -> vehicleService.buyVehicle(10L, "VTT_LEGER", 3));
+                    () -> vehicleService.buyVehicle(10L, "VTT_LEGER", 3, BOARD_ID));
 
             assertEquals(1000.0, player.getStats().getMoney());
         }
@@ -179,21 +181,21 @@ class VehicleServiceTest {
         @DisplayName("Panier vide est rejeté")
         void shouldRejectEmptyCart() {
             assertThrows(IllegalArgumentException.class,
-                    () -> vehicleService.buyVehiclesBatch(10L, List.of()));
+                    () -> vehicleService.buyVehiclesBatch(10L, List.of(), BOARD_ID));
             assertThrows(IllegalArgumentException.class,
-                    () -> vehicleService.buyVehiclesBatch(10L, null));
+                    () -> vehicleService.buyVehiclesBatch(10L, null, BOARD_ID));
         }
 
         @Test
         @DisplayName("Coût total validé AVANT tout débit")
         void shouldValidateTotalCostBeforeAnyDebit() {
             player.getStats().setMoney(9000.0);
-            when(turnService.getCurrentTurn()).thenReturn(12);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(12);
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
 
             assertThrows(InsufficientFundsException.class,
                     () -> vehicleService.buyVehiclesBatch(10L,
-                            List.of(item("TANK", 1), item("VTT_LEGER", 1))));
+                            List.of(item("TANK", 1), item("VTT_LEGER", 1)), BOARD_ID));
 
             assertEquals(9000.0, player.getStats().getMoney());
             assertEquals(0.0, player.getStats().getTotalVehiclesValue());
@@ -203,25 +205,25 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Ligne invalide dans le lot est rejetée")
         void shouldRejectInvalidLineInBatch() {
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
 
             assertThrows(IllegalArgumentException.class,
-                    () -> vehicleService.buyVehiclesBatch(10L, List.of(item("TANK", 0))));
+                    () -> vehicleService.buyVehiclesBatch(10L, List.of(item("TANK", 0)), BOARD_ID));
             assertThrows(IllegalArgumentException.class,
-                    () -> vehicleService.buyVehiclesBatch(10L, List.of(item(" ", 1))));
+                    () -> vehicleService.buyVehiclesBatch(10L, List.of(item(" ", 1)), BOARD_ID));
             assertThrows(IllegalArgumentException.class,
-                    () -> vehicleService.buyVehiclesBatch(10L, List.of(item("MOTO", 1))));
+                    () -> vehicleService.buyVehiclesBatch(10L, List.of(item("MOTO", 1)), BOARD_ID));
         }
 
         @Test
         @DisplayName("Lot réussi crée tous les véhicules")
         void shouldCreateAllVehiclesInBatch() {
-            when(turnService.getCurrentTurn()).thenReturn(12);
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(12);
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, BOARD_ID)).thenReturn(Optional.of(player));
             when(vehicleRepository.save(any(Vehicle.class))).thenAnswer(inv -> inv.getArgument(0));
 
             List<Vehicle> created = vehicleService.buyVehiclesBatch(10L,
-                    List.of(item("TOURELLE", 2), item("VTT_LEGER", 1)));
+                    List.of(item("TOURELLE", 2), item("VTT_LEGER", 1)), BOARD_ID);
 
             assertEquals(3, created.size());
             assertEquals(3400.0, player.getStats().getMoney());
@@ -240,7 +242,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Véhicule d'un autre joueur est rejeté")
         void shouldRejectVehicleOwnedByAnotherPlayer() {
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, 100L)).thenReturn(Optional.of(player));
             Vehicle foreign = new Vehicle(VehicleType.TANK, 99L);
             when(vehicleRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(foreign));
 
@@ -251,7 +253,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Secteur introuvable est rejeté")
         void shouldRejectUnknownSector() {
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, 100L)).thenReturn(Optional.of(player));
             when(vehicleRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(ownedVehicle()));
             when(sectorRepository.findByBoard_IdAndNumber(100L, 3)).thenReturn(Optional.empty());
 
@@ -262,7 +264,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Secteur non possédé est rejeté")
         void shouldRejectSectorNotOwned() {
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, 100L)).thenReturn(Optional.of(player));
             when(vehicleRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(ownedVehicle()));
             Sector sector = new Sector(3, "Secteur 3");
             sector.setOwnerId(99L);
@@ -275,7 +277,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Véhicule déjà déployé est rejeté")
         void shouldRejectAlreadyDeployedVehicle() {
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, 100L)).thenReturn(Optional.of(player));
             Vehicle vehicle = ownedVehicle();
             vehicle.setSector(new Sector(1, "Secteur 1"));
             when(vehicleRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(vehicle));
@@ -287,7 +289,7 @@ class VehicleServiceTest {
         @Test
         @DisplayName("Placement réussi sur secteur possédé")
         void shouldPlaceVehicleOnOwnedSector() {
-            when(playerRepository.findByUserIdForUpdate(10L)).thenReturn(Optional.of(player));
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(10L, 100L)).thenReturn(Optional.of(player));
             Vehicle vehicle = ownedVehicle();
             when(vehicleRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(vehicle));
             Sector sector = new Sector(3, "Secteur 3");

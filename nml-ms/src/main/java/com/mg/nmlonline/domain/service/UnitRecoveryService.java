@@ -18,8 +18,8 @@ public class UnitRecoveryService {
     }
 
     @Transactional
-    public void recoverAtTurnEnd(int turnEnding) {
-        List<Unit> units = unitRepository.findAll();
+    public void recoverAtTurnEnd(int turnEnding, Long boardId) {
+        List<Unit> units = unitRepository.findByBoardId(boardId);
         units.stream()
                 .filter(unit -> unit.shouldRecover(turnEnding))
                 .forEach(Unit::recover);

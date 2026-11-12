@@ -47,6 +47,12 @@ public class Equipment {
     @Column(name = "vehicle_bonus", nullable = false)
     private double vehicleBonus;
 
+    @Column(name = "aim_malus_reduction", nullable = false)
+    private double aimMalusReduction;
+
+    @Column(name = "enemy_aim_malus", nullable = false)
+    private double enemyAimMalus;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "vehicle_bonus_target")
     private VehicleBonusTarget vehicleBonusTarget;
@@ -104,6 +110,12 @@ public class Equipment {
             stats.append(formatPercent(vehicleBonus)).append("Vs ")
                     .append(vehicleTargetLabel())
                     .append(" ; ");
+        }
+        if (aimMalusReduction != 0) {
+            stats.append(formatPercent(aimMalusReduction)).append("Malus de visée").append(" ; ");
+        }
+        if (enemyAimMalus != 0) {
+            stats.append(formatPercent(enemyAimMalus)).append("Malus de visée adverse").append(" ; ");
         }
         if (!stats.isEmpty()) {
             stats.setLength(stats.length() - 3);

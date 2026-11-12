@@ -35,9 +35,9 @@ class UnitRecoveryServiceTest {
         unit.addEquipment(new Equipment("Protection", 100, 0, 0, 25, 0,
                 Set.of(UnitClass.TIREUR), EquipmentCategory.DEFENSIVE));
         unit.setArmor(3);
-        when(unitRepository.findAll()).thenReturn(List.of(unit));
+        when(unitRepository.findByBoardId(1L)).thenReturn(List.of(unit));
 
-        service.recoverAtTurnEnd(10);
+        service.recoverAtTurnEnd(10, 1L);
 
         assertEquals(12.5, unit.getArmor());
         assertEquals(50.0, unit.getDefense());

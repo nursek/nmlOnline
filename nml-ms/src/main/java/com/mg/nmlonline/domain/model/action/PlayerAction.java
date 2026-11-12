@@ -60,7 +60,7 @@ public class PlayerAction {
     @Column(name = "building_id")
     private Long buildingId;
 
-    @Column(name = "board_id")
+    @Column(name = "board_id", nullable = false)
     private Long boardId;
 
     @Column(name = "from_sector_number")

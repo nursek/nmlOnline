@@ -9,7 +9,9 @@ import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.api.dto.RankingCommentRequestDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.TurnFinalizeResultDto;
+import com.mg.nmlonline.api.dto.TurnJournalDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.service.AdminService;
 import com.mg.nmlonline.domain.service.AllianceService;
@@ -18,6 +20,7 @@ import com.mg.nmlonline.domain.service.ExchangeOfferService;
 import com.mg.nmlonline.domain.service.MovementAdminService;
 import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.RankingService;
+import com.mg.nmlonline.domain.service.TurnJournalService;
 import com.mg.nmlonline.domain.service.TurnResolutionOrchestrator;
 import com.mg.nmlonline.domain.service.TurnService;
 import jakarta.validation.Valid;
@@ -32,12 +35,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'INSTANCE_ADMIN')")
 public class AdminController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
@@ -51,6 +55,7 @@ public class AdminController {
     private final RankingService rankingService;
     private final ExchangeOfferService exchangeOfferService;
     private final AllianceService allianceService;
+    private final TurnJournalService turnJournalService;
 
     public AdminController(AdminService adminService,
                            PlayerService playerService,
@@ -60,7 +65,8 @@ public class AdminController {
                            TurnResolutionOrchestrator turnResolutionOrchestrator,
                            RankingService rankingService,
                            ExchangeOfferService exchangeOfferService,
-                           AllianceService allianceService) {
+                           AllianceService allianceService,
+                           TurnJournalService turnJournalService) {
         this.adminService = adminService;
         this.playerService = playerService;
         this.boardAssetStorageService = boardAssetStorageService;
@@ -70,26 +76,45 @@ public class AdminController {
         this.rankingService = rankingService;
         this.exchangeOfferService = exchangeOfferService;
         this.allianceService = allianceService;
+        this.turnJournalService = turnJournalService;
+    }
+
+    private Long boardId(HttpServletRequest request) {
+        return (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/instances/{boardId}/admins/{userId}")
+    public ResponseEntity<Void> grantBoardAdmin(@PathVariable Long boardId, @PathVariable Long userId) {
+        adminService.grantBoardAdmin(boardId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/instances/{boardId}/admins/{userId}")
+    public ResponseEntity<Void> revokeBoardAdmin(@PathVariable Long boardId, @PathVariable Long userId) {
+        adminService.revokeBoardAdmin(boardId, userId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/players")
-    public Page<PlayerDto> getAllPlayers(Pageable pageable) {
-        return playerService.findAllDto(pageable);
+    public Page<PlayerDto> getAllPlayers(Pageable pageable, HttpServletRequest request) {
+        return playerService.findAllDto(boardId(request), pageable);
     }
 
     @GetMapping("/exchanges")
     public ResponseEntity<Page<ExchangeOfferDto>> getAllExchanges(@RequestParam(required = false) String status,
-                                                                  Pageable pageable) {
+                                                                  Pageable pageable, HttpServletRequest request) {
         try {
-            return ResponseEntity.ok(exchangeOfferService.getAllOffers(status, pageable));
+            return ResponseEntity.ok(exchangeOfferService.getAllOffers(boardId(request), status, pageable));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
     @GetMapping("/alliances")
-    public AdminAllianceHistoryDto getAllianceHistory() {
-        return allianceService.getHistory();
+    public AdminAllianceHistoryDto getAllianceHistory(HttpServletRequest request) {
+        return allianceService.getHistory(boardId(request));
     }
 
     @GetMapping("/players/{id}/export")
@@ -105,10 +130,11 @@ public class AdminController {
     @PostMapping(value = "/players/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PlayerDto> importPlayer(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "password", required = false) String password
+            @RequestParam(value = "password", required = false) String password,
+            HttpServletRequest request
     ) throws java.io.IOException {
         String jsonContent = new String(file.getBytes(), StandardCharsets.UTF_8);
-        return ResponseEntity.ok(adminService.importPlayerDto(jsonContent, password));
+        return ResponseEntity.ok(adminService.importPlayerDto(jsonContent, password, boardId(request)));
     }
 
     @DeleteMapping("/players/{id}")
@@ -129,6 +155,7 @@ public class AdminController {
      * Étape 1/2 création board prod : stocke les assets, renvoie URLs + compte de secteurs
      * du SVG pour valider le board.json à venir.
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping(value = "/boards/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, Object>> uploadBoardAssets(
             @RequestParam("mapImage") MultipartFile mapImage,
@@ -145,6 +172,7 @@ public class AdminController {
     /**
      * Étape 2/2 : import board.json (liste plate) ; les URLs de /boards/assets override celles du JSON.
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping(value = "/boards/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BoardDto> importBoard(
             @RequestParam("file") MultipartFile file,
@@ -155,53 +183,56 @@ public class AdminController {
     }
 
     @GetMapping("/turn/current")
-    public Map<String, Object> getCurrentTurn() {
-        return Map.of("currentTurn", turnService.getCurrentTurn());
+    public Map<String, Object> getCurrentTurn(HttpServletRequest request) {
+        return Map.of("currentTurn", turnService.getCurrentTurn(boardId(request)));
     }
 
     @GetMapping("/turn/orders")
     public List<AdminMovementOrderDto> getOrders(
-            @RequestParam(value = "status", required = false) MovementStatus status) {
-        return movementAdminService.getOrdersForTurn(turnService.getCurrentTurn(), status);
+            @RequestParam(value = "status", required = false) MovementStatus status,
+            HttpServletRequest request) {
+        Long boardId = boardId(request);
+        return movementAdminService.getOrdersForTurn(boardId, turnService.getCurrentTurn(boardId), status);
     }
 
     /**
      * Dry-run : calcule la résolution sans persister (ordres restent PENDING).
      */
     @PostMapping("/turn/movements/preview")
-    public MovementResolutionResultDto previewMovements() {
-        return movementAdminService.previewMovements(turnService.getCurrentTurn());
+    public MovementResolutionResultDto previewMovements(HttpServletRequest request) {
+        Long boardId = boardId(request);
+        return movementAdminService.previewMovements(boardId, turnService.getCurrentTurn(boardId));
     }
 
     /**
      * Démarre une session pas-à-pas ; verrouille les autres résolutions ; 409 si déjà active.
      */
     @PostMapping("/turn/resolve/start")
-    public TurnResolutionStateDto startResolution() {
-        TurnResolutionStateDto state = turnResolutionOrchestrator.startSession();
+    public TurnResolutionStateDto startResolution(HttpServletRequest request) {
+        TurnResolutionStateDto state = turnResolutionOrchestrator.startSession(boardId(request));
         logger.info("[ADMIN] Session pas-à-pas démarrée — tour à résoudre: {}", state.getTurnEnding());
         return state;
     }
 
     @GetMapping("/turn/resolve/state")
-    public TurnResolutionStateDto getResolutionState() {
-        return turnResolutionOrchestrator.getState();
+    public TurnResolutionStateDto getResolutionState(HttpServletRequest request) {
+        return turnResolutionOrchestrator.getState(boardId(request));
     }
 
     /**
      * Avance d'un hop ; 409 si batailles en attente ou tous hops déjà faits.
      */
     @PostMapping("/turn/resolve/next-hop")
-    public TurnResolutionStateDto advanceHop() {
-        return turnResolutionOrchestrator.advanceHop();
+    public TurnResolutionStateDto advanceHop(HttpServletRequest request) {
+        return turnResolutionOrchestrator.advanceHop(boardId(request));
     }
 
     /**
      * Résout la bataille conflictId (du DTO d'état) ; 404 si introuvable/déjà résolu.
      */
     @PostMapping("/turn/resolve/resolve-battle")
-    public ResolvedBattleDto resolveBattle(@RequestParam int conflictId) {
-        ResolvedBattleDto report = turnResolutionOrchestrator.resolveBattle(conflictId);
+    public ResolvedBattleDto resolveBattle(@RequestParam int conflictId, HttpServletRequest request) {
+        ResolvedBattleDto report = turnResolutionOrchestrator.resolveBattle(boardId(request), conflictId);
         logger.info("[ADMIN] Bataille résolue au secteur {} — {} pertes attaquant, {} pertes défenseur",
                 report.getSectorNumber(), report.getAttackerCasualties(), report.getDefenderCasualties());
         return report;
@@ -209,24 +240,31 @@ public class AdminController {
 
     @PostMapping("/turn/resolve/elimination")
     public TurnResolutionStateDto resolveElimination(@RequestParam Long victimPlayerId,
-                                                     @RequestParam(required = false) Long killerPlayerId) {
-        return turnResolutionOrchestrator.resolveElimination(victimPlayerId, killerPlayerId);
+                                                     @RequestParam(required = false) Long killerPlayerId,
+                                                     HttpServletRequest request) {
+        return turnResolutionOrchestrator.resolveElimination(boardId(request), victimPlayerId, killerPlayerId);
     }
 
     /**
      * Finalise : incrémente le tour ; 409 si hops/batailles incomplets ; libère le verrou.
      */
     @PostMapping("/turn/resolve/finalize")
-    public TurnFinalizeResultDto finalizeResolution() {
-        return turnResolutionOrchestrator.finalizeTurn();
+    public TurnFinalizeResultDto finalizeResolution(HttpServletRequest request) {
+        return turnResolutionOrchestrator.finalizeTurn(boardId(request));
+    }
+
+    /** Journal complet d'un tour finalisé (404 si aucun archivage pour ce tour). */
+    @GetMapping("/turn-journals/{turn}")
+    public TurnJournalDto getTurnJournal(@PathVariable int turn, HttpServletRequest request) {
+        return turnJournalService.findByTurn(boardId(request), turn);
     }
 
     /**
      * Abandon soft : libère le verrou sans rollback des positions/combats déjà effectués.
      */
     @DeleteMapping("/turn/resolve")
-    public ResponseEntity<Map<String, String>> abortResolution() {
-        turnResolutionOrchestrator.abort();
+    public ResponseEntity<Map<String, String>> abortResolution(HttpServletRequest request) {
+        turnResolutionOrchestrator.abort(boardId(request));
         return ResponseEntity.ok(Map.of("message", "Session pas-à-pas abandonnée (positions déjà déplacées conservées)"));
     }
 

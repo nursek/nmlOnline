@@ -70,6 +70,14 @@ public abstract class CombatEntity {
         return 0.0;
     }
 
+    public double getCriticalChance() {
+        return 0.0;
+    }
+
+    public double getCriticalMultiplier() {
+        return 1.0;
+    }
+
     /** Valeur par défaut (0,5) : bâtiments et entités sans règle spécifique. */
     public double getAerialHitChance() {
         return 0.5;
@@ -103,6 +111,12 @@ public abstract class CombatEntity {
         sb.append(" / ").append(formatStat(defense)).append(" Def");
         if (armor > 0) sb.append(" + ").append(formatStat(armor)).append(" Arm");
         if (evasion > 0) sb.append(". Esquive : ").append((int) Math.ceil(evasion)).append(" %");
+    }
+
+    public String getStatsSummary() {
+        StringBuilder sb = new StringBuilder();
+        buildStatsString(sb);
+        return sb.toString();
     }
 }
 

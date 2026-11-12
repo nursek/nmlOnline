@@ -110,6 +110,12 @@ public class CsvDataLoader implements CommandLineRunner {
             if (parts.length >= 10 && !parts[9].isBlank()) {
                 equipment.setVehicleBonusTarget(VehicleBonusTarget.valueOf(parts[9]));
             }
+            if (parts.length >= 11 && !parts[10].isBlank()) {
+                equipment.setAimMalusReduction(Double.parseDouble(parts[10]));
+            }
+            if (parts.length >= 12 && !parts[11].isBlank()) {
+                equipment.setEnemyAimMalus(Double.parseDouble(parts[11]));
+            }
             return equipment;
         });
         equipments.forEach(equipmentRepository::save);

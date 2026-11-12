@@ -51,12 +51,12 @@
       } @else {
         <div class="alliance-list">
           @for (alliance of me.alliances; track alliance.id) {
-            <div class="alliance-row" [class.selected]="selectedAllianceId() === alliance.id">
-              <button mat-button class="alliance-select" (click)="selectAlliance(alliance.id)">
+            <div class="alliance-row">
+              <span class="alliance-select">
                 <mat-icon>shield</mat-icon>
                 {{ alliance.allyName }}
                 <span class="since">depuis le tour {{ alliance.createdTurn }}</span>
-              </button>
+              </span>
               <div class="alliance-actions">
                 <button mat-stroked-button (click)="proposeRupture(alliance.allyPlayerId)">
                   <mat-icon>handshake</mat-icon>
@@ -138,42 +138,5 @@
         </button>
       </div>
     </div>
-
-    @if (me.alliances.length) {
-      <div class="card chat-card">
-        <h2>
-          Chat d'alliance
-          @if (selectedAlliance(); as selected) {
-            <span class="since">avec {{ selected.allyName }}</span>
-          }
-        </h2>
-        <div class="chat-messages">
-          @if (!messages().length) {
-            <p class="hint">Aucun message. Servez-vous du chat pour négocier… ou bluffer.</p>
-          }
-          @for (message of messages(); track message.id) {
-            <div class="chat-message" [class.mine]="message.senderPlayerId === player()?.id">
-              <span class="sender">{{ message.senderName }} · tour {{ message.turn }}</span>
-              <span class="body">{{ message.body }}</span>
-            </div>
-          }
-        </div>
-        <div class="chat-form">
-          <mat-form-field appearance="outline">
-            <mat-label>Message</mat-label>
-            <input
-              matInput
-              maxlength="1000"
-              [ngModel]="messageDraft()"
-              (ngModelChange)="messageDraft.set($event)"
-              (keyup.enter)="sendMessage()"
-            />
-          </mat-form-field>
-          <button mat-flat-button color="primary" [disabled]="!messageDraft().trim()" (click)="sendMessage()">
-            <mat-icon>send</mat-icon>
-          </button>
-        </div>
-      </div>
-    }
   }
 </mat-dialog-content>
