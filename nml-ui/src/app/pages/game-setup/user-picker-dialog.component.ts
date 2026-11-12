@@ -13,6 +13,8 @@ import { httpErrorMessage } from '../../core/http-error.interceptor';
 export interface UserPickerData {
   title: string;
   actionLabel: string;
+  excludeUserIds?: readonly number[];
+  excludeRoles?: readonly string[];
 }
 
 @Component({
@@ -139,7 +141,11 @@ export class UserPickerDialogComponent {
     this.error.set(null);
     try {
       const page = await firstValueFrom(this.api.adminSearchUsers(this.query().trim()));
-      this.results.set(page.content);
+      const excludedIds = new Set(this.data.excludeUserIds ?? []);
+      const excludedRoles = new Set(this.data.excludeRoles ?? []);
+      this.results.set(
+        page.content.filter((user) => !excludedIds.has(user.id) && !excludedRoles.has(user.role)),
+      );
     } catch (error) {
       this.error.set(httpErrorMessage(error, 'Recherche impossible'));
     } finally {

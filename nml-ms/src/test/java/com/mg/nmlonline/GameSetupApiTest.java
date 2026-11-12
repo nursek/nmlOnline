@@ -95,4 +95,68 @@ class GameSetupApiTest {
                         .header("X-Board-Id", board.getId().toString()))
                 .andExpect(status().isConflict());
     }
+
+    @Test
+    @DisplayName("Un MJ n'est pas un joueur ; l'admin plateforme n'est pas MJ")
+    void mjAndPlayerAreSeparate() throws Exception {
+        String boardName = "API rôles " + UUID.randomUUID();
+        Board board = new Board();
+        board.setName(boardName);
+        for (int number = 1; number <= 3; number++) {
+            board.addSector(new Sector(number, "Secteur " + number));
+        }
+        board = boardService.saveBoard(board, boardName);
+
+        User admin = userRepository.findByUsername(TestDataInitializer.ADMIN);
+        User playerUser = userRepository.findByUsername(TestDataInitializer.USER_1);
+        User mjUser = userRepository.findByUsername(TestDataInitializer.USER_2);
+        String adminToken = jwtService.generateToken(admin, 3_600_000L);
+
+        MvcResult created = mockMvc.perform(post("/api/admin/players/template")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"JoueurRôle\",\"race\":\"ORKS\",\"sectorNumbers\":[1]}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        Number playerId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+
+        mockMvc.perform(put("/api/admin/players/" + playerId + "/account")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"" + playerUser.getUsername() + "\"}"))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(put("/api/admin/instances/" + board.getId() + "/admins/" + playerUser.getId())
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(put("/api/admin/instances/" + board.getId() + "/admins/" + mjUser.getId())
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isNoContent());
+
+        MvcResult created2 = mockMvc.perform(post("/api/admin/players/template")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"JoueurRôle2\",\"race\":\"ORKS\",\"sectorNumbers\":[2]}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        Number playerId2 = JsonPath.read(created2.getResponse().getContentAsString(), "$.id");
+
+        mockMvc.perform(put("/api/admin/players/" + playerId2 + "/account")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"" + mjUser.getUsername() + "\"}"))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(put("/api/admin/instances/" + board.getId() + "/admins/" + admin.getId())
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isConflict());
+    }
 }

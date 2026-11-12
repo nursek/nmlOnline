@@ -67,9 +67,6 @@
                       Compte non relié
                     </span>
                   }
-                  @if (isMj(player)) {
-                    <span class="badge">MJ</span>
-                  }
                   @if (unplacedCount(player) > 0) {
                     <span class="badge badge--warn">{{ unplacedCount(player) }} à placer</span>
                   }
@@ -81,29 +78,21 @@
                     <span class="warn">Aucun secteur de départ</span>
                   }
                 </div>
-                @if (preparation() || player.userId) {
+                @if (preparation()) {
                   <div class="player-actions">
-                    @if (preparation()) {
-                      <button mat-stroked-button (click)="assignSectors(player)">
-                        <mat-icon>map</mat-icon>
-                        Secteurs
-                      </button>
-                    }
-                    @if (preparation() && !player.userId) {
+                    <button mat-stroked-button (click)="assignSectors(player)">
+                      <mat-icon>map</mat-icon>
+                      Secteurs
+                    </button>
+                    @if (!player.userId) {
                       <button mat-stroked-button (click)="linkAccount(player)">
                         <mat-icon>link</mat-icon>
                         Relier
                       </button>
-                    } @else if (preparation()) {
+                    } @else {
                       <button mat-stroked-button (click)="unlinkAccount(player)">
                         <mat-icon>link_off</mat-icon>
                         Délier
-                      </button>
-                    }
-                    @if (player.userId) {
-                      <button mat-stroked-button (click)="toggleMj(player)">
-                        <mat-icon>shield_person</mat-icon>
-                        {{ isMj(player) ? 'Retirer MJ' : 'Nommer MJ' }}
                       </button>
                     }
                   </div>

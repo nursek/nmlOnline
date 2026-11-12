@@ -97,6 +97,10 @@ public class AdminService {
 
         if (password != null && !password.isBlank()) {
             User user = ensureCredential(player.getName(), password);
+            if (boardAdminRepository.existsByBoardIdAndUserId(boardId, user.getId())) {
+                throw new IllegalStateException(
+                        "Ce compte est MJ de cette partie : un MJ ne peut pas être joueur");
+            }
             player.setUserId(user.getId());
         }
 
@@ -138,7 +142,15 @@ public class AdminService {
 
     @Transactional
     public void grantBoardAdmin(Long boardId, Long userId) {
-        requireBoardAndUser(boardId, userId);
+        User user = requireBoardAndUser(boardId, userId);
+        if ("ADMIN".equals(user.getRole())) {
+            throw new IllegalStateException(
+                    "L'admin plateforme gère déjà toutes les parties et n'a pas besoin du rôle MJ");
+        }
+        if (playerService.findByUserId(userId, boardId) != null) {
+            throw new IllegalStateException(
+                    "Ce compte est déjà joueur de cette partie : un MJ ne peut pas être joueur");
+        }
         if (!boardAdminRepository.existsByBoardIdAndUserId(boardId, userId)) {
             boardAdminRepository.save(new BoardAdmin(boardId, userId));
         }
@@ -171,6 +183,10 @@ public class AdminService {
         }
         if ("ADMIN".equals(user.getRole())) {
             throw new SecurityException("Un compte administrateur ne peut pas être relié à un joueur");
+        }
+        if (boardAdminRepository.existsByBoardIdAndUserId(player.getBoardId(), user.getId())) {
+            throw new IllegalStateException(
+                    "Ce compte est MJ de cette partie : un MJ ne peut pas être joueur");
         }
         Player existing = playerService.findByUserId(user.getId(), player.getBoardId());
         if (existing != null) {
@@ -227,13 +243,12 @@ public class AdminService {
                 .toList();
     }
 
-    private void requireBoardAndUser(Long boardId, Long userId) {
-        if (!boardService.getBoardById(boardId).isPresent()) {
+    private User requireBoardAndUser(Long boardId, Long userId) {
+        if (!boardService.getBoardByIdForUpdate(boardId).isPresent()) {
             throw new IllegalArgumentException("Plateau introuvable : " + boardId);
         }
-        if (userRepository.findById(userId).isEmpty()) {
-            throw new IllegalArgumentException("Utilisateur introuvable : " + userId);
-        }
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable : " + userId));
     }
 
     private User ensureCredential(String username, String password) {
