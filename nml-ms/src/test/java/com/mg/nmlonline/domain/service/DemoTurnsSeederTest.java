@@ -50,6 +50,10 @@ class DemoTurnsSeederTest {
     @Autowired
     private BoardRepository boardRepository;
 
+    private Long boardId() {
+        return boardRepository.findAll().getFirst().getId();
+    }
+
     @Autowired
     private PlatformTransactionManager txManager;
 
@@ -71,7 +75,7 @@ class DemoTurnsSeederTest {
     // Base partagée par toute la suite : la démo committe ventes/ordres/rapports, il faut les purger.
     @AfterEach
     void cleanUpSharedDatabase() {
-        orchestrator.abort();
+        orchestrator.abort(boardId());
         new TransactionTemplate(txManager).executeWithoutResult(status -> {
             playerActionRepository.deleteAll();
             movementOrderRepository.deleteAll();
@@ -94,7 +98,7 @@ class DemoTurnsSeederTest {
         ScenarioSummaryDto report = seeder.playDemoTurns();
 
         assertEquals(3, report.getTurn(), "La démo joue les tours 1 et 2");
-        assertEquals(turnService.getCurrentTurn(), report.getTurn());
+        assertEquals(turnService.getCurrentTurn(boardId()), report.getTurn());
         assertTrue(report.getMessage().contains("capture(s) au tour 1"),
                 "Le rapport compte les captures : " + report.getMessage());
         assertTrue(battleReportRepository.count() >= 1,
@@ -107,7 +111,8 @@ class DemoTurnsSeederTest {
                 .getAllSectors().stream().filter(sector -> !sector.isNeutral()).count());
         assertTrue(captured >= 35,
                 "La vague de conquêtes des deux tours couvre presque la carte, got " + captured);
-        assertTrue(playerActionRepository.findByTurnAndStatus(3, PlayerActionStatus.ACTIVE).isEmpty(),
+        assertTrue(playerActionRepository.findByBoardIdAndTurnAndStatus(
+                        boardId(), 3, PlayerActionStatus.ACTIVE).isEmpty(),
                 "Le tour 3 reste vierge : la démo ne joue que deux tours");
 
         IllegalStateException replay = assertThrows(IllegalStateException.class, seeder::playDemoTurns);

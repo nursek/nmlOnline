@@ -114,13 +114,13 @@ public class VehicleCrewService {
             return;
         }
         List<Long> alreadyOrdered = movementOrderRepository
-                .findPendingEntityIds(turnService.getCurrentTurn(), ids);
+                .findPendingEntityIds(player.getBoardId(), turnService.getCurrentTurn(player.getBoardId()), ids);
         if (!alreadyOrdered.isEmpty()) {
             throw new IllegalArgumentException(
                     "Entité(s) déjà engagée(s) dans un ordre en attente : " + alreadyOrdered + ".");
         }
         List<Long> sniperOrdered = sniperOrderRepository
-                .findPendingUnitIds(turnService.getCurrentTurn(), ids);
+                .findPendingUnitIds(player.getBoardId(), turnService.getCurrentTurn(player.getBoardId()), ids);
         if (!sniperOrdered.isEmpty()) {
             throw new IllegalArgumentException(
                     "Entité(s) déjà engagée(s) dans un ordre sniper en attente : " + sniperOrdered + ".");

@@ -5,6 +5,7 @@ import com.mg.nmlonline.api.dto.MovementOrderDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.api.dto.VehicleTypeDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
+import jakarta.persistence.EntityNotFoundException;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -62,23 +63,23 @@ public class VehicleService {
         this.playerActionService = playerActionService;
     }
 
-    private void requireTurnOpen() {
-        if (turnLock.isLocked()) {
+    private void requireTurnOpen(Long boardId) {
+        if (turnLock.isLocked(boardId)) {
             throw new IllegalStateException(
                     "La résolution du tour est en cours — réessayez après la fin du tour");
         }
     }
 
-    public List<VehicleTypeDto> getVehicleTypesDto(Long userId) {
+    public List<VehicleTypeDto> getVehicleTypesDto(Long userId, Long boardId) {
         PlayerRace race = userId == null ? null
-                : playerRepository.findByUserId(userId).map(Player::getRace).orElse(null);
+                : playerRepository.findByUserIdAndBoardId(userId, boardId).map(Player::getRace).orElse(null);
         return Arrays.stream(VehicleType.values())
                 .map(type -> vehicleMapper.vehicleTypeToDto(type, race))
                 .toList();
     }
 
-    private void requireAvailableAtCurrentTurn(VehicleType vehicleType) {
-        int turn = turnService.getCurrentTurn();
+    private void requireAvailableAtCurrentTurn(VehicleType vehicleType, Long boardId) {
+        int turn = turnService.getCurrentTurn(boardId);
         if (!vehicleType.isAvailableAt(turn)) {
             throw new IllegalStateException("« " + vehicleType.getDisplayName()
                     + " » est disponible à l'achat à partir du tour " + vehicleType.getAvailableFromTurn());
@@ -86,7 +87,7 @@ public class VehicleService {
     }
 
     @Transactional
-    public List<Vehicle> buyVehicle(Long userId, String vehicleTypeName, int quantity) {
+    public List<Vehicle> buyVehicle(Long userId, String vehicleTypeName, int quantity, Long boardId) {
         if (vehicleTypeName == null || vehicleTypeName.isBlank()) {
             throw new IllegalArgumentException("Le type de véhicule est requis");
         }
@@ -99,10 +100,10 @@ public class VehicleService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Type de véhicule invalide : " + vehicleTypeName, e);
         }
-        requireAvailableAtCurrentTurn(vehicleType);
+        requireAvailableAtCurrentTurn(vehicleType, boardId);
 
-        Player player = playerRepository.findByUserIdForUpdate(userId)
-                .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
+        Player player = playerRepository.findByUserIdAndBoardIdForUpdate(userId, boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour userId : " + userId));
 
         List<Vehicle> created = new ArrayList<>();
         for (int i = 0; i < quantity; i++) {
@@ -120,13 +121,13 @@ public class VehicleService {
     }
 
     @Transactional
-    public List<Vehicle> buyVehiclesBatch(Long userId, List<BuyVehicleRequestDto> items) {
+    public List<Vehicle> buyVehiclesBatch(Long userId, List<BuyVehicleRequestDto> items, Long boardId) {
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("Le panier de véhicules est vide");
         }
 
-        Player player = playerRepository.findByUserIdForUpdate(userId)
-                .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
+        Player player = playerRepository.findByUserIdAndBoardIdForUpdate(userId, boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour userId : " + userId));
 
         record OrderLine(VehicleType type, int quantity) {
         }
@@ -149,7 +150,7 @@ public class VehicleService {
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Type de véhicule invalide : " + item.getVehicleType());
             }
-            requireAvailableAtCurrentTurn(vehicleType);
+            requireAvailableAtCurrentTurn(vehicleType, boardId);
             lines.add(new OrderLine(vehicleType, item.getQuantity()));
             totalCost += (long) vehicleType.getCost() * item.getQuantity();
         }
@@ -177,10 +178,10 @@ public class VehicleService {
 
     @Transactional
     public Vehicle placeVehicle(Long vehicleId, Long boardId, int sectorNumber, Long userId) {
-        requireTurnOpen();
+        requireTurnOpen(boardId);
         // Même ordre de verrouillage que setCrew : joueur puis véhicule.
-        Player player = playerRepository.findByUserIdForUpdate(userId)
-                .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
+        Player player = playerRepository.findByUserIdAndBoardIdForUpdate(userId, boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour userId : " + userId));
 
         Vehicle vehicle = vehicleRepository.findByIdForUpdate(vehicleId)
                 .orElseThrow(() -> new RuntimeException("Véhicule introuvable : " + vehicleId));
@@ -210,10 +211,11 @@ public class VehicleService {
     }
 
     @Transactional
-    public VehicleDto setCrew(Long userId, Long vehicleId, Long pilotId, List<Long> passengerIds) {
+    public VehicleDto setCrew(Long userId, Long vehicleId, Long pilotId, List<Long> passengerIds,
+                             Long boardId) {
         // Verrou joueur AVANT véhicule : l'insert player_actions pose un KEY SHARE sur players.
-        Player player = playerRepository.findByUserIdForUpdate(userId)
-                .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
+        Player player = playerRepository.findByUserIdAndBoardIdForUpdate(userId, boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour userId : " + userId));
 
         Vehicle vehicle = vehicleRepository.findByIdForUpdate(vehicleId)
                 .orElseThrow(() -> new RuntimeException("Véhicule introuvable : " + vehicleId));
@@ -242,41 +244,41 @@ public class VehicleService {
     }
 
     @Transactional
-    public MovementOrderDto placeVehicleOrderDto(Long userId, Long vehicleId, List<Integer> route) {
-        requireTurnOpen();
+    public MovementOrderDto placeVehicleOrderDto(Long userId, Long vehicleId, List<Integer> route, Long boardId) {
+        requireTurnOpen(boardId);
         // Même ordre de verrouillage que setCrew : joueur puis véhicule.
-        Player player = playerRepository.findByUserIdForUpdate(userId)
-                .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
-        Board board = boardService.getAllBoards().stream().findFirst()
+        Player player = playerRepository.findByUserIdAndBoardIdForUpdate(userId, boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour userId : " + userId));
+        Board board = boardService.getBoardById(boardId)
                 .orElseThrow(() -> new IllegalStateException("Aucun plateau disponible."));
         MovementOrder order = movementService.placeVehicleOrder(
-                player.getId(), turnService.getCurrentTurn(), vehicleId, route, board);
+                player.getId(), turnService.getCurrentTurn(boardId), vehicleId, route, board);
         return movementMapper.toDto(order);
     }
 
     @Transactional(readOnly = true)
-    public List<VehicleDto> getPlayerVehiclesDto(Long userId) {
-        Player player = playerRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("Joueur introuvable pour userId : " + userId));
+    public List<VehicleDto> getPlayerVehiclesDto(Long userId, Long boardId) {
+        Player player = playerRepository.findByUserIdAndBoardId(userId, boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour userId : " + userId));
         return vehicleRepository.findByPlayerId(player.getId()).stream()
                 .map(vehicle -> vehicleMapper.toDto(vehicle, player.getRace()))
                 .toList();
     }
 
     @Transactional
-    public List<VehicleDto> buyVehicleDto(Long userId, String vehicleTypeName, int quantity) {
-        return buyVehicle(userId, vehicleTypeName, quantity).stream().map(vehicleMapper::toDto).toList();
+    public List<VehicleDto> buyVehicleDto(Long userId, String vehicleTypeName, int quantity, Long boardId) {
+        return buyVehicle(userId, vehicleTypeName, quantity, boardId).stream().map(vehicleMapper::toDto).toList();
     }
 
     @Transactional
-    public List<VehicleDto> buyVehiclesBatchDto(Long userId, List<BuyVehicleRequestDto> items) {
-        return buyVehiclesBatch(userId, items).stream().map(vehicleMapper::toDto).toList();
+    public List<VehicleDto> buyVehiclesBatchDto(Long userId, List<BuyVehicleRequestDto> items, Long boardId) {
+        return buyVehiclesBatch(userId, items, boardId).stream().map(vehicleMapper::toDto).toList();
     }
 
     @Transactional
     public VehicleDto placeVehicleDto(Long vehicleId, Long boardId, int sectorNumber, Long userId) {
         Vehicle vehicle = placeVehicle(vehicleId, boardId, sectorNumber, userId);
-        PlayerRace race = playerRepository.findByUserId(userId).map(Player::getRace).orElse(null);
+        PlayerRace race = playerRepository.findByUserIdAndBoardId(userId, boardId).map(Player::getRace).orElse(null);
         return vehicleMapper.toDto(vehicle, race);
     }
 }

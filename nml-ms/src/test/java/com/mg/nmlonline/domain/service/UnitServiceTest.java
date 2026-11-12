@@ -85,7 +85,7 @@ class UnitServiceTest {
         long dispoBefore = availableOf(eq.getName());
         assertEquals(2, dispoBefore);
 
-        Unit updated = unitService.assignEquipment(unit.getId(), player.getUserId(), eq.getName());
+        Unit updated = unitService.assignEquipment(unit.getId(), player.getUserId(), eq.getName(), player.getBoardId());
 
         assertTrue(updated.getEquipments().stream().anyMatch(e -> e.getName().equals(eq.getName())),
                 "L'unité doit porter l'équipement après assignation");
@@ -93,7 +93,7 @@ class UnitServiceTest {
         long dispoAfter = availableOf(eq.getName());
         assertEquals(1, dispoAfter, "La dispo du matériel doit décrémenter de 1");
 
-        unitService.removeEquipment(unit.getId(), player.getUserId(), eq.getName());
+        unitService.removeEquipment(unit.getId(), player.getUserId(), eq.getName(), player.getBoardId());
         long dispoFinal = availableOf(eq.getName());
         assertEquals(2, dispoFinal, "removeEquipment doit rendre l'exemplaire au matériel");
     }
@@ -111,8 +111,9 @@ class UnitServiceTest {
         entityManager.flush();
 
         assertThrows(SecurityException.class,
-                () -> unitService.assignEquipment(unit.getId(), owner.getUserId(), anyCompatibleEquipment().getName()),
-                "Équiper l'unité d'un autre joueur doit lever SecurityException");
+                () -> unitService.assignEquipment(unit.getId(), owner.getUserId(), anyCompatibleEquipment().getName(),
+                        owner.getBoardId()),
+                "Équiper l unité d un autre joueur doit lever SecurityException");
     }
 
     @Test
@@ -135,7 +136,8 @@ class UnitServiceTest {
         playerService.save(player);
 
         assertThrows(IllegalArgumentException.class,
-                () -> unitService.assignEquipment(unit.getId(), player.getUserId(), incompatible.getName()),
+                () -> unitService.assignEquipment(unit.getId(), player.getUserId(), incompatible.getName(),
+                        player.getBoardId()),
                 "Un équipement incompatible doit être refusé");
     }
 
@@ -157,7 +159,7 @@ class UnitServiceTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> unitService.placeFootOrder(player.getUserId(), List.of(hq.getId()),
-                        List.of(from.getNumber(), to.getNumber())),
+                        List.of(from.getNumber(), to.getNumber()), player.getBoardId()),
                 "Un bâtiment ne peut pas être déplacé par un ordre à pied");
     }
 
@@ -180,15 +182,15 @@ class UnitServiceTest {
         player.addEquipmentToStack(melee, 2);
         playerService.save(player);
 
-        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName());
-        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName());
+        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName(), player.getBoardId());
+        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName(), player.getBoardId());
 
-        unitService.removeEquipment(unit.getId(), player.getUserId(), melee.getName());
+        unitService.removeEquipment(unit.getId(), player.getUserId(), melee.getName(), player.getBoardId());
 
         assertEquals(1, unit.getEquipments().size(), "Une seule copie doit rester équipée");
         assertEquals(1, availableOf(melee.getName()), "Une seule copie doit revenir au stock");
 
-        unitService.removeEquipment(unit.getId(), player.getUserId(), melee.getName());
+        unitService.removeEquipment(unit.getId(), player.getUserId(), melee.getName(), player.getBoardId());
 
         assertEquals(0, unit.getEquipments().size());
         assertEquals(2, availableOf(melee.getName()));
@@ -216,27 +218,27 @@ class UnitServiceTest {
         Player player = playerOfTestUser(TestDataInitializer.USER_1);
 
         assertThrows(IllegalArgumentException.class,
-                () -> unitService.buyUnits(player.getUserId(), List.of()));
+                () -> unitService.buyUnits(player.getUserId(), List.of(), player.getBoardId()));
 
         BuyUnitRequestDto blankType = new BuyUnitRequestDto();
         blankType.setUnitType(" ");
         blankType.setUnitClass(UnitClass.LEGER.name());
         assertThrows(IllegalArgumentException.class,
-                () -> unitService.buyUnits(player.getUserId(), List.of(blankType)));
+                () -> unitService.buyUnits(player.getUserId(), List.of(blankType), player.getBoardId()));
 
         // LARBIN n'est achetable qu'à partir du tour 2 : on force un tour éligible puis on restaure.
-        int originalTurn = turnService.getCurrentTurn();
+        int originalTurn = turnService.getCurrentTurn(player.getBoardId());
         try {
-            turnService.setCurrentTurn(Math.max(2, originalTurn));
+            turnService.setCurrentTurn(player.getBoardId(), Math.max(2, originalTurn));
 
             BuyUnitRequestDto zeroQuantity = new BuyUnitRequestDto();
             zeroQuantity.setUnitType(UnitType.LARBIN.name());
             zeroQuantity.setUnitClass(UnitClass.LEGER.name());
             zeroQuantity.setQuantity(0);
             assertThrows(IllegalArgumentException.class,
-                    () -> unitService.buyUnits(player.getUserId(), List.of(zeroQuantity)));
+                    () -> unitService.buyUnits(player.getUserId(), List.of(zeroQuantity), player.getBoardId()));
         } finally {
-            turnService.setCurrentTurn(originalTurn);
+            turnService.setCurrentTurn(player.getBoardId(), originalTurn);
             turnService.invalidateTurnCache();
         }
     }
@@ -245,7 +247,8 @@ class UnitServiceTest {
     private Player playerOfTestUser(String username) {
         User user = userRepository.findByUsername(username);
         assertNotNull(user, "L'utilisateur de test " + username + " doit exister");
-        Player player = playerService.findByUserId(user.getId());
+        Player player = playerService.findByUserId(user.getId(),
+                boardService.getAllBoards().getFirst().getId());
         assertNotNull(player, "Le joueur lié à " + username + " doit exister");
         return player;
     }

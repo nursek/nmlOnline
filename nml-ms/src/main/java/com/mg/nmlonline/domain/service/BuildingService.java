@@ -230,7 +230,7 @@ public class BuildingService {
         if (building == null) {
             throw new IllegalArgumentException("Bâtiment introuvable : " + buildingId);
         }
-        int currentTurn = turnService.getCurrentTurn();
+        int currentTurn = turnService.getCurrentTurn(boardId);
         if (!building.canMove(currentTurn)) {
             throw new IllegalStateException("Le bâtiment ne peut pas se déplacer ce tour-ci");
         }
@@ -258,12 +258,13 @@ public class BuildingService {
         return true;
     }
 
-    public void discardPlayerEquipment(Long buildingId, String equipmentName, int quantity, Long userId) {
+    public void discardPlayerEquipment(Long buildingId, String equipmentName, int quantity, Long userId,
+                                       Long boardId) {
         if (equipmentName == null || equipmentName.isBlank() || quantity <= 0) {
             throw new IllegalArgumentException("Équipement ou quantité invalide");
         }
 
-        Player player = playerRepository.findByUserIdForUpdate(userId)
+        Player player = playerRepository.findByUserIdAndBoardIdForUpdate(userId, boardId)
                 .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable"));
         Building building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new IllegalArgumentException("Bâtiment introuvable : " + buildingId));
@@ -277,7 +278,7 @@ public class BuildingService {
             throw new IllegalStateException("La cache d'armes est détruite");
         }
         playerActionService.discardActiveActionsReferencing(
-                player.getId(), turnService.getCurrentTurn(), null, null, buildingId,
+                player.getId(), turnService.getCurrentTurn(player.getBoardId()), null, null, buildingId,
                 equipmentName, PlayerActionType.BUY_EQUIPMENT);
 
         EquipmentStack stack = cache.getStoredEquipments().stream()
@@ -319,11 +320,6 @@ public class BuildingService {
         return playerRepository.findById(playerId)
                 .map(player -> player.getStats().getMoney())
                 .orElse(null);
-    }
-
-    /** playerId ignoré (tour global) — conservé pour compatibilité. Source unique : TurnService. */
-    public int getCurrentTurn(Long playerId) {
-        return turnService.getCurrentTurn();
     }
 
     public record CaptureResult(double money, List<PlayerResource> resources) {}

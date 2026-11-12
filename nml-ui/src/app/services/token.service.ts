@@ -68,6 +68,9 @@ export class TokenService {
   clearAuth(): void {
     this.removeAccessToken();
     this.removeUser();
+    // Un autre compte ne doit pas hériter de la partie choisie.
+    sessionStorage.removeItem('instanceId');
+    sessionStorage.removeItem('instanceRole');
     this.removeRememberMe();
     this.resetRefreshState();
   }

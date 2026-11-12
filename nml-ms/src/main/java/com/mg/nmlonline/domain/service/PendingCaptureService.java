@@ -53,8 +53,8 @@ public class PendingCaptureService {
     }
 
     @Transactional(readOnly = true)
-    public List<PendingCaptureDto> list() {
-        List<PendingCapture> pendings = repository.findByResolvedFalseOrderByIdAsc();
+    public List<PendingCaptureDto> list(Long boardId) {
+        List<PendingCapture> pendings = repository.findByBoardIdAndResolvedFalseOrderByIdAsc(boardId);
         Set<Long> ids = pendings.stream()
                 .flatMap(pending -> pending.candidateIds().stream())
                 .collect(Collectors.toCollection(HashSet::new));
@@ -77,14 +77,18 @@ public class PendingCaptureService {
     }
 
     /** Décision admin : attribution immédiate, sans attendre un tour. */
-    public void resolve(Long pendingId, Long playerId) {
-        PendingCapture pending = repository.findById(pendingId)
-                .orElseThrow(() -> new EntityNotFoundException("Attribution en attente introuvable : " + pendingId));
+    public void resolve(Long boardId, Long pendingId, Long playerId) {
+        PendingCapture pending = requirePendingOfBoard(boardId, pendingId);
         if (pending.isResolved()) {
             throw new IllegalStateException("Cette attribution est déjà résolue.");
         }
         Board board = boardRepository.findById(pending.getBoardId())
                 .orElseThrow(() -> new EntityNotFoundException("Plateau introuvable : " + pending.getBoardId()));
+        if (playerRepository.findById(playerId)
+                .map(player -> !boardId.equals(player.getBoardId()))
+                .orElse(true)) {
+            throw new IllegalArgumentException("Le joueur ciblé ne joue pas dans cette partie");
+        }
         String color = board.getSectorsByOwner(playerId).stream()
                 .map(Sector::getColor)
                 .filter(Objects::nonNull)
@@ -96,10 +100,18 @@ public class PendingCaptureService {
         repository.save(pending);
     }
 
-    public void dismiss(Long pendingId) {
-        PendingCapture pending = repository.findById(pendingId)
-                .orElseThrow(() -> new EntityNotFoundException("Attribution en attente introuvable : " + pendingId));
+    public void dismiss(Long boardId, Long pendingId) {
+        PendingCapture pending = requirePendingOfBoard(boardId, pendingId);
         pending.setResolved(true);
         repository.save(pending);
+    }
+
+    private PendingCapture requirePendingOfBoard(Long boardId, Long pendingId) {
+        PendingCapture pending = repository.findById(pendingId)
+                .orElseThrow(() -> new EntityNotFoundException("Attribution en attente introuvable : " + pendingId));
+        if (!pending.getBoardId().equals(boardId)) {
+            throw new SecurityException("Cette attribution appartient à une autre partie.");
+        }
+        return pending;
     }
 }

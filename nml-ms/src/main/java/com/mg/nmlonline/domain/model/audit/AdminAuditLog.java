@@ -31,6 +31,10 @@ public class AdminAuditLog {
     @Column(name = "player_id")
     private Long playerId;
 
+    /** Null pour une action plateforme (création de plateau, catalogue). */
+    @Column(name = "board_id")
+    private Long boardId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private AdminAuditAction action;

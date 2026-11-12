@@ -4,6 +4,7 @@ import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.board.BoardAdmin;
 import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
@@ -15,6 +16,7 @@ import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.domain.model.unit.UnitEquipment;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
+import com.mg.nmlonline.infrastructure.repository.BoardAdminRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import com.mg.nmlonline.mapper.BoardMapper;
@@ -22,6 +24,7 @@ import com.mg.nmlonline.mapper.PlayerMapper;
 import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +47,7 @@ public class AdminService {
     private final PlayerMapper playerMapper;
     private final BoardMapper boardMapper;
     private final AdminAuditService adminAuditService;
+    private final BoardAdminRepository boardAdminRepository;
 
     public AdminService(PlayerImportService playerImportService,
                         PlayerService playerService,
@@ -55,7 +59,8 @@ public class AdminService {
                         EntityManager entityManager,
                         PlayerMapper playerMapper,
                         BoardMapper boardMapper,
-                        AdminAuditService adminAuditService) {
+                        AdminAuditService adminAuditService,
+                        BoardAdminRepository boardAdminRepository) {
         this.playerImportService = playerImportService;
         this.playerService = playerService;
         this.boardImportService = boardImportService;
@@ -67,18 +72,19 @@ public class AdminService {
         this.playerMapper = playerMapper;
         this.boardMapper = boardMapper;
         this.adminAuditService = adminAuditService;
+        this.boardAdminRepository = boardAdminRepository;
     }
 
     /** Import JSON : supprime un joueur homonyme au préalable ; si password est fourni, crée/met à jour le compte User associé. */
     @Transactional
-    public Player importPlayer(String jsonContent, String password) throws IOException {
+    public Player importPlayer(String jsonContent, String password, Long boardId) throws IOException {
         PlayerImportService.PlayerDTO dto = playerImportService.parse(jsonContent);
-        Player player = playerImportService.importPlayer(dto);
+        Player player = playerImportService.importPlayer(dto, boardId);
         if (player == null) {
             throw new IllegalArgumentException("Impossible de parser le JSON du joueur");
         }
 
-        Player existing = playerService.findByName(player.getName());
+        Player existing = playerService.findByName(boardId, player.getName());
         if (existing != null) {
             playerService.delete(existing.getId());
             entityManager.flush();
@@ -97,7 +103,7 @@ public class AdminService {
         playerImportService.importResources(dto, player);
         player = playerService.save(player);
 
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        Board board = boardService.getBoardById(boardId).orElse(null);
         if (board != null) {
             playerImportService.importVehicles(dto, player, board);
             playerImportService.importSectors(dto, player, board);
@@ -110,21 +116,45 @@ public class AdminService {
         playerImportService.clearEquipmentCache();
 
         logger.info("Import joueur '{}' (id {})", player.getName(), player.getId());
-        adminAuditService.record(player.getId(), AdminAuditAction.IMPORT_PLAYER,
+        adminAuditService.record(boardId, player.getId(), AdminAuditAction.IMPORT_PLAYER,
                 "Import : " + player.getName());
         return player;
     }
 
-    public Player importPlayer(String jsonContent) throws IOException {
-        return importPlayer(jsonContent, null);
+    public Player importPlayer(String jsonContent, Long boardId) throws IOException {
+        return importPlayer(jsonContent, null, boardId);
     }
 
     /** Import + mapping dans une seule transaction : le DTO parcourt equipments/resources/buildings (LAZY). */
     @Transactional
-    public PlayerDto importPlayerDto(String jsonContent, String password) throws IOException {
-        Player player = importPlayer(jsonContent, password);
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+    public PlayerDto importPlayerDto(String jsonContent, String password, Long boardId) throws IOException {
+        Player player = importPlayer(jsonContent, password, boardId);
+        Board board = boardService.getBoardById(boardId).orElse(null);
         return playerMapper.toDtoWithSectors(player, board);
+    }
+
+    @Transactional
+    public void grantBoardAdmin(Long boardId, Long userId) {
+        requireBoardAndUser(boardId, userId);
+        if (!boardAdminRepository.existsByBoardIdAndUserId(boardId, userId)) {
+            boardAdminRepository.save(new BoardAdmin(boardId, userId));
+        }
+    }
+
+    @Transactional
+    public void revokeBoardAdmin(Long boardId, Long userId) {
+        boardAdminRepository.findByUserId(userId).stream()
+                .filter(admin -> admin.getBoardId().equals(boardId))
+                .forEach(boardAdminRepository::delete);
+    }
+
+    private void requireBoardAndUser(Long boardId, Long userId) {
+        if (!boardService.getBoardById(boardId).isPresent()) {
+            throw new IllegalArgumentException("Plateau introuvable : " + boardId);
+        }
+        if (userRepository.findById(userId).isEmpty()) {
+            throw new IllegalArgumentException("Utilisateur introuvable : " + userId);
+        }
     }
 
     private User ensureCredential(String username, String password) {
@@ -144,7 +174,7 @@ public class AdminService {
         Player player = playerService.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable avec l'ID " + playerId));
 
-        Board board = boardService.getAllBoards().stream().findFirst().orElse(null);
+        Board board = boardService.getBoardById(player.getBoardId()).orElse(null);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("name", player.getName());
@@ -264,15 +294,21 @@ public class AdminService {
         if (!playerService.delete(playerId)) {
             throw new IllegalArgumentException("Joueur introuvable avec l'ID " + playerId);
         }
-        User user = player.getUserId() != null
-                ? userRepository.findById(player.getUserId()).orElse(null)
-                : userRepository.findByUsername(name);
-        if (user != null && !"ADMIN".equals(user.getRole())) {
-            userRepository.delete(user);
-        }
         logger.info("Suppression joueur '{}' (id {})", name, playerId);
-        adminAuditService.record(playerId, AdminAuditAction.DELETE_PLAYER,
+        adminAuditService.record(player != null ? player.getBoardId() : null, playerId, AdminAuditAction.DELETE_PLAYER,
                 "Suppression : " + name);
+    }
+
+    /** Supprime une partie : ses participations d'abord (leurs cascades JPA), la carte ensuite. */
+    @Transactional
+    public void deleteBoard(Long boardId) {
+        boardService.getBoardById(boardId)
+                .orElseThrow(() -> new IllegalArgumentException("Plateau introuvable : " + boardId));
+        playerService.findAll(boardId, Pageable.unpaged()).stream()
+                .map(Player::getId)
+                .toList()
+                .forEach(playerService::delete);
+        boardService.deleteBoard(boardId);
     }
 
     /** Import board.json. Les URLs fournies override celles du JSON ; upsert par nom via saveBoard. */
@@ -288,7 +324,7 @@ public class AdminService {
         String boardName = board.getName() != null ? board.getName() : "Carte Principale";
         Board saved = boardService.saveBoard(board, boardName);
         logger.info("Import board '{}' (id {})", saved.getName(), saved.getId());
-        adminAuditService.record(null, AdminAuditAction.IMPORT_BOARD,
+        adminAuditService.record(saved.getId(), null, AdminAuditAction.IMPORT_BOARD,
                 "Board : " + saved.getName());
         return saved;
     }

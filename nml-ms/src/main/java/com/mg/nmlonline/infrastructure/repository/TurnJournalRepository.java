@@ -7,5 +7,5 @@ import java.util.Optional;
 
 public interface TurnJournalRepository extends JpaRepository<TurnJournal, Long> {
 
-    Optional<TurnJournal> findFirstByTurnOrderByIdDesc(int turn);
+    Optional<TurnJournal> findFirstByBoardIdAndTurnOrderByIdDesc(Long boardId, int turn);
 }

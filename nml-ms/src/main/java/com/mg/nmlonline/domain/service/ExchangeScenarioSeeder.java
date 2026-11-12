@@ -45,34 +45,34 @@ public class ExchangeScenarioSeeder {
     }
 
     @Transactional
-    public ExchangeScenarioSummaryDto seedExchangeScenario() {
-        Player sender = resolvePlayer(SENDER);
-        Player receiver = resolvePlayer(RECEIVER);
-        Player secondSender = resolvePlayer(SECOND_SENDER);
-        Player secondReceiver = resolvePlayer(SECOND_RECEIVER);
+    public ExchangeScenarioSummaryDto seedExchangeScenario(Long boardId) {
+        Player sender = resolvePlayer(boardId, SENDER);
+        Player receiver = resolvePlayer(boardId, RECEIVER);
+        Player secondSender = resolvePlayer(boardId, SECOND_SENDER);
+        Player secondReceiver = resolvePlayer(boardId, SECOND_RECEIVER);
 
         purgeOffers(List.of(sender, receiver, secondSender, secondReceiver));
         ensureEarnedMoney(sender, PENDING_MONEY);
         ensureEarnedMoney(secondSender, ACCEPTED_MONEY);
         ensureResource(secondSender, "Auramite", 2);
 
-        ExchangeOfferDto pending = exchangeOfferService.createOffer(requireUserId(sender),
+        ExchangeOfferDto pending = exchangeOfferService.createOffer(requireUserId(sender), boardId,
                 new CreateExchangeOfferRequestDto(receiver.getId(), PENDING_MONEY,
                         List.of(new ExchangeOfferItemDto("Caisse d'armes", 3))));
 
-        ExchangeOfferDto created = exchangeOfferService.createOffer(requireUserId(secondSender),
+        ExchangeOfferDto created = exchangeOfferService.createOffer(requireUserId(secondSender), boardId,
                 new CreateExchangeOfferRequestDto(secondReceiver.getId(), ACCEPTED_MONEY,
                         List.of(new ExchangeOfferItemDto("Auramite", 2))));
         exchangeOfferService.acceptOffer(requireUserId(secondReceiver), created.id());
 
         String message = "Offre #" + pending.id() + " en attente (" + SENDER + " → " + RECEIVER
                 + "), échange #" + created.id() + " accepté (" + SECOND_SENDER + " → " + SECOND_RECEIVER + ").";
-        return new ExchangeScenarioSummaryDto(turnService.getCurrentTurn(), pending.id(),
+        return new ExchangeScenarioSummaryDto(turnService.getCurrentTurn(boardId), pending.id(),
                 created.id(), message);
     }
 
-    private Player resolvePlayer(String name) {
-        return playerRepository.findByName(name)
+    private Player resolvePlayer(Long boardId, String name) {
+        return playerRepository.findByBoardIdAndName(boardId, name)
                 .orElseThrow(() -> new IllegalStateException(
                         "Joueur de fixture introuvable : " + name + " (import démo requis)"));
     }

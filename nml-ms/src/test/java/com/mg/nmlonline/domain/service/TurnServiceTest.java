@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class TurnServiceTest {
 
     @Autowired
+    private BoardRepository boardRepository;
+
+    private Long boardId() {
+        return boardRepository.findAll().getFirst().getId();
+    }
+
+
+
+    @Autowired
     private TurnService turnService;
 
     @Autowired
@@ -31,18 +41,18 @@ class TurnServiceTest {
     @Test
     @DisplayName("advanceTurn résout les ordres PENDING puis incrémente currentTurn")
     void advanceTurnResolvesPendingAndIncrements() {
-        int initialTurn = turnService.getCurrentTurn();
+        int initialTurn = turnService.getCurrentTurn(boardId());
         assertTrue(initialTurn >= 1, "Le tour courant initial doit être >= 1");
 
         MovementOrder order = MovementOrder.createFootOrder(
-                99L, initialTurn, List.of(999L), List.of(2, 10));
+                99L, boardId(), initialTurn, List.of(999L), List.of(2, 10));
         order = movementOrderRepository.save(order);
         assertEquals(MovementStatus.PENDING, order.getStatus());
 
-        int newTurn = turnService.advanceTurn();
+        int newTurn = turnService.advanceTurn(boardId());
 
         assertEquals(initialTurn + 1, newTurn, "advanceTurn doit incrémenter le tour");
-        assertEquals(newTurn, turnService.getCurrentTurn(), "Le tour courant doit être persisted après advanceTurn");
+        assertEquals(newTurn, turnService.getCurrentTurn(boardId()), "Le tour courant doit être persisted après advanceTurn");
 
         MovementOrder reloaded = movementOrderRepository.findById(order.getId()).orElseThrow();
         assertNotEquals(MovementStatus.PENDING, reloaded.getStatus(),
@@ -54,20 +64,20 @@ class TurnServiceTest {
     @Test
     @DisplayName("setCurrentTurn fixe le tour persisté et refuse les valeurs invalides")
     void setCurrentTurnPublishesPersistsAndRejectsInvalid() {
-        assertThrows(IllegalArgumentException.class, () -> turnService.setCurrentTurn(0));
+        assertThrows(IllegalArgumentException.class, () -> turnService.setCurrentTurn(boardId(), 0));
 
-        int target = turnService.getCurrentTurn() + 7;
-        assertEquals(target, turnService.setCurrentTurn(target));
+        int target = turnService.getCurrentTurn(boardId()) + 7;
+        assertEquals(target, turnService.setCurrentTurn(boardId(), target));
         turnService.invalidateTurnCache();
-        assertEquals(target, turnService.getCurrentTurn(), "La valeur doit être persistée en base");
+        assertEquals(target, turnService.getCurrentTurn(boardId()), "La valeur doit être persistée en base");
     }
 
     @Test
     @DisplayName("advanceTurn rejette un 2e appel concurrent (garde anti double-clic)")
     void advanceTurnRejectsConcurrentCall() throws Exception {
-        int initialTurn = turnService.getCurrentTurn();
+        int initialTurn = turnService.getCurrentTurn(boardId());
         MovementOrder order = MovementOrder.createFootOrder(
-                99L, initialTurn, List.of(999L), List.of(2, 10));
+                99L, boardId(), initialTurn, List.of(999L), List.of(2, 10));
         order = movementOrderRepository.save(order);
 
         int attempts = 12;
@@ -82,7 +92,7 @@ class TurnServiceTest {
                 try {
                     start.await();
                     try {
-                        turnService.advanceTurn();
+                        turnService.advanceTurn(boardId());
                         wins.incrementAndGet();
                     } catch (IllegalStateException e) {
                         rejects.incrementAndGet();

@@ -8,6 +8,7 @@ import com.mg.nmlonline.api.dto.AdminMoneyRequestDto;
 import com.mg.nmlonline.api.dto.AdminPlayerEditDto;
 import com.mg.nmlonline.api.dto.AdminPlayerNameRequestDto;
 import com.mg.nmlonline.api.dto.AdminSectorOwnerRequestDto;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.api.dto.AdminUnitCreateRequestDto;
 import com.mg.nmlonline.api.dto.AdminUnitEquipRequestDto;
 import com.mg.nmlonline.api.dto.AdminUnitMoveRequestDto;
@@ -15,6 +16,7 @@ import com.mg.nmlonline.api.dto.AdminUnitUpdateRequestDto;
 import com.mg.nmlonline.api.dto.AdminVehicleCreateRequestDto;
 import com.mg.nmlonline.api.dto.SetVehicleCrewRequestDto;
 import com.mg.nmlonline.domain.service.AdminPlayerEditService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'INSTANCE_ADMIN')")
 public class AdminPlayerEditController {
 
     private final AdminPlayerEditService adminPlayerEditService;
@@ -70,8 +72,11 @@ public class AdminPlayerEditController {
 
     @PutMapping("/sectors/{sectorNumber}/owner")
     public ResponseEntity<Void> reassignSector(@PathVariable int sectorNumber,
-                                               @RequestBody AdminSectorOwnerRequestDto request) {
-        adminPlayerEditService.reassignSector(sectorNumber, request.getPlayerId());
+                                               @RequestBody AdminSectorOwnerRequestDto request,
+                                               HttpServletRequest httpRequest) {
+        adminPlayerEditService.reassignSector(
+                (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE), sectorNumber,
+                request.getPlayerId());
         return ResponseEntity.noContent().build();
     }
 

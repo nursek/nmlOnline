@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
+@Order(2)
 public class PlayerStartupImporter implements ApplicationRunner {
 
     private final PlayerImportService playerImportService;
@@ -144,12 +146,12 @@ public class PlayerStartupImporter implements ApplicationRunner {
                 PlayerImportService.PlayerDTO dto = playerImportService.parse(
                         new String(is.readAllBytes(), StandardCharsets.UTF_8));
 
-                Player player = playerImportService.importPlayer(dto);
+                Player player = playerImportService.importPlayer(dto, board.getId());
 
                 if (player != null) {
                     // Réimporter = remplacer, pas fusionner : une fusion duplique l'armée, et les
                     // doublons n'ont plus d'équipement (stock du joueur déjà consommé).
-                    Player existingPlayer = playerService.findByName(player.getName());
+                    Player existingPlayer = playerService.findByName(board.getId(), player.getName());
                     if (existingPlayer != null) {
                         log.info("Joueur {} déjà existant, remplacement...", player.getName());
                         playerService.delete(existingPlayer.getId());

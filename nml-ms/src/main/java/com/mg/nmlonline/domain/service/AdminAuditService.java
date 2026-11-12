@@ -26,22 +26,23 @@ public class AdminAuditService {
     }
 
     @Transactional
-    public void record(Long playerId, AdminAuditAction action, String details) {
+    public void record(Long boardId, Long playerId, AdminAuditAction action, String details) {
         AdminAuditLog log = new AdminAuditLog();
         log.setAdminUsername(truncate(adminUsername(), 100));
         log.setPlayerId(playerId);
+        log.setBoardId(boardId);
         log.setAction(action);
         log.setDetails(truncate(details, 2000));
         log.setCreatedAt(Instant.now());
-        log.setTurn(turnService.getCurrentTurn());
+        log.setTurn(boardId != null ? turnService.getCurrentTurn(boardId) : null);
         auditLogRepository.save(log);
     }
 
     @Transactional(readOnly = true)
-    public Page<AdminAuditEntryDto> getHistory(Long playerId, Pageable pageable) {
+    public Page<AdminAuditEntryDto> getHistory(Long boardId, Long playerId, Pageable pageable) {
         Page<AdminAuditLog> page = playerId == null
-                ? auditLogRepository.findAllByOrderByCreatedAtDesc(pageable)
-                : auditLogRepository.findByPlayerIdOrderByCreatedAtDesc(playerId, pageable);
+                ? auditLogRepository.findByBoardIdOrderByCreatedAtDesc(boardId, pageable)
+                : auditLogRepository.findByBoardIdAndPlayerIdOrderByCreatedAtDesc(boardId, playerId, pageable);
         return page.map(this::toDto);
     }
 

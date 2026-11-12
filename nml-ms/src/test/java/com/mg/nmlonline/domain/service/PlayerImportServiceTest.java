@@ -164,10 +164,10 @@ class PlayerImportServiceTest {
         PlayerDTO dto = new PlayerDTO();
         dto.name = "ork";
         dto.race = "orks";
-        assertEquals(PlayerRace.ORKS, service.importPlayer(dto).getRace());
+        assertEquals(PlayerRace.ORKS, service.importPlayer(dto, 1L).getRace());
 
         dto.race = "SOUS_MARIN";
-        assertNull(service.importPlayer(dto).getRace());
+        assertNull(service.importPlayer(dto, 1L).getRace());
     }
 
     private VehicleDTO vehicleDto(VehicleType type, int quantity, Integer sectorNumber) {

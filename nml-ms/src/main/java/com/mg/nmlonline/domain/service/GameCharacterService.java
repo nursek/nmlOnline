@@ -40,12 +40,11 @@ public class GameCharacterService {
             throw new IllegalStateException("Le joueur a déjà un personnage principal");
         }
 
-        if (characterRepository.existsByName(name)) {
-            throw new IllegalArgumentException("Un personnage avec ce nom existe déjà");
-        }
-
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Joueur non trouvé"));
+        if (characterRepository.existsByBoardIdAndName(player.getBoardId(), name)) {
+            throw new IllegalArgumentException("Un personnage avec ce nom existe déjà");
+        }
 
         GameCharacter character = new GameCharacter(name, baseAttack, basePdf, basePdc,
                                                      baseDefense, baseArmor, baseEvasion);
@@ -62,8 +61,8 @@ public class GameCharacterService {
         return characterRepository.findByPlayerId(playerId);
     }
 
-    public Optional<GameCharacter> getCharacterByName(String name) {
-        return characterRepository.findByName(name);
+    public Optional<GameCharacter> getCharacterByName(Long boardId, String name) {
+        return characterRepository.findByBoardIdAndName(boardId, name);
     }
 
     public void placeInSector(Long playerId, Sector sector) {
@@ -81,7 +80,9 @@ public class GameCharacterService {
                                 double baseDefense, double baseArmor, double baseEvasion) {
         GameCharacter character = characterRepository.findByPlayerId(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Le joueur n'a pas de personnage"));
-        characterRepository.findByName(name).ifPresent(existing -> {
+        characterRepository.findByBoardIdAndName(playerRepository.findById(playerId)
+                        .orElseThrow(() -> new IllegalArgumentException("Joueur non trouvé")).getBoardId(), name)
+                .ifPresent(existing -> {
             if (!existing.getId().equals(character.getId())) {
                 throw new IllegalArgumentException("Un personnage avec ce nom existe déjà");
             }
@@ -111,8 +112,8 @@ public class GameCharacterService {
     }
 
     /** Fin de tour : +50 def (plafonné baseDefense) sur chaque personnage entamé. */
-    public void regenerateAllCharacters() {
-        List<GameCharacter> damaged = characterRepository.findAll().stream()
+    public void regenerateAllCharacters(Long boardId) {
+        List<GameCharacter> damaged = characterRepository.findByBoardId(boardId).stream()
                 .filter(c -> c.getDefense() < c.getBaseDefense())
                 .toList();
         damaged.forEach(c -> c.regenerateDefense(GameCharacter.DEFENSE_REGEN_PER_TURN));
@@ -124,8 +125,8 @@ public class GameCharacterService {
         return getCharacter(playerId).map(characterMapper::toDto);
     }
 
-    public Optional<GameCharacterDto> getCharacterByNameDto(String name) {
-        return getCharacterByName(name).map(characterMapper::toDto);
+    public Optional<GameCharacterDto> getCharacterByNameDto(Long boardId, String name) {
+        return getCharacterByName(boardId, name).map(characterMapper::toDto);
     }
 
 }

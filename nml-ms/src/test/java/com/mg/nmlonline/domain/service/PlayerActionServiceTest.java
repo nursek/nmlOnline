@@ -40,6 +40,10 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("PlayerActionService — journal & annulation en cascade")
 class PlayerActionServiceTest {
 
+    private Long boardId() {
+        return boardService.getAllBoards().getFirst().getId();
+    }
+
     @Autowired
     private PlayerActionService playerActionService;
 
@@ -103,16 +107,16 @@ class PlayerActionServiceTest {
         item.setName(eq.getName());
         item.setQuantity(2);
         playerService.buyEquipments(player.getId(), List.of(item));
-        unitService.assignEquipment(unit.getId(), player.getUserId(), eq.getName());
+        unitService.assignEquipment(unit.getId(), player.getUserId(), eq.getName(), boardId());
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertEquals(2, actions.size());
         assertEquals(PlayerActionType.BUY_EQUIPMENT, actions.get(0).getType());
         assertEquals(PlayerActionType.EQUIP_UNIT, actions.get(1).getType());
 
-        playerActionService.undoFrom(player.getUserId(), actions.get(0).getId());
+        playerActionService.undoFrom(player.getUserId(), boardId(), actions.get(0).getId());
 
-        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty(),
+        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty(),
                 "L'annulation en cascade doit vider le journal du tour");
         Player reloaded = playerRepository.findById(player.getId()).orElseThrow();
         assertEquals(moneyBefore, reloaded.getStats().getMoney(), 0.001,
@@ -140,16 +144,16 @@ class PlayerActionServiceTest {
         item.setVehicleType("TANK");
         item.setQuantity(1);
         List<com.mg.nmlonline.domain.model.vehicle.Vehicle> created =
-                vehicleService.buyVehiclesBatch(player.getUserId(), List.of(item));
+                vehicleService.buyVehiclesBatch(player.getUserId(), List.of(item), boardId());
         Long vehicleId = created.getFirst().getId();
         vehicleService.placeVehicle(vehicleId, board.getId(), owned.getNumber(), player.getUserId());
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertEquals(2, actions.size());
         assertEquals(PlayerActionType.BUY_VEHICLE, actions.get(0).getType());
         assertEquals(PlayerActionType.PLACE_VEHICLE, actions.get(1).getType());
 
-        playerActionService.undoFrom(player.getUserId(), actions.get(0).getId());
+        playerActionService.undoFrom(player.getUserId(), boardId(), actions.get(0).getId());
 
         assertTrue(vehicleRepository.findById(vehicleId).isEmpty(),
                 "Le véhicule acheté doit être supprimé");
@@ -176,27 +180,27 @@ class PlayerActionServiceTest {
         item.setName(melee.getName());
         item.setQuantity(2);
         playerService.buyEquipments(player.getId(), List.of(item));
-        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName());
-        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName());
+        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName(), boardId());
+        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName(), boardId());
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertEquals(3, actions.size());
         assertEquals(PlayerActionType.EQUIP_UNIT, actions.get(2).getType());
 
-        playerActionService.undoFrom(player.getUserId(), actions.get(2).getId());
+        playerActionService.undoFrom(player.getUserId(), boardId(), actions.get(2).getId());
 
         assertEquals(1, unit.getEquipments().size(), "Une seule occurrence doit être retirée");
         assertEquals(1, availableOf(player, melee.getName()), "Un seul exemplaire doit revenir au stock");
-        assertEquals(2, playerActionService.getCurrentTurnActions(player.getUserId()).size());
+        assertEquals(2, playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).size());
 
-        List<PlayerActionDto> remaining = playerActionService.getCurrentTurnActions(player.getUserId());
-        playerActionService.undoFrom(player.getUserId(), remaining.get(1).getId());
+        List<PlayerActionDto> remaining = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
+        playerActionService.undoFrom(player.getUserId(), boardId(), remaining.get(1).getId());
 
         assertEquals(0, unit.getEquipments().size());
         assertEquals(2, availableOf(player, melee.getName()));
 
-        playerActionService.undoFrom(player.getUserId(),
-                playerActionService.getCurrentTurnActions(player.getUserId()).getFirst().getId());
+        playerActionService.undoFrom(player.getUserId(), boardId(),
+                playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).getFirst().getId());
 
         Player reloaded = playerRepository.findById(player.getId()).orElseThrow();
         assertEquals(moneyBefore, reloaded.getStats().getMoney(), 0.001);
@@ -215,18 +219,18 @@ class PlayerActionServiceTest {
         entityManager.flush();
 
         Long resourceId = player.getResources().getFirst().getId();
-        resourceService.sellResource(resourceId, 2, player.getUserId());
+        resourceService.sellResource(resourceId, 2, player.getUserId(), boardId());
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertEquals(1, actions.size());
         assertEquals(PlayerActionType.SELL_RESOURCE, actions.getFirst().getType());
 
-        playerActionService.undoFrom(player.getUserId(), actions.getFirst().getId());
+        playerActionService.undoFrom(player.getUserId(), boardId(), actions.getFirst().getId());
 
         Player reloaded = playerRepository.findById(player.getId()).orElseThrow();
         assertEquals(5, reloaded.getResourceQuantity("Auramite"));
         assertEquals(100000.0, reloaded.getStats().getMoney(), 0.001);
-        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId()).isEmpty());
+        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty());
     }
 
     @Test
@@ -258,11 +262,11 @@ class PlayerActionServiceTest {
         buildingService.moveBuilding(bank.getId(), board.getId(), to.getNumber());
         assertEquals(to.getNumber(), bank.getSector().getNumber());
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertEquals(1, actions.size());
         assertEquals(PlayerActionType.MOVE_BUILDING, actions.getFirst().getType());
 
-        playerActionService.undoFrom(player.getUserId(), actions.getFirst().getId());
+        playerActionService.undoFrom(player.getUserId(), boardId(), actions.getFirst().getId());
 
         assertEquals(from.getNumber(), bank.getSector().getNumber());
         assertEquals(2, bank.getLastMovedTurn());
@@ -287,15 +291,15 @@ class PlayerActionServiceTest {
         item.setName(melee.getName());
         item.setQuantity(1);
         playerService.buyEquipments(player.getId(), List.of(item));
-        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName());
-        unitService.removeEquipment(unit.getId(), player.getUserId(), melee.getName());
+        unitService.assignEquipment(unit.getId(), player.getUserId(), melee.getName(), boardId());
+        unitService.removeEquipment(unit.getId(), player.getUserId(), melee.getName(), boardId());
         assertEquals(0, unit.getEquipments().size());
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertEquals(3, actions.size());
         assertEquals(PlayerActionType.UNEQUIP_UNIT, actions.get(2).getType());
 
-        playerActionService.undoFrom(player.getUserId(), actions.get(2).getId());
+        playerActionService.undoFrom(player.getUserId(), boardId(), actions.get(2).getId());
 
         assertEquals(1, unit.getEquipments().size());
         assertEquals(0, availableOf(player, melee.getName()));
@@ -317,7 +321,7 @@ class PlayerActionServiceTest {
         Unit passager = addUnit(sector, player, UnitClass.LEGER);
 
         VehicleDto dto = vehicleService.setCrew(player.getUserId(), vehicleId,
-                pilote.getId(), List.of(passager.getId()));
+                pilote.getId(), List.of(passager.getId()), boardId());
 
         assertEquals(pilote.getId(), dto.getPilotId());
         assertEquals(List.of(passager.getId()), dto.getPassengerIds());
@@ -326,10 +330,10 @@ class PlayerActionServiceTest {
         assertTrue(sector.getArmy().stream().anyMatch(u -> u.getId().equals(passager.getId())),
                 "Le passager reste une unité normale du secteur");
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertEquals(PlayerActionType.SET_VEHICLE_CREW, actions.getLast().getType());
 
-        playerActionService.undoFrom(player.getUserId(), actions.getLast().getId());
+        playerActionService.undoFrom(player.getUserId(), boardId(), actions.getLast().getId());
 
         Vehicle reloaded = vehicleRepository.findById(vehicleId).orElseThrow();
         assertNull(reloaded.getPilot());
@@ -353,11 +357,11 @@ class PlayerActionServiceTest {
         Unit pilote = addUnit(sector, player, UnitClass.PILOTE_DESTRUCTEUR);
         Unit passager = addUnit(sector, player, UnitClass.LEGER);
 
-        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()));
-        vehicleService.setCrew(player.getUserId(), vehicleId, null, List.of());
+        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()), boardId());
+        vehicleService.setCrew(player.getUserId(), vehicleId, null, List.of(), boardId());
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
-        playerActionService.undoFrom(player.getUserId(), actions.getLast().getId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
+        playerActionService.undoFrom(player.getUserId(), boardId(), actions.getLast().getId());
 
         Vehicle reloaded = vehicleRepository.findById(vehicleId).orElseThrow();
         assertEquals(pilote.getId(), reloaded.getPilot().getId());
@@ -379,13 +383,13 @@ class PlayerActionServiceTest {
         Unit pilote = addUnit(sector, player, UnitClass.PILOTE_DESTRUCTEUR);
         Unit passager = addUnit(sector, player, UnitClass.LEGER);
 
-        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()));
+        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()), boardId());
         vehicleService.placeVehicleOrderDto(player.getUserId(), vehicleId,
-                List.of(sector.getNumber(), sector.getNeighbors().getFirst()));
+                List.of(sector.getNumber(), sector.getNeighbors().getFirst()), boardId());
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertThrows(PlayerActionUndoException.class,
-                () -> playerActionService.undoFrom(player.getUserId(), actions.getLast().getId()));
+                () -> playerActionService.undoFrom(player.getUserId(), boardId(), actions.getLast().getId()));
     }
 
     @Test
@@ -403,14 +407,14 @@ class PlayerActionServiceTest {
         Unit pilote = addUnit(sector, player, UnitClass.PILOTE_DESTRUCTEUR);
         Unit passager = addUnit(sector, player, UnitClass.LEGER);
 
-        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()));
-        vehicleService.setCrew(player.getUserId(), vehicleId, null, List.of());
+        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()), boardId());
+        vehicleService.setCrew(player.getUserId(), vehicleId, null, List.of(), boardId());
         unitService.placeFootOrder(player.getUserId(), List.of(passager.getId()),
-                List.of(sector.getNumber(), sector.getNeighbors().getFirst()));
+                List.of(sector.getNumber(), sector.getNeighbors().getFirst()), boardId());
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertThrows(PlayerActionUndoException.class,
-                () -> playerActionService.undoFrom(player.getUserId(), actions.getLast().getId()));
+                () -> playerActionService.undoFrom(player.getUserId(), boardId(), actions.getLast().getId()));
     }
 
     @Test
@@ -432,7 +436,7 @@ class PlayerActionServiceTest {
         entityManager.flush();
 
         assertThrows(IllegalArgumentException.class, () -> vehicleService.setCrew(
-                player.getUserId(), vehicleId, null, List.of(farUnit.getId())));
+                player.getUserId(), vehicleId, null, List.of(farUnit.getId()), boardId()));
     }
 
     @Test
@@ -450,12 +454,12 @@ class PlayerActionServiceTest {
         Unit pilote = addUnit(sector, player, UnitClass.PILOTE_DESTRUCTEUR);
         Unit passager = addUnit(sector, player, UnitClass.LEGER);
 
-        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()));
-        PlayerActionDto placement = playerActionService.getCurrentTurnActions(player.getUserId()).stream()
+        vehicleService.setCrew(player.getUserId(), vehicleId, pilote.getId(), List.of(passager.getId()), boardId());
+        PlayerActionDto placement = playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).stream()
                 .filter(a -> a.getType() == PlayerActionType.PLACE_VEHICLE)
                 .findFirst().orElseThrow();
 
-        playerActionService.undoFrom(player.getUserId(), placement.getId());
+        playerActionService.undoFrom(player.getUserId(), boardId(), placement.getId());
 
         Vehicle reloaded = vehicleRepository.findById(vehicleId).orElseThrow();
         assertNull(reloaded.getSector());
@@ -482,14 +486,14 @@ class PlayerActionServiceTest {
         item.setQuantity(1);
         playerService.buyEquipments(player.getId(), List.of(item));
 
-        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> actions = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertEquals("Achat de 1 × Éclateur gauss", actions.getFirst().getLabel());
 
         player.setRace(null);
         playerRepository.save(player);
         entityManager.flush();
 
-        List<PlayerActionDto> english = playerActionService.getCurrentTurnActions(player.getUserId());
+        List<PlayerActionDto> english = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
         assertEquals("Achat de 1 × Gauss Blaster", english.getFirst().getLabel());
     }
 
@@ -506,7 +510,7 @@ class PlayerActionServiceTest {
         BuyVehicleRequestDto item = new BuyVehicleRequestDto();
         item.setVehicleType("VTT_LEGER");
         item.setQuantity(1);
-        Long vehicleId = vehicleService.buyVehiclesBatch(player.getUserId(), List.of(item))
+        Long vehicleId = vehicleService.buyVehiclesBatch(player.getUserId(), List.of(item), boardId())
                 .getFirst().getId();
         vehicleService.placeVehicle(vehicleId, board.getId(), sector.getNumber(), player.getUserId());
         return vehicleId;
@@ -515,7 +519,7 @@ class PlayerActionServiceTest {
     private void setTurn(Board board, int turn) {
         board.setCurrentTurn(turn);
         entityManager.flush();
-        turnService.publishTurn(turn);
+        turnService.publishTurn(board.getId(), turn);
     }
 
     private double fund(Player player) {
@@ -527,7 +531,8 @@ class PlayerActionServiceTest {
     private Player playerOfTestUser(String username) {
         User user = userRepository.findByUsername(username);
         assertNotNull(user, "L'utilisateur de test " + username + " doit exister");
-        Player player = playerService.findByUserId(user.getId());
+        Player player = playerService.findByUserId(user.getId(),
+                boardService.getAllBoards().getFirst().getId());
         assertNotNull(player, "Le joueur lié à " + username + " doit exister");
         return player;
     }

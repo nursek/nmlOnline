@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,7 +49,7 @@ public class ExchangeOfferService {
         this.turnService = turnService;
     }
 
-    public ExchangeOfferDto createOffer(Long userId, CreateExchangeOfferRequestDto request) {
+    public ExchangeOfferDto createOffer(Long userId, Long boardId, CreateExchangeOfferRequestDto request) {
         if (request == null || request.receiverPlayerId() == null) {
             throw new IllegalArgumentException("Destinataire manquant");
         }
@@ -56,12 +57,12 @@ public class ExchangeOfferService {
             throw new IllegalArgumentException("Montant invalide");
         }
 
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(boardId);
         // Purge avant comptage : une offre expirée ne doit plus consommer un emplacement.
-        exchangeOfferRepository.expirePendingOffers(ExchangeOfferStatus.PENDING,
+        exchangeOfferRepository.expirePendingOffers(boardId, ExchangeOfferStatus.PENDING,
                 ExchangeOfferStatus.EXPIRED, turn);
 
-        Player senderRef = playerRepository.findByUserId(userId)
+        Player senderRef = playerRepository.findByUserIdAndBoardId(userId, boardId)
                 .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable"));
         Long receiverId = request.receiverPlayerId();
         if (senderRef.getId().equals(receiverId)) {
@@ -73,6 +74,10 @@ public class ExchangeOfferService {
         Player second = lockPlayer(Math.max(senderRef.getId(), receiverId));
         Player sender = first.getId().equals(senderRef.getId()) ? first : second;
         Player receiver = first.getId().equals(receiverId) ? first : second;
+
+        if (!Objects.equals(receiver.getBoardId(), boardId)) {
+            throw new IllegalArgumentException("Le destinataire ne joue pas dans cette partie");
+        }
 
         List<ExchangeOfferItemDto> items = validatedItems(request.resources());
         if (request.money() <= 0 && items.isEmpty()) {
@@ -88,7 +93,7 @@ public class ExchangeOfferService {
             throw new IllegalStateException("Trois offres en attente maximum");
         }
 
-        ExchangeOffer offer = new ExchangeOffer(sender.getId(), receiver.getId(), request.money(),
+        ExchangeOffer offer = new ExchangeOffer(boardId, sender.getId(), receiver.getId(), request.money(),
                 turn, turn + 1);
         for (ExchangeOfferItemDto item : items) {
             offer.addResource(new ExchangeOfferResource(item.resourceName(), item.quantity()));
@@ -97,12 +102,12 @@ public class ExchangeOfferService {
         return toDto(offer, sender.getName(), receiver.getName());
     }
 
-    public List<ExchangeOfferDto> getOffers(Long userId) {
-        Player player = playerRepository.findByUserId(userId)
+    public List<ExchangeOfferDto> getOffers(Long userId, Long boardId) {
+        Player player = playerRepository.findByUserIdAndBoardId(userId, boardId)
                 .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable"));
 
-        int turn = turnService.getCurrentTurn();
-        exchangeOfferRepository.expirePendingOffers(ExchangeOfferStatus.PENDING,
+        int turn = turnService.getCurrentTurn(boardId);
+        exchangeOfferRepository.expirePendingOffers(boardId, ExchangeOfferStatus.PENDING,
                 ExchangeOfferStatus.EXPIRED, turn);
 
         List<ExchangeOffer> offers = exchangeOfferRepository
@@ -114,17 +119,18 @@ public class ExchangeOfferService {
                 .toList();
     }
 
-    /** Vue admin : toutes les offres, avec expiration paresseuse des PENDING comme la vue joueur. */
-    public Page<ExchangeOfferDto> getAllOffers(String status, Pageable pageable) {
-        int turn = turnService.getCurrentTurn();
-        exchangeOfferRepository.expirePendingOffers(ExchangeOfferStatus.PENDING,
+    /** Vue admin : toutes les offres de la partie, avec expiration paresseuse des PENDING comme la vue joueur. */
+    public Page<ExchangeOfferDto> getAllOffers(Long boardId, String status, Pageable pageable) {
+        int turn = turnService.getCurrentTurn(boardId);
+        exchangeOfferRepository.expirePendingOffers(boardId, ExchangeOfferStatus.PENDING,
                 ExchangeOfferStatus.EXPIRED, turn);
 
         Page<ExchangeOffer> offers;
         if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
-            offers = exchangeOfferRepository.findAllByOrderByCreatedAtDesc(pageable);
+            offers = exchangeOfferRepository.findByBoardIdOrderByCreatedAtDesc(boardId, pageable);
         } else {
-            offers = exchangeOfferRepository.findByStatusOrderByCreatedAtDesc(parseStatus(status), pageable);
+            offers = exchangeOfferRepository.findByBoardIdAndStatusOrderByCreatedAtDesc(boardId,
+                    parseStatus(status), pageable);
         }
 
         Map<Long, String> names = playerNames(offers.getContent());
@@ -142,8 +148,7 @@ public class ExchangeOfferService {
 
     public ExchangeOfferDto acceptOffer(Long userId, Long offerId) {
         ExchangeOffer offer = lockOffer(offerId);
-
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(offer.getBoardId());
         ensurePending(offer, turn);
 
         // Verrouillage des joueurs par id croissant : ordre canonique anti-deadlock.
@@ -186,7 +191,7 @@ public class ExchangeOfferService {
 
     public ExchangeOfferDto declineOffer(Long userId, Long offerId) {
         ExchangeOffer offer = lockOffer(offerId);
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(offer.getBoardId());
         ensurePending(offer, turn);
 
         Player receiver = playerRepository.findById(offer.getReceiverPlayerId())
@@ -202,7 +207,7 @@ public class ExchangeOfferService {
 
     public ExchangeOfferDto cancelOffer(Long userId, Long offerId) {
         ExchangeOffer offer = lockOffer(offerId);
-        int turn = turnService.getCurrentTurn();
+        int turn = turnService.getCurrentTurn(offer.getBoardId());
         ensurePending(offer, turn);
 
         Player sender = playerRepository.findById(offer.getSenderPlayerId())

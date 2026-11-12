@@ -117,7 +117,7 @@ public class PlayerEliminationService {
         breakAlliances(victim, turn);
         cancelPendingProposals(victim, turn);
         cancelPendingExchanges(victim, turn);
-        removeVictimFromPendingCaptures(victim.getId());
+        removeVictimFromPendingCaptures(victim);
 
         board.getAllSectors().forEach(Sector::recalculateMilitaryPower);
 
@@ -197,7 +197,7 @@ public class PlayerEliminationService {
     }
 
     private void breakAlliances(Player victim, int turn) {
-        for (Alliance alliance : allianceRepository.findAllActive()) {
+        for (Alliance alliance : allianceRepository.findAllActiveByBoardId(victim.getBoardId())) {
             if (!alliance.involves(victim.getId())) {
                 continue;
             }
@@ -205,7 +205,7 @@ public class PlayerEliminationService {
             alliance.end(turn, victim.getId(), false);
             allianceRepository.save(alliance);
             announcementRepository.save(Announcement.create(
-                    AnnouncementType.ALLIANCE_BROKEN, victim.getId(), allyId, turn));
+                    AnnouncementType.ALLIANCE_BROKEN, victim.getBoardId(), victim.getId(), allyId, turn));
         }
     }
 
@@ -225,8 +225,10 @@ public class PlayerEliminationService {
         exchangeOfferRepository.saveAll(pending);
     }
 
-    private void removeVictimFromPendingCaptures(Long victimId) {
-        for (PendingCapture capture : pendingCaptureRepository.findByResolvedFalseOrderByIdAsc()) {
+    private void removeVictimFromPendingCaptures(Player victim) {
+        Long victimId = victim.getId();
+        for (PendingCapture capture : pendingCaptureRepository
+                .findByBoardIdAndResolvedFalseOrderByIdAsc(victim.getBoardId())) {
             List<Long> candidates = capture.candidateIds();
             if (!candidates.contains(victimId)) {
                 continue;

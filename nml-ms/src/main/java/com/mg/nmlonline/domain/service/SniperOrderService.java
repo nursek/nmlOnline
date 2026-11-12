@@ -52,13 +52,13 @@ public class SniperOrderService {
         this.allianceGraph = allianceGraph;
     }
 
-    public SniperOrderDto place(Long userId, Long unitId, int targetSectorNumber) {
-        if (turnLock.isLocked()) {
+    public SniperOrderDto place(Long userId, Long boardId, Long unitId, int targetSectorNumber) {
+        if (turnLock.isLocked(boardId)) {
             throw new IllegalStateException(
                     "La résolution du tour est en cours — réessayez après la fin du tour");
         }
-        Player player = requirePlayerForUpdate(userId);
-        Board board = requireBoard();
+        Player player = requirePlayerForUpdate(userId, boardId);
+        Board board = requireBoard(boardId);
         Unit unit = requireOwnedSniper(board, unitId, player);
         Sector from = unit.getSector();
         if (targetSectorNumber == from.getNumber()) {
@@ -73,34 +73,35 @@ public class SniperOrderService {
             throw new IllegalArgumentException(
                     "Le secteur " + targetSectorNumber + " n'est pas adjacent au secteur " + from.getNumber() + ".");
         }
-        int turn = turnService.getCurrentTurn();
-        if (!movementOrderRepository.findPendingEntityIds(turn, List.of(unitId)).isEmpty()) {
+        int turn = turnService.getCurrentTurn(boardId);
+        if (!movementOrderRepository.findPendingEntityIds(boardId, turn, List.of(unitId)).isEmpty()) {
             throw new IllegalArgumentException("Cette unité a déjà un ordre de déplacement en attente.");
         }
-        if (sniperOrderRepository.existsByUnitIdAndTurnAndStatus(
-                unitId, turn, SniperOrderStatus.PENDING)) {
+        if (sniperOrderRepository.existsByBoardIdAndUnitIdAndTurnAndStatus(
+                boardId, unitId, turn, SniperOrderStatus.PENDING)) {
             throw new IllegalArgumentException(
                     "Cette unité a déjà un ordre sniper en attente pour ce tour.");
         }
         SniperOrder order = sniperOrderRepository.save(SniperOrder.create(
-                player.getId(), turn, unitId, from.getNumber(), targetSectorNumber));
-        return toDto(order, player, target);
+                boardId, player.getId(), turn, unitId, from.getNumber(), targetSectorNumber));
+        return toDto(order, player, target, boardId);
     }
 
     @Transactional(readOnly = true)
-    public List<SniperOrderDto> currentPending(Long userId) {
-        Player player = requirePlayer(userId);
-        Board board = requireBoard();
-        int turn = turnService.getCurrentTurn();
+    public List<SniperOrderDto> currentPending(Long userId, Long boardId) {
+        Player player = requirePlayer(userId, boardId);
+        Board board = requireBoard(boardId);
+        int turn = turnService.getCurrentTurn(boardId);
         return sniperOrderRepository
-                .findByPlayerIdAndTurnAndStatus(player.getId(), turn, SniperOrderStatus.PENDING)
+                .findByBoardIdAndPlayerIdAndTurnAndStatus(boardId, player.getId(), turn,
+                        SniperOrderStatus.PENDING)
                 .stream()
-                .map(order -> toDto(order, player, board.getSector(order.getTargetSectorNumber())))
+                .map(order -> toDto(order, player, board.getSector(order.getTargetSectorNumber()), boardId))
                 .toList();
     }
 
-    public void cancel(Long userId, Long orderId) {
-        Player player = requirePlayer(userId);
+    public void cancel(Long userId, Long boardId, Long orderId) {
+        Player player = requirePlayer(userId, boardId);
         SniperOrder order = sniperOrderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Ordre sniper #" + orderId + " introuvable."));
@@ -116,7 +117,7 @@ public class SniperOrderService {
         sniperOrderRepository.save(order);
     }
 
-    private SniperOrderDto toDto(SniperOrder order, Player player, Sector targetSector) {
+    private SniperOrderDto toDto(SniperOrder order, Player player, Sector targetSector, Long boardId) {
         SniperOrderDto dto = new SniperOrderDto();
         dto.setId(order.getId());
         dto.setTurn(order.getTurn());
@@ -126,39 +127,39 @@ public class SniperOrderService {
         dto.setTargetSectorNumber(order.getTargetSectorNumber());
         dto.setStatus(order.getStatus().name());
         dto.setStatusMessage(order.getStatusMessage());
-        dto.setAction(actionFor(player, targetSector).name());
+        dto.setAction(actionFor(player, targetSector, boardId).name());
         return dto;
     }
 
-    private SniperOrderAction actionFor(Player player, Sector targetSector) {
+    private SniperOrderAction actionFor(Player player, Sector targetSector, Long boardId) {
         if (targetSector == null || targetSector.getOwnerId() == null) {
             return SniperOrderAction.TIR_PRECISION;
         }
         if (targetSector.getOwnerId().equals(player.getId())
-                || allianceGraph.areAllied(player.getId(), targetSector.getOwnerId())) {
+                || allianceGraph.areAllied(boardId, player.getId(), targetSector.getOwnerId())) {
             return SniperOrderAction.SURVEILLANCE;
         }
         return SniperOrderAction.TIR_PRECISION;
     }
 
-    private Player requirePlayer(Long userId) {
-        Player player = playerService.findByUserId(userId);
+    private Player requirePlayer(Long userId, Long boardId) {
+        Player player = playerService.findByUserId(userId, boardId);
         if (player == null) {
             throw new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId);
         }
         return player;
     }
 
-    private Player requirePlayerForUpdate(Long userId) {
-        Player player = playerService.findByUserIdForUpdate(userId);
+    private Player requirePlayerForUpdate(Long userId, Long boardId) {
+        Player player = playerService.findByUserIdForUpdate(userId, boardId);
         if (player == null) {
             throw new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId);
         }
         return player;
     }
 
-    private Board requireBoard() {
-        return boardService.getAllBoards().stream().findFirst()
+    private Board requireBoard(Long boardId) {
+        return boardService.getBoardById(boardId)
                 .orElseThrow(() -> new IllegalStateException("Aucun plateau disponible."));
     }
 

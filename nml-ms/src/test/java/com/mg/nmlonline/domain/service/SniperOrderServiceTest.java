@@ -38,6 +38,7 @@ import static org.mockito.Mockito.when;
 class SniperOrderServiceTest {
 
     private static final Long USER_ID = 7L;
+    private static final Long BOARD_ID = 1L;
     private static final Long PLAYER_ID = 1L;
     private static final Long UNIT_ID = 10L;
     private static final int TURN = 1;
@@ -92,19 +93,19 @@ class SniperOrderServiceTest {
         sniper.setSector(from);
         from.getArmy().add(sniper);
 
-        lenient().when(turnLock.isLocked()).thenReturn(false);
-        lenient().when(playerService.findByUserIdForUpdate(USER_ID)).thenReturn(player);
-        lenient().when(playerService.findByUserId(USER_ID)).thenReturn(player);
-        lenient().when(boardService.getAllBoards()).thenReturn(List.of(board));
-        lenient().when(turnService.getCurrentTurn()).thenReturn(TURN);
+        lenient().when(turnLock.isLocked(BOARD_ID)).thenReturn(false);
+        lenient().when(playerService.findByUserIdForUpdate(USER_ID, BOARD_ID)).thenReturn(player);
+        lenient().when(playerService.findByUserId(USER_ID, BOARD_ID)).thenReturn(player);
+        lenient().when(boardService.getBoardById(BOARD_ID)).thenReturn(Optional.of(board));
+        lenient().when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(TURN);
         lenient().when(unitRepository.findById(UNIT_ID)).thenReturn(Optional.of(sniper));
         lenient().when(vehicleRepository.existsByPilot_Id(UNIT_ID)).thenReturn(false);
         lenient().when(vehicleRepository.existsByPassengers_Id(UNIT_ID)).thenReturn(false);
-        lenient().when(movementOrderRepository.findPendingEntityIds(eq(TURN), anyList()))
+        lenient().when(movementOrderRepository.findPendingEntityIds(eq(BOARD_ID), eq(TURN), anyList()))
                 .thenReturn(List.of());
-        lenient().when(sniperOrderRepository.existsByUnitIdAndTurnAndStatus(
-                UNIT_ID, TURN, SniperOrderStatus.PENDING)).thenReturn(false);
-        lenient().when(allianceGraph.areAllied(anyLong(), anyLong())).thenReturn(false);
+        lenient().when(sniperOrderRepository.existsByBoardIdAndUnitIdAndTurnAndStatus(
+                BOARD_ID, UNIT_ID, TURN, SniperOrderStatus.PENDING)).thenReturn(false);
+        lenient().when(allianceGraph.areAllied(eq(BOARD_ID), anyLong(), anyLong())).thenReturn(false);
         lenient().when(sniperOrderRepository.save(any())).thenAnswer(invocation -> {
             SniperOrder saved = invocation.getArgument(0);
             saved.setId(99L);
@@ -115,26 +116,26 @@ class SniperOrderServiceTest {
     @Test
     @DisplayName("Pose l'ordre sur un secteur adjacent et dérive Tir de précision / Surveillance")
     void placesOrderAndDerivesAction() {
-        SniperOrderDto neutral = service.place(USER_ID, UNIT_ID, 2);
+        SniperOrderDto neutral = service.place(USER_ID, BOARD_ID, UNIT_ID, 2);
         assertEquals("PENDING", neutral.getStatus());
         assertEquals(1, neutral.getFromSectorNumber());
         assertEquals(2, neutral.getTargetSectorNumber());
         assertEquals("TIR_PRECISION", neutral.getAction());
 
         board.getSector(2).setOwnerId(PLAYER_ID);
-        assertEquals("SURVEILLANCE", service.place(USER_ID, UNIT_ID, 2).getAction());
+        assertEquals("SURVEILLANCE", service.place(USER_ID, BOARD_ID, UNIT_ID, 2).getAction());
 
         board.getSector(2).setOwnerId(55L);
-        when(allianceGraph.areAllied(PLAYER_ID, 55L)).thenReturn(true);
-        assertEquals("SURVEILLANCE", service.place(USER_ID, UNIT_ID, 2).getAction());
+        when(allianceGraph.areAllied(BOARD_ID, PLAYER_ID, 55L)).thenReturn(true);
+        assertEquals("SURVEILLANCE", service.place(USER_ID, BOARD_ID, UNIT_ID, 2).getAction());
     }
 
     @Test
     @DisplayName("Refuse un secteur identique, non adjacent ou inconnu")
     void rejectsInvalidTargetSector() {
-        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, UNIT_ID, 1));
-        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, UNIT_ID, 3));
-        assertThrows(EntityNotFoundException.class, () -> service.place(USER_ID, UNIT_ID, 99));
+        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, BOARD_ID, UNIT_ID, 1));
+        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, BOARD_ID, UNIT_ID, 3));
+        assertThrows(EntityNotFoundException.class, () -> service.place(USER_ID, BOARD_ID, UNIT_ID, 99));
     }
 
     @Test
@@ -145,58 +146,58 @@ class SniperOrderServiceTest {
         leger.setPlayerId(PLAYER_ID);
         leger.setSector(from);
         when(unitRepository.findById(UNIT_ID)).thenReturn(Optional.of(leger));
-        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, UNIT_ID, 2));
+        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, BOARD_ID, UNIT_ID, 2));
 
         lenient().when(unitRepository.findById(UNIT_ID)).thenReturn(Optional.of(sniper));
         sniper.setPlayerId(99L);
-        assertThrows(SecurityException.class, () -> service.place(USER_ID, UNIT_ID, 2));
+        assertThrows(SecurityException.class, () -> service.place(USER_ID, BOARD_ID, UNIT_ID, 2));
         sniper.setPlayerId(PLAYER_ID);
 
         when(vehicleRepository.existsByPilot_Id(UNIT_ID)).thenReturn(true);
-        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, UNIT_ID, 2));
+        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, BOARD_ID, UNIT_ID, 2));
     }
 
     @Test
     @DisplayName("Refuse un ordre de déplacement ou un ordre sniper déjà en attente")
     void rejectsConflictingOrders() {
-        when(movementOrderRepository.findPendingEntityIds(TURN, List.of(UNIT_ID)))
+        when(movementOrderRepository.findPendingEntityIds(BOARD_ID, TURN, List.of(UNIT_ID)))
                 .thenReturn(List.of(UNIT_ID));
-        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, UNIT_ID, 2));
+        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, BOARD_ID, UNIT_ID, 2));
 
-        when(movementOrderRepository.findPendingEntityIds(TURN, List.of(UNIT_ID)))
+        when(movementOrderRepository.findPendingEntityIds(BOARD_ID, TURN, List.of(UNIT_ID)))
                 .thenReturn(List.of());
-        when(sniperOrderRepository.existsByUnitIdAndTurnAndStatus(
-                UNIT_ID, TURN, SniperOrderStatus.PENDING)).thenReturn(true);
-        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, UNIT_ID, 2));
+        when(sniperOrderRepository.existsByBoardIdAndUnitIdAndTurnAndStatus(
+                BOARD_ID, UNIT_ID, TURN, SniperOrderStatus.PENDING)).thenReturn(true);
+        assertThrows(IllegalArgumentException.class, () -> service.place(USER_ID, BOARD_ID, UNIT_ID, 2));
     }
 
     @Test
     @DisplayName("Annule un ordre PENDING du propriétaire, refuse un autre statut ou un autre joueur")
     void cancelsPendingOrder() {
-        SniperOrder order = SniperOrder.create(PLAYER_ID, TURN, UNIT_ID, 1, 2);
+        SniperOrder order = SniperOrder.create(BOARD_ID, PLAYER_ID, TURN, UNIT_ID, 1, 2);
         order.setId(99L);
         when(sniperOrderRepository.findById(99L)).thenReturn(Optional.of(order));
 
-        service.cancel(USER_ID, 99L);
+        service.cancel(USER_ID, BOARD_ID, 99L);
         assertEquals(SniperOrderStatus.CANCELLED, order.getStatus());
-        assertThrows(IllegalStateException.class, () -> service.cancel(USER_ID, 99L));
+        assertThrows(IllegalStateException.class, () -> service.cancel(USER_ID, BOARD_ID, 99L));
 
-        SniperOrder foreign = SniperOrder.create(99L, TURN, UNIT_ID, 1, 2);
+        SniperOrder foreign = SniperOrder.create(BOARD_ID, 99L, TURN, UNIT_ID, 1, 2);
         foreign.setId(100L);
         when(sniperOrderRepository.findById(100L)).thenReturn(Optional.of(foreign));
-        assertThrows(SecurityException.class, () -> service.cancel(USER_ID, 100L));
+        assertThrows(SecurityException.class, () -> service.cancel(USER_ID, BOARD_ID, 100L));
     }
 
     @Test
     @DisplayName("Liste les ordres PENDING du joueur pour le tour courant avec l'action calculée")
     void listsPendingOrdersWithAction() {
-        SniperOrder order = SniperOrder.create(PLAYER_ID, TURN, UNIT_ID, 1, 2);
+        SniperOrder order = SniperOrder.create(BOARD_ID, PLAYER_ID, TURN, UNIT_ID, 1, 2);
         order.setId(42L);
         board.getSector(2).setOwnerId(PLAYER_ID);
-        when(sniperOrderRepository.findByPlayerIdAndTurnAndStatus(
-                PLAYER_ID, TURN, SniperOrderStatus.PENDING)).thenReturn(List.of(order));
+        when(sniperOrderRepository.findByBoardIdAndPlayerIdAndTurnAndStatus(
+                BOARD_ID, PLAYER_ID, TURN, SniperOrderStatus.PENDING)).thenReturn(List.of(order));
 
-        List<SniperOrderDto> orders = service.currentPending(USER_ID);
+        List<SniperOrderDto> orders = service.currentPending(USER_ID, BOARD_ID);
 
         assertEquals(1, orders.size());
         assertEquals(42L, orders.getFirst().getId());

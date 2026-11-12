@@ -29,6 +29,9 @@ public class Announcement {
     @Column(nullable = false, length = 30)
     private AnnouncementType type;
 
+    @Column(name = "board_id", nullable = false)
+    private Long boardId;
+
     @Column(name = "actor_player_id", nullable = false)
     private Long actorPlayerId;
 
@@ -41,8 +44,10 @@ public class Announcement {
     @Column(name = "visible_at_turn", nullable = false)
     private int visibleAtTurn;
 
-    public static Announcement create(AnnouncementType type, Long actorPlayerId, Long targetPlayerId, int turn) {
+    public static Announcement create(AnnouncementType type, Long boardId, Long actorPlayerId, Long targetPlayerId,
+                                     int turn) {
         Announcement announcement = new Announcement();
+        announcement.boardId = boardId;
         announcement.type = type;
         announcement.actorPlayerId = actorPlayerId;
         announcement.targetPlayerId = targetPlayerId;

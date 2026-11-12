@@ -7,16 +7,26 @@ import com.mg.nmlonline.domain.service.BuildingService;
 import com.mg.nmlonline.domain.service.GameCharacterService;
 import com.mg.nmlonline.domain.service.UserService;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @Profile("test")
-public class TestDataInitializer {
+@Order(100)
+public class TestDataInitializer implements ApplicationRunner {
+
+    // Après PlayerStartupImporter (@Order 2) : les joueurs de test ont besoin du plateau de démo.
+    @Override
+    public void run(ApplicationArguments args) {
+        init();
+    }
 
     public static final String USER_1 = "testuser1";
     public static final String USER_2 = "testuser2";
@@ -24,26 +34,28 @@ public class TestDataInitializer {
     public static final String PASSWORD = "password";
 
     private final UserRepository userRepository;
+    private final BoardRepository boardRepository;
     private final UserService userService;
     private final PlayerRepository playerRepository;
     private final GameCharacterService characterService;
     private final BuildingService buildingService;
 
     public TestDataInitializer(UserRepository userRepository,
+                               BoardRepository boardRepository,
                                UserService userService,
                                PlayerRepository playerRepository,
                                GameCharacterService characterService,
                                BuildingService buildingService) {
         this.userRepository = userRepository;
+        this.boardRepository = boardRepository;
         this.userService = userService;
         this.playerRepository = playerRepository;
         this.characterService = characterService;
         this.buildingService = buildingService;
     }
 
-    @PostConstruct
     public void init() {
-        if (userRepository.count() > 0) {
+        if (userRepository.findByUsername(USER_1) != null) {
             log.debug("Des utilisateurs existent déjà, skipping TestDataInitializer");
             return;
         }
@@ -54,8 +66,9 @@ public class TestDataInitializer {
         User user2 = createUser(USER_2, PASSWORD, "USER");
         createUser(ADMIN, PASSWORD, "ADMIN");
 
-        Player player1 = createPlayer("TestPlayer1", user1.getId());
-        Player player2 = createPlayer("TestPlayer2", user2.getId());
+        Long boardId = boardRepository.findAll().getFirst().getId();
+        Player player1 = createPlayer("TestPlayer1", user1.getId(), boardId);
+        Player player2 = createPlayer("TestPlayer2", user2.getId(), boardId);
 
         createCharacter(player1.getId(), "HeroOne");
         createCharacter(player2.getId(), "HeroTwo");
@@ -75,9 +88,10 @@ public class TestDataInitializer {
         return userRepository.save(user);
     }
 
-    private Player createPlayer(String name, Long userId) {
+    private Player createPlayer(String name, Long userId, Long boardId) {
         Player player = new Player(name);
         player.setUserId(userId);
+        player.setBoardId(boardId);
         return playerRepository.save(player);
     }
 

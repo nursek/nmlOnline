@@ -16,8 +16,8 @@ public class VehicleMaintenanceService {
     }
 
     @Transactional
-    public void repairAllVehicles() {
-        vehicleRepository.findAll().stream()
+    public void repairAllVehicles(Long boardId) {
+        vehicleRepository.findByBoardId(boardId).stream()
                 .filter(vehicle -> !vehicle.isDestroyed() && vehicle.getDefense() < vehicle.getBaseDefense())
                 .forEach(vehicle -> vehicle.regenerateDefense(Vehicle.DEFENSE_REGEN_PER_TURN));
     }

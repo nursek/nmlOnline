@@ -105,21 +105,24 @@ public class TurnResolutionOrchestrator {
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
-    public synchronized TurnResolutionStateDto startSession() {
+    public synchronized TurnResolutionStateDto startSession(Long boardId) {
         // Session abandonnée (onglet fermé) : on la libère au bout de 2 h pour ne pas figer le jeu.
         if (session != null && System.currentTimeMillis() - session.startedAt > SESSION_TIMEOUT_MS) {
-            turnLock.release();
+            turnLock.release(session.boardId);
             session = null;
         }
-        if (!turnLock.tryAcquire()) {
+        if (session != null && !session.boardId.equals(boardId)) {
+            throw new IllegalStateException("Une résolution est déjà en cours sur une autre partie");
+        }
+        if (!turnLock.tryAcquire(boardId)) {
             throw new IllegalStateException("Une résolution de fin de tour est déjà en cours");
         }
         try {
-            Board board = loadBoard();
+            Board board = boardOf(boardId);
             int turnEnding = board.getCurrentTurn();
             reserveUnitPlacer.placeAllAtHeadquarters();
             MovementService.ResolutionContext ctx = movementService.prepareResolution(turnEnding, board);
-            Session s = new Session(ctx, turnEnding, HarvestAutoCollector.ownersBySector(board));
+            Session s = new Session(boardId, ctx, turnEnding, HarvestAutoCollector.ownersBySector(board));
             // Conflits de rupture/trahison détectés dès la préparation (ex-alliés co-localisés).
             for (SectorConflict conflict : ctx.getConflicts()) {
                 s.pendingConflicts.add(new PendingConflict(++s.conflictIdSeq, conflict));
@@ -127,14 +130,14 @@ public class TurnResolutionOrchestrator {
             this.session = s;
             return toStateDto(s);
         } catch (RuntimeException e) {
-            turnLock.release();
+            turnLock.release(boardId);
             throw e;
         }
     }
 
     /** Avance d'un hop et expose les conflits à l'admin. Refusé si des batailles du hop courant sont en attente. */
-    public synchronized TurnResolutionStateDto advanceHop() {
-        Session s = requireSession();
+    public synchronized TurnResolutionStateDto advanceHop(Long boardId) {
+        Session s = requireSession(boardId);
         if (!s.pendingConflicts.isEmpty()) {
             throw new IllegalStateException("Résolvez les batailles du hop courant avant de passer au suivant");
         }
@@ -142,7 +145,7 @@ public class TurnResolutionOrchestrator {
             throw new IllegalStateException("Tous les hops sont déjà effectués — finalisez le tour");
         }
         int nextStep = s.ctx.getCurrentStep() + 1;
-        Board board = loadBoard();
+        Board board = boardOf(s);
         movementService.refreshActiveOrders(s.ctx);
         List<SectorConflict> stepConflicts = movementService.resolveStep(board, nextStep, s.ctx);
         s.pendingConflicts.clear();
@@ -153,14 +156,14 @@ public class TurnResolutionOrchestrator {
     }
 
     /** Résout le conflit : duel classique à 2 camps (1 ou 2 alliés), impasse à 3+ (un seul appel pour tout le cercle). */
-    public synchronized ResolvedBattleDto resolveBattle(int conflictId) {
-        Session s = requireSession();
+    public synchronized ResolvedBattleDto resolveBattle(Long boardId, int conflictId) {
+        Session s = requireSession(boardId);
         PendingConflict pc = s.pendingConflicts.stream()
                 .filter(p -> p.id == conflictId)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Conflit " + conflictId + " introuvable ou déjà résolu"));
-        Board board = loadBoard();
+        Board board = boardOf(s);
         Set<Integer> battleSectors = new HashSet<>();
         s.resolvedConflicts.forEach(resolved -> battleSectors.add(resolved.sectorNumber()));
         s.pendingConflicts.forEach(pending -> battleSectors.add(pending.sectorNumber));
@@ -169,7 +172,7 @@ public class TurnResolutionOrchestrator {
         Map<Long, Player> locked;
         if (pc.standoff) {
             SniperService.StandoffSupport support = sniperService.collectStandoffSupport(
-                    s.turnEnding, pc.sectorNumber, pc.camps, battleSectors);
+                    s.boardId, s.turnEnding, pc.sectorNumber, pc.camps, battleSectors);
             List<List<Long>> campIds = campsWithIndependents(pc.camps, support.independents());
             locked = lockPlayers(campIds);
             List<List<Player>> camps = toPlayerCamps(campIds, locked);
@@ -177,7 +180,7 @@ public class TurnResolutionOrchestrator {
             Set<Integer> rangedOnly = attachIndependents(pc.camps.size(), support.independents(), byCamp);
             CombatService.StandoffBattleResult r = combatService.simulateSectorStandoff(
                     camps, board, pc.sectorNumber, byCamp, rangedOnly);
-            battleReportService.saveStandoffReport(s.turnEnding, pc.sectorNumber,
+            battleReportService.saveStandoffReport(s.boardId, s.turnEnding, pc.sectorNumber,
                     camps.stream().flatMap(List::stream).toList(), r);
             if (r.success()) {
                 sniperService.markResolved(support.resolvedOrders());
@@ -185,7 +188,7 @@ public class TurnResolutionOrchestrator {
             rb = ResolvedBattle.standoff(pc.sectorNumber, camps, r);
         } else {
             SniperService.DuelSupport support = sniperService.collectDuelSupport(
-                    s.turnEnding, pc.sectorNumber, pc.camps.get(0), pc.camps.get(1), battleSectors);
+                    s.boardId, s.turnEnding, pc.sectorNumber, pc.camps.get(0), pc.camps.get(1), battleSectors);
             if (support.independents().isEmpty()) {
                 locked = lockPlayers(pc.camps);
                 List<Player> attackerCamp = pc.camps.get(0).stream().map(locked::get).toList();
@@ -193,7 +196,8 @@ public class TurnResolutionOrchestrator {
                 CombatService.SectorBattleResult r =
                         combatService.simulateSectorBattle(attackerCamp, defenderCamp, board, pc.sectorNumber,
                                 support.attackers(), support.defenders());
-                battleReportService.saveDuelReport(s.turnEnding, pc.sectorNumber, attackerCamp, defenderCamp, r);
+                battleReportService.saveDuelReport(s.boardId, s.turnEnding, pc.sectorNumber, attackerCamp,
+                        defenderCamp, r);
                 if (r.success()) {
                     sniperService.markResolved(support.resolvedOrders());
                 }
@@ -208,7 +212,7 @@ public class TurnResolutionOrchestrator {
                 Set<Integer> rangedOnly = attachIndependents(pc.camps.size(), support.independents(), byCamp);
                 CombatService.StandoffBattleResult r = combatService.simulateSectorStandoff(
                         camps, board, pc.sectorNumber, byCamp, rangedOnly);
-                battleReportService.saveStandoffReport(s.turnEnding, pc.sectorNumber,
+                battleReportService.saveStandoffReport(s.boardId, s.turnEnding, pc.sectorNumber,
                         camps.stream().flatMap(List::stream).toList(), r);
                 if (r.success()) {
                     sniperService.markResolved(support.resolvedOrders());
@@ -291,8 +295,8 @@ public class TurnResolutionOrchestrator {
         }
     }
 
-    public synchronized TurnResolutionStateDto resolveElimination(Long victimPlayerId, Long killerPlayerId) {
-        Session s = requireSession();
+    public synchronized TurnResolutionStateDto resolveElimination(Long boardId, Long victimPlayerId, Long killerPlayerId) {
+        Session s = requireSession(boardId);
         PendingElimination pending = s.pendingEliminations.get(victimPlayerId);
         if (pending == null) {
             throw new IllegalArgumentException(
@@ -324,8 +328,8 @@ public class TurnResolutionOrchestrator {
     }
 
     /** Finalise le tour (ordres RESOLVED + incrémentation), libère le verrou. Nécessite tous hops + batailles résolus. */
-    public synchronized TurnFinalizeResultDto finalizeTurn() {
-        Session s = requireSession();
+    public synchronized TurnFinalizeResultDto finalizeTurn(Long boardId) {
+        Session s = requireSession(boardId);
         if (!s.pendingConflicts.isEmpty()) {
             throw new IllegalStateException("Résolvez toutes les batailles avant de finaliser");
         }
@@ -335,7 +339,7 @@ public class TurnResolutionOrchestrator {
         if (s.ctx.getCurrentStep() < s.ctx.getMaxSteps()) {
             throw new IllegalStateException("Effectuez tous les hops avant de finaliser");
         }
-        Board board = loadBoard();
+        Board board = boardOf(s);
         movementService.refreshActiveOrders(s.ctx);
         try {
             if (board.getCurrentTurn() != s.turnEnding) {
@@ -350,7 +354,8 @@ public class TurnResolutionOrchestrator {
             s.resolvedConflicts.forEach(resolved -> battleSectors.add(resolved.sectorNumber()));
             List<BattleReportDetailDto> rangedCombats =
                     sniperService.resolveRemainingFire(s.turnEnding, board, battleSectors);
-            List<Player> eliminated = playerRepository.findByEliminatedTurnOrderByNameAsc(s.turnEnding);
+            List<Player> eliminated =
+                    playerRepository.findByBoardIdAndEliminatedTurnOrderByNameAsc(s.boardId, s.turnEnding);
             for (Player victim : eliminated) {
                 // Décision en session d'abord : le commit du choix peut suivre une finalisation concurrente.
                 Long killerId = s.eliminationKillers.containsKey(victim.getId())
@@ -358,12 +363,12 @@ public class TurnResolutionOrchestrator {
                         : victim.getEliminatedByPlayerId();
                 playerEliminationService.apply(board, victim, killerId, s.turnEnding);
             }
-            characterService.regenerateAllCharacters();
-            vehicleMaintenanceService.repairAllVehicles();
-            unitRecoveryService.recoverWoundedUnits(s.turnEnding);
+            characterService.regenerateAllCharacters(s.boardId);
+            vehicleMaintenanceService.repairAllVehicles(s.boardId);
+            unitRecoveryService.recoverWoundedUnits(s.turnEnding, s.boardId);
             board.setCurrentTurn(s.turnEnding + 1);
             boardRepository.save(board);
-            turnService.publishTurn(s.turnEnding + 1);
+            turnService.publishTurn(s.boardId, s.turnEnding + 1);
 
             int newTurn = board.getCurrentTurn();
             List<SectorCapture> captures = result.getCaptures();
@@ -384,10 +389,10 @@ public class TurnResolutionOrchestrator {
                     ? "Tour " + newTurn + " démarré." + eliminatedSuffix
                     : "Tour " + newTurn + " démarré — " + captures.size() + " secteur(s) capturé(s)."
                             + eliminatedSuffix);
-            turnJournalService.save(buildTurnJournal(s, dto, rangedCombats));
+            turnJournalService.save(s.boardId, buildTurnJournal(s, dto, rangedCombats));
             return dto;
         } finally {
-            turnLock.release();
+            turnLock.release(s.boardId);
             this.session = null;
         }
     }
@@ -421,19 +426,19 @@ public class TurnResolutionOrchestrator {
     }
 
     /** Abandon soft : libère le verrou sans rollback des entités déplacées ni des combats résolus. */
-    public synchronized void abort() {
+    public synchronized void abort(Long boardId) {
         Session s = this.session;
-        if (s == null) {
+        if (s == null || !s.boardId.equals(boardId)) {
             return;
         }
-        turnLock.release();
+        turnLock.release(s.boardId);
         this.session = null;
     }
 
     @Transactional(readOnly = true)
-    public synchronized TurnResolutionStateDto getState() {
+    public synchronized TurnResolutionStateDto getState(Long boardId) {
         Session s = this.session;
-        if (s == null) {
+        if (s == null || !s.boardId.equals(boardId)) {
             TurnResolutionStateDto dto = new TurnResolutionStateDto();
             dto.setActive(false);
             return dto;
@@ -441,18 +446,21 @@ public class TurnResolutionOrchestrator {
         return toStateDto(s);
     }
 
-    private Session requireSession() {
+    private Session requireSession(Long boardId) {
         Session s = this.session;
-        if (s == null) {
-            throw new IllegalStateException("Aucune session de résolution pas-à-pas active — démarrez-la d'abord");
+        if (s == null || !s.boardId.equals(boardId)) {
+            throw new IllegalStateException("Aucune session de résolution active sur cette partie");
         }
         return s;
     }
 
-    private Board loadBoard() {
-        return boardRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Aucun plateau trouvé"));
+    private Board boardOf(Session s) {
+        return boardOf(s.boardId);
+    }
+
+    private Board boardOf(Long boardId) {
+        return boardRepository.findById(boardId)
+                .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
     }
 
     private TurnResolutionStateDto toStateDto(Session s) {
@@ -646,6 +654,7 @@ public class TurnResolutionOrchestrator {
     }
 
     private static final class Session {
+        final Long boardId;
         final MovementService.ResolutionContext ctx;
         final int turnEnding;
         final Map<Integer, Long> sectorOwners;
@@ -656,7 +665,9 @@ public class TurnResolutionOrchestrator {
         final Map<Long, Long> eliminationKillers = new HashMap<>();
         int conflictIdSeq = 0;
 
-        Session(MovementService.ResolutionContext ctx, int turnEnding, Map<Integer, Long> sectorOwners) {
+        Session(Long boardId, MovementService.ResolutionContext ctx, int turnEnding,
+                Map<Integer, Long> sectorOwners) {
+            this.boardId = boardId;
             this.ctx = ctx;
             this.turnEnding = turnEnding;
             this.sectorOwners = sectorOwners;

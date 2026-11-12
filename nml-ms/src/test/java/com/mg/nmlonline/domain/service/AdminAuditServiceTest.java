@@ -35,9 +35,13 @@ class AdminAuditServiceTest {
 
     private Player player;
 
+    private Long boardId() {
+        return playerRepository.findAll().getFirst().getBoardId();
+    }
+
     @BeforeEach
     void setUp() {
-        player = playerRepository.findByName("lurio")
+        player = playerRepository.findByBoardIdAndName(boardId(), "lurio")
                 .orElseThrow(() -> new IllegalStateException("Fixture lurio absente"));
     }
 
@@ -46,7 +50,7 @@ class AdminAuditServiceTest {
     void mutationRecordsAuditEntry() {
         editService.setMoney(player.getId(), 1234.5);
 
-        Page<AdminAuditEntryDto> history = auditService.getHistory(
+        Page<AdminAuditEntryDto> history = auditService.getHistory(player.getBoardId(),
                 player.getId(), PageRequest.of(0, 10));
 
         assertEquals(1, history.getTotalElements());
@@ -64,7 +68,7 @@ class AdminAuditServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> editService.removeResource(player.getId(), "Caisse d'armes", 100_000));
 
-        Page<AdminAuditEntryDto> history = auditService.getHistory(
+        Page<AdminAuditEntryDto> history = auditService.getHistory(player.getBoardId(),
                 player.getId(), PageRequest.of(0, 10));
 
         assertEquals(0, history.getTotalElements());
@@ -77,14 +81,15 @@ class AdminAuditServiceTest {
             editService.setMoney(player.getId(), i);
         }
 
-        Page<AdminAuditEntryDto> first = auditService.getHistory(
+        Page<AdminAuditEntryDto> first = auditService.getHistory(player.getBoardId(),
                 player.getId(), PageRequest.of(0, 10));
-        Page<AdminAuditEntryDto> second = auditService.getHistory(
+        Page<AdminAuditEntryDto> second = auditService.getHistory(player.getBoardId(),
                 player.getId(), PageRequest.of(1, 10));
 
         assertEquals(25, first.getTotalElements());
         assertEquals(10, first.getContent().size());
         assertEquals(10, second.getContent().size());
-        assertEquals(25, auditService.getHistory(null, PageRequest.of(0, 100)).getTotalElements());
+        assertEquals(25, auditService.getHistory(player.getBoardId(), null, PageRequest.of(0, 100))
+                .getTotalElements());
     }
 }

@@ -1,0 +1,89 @@
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { InstanceService } from '../../services/instance.service';
+import { GameInstance } from '../../models';
+
+@Component({
+  selector: 'app-parties',
+  imports: [MatCardModule, MatButtonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <section class="parties">
+      <h1>Choisir une partie</h1>
+      @if (instanceService.loading() && instanceService.instances().length === 0) {
+        <p>Chargement des parties…</p>
+      } @else if (instanceService.error(); as error) {
+        <p class="warn">{{ error }}</p>
+        <button mat-stroked-button (click)="retry()">Réessayer</button>
+      } @else if (instanceService.instances().length === 0) {
+        <p>Aucune partie ne vous est attribuée. Contactez l'organisateur.</p>
+        <button mat-stroked-button (click)="retry()">Actualiser</button>
+      } @else {
+        <div class="grid">
+          @for (instance of instanceService.instances(); track instance.id) {
+            <mat-card class="card" [class.selected]="instance.id === instanceService.selectedId()">
+              <mat-card-title>{{ instance.name }}</mat-card-title>
+              <mat-card-content>
+                <p>Tour {{ instance.currentTurn }} — {{ instance.playerCount }} joueurs</p>
+                @if (instance.playerName) {
+                  <p>Votre personnage : {{ instance.playerName }}</p>
+                }
+                @if (instance.eliminated) {
+                  <p class="warn">Éliminé</p>
+                }
+              </mat-card-content>
+              <mat-card-actions>
+                <button mat-flat-button color="primary" (click)="join(instance)">
+                  {{
+                    instance.role === 'MJ' || instance.role === 'ADMIN' ? 'Administrer' : 'Jouer'
+                  }}
+                </button>
+              </mat-card-actions>
+              <span class="role">{{ instance.role }}</span>
+            </mat-card>
+          }
+        </div>
+      }
+    </section>
+  `,
+  styles: `
+    .parties {
+      padding: 1.5rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      padding: 0.5rem;
+    }
+    .card.selected {
+      outline: 2px solid var(--mat-sys-primary, #6750a4);
+    }
+    .role {
+      margin-left: auto;
+      font-size: 0.75rem;
+      opacity: 0.7;
+    }
+    .warn {
+      color: #b3261e;
+    }
+  `,
+})
+export class PartiesComponent {
+  readonly instanceService = inject(InstanceService);
+
+  constructor() {
+    void this.instanceService.refresh().catch(() => undefined);
+  }
+
+  retry(): void {
+    void this.instanceService.refresh().catch(() => undefined);
+  }
+
+  join(instance: GameInstance): void {
+    this.instanceService.enter(instance);
+  }
+}

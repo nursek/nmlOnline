@@ -88,8 +88,11 @@ class PlayerEliminationServiceTest {
         return new TransactionTemplate(txManager).execute(status -> {
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             Player victim = new Player("VictimeElim");
+            victim.setBoardId(board.getId());
             Player killer = new Player("TueurElim");
+            killer.setBoardId(board.getId());
             Player ally = new Player("AllieElim");
+            ally.setBoardId(board.getId());
             playerRepository.saveAll(List.of(victim, killer, ally));
             em.flush();
 
@@ -157,11 +160,11 @@ class PlayerEliminationServiceTest {
             victim.eliminate(cause, 1, null);
             em.flush();
 
-            Alliance alliance = allianceRepository.save(Alliance.create(victim.getId(), ally.getId(), 1));
+            Alliance alliance = allianceRepository.save(Alliance.create(victim.getId(), ally.getId(), board.getId(), 1));
             AllianceProposal proposal = proposalRepository.save(AllianceProposal.create(
-                    ProposalKind.ALLIANCE, victim.getId(), ally.getId(), 1));
+                    ProposalKind.ALLIANCE, board.getId(), victim.getId(), ally.getId(), 1));
             ExchangeOffer offer = exchangeOfferRepository.save(new ExchangeOffer(
-                    victim.getId(), ally.getId(), 100.0, 1, 2));
+                    board.getId(), victim.getId(), ally.getId(), 100.0, 1, 2));
             pendingCaptureRepository.save(PendingCapture.create(board.getId(), HQ_SECTOR, 1,
                     List.of(victim.getId(), ally.getId())));
             pendingCaptureRepository.save(PendingCapture.create(board.getId(), 39, 1,
@@ -234,7 +237,7 @@ class PlayerEliminationServiceTest {
                     proposalRepository.findById(world.proposalId()).orElseThrow().getStatus());
             assertEquals(ExchangeOfferStatus.CANCELLED,
                     exchangeOfferRepository.findById(world.offerId()).orElseThrow().getStatus());
-            PendingCapture capture = pendingCaptureRepository.findByResolvedFalseOrderByIdAsc().stream()
+            PendingCapture capture = pendingCaptureRepository.findByBoardIdAndResolvedFalseOrderByIdAsc(board.getId()).stream()
                     .filter(pending -> pending.getSectorNumber() == HQ_SECTOR)
                     .findFirst()
                     .orElseThrow();
@@ -242,7 +245,7 @@ class PlayerEliminationServiceTest {
                     "Le joueur éliminé est retiré des candidats de capture");
             assertTrue(capture.candidateIds().contains(world.allyId()),
                     "Les autres candidats de la capture alliée sont conservés");
-            assertTrue(pendingCaptureRepository.findByResolvedFalseOrderByIdAsc().stream()
+            assertTrue(pendingCaptureRepository.findByBoardIdAndResolvedFalseOrderByIdAsc(board.getId()).stream()
                             .noneMatch(pending -> pending.getSectorNumber() == 39),
                     "Une capture dont l'éliminé était l'unique candidat est supprimée");
         });

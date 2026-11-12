@@ -6,7 +6,7 @@ import com.mg.nmlonline.api.dto.PlayerResourceDto;
 import com.mg.nmlonline.domain.model.building.*;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
-import com.mg.nmlonline.domain.service.TurnService;
+import com.mg.nmlonline.domain.model.sector.Sector;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,11 +16,9 @@ import java.util.stream.Collectors;
 public class BuildingMapper {
 
     private final EquipmentMapper equipmentMapper;
-    private final TurnService turnService;
 
-    public BuildingMapper(EquipmentMapper equipmentMapper, TurnService turnService) {
+    public BuildingMapper(EquipmentMapper equipmentMapper) {
         this.equipmentMapper = equipmentMapper;
-        this.turnService = turnService;
     }
 
     public BuildingDto toDto(Building building) {
@@ -65,7 +63,7 @@ public class BuildingMapper {
 
     private void mapHeadquartersToDto(Headquarters hq, BuildingDto dto, Double ownerMoney) {
         dto.setIsOperational(hq.isOperational());
-        dto.setCanMove(hq.canMove(getCurrentTurn()));
+        dto.setCanMove(hq.canMove(currentTurn(hq)));
         if (ownerMoney != null) {
             dto.setStoredWealth(hq.getStoredWealth(ownerMoney));
         }
@@ -76,7 +74,7 @@ public class BuildingMapper {
         dto.setCurrentCapacity(cache.getTotalStoredCount());
         dto.setAvailableCapacity(cache.getAvailableCapacity());
         dto.setFillPercentage(cache.getFillPercentage());
-        dto.setCanMove(cache.canMove(getCurrentTurn()));
+        dto.setCanMove(cache.canMove(currentTurn(cache)));
 
         if (cache.getStoredEquipments() != null) {
             List<EquipmentStackDto> equipmentDtos = cache.getStoredEquipments().stream()
@@ -89,8 +87,8 @@ public class BuildingMapper {
     private void mapBankToDto(Bank bank, BuildingDto dto, Double ownerMoney) {
         dto.setHasMoved(bank.isHasMoved());
         dto.setStoredMoney(ownerMoney != null ? bank.calculateStoredWealth(ownerMoney) : bank.getStoredMoney());
-        dto.setCanMove(bank.canMove(getCurrentTurn()));
-        dto.setCurrentVampirizeRate(bank.getVampirizeRate(getCurrentTurn()));
+        dto.setCanMove(bank.canMove(currentTurn(bank)));
+        dto.setCurrentVampirizeRate(bank.getVampirizeRate(currentTurn(bank)));
 
         if (bank.getStoredResources() != null) {
             List<PlayerResourceDto> resourceDtos = bank.getStoredResources().stream()
@@ -118,8 +116,10 @@ public class BuildingMapper {
         return dto;
     }
 
-    private int getCurrentTurn() {
-        return turnService.getCurrentTurn();
+    // Le tour est celui du plateau du bâtiment : un bâtiment appartient à une seule partie.
+    private int currentTurn(Building building) {
+        Sector sector = building.getSector();
+        return sector != null && sector.getBoard() != null ? sector.getBoard().getCurrentTurn() : 1;
     }
 }
 

@@ -15,11 +15,18 @@ import java.util.Optional;
 
 @Repository
 public interface PlayerRepository extends JpaRepository<Player, Long> {
-    Optional<Player> findByName(String name);
-    Optional<Player> findByUserId(Long userId);
-    List<Player> findByEliminatedTurnOrderByNameAsc(Integer eliminatedTurn);
 
-    Page<Player> findAllByOrderByNameAsc(Pageable pageable);
+    Optional<Player> findByBoardIdAndName(Long boardId, String name);
+
+    Optional<Player> findByUserIdAndBoardId(Long userId, Long boardId);
+
+    List<Player> findByBoardId(Long boardId);
+
+    List<Player> findByBoardIdAndEliminatedTurnOrderByNameAsc(Long boardId, Integer eliminatedTurn);
+
+    Page<Player> findByBoardIdOrderByNameAsc(Long boardId, Pageable pageable);
+
+    long countByBoardId(Long boardId);
 
     /** Pessimistic-write : empêche le double-spend lors des achats (check + débit money). */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -27,6 +34,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     Optional<Player> findByIdForUpdate(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM Player p WHERE p.userId = :userId")
-    Optional<Player> findByUserIdForUpdate(@Param("userId") Long userId);
+    @Query("SELECT p FROM Player p WHERE p.userId = :userId AND p.boardId = :boardId")
+    Optional<Player> findByUserIdAndBoardIdForUpdate(@Param("userId") Long userId,
+                                                     @Param("boardId") Long boardId);
 }

@@ -120,14 +120,12 @@ class MapperTest {
 
         @BeforeEach
         void setUp() {
-            buildingMapper = new BuildingMapper(equipmentMapper, turnService);
+            buildingMapper = new BuildingMapper(equipmentMapper);
         }
 
         @Test
         @DisplayName("Banque 75 % et QG 25 % de la fortune du propriétaire")
         void shouldSplitOwnerWealthBetweenBankAndHeadquarters() {
-            when(turnService.getCurrentTurn()).thenReturn(3);
-
             BuildingDto bank = buildingMapper.toDto(new Bank(1L), 10000.0);
             BuildingDto hq = buildingMapper.toDto(new Headquarters(1L), 10000.0);
 
@@ -138,8 +136,6 @@ class MapperTest {
         @Test
         @DisplayName("Sans propriétaire : aucune part de fortune calculée")
         void shouldNotComputeWealthWithoutOwner() {
-            when(turnService.getCurrentTurn()).thenReturn(3);
-
             BuildingDto bank = buildingMapper.toDto(new Bank(1L));
             BuildingDto hq = buildingMapper.toDto(new Headquarters(1L));
 

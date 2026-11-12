@@ -128,7 +128,7 @@ public class AdminPlayerEditService {
     @Transactional(readOnly = true)
     public AdminPlayerEditDto getEdit(Long playerId) {
         Player player = requirePlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         AdminPlayerEditDto dto = new AdminPlayerEditDto();
         dto.setPlayer(playerMapper.toDtoWithSectors(player, board));
         dto.setUnits(unitRepository.findByPlayerId(playerId).stream()
@@ -165,7 +165,7 @@ public class AdminPlayerEditService {
         if (!Double.isFinite(amount) || amount < 0) {
             throw new IllegalArgumentException("Le montant doit être un nombre positif");
         }
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
         double previousMoney = player.getStats().getMoney();
         player.getStats().setMoney(amount);
@@ -179,11 +179,11 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void updatePlayerName(Long playerId, String name) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
         String previousName = player.getName();
         String trimmed = normalizeName(name);
-        playerRepository.findByName(trimmed).ifPresent(existing -> {
+        playerRepository.findByBoardIdAndName(player.getBoardId(), trimmed).ifPresent(existing -> {
             if (!existing.getId().equals(playerId)) {
                 throw new IllegalArgumentException("Un joueur avec ce nom existe déjà");
             }
@@ -196,9 +196,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void updateCharacter(Long playerId, AdminCharacterRequestDto request) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         validateCharacter(request);
         gameCharacterService.updateCharacter(playerId, request.getName().trim(),
                 request.getBaseAttack(), request.getBasePdf(), request.getBasePdc(),
@@ -214,9 +214,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void createCharacter(Long playerId, AdminCharacterRequestDto request) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         validateCharacter(request);
         Sector sector = resolveCharacterSector(player, board);
         gameCharacterService.createCharacter(playerId, request.getName().trim(),
@@ -231,9 +231,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void deleteCharacter(Long playerId) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         GameCharacter character = gameCharacterService.getCharacter(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Le joueur n'a pas de personnage"));
         String characterName = character.getName();
@@ -249,12 +249,19 @@ public class AdminPlayerEditService {
     }
 
     @Transactional
-    public void reassignSector(int sectorNumber, Long targetPlayerId) {
-        requireTurnOpen();
-        Board board = activeBoard();
+    public void reassignSector(Long boardId, int sectorNumber, Long targetPlayerId) {
+        requireTurnOpenOnBoard(boardId);
+        Board board = boardService.getBoardById(boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Plateau introuvable : " + boardId));
         Sector sector = board.getSector(sectorNumber);
         if (sector == null) {
             throw new EntityNotFoundException("Secteur introuvable : " + sectorNumber);
+        }
+        if (targetPlayerId != null) {
+            Player target = requirePlayer(targetPlayerId);
+            if (!boardId.equals(target.getBoardId())) {
+                throw new IllegalArgumentException("Le joueur ciblé ne joue pas dans cette partie");
+            }
         }
         Long currentOwnerId = sector.getOwnerId();
         if (Objects.equals(currentOwnerId, targetPlayerId)) {
@@ -299,7 +306,7 @@ public class AdminPlayerEditService {
     @Transactional
     public void addResource(Long playerId, String name, int quantity) {
         requireQuantity(quantity, MAX_STACK_QUANTITY);
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
         Resource resource = resourceRepository.findByName(name)
                 .orElseThrow(() -> new IllegalArgumentException("Ressource inconnue : " + name));
@@ -311,7 +318,7 @@ public class AdminPlayerEditService {
     @Transactional
     public void removeResource(Long playerId, String name, int quantity) {
         requireQuantity(quantity, MAX_STACK_QUANTITY);
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
         if (!player.removeResource(name, quantity)) {
             throw new IllegalArgumentException("Quantité insuffisante pour « " + name
@@ -324,7 +331,7 @@ public class AdminPlayerEditService {
     @Transactional
     public void addEquipment(Long playerId, String name, int quantity) {
         requireQuantity(quantity, MAX_STACK_QUANTITY);
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
         Equipment equipment = equipmentService.findByName(name)
                 .orElseThrow(() -> new IllegalArgumentException("Équipement inconnu : " + name));
@@ -339,9 +346,9 @@ public class AdminPlayerEditService {
     @Transactional
     public void removeEquipment(Long playerId, String name, int quantity, boolean includeEquipped) {
         requireQuantity(quantity, MAX_STACK_QUANTITY);
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         EquipmentStack stack = player.getEquipments().stream()
                 .filter(s -> s.getEquipment() != null && name.equals(s.getEquipment().getName()))
                 .findFirst()
@@ -386,9 +393,9 @@ public class AdminPlayerEditService {
     public void addUnits(Long playerId, String typeName, List<String> classNames, int quantity,
                          Integer sectorNumber) {
         requireQuantity(quantity, MAX_ENTITY_QUANTITY);
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         UnitType type = parseUnitType(typeName);
         List<UnitClass> classes = parseUnitClasses(classNames);
         Sector sector = resolveOwnedSector(player, board, sectorNumber, false);
@@ -417,9 +424,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void deleteUnit(Long playerId, Long unitId) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         Unit unit = unitRepository.findById(unitId)
                 .orElseThrow(() -> new EntityNotFoundException("Unité introuvable : " + unitId));
         if (!playerId.equals(unit.getPlayerId())) {
@@ -447,9 +454,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void updateUnit(Long playerId, Long unitId, AdminUnitUpdateRequestDto request) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         Unit unit = requireUnitOfPlayer(playerId, unitId);
         boolean classOrExperienceChanged = false;
 
@@ -497,9 +504,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void moveUnit(Long playerId, Long unitId, Integer sectorNumber) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         Unit unit = requireUnitOfPlayer(playerId, unitId);
         if (unitIsInVehicle(unitId)) {
             throw new IllegalArgumentException(
@@ -531,9 +538,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void equipUnit(Long playerId, Long unitId, String equipmentName) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         Unit unit = requireUnitOfPlayer(playerId, unitId);
         Equipment equipment = equipmentService.findByName(equipmentName)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -563,9 +570,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void unequipUnit(Long playerId, Long unitId, String equipmentName) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         Unit unit = requireUnitOfPlayer(playerId, unitId);
         UnitEquipment row = unit.removeOneEquipment(equipmentName);
         if (row == null) {
@@ -582,9 +589,9 @@ public class AdminPlayerEditService {
     @Transactional
     public void addVehicles(Long playerId, String vehicleTypeName, int quantity, Integer sectorNumber) {
         requireQuantity(quantity, MAX_ENTITY_QUANTITY);
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         VehicleType type = parseVehicleType(vehicleTypeName);
         Sector sector = resolveOwnedSector(player, board, sectorNumber, false);
         for (int i = 0; i < quantity; i++) {
@@ -606,9 +613,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void deleteVehicle(Long playerId, Long vehicleId) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         Vehicle vehicle = vehicleRepository.findByIdForUpdate(vehicleId)
                 .orElseThrow(() -> new EntityNotFoundException("Véhicule introuvable : " + vehicleId));
         if (!playerId.equals(vehicle.getPlayerId())) {
@@ -638,9 +645,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void setVehicleCrew(Long playerId, Long vehicleId, SetVehicleCrewRequestDto request) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         Vehicle vehicle = vehicleRepository.findByIdForUpdate(vehicleId)
                 .orElseThrow(() -> new EntityNotFoundException("Véhicule introuvable : " + vehicleId));
         if (!playerId.equals(vehicle.getPlayerId())) {
@@ -672,9 +679,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void addBuilding(Long playerId, String buildingTypeName, Integer sectorNumber) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         BuildingType type = parseBuildingType(buildingTypeName);
         Sector sector = resolveOwnedSector(player, board, sectorNumber, true);
         if ((type == BuildingType.HEADQUARTERS || type == BuildingType.BANK)
@@ -694,9 +701,9 @@ public class AdminPlayerEditService {
 
     @Transactional
     public void deleteBuilding(Long playerId, Long buildingId) {
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
-        Board board = activeBoard();
+        Board board = activeBoard(playerId);
         Building building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new EntityNotFoundException("Bâtiment introuvable : " + buildingId));
         if (!playerId.equals(building.getPlayerId())) {
@@ -727,7 +734,7 @@ public class AdminPlayerEditService {
     @Transactional
     public void addBankResource(Long playerId, String name, int quantity) {
         requireQuantity(quantity, MAX_STACK_QUANTITY);
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
         Resource resource = resourceRepository.findByName(name)
                 .orElseThrow(() -> new IllegalArgumentException("Ressource inconnue : " + name));
@@ -750,7 +757,7 @@ public class AdminPlayerEditService {
     @Transactional
     public void removeBankResource(Long playerId, String name, int quantity) {
         requireQuantity(quantity, MAX_STACK_QUANTITY);
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         lockPlayer(playerId);
         Bank bank = requireBankOfPlayer(playerId);
         PlayerResource stored = bank.getStoredResources().stream()
@@ -773,7 +780,7 @@ public class AdminPlayerEditService {
     @Transactional
     public void addCacheEquipment(Long playerId, Long buildingId, String name, int quantity) {
         requireQuantity(quantity, MAX_STACK_QUANTITY);
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
         WeaponCache cache = requireCacheOfPlayer(playerId, buildingId);
         Equipment equipment = equipmentService.findByName(name)
@@ -805,7 +812,7 @@ public class AdminPlayerEditService {
     @Transactional
     public void removeCacheEquipment(Long playerId, Long buildingId, String name, int quantity) {
         requireQuantity(quantity, MAX_STACK_QUANTITY);
-        requireTurnOpen();
+        requireTurnOpen(playerId);
         Player player = lockPlayer(playerId);
         WeaponCache cache = requireCacheOfPlayer(playerId, buildingId);
         EquipmentStack stored = cache.getStoredEquipments().stream()
@@ -818,7 +825,7 @@ public class AdminPlayerEditService {
                     + " × « " + name + " » disponibles (copies équipées exclues)");
         }
         playerActionService.discardActiveActionsReferencing(
-                playerId, activeBoard().getCurrentTurn(), null, null, null, name,
+                playerId, activeBoard(playerId).getCurrentTurn(), null, null, null, name,
                 PlayerActionType.BUY_EQUIPMENT);
         stored.setQuantity(stored.getQuantity() - quantity);
         stored.setAvailable(stored.getAvailable() - quantity);
@@ -878,7 +885,7 @@ public class AdminPlayerEditService {
     }
 
     private void audit(Long playerId, AdminAuditAction action, String details) {
-        adminAuditService.record(playerId, action, details);
+        adminAuditService.record(boardIdOf(playerId), playerId, action, details);
     }
 
     private String sectorLabel(Integer number) {
@@ -1107,8 +1114,12 @@ public class AdminPlayerEditService {
         }
     }
 
-    private void requireTurnOpen() {
-        if (turnLock.isLocked()) {
+    private void requireTurnOpen(Long playerId) {
+        requireTurnOpenOnBoard(boardIdOf(playerId));
+    }
+
+    private void requireTurnOpenOnBoard(Long boardId) {
+        if (turnLock.isLocked(boardId)) {
             throw new IllegalStateException(
                     "La résolution du tour est en cours — réessayez après la fin du tour");
         }
@@ -1124,8 +1135,14 @@ public class AdminPlayerEditService {
                 .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable : " + playerId));
     }
 
-    private Board activeBoard() {
-        return boardService.getAllBoards().stream().findFirst()
+    private Board activeBoard(Long playerId) {
+        return boardService.getBoardById(boardIdOf(playerId))
                 .orElseThrow(() -> new IllegalStateException("Aucun plateau disponible."));
+    }
+
+    private Long boardIdOf(Long playerId) {
+        return playerRepository.findById(playerId)
+                .map(Player::getBoardId)
+                .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable : " + playerId));
     }
 }

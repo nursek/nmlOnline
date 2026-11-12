@@ -95,51 +95,51 @@ public class PlayerActionService {
 
     public void recordBuyEquipment(Long playerId, String equipmentName, int quantity, double cost,
                                    double startingMoneySpent) {
-        save(PlayerAction.buyEquipment(playerId, turnService.getCurrentTurn(), equipmentName, quantity, cost,
+        save(PlayerAction.buyEquipment(playerId, currentTurn(playerId), equipmentName, quantity, cost,
                 startingMoneySpent));
     }
 
     public void recordSellResource(Long playerId, String resourceName, int quantity, double value) {
-        save(PlayerAction.sellResource(playerId, turnService.getCurrentTurn(), resourceName, quantity, value));
+        save(PlayerAction.sellResource(playerId, currentTurn(playerId), resourceName, quantity, value));
     }
 
     public void recordEquipUnit(Long playerId, Long unitId, String equipmentName) {
-        save(PlayerAction.equipUnit(playerId, turnService.getCurrentTurn(), unitId, equipmentName));
+        save(PlayerAction.equipUnit(playerId, currentTurn(playerId), unitId, equipmentName));
     }
 
     public void recordUnequipUnit(Long playerId, Long unitId, String equipmentName) {
-        save(PlayerAction.unequipUnit(playerId, turnService.getCurrentTurn(), unitId, equipmentName));
+        save(PlayerAction.unequipUnit(playerId, currentTurn(playerId), unitId, equipmentName));
     }
 
     public void recordBuyVehicle(Long playerId, Long vehicleId, double cost, double startingMoneySpent) {
-        save(PlayerAction.buyVehicle(playerId, turnService.getCurrentTurn(), vehicleId, cost, startingMoneySpent));
+        save(PlayerAction.buyVehicle(playerId, currentTurn(playerId), vehicleId, cost, startingMoneySpent));
     }
 
     public void recordPlaceVehicle(Long playerId, Long vehicleId, Long boardId, int sectorNumber) {
-        save(PlayerAction.placeVehicle(playerId, turnService.getCurrentTurn(), vehicleId, boardId, sectorNumber));
+        save(PlayerAction.placeVehicle(playerId, currentTurn(playerId), vehicleId, boardId, sectorNumber));
     }
 
     public void recordBuyUnit(Long playerId, Long unitId, String unitType, double cost, double startingMoneySpent) {
-        save(PlayerAction.buyUnit(playerId, turnService.getCurrentTurn(), unitId, unitType, cost, startingMoneySpent));
+        save(PlayerAction.buyUnit(playerId, currentTurn(playerId), unitId, unitType, cost, startingMoneySpent));
     }
 
     public void recordPlaceUnit(Long playerId, Long unitId, Long boardId, int sectorNumber) {
-        save(PlayerAction.placeUnit(playerId, turnService.getCurrentTurn(), unitId, boardId, sectorNumber));
+        save(PlayerAction.placeUnit(playerId, currentTurn(playerId), unitId, boardId, sectorNumber));
     }
 
     public void recordMoveBuilding(Long playerId, Long buildingId, Long boardId, int fromSectorNumber,
                                    int toSectorNumber, Integer prevLastMovedTurn, Boolean prevHasMoved) {
-        save(PlayerAction.moveBuilding(playerId, turnService.getCurrentTurn(), buildingId, boardId,
+        save(PlayerAction.moveBuilding(playerId, currentTurn(playerId), buildingId, boardId,
                 fromSectorNumber, toSectorNumber, prevLastMovedTurn, prevHasMoved));
     }
 
     public void recordSetVehicleCrew(Long playerId, Long vehicleId, Long prevPilotId, String prevPassengerIds) {
-        save(PlayerAction.setVehicleCrew(playerId, turnService.getCurrentTurn(), vehicleId,
+        save(PlayerAction.setVehicleCrew(playerId, currentTurn(playerId), vehicleId,
                 prevPilotId, prevPassengerIds));
     }
 
     // Un secteur = une ligne : la cascade LIFO du journal suffit pour changer son choix.
-    public List<PlayerActionDto> harvest(Long userId, PlayerActionType choice, List<Integer> sectorNumbers) {
+    public List<PlayerActionDto> harvest(Long userId, Long boardId, PlayerActionType choice, List<Integer> sectorNumbers) {
         if (choice == null || !choice.isHarvest()) {
             throw new IllegalArgumentException("Choix de récolte invalide");
         }
@@ -147,13 +147,13 @@ public class PlayerActionService {
             throw new IllegalArgumentException("Aucun secteur à récolter");
         }
 
-        Player locked = lockPlayerByUserId(userId);
-        int turn = turnService.getCurrentTurn();
+        Player locked = lockPlayerByUserId(userId, boardId);
+        int turn = turnService.getCurrentTurn(locked.getBoardId());
         if (turn < FIRST_HARVEST_TURN) {
             throw new IllegalStateException("La récolte est disponible à partir du tour " + FIRST_HARVEST_TURN);
         }
         // Le claim des revenus est figé au début de la résolution : un secteur ne peut plus payer.
-        if (turnLock.isLocked() || harvestAutoCollector.hasClaimedRevenue(turn)) {
+        if (turnLock.isLocked(locked.getBoardId()) || harvestAutoCollector.hasClaimedRevenue(locked.getBoardId(), turn)) {
             throw new HarvestClosedException(
                     "La résolution du tour est en cours — la récolte est fermée jusqu'au tour suivant");
         }
@@ -162,7 +162,7 @@ public class PlayerActionService {
                 .collect(Collectors.toMap(Sector::getNumber, sector -> sector, (a, b) -> a));
         // Global par secteur : un secteur ne paie qu'une fois, même si sa propriété a changé.
         Set<Integer> alreadyHarvested = actionRepository
-                .findByTurnAndStatus(turn, PlayerActionStatus.ACTIVE)
+                .findByBoardIdAndTurnAndStatus(locked.getBoardId(), turn, PlayerActionStatus.ACTIVE)
                 .stream()
                 .filter(action -> action.getType().isHarvest())
                 .map(PlayerAction::getFromSectorNumber)
@@ -197,15 +197,16 @@ public class PlayerActionService {
                 recorded.add(PlayerAction.harvestResource(locked.getId(), turn, number, resourceName, 1));
             }
         }
+        recorded.forEach(action -> action.setBoardId(locked.getBoardId()));
         actionRepository.saveAll(recorded);
         playerRepository.save(locked);
         return mapActive(locked, turn);
     }
 
     @Transactional(readOnly = true)
-    public List<PlayerActionDto> getCurrentTurnActions(Long userId) {
-        Player player = requirePlayerByUserId(userId);
-        return mapActive(player, turnService.getCurrentTurn());
+    public List<PlayerActionDto> getCurrentTurnActions(Long userId, Long boardId) {
+        Player player = requirePlayerByUserId(userId, boardId);
+        return mapActive(player, turnService.getCurrentTurn(player.getBoardId()));
     }
 
     public void deleteForPlayer(Long playerId) {
@@ -229,15 +230,15 @@ public class PlayerActionService {
         }
     }
 
-    public List<PlayerActionDto> undoFrom(Long userId, Long actionId) {
+    public List<PlayerActionDto> undoFrom(Long userId, Long boardId, Long actionId) {
         // Le journal reste figé pendant la résolution : annuler modifierait un état déjà combattu.
-        if (turnLock.isLocked()) {
+        if (turnLock.isLocked(boardId)) {
             throw new PlayerActionUndoException(
                     "La résolution du tour est en cours — l'annulation est fermée jusqu'au tour suivant");
         }
         // Verrou d'abord : un FOR UPDATE ne rafraîchit pas une entité déjà managée.
-        Player locked = lockPlayerByUserId(userId);
-        int turn = turnService.getCurrentTurn();
+        Player locked = lockPlayerByUserId(userId, boardId);
+        int turn = turnService.getCurrentTurn(locked.getBoardId());
 
         PlayerAction target = actionRepository.findByIdAndPlayerId(actionId, locked.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Action introuvable : " + actionId));
@@ -251,7 +252,7 @@ public class PlayerActionService {
         toUndo.sort((a, b) -> b.getId().compareTo(a.getId()));
 
         // Revenus déjà versés sur cette récolte : l'annuler priverait le secteur de tout revenu pour le tour.
-        if (harvestAutoCollector.hasClaimedRevenue(turn)
+        if (harvestAutoCollector.hasClaimedRevenue(locked.getBoardId(), turn)
                 && toUndo.stream().anyMatch(action -> action.getType().isHarvest())) {
             throw new HarvestClosedException(
                     "Le revenu du tour a déjà été versé — la récolte n'est plus annulable");
@@ -267,15 +268,15 @@ public class PlayerActionService {
         return mapActive(locked, turn);
     }
 
-    public List<PlayerActionDto> undoAll(Long userId) {
-        Player locked = lockPlayerByUserId(userId);
-        int turn = turnService.getCurrentTurn();
+    public List<PlayerActionDto> undoAll(Long userId, Long boardId) {
+        Player locked = lockPlayerByUserId(userId, boardId);
+        int turn = turnService.getCurrentTurn(locked.getBoardId());
         List<PlayerAction> active = actionRepository
                 .findByPlayerIdAndTurnAndStatusOrderByIdAsc(locked.getId(), turn, PlayerActionStatus.ACTIVE);
         if (active.isEmpty()) {
             return List.of();
         }
-        return undoFrom(userId, active.getFirst().getId());
+        return undoFrom(userId, boardId, active.getFirst().getId());
     }
 
     private void applyUndo(PlayerAction action, Player player) {
@@ -370,7 +371,7 @@ public class PlayerActionService {
     private void undoPlaceVehicle(PlayerAction action) {
         Vehicle vehicle = vehicleRepository.findById(action.getVehicleId())
                 .orElseThrow(() -> new PlayerActionUndoException("Véhicule introuvable."));
-        int turn = turnService.getCurrentTurn();
+        int turn = currentTurn(action.getPlayerId());
         if (!movementOrderRepository
                 .findByVehicleIdAndTurnAndStatus(vehicle.getId(), turn, MovementStatus.PENDING).isEmpty()) {
             throw new PlayerActionUndoException(
@@ -403,8 +404,9 @@ public class PlayerActionService {
             throw new PlayerActionUndoException(
                     "L'unité est à bord d'un véhicule : retirez-la de l'équipage d'abord.");
         }
-        int turn = turnService.getCurrentTurn();
-        if (!movementOrderRepository.findPendingEntityIds(turn, List.of(unit.getId())).isEmpty()) {
+        Long boardId = boardIdOf(action.getPlayerId());
+        int turn = turnService.getCurrentTurn(boardId);
+        if (!movementOrderRepository.findPendingEntityIds(boardId, turn, List.of(unit.getId())).isEmpty()) {
             throw new PlayerActionUndoException("L'unité a un ordre à pied en attente : annulez-le d'abord.");
         }
         // Sortir l'unité de Sector.army : une collection managée avec cascade ré-persiste l'entité supprimée.
@@ -435,7 +437,8 @@ public class PlayerActionService {
     private void undoSetVehicleCrew(PlayerAction action) {
         Vehicle vehicle = vehicleRepository.findById(action.getVehicleId())
                 .orElseThrow(() -> new PlayerActionUndoException("Véhicule introuvable."));
-        int turn = turnService.getCurrentTurn();
+        Long boardId = boardIdOf(action.getPlayerId());
+        int turn = turnService.getCurrentTurn(boardId);
         if (!movementOrderRepository
                 .findByVehicleIdAndTurnAndStatus(vehicle.getId(), turn, MovementStatus.PENDING).isEmpty()) {
             throw new PlayerActionUndoException(
@@ -446,7 +449,7 @@ public class PlayerActionService {
             restoredIds.add(action.getPrevPilotId());
         }
         if (!restoredIds.isEmpty()) {
-            List<Long> engaged = movementOrderRepository.findPendingEntityIds(turn, restoredIds);
+            List<Long> engaged = movementOrderRepository.findPendingEntityIds(boardId, turn, restoredIds);
             if (!engaged.isEmpty()) {
                 throw new PlayerActionUndoException(
                         "Des occupants ont un ordre à pied en attente : annulez-le d'abord.");
@@ -494,20 +497,34 @@ public class PlayerActionService {
         return player.findEquipmentStack(equipmentName);
     }
 
-    private Player requirePlayerByUserId(Long userId) {
-        Player player = playerRepository.findByUserId(userId).orElse(null);
+    private Player requirePlayerByUserId(Long userId, Long boardId) {
+        Player player = playerRepository.findByUserIdAndBoardId(userId, boardId).orElse(null);
         if (player == null) {
             throw new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId);
         }
         return player;
     }
 
-    private Player lockPlayerByUserId(Long userId) {
-        return playerRepository.findByUserIdForUpdate(userId)
+    // Un joueur n'appartient qu'à une partie : plateau et tour se déduisent de lui.
+    private Long boardIdOf(Long playerId) {
+        return playerRepository.findById(playerId)
+                .map(Player::getBoardId)
+                .orElseThrow(() -> new IllegalArgumentException("Joueur introuvable : " + playerId));
+    }
+
+    private int currentTurn(Long playerId) {
+        return turnService.getCurrentTurn(boardIdOf(playerId));
+    }
+
+    private Player lockPlayerByUserId(Long userId, Long boardId) {
+        return playerRepository.findByUserIdAndBoardIdForUpdate(userId, boardId)
                 .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour l'utilisateur " + userId));
     }
 
     private void save(PlayerAction action) {
+        if (action.getBoardId() == null) {
+            action.setBoardId(boardIdOf(action.getPlayerId()));
+        }
         actionRepository.save(action);
     }
 

@@ -33,4 +33,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     boolean existsByPilot_Id(Long pilotId);
 
     boolean existsByPassengers_Id(Long passengerId);
+
+    // Véhicule sans secteur = non déployé : il n'appartient à aucune partie.
+    @Query("select v from Vehicle v where v.sector.board.id = :boardId")
+    List<Vehicle> findByBoardId(@Param("boardId") Long boardId);
 }

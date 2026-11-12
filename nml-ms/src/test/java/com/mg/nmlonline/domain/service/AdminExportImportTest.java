@@ -29,6 +29,10 @@ class AdminExportImportTest {
     @Autowired
     private PlayerRepository playerRepository;
 
+    private Long boardId() {
+        return playerRepository.findAll().getFirst().getBoardId();
+    }
+
     @Autowired
     private PlayerImportService playerImportService;
 
@@ -48,7 +52,7 @@ class AdminExportImportTest {
     @Test
     @DisplayName("export produit une section character et buildings, relisible par l'import")
     void exportCharacterAndBuildingsRoundTrip() throws Exception {
-        Player nursek = playerRepository.findByName("nursek")
+        Player nursek = playerRepository.findByBoardIdAndName(boardId(), "nursek")
                 .orElseThrow(() -> new AssertionError("Le joueur nursek doit être importé au démarrage (profil test)"));
 
         Map<String, Object> exported = adminService.exportPlayer(nursek.getId());
@@ -102,7 +106,7 @@ class AdminExportImportTest {
     @org.springframework.transaction.annotation.Transactional
     @DisplayName("Export : les ressources stockées en banque sont conservées")
     void exportIncludesBankResources() {
-        Player nursek = playerRepository.findByName("nursek")
+        Player nursek = playerRepository.findByBoardIdAndName(boardId(), "nursek")
                 .orElseThrow(() -> new AssertionError("Le joueur nursek doit être importé au démarrage (profil test)"));
         adminPlayerEditService.addBankResource(nursek.getId(), "Caisse d'armes", 3);
 

@@ -28,6 +28,9 @@ public class TurnJournal {
     @EqualsAndHashCode.Include
     private Long id;
 
+    @Column(name = "board_id", nullable = false)
+    private Long boardId;
+
     @Column(nullable = false)
     private int turn;
 

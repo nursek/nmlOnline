@@ -10,5 +10,6 @@ import java.util.List;
 @Repository
 public interface AnnouncementRepository extends JpaRepository<Announcement, Long> {
 
-    List<Announcement> findByVisibleAtTurnLessThanEqualOrderByIdDesc(int turn, Pageable pageable);
+    List<Announcement> findByBoardIdAndVisibleAtTurnLessThanEqualOrderByIdDesc(Long boardId, int turn,
+                                                                              Pageable pageable);
 }

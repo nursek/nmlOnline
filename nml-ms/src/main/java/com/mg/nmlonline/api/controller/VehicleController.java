@@ -8,6 +8,7 @@ import com.mg.nmlonline.api.dto.PlaceVehicleRequestDto;
 import com.mg.nmlonline.api.dto.SetVehicleCrewRequestDto;
 import com.mg.nmlonline.api.dto.VehicleDto;
 import com.mg.nmlonline.api.dto.VehicleTypeDto;
+import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.VehicleService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -29,16 +30,18 @@ public class VehicleController {
     @GetMapping("/types")
     public List<VehicleTypeDto> getVehicleTypes(HttpServletRequest httpRequest) {
         Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
-        return vehicleService.getVehicleTypesDto(authenticatedUserId);
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
+        return vehicleService.getVehicleTypesDto(authenticatedUserId, boardId);
     }
 
     @GetMapping("/my")
     public ResponseEntity<List<VehicleDto>> getMyVehicles(HttpServletRequest httpRequest) {
         Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
-        List<VehicleDto> vehicles = vehicleService.getPlayerVehiclesDto(authenticatedUserId);
+        List<VehicleDto> vehicles = vehicleService.getPlayerVehiclesDto(authenticatedUserId, boardId);
         return ResponseEntity.ok(vehicles);
     }
 
@@ -46,10 +49,11 @@ public class VehicleController {
     public ResponseEntity<List<VehicleDto>> buyVehicle(@Valid @RequestBody BuyVehicleRequestDto request,
                                                        HttpServletRequest httpRequest) {
         Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
-        List<VehicleDto> vehicles = vehicleService.buyVehicleDto(authenticatedUserId, request.getVehicleType(), request.getQuantity());
+        List<VehicleDto> vehicles = vehicleService.buyVehicleDto(authenticatedUserId, request.getVehicleType(), request.getQuantity(), boardId);
         return ResponseEntity.ok(vehicles);
     }
 
@@ -57,10 +61,11 @@ public class VehicleController {
     public ResponseEntity<List<VehicleDto>> buyVehiclesBatch(@Valid @RequestBody BuyVehicleBatchRequestDto request,
                                                              HttpServletRequest httpRequest) {
         Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
-        List<VehicleDto> vehicles = vehicleService.buyVehiclesBatchDto(authenticatedUserId, request.getItems());
+        List<VehicleDto> vehicles = vehicleService.buyVehiclesBatchDto(authenticatedUserId, request.getItems(), boardId);
         return ResponseEntity.ok(vehicles);
     }
 
@@ -69,10 +74,11 @@ public class VehicleController {
                                                    @Valid @RequestBody PlaceVehicleRequestDto request,
                                                    HttpServletRequest httpRequest) {
         Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
-        VehicleDto vehicle = vehicleService.placeVehicleDto(id, request.getBoardId(), request.getSectorNumber(), authenticatedUserId);
+        VehicleDto vehicle = vehicleService.placeVehicleDto(id, boardId, request.getSectorNumber(), authenticatedUserId);
         return ResponseEntity.ok(vehicle);
     }
 
@@ -81,11 +87,12 @@ public class VehicleController {
                                               @RequestBody SetVehicleCrewRequestDto request,
                                               HttpServletRequest httpRequest) {
         Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
         VehicleDto vehicle = vehicleService.setCrew(authenticatedUserId, id,
-                request.getPilotId(), request.getPassengerIds());
+                request.getPilotId(), request.getPassengerIds(), boardId);
         return ResponseEntity.ok(vehicle);
     }
 
@@ -94,10 +101,11 @@ public class VehicleController {
                                                               @Valid @RequestBody PlaceVehicleOrderRequestDto request,
                                                               HttpServletRequest httpRequest) {
         Long authenticatedUserId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).build();
         }
-        MovementOrderDto order = vehicleService.placeVehicleOrderDto(authenticatedUserId, id, request.getRoute());
+        MovementOrderDto order = vehicleService.placeVehicleOrderDto(authenticatedUserId, id, request.getRoute(), boardId);
         return ResponseEntity.ok(order);
     }
 }
