@@ -193,6 +193,8 @@ export class GameSetupComponent {
     const data: UserPickerData = {
       title: `Relier un compte à ${player.name}`,
       actionLabel: 'Relier',
+      excludeUserIds: [...this.linkedUserIds(), ...this.mjUserIds()],
+      excludeRoles: ['ADMIN'],
     };
     const user = await firstValueFrom(
       this.dialog
@@ -225,34 +227,25 @@ export class GameSetupComponent {
     }
   }
 
-  isMj(player: Player): boolean {
-    return player.userId !== null && this.admins().some((admin) => admin.userId === player.userId);
+  private linkedUserIds(): number[] {
+    return this.players()
+      .map((player) => player.userId)
+      .filter((userId): userId is number => userId !== null);
   }
 
-  async toggleMj(player: Player): Promise<void> {
-    const board = this.board();
-    if (!board || !player.userId) return;
-    const removing = this.isMj(player);
-    const confirmed = await this.confirm(
-      removing ? 'Retirer le rôle MJ' : 'Nommer MJ',
-      `${removing ? 'Retirer' : 'Donner'} le rôle MJ à ${player.name} ?`,
-      removing ? 'Retirer' : 'Nommer',
-    );
-    if (!confirmed) return;
-    const call = removing
-      ? this.api.adminRevokeBoardAdmin(board.id, player.userId)
-      : this.api.adminGrantBoardAdmin(board.id, player.userId);
-    if (
-      await this.run(() => firstValueFrom(call), removing ? 'Rôle MJ retiré' : 'Rôle MJ attribué')
-    ) {
-      await this.loadAdmins();
-    }
+  private mjUserIds(): number[] {
+    return this.admins().map((admin) => admin.userId);
   }
 
   async addMj(): Promise<void> {
     const board = this.board();
     if (!board) return;
-    const data: UserPickerData = { title: 'Nommer un maître du jeu', actionLabel: 'Nommer' };
+    const data: UserPickerData = {
+      title: 'Nommer un maître du jeu',
+      actionLabel: 'Nommer',
+      excludeUserIds: [...this.linkedUserIds(), ...this.mjUserIds()],
+      excludeRoles: ['ADMIN'],
+    };
     const user = await firstValueFrom(
       this.dialog
         .open(UserPickerDialogComponent, { data, width: '560px', maxWidth: '95vw' })

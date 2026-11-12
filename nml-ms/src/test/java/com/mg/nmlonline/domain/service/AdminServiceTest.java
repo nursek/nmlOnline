@@ -3,6 +3,7 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.infrastructure.repository.ResourceRepository;
+import com.mg.nmlonline.infrastructure.repository.BoardAdminRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import com.mg.nmlonline.mapper.BoardMapper;
@@ -31,6 +32,8 @@ class AdminServiceTest {
     PlayerService playerService;
     @Mock
     BoardService boardService;
+    @Mock
+    BoardAdminRepository boardAdminRepository;
     @Mock
     UserService userService;
     @Mock

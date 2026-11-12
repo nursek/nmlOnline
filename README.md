@@ -538,8 +538,11 @@ imports games, manages the equipment catalogue) and per-game game masters
 A new board starts at `current_turn = 0` (preparation). The platform admin creates it from a
 bundled preset or a `board.json`, creates ready-to-use players (100 unclassified units, a
 character, the three buildings and starting money), assigns 1–3 starting sectors from the preset
-spots, links accounts and names game masters. The admin then starts the game
-(`POST /api/admin/board/start`), which sets `started_at` and moves the board to turn 1.
+spots, links accounts and names game masters. Players and game masters are distinct: a linked
+player cannot be nominated MJ, and a MJ account cannot be linked to a player. The platform admin
+is never stored as a MJ; with no MJ nominated, the platform admin manages the game. The admin then
+starts the game (`POST /api/admin/board/start`), which sets `started_at` and moves the board to
+turn 1.
 
 During turn 0, only the setup actions and social routes (alliances, bank offers) are open:
 purchases, orders, movement, harvest and normal unit deployment are rejected by
