@@ -80,6 +80,7 @@ function formatNombre(valeur: number): string {
 export class ReglesComponent {
   readonly sommaire: readonly SectionRegle[] = [
     { id: 'but', label: 'But du jeu', icon: 'my_location' },
+    { id: 'preparation', label: 'Préparation (tour 0)', icon: 'construction' },
     { id: 'stats', label: 'Statistiques des unités', icon: 'insights' },
     { id: 'niveaux', label: 'Niveaux et évolution', icon: 'military_tech' },
     { id: 'classes', label: 'Classes', icon: 'badge' },
@@ -211,7 +212,7 @@ export class ReglesComponent {
       nom: unitClassLabel('PILOTE_DESTRUCTEUR'),
       effet:
         "Priorité de ciblage : tire d'abord sur les véhicules ennemis. Obligatoire pour piloter un véhicule avec une unité ; " +
-        "les armes anti-véhicules (Gauss Cannon, Heavy Gauss Cannon, Enmitic Annihilator) doublent les dégâts contre leur catégorie de cible.",
+        'les armes anti-véhicules (Gauss Cannon, Heavy Gauss Cannon, Enmitic Annihilator) doublent les dégâts contre leur catégorie de cible.',
       actif: true,
     },
   ];

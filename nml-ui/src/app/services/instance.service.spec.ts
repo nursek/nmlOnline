@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { InstanceService } from './instance.service';
+import { InstanceService, routeForInstance } from './instance.service';
 import { authInterceptor } from './auth.interceptor';
 import { GameInstance } from '../models';
 import { environment } from '../../environments/environment';
@@ -163,5 +163,30 @@ describe('InstanceService (partie sélectionnée et en-tête X-Board-Id)', () =>
     await fresh;
 
     expect(service.instances().map((candidate) => candidate.id)).toEqual([2]);
+  });
+});
+
+describe('routeForInstance', () => {
+  const base: GameInstance = {
+    id: 1,
+    name: 'Prep',
+    currentTurn: 0,
+    playerCount: 2,
+    playerId: 10,
+    playerName: 'Joueur',
+    eliminated: false,
+    role: 'PLAYER',
+    participant: true,
+  };
+
+  it('oriente chaque rôle vers son écran de préparation', () => {
+    expect(routeForInstance({ ...base, role: 'ADMIN' })).toBe('/admin/partie');
+    expect(routeForInstance({ ...base, role: 'MJ' })).toBe('/admin');
+    expect(routeForInstance({ ...base, role: 'PLAYER' })).toBe('/joueur');
+  });
+
+  it('garde les routes de jeu une fois la partie démarrée', () => {
+    expect(routeForInstance({ ...base, currentTurn: 1, role: 'ADMIN' })).toBe('/admin');
+    expect(routeForInstance({ ...base, currentTurn: 1, role: 'PLAYER' })).toBe('/accueil');
   });
 });

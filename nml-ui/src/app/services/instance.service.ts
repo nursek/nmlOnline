@@ -106,6 +106,11 @@ export class InstanceService {
 
 export function routeForInstance(instance: GameInstance): string {
   const admin = instance.role === 'ADMIN' || instance.role === 'MJ';
+  if (instance.currentTurn === 0) {
+    if (instance.role === 'ADMIN') return '/admin/partie';
+    if (instance.role === 'MJ') return '/admin';
+    return '/joueur';
+  }
   return admin ? '/admin' : '/accueil';
 }
 

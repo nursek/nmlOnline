@@ -3,6 +3,8 @@ import { httpResource } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatButtonModule } from '@angular/material/button';
+import { RouterLink } from '@angular/router';
 import { Announcement, GameStatistics } from '../../models';
 import { environment } from '../../../environments/environment';
 import { ActiveBoardService } from '../../services/active-board.service';
@@ -19,6 +21,8 @@ import { PodiumPanelComponent } from './podium-panel.component';
     MatCardModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatButtonModule,
+    RouterLink,
     RankingsPanelComponent,
     PodiumPanelComponent,
   ],

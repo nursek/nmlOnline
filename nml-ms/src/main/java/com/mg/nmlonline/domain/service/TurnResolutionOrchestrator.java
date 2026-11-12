@@ -141,6 +141,9 @@ public class TurnResolutionOrchestrator {
             if (board.isFinished()) {
                 throw new IllegalStateException("Partie terminée : aucune résolution de tour");
             }
+            if (board.isPreparation()) {
+                throw new IllegalStateException("Partie en préparation : démarrez-la avant de résoudre un tour");
+            }
             int turnEnding = board.getCurrentTurn();
             reserveUnitPlacer.placeAllAtHeadquarters();
             MovementService.ResolutionContext ctx = movementService.prepareResolution(turnEnding, board);

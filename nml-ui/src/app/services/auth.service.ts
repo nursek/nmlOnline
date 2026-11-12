@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenService } from './token.service';
 import { InstanceService } from './instance.service';
-import { LoginRequest, User } from '../models';
+import { LoginRequest, RegisterRequest, User } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 
 /**
@@ -105,6 +105,26 @@ export class AuthService {
         throw new Error('Trop de tentatives de connexion');
       }
       const message = this.extractErrorMessage(error);
+      this._error.set(message);
+      throw new Error(message);
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  /** Crée le compte puis connecte immédiatement (parcours d'invitation). */
+  async register(payload: RegisterRequest): Promise<void> {
+    this._loading.set(true);
+    this._error.set(null);
+    try {
+      await firstValueFrom(this.api.register(payload));
+      await this.login({
+        username: payload.username,
+        password: payload.password,
+        rememberMe: false,
+      });
+    } catch (error) {
+      const message = httpErrorMessage(error, "Une erreur est survenue lors de l'inscription");
       this._error.set(message);
       throw new Error(message);
     } finally {

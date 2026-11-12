@@ -387,14 +387,16 @@
                   Annuler
                 </button>
               </div>
-            } @else if (!isAdmin() && (reserveUnits().length || undeployedVehicles().length)) {
+            } @else if (
+              !isAdmin() && (deployableReserveUnits().length || undeployedVehicles().length)
+            ) {
               <div class="detail-section">
                 <h3>
                   <mat-icon>inventory_2</mat-icon>
-                  Réserves ({{ reserveUnits().length + undeployedVehicles().length }})
+                  Réserves ({{ deployableReserveUnits().length + undeployedVehicles().length }})
                 </h3>
                 <div class="reserve-list">
-                  @for (unit of reserveUnits(); track unit.id) {
+                  @for (unit of deployableReserveUnits(); track unit.id) {
                     <button
                       type="button"
                       class="reserve-item"

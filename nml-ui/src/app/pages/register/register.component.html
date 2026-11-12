@@ -1,0 +1,120 @@
+<div class="login-page">
+  <div class="theme-corner">
+    <app-theme-toggle />
+  </div>
+  <app-sigil class="watermark" [size]="520" />
+  <div class="login-container">
+    <mat-card class="login-card">
+      <div class="console-lights" aria-hidden="true">
+        <span class="led led--green"></span>
+        <span class="led led--amber"></span>
+        <span class="led led--red"></span>
+      </div>
+      <mat-card-content>
+        <div class="header">
+          <div class="avatar">
+            <app-sigil [size]="52" />
+          </div>
+          <h1 class="title">Rejoindre</h1>
+          <p class="subtitle">Un compte, plusieurs parties</p>
+        </div>
+
+        @if (mode() === null) {
+          <div class="closed">Vérification de l'accès aux inscriptions…</div>
+        } @else if (!mode()!.enabled) {
+          <div class="closed">
+            <mat-icon>lock</mat-icon>
+            <p>Les inscriptions sont fermées. Demandez un accès à l'organisateur.</p>
+          </div>
+        } @else {
+          <form (submit)="onSubmit($event)" aria-label="Formulaire d'inscription">
+            @if (error(); as error) {
+              <div class="error-alert" role="alert">
+                <mat-icon>error</mat-icon>
+                {{ error }}
+              </div>
+            }
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Nom d'utilisateur</mat-label>
+              <input
+                matInput
+                type="text"
+                autocomplete="username"
+                [value]="username()"
+                (input)="username.set($any($event.target).value)"
+              />
+              @if (submitted() && usernameError(); as err) {
+                <mat-error>{{ err }}</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Mot de passe</mat-label>
+              <input
+                matInput
+                type="password"
+                autocomplete="new-password"
+                [value]="password()"
+                (input)="password.set($any($event.target).value)"
+              />
+              @if (submitted() && passwordError(); as err) {
+                <mat-error>{{ err }}</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Confirmer le mot de passe</mat-label>
+              <input
+                matInput
+                type="password"
+                autocomplete="new-password"
+                [value]="confirmPassword()"
+                (input)="confirmPassword.set($any($event.target).value)"
+              />
+              @if (submitted() && confirmError(); as err) {
+                <mat-error>{{ err }}</mat-error>
+              }
+            </mat-form-field>
+
+            @if (mode()!.inviteRequired) {
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Code d'invitation</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  autocomplete="off"
+                  [value]="inviteCode()"
+                  (input)="inviteCode.set($any($event.target).value)"
+                />
+                @if (submitted() && inviteError(); as err) {
+                  <mat-error>{{ err }}</mat-error>
+                }
+              </mat-form-field>
+            }
+
+            <button
+              mat-raised-button
+              color="primary"
+              type="submit"
+              class="submit-btn"
+              [disabled]="(submitted() && invalid()) || loading()"
+            >
+              @if (loading()) {
+                <mat-spinner diameter="20" aria-label="Création en cours"></mat-spinner>
+                Création...
+              } @else {
+                Créer mon compte
+              }
+            </button>
+          </form>
+        }
+
+        <p class="alt-link">
+          Déjà un compte ?
+          <a routerLink="/login">Se connecter</a>
+        </p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

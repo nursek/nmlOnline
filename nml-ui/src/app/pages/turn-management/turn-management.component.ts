@@ -26,6 +26,7 @@ import { ConflictPreviewService } from '../../services/conflict-preview.service'
 import { DevScenarioService } from '../../services/dev-scenario.service';
 import { PlayerStatusService } from '../../services/player-status.service';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { PendingCapture, ResolvedBattle } from '../../models';
 import { CombatLogDialogComponent } from './combat-log-dialog.component';
 import { downloadJson, downloadText } from '../../core/download-file';
@@ -66,6 +67,7 @@ export class TurnManagementComponent {
   private readonly devScenarios = inject(DevScenarioService);
   private readonly playerStatus = inject(PlayerStatusService);
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -75,6 +77,7 @@ export class TurnManagementComponent {
   readonly archiveLoading = signal(false);
   private archiveTurnTouched = false;
 
+  readonly isAdmin = this.auth.isAdmin;
   readonly state = this.turnManagement.state;
   readonly busy = this.turnManagement.busy;
   readonly loading = this.turnManagement.loading;

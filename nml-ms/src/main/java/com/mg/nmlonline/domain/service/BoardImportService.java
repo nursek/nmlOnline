@@ -58,6 +58,9 @@ public class BoardImportService {
         if (dto.svgOverlayUrl != null) {
             board.setSvgOverlayUrl(dto.svgOverlayUrl);
         }
+        if (dto.presetKey != null) {
+            board.setPresetKey(dto.presetKey);
+        }
 
         if (dto.sectors != null && !dto.sectors.isEmpty()) {
             for (SectorDTO sectorDto : dto.sectors) {
@@ -170,6 +173,7 @@ public class BoardImportService {
         public String name;
         public String mapImageUrl;
         public String svgOverlayUrl;
+        public String presetKey;
         public List<SectorDTO> sectors;
     }
 
