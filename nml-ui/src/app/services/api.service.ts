@@ -37,6 +37,13 @@ import {
   Announcement,
   PendingCapture,
   AdminAuditEntry,
+  AdminUser,
+  BoardAdminEntry,
+  BoardPreset,
+  BoardPresetSummary,
+  RegistrationMode,
+  RegisterRequest,
+  TemplatePlayerRequest,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -65,6 +72,88 @@ export class ApiService {
 
   logout(): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/auth/logout`, {}, { withCredentials: true });
+  }
+
+  getRegistrationMode(): Observable<RegistrationMode> {
+    return this.http.get<RegistrationMode>(`${this.baseUrl}/auth/registration-mode`);
+  }
+
+  register(payload: RegisterRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/register`, payload);
+  }
+
+  adminSearchUsers(q: string): Observable<PageResult<AdminUser>> {
+    return this.http.get<PageResult<AdminUser>>(`${this.baseUrl}/admin/users`, {
+      params: { q, size: '20' },
+    });
+  }
+
+  adminLinkAccount(playerId: number, username: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/account`, { username });
+  }
+
+  adminUnlinkAccount(playerId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/players/${playerId}/account`);
+  }
+
+  adminGetBoardAdmins(): Observable<BoardAdminEntry[]> {
+    return this.http.get<BoardAdminEntry[]>(`${this.baseUrl}/admin/board-admins`);
+  }
+
+  adminGrantBoardAdmin(boardId: number, userId: number): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/instances/${boardId}/admins/${userId}`, {});
+  }
+
+  adminRevokeBoardAdmin(boardId: number, userId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/instances/${boardId}/admins/${userId}`);
+  }
+
+  adminGetBoardPresets(): Observable<BoardPresetSummary[]> {
+    return this.http.get<BoardPresetSummary[]>(`${this.baseUrl}/admin/board-presets`);
+  }
+
+  adminGetBoardPreset(key: string): Observable<BoardPreset> {
+    return this.http.get<BoardPreset>(`${this.baseUrl}/admin/board-presets/${key}`);
+  }
+
+  createBoard(board: Board): Observable<Board> {
+    return this.http.post<Board>(`${this.baseUrl}/boards`, board);
+  }
+
+  adminCreateTemplatePlayer(payload: TemplatePlayerRequest): Observable<Player> {
+    return this.http.post<Player>(`${this.baseUrl}/admin/players/template`, payload);
+  }
+
+  adminAssignStartingSectors(playerId: number, sectorNumbers: number[]): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/starting-sectors`, {
+      sectorNumbers,
+    });
+  }
+
+  adminStartGame(): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/board/start`, {});
+  }
+
+  placePreparationCharacter(sectorNumber: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/preparation/character`, { sectorNumber });
+  }
+
+  placePreparationBuilding(buildingId: number, sectorNumber: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/preparation/buildings/${buildingId}`, {
+      sectorNumber,
+    });
+  }
+
+  distributePreparationUnits(
+    sectorNumber: number,
+    quantity: number,
+    classes: string[],
+  ): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/preparation/units`, {
+      sectorNumber,
+      quantity,
+      classes,
+    });
   }
 
   getPlayer(username: string): Observable<Player> {
@@ -310,11 +399,17 @@ export class ApiService {
     );
   }
 
-  adminImportBoard(file: File, mapImageUrl?: string, svgOverlayUrl?: string): Observable<Board> {
+  adminImportBoard(
+    file: File,
+    mapImageUrl?: string,
+    svgOverlayUrl?: string,
+    name?: string,
+  ): Observable<Board> {
     const formData = new FormData();
     formData.append('file', file);
     if (mapImageUrl) formData.append('mapImageUrl', mapImageUrl);
     if (svgOverlayUrl) formData.append('svgOverlayUrl', svgOverlayUrl);
+    if (name) formData.append('name', name);
     return this.http.post<Board>(`${this.baseUrl}/admin/boards/import`, formData);
   }
 

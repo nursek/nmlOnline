@@ -12,4 +12,6 @@ public interface BoardAdminRepository extends JpaRepository<BoardAdmin, BoardAdm
     boolean existsByBoardIdAndUserId(Long boardId, Long userId);
 
     List<BoardAdmin> findByUserId(Long userId);
+
+    List<BoardAdmin> findByBoardId(Long boardId);
 }

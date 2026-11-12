@@ -7,7 +7,9 @@ import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.mapper.BoardMapper;
 import com.mg.nmlonline.mapper.SectorMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -41,6 +43,10 @@ public class BoardService {
         return boardRepository.findById(id);
     }
 
+    public Optional<Board> getBoardByIdForUpdate(Long id) {
+        return boardRepository.findByIdForUpdate(id);
+    }
+
     public Optional<Board> getBoardByName(String name) {
         return boardRepository.findByName(name);
     }
@@ -58,6 +64,9 @@ public class BoardService {
 
             existingBoard.setMapImageUrl(board.getMapImageUrl());
             existingBoard.setSvgOverlayUrl(board.getSvgOverlayUrl());
+            if (board.getPresetKey() != null) {
+                existingBoard.setPresetKey(board.getPresetKey());
+            }
 
             Map<Integer, Sector> existingByNumber = new HashMap<>();
             for (Sector s : existingBoard.getSectorsList()) {
@@ -87,6 +96,7 @@ public class BoardService {
             // Un plateau créé prend toujours un id de séquence, même si le DTO en portait un.
             board.setId(null);
             board.setName(boardName);
+            board.setCurrentTurn(0);
             return boardRepository.save(board);
         }
     }
@@ -166,6 +176,12 @@ public class BoardService {
     }
 
     public BoardDto createBoardDto(BoardDto boardDto) {
+        if (boardDto.getName() == null || boardDto.getName().isBlank()) {
+            throw new IllegalArgumentException("Le nom de la partie est requis");
+        }
+        if (boardRepository.findByName(boardDto.getName()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Une partie porte déjà ce nom");
+        }
         Board board = boardMapper.toDomain(boardDto);
         Board saved = saveBoard(board, boardDto.getName());
         return boardMapper.toDto(saved);

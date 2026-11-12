@@ -6,6 +6,12 @@
       </div>
       <h1 class="admin-title">Console Admin</h1>
     </div>
+    @if (auth.isAdmin()) {
+      <a mat-stroked-button routerLink="/admin/partie">
+        <mat-icon>construction</mat-icon>
+        Préparation de la partie
+      </a>
+    }
   </div>
 
   <div class="admin-panel">

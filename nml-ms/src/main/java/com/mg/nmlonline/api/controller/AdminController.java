@@ -1,7 +1,12 @@
 package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.api.dto.AdminAllianceHistoryDto;
+import com.mg.nmlonline.api.dto.AdminBoardAdminDto;
+import com.mg.nmlonline.api.dto.AdminLinkAccountRequestDto;
 import com.mg.nmlonline.api.dto.AdminMovementOrderDto;
+import com.mg.nmlonline.api.dto.AdminUserDto;
+import com.mg.nmlonline.api.dto.BoardPresetDto;
+import com.mg.nmlonline.api.dto.BoardPresetSummaryDto;
 import com.mg.nmlonline.api.dto.ExchangeOfferDto;
 import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
 import com.mg.nmlonline.api.dto.BoardDto;
@@ -16,6 +21,7 @@ import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.domain.service.AdminService;
 import com.mg.nmlonline.domain.service.AllianceService;
 import com.mg.nmlonline.domain.service.BoardAssetStorageService;
+import com.mg.nmlonline.domain.service.BoardPresetService;
 import com.mg.nmlonline.domain.service.ExchangeOfferService;
 import com.mg.nmlonline.domain.service.MovementAdminService;
 import com.mg.nmlonline.domain.service.PlayerService;
@@ -49,6 +55,7 @@ public class AdminController {
     private final AdminService adminService;
     private final PlayerService playerService;
     private final BoardAssetStorageService boardAssetStorageService;
+    private final BoardPresetService boardPresetService;
     private final TurnService turnService;
     private final MovementAdminService movementAdminService;
     private final TurnResolutionOrchestrator turnResolutionOrchestrator;
@@ -60,6 +67,7 @@ public class AdminController {
     public AdminController(AdminService adminService,
                            PlayerService playerService,
                            BoardAssetStorageService boardAssetStorageService,
+                           BoardPresetService boardPresetService,
                            TurnService turnService,
                            MovementAdminService movementAdminService,
                            TurnResolutionOrchestrator turnResolutionOrchestrator,
@@ -70,6 +78,7 @@ public class AdminController {
         this.adminService = adminService;
         this.playerService = playerService;
         this.boardAssetStorageService = boardAssetStorageService;
+        this.boardPresetService = boardPresetService;
         this.turnService = turnService;
         this.movementAdminService = movementAdminService;
         this.turnResolutionOrchestrator = turnResolutionOrchestrator;
@@ -95,6 +104,45 @@ public class AdminController {
     public ResponseEntity<Void> revokeBoardAdmin(@PathVariable Long boardId, @PathVariable Long userId) {
         adminService.revokeBoardAdmin(boardId, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/users")
+    public Page<AdminUserDto> searchUsers(@RequestParam(defaultValue = "") String q, Pageable pageable) {
+        return adminService.searchUsers(q, pageable);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/board-admins")
+    public List<AdminBoardAdminDto> listBoardAdmins(HttpServletRequest request) {
+        return adminService.listBoardAdmins(boardId(request));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/players/{id}/account")
+    public ResponseEntity<Void> linkAccount(@PathVariable Long id,
+                                            @Valid @RequestBody AdminLinkAccountRequestDto request) {
+        adminService.linkAccount(id, request.username());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/players/{id}/account")
+    public ResponseEntity<Void> unlinkAccount(@PathVariable Long id) {
+        adminService.unlinkAccount(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/board-presets")
+    public List<BoardPresetSummaryDto> listBoardPresets() {
+        return boardPresetService.list();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/board-presets/{key}")
+    public BoardPresetDto getBoardPreset(@PathVariable String key) {
+        return boardPresetService.get(key);
     }
 
     @GetMapping("/players")
@@ -178,9 +226,10 @@ public class AdminController {
     public ResponseEntity<BoardDto> importBoard(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "mapImageUrl", required = false) String mapImageUrl,
-            @RequestParam(value = "svgOverlayUrl", required = false) String svgOverlayUrl) throws java.io.IOException {
+            @RequestParam(value = "svgOverlayUrl", required = false) String svgOverlayUrl,
+            @RequestParam(value = "name", required = false) String name) throws java.io.IOException {
         String jsonContent = new String(file.getBytes(), StandardCharsets.UTF_8);
-        return ResponseEntity.ok(adminService.importBoardDto(jsonContent, mapImageUrl, svgOverlayUrl));
+        return ResponseEntity.ok(adminService.importBoardDto(jsonContent, mapImageUrl, svgOverlayUrl, name));
     }
 
     @GetMapping("/turn/current")

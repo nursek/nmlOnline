@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
 import {
   AdminAllianceEntry,
   AdminAllianceProposalEntry,
@@ -13,6 +14,7 @@ import {
   MovementStatusFilter,
 } from '../../models';
 import { AdminService } from '../../services/admin.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-admin',
@@ -23,12 +25,14 @@ import { AdminService } from '../../services/admin.service';
     MatProgressSpinnerModule,
     MatChipsModule,
     MatTooltipModule,
+    RouterLink,
   ],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss'],
 })
 export class AdminComponent {
   private readonly admin = inject(AdminService);
+  readonly auth = inject(AuthService);
 
   readonly currentTurn = this.admin.currentTurn;
 

@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 
 @Slf4j
@@ -96,6 +97,8 @@ public class PlayerStartupImporter implements ApplicationRunner {
             importIfPresent(new ClassPathResource(player), board);
         }
 
+        // Les plateaux de démo sont déjà jouables : ils ne passent pas par le tour 0.
+        board.start(Instant.now());
         log.info("Sauvegarde finale du Board (merge) avec {} secteurs...", board.getAllSectors().size());
         boardService.save(board);
         long ownedCount = board.getAllSectors().stream().filter(s -> !s.isNeutral()).count();

@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.*;
 
 @Entity
@@ -37,9 +38,15 @@ public class Board {
     @Column(name = "svg_overlay_url")
     private String svgOverlayUrl;
 
-    /** Tour courant — source unique de vérité du plateau (incrémenté par TurnService.advanceTurn). */
+    @Column(name = "preset_key", length = 64)
+    private String presetKey;
+
+    /** Tour courant — 0 = tour de préparation, 1+ = partie en cours. */
     @Column(name = "current_turn", nullable = false)
     private int currentTurn = 1;
+
+    @Column(name = "started_at")
+    private Instant startedAt;
 
     /** Tour dont les revenus ont déjà été versés (le raccourci admin ne l'incrémente pas). */
     @Column(name = "revenue_claimed_turn")
@@ -211,6 +218,20 @@ public class Board {
             }
         }
         return Collections.emptyList();
+    }
+
+    public boolean isPreparation() {
+        return currentTurn < 1;
+    }
+
+    /** Tour 0 = préparation ; le démarrage fixe le premier tour joué. */
+    public void start(Instant now) {
+        if (startedAt == null) {
+            startedAt = now;
+        }
+        if (currentTurn < 1) {
+            currentTurn = 1;
+        }
     }
 
     @Override

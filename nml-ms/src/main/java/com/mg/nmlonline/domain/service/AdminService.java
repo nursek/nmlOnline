@@ -1,5 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.AdminBoardAdminDto;
+import com.mg.nmlonline.api.dto.AdminUserDto;
 import com.mg.nmlonline.api.dto.BoardDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
@@ -24,6 +26,7 @@ import com.mg.nmlonline.mapper.PlayerMapper;
 import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -146,6 +149,82 @@ public class AdminService {
         boardAdminRepository.findByUserId(userId).stream()
                 .filter(admin -> admin.getBoardId().equals(boardId))
                 .forEach(boardAdminRepository::delete);
+    }
+
+    @Transactional
+    public void linkAccount(Long playerId, String username) {
+        Player player = playerService.findByIdForUpdate(playerId);
+        if (player == null) {
+            throw new IllegalArgumentException("Joueur introuvable : " + playerId);
+        }
+        Board board = boardService.getBoardByIdForUpdate(player.getBoardId())
+                .orElseThrow(() -> new IllegalStateException("Plateau introuvable"));
+        if (!board.isPreparation()) {
+            throw new IllegalStateException("La partie a déjà démarré : impossible de relier un compte");
+        }
+        if (player.getUserId() != null) {
+            throw new IllegalStateException("Ce joueur a déjà un compte relié");
+        }
+        User user = userRepository.findByUsername(username.trim());
+        if (user == null) {
+            throw new IllegalArgumentException("Compte introuvable : " + username.trim());
+        }
+        if ("ADMIN".equals(user.getRole())) {
+            throw new SecurityException("Un compte administrateur ne peut pas être relié à un joueur");
+        }
+        Player existing = playerService.findByUserId(user.getId(), player.getBoardId());
+        if (existing != null) {
+            throw new IllegalStateException("Ce compte est déjà relié à un joueur de cette partie");
+        }
+        player.setUserId(user.getId());
+        playerService.save(player);
+        adminAuditService.record(player.getBoardId(), playerId, AdminAuditAction.LINK_ACCOUNT,
+                "Compte relié : " + user.getUsername());
+    }
+
+    @Transactional
+    public void unlinkAccount(Long playerId) {
+        Player player = playerService.findByIdForUpdate(playerId);
+        if (player == null) {
+            throw new IllegalArgumentException("Joueur introuvable : " + playerId);
+        }
+        Board board = boardService.getBoardByIdForUpdate(player.getBoardId())
+                .orElseThrow(() -> new IllegalStateException("Plateau introuvable"));
+        if (!board.isPreparation()) {
+            throw new IllegalStateException("La partie a déjà démarré : impossible de délier un compte");
+        }
+        if (player.getUserId() == null) {
+            return;
+        }
+        String username = userRepository.findById(player.getUserId())
+                .map(User::getUsername)
+                .orElse("inconnu");
+        player.setUserId(null);
+        playerService.save(player);
+        adminAuditService.record(player.getBoardId(), playerId, AdminAuditAction.UNLINK_ACCOUNT,
+                "Compte délié : " + username);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AdminUserDto> searchUsers(String query, Pageable pageable) {
+        String q = query == null ? "" : query.trim();
+        var page = q.isEmpty()
+                ? userRepository.findAll(pageable)
+                : userRepository.findByUsernameContainingIgnoreCase(q, pageable);
+        return page.map(user -> new AdminUserDto(
+                user.getId(), user.getUsername(), user.getRole()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminBoardAdminDto> listBoardAdmins(Long boardId) {
+        List<BoardAdmin> admins = boardAdminRepository.findByBoardId(boardId);
+        List<Long> ids = admins.stream().map(BoardAdmin::getUserId).toList();
+        Map<Long, String> usernames = new HashMap<>();
+        userRepository.findAllById(ids).forEach(user -> usernames.put(user.getId(), user.getUsername()));
+        return admins.stream()
+                .map(admin -> new AdminBoardAdminDto(
+                        admin.getUserId(), usernames.get(admin.getUserId())))
+                .toList();
     }
 
     private void requireBoardAndUser(Long boardId, Long userId) {
@@ -318,9 +397,10 @@ public class AdminService {
         boardService.deleteBoard(boardId);
     }
 
-    /** Import board.json. Les URLs fournies override celles du JSON ; upsert par nom via saveBoard. */
+    /** Import board.json. Les URLs fournies override celles du JSON ; un nom explicite déjà pris est refusé. */
     @Transactional
-    public Board importBoard(String jsonContent, String mapImageUrl, String svgOverlayUrl) throws IOException {
+    public Board importBoard(String jsonContent, String mapImageUrl, String svgOverlayUrl,
+                             String requestedName) throws IOException {
         Board board = boardImportService.importBoardFromJson(jsonContent);
         if (mapImageUrl != null && !mapImageUrl.isBlank()) {
             board.setMapImageUrl(mapImageUrl);
@@ -328,7 +408,14 @@ public class AdminService {
         if (svgOverlayUrl != null && !svgOverlayUrl.isBlank()) {
             board.setSvgOverlayUrl(svgOverlayUrl);
         }
-        String boardName = board.getName() != null ? board.getName() : "Carte Principale";
+        String boardName = requestedName != null && !requestedName.isBlank()
+                ? requestedName.trim()
+                : board.getName() != null ? board.getName() : "Carte Principale";
+        if (requestedName != null && !requestedName.isBlank()
+                && boardService.getBoardByName(boardName).isPresent()) {
+            throw new IllegalStateException("Une partie porte déjà ce nom");
+        }
+        board.setName(boardName);
         Board saved = boardService.saveBoard(board, boardName);
         logger.info("Import board '{}' (id {})", saved.getName(), saved.getId());
         adminAuditService.record(saved.getId(), null, AdminAuditAction.IMPORT_BOARD,
@@ -338,8 +425,9 @@ public class AdminService {
 
     /** Idem : boardMapper parcourt sectorsList et ses sous-collections (LAZY). */
     @Transactional
-    public BoardDto importBoardDto(String jsonContent, String mapImageUrl, String svgOverlayUrl) throws IOException {
-        Board board = importBoard(jsonContent, mapImageUrl, svgOverlayUrl);
+    public BoardDto importBoardDto(String jsonContent, String mapImageUrl, String svgOverlayUrl,
+                                   String requestedName) throws IOException {
+        Board board = importBoard(jsonContent, mapImageUrl, svgOverlayUrl, requestedName);
         return boardMapper.toDto(board);
     }
 }

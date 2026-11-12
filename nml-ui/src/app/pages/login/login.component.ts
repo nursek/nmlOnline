@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { SigilComponent } from '../../shared/sigil/sigil.component';
 import { ThemeToggleComponent } from '../../shared/theme-toggle/theme-toggle.component';
@@ -21,6 +22,7 @@ import { ThemeToggleComponent } from '../../shared/theme-toggle/theme-toggle.com
     MatCheckboxModule,
     MatProgressSpinnerModule,
     MatIconModule,
+    RouterLink,
     SigilComponent,
     ThemeToggleComponent,
   ],

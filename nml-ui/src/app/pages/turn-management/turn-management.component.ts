@@ -19,11 +19,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
+import { RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { TurnManagementService } from '../../services/turn-management.service';
 import { ConflictPreviewService } from '../../services/conflict-preview.service';
 import { DevScenarioService } from '../../services/dev-scenario.service';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { PendingCapture, ResolvedBattle } from '../../models';
 import { CombatLogDialogComponent } from './combat-log-dialog.component';
 import { downloadJson, downloadText } from '../../core/download-file';
@@ -53,6 +55,7 @@ import type { ExportFormat } from './turn-export.helpers';
     MatInputModule,
     MatDialogModule,
     MatMenuModule,
+    RouterLink,
   ],
   templateUrl: './turn-management.component.html',
   styleUrls: ['./turn-management.component.scss'],
@@ -62,6 +65,7 @@ export class TurnManagementComponent {
   private readonly preview = inject(ConflictPreviewService);
   private readonly devScenarios = inject(DevScenarioService);
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -71,6 +75,7 @@ export class TurnManagementComponent {
   readonly archiveLoading = signal(false);
   private archiveTurnTouched = false;
 
+  readonly isAdmin = this.auth.isAdmin;
   readonly state = this.turnManagement.state;
   readonly busy = this.turnManagement.busy;
   readonly loading = this.turnManagement.loading;

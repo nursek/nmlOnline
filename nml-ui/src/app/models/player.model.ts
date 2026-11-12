@@ -41,6 +41,8 @@ export interface Player {
   id: number | null;
   name: string;
   race?: string | null;
+  userId?: number | null;
+  accountUsername?: string | null;
   // Présent sur la vue publique (autres joueurs) : état privé absent.
   sectorCount?: number;
   stats: PlayerStats;

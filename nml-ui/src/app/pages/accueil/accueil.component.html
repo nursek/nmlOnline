@@ -12,6 +12,27 @@
       <h1 class="title">Accueil</h1>
     </div>
 
+    @if (turn() === 0) {
+      <mat-card class="prep-banner">
+        <mat-card-content>
+          <div class="prep-banner-head">
+            <mat-icon>construction</mat-icon>
+            <div>
+              <strong>Tour 0 — préparation</strong>
+              <p>
+                Lisez les règles, discutez avec vos voisins, puis placez vos bâtiments, votre
+                personnage et vos unités sur vos territoires.
+              </p>
+            </div>
+          </div>
+          <div class="prep-banner-actions">
+            <a mat-stroked-button routerLink="/regles">Lire les règles</a>
+            <a mat-flat-button color="primary" routerLink="/joueur">Préparer mes forces</a>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
     @if (boardError()) {
       <div class="error-alert" role="alert">
         <mat-icon>error</mat-icon>
