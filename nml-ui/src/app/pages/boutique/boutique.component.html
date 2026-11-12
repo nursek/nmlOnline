@@ -467,20 +467,20 @@
 
                   <div class="tile-meta">
                     @if (equipment.pdfBonus > 0) {
-                      <span class="stat-tag pdf">+{{ equipment.pdfBonus }} PDF</span>
+                      <span class="stat-tag pdf">+{{ equipment.pdfBonus }} % PDF</span>
                     }
                     @if (equipment.pdcBonus > 0) {
-                      <span class="stat-tag pdc">+{{ equipment.pdcBonus }} PDC</span>
+                      <span class="stat-tag pdc">+{{ equipment.pdcBonus }} % PDC</span>
                     }
                     @if (equipment.armBonus > 0) {
-                      <span class="stat-tag arm">+{{ equipment.armBonus }} ARM</span>
+                      <span class="stat-tag arm">+{{ equipment.armBonus }} % ARM</span>
                     }
                     @if (equipment.evasionBonus > 0) {
-                      <span class="stat-tag esq">+{{ equipment.evasionBonus }} ESQ</span>
+                      <span class="stat-tag esq">+{{ equipment.evasionBonus }} % ESQ</span>
                     }
                     @if ((equipment.vehicleBonus ?? 0) > 0) {
                       <span class="stat-tag vehicle"
-                        >+{{ equipment.vehicleBonus }} VS
+                        >+{{ equipment.vehicleBonus }} % VS
                         {{
                           equipment.vehicleBonusTarget === 'AERIAL' ? 'aériens' : 'terrestres'
                         }}</span
