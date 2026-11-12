@@ -40,7 +40,8 @@
             Chaque joueur contrôle des secteurs et y stationne ses unités, son personnage et ses
             bâtiments. L'objectif est de prendre les secteurs adverses et de durer plus longtemps
             que les autres. La partie commence par un tour 0 de préparation, puis avance au tour
-            par tour : les joueurs transmettent leurs ordres, puis les affrontements sont résolus.
+            par tour : à partir du tour 1, les joueurs transmettent leurs ordres, puis les
+            affrontements sont résolus.
           </p>
         </mat-expansion-panel>
 
@@ -62,6 +63,21 @@
             unités. Pour chaque groupe d'unités, il choisit le secteur, la quantité et la
             <strong>classe</strong> ; une unité LARBIN ne peut avoir qu'une classe.
           </p>
+          <ul class="rule-list">
+            <li>
+              <strong>Unités de départ</strong> — les 100 unités ne sont pas des recrues achetées :
+              elles ne consomment aucun quota de recrutement. Le joueur doit les répartir pendant le
+              tour 0.
+            </li>
+            <li>
+              <strong>Placement initial</strong> — poser le personnage ou un bâtiment au tour 0 ne
+              consomme pas son déplacement et ne déclenche aucun cooldown.
+            </li>
+            <li>
+              <strong>Alliances</strong> — elles peuvent être proposées dès le tour 0, sous réserve
+              d'un QG opérationnel.
+            </li>
+          </ul>
           <div class="callout">
             <mat-icon>info</mat-icon>
             <p>
@@ -71,9 +87,10 @@
             </p>
           </div>
           <p class="text">
-            Au démarrage, un bâtiment ou un personnage encore non placé rejoint le premier secteur
-            du joueur. Une unité encore non classée devient <strong>LÉGER</strong> ; les unités
-            restées en réserve rejoignent le QG à la fin du tour 1.
+            En pratique, le joueur doit avoir tout réparti avant le démarrage. À défaut, un bâtiment
+            ou un personnage encore non placé rejoint le premier secteur du joueur, et une unité
+            encore non classée devient <strong>LÉGER</strong> ; les unités restées en réserve
+            rejoignent le QG à la fin du tour 1.
           </p>
         </mat-expansion-panel>
 
