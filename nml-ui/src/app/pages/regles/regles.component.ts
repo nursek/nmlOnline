@@ -204,7 +204,7 @@ export class ReglesComponent {
     {
       nom: unitClassLabel('TIREUR'),
       effet:
-        'À chaque phase de tir (PdF, PdC, ATK), 10 % de chances de voir ses dégâts multipliés par 1,5 pour la phase.',
+        'À chaque phase de tir (PdF, PdC, ATK), 20 % de chances de voir ses dégâts multipliés par 1,5 pour la phase.',
       actif: true,
     },
     {

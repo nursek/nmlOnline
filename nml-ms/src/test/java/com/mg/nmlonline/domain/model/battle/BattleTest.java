@@ -638,11 +638,11 @@ class BattleTest {
     class CriticalTests {
 
         @Test
-        @DisplayName("TIREUR : jet ≤ 10 multiplie les dégâts par 1,5 et le journalise")
+        @DisplayName("TIREUR : jet ≤ 20 multiplie les dégâts par 1,5 et le journalise")
         void tireurCritMultipliesDamage() {
             Unit striker = brute();
             striker.setNumber(1);
-            battle.setRandomSource(rolls(10));
+            battle.setRandomSource(rolls(20));
             Headquarters hq = new Headquarters(1L);
             hq.setPlayerId(1L);
             List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
@@ -651,17 +651,17 @@ class BattleTest {
             battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
 
             assertEquals(50.0, hq.getDefense(), "100 ATK × 1,5 = 150 face à 200 def");
-            assertTrue(logContains("critique (jet 10 ≤ 10 %) : 100 → 150 ATK"));
+            assertTrue(logContains("critique (jet 20 ≤ 20 %) : 100 → 150 ATK"));
             assertTrue(battle.getLog().stream()
                     .anyMatch(entry -> BattleLogEntry.CRIT.equals(entry.outcome())));
         }
 
         @Test
-        @DisplayName("TIREUR : jet > 10 conserve les dégâts normaux")
+        @DisplayName("TIREUR : jet > 20 conserve les dégâts normaux")
         void tireurWithoutCritDealsNormalDamage() {
             Unit striker = brute();
             striker.setNumber(1);
-            battle.setRandomSource(rolls(11));
+            battle.setRandomSource(rolls(21));
             Headquarters hq = new Headquarters(1L);
             hq.setPlayerId(1L);
             List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));

@@ -15,7 +15,7 @@ public enum UnitClass {
     TIREUR("T") {
         @Override
         public double getCriticalChance() {
-            return 0.10;
+            return 0.20;
         }
 
         @Override
