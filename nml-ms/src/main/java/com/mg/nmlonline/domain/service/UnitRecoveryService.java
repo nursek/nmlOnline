@@ -18,12 +18,13 @@ public class UnitRecoveryService {
     }
 
     @Transactional
-    public void recoverWoundedUnits(int turnEnding) {
-        List<Unit> recovered = unitRepository.findAll().stream()
+    public void recoverAtTurnEnd(int turnEnding) {
+        List<Unit> units = unitRepository.findAll();
+        units.stream()
                 .filter(unit -> unit.shouldRecover(turnEnding))
-                .toList();
-        recovered.forEach(Unit::recover);
-        recovered.stream()
+                .forEach(Unit::recover);
+        units.forEach(Unit::regenerateArmor);
+        units.stream()
                 .map(Unit::getSector)
                 .filter(sector -> sector != null)
                 .distinct()

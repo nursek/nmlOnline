@@ -125,7 +125,7 @@ public class TurnService {
 
             characterService.regenerateAllCharacters();
             vehicleMaintenanceService.repairAllVehicles();
-            unitRecoveryService.recoverWoundedUnits(turnEnding);
+            unitRecoveryService.recoverAtTurnEnd(turnEnding);
 
             int newTurn = turnEnding + 1;
             board.setCurrentTurn(newTurn);
