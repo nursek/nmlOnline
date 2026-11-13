@@ -271,6 +271,13 @@ Any schema change (new entity, new column, new index…) MUST ship as a migratio
 
 Never edit an already-applied migration file — always add a new one.
 
+### End-game schema (V40)
+
+`V40__game_end_and_gazette.sql` adds `boards.finished_at`, `winner_player_id` and
+`winner_adjusted`, the `elimination_events` history (per-board death order and victim snapshot)
+and the `gazette_issues` table (public payload + admin-only `editor_notes`), and extends the
+`announcements` type check with `FINAL_DUEL`.
+
 ### Detecting prod/test divergence before deploying
 
 `ProdBootParityTest` starts a real PostgreSQL 14 **inside the JVM** (native binaries pulled from Maven,
@@ -516,6 +523,15 @@ Every endpoint below except `/api/login`, `/api/register`, `/api/auth/*` and `/a
 | POST | `/api/buildings/{id}/move` | Bearer+Owner | Move building to another sector |
 | GET | `/api/admin/players?page=0&size=20` | Admin | List all players (paginated) |
 | POST | `/api/admin/players/import` | Admin | Import player from JSON |
+| GET | `/api/game/podium` | Bearer+Scope | Final podium (champion, places, kills/assists) |
+| GET | `/api/game/gazette` | Bearer+Scope | Published gazette issues |
+| GET | `/api/game/gazette/{turn}` | Bearer+Scope | Published issue (404 for a draft) |
+| PUT | `/api/admin/game/winner` | Admin | Designate the posthumous champion |
+| GET | `/api/admin/game/gazette` | Admin | Draft and published issues |
+| GET | `/api/admin/game/gazette/{turn}` | Admin | Draft/issue with admin notes |
+| PUT | `/api/admin/game/gazette/{turn}` | Admin | Save or correct an issue |
+| POST | `/api/admin/game/gazette/{turn}/publish` | Admin | Publish (at least one complete front-page article) |
+| DELETE | `/api/admin/game/gazette/{turn}` | Admin | Delete a draft (409 if published) |
 | GET | `/actuator/health` | Public | Health check |
 
 ### Multi-instance
@@ -539,6 +555,26 @@ volume (`-v nml-logs:/app/logs`) to persist it. Players see the summarized resul
 **Rapports** page (`GET /api/battle-reports`); the full step-by-step log stays admin-only and is
 kept for the current resolution session.
 
+### Game end, podium and the Brigade des Morts
+
+The BETA format is six players, each for themselves; temporary alliances are allowed but there
+is no alliance victory and no secret objective. A player is eliminated when their headquarters is
+captured or their main character is killed. The game ends when only one player remains: the
+survivor is the champion; with no survivor, the last eliminated player is the posthumous champion
+and the game master may designate another eliminated player. The podium (`GET /api/game/podium`)
+lists every player in reverse elimination order, with kills, assists, cause
+(`MAIN_CHARACTER_KILLED` is definitive, `HEADQUARTERS_CAPTURED` is a defeat that can return in
+lore) and the final duel. If the last two players are allied, the alliance breaks automatically
+on the following turn; no new alliance can be formed with two players left.
+
+After every turn with at least one elimination the backend creates a **Brigade des Morts**
+draft: a persisted masthead (journal name, volume, issue, Europe/Paris date, uniformly drawn
+weather and fake URL slug), pre-filled front-page slots and admin-only editor notes (eliminations,
+battles, captures, announcements, players, outcome). The game master writes the articles in
+`/admin/journal`, previews them, and publishes; players read published issues in `/journal` and
+`/journal/:turn`. Drafts and editor notes are never public. The masthead is frozen once the draft
+is created; a published issue can be corrected without changing its publication date.
+
 ---
 
 ## Testing
@@ -548,7 +584,7 @@ kept for the current resolution session.
 ```bash
 cd nml-ms
 
-# All 456 backend tests on embedded PostgreSQL + Flyway (no install, no Docker) — ~60 s
+# All 708 backend tests on embedded PostgreSQL + Flyway (no install, no Docker) — ~8 min
 ./mvnw clean test
 
 # Fast iteration while developing
@@ -562,12 +598,12 @@ cd nml-ms
 ./mvnw verify
 ```
 
-The full suite runs on the embedded PostgreSQL in about a minute, locally and in CI alike. That cost
+The full suite runs on the embedded PostgreSQL in a few minutes, locally and in CI alike. That cost
 buys detection before the push: a migration forgotten behind a new entity field fails `mvn test`
 here rather than in CI after the push, or worse, at the next production boot. The ~14 s PostgreSQL
 startup is paid once per JVM, so extra tests on an existing Spring context are nearly free.
 
- 456 backend tests across unit tests (domain models, game-logic services with mocked repositories) and integration tests (Spring context, security ownership). Game rules are pinned as characterization tests: economy (purchases, sale multipliers), units (experience thresholds, injury, equipment formulas), buildings (cooldowns, capture, vampirisation), vehicles (pilot rules, balance table), combat (deterministic phases, no-evasion scenarios) and player stats formulas. Behavior suspected to be buggy is pinned with a characterization test rather than fixed.
+ 708 backend tests across unit tests (domain models, game-logic services with mocked repositories) and integration tests (Spring context, security ownership). Game rules are pinned as characterization tests: economy (purchases, sale multipliers), units (experience thresholds, injury, equipment formulas), buildings (cooldowns, capture, vampirisation), vehicles (pilot rules, balance table), combat (deterministic phases, no-evasion scenarios) and player stats formulas. Behavior suspected to be buggy is pinned with a characterization test rather than fixed. The end-game flows are covered too: elimination order and snapshots, podium and posthumous champion, final alliance break, gazette masthead/draft/publication and the read-only game-over filter.
 
 ### Frontend
 
@@ -587,7 +623,8 @@ npm run format
 npx ng build
 ```
 
-Jest unit tests on services and guards (NgRx was removed in favor of signal-based services).
+Jest unit tests on services, guards, pages and the podium/gazette components (NgRx was removed in
+favor of signal-based services).
 
 ---
 
@@ -615,6 +652,7 @@ src/main/java/com/mg/nmlonline/
 │   │   ├── equipment/    # Equipment & stacks
 │   │   ├── movement/     # Movement service
 │   │   ├── player/       # Player, resources, stats
+│   │   ├── press/        # Elimination events and gazette issues
 │   │   ├── resource/     # Resource types
 │   │   ├── sector/       # Sector model
 │   │   ├── unit/         # Units, characters, combat entities
@@ -633,7 +671,10 @@ src/main/java/com/mg/nmlonline/
 src/app/
 ├── pages/
 │   ├── login/            # Login form (NonNullableFormBuilder, signals)
-│   ├── accueil/          # Home: global stats, announcements, rankings
+│   ├── accueil/          # Home: global stats, announcements, rankings/podium
+│   ├── podium/           # Final podium, champion adjustment
+│   ├── journal/          # Public gazette archive and issue
+│   ├── admin-journal/    # Game master gazette list and editor
 │   ├── carte/            # Interactive SVG map (afterNextRender, signals)
 │   ├── joueur/           # Player profile + units
 │   ├── boutique/         # Equipment & vehicle shop (takeUntilDestroyed)
@@ -644,6 +685,8 @@ src/app/
 │   └── navbar/           # Navigation bar (effect, signals)
 ├── shared/
 │   ├── confirm-dialog/   # Material confirm dialog
+│   ├── gazette/          # Newspaper template and helpers
+│   ├── player-photo/     # Portrait with archive fallback
 │   └── purchase-success-dialog/  # Purchase feedback
 ├── services/
 │   ├── api.service.ts          # Centralized HTTP calls

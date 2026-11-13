@@ -63,6 +63,12 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   `player_actions.player_id` pose un KEY SHARE sur `players` ; l'ordre inverse deadlock.
 - **Lecture** : jamais l'état privé d'autrui — `PlayerDto` complet = propriétaire/admin,
   carte via `BoardMapper.toPublicDto` ; SVG admin = `sanitizeSvg` client + CSP `sandbox` (`/boards/**`).
+- **Fin de partie** : `GameEndService.finishIfOver` (depuis `finalizeTurn`) écrit
+  `finishedAt`/`winnerPlayerId`/`winnerAdjusted` ; `currentTurn` reste le tour final.
+  `GameOverFilter` refuse les mutations hors `/api/admin/**`. `GazetteIssue` (journal du MJ)
+  est distincte de `TurnJournal` (archive technique). Un brouillon (`DRAFT`) n'est jamais
+  public ; `editor_notes` est admin-only. Aucune victoire d'alliance : la dernière alliance se
+  brise et aucune nouvelle n'est acceptée à deux joueurs. Aucun objectif secret.
 - Minimal wins : pas d'abstraction spéculative, pas d'échafaudage « pour plus tard »,
   pas de nouvelle dépendance quand quelques lignes suffisent. Supprimer > ajouter.
 - Logique non triviale = **un** test qui casse si la logique casse. Pas de suite par fonction.
