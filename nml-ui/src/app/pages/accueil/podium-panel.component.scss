@@ -1,0 +1,178 @@
+@use '../../../styles/shared' as shared;
+
+:host {
+  display: block;
+  margin-top: 24px;
+}
+
+.podium-card {
+  border-radius: var(--r-md);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+}
+
+.section-header {
+  @include shared.section-header;
+  margin-bottom: 16px;
+
+  h2 {
+    font-size: 1.1rem;
+  }
+}
+
+.turn-badge {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: var(--r-xs);
+  background: var(--accent-tint);
+  color: shared.$primary-color;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.podium-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: shared.$text-muted;
+  font-size: 0.9rem;
+}
+
+.podium-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.podium-empty {
+  margin: 0;
+  color: shared.$text-muted;
+  font-size: 0.9rem;
+}
+
+.champion-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 18px;
+  align-items: center;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1.5px solid color-mix(in srgb, var(--sun) 45%, var(--line));
+  border-radius: var(--r-sm);
+  background:
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--sun) 12%, transparent), transparent 60%),
+    var(--surface-2);
+}
+
+.champion-photo {
+  width: 96px;
+}
+
+.champion-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sun);
+}
+
+.champion-name {
+  margin: 4px 0 2px;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  line-height: 1.05;
+  color: var(--ink);
+}
+
+.champion-stats {
+  display: block;
+  color: shared.$text-muted;
+  font-size: 0.85rem;
+}
+
+.champion-note {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--sun);
+  border-radius: var(--r-xs);
+  color: var(--sun);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mini-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.mini-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 8px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  text-align: center;
+
+  &.step-1 {
+    order: 2;
+    padding-top: 16px;
+    border-color: var(--sun);
+  }
+
+  &.step-2 {
+    order: 1;
+  }
+
+  &.step-3 {
+    order: 3;
+  }
+}
+
+.medal {
+  font-size: 1.1rem;
+}
+
+.mini-place {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.mini-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-weight: 600;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-stats {
+  font-size: 0.72rem;
+  color: shared.$text-muted;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.podium-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

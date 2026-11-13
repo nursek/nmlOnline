@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { AuthService } from './services/auth.service';
@@ -9,7 +9,7 @@ import { ShopService } from './services/shop.service';
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, MatIconModule, NavbarComponent],
+  imports: [RouterOutlet, RouterLink, MatIconModule, NavbarComponent],
   template: `
     <div class="app-container">
       <app-navbar></app-navbar>
@@ -30,6 +30,7 @@ import { ShopService } from './services/shop.service';
               <em>(champion désigné par le MJ)</em>
             }
           </span>
+          <a class="banner-link" routerLink="/podium">Voir le podium</a>
         </div>
       } @else if (playerStatus.eliminated()) {
         <div class="readonly-banner" role="status">
@@ -78,6 +79,13 @@ import { ShopService } from './services/shop.service';
           mat-icon {
             color: var(--accent);
           }
+        }
+
+        .banner-link {
+          margin-left: auto;
+          color: var(--accent-ink);
+          font-weight: 600;
+          white-space: nowrap;
         }
       }
     `,

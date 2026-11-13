@@ -57,7 +57,7 @@
           <div class="global-stat">
             <mat-icon>people</mat-icon>
             <div>
-              <span class="stat-value">{{ players().length }}</span>
+              <span class="stat-value">{{ playersAlive() }}</span>
               <span class="stat-label">Joueurs en vie</span>
               @if (playersTruncated()) {
                 <span class="stat-label">(liste partielle — 50 premiers)</span>
@@ -148,6 +148,10 @@
       </mat-card>
     }
 
-    <app-rankings-panel [playerColors]="playerColors()" />
+    @if (gameFinished()) {
+      <app-podium-panel [playerColors]="playerColors()" />
+    } @else {
+      <app-rankings-panel [playerColors]="playerColors()" />
+    }
   </div>
 }

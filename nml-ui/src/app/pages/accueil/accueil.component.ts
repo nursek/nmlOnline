@@ -8,12 +8,20 @@ import { environment } from '../../../environments/environment';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
 import { PlayerDirectoryService } from '../../services/player-directory.service';
+import { PlayerStatusService } from '../../services/player-status.service';
 import { RankingsPanelComponent } from './rankings-panel.component';
+import { PodiumPanelComponent } from './podium-panel.component';
 
 @Component({
   selector: 'app-accueil',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatCardModule, MatIconModule, MatProgressSpinnerModule, RankingsPanelComponent],
+  imports: [
+    MatCardModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    RankingsPanelComponent,
+    PodiumPanelComponent,
+  ],
   templateUrl: './accueil.component.html',
   styleUrls: ['./accueil.component.scss'],
 })
@@ -21,6 +29,7 @@ export class AccueilComponent {
   private readonly activeBoard = inject(ActiveBoardService);
   private readonly playerDirectory = inject(PlayerDirectoryService);
   private readonly allianceState = inject(AllianceStateService);
+  private readonly playerStatus = inject(PlayerStatusService);
 
   private readonly turnRef = httpResource<number>(() => `${environment.apiBaseUrl}/turn/current`);
   private readonly statisticsRef = httpResource<GameStatistics>(
@@ -31,8 +40,12 @@ export class AccueilComponent {
   readonly boardError = this.activeBoard.error;
   readonly turn = this.turnRef.value;
   readonly players = this.playerDirectory.players;
+  readonly playersAlive = computed(
+    () => this.players().filter((player) => !player.eliminated).length,
+  );
   readonly playersTruncated = this.playerDirectory.truncated;
   readonly playerColors = this.playerDirectory.colorMap;
+  readonly gameFinished = this.playerStatus.gameFinished;
   readonly announcements = this.allianceState.announcements;
   readonly statistics = computed(() =>
     this.statisticsRef.hasValue() ? this.statisticsRef.value() : null,

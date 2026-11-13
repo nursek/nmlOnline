@@ -20,6 +20,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 import { InstanceService } from '../../services/instance.service';
 import { DevScenarioService } from '../../services/dev-scenario.service';
+import { PlayerStatusService } from '../../services/player-status.service';
 import { SigilComponent } from '../../shared/sigil/sigil.component';
 import { ThemeToggleComponent } from '../../shared/theme-toggle/theme-toggle.component';
 
@@ -387,6 +388,7 @@ export class NavbarComponent {
   private readonly instance = inject(InstanceService);
   private readonly router = inject(Router);
   private readonly devScenarios = inject(DevScenarioService);
+  private readonly playerStatus = inject(PlayerStatusService);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly document = inject(DOCUMENT);
 
@@ -409,12 +411,14 @@ export class NavbarComponent {
   readonly drawerOpen = signal(false);
 
   readonly menuItems = computed<NavLink[]>(() => {
-    if (!this.canAdmin()) {
-      return BASE_MENU_ITEMS;
-    }
-    return this.devScenarios.available()
-      ? ADMIN_MENU_ITEMS
-      : ADMIN_MENU_ITEMS.filter((item) => item.path !== '/admin/scenarios');
+    const base = !this.canAdmin()
+      ? BASE_MENU_ITEMS
+      : this.devScenarios.available()
+        ? ADMIN_MENU_ITEMS
+        : ADMIN_MENU_ITEMS.filter((item) => item.path !== '/admin/scenarios');
+    return this.playerStatus.gameFinished()
+      ? [...base, { path: '/podium', label: 'Podium', icon: 'emoji_events' }]
+      : base;
   });
 
   // Block body scroll while the mobile drawer is open (DOM/3rd-party sync effect).

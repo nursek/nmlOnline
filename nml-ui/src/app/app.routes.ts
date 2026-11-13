@@ -55,6 +55,11 @@ export const routes: Routes = [
     canActivate: [authGuard, instanceGuard],
   },
   {
+    path: 'podium',
+    loadComponent: () => import('./pages/podium/podium.component').then((m) => m.PodiumComponent),
+    canActivate: [authGuard, instanceGuard],
+  },
+  {
     path: 'carte',
     loadComponent: () => import('./pages/carte/carte.component').then((m) => m.CarteComponent),
     canActivate: [authGuard, instanceGuard],

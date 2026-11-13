@@ -137,6 +137,10 @@ export class ApiService {
     });
   }
 
+  adminAdjustWinner(playerId: number): Observable<unknown> {
+    return this.http.put<unknown>(`${this.baseUrl}/admin/game/winner`, { playerId });
+  }
+
   adminSetMoney(playerId: number, amount: number): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/admin/players/${playerId}/money`, { amount });
   }

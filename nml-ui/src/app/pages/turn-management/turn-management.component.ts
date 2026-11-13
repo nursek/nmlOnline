@@ -19,10 +19,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
+import { RouterLink } from '@angular/router';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { TurnManagementService } from '../../services/turn-management.service';
 import { ConflictPreviewService } from '../../services/conflict-preview.service';
 import { DevScenarioService } from '../../services/dev-scenario.service';
+import { PlayerStatusService } from '../../services/player-status.service';
 import { ApiService } from '../../services/api.service';
 import { PendingCapture, ResolvedBattle } from '../../models';
 import { CombatLogDialogComponent } from './combat-log-dialog.component';
@@ -53,6 +55,7 @@ import type { ExportFormat } from './turn-export.helpers';
     MatInputModule,
     MatDialogModule,
     MatMenuModule,
+    RouterLink,
   ],
   templateUrl: './turn-management.component.html',
   styleUrls: ['./turn-management.component.scss'],
@@ -61,6 +64,7 @@ export class TurnManagementComponent {
   private readonly turnManagement = inject(TurnManagementService);
   private readonly preview = inject(ConflictPreviewService);
   private readonly devScenarios = inject(DevScenarioService);
+  private readonly playerStatus = inject(PlayerStatusService);
   private readonly api = inject(ApiService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
@@ -81,6 +85,7 @@ export class TurnManagementComponent {
   readonly currentTurn = this.turnManagement.currentTurn;
   readonly navigating = this.turnManagement.navigating;
   readonly devScenarioAvailable = this.devScenarios.available;
+  readonly gameFinished = this.playerStatus.gameFinished;
   readonly causeLabel = eliminationCauseLabel;
 
   readonly previewReport = this.preview.report;
@@ -137,7 +142,9 @@ export class TurnManagementComponent {
           duration: 5000,
           panelClass: 'toast-success',
         });
-        this.turnManagement.clearFinalizeResult();
+        if (!fin.gameFinished) {
+          this.turnManagement.clearFinalizeResult();
+        }
       }
     });
     effect(() => {
@@ -151,6 +158,10 @@ export class TurnManagementComponent {
 
   onStart(): void {
     this.afterMutation(this.turnManagement.startSession());
+  }
+
+  clearFinalizeResult(): void {
+    this.turnManagement.clearFinalizeResult();
   }
 
   onReloadPreview(): void {
