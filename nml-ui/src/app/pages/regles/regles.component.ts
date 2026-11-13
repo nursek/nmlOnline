@@ -4,6 +4,7 @@ import { MatAccordion, MatExpansionModule, MatExpansionPanel } from '@angular/ma
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { unitClassLabel } from '../../core/labels';
+import { SALE_MAX_QUANTITY, SALE_MULTIPLIERS, saleValue } from '../../core/sale-multiplier';
 
 interface SectionRegle {
   id: string;
@@ -47,6 +48,28 @@ interface VehiculeDispo {
   dispo: number;
 }
 
+interface RessourceJeu {
+  nom: string;
+  ventes: readonly string[];
+}
+
+// ponytail: catalogue figé (resources.csv) ; passer par l'API publique s'il devient éditable.
+const RESSOURCES = [
+  { nom: "Caisse d'armes", valeur: 600 },
+  { nom: 'Prométhéum', valeur: 800 },
+  { nom: 'Plastacier', valeur: 1000 },
+  { nom: 'Adamentium', valeur: 1100 },
+  { nom: 'Conteneur blindé', valeur: 1400 },
+  { nom: 'Auramite', valeur: 1700 },
+  { nom: 'Noctilithe', valeur: 2000 },
+] as const;
+
+const NOMBRE_FR = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 3 });
+
+function formatNombre(valeur: number): string {
+  return NOMBRE_FR.format(valeur);
+}
+
 @Component({
   selector: 'app-regles',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -65,6 +88,7 @@ export class ReglesComponent {
     { id: 'vehicules', label: 'Véhicules', icon: 'directions_car' },
     { id: 'batiments', label: 'Bâtiments', icon: 'apartment' },
     { id: 'economie', label: 'Économie et échange', icon: 'payments' },
+    { id: 'ressources', label: 'Ressources', icon: 'diamond' },
     { id: 'boutique', label: 'Boutique et équipements', icon: 'shopping_bag' },
     { id: 'recolte', label: 'Récolte des revenus', icon: 'agriculture' },
     { id: 'combat', label: 'Affrontements', icon: 'sports_esports' },
@@ -210,6 +234,15 @@ export class ReglesComponent {
     { nom: 'Hélicoptère de combat', dispo: 8 },
     { nom: 'Avion de transport', dispo: 12 },
   ];
+
+  readonly maxVente = SALE_MAX_QUANTITY;
+
+  readonly quantites: readonly number[] = SALE_MULTIPLIERS.map((_, index) => index + 1);
+
+  readonly ressources: readonly RessourceJeu[] = RESSOURCES.map(({ nom, valeur }) => ({
+    nom,
+    ventes: SALE_MULTIPLIERS.map((_, index) => formatNombre(saleValue(valeur, index + 1))),
+  }));
 
   private readonly panneaux = viewChildren(MatExpansionPanel);
   private readonly accordeon = viewChild(MatAccordion);
