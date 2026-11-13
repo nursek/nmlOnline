@@ -415,8 +415,9 @@
               <thead>
                 <tr>
                   <th>Ressource</th>
-                  <th>Valeur de base</th>
-                  <th>Vente de {{ maxVente }} unités</th>
+                  @for (quantite of quantites; track quantite) {
+                    <th>{{ quantite }} {{ quantite === 1 ? 'unité' : 'unités' }}</th>
+                  }
                 </tr>
               </thead>
               <tbody>
@@ -425,45 +426,13 @@
                     <td>
                       <strong>{{ ressource.nom }}</strong>
                     </td>
-                    <td>{{ ressource.valeur }} ₡</td>
-                    <td>{{ ressource.venteMax }} ₡</td>
+                    @for (vente of ressource.ventes; track $index) {
+                      <td>{{ vente }} ₡</td>
+                    }
                   </tr>
                 }
               </tbody>
             </table>
-          </div>
-          <p class="text">
-            Une vente porte sur <strong>1 à {{ maxVente }} unités</strong> d'une même ressource. Le
-            prix du lot vaut <code>valeur de base × coefficient</code> ; le gain par unité, exprimé
-            en multiples de la valeur de base, progresse avec la taille du lot.
-          </p>
-          <div class="table-wrap">
-            <table class="rules-table">
-              <thead>
-                <tr>
-                  <th>Unités vendues d'un coup</th>
-                  <th>Coefficient</th>
-                  <th>Gain par unité</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (vente of ventes; track vente.quantite) {
-                  <tr>
-                    <td>{{ vente.quantite }}</td>
-                    <td>×{{ vente.coefficient }}</td>
-                    <td>×{{ vente.rendement }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <div class="callout">
-            <mat-icon>savings</mat-icon>
-            <p>
-              Vendre un lot de {{ maxVente }} unités maximise le gain par unité ; à l'unité, la
-              vente ne rapporte que la valeur de base. Le produit de la vente est crédité
-              immédiatement.
-            </p>
           </div>
         </mat-expansion-panel>
 
