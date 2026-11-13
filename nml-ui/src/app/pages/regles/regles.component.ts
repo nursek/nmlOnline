@@ -50,14 +50,7 @@ interface VehiculeDispo {
 
 interface RessourceJeu {
   nom: string;
-  valeur: string;
-  venteMax: string;
-}
-
-interface PalierVente {
-  quantite: number;
-  coefficient: string;
-  rendement: string;
+  ventes: readonly string[];
 }
 
 // ponytail: catalogue figé (resources.csv) ; passer par l'API publique s'il devient éditable.
@@ -245,16 +238,11 @@ export class ReglesComponent {
 
   readonly maxVente = SALE_MAX_QUANTITY;
 
+  readonly quantites: readonly number[] = SALE_MULTIPLIERS.map((_, index) => index + 1);
+
   readonly ressources: readonly RessourceJeu[] = RESSOURCES.map(({ nom, valeur }) => ({
     nom,
-    valeur: formatNombre(valeur),
-    venteMax: formatNombre(saleValue(valeur, SALE_MAX_QUANTITY)),
-  }));
-
-  readonly ventes: readonly PalierVente[] = SALE_MULTIPLIERS.map((coefficient, index) => ({
-    quantite: index + 1,
-    coefficient: formatNombre(coefficient),
-    rendement: formatNombre(coefficient / (index + 1)),
+    ventes: SALE_MULTIPLIERS.map((_, index) => formatNombre(saleValue(valeur, index + 1))),
   }));
 
   private readonly panneaux = viewChildren(MatExpansionPanel);
