@@ -22,7 +22,7 @@ import java.util.Optional;
 @Transactional
 public class BuildingService {
 
-    private static final double HQ_RECONSTRUCTION_SAME_LOCATION_COST = 75000;
+    private static final double HQ_RECONSTRUCTION_SAME_LOCATION_COST = 7500;
 
     private final BuildingRepository buildingRepository;
     private final PlayerRepository playerRepository;

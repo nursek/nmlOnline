@@ -427,7 +427,7 @@ class CombatServiceScenariosTest {
             assertNotNull(defender.getCharacter());
             assertFalse(defender.isEliminated(),
                     "QG détruit mais non capturé : aucune élimination");
-            // Reconstruction 75 000 : le chemin existant redresse le QG.
+            // Reconstruction 7 500 : le chemin existant redresse le QG.
             assertTrue(buildingService.reconstructHeadquartersSameLocation(defender.getId()));
         });
 
@@ -439,14 +439,14 @@ class CombatServiceScenariosTest {
             assertEquals(CHAR_DEF, character.getDefense(), "min(10 + 50, 30) = 30 : régénérée en fin de tour");
 
             Headquarters hq = em.find(Headquarters.class, w.hqId());
-            assertFalse(hq.isDestroyed(), "QG reconstruit (75 000)");
+            assertFalse(hq.isDestroyed(), "QG reconstruit (7 500)");
             assertTrue(hq.isOperational());
             assertEquals(100.0, hq.getAttack());
             assertEquals(200.0, hq.getDefense());
             assertFalse(hq.isArmyImmobilized());
 
             Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
-            assertEquals(5000.0, defender.getStats().getMoney(), "80 000 - 75 000 de reconstruction");
+            assertEquals(72500.0, defender.getStats().getMoney(), "80 000 - 7 500 de reconstruction");
         });
     }
 
