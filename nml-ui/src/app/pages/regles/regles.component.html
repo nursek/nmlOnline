@@ -654,6 +654,11 @@
               au joueur dominant du camp vainqueur.
             </li>
             <li>
+              <strong>Aucune victoire partagée</strong> — une alliance ne gagne jamais la partie.
+              S'il ne reste que deux alliés, le pacte se brise automatiquement et ils doivent
+              s'affronter ; aucune nouvelle alliance n'est possible à deux joueurs.
+            </li>
+            <li>
               <strong>Trahison</strong> — rompre l'alliance unilatéralement offre au traître
               <strong>+15 %, plus +10 % par tour d'alliance</strong> (sans plafond), uniquement le
               tour de la trahison, en attaque comme en défense contre son ex-allié.
@@ -664,8 +669,8 @@
               secteur se battent le tour de la rupture : il faut dégager ses unités.
             </li>
             <li>
-              <strong>Annonces</strong> — formation, rupture et trahison sont révélées publiquement au
-              tour suivant, dans <strong>Accueil</strong>.
+              <strong>Annonces</strong> — formation, rupture, trahison et rupture de la dernière
+              alliance sont révélées publiquement au tour suivant, dans <strong>Accueil</strong>.
             </li>
             <li>
               <strong>Visibilité</strong> — un secteur d'autrui n'affiche que son nom, son
@@ -721,7 +726,7 @@
           <mat-expansion-panel-header>
             <mat-panel-title>
               <mat-icon>emoji_events</mat-icon>Élimination et fin de partie
-              <span class="soon">Podium à venir</span>
+              <span class="soon">BETA 6 joueurs</span>
             </mat-panel-title>
           </mat-expansion-panel-header>
           <p class="text">
@@ -759,15 +764,24 @@
             </li>
           </ul>
           <p class="text">
-            La partie se joue jusqu'au dernier survivant. Le podium récompensera les
-            <strong>trois finalistes</strong>, c'est-à-dire les trois derniers joueurs encore en
-            vie.
+            La partie se joue jusqu'au dernier survivant : dès qu'il ne reste qu'un joueur en vie,
+            elle se termine à la fin du tour. S'il ne reste <strong>aucun survivant</strong>, le
+            dernier éliminé est <strong>vainqueur posthume</strong> ; le MJ peut désigner un autre
+            champion parmi les éliminés.
+          </p>
+          <p class="text">
+            <strong>Dernière alliance</strong> — s'il ne reste que deux joueurs alliés, l'alliance
+            se brise automatiquement au tour suivant : ils doivent s'affronter. Aucune nouvelle
+            alliance n'est possible à deux joueurs.
           </p>
           <div class="podium">
             <div class="podium-item gold">
               <span class="emoji">🥇</span>
               <h4>1<sup>re</sup> place</h4>
-              <p>Le dernier joueur survivant.</p>
+              <p>
+                Le dernier survivant — ou le dernier éliminé, vainqueur posthume, éventuellement
+                désigné par le MJ.
+              </p>
             </div>
             <div class="podium-item silver">
               <span class="emoji">🥈</span>
@@ -780,69 +794,32 @@
               <p>Le joueur éliminé juste avant.</p>
             </div>
           </div>
-          <p class="text">Issues possibles à détailler :</p>
-          <ul class="rule-list">
-            <li>
-              <strong>Un seul survivant</strong> — il remporte la partie ; les deux joueurs éliminés
-              en dernier complètent le podium.
-            </li>
-            <li>
-              <strong>Plusieurs survivants au dernier tour</strong> — à départager (critère à
-              définir : territoires contrôlés, puissance militaire…).
-            </li>
-            <li>
-              <strong>Aucun survivant</strong> — pas de vainqueur, la partie se conclut sans
-              première place.
-            </li>
-          </ul>
-          <div class="draft">
-            <mat-icon>construction</mat-icon>
-            <p>
-              Non implémenté : le podium et la condition de fin de partie. Les conséquences de
-              l'élimination d'un joueur (QG capturé ou personnage principal tué) sont actives.
-            </p>
-          </div>
+          <p class="text">
+            <strong>Ordre du podium</strong> — le vainqueur, puis les éliminés dans l'ordre inverse
+            des éliminations : le dernier tombé est 2<sup>e</sup>, l'avant-dernier 3<sup>e</sup>, et
+            ainsi de suite. Les éliminations d'un même tour sont départagées par l'ordre des
+            conflits puis par l'ordre des victimes dans la bataille.
+          </p>
+          <p class="text">
+            <strong>Kills et assistances</strong> — un <strong>kill</strong> est une élimination
+            signée par le tueur désigné par le MJ (ou par le capturant d'un QG). Une
+            <strong>assistance</strong> est accordée aux alliés du tueur présents dans la même
+            bataille. Sans tueur désigné, personne n'est crédité. Les assists ne sont nommés qu'au
+            podium, une fois la partie terminée.
+          </p>
+          <p class="text">
+            <strong>Mort définitive ou défaite</strong> — un personnage principal tué est
+            <strong>définitivement éliminé du lore</strong>. Un joueur dont le QG est conquis est
+            <strong>battu</strong> : il perd la partie, mais son personnage peut revenir dans une
+            édition future. Le podium affiche cette distinction.
+          </p>
+          <p class="text">
+            <strong>Après la fin</strong> — toutes les actions de jeu sont désactivées (achat,
+            ordre, récolte, échange). Les joueurs conservent la consultation de la carte, des
+            rapports et du podium. Le MJ garde ses outils d'administration.
+          </p>
         </mat-expansion-panel>
 
-        <mat-expansion-panel id="empereur" class="rule-panel">
-          <mat-expansion-panel-header>
-            <mat-panel-title>
-              <mat-icon>key</mat-icon>Objectif secret
-              <span class="soon">À venir</span>
-            </mat-panel-title>
-          </mat-expansion-panel-header>
-          <p class="text">
-            En plus de l'objectif principal, un <strong>objectif secret</strong> est révélé en cours
-            de partie. Sa révélation peut toutefois se produire plus tôt que prévu : c'est le
-            <strong>réveil de l'empereur</strong>.
-          </p>
-          <p class="text">Possibilités envisagées :</p>
-          <ul class="rule-list">
-            <li>
-              <strong>Révélation normale</strong> — l'objectif est dévoilé à un stade avancé de la
-              partie (seuil de tours ou de territoires à définir).
-            </li>
-            <li>
-              <strong>Réveil anticipé</strong> — un événement déclenche l'objectif avant l'heure
-              (contrôle d'un lieu clé, élimination d'un personnage, accumulation de ressources…).
-            </li>
-            <li>
-              <strong>L'empereur entre en jeu</strong> — il peut devenir une menace commune ou un
-              troisième camp, forçant les joueurs à coopérer ou à trahir.
-            </li>
-            <li>
-              <strong>Impact sur le classement</strong> — la réussite de l'objectif secret peut
-              bouleverser le podium final.
-            </li>
-          </ul>
-          <div class="draft">
-            <mat-icon>construction</mat-icon>
-            <p>
-              Brouillon : cette mécanique n'existe pas dans le code. Les déclencheurs, conséquences
-              et interactions restent à préciser.
-            </p>
-          </div>
-        </mat-expansion-panel>
       </mat-accordion>
     </div>
   </div>

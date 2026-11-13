@@ -29,5 +29,6 @@ public enum AdminAuditAction {
     IMPORT_PLAYER,
     DELETE_PLAYER,
     IMPORT_BOARD,
-    RANKING_COMMENT
+    RANKING_COMMENT,
+    GAME_WINNER_OVERRIDE
 }

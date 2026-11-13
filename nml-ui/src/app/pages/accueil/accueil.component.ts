@@ -67,6 +67,8 @@ export class AccueilComponent {
         return `${announcement.actorName} et ${announcement.targetName} ont rompu leur alliance`;
       case 'BETRAYAL':
         return `${announcement.actorName} a trahi ${announcement.targetName}`;
+      case 'FINAL_DUEL':
+        return `${announcement.actorName} et ${announcement.targetName} : la dernière alliance se brise, il ne peut rester qu'un survivant`;
       default:
         return 'Annonce';
     }

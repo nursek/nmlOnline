@@ -15,6 +15,12 @@ public class TurnJournalDto {
     private List<SectorCaptureDto> captures;
     private List<TransitCombatResultDto> transitCombats;
     private List<String> eliminatedPlayers;
+    private boolean gameFinished;
+    private Long winnerPlayerId;
+    private String winnerName;
+    private boolean winnerPosthumous;
+    private boolean winnerAdjusted;
+    private Integer gazetteDraftTurn;
 
     @Data
     public static class SummaryDto {

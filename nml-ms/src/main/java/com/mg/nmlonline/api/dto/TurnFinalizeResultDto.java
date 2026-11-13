@@ -15,5 +15,11 @@ public class TurnFinalizeResultDto {
     private List<TransitCombatResultDto> transitCombats;
     private List<SectorCaptureDto> capturedSectors;
     private List<String> eliminatedPlayers;
+    private boolean gameFinished;
+    private Long winnerPlayerId;
+    private String winnerName;
+    private boolean winnerPosthumous;
+    private boolean winnerAdjusted;
+    private Integer gazetteDraftTurn;
     private String message;
 }

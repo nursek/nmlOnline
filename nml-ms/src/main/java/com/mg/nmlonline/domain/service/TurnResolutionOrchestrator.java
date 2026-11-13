@@ -20,6 +20,7 @@ import com.mg.nmlonline.domain.model.movement.SectorConflict;
 import com.mg.nmlonline.domain.model.movement.TransitCombatResult;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.press.EliminationEvent;
 import com.mg.nmlonline.domain.model.unit.Unit;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
@@ -29,11 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -67,6 +70,9 @@ public class TurnResolutionOrchestrator {
     private final PlayerEliminationService playerEliminationService;
     private final SniperService sniperService;
     private final TurnJournalService turnJournalService;
+    private final EliminationHistoryService eliminationHistoryService;
+    private final GameEndService gameEndService;
+    private final FinalDuelService finalDuelService;
 
     private static final long SESSION_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
 
@@ -87,7 +93,10 @@ public class TurnResolutionOrchestrator {
                                       UnitRecoveryService unitRecoveryService,
                                       PlayerEliminationService playerEliminationService,
                                       SniperService sniperService,
-                                      TurnJournalService turnJournalService) {
+                                      TurnJournalService turnJournalService,
+                                      EliminationHistoryService eliminationHistoryService,
+                                      GameEndService gameEndService,
+                                      FinalDuelService finalDuelService) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
@@ -103,6 +112,9 @@ public class TurnResolutionOrchestrator {
         this.playerEliminationService = playerEliminationService;
         this.sniperService = sniperService;
         this.turnJournalService = turnJournalService;
+        this.eliminationHistoryService = eliminationHistoryService;
+        this.gameEndService = gameEndService;
+        this.finalDuelService = finalDuelService;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -190,7 +202,7 @@ public class TurnResolutionOrchestrator {
             if (r.success()) {
                 sniperService.markResolved(support.resolvedOrders());
             }
-            rb = ResolvedBattle.standoff(pc.sectorNumber, camps, r);
+            rb = ResolvedBattle.standoff(pc.id, pc.sectorNumber, camps, r);
         } else {
             SniperService.DuelSupport support = sniperService.collectDuelSupport(
                     s.boardId, s.turnEnding, pc.sectorNumber, pc.camps.get(0), pc.camps.get(1), battleSectors);
@@ -206,7 +218,7 @@ public class TurnResolutionOrchestrator {
                 if (r.success()) {
                     sniperService.markResolved(support.resolvedOrders());
                 }
-                rb = ResolvedBattle.duel(pc.sectorNumber, attackerCamp, defenderCamp, r);
+                rb = ResolvedBattle.duel(pc.id, pc.sectorNumber, attackerCamp, defenderCamp, r);
             } else {
                 List<List<Long>> campIds = campsWithIndependents(pc.camps, support.independents());
                 locked = lockPlayers(campIds);
@@ -222,7 +234,7 @@ public class TurnResolutionOrchestrator {
                 if (r.success()) {
                     sniperService.markResolved(support.resolvedOrders());
                 }
-                rb = ResolvedBattle.standoff(pc.sectorNumber, camps, r);
+                rb = ResolvedBattle.standoff(pc.id, pc.sectorNumber, camps, r);
             }
         }
 
@@ -381,9 +393,20 @@ public class TurnResolutionOrchestrator {
             s.resolvedConflicts.forEach(resolved -> battleSectors.add(resolved.sectorNumber()));
             List<BattleReportDetailDto> rangedCombats =
                     sniperService.resolveRemainingFire(s.turnEnding, board, battleSectors);
-            List<Player> eliminated =
-                    playerRepository.findByBoardIdAndEliminatedTurnOrderByNameAsc(s.boardId, s.turnEnding);
-            for (Player victim : eliminated) {
+            List<Player> players = playerRepository.findByBoardId(s.boardId);
+            List<Player> eliminated = players.stream()
+                    .filter(player -> Objects.equals(player.getEliminatedTurn(), s.turnEnding))
+                    .toList();
+            List<Player> deathOrder = deathOrder(s, eliminated);
+            List<EliminationHistoryService.EliminationSnapshot> snapshots =
+                    eliminationSnapshots(deathOrder, s);
+            List<EliminationEvent> events =
+                    eliminationHistoryService.save(s.boardId, s.turnEnding, snapshots);
+            GameEndService.GameOutcome outcome = gameEndService.finishIfOver(board, players, events);
+            if (!outcome.finished()) {
+                finalDuelService.breakLastAllianceIfNeeded(board, players, s.turnEnding);
+            }
+            for (Player victim : deathOrder) {
                 // Décision en session d'abord : le commit du choix peut suivre une finalisation concurrente.
                 Long killerId = s.eliminationKillers.containsKey(victim.getId())
                         ? s.eliminationKillers.get(victim.getId())
@@ -393,9 +416,11 @@ public class TurnResolutionOrchestrator {
             characterService.regenerateAllCharacters(s.boardId);
             vehicleMaintenanceService.repairAllVehicles(s.boardId);
             unitRecoveryService.recoverAtTurnEnd(s.turnEnding, s.boardId);
-            board.setCurrentTurn(s.turnEnding + 1);
+            if (!outcome.finished()) {
+                board.setCurrentTurn(s.turnEnding + 1);
+            }
             boardRepository.save(board);
-            turnService.publishTurn(s.boardId, s.turnEnding + 1);
+            turnService.publishTurn(s.boardId, board.getCurrentTurn());
 
             int newTurn = board.getCurrentTurn();
             List<SectorCapture> captures = result.getCaptures();
@@ -408,20 +433,105 @@ public class TurnResolutionOrchestrator {
             dto.setTransitCombatsCount(result.getTransitCombats().size());
             dto.setTransitCombats(toTransitDtoList(result.getTransitCombats()));
             dto.setCapturedSectors(toCaptureDtoList(captures));
-            dto.setEliminatedPlayers(eliminated.stream().map(Player::getName).toList());
-            String eliminatedSuffix = eliminated.isEmpty() ? ""
-                    : " " + String.join(", ", eliminated.stream().map(Player::getName).toList())
+            dto.setEliminatedPlayers(deathOrder.stream().map(Player::getName).toList());
+            dto.setGameFinished(outcome.finished());
+            dto.setWinnerPlayerId(outcome.winnerPlayerId());
+            dto.setWinnerName(outcome.winnerName());
+            dto.setWinnerPosthumous(outcome.posthumous());
+            dto.setWinnerAdjusted(outcome.winnerAdjusted());
+            String eliminatedSuffix = deathOrder.isEmpty() ? ""
+                    : " " + String.join(", ", deathOrder.stream().map(Player::getName).toList())
                             + " éliminé(s).";
-            dto.setMessage(captures.isEmpty()
-                    ? "Tour " + newTurn + " démarré." + eliminatedSuffix
-                    : "Tour " + newTurn + " démarré — " + captures.size() + " secteur(s) capturé(s)."
-                            + eliminatedSuffix);
+            if (outcome.finished()) {
+                dto.setMessage("Partie terminée au tour " + s.turnEnding + " : "
+                        + outcome.winnerName() + " remporte la partie." + eliminatedSuffix);
+            } else {
+                dto.setMessage(captures.isEmpty()
+                        ? "Tour " + newTurn + " démarré." + eliminatedSuffix
+                        : "Tour " + newTurn + " démarré — " + captures.size() + " secteur(s) capturé(s)."
+                                + eliminatedSuffix);
+            }
             turnJournalService.save(s.boardId, buildTurnJournal(s, dto, rangedCombats));
             return dto;
         } finally {
             turnLock.release(s.boardId);
             this.session = null;
         }
+    }
+
+    private List<Player> deathOrder(Session s, List<Player> eliminated) {
+        Map<Long, Player> byId = new HashMap<>();
+        eliminated.forEach(player -> byId.put(player.getId(), player));
+        List<Player> ordered = new ArrayList<>();
+        Set<Long> seen = new HashSet<>();
+        s.resolvedConflicts.stream()
+                .sorted(Comparator.comparingInt(ResolvedBattle::conflictId))
+                .forEach(battle -> battle.eliminatedPlayers().forEach(elimination -> {
+                    Player player = byId.get(elimination.playerId());
+                    if (player != null && seen.add(player.getId())) {
+                        ordered.add(player);
+                    }
+                }));
+        eliminated.stream()
+                .filter(player -> !seen.contains(player.getId()))
+                .sorted(Comparator.comparing(Player::getId))
+                .forEach(ordered::add);
+        return ordered;
+    }
+
+    private List<EliminationHistoryService.EliminationSnapshot> eliminationSnapshots(
+            List<Player> deathOrder, Session s) {
+        List<EliminationHistoryService.EliminationSnapshot> snapshots = new ArrayList<>();
+        for (Player victim : deathOrder) {
+            Long killerId = s.eliminationKillers.containsKey(victim.getId())
+                    ? s.eliminationKillers.get(victim.getId())
+                    : victim.getEliminatedByPlayerId();
+            EliminationCause cause = victim.getEliminationCause();
+            ResolvedBattle context = eliminationContext(s, victim.getId(), cause);
+            String killerName = killerId != null
+                    ? playerRepository.findById(killerId).map(Player::getName).orElse(null)
+                    : null;
+            String characterName = victim.getCharacter() != null
+                    ? victim.getCharacter().getName()
+                    : null;
+            snapshots.add(new EliminationHistoryService.EliminationSnapshot(victim.getId(),
+                    victim.getName(), victim.getRace(), characterName, cause, killerId, killerName,
+                    assists(context, victim.getId(), killerId),
+                    context != null ? context.sectorNumber() : null));
+        }
+        return snapshots;
+    }
+
+    private ResolvedBattle eliminationContext(Session s, Long victimId, EliminationCause cause) {
+        ResolvedBattle context = null;
+        for (ResolvedBattle battle : s.resolvedConflicts.stream()
+                .sorted(Comparator.comparingInt(ResolvedBattle::conflictId)).toList()) {
+            boolean match = battle.eliminatedPlayers().stream()
+                    .anyMatch(elimination -> elimination.playerId().equals(victimId)
+                            && elimination.cause().equals(cause.name()));
+            if (match) {
+                context = battle;
+            }
+        }
+        return context;
+    }
+
+    private static List<Long> assists(ResolvedBattle battle, Long victimId, Long killerId) {
+        if (battle == null || killerId == null) {
+            return List.of();
+        }
+        List<Long> killerCamp = battle.camps().stream()
+                .filter(camp -> camp.contains(killerId))
+                .findFirst()
+                .orElse(null);
+        if (killerCamp == null) {
+            return List.of();
+        }
+        return killerCamp.stream()
+                .filter(playerId -> !playerId.equals(killerId) && !playerId.equals(victimId))
+                .distinct()
+                .sorted()
+                .toList();
     }
 
     private TurnJournalDto buildTurnJournal(Session s, TurnFinalizeResultDto finalize,
@@ -449,6 +559,12 @@ public class TurnResolutionOrchestrator {
         journal.setCaptures(finalize.getCapturedSectors());
         journal.setTransitCombats(finalize.getTransitCombats());
         journal.setEliminatedPlayers(finalize.getEliminatedPlayers());
+        journal.setGameFinished(finalize.isGameFinished());
+        journal.setWinnerPlayerId(finalize.getWinnerPlayerId());
+        journal.setWinnerName(finalize.getWinnerName());
+        journal.setWinnerPosthumous(finalize.isWinnerPosthumous());
+        journal.setWinnerAdjusted(finalize.isWinnerAdjusted());
+        journal.setGazetteDraftTurn(finalize.getGazetteDraftTurn());
         return journal;
     }
 
@@ -722,7 +838,8 @@ public class TurnResolutionOrchestrator {
         }
     }
 
-    private record ResolvedBattle(int sectorNumber, boolean standoff, List<Long> participantPlayerIds,
+    private record ResolvedBattle(int conflictId, int sectorNumber, boolean standoff,
+                                  List<Long> participantPlayerIds, List<List<Long>> camps,
                                   List<Long> attackerCampPlayerIds, List<Long> defenderCampPlayerIds,
                                   List<Long> winningCampPlayerIds,
                                   Long attackerPlayerId, Long defenderPlayerId, boolean success, String message,
@@ -747,8 +864,8 @@ public class TurnResolutionOrchestrator {
                     .toList();
         }
 
-        static ResolvedBattle duel(int sectorNumber, List<Player> attackerCamp, List<Player> defenderCamp,
-                                   CombatService.SectorBattleResult r) {
+        static ResolvedBattle duel(int conflictId, int sectorNumber, List<Player> attackerCamp,
+                                   List<Player> defenderCamp, CombatService.SectorBattleResult r) {
             List<Long> attackerIds = attackerCamp.stream().map(Player::getId).toList();
             List<Long> defenderIds = defenderCamp.stream().map(Player::getId).toList();
             List<Long> winning = r.winner() == null ? List.of()
@@ -757,7 +874,8 @@ public class TurnResolutionOrchestrator {
             participants.addAll(defenderIds);
             List<Player> combatants = new ArrayList<>(attackerCamp);
             combatants.addAll(defenderCamp);
-            return new ResolvedBattle(sectorNumber, false, participants, attackerIds, defenderIds, winning,
+            return new ResolvedBattle(conflictId, sectorNumber, false, participants,
+                    List.of(attackerIds, defenderIds), attackerIds, defenderIds, winning,
                     attackerIds.getFirst(), defenderIds.getFirst(), r.success(), r.message(),
                     r.winner() != null ? r.winner().getId() : null,
                     r.attackerCasualties().size(), r.defenderCasualties().size(),
@@ -767,9 +885,12 @@ public class TurnResolutionOrchestrator {
                     r.forces(), r.highlights());
         }
 
-        static ResolvedBattle standoff(int sectorNumber, List<List<Player>> camps,
+        static ResolvedBattle standoff(int conflictId, int sectorNumber, List<List<Player>> camps,
                                        CombatService.StandoffBattleResult r) {
             List<Long> participants = camps.stream().flatMap(List::stream).map(Player::getId).toList();
+            List<List<Long>> campIds = camps.stream()
+                    .map(camp -> camp.stream().map(Player::getId).toList())
+                    .toList();
             List<Long> winning = r.winner() == null ? List.of()
                     : camps.stream()
                             .filter(camp -> camp.stream()
@@ -778,7 +899,8 @@ public class TurnResolutionOrchestrator {
                             .map(camp -> camp.stream().map(Player::getId).toList())
                             .orElse(List.of(r.winner().getId()));
             List<Player> combatants = camps.stream().flatMap(List::stream).toList();
-            return new ResolvedBattle(sectorNumber, true, participants, List.of(), List.of(), winning,
+            return new ResolvedBattle(conflictId, sectorNumber, true, participants, campIds,
+                    List.of(), List.of(), winning,
                     null, null, r.success(), r.message(),
                     r.winner() != null ? r.winner().getId() : null,
                     0, 0, 0, 0, r.capturedBuildings(), false, false, false,
