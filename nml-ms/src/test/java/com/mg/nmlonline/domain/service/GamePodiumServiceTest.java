@@ -8,6 +8,7 @@ import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.press.EliminationEvent;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.EliminationEventRepository;
+import com.mg.nmlonline.infrastructure.repository.GazetteIssueRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,8 +31,9 @@ class GamePodiumServiceTest {
     private final PlayerRepository playerRepository = mock(PlayerRepository.class);
     private final EliminationEventRepository eliminationEventRepository =
             mock(EliminationEventRepository.class);
+    private final GazetteIssueRepository gazetteIssueRepository = mock(GazetteIssueRepository.class);
     private final GamePodiumService service = new GamePodiumService(boardRepository,
-            playerRepository, eliminationEventRepository);
+            playerRepository, eliminationEventRepository, gazetteIssueRepository);
 
     @Test
     void placesSurvivorThenDeathsInReverseOrderWithStats() {

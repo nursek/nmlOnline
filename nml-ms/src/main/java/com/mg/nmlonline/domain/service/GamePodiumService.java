@@ -6,8 +6,11 @@ import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.press.EliminationEvent;
+import com.mg.nmlonline.domain.model.press.GazetteIssue;
+import com.mg.nmlonline.domain.model.press.GazetteStatus;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.EliminationEventRepository;
+import com.mg.nmlonline.infrastructure.repository.GazetteIssueRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,12 +29,15 @@ public class GamePodiumService {
     private final BoardRepository boardRepository;
     private final PlayerRepository playerRepository;
     private final EliminationEventRepository eliminationEventRepository;
+    private final GazetteIssueRepository gazetteIssueRepository;
 
     public GamePodiumService(BoardRepository boardRepository, PlayerRepository playerRepository,
-                             EliminationEventRepository eliminationEventRepository) {
+                             EliminationEventRepository eliminationEventRepository,
+                             GazetteIssueRepository gazetteIssueRepository) {
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
         this.eliminationEventRepository = eliminationEventRepository;
+        this.gazetteIssueRepository = gazetteIssueRepository;
     }
 
     @Transactional(readOnly = true)
@@ -85,7 +91,10 @@ public class GamePodiumService {
         dto.setPosthumous(!places.getFirst().isAlive());
         dto.setChampionAdjusted(board.isWinnerAdjusted() && dto.isPosthumous());
         dto.setPlaces(places);
-        dto.setLastGazetteTurn(null);
+        dto.setLastGazetteTurn(gazetteIssueRepository
+                .findFirstByBoardIdAndStatusOrderByTurnDesc(boardId, GazetteStatus.PUBLISHED)
+                .map(GazetteIssue::getTurn)
+                .orElse(null));
         return dto;
     }
 

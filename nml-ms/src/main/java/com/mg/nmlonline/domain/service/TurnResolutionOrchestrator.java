@@ -73,6 +73,8 @@ public class TurnResolutionOrchestrator {
     private final EliminationHistoryService eliminationHistoryService;
     private final GameEndService gameEndService;
     private final FinalDuelService finalDuelService;
+    private final GazetteDraftFactory gazetteDraftFactory;
+    private final GazetteService gazetteService;
 
     private static final long SESSION_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
 
@@ -96,7 +98,9 @@ public class TurnResolutionOrchestrator {
                                       TurnJournalService turnJournalService,
                                       EliminationHistoryService eliminationHistoryService,
                                       GameEndService gameEndService,
-                                      FinalDuelService finalDuelService) {
+                                      FinalDuelService finalDuelService,
+                                      GazetteDraftFactory gazetteDraftFactory,
+                                      GazetteService gazetteService) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
@@ -115,6 +119,8 @@ public class TurnResolutionOrchestrator {
         this.eliminationHistoryService = eliminationHistoryService;
         this.gameEndService = gameEndService;
         this.finalDuelService = finalDuelService;
+        this.gazetteDraftFactory = gazetteDraftFactory;
+        this.gazetteService = gazetteService;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -422,8 +428,19 @@ public class TurnResolutionOrchestrator {
             boardRepository.save(board);
             turnService.publishTurn(s.boardId, board.getCurrentTurn());
 
-            int newTurn = board.getCurrentTurn();
             List<SectorCapture> captures = result.getCaptures();
+            Integer gazetteDraftTurn = null;
+            if (!events.isEmpty()) {
+                List<ResolvedBattleDto> battleDtos = s.resolvedConflicts.stream()
+                        .map(rb -> toBattleDto(rb, resolveNamesForSession(s)))
+                        .toList();
+                GazetteDraftFactory.GazetteDraft draft = gazetteDraftFactory.build(board,
+                        s.turnEnding, events, outcome, captures, players, battleDtos);
+                gazetteService.createDraft(board, s.turnEnding, draft);
+                gazetteDraftTurn = s.turnEnding;
+            }
+
+            int newTurn = board.getCurrentTurn();
             TurnFinalizeResultDto dto = new TurnFinalizeResultDto();
             dto.setNewTurn(newTurn);
             dto.setTurnEnding(s.turnEnding);
@@ -439,6 +456,7 @@ public class TurnResolutionOrchestrator {
             dto.setWinnerName(outcome.winnerName());
             dto.setWinnerPosthumous(outcome.posthumous());
             dto.setWinnerAdjusted(outcome.winnerAdjusted());
+            dto.setGazetteDraftTurn(gazetteDraftTurn);
             String eliminatedSuffix = deathOrder.isEmpty() ? ""
                     : " " + String.join(", ", deathOrder.stream().map(Player::getName).toList())
                             + " éliminé(s).";
