@@ -71,12 +71,12 @@ class BuildingServiceTest {
     }
 
     @Nested
-    @DisplayName("Reconstruction du QG (75 000)")
+    @DisplayName("Reconstruction du QG (7 500)")
     class ReconstructHeadquartersTests {
 
         @Test
         @DisplayName("Succès : coût débité et QG restauré")
-        void shouldReconstructForSeventyFiveThousand() {
+        void shouldReconstructForSevenThousandFiveHundred() {
             Headquarters hq = new Headquarters(1L);
             hq.destroy();
             stubHeadquarters(hq);
@@ -85,7 +85,7 @@ class BuildingServiceTest {
             boolean result = buildingService.reconstructHeadquartersSameLocation(1L);
 
             assertTrue(result);
-            assertEquals(25000.0, player.getStats().getMoney());
+            assertEquals(92500.0, player.getStats().getMoney());
             assertTrue(hq.isOperational());
             assertEquals(100.0, hq.getAttack());
             assertEquals(200.0, hq.getDefense());
@@ -113,13 +113,13 @@ class BuildingServiceTest {
             Headquarters hq = new Headquarters(1L);
             hq.destroy();
             stubHeadquarters(hq);
-            player.getStats().setMoney(74999.0);
+            player.getStats().setMoney(7499.0);
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
 
             boolean result = buildingService.reconstructHeadquartersSameLocation(1L);
 
             assertFalse(result);
-            assertEquals(74999.0, player.getStats().getMoney());
+            assertEquals(7499.0, player.getStats().getMoney());
             assertTrue(hq.isDestroyed());
             verify(buildingRepository, never()).save(any(Building.class));
         }
