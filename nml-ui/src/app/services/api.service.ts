@@ -37,6 +37,8 @@ import {
   Announcement,
   PendingCapture,
   AdminAuditEntry,
+  GazetteAdminIssue,
+  GazetteContent,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -139,6 +141,24 @@ export class ApiService {
 
   adminAdjustWinner(playerId: number): Observable<unknown> {
     return this.http.put<unknown>(`${this.baseUrl}/admin/game/winner`, { playerId });
+  }
+
+  adminSaveGazette(turn: number, content: GazetteContent): Observable<GazetteAdminIssue> {
+    return this.http.put<GazetteAdminIssue>(
+      `${this.baseUrl}/admin/game/gazette/${turn}`,
+      content,
+    );
+  }
+
+  adminPublishGazette(turn: number, content: GazetteContent): Observable<GazetteAdminIssue> {
+    return this.http.post<GazetteAdminIssue>(
+      `${this.baseUrl}/admin/game/gazette/${turn}/publish`,
+      content,
+    );
+  }
+
+  adminDeleteGazetteDraft(turn: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/admin/game/gazette/${turn}`);
   }
 
   adminSetMoney(playerId: number, amount: number): Observable<void> {

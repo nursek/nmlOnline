@@ -36,6 +36,7 @@ const BASE_MENU_ITEMS: NavLink[] = [
   { path: '/joueur', label: 'Mon Joueur', icon: 'person' },
   { path: '/ordres', label: 'Mes ordres', icon: 'list_alt' },
   { path: '/rapports', label: 'Rapports', icon: 'history' },
+  { path: '/journal', label: 'Journal', icon: 'newspaper' },
   { path: '/boutique', label: 'Boutique', icon: 'shopping_bag' },
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
 ];
@@ -46,6 +47,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
   { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' },
   { path: '/admin/tour', label: 'Gestion du tour', icon: 'event_repeat' },
   { path: '/admin/joueurs', label: 'Gestion des joueurs', icon: 'groups' },
+  { path: '/admin/journal', label: 'Rédaction journal', icon: 'newspaper' },
   { path: '/admin/scenarios', label: 'Scénarios de tests', icon: 'science' },
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
 ];

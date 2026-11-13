@@ -18,6 +18,7 @@ export * from './battle-report.model';
 export * from './dev-seed.model';
 export * from './ranking.model';
 export * from './podium.model';
+export * from './gazette.model';
 export * from './exchange-offer.model';
 export * from './alliance.model';
 export * from './game-statistics.model';

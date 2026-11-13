@@ -725,6 +725,11 @@ button[disabled] mat-spinner {
   border: 1.5px solid color-mix(in srgb, var(--sun) 45%, var(--line));
 }
 
+.gazette-draft-card {
+  @include shared.card;
+  border: 1.5px solid var(--accent);
+}
+
 .game-over-title {
   display: flex;
   align-items: center;

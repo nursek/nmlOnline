@@ -18,6 +18,30 @@
   }
 
   @if (finalizeResult(); as fin) {
+    @if (fin.gazetteDraftTurn) {
+      <mat-card class="gazette-draft-card">
+        <mat-card-content>
+          <div class="game-over-title">
+            <mat-icon>newspaper</mat-icon>
+            <h2>Brigade des Morts</h2>
+          </div>
+          <p>
+            Le brouillon du tour {{ fin.gazetteDraftTurn }} est prêt. Rédigez puis publiez
+            l'édition.
+          </p>
+          <div class="game-over-actions">
+            <a
+              mat-flat-button
+              color="primary"
+              [routerLink]="['/admin/journal', fin.gazetteDraftTurn]"
+            >
+              Rédiger la gazette
+            </a>
+            <button mat-button type="button" (click)="clearFinalizeResult()">Fermer</button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
     @if (fin.gameFinished) {
       <mat-card class="game-over-card">
         <mat-card-content>

@@ -142,7 +142,7 @@ export class TurnManagementComponent {
           duration: 5000,
           panelClass: 'toast-success',
         });
-        if (!fin.gameFinished) {
+        if (!fin.gameFinished && !fin.gazetteDraftTurn) {
           this.turnManagement.clearFinalizeResult();
         }
       }

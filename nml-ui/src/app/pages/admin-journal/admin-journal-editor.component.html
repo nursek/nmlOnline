@@ -1,0 +1,492 @@
+<section class="editor-page">
+  <div class="toolbar">
+    <a mat-stroked-button routerLink="/admin/journal">
+      <mat-icon>arrow_back</mat-icon>
+      Toutes les éditions
+    </a>
+    <div class="toolbar-actions">
+      @if (adminIssue()) {
+        <button mat-stroked-button class="readonly-allow" type="button" (click)="print()">
+          <mat-icon>print</mat-icon>
+          Aperçu imprimable
+        </button>
+        <a mat-stroked-button routerLink="/journal">
+          <mat-icon>menu_book</mat-icon>
+          Journal public
+        </a>
+      }
+    </div>
+  </div>
+
+  @if (!adminIssue() && issueRef.isLoading()) {
+    <div class="loading-state" role="status">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Chargement de l'édition...</p>
+    </div>
+  } @else if (issueRef.error()) {
+    <div class="error-alert" role="alert">
+      <mat-icon>error</mat-icon>
+      <span>Impossible de charger cette édition.</span>
+      <button mat-stroked-button type="button" (click)="retry()">Réessayer</button>
+    </div>
+  } @else if (adminIssue(); as admin) {
+    <header class="page-header">
+      <div class="title">
+        <mat-icon>newspaper</mat-icon>
+        <h1>Rédaction — Brigade des Morts</h1>
+      </div>
+      <div class="status-line">
+        <span class="turn">
+          Tour {{ admin.issue.turn }} — Vol. {{ admin.issue.masthead.volume }} · N°
+          {{ admin.issue.issueNumber }}
+        </span>
+        <span class="status" [class.published]="published()">
+          {{ published() ? 'Publiée' : 'Brouillon' }}
+        </span>
+      </div>
+    </header>
+
+    @if (error()) {
+      <div class="error-alert" role="alert">
+        <mat-icon>error</mat-icon>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    <div class="editor-grid">
+      <div class="editor-column">
+        <mat-card class="masthead-card">
+          <mat-card-content>
+            <h2>Masthead verrouillé</h2>
+            <p>La météo, le lien et la date sont figés pour cette édition.</p>
+            <dl class="masthead-facts">
+              <div>
+                <dt>Journal</dt>
+                <dd>{{ admin.issue.masthead.journalName }}</dd>
+              </div>
+              <div>
+                <dt>Volume</dt>
+                <dd>{{ admin.issue.masthead.volume }} — N° {{ admin.issue.issueNumber }}</dd>
+              </div>
+              <div>
+                <dt>Date</dt>
+                <dd>{{ admin.issue.masthead.dateLabel }}</dd>
+              </div>
+              <div>
+                <dt>Météo</dt>
+                <dd>
+                  {{ admin.issue.masthead.weather.condition }} ·
+                  {{ admin.issue.masthead.weather.temperature }} °C ·
+                  {{ admin.issue.masthead.weather.precipitation }} mm ·
+                  {{ admin.issue.masthead.weather.humidity }} % ·
+                  {{ admin.issue.masthead.weather.wind }} km/h
+                  {{ admin.issue.masthead.weather.windDirection }}
+                </dd>
+              </div>
+              <div>
+                <dt>Lien</dt>
+                <dd class="mono">{{ admin.issue.masthead.fakeUrl }}</dd>
+              </div>
+            </dl>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="form-card">
+          <mat-card-content>
+            <div class="section-head">
+              <h2>La une</h2>
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="frontPage().length >= 3"
+                (click)="addMain()"
+              >
+                <mat-icon>add</mat-icon>
+                Une
+              </button>
+            </div>
+            <p class="hint">
+              1 à 3 articles. Au moins une une complète (titre, corps, auteur) est requise pour
+              publier.
+            </p>
+
+            @for (article of frontPage(); track $index; let i = $index) {
+              <div class="article-editor">
+                <div class="article-head">
+                  <h3>Une {{ i + 1 }}</h3>
+                  <div class="article-actions">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [disabled]="i === 0"
+                      aria-label="Monter l'article"
+                      (click)="move('frontPage', i, -1)"
+                    >
+                      <mat-icon>arrow_upward</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [disabled]="i === frontPage().length - 1"
+                      aria-label="Descendre l'article"
+                      (click)="move('frontPage', i, 1)"
+                    >
+                      <mat-icon>arrow_downward</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      type="button"
+                      aria-label="Supprimer l'article"
+                      (click)="remove('frontPage', i)"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="field-grid">
+                  <label class="field">
+                    <span>Rubrique</span>
+                    <select
+                      [value]="article.section"
+                      (change)="updateField('frontPage', i, 'section', $event)"
+                    >
+                      <option value="LA UNE">LA UNE</option>
+                      <option value="LES AUTRES FAITS">LES AUTRES FAITS</option>
+                      <option value="CHRONIQUE">CHRONIQUE</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span>Type</span>
+                    <select
+                      [value]="article.kind"
+                      (change)="updateField('frontPage', i, 'kind', $event)"
+                    >
+                      <option value="ELIMINATION">Élimination</option>
+                      <option value="BATTLE">Bataille</option>
+                      <option value="CAPTURE">Capture</option>
+                      <option value="ALLIANCE">Alliance</option>
+                      <option value="CHRONICLE">Chronique</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label class="field">
+                  <span>Titre <em>{{ article.headline.length }} / 120</em></span>
+                  <input
+                    [value]="article.headline"
+                    maxlength="120"
+                    (input)="updateField('frontPage', i, 'headline', $event)"
+                  />
+                </label>
+                <label class="field">
+                  <span>Citation <em>{{ article.quote?.length ?? 0 }} / 220</em></span>
+                  <textarea
+                    [value]="article.quote ?? ''"
+                    maxlength="220"
+                    rows="2"
+                    (input)="updateField('frontPage', i, 'quote', $event)"
+                  ></textarea>
+                </label>
+                <label class="field">
+                  <span>Auteur <em>{{ article.author.length }} / 80</em></span>
+                  <input
+                    [value]="article.author"
+                    maxlength="80"
+                    (input)="updateField('frontPage', i, 'author', $event)"
+                  />
+                </label>
+
+                <div class="field-grid">
+                  <label class="field">
+                    <span>Photo</span>
+                    <select
+                      [value]="article.photoPlayerName ?? ''"
+                      (change)="updateField('frontPage', i, 'photoPlayerName', $event)"
+                    >
+                      <option value="">—</option>
+                      @for (player of players(); track player.id) {
+                        <option [value]="player.name">{{ player.name }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span
+                      >Légende photo
+                      <em>{{ article.photoCaption?.length ?? 0 }} / 160</em></span
+                    >
+                    <input
+                      [value]="article.photoCaption ?? ''"
+                      maxlength="160"
+                      (input)="updateField('frontPage', i, 'photoCaption', $event)"
+                    />
+                  </label>
+                </div>
+
+                <label class="field">
+                  <span>Corps <em>{{ article.body.length }} / 4000</em></span>
+                  <textarea
+                    [value]="article.body"
+                    maxlength="4000"
+                    rows="8"
+                    (input)="updateField('frontPage', i, 'body', $event)"
+                  ></textarea>
+                </label>
+              </div>
+            }
+            @if (!frontPage().length) {
+              <p class="empty">Aucune une. Ajoutez-en une.</p>
+            }
+
+            <div class="section-head">
+              <h2>Brèves</h2>
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="briefs().length >= 4"
+                (click)="addBrief()"
+              >
+                <mat-icon>add</mat-icon>
+                Brève
+              </button>
+            </div>
+
+            @for (article of briefs(); track $index; let i = $index) {
+              <div class="article-editor">
+                <div class="article-head">
+                  <h3>Brève {{ i + 1 }}</h3>
+                  <div class="article-actions">
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [disabled]="i === 0"
+                      aria-label="Monter la brève"
+                      (click)="move('briefs', i, -1)"
+                    >
+                      <mat-icon>arrow_upward</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [disabled]="i === briefs().length - 1"
+                      aria-label="Descendre la brève"
+                      (click)="move('briefs', i, 1)"
+                    >
+                      <mat-icon>arrow_downward</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      color="warn"
+                      type="button"
+                      aria-label="Supprimer la brève"
+                      (click)="remove('briefs', i)"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <label class="field">
+                  <span>Titre <em>{{ article.headline.length }} / 120</em></span>
+                  <input
+                    [value]="article.headline"
+                    maxlength="120"
+                    (input)="updateField('briefs', i, 'headline', $event)"
+                  />
+                </label>
+                <label class="field">
+                  <span>Auteur <em>{{ article.author.length }} / 80</em></span>
+                  <input
+                    [value]="article.author"
+                    maxlength="80"
+                    (input)="updateField('briefs', i, 'author', $event)"
+                  />
+                </label>
+                <label class="field">
+                  <span>Corps <em>{{ article.body.length }} / 4000</em></span>
+                  <textarea
+                    [value]="article.body"
+                    maxlength="4000"
+                    rows="5"
+                    (input)="updateField('briefs', i, 'body', $event)"
+                  ></textarea>
+                </label>
+              </div>
+            }
+
+            <div class="actions">
+              <button mat-stroked-button type="button" [disabled]="saving()" (click)="save()">
+                @if (saving()) {
+                  <mat-spinner diameter="18"></mat-spinner>
+                } @else {
+                  <mat-icon>save</mat-icon>
+                }
+                {{ published() ? 'Enregistrer les corrections' : 'Enregistrer le brouillon' }}
+              </button>
+              @if (!published()) {
+                <button
+                  mat-flat-button
+                  color="primary"
+                  type="button"
+                  [disabled]="saving() || !canPublish()"
+                  (click)="publish()"
+                >
+                  <mat-icon>publish</mat-icon>
+                  Publier
+                </button>
+                <button
+                  mat-button
+                  color="warn"
+                  type="button"
+                  [disabled]="saving()"
+                  (click)="deleteDraft()"
+                >
+                  <mat-icon>delete</mat-icon>
+                  Supprimer
+                </button>
+              }
+            </div>
+            @if (!canPublish() && !published()) {
+              <p class="publish-hint">
+                Complétez au moins une une (titre, corps, auteur) pour activer la publication.
+              </p>
+            }
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <aside class="preview-column">
+        <div class="preview-head">
+          <h2>Aperçu</h2>
+          <span>Ce que verront les joueurs après publication</span>
+        </div>
+        @if (previewIssue(); as preview) {
+          <app-gazette-template [issue]="preview" />
+        }
+
+        <mat-card class="notes-card">
+          <mat-card-content>
+            <div class="section-head">
+              <h2>Faits du tour</h2>
+              <button mat-button type="button" [disabled]="!notes()" (click)="copyNotes()">
+                <mat-icon>content_copy</mat-icon>
+                Copier
+              </button>
+            </div>
+            <p class="hint">Notes réservées au MJ — elles ne sont jamais publiées.</p>
+
+            @if (notes(); as n) {
+              <section class="note-section">
+                <h3>Éliminations</h3>
+                @for (elimination of n.eliminations; track $index) {
+                  <p>
+                    <strong>{{ elimination.victimName }}</strong> — tour
+                    {{ elimination.eliminatedTurn }} — {{ elimination.cause ?? '—' }} — tueur
+                    {{ elimination.killerName ?? '—' }} — assists
+                    {{ elimination.assists.length ? elimination.assists.join(', ') : '—' }} —
+                    {{ elimination.characterName ?? '—' }} — secteur
+                    {{ elimination.battleSector ?? '—' }}
+                  </p>
+                }
+                @if (!n.eliminations.length) {
+                  <p class="empty">Aucune.</p>
+                }
+              </section>
+
+              <section class="note-section">
+                <h3>Batailles</h3>
+                @for (battle of n.battles; track $index) {
+                  <p>
+                    <strong>Secteur {{ battle.sectorNumber }}</strong> —
+                    {{ battle.standoff ? 'impasse' : (battle.winnerName ?? '—') }} — pertes
+                    {{ battle.attackerCasualties }} / {{ battle.defenderCasualties }} — QG
+                    {{ battle.headquartersCaptured ? 'conquis' : 'intact' }}
+                  </p>
+                  @if (battle.log.length) {
+                    <details>
+                      <summary>Journal de bataille</summary>
+                      <ul>
+                        @for (line of battle.log; track $index) {
+                          <li>{{ line }}</li>
+                        }
+                      </ul>
+                    </details>
+                  }
+                }
+                @if (!n.battles.length) {
+                  <p class="empty">Aucune.</p>
+                }
+              </section>
+
+              <section class="note-section">
+                <h3>Captures</h3>
+                @for (capture of n.captures; track $index) {
+                  <p>
+                    Secteur {{ capture.sectorNumber }} → {{ capture.ownerName
+                    }}{{ capture.onTheFly ? ' (vol)' : '' }}
+                  </p>
+                }
+                @if (!n.captures.length) {
+                  <p class="empty">Aucune.</p>
+                }
+              </section>
+
+              <section class="note-section">
+                <h3>Annonces</h3>
+                @for (announcement of n.announcements; track $index) {
+                  <p>
+                    {{ announcement.type }} — {{ announcement.actorName
+                    }}{{ announcement.targetName ? ' / ' + announcement.targetName : '' }} — tour
+                    {{ announcement.turnCreated }}
+                  </p>
+                }
+                @if (!n.announcements.length) {
+                  <p class="empty">Aucune.</p>
+                }
+              </section>
+
+              <section class="note-section">
+                <h3>Joueurs</h3>
+                @for (player of n.players; track player.name) {
+                  <p>
+                    {{ player.name }} — {{ player.alive ? 'en vie' : 'éliminé' }} —
+                    {{ player.sectorCount }} secteur(s)
+                  </p>
+                }
+              </section>
+
+              <section class="note-section">
+                <h3>Issue</h3>
+                <p>
+                  {{ n.outcome.finished ? 'Partie terminée' : 'Partie en cours'
+                  }}{{ n.outcome.winnerName ? ' — ' + n.outcome.winnerName : ''
+                  }}{{ n.outcome.posthumous ? ' (posthume)' : ''
+                  }}{{ n.outcome.adjusted ? ' (désigné MJ)' : '' }}
+                </p>
+              </section>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="model-card">
+          <mat-card-content>
+            <h2>Modèle</h2>
+            <details>
+              <summary>Structure et rappels</summary>
+              <ul>
+                <li>1 à 3 unes, 0 à 4 brèves.</li>
+                <li>Une une complète : titre, corps, auteur.</li>
+                <li>
+                  Les faits ci-dessus sont privés ; le journal peut les révéler au choix du MJ.
+                </li>
+                <li>
+                  La météo et le lien sont figés ; le contenu est entièrement rédigé par le MJ.
+                </li>
+              </ul>
+            </details>
+          </mat-card-content>
+        </mat-card>
+      </aside>
+    </div>
+  }
+</section>
