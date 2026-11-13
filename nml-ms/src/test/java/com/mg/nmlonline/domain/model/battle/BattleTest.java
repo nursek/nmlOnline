@@ -216,6 +216,26 @@ class BattleTest {
             assertEquals(50.0, dealt.damageDealt(), "50 ATK : 40 d'armure puis 10 de défense");
             assertEquals(50.0, taken.damageTaken(), "L'armure ne doit pas être comptée deux fois");
         }
+
+        @Test
+        @DisplayName("Malus de transit : Défense et Armure de la cible divisées par deux")
+        void transitMalusHalvesDefenseAndArmor() {
+            Unit striker = new Unit(0, UnitClass.LEGER);
+            striker.setAttack(6);
+            striker.setArmor(30);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            Unit target = larbin();
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(target));
+            battle.markDefenseHalved(List.of(target));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertTrue(defenderUnits.isEmpty(),
+                    "6 ATK détruit 10 Def divisée par deux (5), mais pas 10 Def intacte");
+            assertFalse(attackerUnits.isEmpty(), "L'attaquant survit grâce à son armure");
+            assertTrue(logContains("Malus de transit : Défense et Armure divisées par deux"));
+            assertTrue(logContains("Défense et Armure divisées par deux (transit)"));
+        }
     }
 
     @Nested

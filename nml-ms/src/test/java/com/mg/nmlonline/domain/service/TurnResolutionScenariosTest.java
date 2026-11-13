@@ -171,6 +171,61 @@ class TurnResolutionScenariosTest {
     }
 
     @Test
+    @DisplayName("une unité LEGER attaquée dans le secteur intermédiaire combat avec ses défenses divisées par deux")
+    @Transactional
+    void legerInTransitFightsWithHalvedDefenses() {
+        Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+        List<Player> players = playerRepository.findByBoardId(board.getId());
+        Player attacker = players.get(0);
+        Player defender = players.stream()
+                .filter(p -> !p.getId().equals(attacker.getId()))
+                .findFirst().orElseThrow();
+
+        Sector departure = board.getSector(7);
+        Sector contested = board.getSector(9);
+        Sector destination = board.getSector(14);
+        assertTrue(contested.isNeutral() && contested.getArmySize() == 0,
+                "Prérequis : le secteur 9 est neutre et vide");
+
+        // 10 Arm + 10 Def = 20, soit 10 sous le malus : le LARBIN défenseur (10 ATK) le tue.
+        Unit leger = new Unit(0.0, UnitClass.LEGER);
+        leger.setAttack(0);
+        leger.setArmor(10);
+        leger.setPlayerId(attacker.getId());
+        departure.addUnit(leger);
+        Unit larbin = new Unit(0.0, UnitClass.LEGER);
+        larbin.setPlayerId(defender.getId());
+        contested.addUnit(larbin);
+        em.flush();
+
+        int turn = turnService.getCurrentTurn(boardId());
+        movementOrderRepository.deleteAll(movementOrderRepository.findPendingByTurn(boardId(), turn));
+        em.flush();
+
+        MovementOrder order = MovementOrder.createFootOrder(attacker.getId(), boardId(), turn,
+                List.of(leger.getId()),
+                List.of(departure.getNumber(), contested.getNumber(), destination.getNumber()));
+        movementOrderRepository.save(order);
+        em.flush();
+
+        orchestrator.startSession(boardId());
+        TurnResolutionStateDto state = orchestrator.advanceHop(boardId());
+        PendingConflictDto conflict = state.getPendingConflicts().getFirst();
+        assertEquals(contested.getNumber(), conflict.getSectorNumber());
+
+        ResolvedBattleDto report = orchestrator.resolveBattle(boardId(), conflict.getConflictId());
+
+        assertTrue(report.isSuccess());
+        assertEquals(defender.getId(), report.getWinnerId(),
+                "Le LEGER en transit meurt sous le malus de défenses");
+        assertEquals(1, report.getAttackerCasualties());
+        assertEquals(0, report.getDefenderCasualties());
+        assertTrue(report.getBattleLog().stream()
+                        .anyMatch(entry -> entry.getMessage().contains("Malus de transit")),
+                "Le rapport de combat signale le malus de transit");
+    }
+
+    @Test
     @DisplayName("anéantissement mutuel : le secteur contesté reste neutre")
     @Transactional
     void mutualAnnihilationLeavesSectorNeutral() {

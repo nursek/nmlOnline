@@ -188,6 +188,7 @@ export function unitClassBonusSummary(uc: UnitClass): string {
   const parts: string[] = [];
   if (uc.maxMovementHops > 1) {
     parts.push(`Peut parcourir ${uc.maxMovementHops} secteurs par tour`);
+    parts.push('Défense et Armure divisées par deux dans le secteur intermédiaire');
   }
   const reduction = Math.max(uc.damageReductionPdf ?? 0, uc.damageReductionPdc ?? 0);
   if (reduction > 0) {

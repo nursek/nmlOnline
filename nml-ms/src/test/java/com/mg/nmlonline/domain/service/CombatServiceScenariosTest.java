@@ -683,7 +683,7 @@ class CombatServiceScenariosTest {
             Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             return combatService.simulateSectorBattle(List.of(attacker), List.of(defender), board,
-                    w.sectorNumber(), List.of(sniper), List.of());
+                    w.sectorNumber(), List.of(sniper), List.of(), Set.of());
         });
 
         assertTrue(r.success());

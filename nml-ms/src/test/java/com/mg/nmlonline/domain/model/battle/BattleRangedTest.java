@@ -274,4 +274,21 @@ class BattleRangedTest {
         assertTrue(battle.getRangedDestroyed().contains(thirdSniper));
         assertNull(battle.getWinner());
     }
+
+    @Test
+    @DisplayName("Malus de transit : un tir à distance perce une Défense divisée par deux")
+    void transitMalusAppliesToRangedStrikes() {
+        Unit shooter = sniper(1L, 6);
+        Unit target = unit(2L);
+        target.setArmor(0);
+        target.setDefense(10);
+        List<CombatEntity> targets = new ArrayList<>(List.of(target));
+        Battle battle = battle();
+        battle.markDefenseHalved(List.of(target));
+
+        battle.rangedOnlyConfiguration(List.of(shooter), targets, "Secteur 2");
+
+        assertTrue(battle.getRangedDestroyed().contains(target),
+                "6 PdF détruit 10 Def divisée par deux (5), mais pas 10 Def intacte");
+    }
 }
