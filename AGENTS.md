@@ -76,7 +76,8 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   `RandomSource` injecté dans `Battle` par `CombatService` (`domain/model/battle/`), jamais
   `java.util.Random` ou `Math.random` dans le domaine. Tests unitaires = jets scriptés
   (`BattleTest.rolls`), intégration = `CombatTestRandomConfig` (jet 100, via
-  `@EmbeddedPostgresTest`) — aucun test probabiliste.
+  `@EmbeddedPostgresTest`) — aucun test probabiliste. Le tirage décoratif du masthead
+  (`GazetteMastheadService` : météo, slug) est hors combat et n'utilise pas `RandomSource`.
 - **Commentaires** : zéro par défaut — relire les lignes `+` de `git diff -U0` avant de rendre
   la main (voir « Commentaires »). Un `catch` vide ne survit que justifié en une ligne.
 - **Règles du jeu** : elles vivent dans la page Règles
@@ -110,6 +111,9 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   `TurnResolutionOrchestrator` mutent `Board.currentTurn` — les trois doivent publier/invalider
   `TurnService.cachedTurns` (`publishTurn(boardId, turn)` avant commit, purge sur rollback).
   Session de l'orchestrateur en mémoire, JVM unique, perdue au redémarrage.
+- **Scénarios dev** : `TurnResolutionScenarioSeeder.resetScenarioArena` supprime les
+  `EliminationEvent`/`GazetteIssue` du board ; sinon le podium et l'archive de démo gardent des
+  fantômes.
 - **Démarrage** : ordre imposé par `@Order` — `DemoDataResetter` 0, `CsvDataLoader` 1,
   `PlayerStartupImporter` 2, `TestDataInitializer` 100. Un runner sans ordre casse les imports
   (le catalogue CSV n'est pas encore chargé quand les joueurs sont lus).
@@ -147,3 +151,7 @@ consomment, ils ne possèdent pas l'état global.
   jamais du jeton.
 - **Guards** : `instanceGuard` avant `playerGuard`/`adminGuard` ; changer de partie recharge la page
   (tous les `httpResource` racine sont liés à la partie).
+- **Routes SPA** : toute nouvelle route Angular doit être ajoutée à `SpaForwardController`
+  (`/route` + `/route/**`) ; `SpaForwardControllerTest` échoue sinon (rechargement prod 404).
+- **Fin de partie** : `PlayerStatusService.locked()` + `.readonly-mode` désactivent les boutons ;
+  les actions de consultation (Imprimer, Réessayer) doivent porter `.readonly-allow`.
