@@ -154,6 +154,11 @@ public class Unit extends CombatEntity {
         recalculateBaseStats();
     }
 
+    /** Armure pleine sur la défense courante : la défense endommagée, elle, n'est pas soignée. */
+    public void regenerateArmor() {
+        this.armor = calculateEquipmentArmor();
+    }
+
     /** Priorité : unitEquipments (persistant) > equipments (champ transient, ancien code). */
     private List<Equipment> getEquipmentsForCalculation() {
         if (unitEquipments != null && !unitEquipments.isEmpty()) {

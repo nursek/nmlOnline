@@ -100,7 +100,7 @@ class TurnBoardIsolationTest {
 
         double vehicleDefenseBefore = vehicle.getDefense();
 
-        unitRecoveryService.recoverWoundedUnits(turnEnding, firstBoard.getId());
+        unitRecoveryService.recoverAtTurnEnd(turnEnding, firstBoard.getId());
         vehicleMaintenanceService.repairAllVehicles(firstBoard.getId());
         characterService.regenerateAllCharacters(firstBoard.getId());
 
@@ -111,7 +111,7 @@ class TurnBoardIsolationTest {
         assertEquals(100, characterRepository.findById(character.getId()).orElseThrow().getDefense(),
                 "le personnage entamé d'un autre plateau ne doit pas régénérer");
 
-        unitRecoveryService.recoverWoundedUnits(turnEnding, secondBoard.getId());
+        unitRecoveryService.recoverAtTurnEnd(turnEnding, secondBoard.getId());
         vehicleMaintenanceService.repairAllVehicles(secondBoard.getId());
         characterService.regenerateAllCharacters(secondBoard.getId());
 

@@ -129,7 +129,7 @@ export class ReglesComponent {
       nom: 'Armure',
       sigle: 'Arm',
       css: 'arm',
-      role: "Absorbe les dégâts en premier. Régénérée entre deux combats pour les personnages ; l'infanterie ne récupère pas son armure.",
+      role: "Absorbe les dégâts en premier. Restaurée après chaque combat pour les personnages ; l'infanterie la récupère intégralement à la fin du tour.",
     },
     {
       nom: 'Esquive',

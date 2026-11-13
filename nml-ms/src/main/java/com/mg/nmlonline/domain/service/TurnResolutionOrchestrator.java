@@ -389,7 +389,7 @@ public class TurnResolutionOrchestrator {
             }
             characterService.regenerateAllCharacters(s.boardId);
             vehicleMaintenanceService.repairAllVehicles(s.boardId);
-            unitRecoveryService.recoverWoundedUnits(s.turnEnding, s.boardId);
+            unitRecoveryService.recoverAtTurnEnd(s.turnEnding, s.boardId);
             board.setCurrentTurn(s.turnEnding + 1);
             boardRepository.save(board);
             turnService.publishTurn(s.boardId, s.turnEnding + 1);
