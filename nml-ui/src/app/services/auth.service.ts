@@ -27,11 +27,18 @@ export class AuthService {
   private readonly _error = signal<string | null>(null);
   private readonly _loading = signal(false);
   private readonly _initialized = signal(false);
+  private readonly _retryAt = signal<number | null>(null);
+  private readonly _tick = signal(Date.now());
+  private retryTimer: ReturnType<typeof setInterval> | null = null;
 
   readonly user = this._user.asReadonly();
   readonly error = this._error.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly initialized = this._initialized.asReadonly();
+  readonly retryInSeconds = computed(() => {
+    const retryAt = this._retryAt();
+    return retryAt === null ? 0 : Math.max(0, Math.ceil((retryAt - this._tick()) / 1000));
+  });
 
   readonly isAuthenticated = computed(() => this._user() !== null);
   readonly isAdmin = computed(() => this._user()?.role === 'ADMIN');
@@ -72,6 +79,7 @@ export class AuthService {
     this._error.set(null);
     try {
       const response = await firstValueFrom(this.api.login(credentials));
+      this.stopRetryCountdown();
       this.tokenService.setRememberMe(credentials.rememberMe);
       this.tokenService.setAccessToken(response.token);
       this.tokenService.setUser({
@@ -91,6 +99,11 @@ export class AuthService {
       }
       void this.router.navigate(['/parties']).catch(() => undefined);
     } catch (error) {
+      const retryAfterSeconds = this.extractRetryAfterSeconds(error);
+      if (retryAfterSeconds > 0) {
+        this.startRetryCountdown(retryAfterSeconds);
+        throw new Error('Trop de tentatives de connexion');
+      }
       const message = this.extractErrorMessage(error);
       this._error.set(message);
       throw new Error(message);
@@ -127,6 +140,34 @@ export class AuthService {
     this._user.set(null);
     this._loading.set(false);
     this._initialized.set(true);
+  }
+
+  private startRetryCountdown(seconds: number): void {
+    this._tick.set(Date.now());
+    this._retryAt.set(this._tick() + seconds * 1000);
+    if (this.retryTimer !== null) return;
+    this.retryTimer = setInterval(() => {
+      this._tick.set(Date.now());
+      if (this.retryInSeconds() === 0) {
+        this.stopRetryCountdown();
+      }
+    }, 1000);
+  }
+
+  private stopRetryCountdown(): void {
+    if (this.retryTimer !== null) {
+      clearInterval(this.retryTimer);
+      this.retryTimer = null;
+    }
+    this._retryAt.set(null);
+  }
+
+  private extractRetryAfterSeconds(error: unknown): number {
+    const response = error as { status?: number; headers?: { get(name: string): string | null } };
+    if (response?.status !== 429) return 0;
+    const raw = response.headers?.get('Retry-After');
+    const seconds = raw ? Number(raw) : NaN;
+    return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : 0;
   }
 
   private extractErrorMessage(error: unknown): string {

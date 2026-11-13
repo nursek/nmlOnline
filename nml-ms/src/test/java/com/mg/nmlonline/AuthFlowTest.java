@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -75,6 +76,47 @@ class AuthFlowTest {
         mockMvc.perform(post("/api/auth/refresh").cookie(rotated))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(false));
+    }
+
+    @Test
+    @DisplayName("Login bloqué : 429 avec Retry-After et durée restante")
+    void blockedLoginReturnsRetryAfter() throws Exception {
+        String username = "authblockeduser";
+        String ip = "203.0.113.7";
+
+        for (int attempt = 1; attempt < 5; attempt++) {
+            mockMvc.perform(post("/api/login")
+                            .with(request -> {
+                                request.setRemoteAddr(ip);
+                                return request;
+                            })
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(loginBody(username, "mauvais")))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        MvcResult fifth = mockMvc.perform(post("/api/login")
+                        .with(request -> {
+                            request.setRemoteAddr(ip);
+                            return request;
+                        })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody(username, "mauvais")))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andReturn();
+
+        int retryAfter = Integer.parseInt(fifth.getResponse().getHeader("Retry-After"));
+        assertTrue(retryAfter > 0 && retryAfter <= 60, "Retry-After doit donner le décompte en secondes");
+
+        mockMvc.perform(post("/api/login")
+                        .with(request -> {
+                            request.setRemoteAddr(ip);
+                            return request;
+                        })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody(username, "secret123")))
+                .andExpect(status().isTooManyRequests());
     }
 
     @Test

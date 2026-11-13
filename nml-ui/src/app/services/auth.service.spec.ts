@@ -92,3 +92,32 @@ describe('AuthService — route après login', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/parties']);
   });
 });
+
+describe('AuthService — blocage temporaire du login', () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => {
+    sessionStorage.clear();
+    jest.useRealTimers();
+  });
+
+  it('décompte les secondes restantes du Retry-After', async () => {
+    jest.useFakeTimers();
+    const { auth, http } = setup();
+
+    const login = auth.login({ username: 'lurio', password: 'mauvais' });
+    http.expectOne(`${environment.apiBaseUrl}/login`).flush(
+      { detail: 'Trop de tentatives, réessayez plus tard' },
+      { status: 429, statusText: 'Too Many Requests', headers: { 'Retry-After': '90' } },
+    );
+    await expect(login).rejects.toThrow('Trop de tentatives');
+
+    expect(auth.retryInSeconds()).toBe(90);
+    expect(auth.error()).toBeNull();
+
+    jest.advanceTimersByTime(30_000);
+    expect(auth.retryInSeconds()).toBe(60);
+
+    jest.advanceTimersByTime(60_000);
+    expect(auth.retryInSeconds()).toBe(0);
+  });
+});

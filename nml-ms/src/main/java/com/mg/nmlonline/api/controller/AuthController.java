@@ -124,8 +124,7 @@ public class AuthController {
         Attempt ipAtt = ipAttempts.computeIfAbsent(clientIp, k -> new Attempt());
 
         if (att.blockedUntil.get() > now || ipAtt.blockedUntil.get() > now) {
-            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                    "Trop de tentatives, réessayez plus tard");
+            return tooManyLoginAttempts(now, att, ipAtt);
         }
 
         User user = userService.findByUsername(req.getUsername());
@@ -150,19 +149,33 @@ public class AuthController {
             logger.warn("Échec de login : '{}' ip {}", logSafe(req.getUsername()), clientIp);
             int currentCount = att.count.incrementAndGet();
             att.lastAttempt.set(now);
+            int ipCount = ipAtt.count.incrementAndGet();
+            ipAtt.lastAttempt.set(now);
             if (currentCount >= MAX_ATTEMPTS) {
                 att.blockedUntil.set(now + BLOCK_TIME_MS);
                 att.count.set(0);
                 logger.warn("Blocage temporaire du compte '{}' ip {}", logSafe(req.getUsername()), clientIp);
             }
-            int ipCount = ipAtt.count.incrementAndGet();
-            ipAtt.lastAttempt.set(now);
             if (ipCount >= MAX_ATTEMPTS) {
                 ipAtt.blockedUntil.set(now + BLOCK_TIME_MS);
                 ipAtt.count.set(0);
             }
+            if (currentCount >= MAX_ATTEMPTS || ipCount >= MAX_ATTEMPTS) {
+                return tooManyLoginAttempts(now, att, ipAtt);
+            }
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identifiants invalides");
         }
+    }
+
+    private static ResponseEntity<Map<String, String>> tooManyLoginAttempts(long now, Attempt... throttles) {
+        long blockedUntil = 0;
+        for (Attempt throttle : throttles) {
+            blockedUntil = Math.max(blockedUntil, throttle.blockedUntil.get());
+        }
+        long retryAfterSeconds = Math.max(1, (blockedUntil - now + 999) / 1000);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", Long.toString(retryAfterSeconds))
+                .body(Map.of("detail", "Trop de tentatives, réessayez dans " + retryAfterSeconds + " s"));
     }
 
     @PostMapping("/auth/refresh")
