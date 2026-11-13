@@ -9,8 +9,8 @@ import com.mg.nmlonline.api.dto.SellResourceBatchRequestDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.config.BoardScopeFilter;
+import com.mg.nmlonline.domain.service.GameEndService;
 import com.mg.nmlonline.domain.service.PlayerService;
-import com.mg.nmlonline.config.BoardScopeFilter;
 import com.mg.nmlonline.domain.service.ResourceService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -28,10 +28,13 @@ public class PlayerController {
 
     private final PlayerService playerService;
     private final ResourceService resourceService;
+    private final GameEndService gameEndService;
 
-    public PlayerController(PlayerService playerService, ResourceService resourceService) {
+    public PlayerController(PlayerService playerService, ResourceService resourceService,
+                            GameEndService gameEndService) {
         this.playerService = playerService;
         this.resourceService = resourceService;
+        this.gameEndService = gameEndService;
     }
 
     @GetMapping
@@ -45,13 +48,19 @@ public class PlayerController {
         Long userId = (Long) request.getAttribute("userId");
         Long boardId = (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
         Player player = playerService.findByUserId(userId, boardId);
+        GameEndService.GameOutcome game = gameEndService.getState(boardId);
         if (player == null) {
-            return new PlayerStatusDto(false, null, null, null);
+            return new PlayerStatusDto(false, null, null, null, false,
+                    game.finished(), game.finalTurn(), game.winnerPlayerId(), game.winnerName(),
+                    game.posthumous(), game.winnerAdjusted(), false);
         }
+        boolean winner = player.getId().equals(game.winnerPlayerId());
         return new PlayerStatusDto(player.isEliminated(),
                 player.getEliminationCause() != null ? player.getEliminationCause().name() : null,
                 player.getEliminatedTurn(),
-                player.getEliminatedByPlayerId());
+                player.getEliminatedByPlayerId(),
+                true, game.finished(), game.finalTurn(), game.winnerPlayerId(), game.winnerName(),
+                game.posthumous(), game.winnerAdjusted(), winner);
     }
 
     @GetMapping("/me")

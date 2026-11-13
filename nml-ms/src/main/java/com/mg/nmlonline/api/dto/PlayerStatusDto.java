@@ -4,5 +4,13 @@ public record PlayerStatusDto(
         boolean eliminated,
         String eliminationCause,
         Integer eliminatedTurn,
-        Long eliminatedByPlayerId) {
+        Long eliminatedByPlayerId,
+        boolean participant,
+        boolean gameFinished,
+        Integer finalTurn,
+        Long winnerPlayerId,
+        String winnerName,
+        boolean winnerPosthumous,
+        boolean winnerAdjusted,
+        boolean winner) {
 }
