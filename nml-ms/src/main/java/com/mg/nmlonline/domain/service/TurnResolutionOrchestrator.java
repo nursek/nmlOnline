@@ -13,6 +13,7 @@ import com.mg.nmlonline.api.dto.TurnJournalDto;
 import com.mg.nmlonline.api.dto.TurnResolutionStateDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
+import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
 import com.mg.nmlonline.domain.model.movement.SectorCapture;
 import com.mg.nmlonline.domain.model.movement.SectorConflict;
@@ -167,6 +168,7 @@ public class TurnResolutionOrchestrator {
         Set<Integer> battleSectors = new HashSet<>();
         s.resolvedConflicts.forEach(resolved -> battleSectors.add(resolved.sectorNumber()));
         s.pendingConflicts.forEach(pending -> battleSectors.add(pending.sectorNumber));
+        Set<Long> transitEntityIds = inTransitEntityIds(s.ctx);
 
         ResolvedBattle rb;
         Map<Long, Player> locked;
@@ -179,7 +181,7 @@ public class TurnResolutionOrchestrator {
             Map<Integer, List<Unit>> byCamp = new HashMap<>(support.byCamp());
             Set<Integer> rangedOnly = attachIndependents(pc.camps.size(), support.independents(), byCamp);
             CombatService.StandoffBattleResult r = combatService.simulateSectorStandoff(
-                    camps, board, pc.sectorNumber, byCamp, rangedOnly);
+                    camps, board, pc.sectorNumber, byCamp, rangedOnly, transitEntityIds);
             battleReportService.saveStandoffReport(s.boardId, s.turnEnding, pc.sectorNumber,
                     camps.stream().flatMap(List::stream).toList(), r);
             if (r.success()) {
@@ -195,7 +197,7 @@ public class TurnResolutionOrchestrator {
                 List<Player> defenderCamp = pc.camps.get(1).stream().map(locked::get).toList();
                 CombatService.SectorBattleResult r =
                         combatService.simulateSectorBattle(attackerCamp, defenderCamp, board, pc.sectorNumber,
-                                support.attackers(), support.defenders());
+                                support.attackers(), support.defenders(), transitEntityIds);
                 battleReportService.saveDuelReport(s.boardId, s.turnEnding, pc.sectorNumber, attackerCamp,
                         defenderCamp, r);
                 if (r.success()) {
@@ -211,7 +213,7 @@ public class TurnResolutionOrchestrator {
                 byCamp.put(1, support.defenders());
                 Set<Integer> rangedOnly = attachIndependents(pc.camps.size(), support.independents(), byCamp);
                 CombatService.StandoffBattleResult r = combatService.simulateSectorStandoff(
-                        camps, board, pc.sectorNumber, byCamp, rangedOnly);
+                        camps, board, pc.sectorNumber, byCamp, rangedOnly, transitEntityIds);
                 battleReportService.saveStandoffReport(s.boardId, s.turnEnding, pc.sectorNumber,
                         camps.stream().flatMap(List::stream).toList(), r);
                 if (r.success()) {
@@ -325,6 +327,28 @@ public class TurnResolutionOrchestrator {
                     .orElseThrow(() -> new IllegalStateException("Joueur " + id + " introuvable")));
         }
         return players;
+    }
+
+    private Set<Long> inTransitEntityIds(MovementService.ResolutionContext ctx) {
+        int step = ctx.getCurrentStep();
+        if (step < 1) {
+            return Set.of();
+        }
+        Set<Long> ids = new HashSet<>();
+        for (MovementOrder order : ctx.getActiveOrders()) {
+            if (!order.isFootMovement() || ctx.getStoppedIds().contains(order.getId())) {
+                continue;
+            }
+            if (step >= order.getHopCount()) {
+                continue;
+            }
+            Integer position = ctx.getCurrentPosition().get(order.getId());
+            if (!Integer.valueOf(order.getRoute().get(step)).equals(position)) {
+                continue;
+            }
+            ids.addAll(order.getEntityIds());
+        }
+        return ids;
     }
 
     /** Finalise le tour (ordres RESOLVED + incrémentation), libère le verrou. Nécessite tous hops + batailles résolus. */

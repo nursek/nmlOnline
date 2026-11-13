@@ -91,8 +91,8 @@ class AdminServiceTest {
     }
 
     @Test
-    @DisplayName("password fourni + user existant → met à jour le mot de passe sans changer le role")
-    void shouldUpdatePasswordWhenUserAlreadyExists() throws Exception {
+    @DisplayName("user existant → mot de passe inchangé, compte simplement lié")
+    void shouldReuseExistingUserWithoutChangingPassword() throws Exception {
         PlayerImportService.PlayerDTO dto = new PlayerImportService.PlayerDTO();
         dto.name = PLAYER_NAME;
         Player persisted = newPlayer();
@@ -109,15 +109,42 @@ class AdminServiceTest {
         when(playerService.findByName(BOARD_ID, PLAYER_NAME)).thenReturn(null);
         when(playerService.save(any(Player.class))).thenReturn(persisted);
         when(userRepository.findByUsername(PLAYER_NAME)).thenReturn(existing);
-        when(userService.encodePassword(PASSWORD)).thenReturn("new-hash");
-        when(userRepository.save(existing)).thenReturn(existing);
 
-        adminService.importPlayer(JSON, PASSWORD, BOARD_ID);
+        Player result = adminService.importPlayer(JSON, PASSWORD, BOARD_ID);
 
-        verify(userRepository).save(existing);
-        assertEquals("USER", existing.getRole());
-        assertEquals("new-hash", existing.getPassword());
-        assertEquals(7L, persisted.getUserId());
+        assertEquals("old-hash", existing.getPassword());
+        assertEquals(7L, result.getUserId());
+        verify(userRepository, never()).save(any(User.class));
+        verify(userService, never()).encodePassword(any());
+    }
+
+    @Test
+    @DisplayName("user ADMIN existant → import refusé sans toucher au mot de passe")
+    void shouldRefuseImportOnPlatformAdminAccount() throws Exception {
+        PlayerImportService.PlayerDTO dto = new PlayerImportService.PlayerDTO();
+        dto.name = PLAYER_NAME;
+        Player persisted = newPlayer();
+        persisted.setId(42L);
+
+        User admin = new User();
+        admin.setId(1L);
+        admin.setUsername(PLAYER_NAME);
+        admin.setRole("ADMIN");
+        admin.setPassword("admin-hash");
+
+        when(playerImportService.parse(JSON)).thenReturn(dto);
+        when(playerImportService.importPlayer(dto, BOARD_ID)).thenReturn(newPlayer());
+        when(playerService.findByName(BOARD_ID, PLAYER_NAME)).thenReturn(null);
+        when(playerService.save(any(Player.class))).thenReturn(persisted);
+        when(userRepository.findByUsername(PLAYER_NAME)).thenReturn(admin);
+
+        assertThrows(SecurityException.class,
+                () -> adminService.importPlayer(JSON, PASSWORD, BOARD_ID));
+
+        assertEquals("admin-hash", admin.getPassword());
+        assertNull(persisted.getUserId());
+        verify(userRepository, never()).save(any(User.class));
+        verify(userService, never()).encodePassword(any());
     }
 
     @Test

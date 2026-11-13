@@ -227,7 +227,7 @@ class CombatExperienceTest {
             Player defender = playerRepository.findById(w.defenderId()).orElseThrow();
             Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
             return combatService.simulateSectorBattle(List.of(attacker), List.of(defender), board,
-                    w.sectorNumber(), List.of(support), List.of());
+                    w.sectorNumber(), List.of(support), List.of(), Set.of());
         });
 
         assertTrue(r.success());

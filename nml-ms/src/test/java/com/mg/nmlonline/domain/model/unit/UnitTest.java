@@ -360,7 +360,7 @@ class UnitTest {
         @DisplayName("Critique : porté par la classe TIREUR, agrégé au max des classes")
         void shouldExposeTireurCrit() {
             Unit tireur = new Unit(5, UnitClass.TIREUR);
-            assertEquals(0.10, tireur.getCriticalChance());
+            assertEquals(0.20, tireur.getCriticalChance());
             assertEquals(1.5, tireur.getCriticalMultiplier());
 
             Unit leger = new Unit(5, UnitClass.LEGER);
@@ -368,7 +368,7 @@ class UnitTest {
             assertEquals(1.0, leger.getCriticalMultiplier());
 
             leger.addSecondClass(UnitClass.TIREUR);
-            assertEquals(0.10, leger.getCriticalChance());
+            assertEquals(0.20, leger.getCriticalChance());
             assertEquals(1.5, leger.getCriticalMultiplier());
         }
     }

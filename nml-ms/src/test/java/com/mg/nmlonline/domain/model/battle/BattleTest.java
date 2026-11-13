@@ -216,6 +216,26 @@ class BattleTest {
             assertEquals(50.0, dealt.damageDealt(), "50 ATK : 40 d'armure puis 10 de défense");
             assertEquals(50.0, taken.damageTaken(), "L'armure ne doit pas être comptée deux fois");
         }
+
+        @Test
+        @DisplayName("Malus de transit : Défense et Armure de la cible divisées par deux")
+        void transitMalusHalvesDefenseAndArmor() {
+            Unit striker = new Unit(0, UnitClass.LEGER);
+            striker.setAttack(6);
+            striker.setArmor(30);
+            List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
+            Unit target = larbin();
+            List<CombatEntity> defenderUnits = new ArrayList<>(List.of(target));
+            battle.markDefenseHalved(List.of(target));
+
+            battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
+
+            assertTrue(defenderUnits.isEmpty(),
+                    "6 ATK détruit 10 Def divisée par deux (5), mais pas 10 Def intacte");
+            assertFalse(attackerUnits.isEmpty(), "L'attaquant survit grâce à son armure");
+            assertTrue(logContains("Malus de transit : Défense et Armure divisées par deux"));
+            assertTrue(logContains("Défense et Armure divisées par deux (transit)"));
+        }
     }
 
     @Nested
@@ -618,11 +638,11 @@ class BattleTest {
     class CriticalTests {
 
         @Test
-        @DisplayName("TIREUR : jet ≤ 10 multiplie les dégâts par 1,5 et le journalise")
+        @DisplayName("TIREUR : jet ≤ 20 multiplie les dégâts par 1,5 et le journalise")
         void tireurCritMultipliesDamage() {
             Unit striker = brute();
             striker.setNumber(1);
-            battle.setRandomSource(rolls(10));
+            battle.setRandomSource(rolls(20));
             Headquarters hq = new Headquarters(1L);
             hq.setPlayerId(1L);
             List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));
@@ -631,17 +651,17 @@ class BattleTest {
             battle.classicCombatConfiguration(attacker, defender, attackerUnits, defenderUnits);
 
             assertEquals(50.0, hq.getDefense(), "100 ATK × 1,5 = 150 face à 200 def");
-            assertTrue(logContains("critique (jet 10 ≤ 10 %) : 100 → 150 ATK"));
+            assertTrue(logContains("critique (jet 20 ≤ 20 %) : 100 → 150 ATK"));
             assertTrue(battle.getLog().stream()
                     .anyMatch(entry -> BattleLogEntry.CRIT.equals(entry.outcome())));
         }
 
         @Test
-        @DisplayName("TIREUR : jet > 10 conserve les dégâts normaux")
+        @DisplayName("TIREUR : jet > 20 conserve les dégâts normaux")
         void tireurWithoutCritDealsNormalDamage() {
             Unit striker = brute();
             striker.setNumber(1);
-            battle.setRandomSource(rolls(11));
+            battle.setRandomSource(rolls(21));
             Headquarters hq = new Headquarters(1L);
             hq.setPlayerId(1L);
             List<CombatEntity> attackerUnits = new ArrayList<>(List.of(striker));

@@ -75,7 +75,7 @@ public class AdminService {
         this.boardAdminRepository = boardAdminRepository;
     }
 
-    /** Import JSON : supprime un joueur homonyme au préalable ; si password est fourni, crée/met à jour le compte User associé. */
+    /** Import JSON : supprime un joueur homonyme au préalable ; si password est fourni, crée le compte User absent (un compte existant n'est jamais modifié). */
     @Transactional
     public Player importPlayer(String jsonContent, String password, Long boardId) throws IOException {
         PlayerImportService.PlayerDTO dto = playerImportService.parse(jsonContent);
@@ -159,11 +159,18 @@ public class AdminService {
 
     private User ensureCredential(String username, String password) {
         User user = userRepository.findByUsername(username);
-        if (user == null) {
-            user = new User();
-            user.setUsername(username);
-            user.setRole("USER");
+        if (user != null) {
+            if ("ADMIN".equals(user.getRole())) {
+                throw new SecurityException(
+                        "Le compte '" + username + "' est réservé et ne peut pas être lié à un joueur");
+            }
+            // Un compte existant n'est jamais réécrit : sinon l'import permet de réinitialiser n'importe quel mot de passe.
+            logger.warn("Compte existant '{}' lié au joueur sans modification du mot de passe", username);
+            return user;
         }
+        user = new User();
+        user.setUsername(username);
+        user.setRole("USER");
         user.setPassword(userService.encodePassword(password));
         return userRepository.save(user);
     }

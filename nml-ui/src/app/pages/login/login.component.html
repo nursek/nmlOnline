@@ -20,7 +20,12 @@
         </div>
 
         <form (submit)="onSubmit($event)" aria-label="Formulaire de connexion">
-          @if (error(); as error) {
+          @if (retryInSeconds() > 0) {
+            <div class="error-alert" role="alert">
+              <mat-icon>timer</mat-icon>
+              <span>Trop de tentatives. Nouvel essai possible dans <strong>{{ retryLabel() }}</strong></span>
+            </div>
+          } @else if (error(); as error) {
             <div class="error-alert" role="alert">
               <mat-icon>error</mat-icon>
               {{ error }}
@@ -68,7 +73,7 @@
             color="primary"
             type="submit"
             class="submit-btn"
-            [disabled]="(submitted() && invalid()) || loading()"
+            [disabled]="(submitted() && invalid()) || loading() || retryInSeconds() > 0"
           >
             @if (loading()) {
               <mat-spinner diameter="20" aria-label="Chargement en cours"></mat-spinner>
