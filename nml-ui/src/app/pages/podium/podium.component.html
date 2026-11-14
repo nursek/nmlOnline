@@ -1,0 +1,205 @@
+<section class="podium-page">
+  <header class="page-header">
+    <div class="title">
+      <mat-icon>emoji_events</mat-icon>
+      <h1>Podium</h1>
+    </div>
+    @if (podium()?.finished) {
+      <span class="subtitle">Tour final {{ podium()?.finalTurn }}</span>
+    }
+  </header>
+
+  @if (!podium() && podiumRef.isLoading()) {
+    <div class="loading-state" role="status">
+      <mat-spinner diameter="48"></mat-spinner>
+      <p>Chargement du podium...</p>
+    </div>
+  } @else if (podiumRef.error()) {
+    <div class="error-alert" role="alert">
+      <mat-icon>error</mat-icon>
+      <span>Impossible de charger le podium.</span>
+      <button mat-stroked-button class="readonly-allow" type="button" (click)="retry()">
+        Réessayer
+      </button>
+    </div>
+  } @else if (podium(); as p) {
+    @if (!p.finished) {
+      <mat-card class="waiting-card">
+        <mat-card-content>
+          <mat-icon>hourglass_top</mat-icon>
+          <h2>La partie est en cours</h2>
+          <p>
+            Le podium sera scellé à la dernière élimination. Encore
+            <strong>{{ p.activePlayers }}</strong> joueur(s) en vie sur
+            <strong>{{ p.totalPlayers }}</strong>.
+          </p>
+          <a mat-stroked-button routerLink="/carte">Voir la carte</a>
+        </mat-card-content>
+      </mat-card>
+    } @else {
+      @if (champion(); as champ) {
+        <mat-card class="champion-card">
+          <mat-card-content>
+            <div class="champion-photo">
+              <app-player-photo
+                [playerName]="champ.playerName"
+                [characterName]="champ.characterName"
+                [color]="getPlayerColor(champ.playerId)"
+              />
+            </div>
+            <div class="champion-body">
+              <span class="kicker">{{ championLabel(champ) }}</span>
+              <h2 class="champion-name">{{ champ.playerName }}</h2>
+              @if (champ.characterName) {
+                <span class="character">{{ champ.characterName }}</span>
+              }
+              <p class="stats">{{ champ.kills }} kill(s) · {{ champ.assists }} assistance(s)</p>
+              @if (p.championAdjusted) {
+                <span class="adjusted">Champion désigné par le MJ</span>
+              }
+            </div>
+            <div class="champion-actions">
+              <button mat-stroked-button class="readonly-allow" type="button" (click)="print()">
+                <mat-icon>print</mat-icon>
+                Imprimer le palmarès
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <section class="podium-steps" aria-label="Podium">
+        @for (place of steps(); track place.playerId) {
+          <article
+            class="podium-step"
+            [class.step-1]="place.place === 1"
+            [class.step-2]="place.place === 2"
+            [class.step-3]="place.place === 3"
+          >
+            <span class="medal" aria-hidden="true">{{ medalEmoji(place.place) }}</span>
+            <span class="medal-label">{{ medalLabel(place.place) }}</span>
+            <h3>{{ place.playerName }}</h3>
+            <span class="place">Place {{ place.place }}</span>
+            <span class="stats">{{ place.kills }} K · {{ place.assists }} A</span>
+            <span class="cause" [class.definitive]="place.definitive">{{ causeLabel(place) }}</span>
+          </article>
+        }
+      </section>
+
+      <mat-card class="standings-card">
+        <mat-card-content>
+          <h2>Classement final</h2>
+          <div class="table-scroll">
+            <table>
+              <caption class="visually-hidden">Classement final de la partie</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Place</th>
+                  <th scope="col">Joueur</th>
+                  <th scope="col">Race</th>
+                  <th scope="col">Éliminé au tour</th>
+                  <th scope="col">Cause</th>
+                  <th scope="col">Tueur</th>
+                  <th scope="col" class="num">Kills</th>
+                  <th scope="col" class="num">Assists</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (place of places(); track place.playerId) {
+                  <tr [class.champion-row]="place.place === 1">
+                    <td class="place">{{ place.place }}</td>
+                    <td>
+                      <span
+                        class="dot"
+                        [style.background-color]="getPlayerColor(place.playerId)"
+                      ></span>
+                      {{ place.playerName }}
+                    </td>
+                    <td>{{ place.race ?? '—' }}</td>
+                    <td>{{ place.eliminatedTurn ?? '—' }}</td>
+                    <td>
+                      <span class="cause" [class.definitive]="place.definitive">{{
+                        causeLabel(place)
+                      }}</span>
+                    </td>
+                    <td>{{ place.killerName ?? '—' }}</td>
+                    <td class="num">{{ place.kills }}</td>
+                    <td class="num">{{ place.assists }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="palmares-card">
+        <mat-card-content>
+          <h2>Palmarès des éliminations</h2>
+          @for (place of places(); track place.playerId) {
+            <div class="palmares-row">
+              <span class="palmares-player">{{ place.place }}. {{ place.playerName }}</span>
+              <span class="palmares-line">
+                <strong>A éliminé :</strong>
+                {{ place.victims.length ? place.victims.join(', ') : '—' }}
+              </span>
+              <span class="palmares-line">
+                <strong>A assisté :</strong>
+                {{ place.assistedVictims.length ? place.assistedVictims.join(', ') : '—' }}
+              </span>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      @if (canAdmin() && p.posthumous) {
+        <mat-card class="admin-card">
+          <mat-card-content>
+            <h2>Désigner le champion</h2>
+            <p>
+              La partie s'est terminée sans survivant. Le MJ peut désigner un autre éliminé comme
+              vainqueur posthume.
+            </p>
+            <div class="admin-controls">
+              <select
+                [value]="selectedWinnerId() ?? ''"
+                (change)="onWinnerChange($event)"
+                aria-label="Champion posthume"
+              >
+                <option value="">—</option>
+                @for (place of eliminatedChoices(); track place.playerId) {
+                  <option [value]="place.playerId">
+                    {{ place.playerName }} ({{ place.place }}e)
+                  </option>
+                }
+              </select>
+              <button
+                mat-flat-button
+                color="primary"
+                [disabled]="selectedWinnerId() === null || saving()"
+                (click)="adjustWinner()"
+              >
+                Désigner
+              </button>
+            </div>
+            @if (adjustError()) {
+              <p class="error" role="alert">{{ adjustError() }}</p>
+            }
+          </mat-card-content>
+        </mat-card>
+      }
+
+      @if (p.lastGazetteTurn; as gazetteTurn) {
+        <a mat-stroked-button class="last-edition" [routerLink]="['/journal', gazetteTurn]">
+          <mat-icon>newspaper</mat-icon>
+          Lire la dernière édition
+        </a>
+      }
+
+      <div class="page-actions">
+        <a mat-stroked-button routerLink="/carte">Voir la carte finale</a>
+        <a mat-stroked-button routerLink="/accueil">Retour à l'accueil</a>
+      </div>
+    }
+  }
+</section>

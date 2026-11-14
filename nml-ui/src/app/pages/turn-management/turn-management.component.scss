@@ -689,3 +689,72 @@ button[disabled] mat-spinner {
     }
   }
 }
+
+.game-over-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+  padding: 12px 16px;
+  border: 1.5px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+
+  mat-icon {
+    color: var(--accent);
+  }
+
+  div {
+    flex: 1;
+    min-width: 0;
+  }
+
+  p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  a {
+    white-space: nowrap;
+  }
+}
+
+.game-over-card {
+  @include shared.card;
+  border: 1.5px solid color-mix(in srgb, var(--sun) 45%, var(--line));
+}
+
+.gazette-draft-card {
+  @include shared.card;
+  border: 1.5px solid var(--accent);
+}
+
+.game-over-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    color: var(--accent);
+  }
+
+  h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+  }
+}
+
+.game-over-card p {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+}
+
+.game-over-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+

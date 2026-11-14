@@ -6,6 +6,67 @@
     </div>
   </header>
 
+  @if (gameFinished()) {
+    <section class="game-over-notice">
+      <mat-icon>emoji_events</mat-icon>
+      <div>
+        <strong>Partie terminée</strong>
+        <p>Le tour final est archivé. Consultez le podium ou les archives ci-dessous.</p>
+      </div>
+      <a mat-stroked-button routerLink="/podium">Ouvrir le podium</a>
+    </section>
+  }
+
+  @if (finalizeResult(); as fin) {
+    @if (fin.gazetteDraftTurn) {
+      <mat-card class="gazette-draft-card">
+        <mat-card-content>
+          <div class="game-over-title">
+            <mat-icon>newspaper</mat-icon>
+            <h2>Brigade des Morts</h2>
+          </div>
+          <p>
+            Le brouillon du tour {{ fin.gazetteDraftTurn }} est prêt. Rédigez puis publiez
+            l'édition.
+          </p>
+          <div class="game-over-actions">
+            <a
+              mat-flat-button
+              color="primary"
+              [routerLink]="['/admin/journal', fin.gazetteDraftTurn]"
+            >
+              Rédiger la gazette
+            </a>
+            <button mat-button type="button" (click)="clearFinalizeResult()">Fermer</button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+    @if (fin.gameFinished) {
+      <mat-card class="game-over-card">
+        <mat-card-content>
+          <div class="game-over-title">
+            <mat-icon>emoji_events</mat-icon>
+            <h2>Partie terminée</h2>
+          </div>
+          <p>
+            {{ fin.winnerName ?? 'Vainqueur inconnu' }} remporte la partie.
+            @if (fin.winnerPosthumous) {
+              <em>Victoire posthume.</em>
+            }
+            @if (fin.winnerAdjusted) {
+              <em>Champion désigné par le MJ.</em>
+            }
+          </p>
+          <div class="game-over-actions">
+            <a mat-flat-button color="primary" routerLink="/podium">Voir le podium</a>
+            <button mat-button type="button" (click)="clearFinalizeResult()">Fermer</button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  }
+
   <section class="resolution-preview">
     <h2 class="preview-title">
       <mat-icon>gavel</mat-icon>
@@ -297,7 +358,7 @@
     </div>
   }
 
-  @if (!active()) {
+  @if (!active() && !gameFinished()) {
     <div class="actions-row">
       <button
         mat-flat-button
