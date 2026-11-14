@@ -18,15 +18,25 @@
       <h1 class="title">{{ player.name }}</h1>
     </div>
 
+    <app-preparation-panel
+      [player]="player"
+      [sectors]="conqueredSectors()"
+      [reserveUnits]="reserveUnits()"
+      [currentTurn]="currentTurn()"
+      (changed)="onPreparationChanged()"
+    />
+
     @if (player.eliminated) {
       <div class="elimination-banner" role="status">
         <mat-icon>dangerous</mat-icon>
         <div>
           <strong>Joueur éliminé</strong>
           <span>
-            {{ eliminationLabel() }}@if (player.eliminatedTurn) {
+            {{ eliminationLabel() }}
+            @if (player.eliminatedTurn) {
               — tour {{ player.eliminatedTurn }}
-            }. Ses unités et ses biens ont été perdus ; les actions sont désactivées.
+            }
+            . Ses unités et ses biens ont été perdus ; les actions sont désactivées.
           </span>
         </div>
       </div>

@@ -156,6 +156,7 @@ Open **http://localhost:4200** in your browser.
 | `SERVER_PORT` | `8080` | HTTP port |
 | `APP_COOKIE_SECURE` | `true` (default), `false` (dev) | Set `false` for local HTTP |
 | `APP_CORS_ALLOWED_ORIGINS` | *(empty)* | Comma-separated extra CORS origins |
+| `REGISTRATION_INVITE_CODE` | *(empty)* | Prod only: enables invitation-only registration. Empty means registrations closed. |
 
 ---
 
@@ -494,7 +495,8 @@ Every endpoint below except `/api/login`, `/api/register`, `/api/auth/*` and `/a
 
 | Method | URL | Auth | Description |
 |--------|-----|------|-------------|
-| POST | `/api/register` | Public | Create an account |
+| POST | `/api/register` | Public | Create an account (invitation code required in prod) |
+| GET | `/api/auth/registration-mode` | Public | Registration availability and invitation requirement |
 | POST | `/api/login` | Public | Login (returns JWT + sets refresh cookie) |
 | POST | `/api/auth/refresh` | Cookie | Refresh access token |
 | POST | `/api/auth/logout` | Cookie | Logout (clears refresh token) |
@@ -530,6 +532,30 @@ audit rows all carry their `board_id`.
 There are two admin levels: the platform `ADMIN` role (`credentials.role`, creates deletes and
 imports games, manages the equipment catalogue) and per-game game masters
 (`board_admins` table → `ROLE_INSTANCE_ADMIN`, granted per request only, never in the token).
+
+### Game setup (turn 0)
+
+A new board starts at `current_turn = 0` (preparation). The platform admin creates it from a
+bundled preset or a `board.json`, creates ready-to-use players (100 unclassified units, a
+character, the three buildings and starting money), assigns 1–3 starting sectors from the preset
+spots, links accounts and names game masters. Players and game masters are distinct: a linked
+player cannot be nominated MJ, and a MJ account cannot be linked to a player. The platform admin
+is never stored as a MJ; with no MJ nominated, the platform admin manages the game. The admin then
+starts the game (`POST /api/admin/board/start`), which sets `started_at` and moves the board to
+turn 1.
+
+During turn 0, only the setup actions, alliances and sector notes are open:
+purchases, orders, movement, harvest, exchanges and normal unit deployment are rejected by
+`PreparationPhaseFilter`. Players place their character, buildings and units themselves through
+the preparation endpoints; an element left unplaced at start falls back to the player's first
+sector, and remaining units are classified `LEGER` and join the HQ reserve. Accounts can only be
+linked, and starting sectors changed, while the board is still in preparation. Exchange offers
+also stay closed until turn 2.
+
+Ready-to-use players are created by `POST /api/admin/players/template`; accounts are linked with
+`PUT /api/admin/players/{id}/account` (platform `ADMIN` only). Registration is invitation-only in
+production: set `REGISTRATION_INVITE_CODE`; when it is empty, `POST /api/register` is closed and
+the admin creates accounts through the player import.
 
 ### Combat logs
 

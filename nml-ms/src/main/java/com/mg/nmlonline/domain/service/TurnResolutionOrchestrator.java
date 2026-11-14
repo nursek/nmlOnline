@@ -120,6 +120,9 @@ public class TurnResolutionOrchestrator {
         }
         try {
             Board board = boardOf(boardId);
+            if (board.isPreparation()) {
+                throw new IllegalStateException("Partie en préparation : démarrez-la avant de résoudre un tour");
+            }
             int turnEnding = board.getCurrentTurn();
             reserveUnitPlacer.placeAllAtHeadquarters();
             MovementService.ResolutionContext ctx = movementService.prepareResolution(turnEnding, board);

@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.util.WebUtils;
 import jakarta.servlet.http.Cookie;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -42,6 +43,8 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final String pepper;
     private final boolean cookieSecure;
+    private final boolean registrationOpen;
+    private final String registrationInviteCode;
 
     private static final int MAX_ATTEMPTS = 5;
     private static final long BLOCK_TIME_MS = TimeUnit.MINUTES.toMillis(1);
@@ -85,13 +88,17 @@ public class AuthController {
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
             @Value("${jwt.pepper}") String pepper,
-            @Value("${app.cookie.secure:true}") boolean cookieSecure
+            @Value("${app.cookie.secure:true}") boolean cookieSecure,
+            @Value("${app.registration.open:true}") boolean registrationOpen,
+            @Value("${app.registration.invite-code:}") String registrationInviteCode
     ) {
         this.userService = userService;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
         this.pepper = pepper;
         this.cookieSecure = cookieSecure;
+        this.registrationOpen = registrationOpen;
+        this.registrationInviteCode = registrationInviteCode;
     }
 
     private static class Attempt {
@@ -265,6 +272,12 @@ public class AuthController {
     }
 
 
+    @GetMapping("/auth/registration-mode")
+    public Map<String, Boolean> registrationMode() {
+        boolean enabled = registrationOpen || !registrationInviteCode.isBlank();
+        return Map.of("enabled", enabled, "inviteRequired", !registrationOpen);
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req, HttpServletRequest request) {
         long now = System.currentTimeMillis();
@@ -283,6 +296,14 @@ public class AuthController {
             ipAtt.count.set(0);
         }
 
+        if (!registrationOpen) {
+            if (registrationInviteCode.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Inscriptions désactivées");
+            }
+            if (!sameSecret(registrationInviteCode, req.getInviteCode())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Code d'invitation invalide");
+            }
+        }
         if (userService.findByUsername(req.getUsername()) != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Utilisateur déjà existant");
         }
@@ -329,6 +350,14 @@ public class AuthController {
         cookie.setAttribute("SameSite", "Strict");
         response.addCookie(cookie);
     }
+    private boolean sameSecret(String expected, String provided) {
+        if (provided == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
+                provided.getBytes(StandardCharsets.UTF_8));
+    }
+
     private String hash(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

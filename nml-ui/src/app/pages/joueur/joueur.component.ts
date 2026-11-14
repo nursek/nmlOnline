@@ -58,6 +58,7 @@ import { HeadquartersPanelComponent } from './headquarters-panel.component';
 import { HarvestPanelComponent } from './harvest-panel.component';
 import { movableEntities } from '../../core/movement.helpers';
 import { CharacterPanelComponent } from './character-panel.component';
+import { PreparationPanelComponent } from './preparation-panel.component';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { AllianceComponent } from '../alliance/alliance.component';
 import { ExpPipe } from '../../shared/exp.pipe';
@@ -111,6 +112,7 @@ import { unitClassLabel } from '../../core/labels';
     WeaponCachePanelComponent,
     HeadquartersPanelComponent,
     HarvestPanelComponent,
+    PreparationPanelComponent,
   ],
   templateUrl: './joueur.component.html',
   styleUrls: ['./joueur.component.scss'],
@@ -466,6 +468,11 @@ export class JoueurComponent {
     }
     const error = this.playerActionsService.error();
     if (error) this.snackBar.open(error, 'Fermer', { duration: 5000 });
+  }
+
+  onPreparationChanged(): void {
+    void this.playerService.loadCurrent();
+    void this.playerService.loadReserveUnits();
   }
 
   // Index 1 = onglet « Actions » (cf. template).

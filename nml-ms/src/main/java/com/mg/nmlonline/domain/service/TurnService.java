@@ -97,6 +97,9 @@ public class TurnService {
         try {
             Board board = boardRepository.findById(boardId)
                     .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
+            if (board.isPreparation()) {
+                throw new IllegalStateException("Partie en préparation : démarrez-la avant de résoudre un tour");
+            }
             int turnEnding = board.getCurrentTurn();
 
             // Avant les captures : le revenu du tour revient à son propriétaire pendant le tour.

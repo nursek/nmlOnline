@@ -9,6 +9,7 @@ public class BoardDto {
     private String name;
     private String mapImageUrl;
     private String svgOverlayUrl;
+    private String presetKey;
     private Map<Integer, SectorDto> sectors;
 }
 

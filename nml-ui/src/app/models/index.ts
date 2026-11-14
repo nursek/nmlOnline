@@ -27,3 +27,4 @@ export interface PageResult<T> {
   content: T[];
   totalElements?: number;
 }
+export * from './game-setup.model';

@@ -1,0 +1,150 @@
+<div class="setup-page">
+  <header class="setup-header">
+    <div>
+      <p class="eyebrow">Préparation de partie</p>
+      <h1>{{ board()?.name ?? 'Partie' }}</h1>
+      @if (currentTurn() === 0) {
+        <p class="status status--prep">Tour 0 — préparation</p>
+      } @else if (currentTurn() !== null) {
+        <p class="status">Partie en cours — tour {{ currentTurn() }}</p>
+      }
+    </div>
+    <div class="header-actions">
+      <a mat-stroked-button routerLink="/admin/joueurs">
+        <mat-icon>group</mat-icon>
+        Importer / gérer les joueurs
+      </a>
+      @if (preparation()) {
+        <button
+          mat-flat-button
+          color="primary"
+          (click)="startGame()"
+          [disabled]="starting() || players().length === 0"
+        >
+          @if (starting()) {
+            <mat-spinner diameter="18"></mat-spinner>
+          } @else {
+            <mat-icon>play_arrow</mat-icon>
+          }
+          Démarrer la partie
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (boardLoading() || playersLoading()) {
+    <div class="loading"><mat-spinner diameter="36"></mat-spinner></div>
+  } @else {
+    <div class="grid">
+      <mat-card class="panel players-panel">
+        <div class="panel-head">
+          <h2><mat-icon>groups</mat-icon> Joueurs ({{ players().length }})</h2>
+          @if (preparation()) {
+            <button mat-stroked-button color="accent" (click)="createTemplatePlayer()">
+              <mat-icon>person_add</mat-icon>
+              Créer un joueur prêt
+            </button>
+          }
+        </div>
+
+        @if (players().length === 0) {
+          <p class="empty">Aucun joueur. Créez un joueur prêt ou importez un JSON.</p>
+        } @else {
+          <div class="player-list">
+            @for (player of players(); track player.id) {
+              <div class="player-row">
+                <div class="player-main">
+                  <strong>{{ player.name }}</strong>
+                  <span class="race">{{ player.race ?? '—' }}</span>
+                  @if (player.accountUsername) {
+                    <span class="account">
+                      <mat-icon>account_circle</mat-icon>
+                      {{ player.accountUsername }}
+                    </span>
+                  } @else {
+                    <span class="account account--missing">
+                      <mat-icon>link_off</mat-icon>
+                      Compte non relié
+                    </span>
+                  }
+                  @if (unplacedCount(player) > 0) {
+                    <span class="badge badge--warn">{{ unplacedCount(player) }} à placer</span>
+                  }
+                </div>
+                <div class="player-sectors">
+                  @if (sectorNumbers(player).length > 0) {
+                    Secteurs {{ sectorNumbers(player).join(', ') }}
+                  } @else {
+                    <span class="warn">Aucun secteur de départ</span>
+                  }
+                </div>
+                @if (preparation()) {
+                  <div class="player-actions">
+                    <button mat-stroked-button (click)="assignSectors(player)">
+                      <mat-icon>map</mat-icon>
+                      Secteurs
+                    </button>
+                    @if (!player.userId) {
+                      <button mat-stroked-button (click)="linkAccount(player)">
+                        <mat-icon>link</mat-icon>
+                        Relier
+                      </button>
+                    } @else {
+                      <button mat-stroked-button (click)="unlinkAccount(player)">
+                        <mat-icon>link_off</mat-icon>
+                        Délier
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </mat-card>
+
+      <div class="side">
+        <mat-card class="panel">
+          <div class="panel-head">
+            <h2><mat-icon>shield_person</mat-icon> Maîtres du jeu</h2>
+            <button mat-stroked-button (click)="addMj()">
+              <mat-icon>add</mat-icon>
+              Nommer
+            </button>
+          </div>
+          @if (admins().length === 0) {
+            <p class="empty">Aucun MJ nommé. L'admin plateforme garde l'accès.</p>
+          } @else {
+            <div class="admin-list">
+              @for (admin of admins(); track admin.userId) {
+                <div class="admin-row">
+                  <span>{{ admin.username ?? '#' + admin.userId }}</span>
+                  <button mat-icon-button (click)="removeMj(admin)" aria-label="Retirer le rôle MJ">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </mat-card>
+
+        @if (spots().length > 0) {
+          <mat-card class="panel">
+            <div class="panel-head">
+              <h2><mat-icon>pin_drop</mat-icon> Spots de départ</h2>
+            </div>
+            <div class="spots">
+              @for (spot of spots(); track $index) {
+                <div class="spot">
+                  <span class="spot-label">Spot {{ $index + 1 }}</span>
+                  <span class="spot-sectors">{{ spot.join(', ') }}</span>
+                  <span class="spot-owner">{{ spotOwner(spot) }}</span>
+                </div>
+              }
+            </div>
+          </mat-card>
+        }
+      </div>
+    </div>
+  }
+</div>

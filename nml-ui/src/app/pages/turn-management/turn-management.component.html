@@ -6,6 +6,19 @@
     </div>
   </header>
 
+  @if (currentTurn() === 0) {
+    <section class="prep-notice">
+      <mat-icon>construction</mat-icon>
+      <div>
+        <strong>La partie est encore en préparation (tour 0).</strong>
+        <p>Le tour 1 démarre depuis l'écran de préparation de la partie.</p>
+      </div>
+      @if (isAdmin()) {
+        <a mat-stroked-button routerLink="/admin/partie">Ouvrir la préparation</a>
+      }
+    </section>
+  }
+
   <section class="resolution-preview">
     <h2 class="preview-title">
       <mat-icon>gavel</mat-icon>

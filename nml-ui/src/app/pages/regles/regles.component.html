@@ -39,8 +39,58 @@
           <p class="text">
             Chaque joueur contrôle des secteurs et y stationne ses unités, son personnage et ses
             bâtiments. L'objectif est de prendre les secteurs adverses et de durer plus longtemps
-            que les autres. La partie avance au tour par tour : les joueurs transmettent leurs
-            ordres, puis les affrontements sont résolus.
+            que les autres. La partie commence par un tour 0 de préparation, puis avance au tour
+            par tour : à partir du tour 1, les joueurs transmettent leurs ordres, puis les
+            affrontements sont résolus.
+          </p>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel id="preparation" class="rule-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title
+              ><mat-icon>construction</mat-icon>Préparation (tour 0)</mat-panel-title
+            >
+          </mat-expansion-panel-header>
+          <p class="text">
+            Avant le premier tour, chaque joueur dispose de <strong>100 unités sans classe</strong>,
+            d'un <strong>personnage</strong>, de ses <strong>trois bâtiments</strong> (QG, cache
+            d'armes, banque) et de <strong>20 000 ₡</strong>. L'organisateur lui attribue 1 à 3
+            secteurs de départ.
+          </p>
+          <p class="text">
+            Pendant ce tour 0, le joueur lit les règles, discute avec ses voisins (alliances) et
+            place librement sur ses secteurs : son personnage, ses trois bâtiments, puis ses
+            unités. Pour chaque groupe d'unités, il choisit le secteur, la quantité et la
+            <strong>classe</strong> ; une unité LARBIN ne peut avoir qu'une classe.
+          </p>
+          <ul class="rule-list">
+            <li>
+              <strong>Unités de départ</strong> — les 100 unités ne sont pas des recrues achetées :
+              elles ne consomment aucun quota de recrutement. Le joueur doit les répartir pendant le
+              tour 0.
+            </li>
+            <li>
+              <strong>Placement initial</strong> — poser le personnage ou un bâtiment au tour 0 ne
+              consomme pas son déplacement et ne déclenche aucun cooldown.
+            </li>
+            <li>
+              <strong>Alliances</strong> — elles peuvent être proposées dès le tour 0, sous réserve
+              d'un QG opérationnel.
+            </li>
+          </ul>
+          <div class="callout">
+            <mat-icon>info</mat-icon>
+            <p>
+              Achats, ordres, déplacements et récolte sont fermés pendant le tour 0 ; les échanges
+              sont fermés jusqu’au tour 2. La partie démarre au tour 1 lorsque l'organisateur la
+              lance.
+            </p>
+          </div>
+          <p class="text">
+            En pratique, le joueur doit avoir tout réparti avant le démarrage. À défaut, un bâtiment
+            ou un personnage encore non placé rejoint le premier secteur du joueur, et une unité
+            encore non classée devient <strong>LÉGER</strong> ; les unités restées en réserve
+            rejoignent le QG à la fin du tour 1.
           </p>
         </mat-expansion-panel>
 
@@ -402,9 +452,10 @@
               du panneau <strong>Ressources</strong> ; le produit est crédité immédiatement.
             </li>
             <li>
-              <strong>Échange</strong> — un joueur peut proposer une offre d'argent et/ou de
-              ressources à un autre. Trois offres en attente maximum par émetteur ; elles expirent au
-              tour suivant. Seul le destinataire peut accepter ou refuser, l'émetteur peut annuler.
+              <strong>Échange</strong> — à partir du tour 2, un joueur peut proposer une offre
+              d'argent et/ou de ressources à un autre. Trois offres en attente maximum par émetteur ;
+              elles expirent au tour suivant. Seul le destinataire peut accepter ou refuser,
+              l'émetteur peut annuler.
             </li>
             <li>
               <strong>Pas d'échange d'unités ni d'armes</strong>, entre alliés compris.

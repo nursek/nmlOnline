@@ -3,6 +3,8 @@ import { authGuard, noAuthGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
 import { instanceGuard } from './guards/instance.guard';
 import { playerGuard } from './guards/player.guard';
+import { platformAdminGuard } from './guards/platform-admin.guard';
+import { preparationGuard } from './guards/preparation.guard';
 
 export const routes: Routes = [
   {
@@ -11,10 +13,22 @@ export const routes: Routes = [
     canActivate: [noAuthGuard],
   },
   {
+    path: 'register',
+    loadComponent: () =>
+      import('./pages/register/register.component').then((m) => m.RegisterComponent),
+    canActivate: [noAuthGuard],
+  },
+  {
     path: 'parties',
     loadComponent: () =>
       import('./pages/parties/parties.component').then((m) => m.PartiesComponent),
     canActivate: [authGuard],
+  },
+  {
+    path: 'admin/partie',
+    loadComponent: () =>
+      import('./pages/game-setup/game-setup.component').then((m) => m.GameSetupComponent),
+    canActivate: [authGuard, instanceGuard, platformAdminGuard],
   },
   {
     path: 'admin',
@@ -68,7 +82,7 @@ export const routes: Routes = [
     path: 'boutique',
     loadComponent: () =>
       import('./pages/boutique/boutique.component').then((m) => m.BoutiqueComponent),
-    canActivate: [authGuard, instanceGuard, playerGuard],
+    canActivate: [authGuard, instanceGuard, playerGuard, preparationGuard],
   },
   {
     path: 'regles/tir-a-distance',
@@ -86,13 +100,13 @@ export const routes: Routes = [
   {
     path: 'ordres',
     loadComponent: () => import('./pages/ordres/ordres.component').then((m) => m.OrdresComponent),
-    canActivate: [authGuard, instanceGuard, playerGuard],
+    canActivate: [authGuard, instanceGuard, playerGuard, preparationGuard],
   },
   {
     path: 'rapports',
     loadComponent: () =>
       import('./pages/rapports/rapports.component').then((m) => m.RapportsComponent),
-    canActivate: [authGuard, instanceGuard, playerGuard],
+    canActivate: [authGuard, instanceGuard, playerGuard, preparationGuard],
   },
   {
     path: '',

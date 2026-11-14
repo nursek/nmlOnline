@@ -130,6 +130,9 @@ export class CarteComponent {
 
   readonly isAdmin = this.auth.isAdmin;
   readonly reserveUnits = this.playerService.reserveUnits;
+  readonly deployableReserveUnits = computed(() =>
+    this.reserveUnits().filter((unit) => unit.classes.length > 0),
+  );
   readonly undeployedVehicles = this.playerService.undeployedVehicles;
   readonly overlays = signal<ReadonlySet<OverlayKey>>(new Set());
   readonly placing = signal<Placement | null>(null);

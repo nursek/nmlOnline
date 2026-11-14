@@ -5,5 +5,6 @@ export interface Board {
   name: string;
   mapImageUrl: string | null;
   svgOverlayUrl: string | null;
+  presetKey?: string | null;
   sectors: { [key: number]: Sector };
 }

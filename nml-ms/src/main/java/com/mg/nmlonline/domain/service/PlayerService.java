@@ -9,6 +9,7 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.CombatEntity;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import com.mg.nmlonline.mapper.PlayerMapper;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,7 @@ import java.util.Optional;
 public class PlayerService {
 
     private final PlayerRepository playerRepository;
+    private final UserRepository userRepository;
     private final SectorService sectorService;
     private final EquipmentService equipmentService;
     private final PlayerMapper playerMapper;
@@ -35,6 +37,7 @@ public class PlayerService {
     private final EntityManager entityManager;
 
     public PlayerService(PlayerRepository playerRepository,
+                          UserRepository userRepository,
                           SectorService sectorService,
                           EquipmentService equipmentService,
                           PlayerMapper playerMapper,
@@ -43,6 +46,7 @@ public class PlayerService {
                           TurnLock turnLock,
                           EntityManager entityManager) {
         this.playerRepository = playerRepository;
+        this.userRepository = userRepository;
         this.sectorService = sectorService;
         this.equipmentService = equipmentService;
         this.playerMapper = playerMapper;
@@ -58,6 +62,10 @@ public class PlayerService {
 
     public Optional<Player> findById(Long id) {
         return playerRepository.findById(id);
+    }
+
+    public Player findByIdForUpdate(Long id) {
+        return playerRepository.findByIdForUpdate(id).orElse(null);
     }
 
     public Player findByName(Long boardId, String name) {
@@ -205,8 +213,23 @@ public class PlayerService {
     @Transactional(readOnly = true)
     public Page<PlayerDto> findAllDto(Long boardId, Pageable pageable) {
         Board board = boardService.getBoardById(boardId).orElse(null);
-        return playerRepository.findByBoardIdOrderByNameAsc(boardId, pageable)
-                .map(p -> playerMapper.toDtoWithSectors(p, board));
+        Page<Player> players = playerRepository.findByBoardIdOrderByNameAsc(boardId, pageable);
+        Map<Long, String> usernames = new HashMap<>();
+        List<Long> userIds = players.stream()
+                .map(Player::getUserId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        if (!userIds.isEmpty()) {
+            userRepository.findAllById(userIds)
+                    .forEach(user -> usernames.put(user.getId(), user.getUsername()));
+        }
+        return players.map(player -> {
+            PlayerDto dto = playerMapper.toDtoWithSectors(player, board);
+            dto.setUserId(player.getUserId());
+            dto.setAccountUsername(player.getUserId() != null ? usernames.get(player.getUserId()) : null);
+            return dto;
+        });
     }
 
     /** Vue publique (liste des joueurs) : pas d'état privé d'autrui. */

@@ -49,13 +49,19 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   résout un joueur le fait par `(userId, boardId)` — jamais `findByUserId` seul.
 - **Rôles** : `ADMIN` est global (compte, création de parties, catalogue) ; le MJ est **par partie**
   (`board_admins` → `ROLE_INSTANCE_ADMIN`, ajoutée à la requête seulement, jamais dans le jeton).
-  Les endpoints plateforme gardent `@PreAuthorize("hasRole('ADMIN')")`.
+  Les endpoints plateforme gardent `@PreAuthorize("hasRole('ADMIN')")`. Un MJ n'est jamais un joueur
+  de la même partie : `linkAccount` refuse un compte MJ, `grantBoardAdmin` refuse un joueur ou un
+  compte `ADMIN`, et l'admin plateforme n'est pas dans `board_admins`. Un compte peut être joueur
+  ailleurs et MJ ici.
 - **Schéma = script Flyway** `V<n>__description.sql` dans
   `nml-ms/src/main/resources/db/migration/` (actif en `test` et `prod` seulement ; jamais modifier
   une migration appliquée). Livré avec l'entité.
 - Jamais de `JWT_SECRET` / `JWT_PEPPER` / identifiants DB dans le dépôt — variables
   d'environnement uniquement. Pas de console H2, pas de `@CrossOrigin` (CORS dans `CorsConfig`).
 - **JWT** : access token = claim `type=access`, refresh = `type=refresh` ; ne jamais accepter l'un pour l'autre.
+- **Inscription** : ouverte en dev/test, fermée en prod ; en prod, seul le code
+  `REGISTRATION_INVITE_CODE` permet de créer un compte (`app.registration.open=false`).
+  `GET /api/auth/registration-mode` pilote l'UI ; ne pas rouvrir l'inscription libre.
 - **Races** : ajouter une race = valeur `PlayerRace` + CHECK Flyway sur `equipment_translations.race`
   + `nml-ms/src/main/resources/equipment_translations_<race>.csv` + noms de véhicules dans
   `VehicleType.raceNames` ; vignettes dans `assets/shop/equipment/<race>/` et `assets/shop/vehicles/<race>/`.
@@ -104,6 +110,12 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   `TurnResolutionOrchestrator` mutent `Board.currentTurn` — les trois doivent publier/invalider
   `TurnService.cachedTurns` (`publishTurn(boardId, turn)` avant commit, purge sur rollback).
   Session de l'orchestrateur en mémoire, JVM unique, perdue au redémarrage.
+- **Tour 0 / démarrage** : `BoardService.saveBoard` place toute nouvelle partie à `currentTurn=0` ;
+  ne pas persister un `new Board()` directement. `GameSetupService.startGame` verrouille les
+  joueurs par id croissant puis le board, exige un compte et un secteur par joueur, place les
+  restes, classe les unités sans classe en `LEGER`, passe à 1, renseigne `started_at` et publie
+  le cache. `PreparationPhaseFilter` refuse les mutations hors préparation/alliances/notes/admin
+  pendant le tour 0 ; les échanges restent fermés jusqu'au tour 2.
 - **Démarrage** : ordre imposé par `@Order` — `DemoDataResetter` 0, `CsvDataLoader` 1,
   `PlayerStartupImporter` 2, `TestDataInitializer` 100. Un runner sans ordre casse les imports
   (le catalogue CSV n'est pas encore chargé quand les joueurs sont lus).
@@ -120,6 +132,10 @@ Source de vérité = la DB. En démo (`app.import-demo-data=true`, défaut dev/t
 `PlayerStartupImporter` importe les `DemoGame` : carte principale (`boards/board.json`,
 `players/*.json`) **et** carte 6 joueurs (`boards/carte-25.json`, `players-carte-25/*.json`).
 En prod, l'admin crée plateau et joueurs par l'API.
+Une partie se prépare via `POST /api/boards` (preset) ou `POST /api/admin/boards/import`
+(`board.json`), puis `/api/admin/players/template`, `/api/admin/players/{id}/starting-sectors` et
+`/api/admin/board/start`. Les cartes prêtes vivent dans
+`nml-ms/src/main/resources/boards/presets.json`.
 
 Import et suppression sont **par partie** : `importPlayer(..., boardId)` rattache la participation,
 et `AdminService.deleteBoard` supprime les participations (cascades JPA) sans jamais toucher aux
@@ -141,3 +157,6 @@ consomment, ils ne possèdent pas l'état global.
   jamais du jeton.
 - **Guards** : `instanceGuard` avant `playerGuard`/`adminGuard` ; changer de partie recharge la page
   (tous les `httpResource` racine sont liés à la partie).
+- **Tour 0** : `/admin/partie` est réservé à `ADMIN` (`platformAdminGuard`) ; `preparationGuard`
+  renvoie `/boutique`, `/ordres` et `/rapports` vers `/joueur` tant que la partie est en
+  préparation. Le placement se fait dans le panneau de préparation de `/joueur`.

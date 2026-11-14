@@ -86,6 +86,7 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Auto-échange refusé")
         void shouldRejectSelfOffer() {
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(4);
             when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
 
             assertThrows(IllegalArgumentException.class,
@@ -98,6 +99,7 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Quatrième offre en attente refusée")
         void shouldRejectWhenTooManyPendingOffers() {
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(4);
             when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
@@ -138,6 +140,7 @@ class ExchangeOfferServiceTest {
         @Test
         @DisplayName("Offre vide refusée")
         void shouldRejectEmptyOffer() {
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(4);
             when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
@@ -145,6 +148,16 @@ class ExchangeOfferServiceTest {
             assertThrows(IllegalArgumentException.class,
                     () -> exchangeOfferService.createOffer(11L, BOARD_ID,
                             new CreateExchangeOfferRequestDto(2L, 0.0, List.of())));
+        }
+
+        @Test
+        @DisplayName("Aucune offre avant le tour 2")
+        void shouldRejectOfferBeforeTurnTwo() {
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(1);
+
+            assertThrows(IllegalStateException.class,
+                    () -> exchangeOfferService.createOffer(11L, BOARD_ID,
+                            new CreateExchangeOfferRequestDto(2L, 10.0, List.of())));
         }
 
         @Test
@@ -252,6 +265,7 @@ class ExchangeOfferServiceTest {
         @DisplayName("Offre refusée tant que la dotation n'est pas dépensée")
         void shouldRefuseOfferFromStartingMoney() {
             sender.initializeStartingMoney();
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(4);
             when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(sender));
             when(playerRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(receiver));
