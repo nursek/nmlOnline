@@ -119,9 +119,22 @@ export class GameSetupComponent {
 
   async startGame(): Promise<void> {
     if (!this.preparation() || this.starting()) return;
+    const unplaced = this.players()
+      .map((player) => ({ name: player.name, count: this.unplacedCount(player) }))
+      .filter((entry) => entry.count > 0);
+    const warning =
+      unplaced.length === 0
+        ? ' Rappel : les unités non classées deviendront LÉGER.'
+        : ' Attention : ' +
+          unplaced
+            .map((entry) => `${entry.name} : ${entry.count} bâtiment(s)/personnage(s) non placé(s)`)
+            .join(', ') +
+          '. Les éléments non placés iront sur le premier secteur du joueur ' +
+          'et les unités non classées deviendront LÉGER.';
     const confirmed = await this.confirm(
       'Démarrer la partie',
-      'Le tour 0 se termine : les comptes ne pourront plus être reliés et les placements de préparation seront fermés.',
+      'Le tour 0 se termine : les comptes ne pourront plus être reliés et les placements de préparation seront fermés.' +
+        warning,
       'Démarrer',
     );
     if (!confirmed) return;

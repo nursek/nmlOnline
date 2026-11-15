@@ -88,8 +88,9 @@
               Unités à répartir ({{ unclassifiedUnits().length }})
             </h3>
             <p class="muted">
-              Choisissez un secteur, une quantité et une classe. Les unités restantes après le
-              démarrage seront classées en LÉGER.
+              Choisissez un secteur, une quantité et une classe, puis répétez l'opération pour poser
+              plusieurs lots. Il reste {{ unclassifiedUnits().length }} unité(s) à répartir ; celles
+              qui ne le sont pas au démarrage seront classées en LÉGER.
             </p>
             <div class="inline">
               <mat-form-field appearance="outline">
@@ -125,7 +126,7 @@
                 (click)="distributeUnits()"
                 [disabled]="saving() || unitSector() === null"
               >
-                Répartir
+                Répartir ce lot
               </button>
             </div>
           </section>

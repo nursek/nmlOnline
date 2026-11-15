@@ -76,7 +76,7 @@ export class PreparationPanelComponent {
   readonly characterSector = signal<number | null>(null);
   readonly buildingSectors = signal<Record<number, number>>({});
   readonly unitSector = signal<number | null>(null);
-  readonly unitQuantity = signal(100);
+  readonly unitQuantity = signal(10);
   readonly unitClass = signal('LEGER');
   readonly saving = signal(false);
 
@@ -125,7 +125,9 @@ export class PreparationPanelComponent {
       `${quantity} unité(s) répartie(s)`,
     );
     if (done) {
-      this.unitQuantity.set(Math.max(1, remaining - quantity));
+      // Conserver la taille du lot : la remettre au restant pousse à tout poser d'un coup.
+      const left = remaining - quantity;
+      this.unitQuantity.set(left > 0 ? Math.min(quantity, left) : 1);
     }
   }
 

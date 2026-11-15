@@ -116,6 +116,28 @@ class GameSetupServiceTest {
     }
 
     @Test
+    @DisplayName("Les unités se répartissent en lots de classes différentes sur plusieurs secteurs")
+    void startingUnitsCanBeSplitAcrossSectorsAndClasses() {
+        String boardName = "Lots " + UUID.randomUUID();
+        Board board = boardService.saveBoard(board(boardName), boardName);
+        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
+                new AdminTemplatePlayerRequestDto("Lots" + UUID.randomUUID(), "ORKS",
+                        List.of(1, 2, 3), null));
+        User account = createAccount();
+        adminService.linkAccount(dto.getId(), account.getUsername());
+
+        preparationService.distributeUnits(account.getId(), board.getId(), 1, 20, List.of("SNIPER"));
+        preparationService.distributeUnits(account.getId(), board.getId(), 2, 50, List.of("MASTODONTE"));
+        preparationService.distributeUnits(account.getId(), board.getId(), 3, 30, List.of("TIREUR"));
+
+        List<Unit> units = unitRepository.findByPlayerId(dto.getId());
+        assertEquals(20, countBySectorAndClass(units, 1, UnitClass.SNIPER));
+        assertEquals(50, countBySectorAndClass(units, 2, UnitClass.MASTODONTE));
+        assertEquals(30, countBySectorAndClass(units, 3, UnitClass.TIREUR));
+        assertEquals(0, unitRepository.findByPlayerIdAndSectorIsNull(dto.getId()).size());
+    }
+
+    @Test
     @DisplayName("Le démarrage refuse un joueur sans compte relié")
     void startRefusesUnlinkedPlayer() {
         String boardName = "Préparation " + UUID.randomUUID();
@@ -140,6 +162,15 @@ class GameSetupServiceTest {
         adminService.linkAccount(dto.getId(), account.getUsername());
 
         assertThrows(IllegalStateException.class, () -> gameSetupService.startGame(board.getId()));
+    }
+
+    private static long countBySectorAndClass(List<Unit> units, int sectorNumber,
+                                              UnitClass unitClass) {
+        return units.stream()
+                .filter(unit -> unit.getSector() != null
+                        && unit.getSector().getNumber() == sectorNumber)
+                .filter(unit -> unit.getClasses().contains(unitClass))
+                .count();
     }
 
     private User createAccount() {
