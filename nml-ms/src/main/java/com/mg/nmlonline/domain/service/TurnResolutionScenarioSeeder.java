@@ -19,7 +19,9 @@ import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
+import com.mg.nmlonline.infrastructure.repository.EliminationEventRepository;
 import com.mg.nmlonline.infrastructure.repository.EquipmentRepository;
+import com.mg.nmlonline.infrastructure.repository.GazetteIssueRepository;
 import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import com.mg.nmlonline.infrastructure.repository.PendingCaptureRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
@@ -153,6 +155,8 @@ public class TurnResolutionScenarioSeeder {
     private final EquipmentRepository equipmentRepository;
     private final PendingCaptureRepository pendingCaptureRepository;
     private final SniperOrderRepository sniperOrderRepository;
+    private final EliminationEventRepository eliminationEventRepository;
+    private final GazetteIssueRepository gazetteIssueRepository;
     private final MovementService movementService;
     private final TurnService turnService;
     private final TurnLock turnLock;
@@ -164,6 +168,8 @@ public class TurnResolutionScenarioSeeder {
                                         EquipmentRepository equipmentRepository,
                                         PendingCaptureRepository pendingCaptureRepository,
                                         SniperOrderRepository sniperOrderRepository,
+                                        EliminationEventRepository eliminationEventRepository,
+                                        GazetteIssueRepository gazetteIssueRepository,
                                         MovementService movementService,
                                         TurnService turnService,
                                         TurnLock turnLock,
@@ -174,6 +180,8 @@ public class TurnResolutionScenarioSeeder {
         this.equipmentRepository = equipmentRepository;
         this.pendingCaptureRepository = pendingCaptureRepository;
         this.sniperOrderRepository = sniperOrderRepository;
+        this.eliminationEventRepository = eliminationEventRepository;
+        this.gazetteIssueRepository = gazetteIssueRepository;
         this.movementService = movementService;
         this.turnService = turnService;
         this.turnLock = turnLock;
@@ -578,6 +586,8 @@ public class TurnResolutionScenarioSeeder {
         pendingCaptureRepository.findByBoardIdAndResolvedFalseOrderByIdAsc(board.getId()).stream()
                 .filter(pending -> pending.getSectorNumber() == arena.getNumber())
                 .forEach(pendingCaptureRepository::delete);
+        eliminationEventRepository.deleteByBoardId(board.getId());
+        gazetteIssueRepository.deleteByBoardId(board.getId());
         entityManager.flush();
     }
 

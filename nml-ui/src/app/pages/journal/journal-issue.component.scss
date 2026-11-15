@@ -1,0 +1,39 @@
+@use '../../../styles/shared' as shared;
+
+.issue-page {
+  @include shared.page-container;
+  max-width: 1160px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 64px 16px;
+  color: shared.$text-muted;
+}
+
+.error-alert {
+  @include shared.error-alert;
+  flex-wrap: wrap;
+
+  a {
+    margin-left: auto;
+  }
+}

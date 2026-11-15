@@ -60,4 +60,12 @@ export interface PlayerStatus {
   eliminationCause: string | null;
   eliminatedTurn: number | null;
   eliminatedByPlayerId: number | null;
+  participant: boolean;
+  gameFinished: boolean;
+  finalTurn: number | null;
+  winnerPlayerId: number | null;
+  winnerName: string | null;
+  winnerPosthumous: boolean;
+  winnerAdjusted: boolean;
+  winner: boolean;
 }

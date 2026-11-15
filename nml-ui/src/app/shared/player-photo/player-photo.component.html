@@ -1,0 +1,26 @@
+<figure class="player-photo" [class.newsprint]="variant() === 'newsprint'">
+  @if (!showFallback()) {
+    <img
+      [src]="portrait()!.src"
+      [srcset]="portrait()!.srcset"
+      [alt]="alt()"
+      loading="lazy"
+      decoding="async"
+      (error)="imgError.set(true)"
+    />
+  } @else {
+    <div
+      class="fallback"
+      [style.color]="color() ?? 'var(--muted)'"
+      role="img"
+      [attr.aria-label]="alt()"
+    >
+      <span class="initial" aria-hidden="true">{{ playerName().charAt(0).toUpperCase() }}</span>
+      <app-sigil [size]="28" />
+      <span class="archive">Photo d'archives</span>
+    </div>
+  }
+  @if (caption(); as text) {
+    <figcaption>{{ text }}</figcaption>
+  }
+</figure>

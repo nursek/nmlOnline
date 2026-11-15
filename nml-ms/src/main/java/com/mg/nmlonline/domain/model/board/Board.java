@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.*;
 
 @Entity
@@ -44,6 +45,19 @@ public class Board {
     /** Tour dont les revenus ont déjà été versés (le raccourci admin ne l'incrémente pas). */
     @Column(name = "revenue_claimed_turn")
     private Integer revenueClaimedTurn;
+
+    @Column(name = "finished_at")
+    private Instant finishedAt;
+
+    @Column(name = "winner_player_id")
+    private Long winnerPlayerId;
+
+    @Column(name = "winner_adjusted", nullable = false)
+    private boolean winnerAdjusted = false;
+
+    public boolean isFinished() {
+        return finishedAt != null;
+    }
 
     /** Refuse tout host/schéma externe : un admin compromis ne doit pas pouvoir faire charger du JS arbitraire via l'overlay SVG. */
     public void setSvgOverlayUrl(String svgOverlayUrl) {

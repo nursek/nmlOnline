@@ -1,0 +1,93 @@
+<section class="admin-journal-page">
+  <header class="page-header">
+    <div class="title">
+      <mat-icon>newspaper</mat-icon>
+      <h1>Rédaction — Brigade des Morts</h1>
+    </div>
+    <div class="header-actions">
+      <a mat-stroked-button routerLink="/journal">
+        <mat-icon>menu_book</mat-icon>
+        Journal public
+      </a>
+    </div>
+  </header>
+
+  @if (error()) {
+    <div class="error-alert" role="alert">
+      <mat-icon>error</mat-icon>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  @if (!issues().length && issuesRef.isLoading()) {
+    <div class="loading-state" role="status">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Chargement des éditions...</p>
+    </div>
+  } @else if (issuesRef.error()) {
+    <div class="error-alert" role="alert">
+      <mat-icon>error</mat-icon>
+      <span>Impossible de charger les éditions.</span>
+      <button mat-stroked-button type="button" (click)="retry()">Réessayer</button>
+    </div>
+  } @else if (!issues().length) {
+    <mat-card class="empty-card">
+      <mat-card-content>
+        <mat-icon>edit_note</mat-icon>
+        <h2>Aucune édition</h2>
+        <p>
+          Un brouillon est créé automatiquement à chaque tour avec au moins une élimination. Il
+          apparaîtra ici pour être rédigé puis publié.
+        </p>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="issue-list">
+      @for (issue of issues(); track issue.turn) {
+        <mat-card class="issue-card" [class.draft]="issue.status === 'DRAFT'">
+          <mat-card-content>
+            <div class="issue-head">
+              <span class="issue-number">Vol. {{ issue.turn }} — N° {{ issue.issueNumber }}</span>
+              <span class="status" [class.published]="issue.status === 'PUBLISHED'">
+                {{ issue.status === 'PUBLISHED' ? 'Publiée' : 'Brouillon' }}
+              </span>
+              @if (issue.finalEdition) {
+                <span class="final-badge">Dernière édition</span>
+              }
+              @if (issue.publishedAt) {
+                <span class="issue-date">{{ issue.publishedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+              } @else if (issue.updatedAt) {
+                <span class="issue-date">Modifiée {{ issue.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+              }
+            </div>
+            <h2>{{ issue.mainHeadline ?? 'Édition sans titre' }}</h2>
+            <div class="issue-actions">
+              <a mat-flat-button color="primary" [routerLink]="['/admin/journal', issue.turn]">
+                <mat-icon>{{ issue.status === 'PUBLISHED' ? 'edit' : 'edit_note' }}</mat-icon>
+                {{ issue.status === 'PUBLISHED' ? 'Corriger' : 'Rédiger' }}
+              </a>
+              @if (issue.status === 'PUBLISHED') {
+                <a mat-stroked-button [routerLink]="['/journal', issue.turn]">
+                  <mat-icon>visibility</mat-icon>
+                  Lire
+                </a>
+              }
+              @if (issue.status === 'DRAFT') {
+                <button
+                  mat-button
+                  color="warn"
+                  type="button"
+                  [disabled]="deleting() === issue.turn"
+                  (click)="deleteDraft(issue.turn)"
+                >
+                  <mat-icon>delete</mat-icon>
+                  Supprimer
+                </button>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</section>

@@ -12,4 +12,6 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
 
     List<Announcement> findByBoardIdAndVisibleAtTurnLessThanEqualOrderByIdDesc(Long boardId, int turn,
                                                                               Pageable pageable);
+
+    List<Announcement> findByBoardIdAndTurnCreatedOrderByIdAsc(Long boardId, int turnCreated);
 }

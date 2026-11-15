@@ -11,6 +11,14 @@ const ACTIVE: PlayerStatus = {
   eliminationCause: null,
   eliminatedTurn: null,
   eliminatedByPlayerId: null,
+  participant: false,
+  gameFinished: false,
+  finalTurn: null,
+  winnerPlayerId: null,
+  winnerName: null,
+  winnerPosthumous: false,
+  winnerAdjusted: false,
+  winner: false,
 };
 
 @Injectable({ providedIn: 'root' })
@@ -36,6 +44,18 @@ export class PlayerStatusService {
   });
   // Le MJ reste opérateur : /api/admin/** échappe au filtre serveur, l'UI doit suivre.
   readonly eliminated = computed(() => this.status().eliminated && !this.auth.isAdmin());
+  readonly participant = computed(() => this.status().participant);
+  readonly gameFinished = computed(() => this.status().gameFinished);
+  readonly winner = computed(() => this.status().winner);
+  readonly winnerName = computed(() => this.status().winnerName);
+  readonly winnerPosthumous = computed(() => this.status().winnerPosthumous);
+  readonly winnerAdjusted = computed(() => this.status().winnerAdjusted);
+  readonly locked = computed(
+    () =>
+      this.status().participant &&
+      (this.status().eliminated || this.status().gameFinished) &&
+      !this.auth.isAdmin(),
+  );
 
   constructor() {
     // Une erreur réseau ne doit pas rouvrir les actions d'un joueur déjà éliminé.

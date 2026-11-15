@@ -1,0 +1,54 @@
+<section class="journal-page">
+  <header class="page-header">
+    <div class="title">
+      <mat-icon>newspaper</mat-icon>
+      <h1>Journal</h1>
+    </div>
+    <span class="subtitle">La Brigade des Morts — éditions publiées</span>
+  </header>
+
+  @if (!issues().length && issuesRef.isLoading()) {
+    <div class="loading-state" role="status">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Chargement des éditions...</p>
+    </div>
+  } @else if (issuesRef.error()) {
+    <div class="error-alert" role="alert">
+      <mat-icon>error</mat-icon>
+      <span>Impossible de charger les éditions.</span>
+      <button mat-stroked-button class="readonly-allow" type="button" (click)="retry()">
+        Réessayer
+      </button>
+    </div>
+  } @else if (!issues().length) {
+    <mat-card class="empty-card">
+      <mat-card-content>
+        <mat-icon>newspaper</mat-icon>
+        <h2>Aucune édition publiée</h2>
+        <p>
+          La Brigade des Morts paraît après chaque tour avec au moins une élimination. Le MJ la
+          rédige et la publie ; les éditions apparaîtront ici.
+        </p>
+        <a mat-stroked-button routerLink="/accueil">Retour à l'accueil</a>
+      </mat-card-content>
+    </mat-card>
+  } @else {
+    <div class="issue-list">
+      @for (issue of issues(); track issue.turn) {
+        <a class="issue-card" [routerLink]="['/journal', issue.turn]">
+          <div class="issue-head">
+            <span class="issue-number">Vol. {{ issue.turn }} — N° {{ issue.issueNumber }}</span>
+            @if (issue.finalEdition) {
+              <span class="final-badge">Dernière édition</span>
+            }
+            @if (issue.publishedAt) {
+              <span class="issue-date">{{ issue.publishedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+            }
+          </div>
+          <h2>{{ issue.mainHeadline ?? 'Édition sans titre' }}</h2>
+          <span class="read-link">Lire l'édition <mat-icon>arrow_forward</mat-icon></span>
+        </a>
+      }
+    </div>
+  }
+</section>

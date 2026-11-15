@@ -97,6 +97,9 @@ public class TurnService {
         try {
             Board board = boardRepository.findById(boardId)
                     .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
+            if (board.isFinished()) {
+                throw new IllegalStateException("Partie terminée : aucune résolution de tour");
+            }
             int turnEnding = board.getCurrentTurn();
 
             // Avant les captures : le revenu du tour revient à son propriétaire pendant le tour.
@@ -132,6 +135,9 @@ public class TurnService {
         try {
             Board board = boardRepository.findById(boardId)
                     .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
+            if (board.isFinished()) {
+                throw new IllegalStateException("Partie terminée : le tour ne peut plus être modifié");
+            }
             board.setCurrentTurn(turn);
             boardRepository.save(board);
             publishTurn(boardId, turn);

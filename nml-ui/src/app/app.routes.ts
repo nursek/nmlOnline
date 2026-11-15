@@ -43,6 +43,22 @@ export const routes: Routes = [
     canActivate: [authGuard, instanceGuard, adminGuard],
   },
   {
+    path: 'admin/journal',
+    loadComponent: () =>
+      import('./pages/admin-journal/admin-journal-list.component').then(
+        (m) => m.AdminJournalListComponent,
+      ),
+    canActivate: [authGuard, instanceGuard, adminGuard],
+  },
+  {
+    path: 'admin/journal/:turn',
+    loadComponent: () =>
+      import('./pages/admin-journal/admin-journal-editor.component').then(
+        (m) => m.AdminJournalEditorComponent,
+      ),
+    canActivate: [authGuard, instanceGuard, adminGuard],
+  },
+  {
     path: 'admin/scenarios',
     loadComponent: () =>
       import('./pages/dev-scenarios/dev-scenarios.component').then((m) => m.DevScenariosComponent),
@@ -52,6 +68,23 @@ export const routes: Routes = [
     path: 'accueil',
     loadComponent: () =>
       import('./pages/accueil/accueil.component').then((m) => m.AccueilComponent),
+    canActivate: [authGuard, instanceGuard],
+  },
+  {
+    path: 'podium',
+    loadComponent: () => import('./pages/podium/podium.component').then((m) => m.PodiumComponent),
+    canActivate: [authGuard, instanceGuard],
+  },
+  {
+    path: 'journal',
+    loadComponent: () =>
+      import('./pages/journal/journal-list.component').then((m) => m.JournalListComponent),
+    canActivate: [authGuard, instanceGuard],
+  },
+  {
+    path: 'journal/:turn',
+    loadComponent: () =>
+      import('./pages/journal/journal-issue.component').then((m) => m.JournalIssueComponent),
     canActivate: [authGuard, instanceGuard],
   },
   {

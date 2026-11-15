@@ -1,0 +1,40 @@
+<section class="issue-page">
+  <div class="toolbar">
+    <a mat-stroked-button routerLink="/journal">
+      <mat-icon>arrow_back</mat-icon>
+      Toutes les éditions
+    </a>
+    <div class="toolbar-actions">
+      @if (canAdmin() && issue()) {
+        <a mat-stroked-button [routerLink]="['/admin/journal', turn()]">
+          <mat-icon>edit</mat-icon>
+          Modifier
+        </a>
+      }
+      @if (issue()) {
+        <button mat-stroked-button class="readonly-allow" type="button" (click)="print()">
+          <mat-icon>print</mat-icon>
+          Imprimer
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (!issue() && issueRef.isLoading()) {
+    <div class="loading-state" role="status">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Chargement de l'édition...</p>
+    </div>
+  } @else if (issueRef.error()) {
+    <div class="error-alert" role="alert">
+      <mat-icon>error</mat-icon>
+      <span>Cette édition est introuvable ou n'a pas été publiée.</span>
+      <button mat-stroked-button class="readonly-allow" type="button" (click)="retry()">
+        Réessayer
+      </button>
+      <a mat-button routerLink="/journal">Retour au journal</a>
+    </div>
+  } @else if (issue(); as current) {
+    <app-gazette-template [issue]="current" />
+  }
+</section>

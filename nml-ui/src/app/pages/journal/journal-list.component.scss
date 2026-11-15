@@ -1,0 +1,154 @@
+@use '../../../styles/shared' as shared;
+
+.journal-page {
+  @include shared.page-container;
+  max-width: 1080px;
+}
+
+.page-header {
+  @include shared.page-header;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  mat-icon {
+    @include shared.header-icon-plate(42px, 24px);
+  }
+
+  h1 {
+    @include shared.gradient-title;
+  }
+}
+
+.subtitle {
+  @include shared.subtitle;
+  margin-left: auto;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 64px 16px;
+  color: shared.$text-muted;
+}
+
+.error-alert {
+  @include shared.error-alert;
+
+  button {
+    margin-left: auto;
+  }
+}
+
+.empty-card {
+  @include shared.card;
+
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+
+    mat-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+      color: var(--accent);
+    }
+
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+    }
+
+    p {
+      margin: 0;
+      max-width: 640px;
+      color: shared.$text-muted;
+    }
+  }
+}
+
+.issue-list {
+  display: grid;
+  gap: 12px;
+}
+
+.issue-card {
+  display: block;
+  padding: 18px 20px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--accent);
+    outline: none;
+  }
+
+  h2 {
+    margin: 8px 0 10px;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+}
+
+.issue-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.issue-number {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.issue-date {
+  margin-left: auto;
+}
+
+.final-badge {
+  padding: 2px 7px;
+  border: 1px solid var(--sun);
+  border-radius: var(--r-xs);
+  color: var(--sun);
+  font-size: 0.6rem;
+}
+
+.read-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}

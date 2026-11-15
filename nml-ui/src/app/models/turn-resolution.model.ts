@@ -104,5 +104,11 @@ export interface TurnFinalizeResult {
   transitCombats: TransitCombatResult[];
   capturedSectors: SectorCapture[];
   eliminatedPlayers: string[] | null;
+  gameFinished?: boolean;
+  winnerPlayerId?: number | null;
+  winnerName?: string | null;
+  winnerPosthumous?: boolean;
+  winnerAdjusted?: boolean;
+  gazetteDraftTurn?: number | null;
   message: string | null;
 }

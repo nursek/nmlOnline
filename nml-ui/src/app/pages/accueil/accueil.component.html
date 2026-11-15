@@ -57,7 +57,7 @@
           <div class="global-stat">
             <mat-icon>people</mat-icon>
             <div>
-              <span class="stat-value">{{ players().length }}</span>
+              <span class="stat-value">{{ playersAlive() }}</span>
               <span class="stat-label">Joueurs en vie</span>
               @if (playersTruncated()) {
                 <span class="stat-label">(liste partielle — 50 premiers)</span>
@@ -132,7 +132,13 @@
           @for (announcement of announcements(); track announcement.id) {
             <div class="announcement" [class.betrayal]="announcement.type === 'BETRAYAL'">
               <mat-icon>
-                {{ announcement.type === 'BETRAYAL' ? 'local_fire_department' : 'handshake' }}
+                {{
+                  announcement.type === 'BETRAYAL'
+                    ? 'local_fire_department'
+                    : announcement.type === 'FINAL_DUEL'
+                      ? 'swords'
+                      : 'handshake'
+                }}
               </mat-icon>
               <span class="label">{{ announcementLabel(announcement) }}</span>
               <span class="turn">tour {{ announcement.turnCreated }}</span>
@@ -142,6 +148,10 @@
       </mat-card>
     }
 
-    <app-rankings-panel [playerColors]="playerColors()" />
+    @if (gameFinished()) {
+      <app-podium-panel [playerColors]="playerColors()" />
+    } @else {
+      <app-rankings-panel [playerColors]="playerColors()" />
+    }
   </div>
 }

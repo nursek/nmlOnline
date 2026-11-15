@@ -172,6 +172,7 @@ public class AllianceService {
         int turn = turnService.getCurrentTurn(boardId);
 
         if (kind == ProposalKind.ALLIANCE) {
+            requireAllianceOpen(boardId);
             if (allianceRepository.findActiveBetween(player.getId(), target.getId()).isPresent()) {
                 throw new IllegalStateException("Vous êtes déjà allié avec " + target.getName() + ".");
             }
@@ -207,6 +208,7 @@ public class AllianceService {
 
         if (proposal.getKind() == ProposalKind.ALLIANCE) {
             requireHeadquarters(player);
+            requireAllianceOpen(boardId);
             Alliance existing = allianceRepository.findActiveBetween(
                     proposal.getFromPlayerId(), proposal.getToPlayerId()).orElse(null);
             if (existing != null) {
@@ -350,6 +352,16 @@ public class AllianceService {
     private void requireHeadquarters(Player player) {
         if (!buildingService.hasOperationalHeadquarters(player.getId())) {
             throw new IllegalStateException("Un quartier général opérationnel est requis pour gérer une alliance.");
+        }
+    }
+
+    private void requireAllianceOpen(Long boardId) {
+        long active = playerRepository.findByBoardId(boardId).stream()
+                .filter(player -> !player.isEliminated())
+                .count();
+        if (active <= 2) {
+            throw new IllegalStateException(
+                    "Il ne peut rester qu'un survivant : aucune alliance à deux joueurs.");
         }
     }
 

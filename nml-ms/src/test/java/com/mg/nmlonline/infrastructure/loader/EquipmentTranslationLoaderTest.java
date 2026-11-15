@@ -43,7 +43,7 @@ class EquipmentTranslationLoaderTest {
                 nightmareShroud.getDisplayDescriptions().get(PlayerRace.NECRONS));
 
         Equipment phylactery = equipmentRepository.findByName("Phylactery").orElseThrow();
-        assertEquals("Guenilles renforcées", phylactery.getDisplayNames().get(PlayerRace.ORKS));
+        assertEquals("Rokette dorsale", phylactery.getDisplayNames().get(PlayerRace.ORKS));
         assertEquals("Spectres Canopteks", phylactery.getDisplayNames().get(PlayerRace.NECRONS));
 
         Equipment sempiternalWeave = equipmentRepository.findByName("Sempiternal Weave").orElseThrow();

@@ -1,5 +1,5 @@
 export type ProposalKind = 'ALLIANCE' | 'RUPTURE';
-export type AnnouncementType = 'ALLIANCE_FORMED' | 'ALLIANCE_BROKEN' | 'BETRAYAL';
+export type AnnouncementType = 'ALLIANCE_FORMED' | 'ALLIANCE_BROKEN' | 'BETRAYAL' | 'FINAL_DUEL';
 
 export interface AllianceMe {
   headquartersOperational: boolean;

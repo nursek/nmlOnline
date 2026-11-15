@@ -12,6 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DevScenarioService } from '../../services/dev-scenario.service';
+import { PlayerStatusService } from '../../services/player-status.service';
 
 @Component({
   selector: 'app-dev-scenarios',
@@ -29,6 +30,7 @@ import { DevScenarioService } from '../../services/dev-scenario.service';
 export class DevScenariosComponent {
   private readonly scenarios = inject(DevScenarioService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly playerStatus = inject(PlayerStatusService);
 
   readonly available = this.scenarios.available;
   readonly loading = this.scenarios.loading;
@@ -101,6 +103,13 @@ export class DevScenariosComponent {
 
   onSeedStandoffScenario(): void {
     this.run('STANDOFF', () => this.scenarios.seedStandoffScenario());
+  }
+
+  onSeedEndGame(): void {
+    this.run('END_GAME', async () => {
+      await this.scenarios.seedEndGame();
+      this.playerStatus.reload();
+    });
   }
 
   onPlayDemoTurns(): void {

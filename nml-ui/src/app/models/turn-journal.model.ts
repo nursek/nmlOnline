@@ -22,4 +22,10 @@ export interface TurnExport {
   captures: SectorCapture[];
   transitCombats: TransitCombatResult[];
   eliminatedPlayers: string[];
+  gameFinished?: boolean;
+  winnerPlayerId?: number | null;
+  winnerName?: string | null;
+  winnerPosthumous?: boolean;
+  winnerAdjusted?: boolean;
+  gazetteDraftTurn?: number | null;
 }

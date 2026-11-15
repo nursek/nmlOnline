@@ -1,0 +1,105 @@
+<article class="gazette">
+  <header class="masthead">
+    <div class="weather">
+      <mat-icon aria-hidden="true">{{ issue().masthead.weather.icon }}</mat-icon>
+      <strong>{{ issue().masthead.weather.condition }}</strong>
+      <span>{{ weather() }}</span>
+    </div>
+    <div class="brand">
+      <h1 class="journal-name">{{ issue().masthead.journalName }}</h1>
+      <p class="subtitle">{{ issue().masthead.subtitle }}</p>
+      <span class="fake-url" role="note">{{ issue().masthead.fakeUrl }}</span>
+    </div>
+    <div class="edition">
+      <span>Vol. {{ issue().masthead.volume }} — N° {{ issue().issueNumber }}</span>
+      <span>{{ issue().masthead.dateLabel }}</span>
+    </div>
+  </header>
+
+  <div class="edition-label">{{ edition() }}</div>
+
+  @if (lead(); as article) {
+    <section class="lead">
+      @if (article.photoPlayerName) {
+        <div class="lead-photo">
+          <app-player-photo
+            [playerName]="article.photoPlayerName"
+            [caption]="article.photoCaption"
+            variant="newsprint"
+          />
+        </div>
+      }
+      <div class="lead-body">
+        <span class="section">{{ article.section }}</span>
+        <h2 class="headline">{{ article.headline }}</h2>
+        @if (article.quote) {
+          <blockquote class="quote">{{ article.quote }}</blockquote>
+        }
+        @if (article.author) {
+          <p class="byline">Par {{ article.author }}</p>
+        }
+        <div class="body">
+          @for (paragraph of paragraphs(article.body); track $index) {
+            <p>{{ paragraph }}</p>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (secondary().length) {
+    <section class="secondary-grid">
+      @for (article of secondary(); track $index) {
+        <article class="secondary">
+          <span class="section">{{ article.section }}</span>
+          <h3>{{ article.headline }}</h3>
+          @if (article.quote) {
+            <blockquote class="quote">{{ article.quote }}</blockquote>
+          }
+          @if (article.author) {
+            <p class="byline">Par {{ article.author }}</p>
+          }
+          <div class="body">
+            @for (paragraph of paragraphs(article.body); track $index) {
+              <p>{{ paragraph }}</p>
+            }
+          </div>
+        </article>
+      }
+    </section>
+  }
+
+  @if (briefs().length) {
+    <section class="briefs">
+      <h2 class="section-title">Les autres faits du tour</h2>
+      <div class="briefs-grid">
+        @for (article of briefs(); track $index) {
+          <article class="brief">
+            <span class="section">{{ article.section }}</span>
+            <h3>{{ article.headline }}</h3>
+            @if (article.author) {
+              <p class="byline">Par {{ article.author }}</p>
+            }
+            <div class="body">
+              @for (paragraph of paragraphs(article.body); track $index) {
+                <p>{{ paragraph }}</p>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+  }
+
+  <footer class="footer">
+    <span>{{ issue().masthead.journalName }} · {{ issue().masthead.boardName }}</span>
+    @if (issue().publishedAt) {
+      <span>Publié le {{ issue().publishedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+    } @else {
+      <span>Brouillon non publié</span>
+    }
+    @if (updated()) {
+      <span>Édition mise à jour le {{ issue().updatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+    }
+  </footer>
+</article>

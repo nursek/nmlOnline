@@ -8,6 +8,7 @@ import { NavbarComponent } from './navbar.component';
 import { AuthService } from '../../services/auth.service';
 import { InstanceService } from '../../services/instance.service';
 import { DevScenarioService } from '../../services/dev-scenario.service';
+import { PlayerStatusService } from '../../services/player-status.service';
 import { GameInstance } from '../../models';
 
 function instances(count: number): GameInstance[] {
@@ -24,7 +25,7 @@ function instances(count: number): GameInstance[] {
   }));
 }
 
-function build(isAdmin: boolean, accessible: number): NavbarComponent {
+function build(isAdmin: boolean, accessible: number, finished = false): NavbarComponent {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -43,6 +44,10 @@ function build(isAdmin: boolean, accessible: number): NavbarComponent {
           selectedRole: signal(null),
         },
       },
+      {
+        provide: PlayerStatusService,
+        useValue: { gameFinished: signal(finished) },
+      },
       { provide: Router, useValue: { navigate: jest.fn() } },
       { provide: DevScenarioService, useValue: { available: signal(false) } },
       { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false }) } },
@@ -60,5 +65,13 @@ describe('NavbarComponent — « Changer de partie »', () => {
   it('apparaît dès que plusieurs parties sont accessibles', () => {
     expect(build(false, 2).canSwitchInstance()).toBe(true);
     expect(build(true, 3).canSwitchInstance()).toBe(true);
+  });
+
+  it('ajoute le lien Podium seulement quand la partie est terminée', () => {
+    const running = build(false, 1, false).menuItems();
+    const finished = build(false, 1, true).menuItems();
+
+    expect(running.some((item) => item.path === '/podium')).toBe(false);
+    expect(finished.some((item) => item.path === '/podium')).toBe(true);
   });
 });

@@ -1,0 +1,84 @@
+<mat-card class="podium-card">
+  <mat-card-content>
+    <div class="section-header">
+      <mat-icon color="primary">emoji_events</mat-icon>
+      <h2>Podium</h2>
+      @if (podium()?.finalTurn; as turn) {
+        <span class="turn-badge">Tour final {{ turn }}</span>
+      }
+    </div>
+
+    @if (!podium() && podiumRef.isLoading()) {
+      <div class="podium-loading" role="status">
+        <mat-spinner diameter="28"></mat-spinner>
+        <span>Chargement du podium...</span>
+      </div>
+    } @else if (podiumRef.error()) {
+      <div class="podium-error" role="alert">
+        <span>Impossible de charger le podium.</span>
+        <button mat-stroked-button class="readonly-allow" (click)="retry()">Réessayer</button>
+      </div>
+    } @else if (podium(); as p) {
+      @if (!p.finished) {
+        <p class="podium-empty">
+          La partie est en cours — le podium sera scellé à la dernière élimination.
+        </p>
+      } @else {
+        @if (champion(); as champ) {
+          <div class="champion-row">
+            <div class="champion-photo">
+              <app-player-photo
+                [playerName]="champ.playerName"
+                [characterName]="champ.characterName"
+                [color]="getPlayerColor(champ.playerId)"
+                [caption]="champ.characterName"
+              />
+            </div>
+            <div class="champion-body">
+              <span class="champion-kicker">{{ championLabel(champ) }}</span>
+              <h3 class="champion-name">{{ champ.playerName }}</h3>
+              <span class="champion-stats">
+                {{ champ.kills }} kill(s) · {{ champ.assists }} assistance(s)
+              </span>
+              @if (p.championAdjusted) {
+                <span class="champion-note">Champion désigné par le MJ</span>
+              }
+            </div>
+          </div>
+        }
+
+        @if (topThree().length) {
+          <div class="mini-podium" aria-label="Trois premiers du podium">
+            @for (place of topThree(); track trackPlace($index, place)) {
+              <div
+                class="mini-step"
+                [class.step-1]="place.place === 1"
+                [class.step-2]="place.place === 2"
+                [class.step-3]="place.place === 3"
+              >
+                <span class="medal" aria-hidden="true">{{ medalEmoji(place.place) }}</span>
+                <span class="mini-place">{{ place.place }}<sup>{{ place.place === 1 ? 're' : 'e' }}</sup></span>
+                <span class="dot" [style.background-color]="getPlayerColor(place.playerId)"></span>
+                <span class="mini-name">{{ place.playerName }}</span>
+                <span class="mini-stats">{{ place.kills }} K · {{ place.assists }} A</span>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="podium-actions">
+          <a mat-flat-button color="primary" routerLink="/podium">
+            <mat-icon>emoji_events</mat-icon>
+            Voir le podium complet
+          </a>
+          @if (p.lastGazetteTurn; as gazetteTurn) {
+            <a mat-stroked-button [routerLink]="['/journal', gazetteTurn]">
+              <mat-icon>newspaper</mat-icon>
+              Lire la dernière édition
+            </a>
+          }
+        </div>
+      }
+    }
+  </mat-card-content>
+</mat-card>

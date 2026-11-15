@@ -20,6 +20,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../services/auth.service';
 import { InstanceService } from '../../services/instance.service';
 import { DevScenarioService } from '../../services/dev-scenario.service';
+import { PlayerStatusService } from '../../services/player-status.service';
 import { SigilComponent } from '../../shared/sigil/sigil.component';
 import { ThemeToggleComponent } from '../../shared/theme-toggle/theme-toggle.component';
 
@@ -35,6 +36,7 @@ const BASE_MENU_ITEMS: NavLink[] = [
   { path: '/joueur', label: 'Mon Joueur', icon: 'person' },
   { path: '/ordres', label: 'Mes ordres', icon: 'list_alt' },
   { path: '/rapports', label: 'Rapports', icon: 'history' },
+  { path: '/journal', label: 'Journal', icon: 'newspaper' },
   { path: '/boutique', label: 'Boutique', icon: 'shopping_bag' },
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
 ];
@@ -45,6 +47,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
   { path: '/admin', label: 'Admin', icon: 'admin_panel_settings' },
   { path: '/admin/tour', label: 'Gestion du tour', icon: 'event_repeat' },
   { path: '/admin/joueurs', label: 'Gestion des joueurs', icon: 'groups' },
+  { path: '/admin/journal', label: 'Rédaction journal', icon: 'newspaper' },
   { path: '/admin/scenarios', label: 'Scénarios de tests', icon: 'science' },
   { path: '/regles', label: 'Règles', icon: 'menu_book' },
 ];
@@ -387,6 +390,7 @@ export class NavbarComponent {
   private readonly instance = inject(InstanceService);
   private readonly router = inject(Router);
   private readonly devScenarios = inject(DevScenarioService);
+  private readonly playerStatus = inject(PlayerStatusService);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly document = inject(DOCUMENT);
 
@@ -409,12 +413,14 @@ export class NavbarComponent {
   readonly drawerOpen = signal(false);
 
   readonly menuItems = computed<NavLink[]>(() => {
-    if (!this.canAdmin()) {
-      return BASE_MENU_ITEMS;
-    }
-    return this.devScenarios.available()
-      ? ADMIN_MENU_ITEMS
-      : ADMIN_MENU_ITEMS.filter((item) => item.path !== '/admin/scenarios');
+    const base = !this.canAdmin()
+      ? BASE_MENU_ITEMS
+      : this.devScenarios.available()
+        ? ADMIN_MENU_ITEMS
+        : ADMIN_MENU_ITEMS.filter((item) => item.path !== '/admin/scenarios');
+    return this.playerStatus.gameFinished()
+      ? [...base, { path: '/podium', label: 'Podium', icon: 'emoji_events' }]
+      : base;
   });
 
   // Block body scroll while the mobile drawer is open (DOM/3rd-party sync effect).
