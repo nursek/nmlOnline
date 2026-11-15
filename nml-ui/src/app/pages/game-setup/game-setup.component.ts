@@ -142,7 +142,7 @@ export class GameSetupComponent {
     if (status.unitsUnclassified > 0) {
       parts.push(`${status.unitsUnclassified} unité(s) non classée(s)`);
     }
-    return parts.join(', ') || 'placement incomplet';
+    return parts.join(', ') || 'prêt non déclaré';
   }
 
   private fallbackLabel(statuses: AdminPreparationStatus[]): string {

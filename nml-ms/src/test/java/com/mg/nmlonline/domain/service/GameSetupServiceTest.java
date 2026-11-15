@@ -154,8 +154,9 @@ class GameSetupServiceTest {
         Building building = player.getBuildings().getFirst();
         preparationService.placeBuilding(account.getId(), board.getId(), building.getId(), 1);
         preparationService.distributeUnits(account.getId(), board.getId(), 1, 20, List.of("SNIPER"));
+        preparationService.distributeUnits(account.getId(), board.getId(), 1, 10, List.of("TIREUR"));
         preparationService.distributeUnits(account.getId(), board.getId(), 2, 50, List.of("MASTODONTE"));
-        preparationService.distributeUnits(account.getId(), board.getId(), 3, 30, List.of("TIREUR"));
+        preparationService.distributeUnits(account.getId(), board.getId(), 3, 20, List.of("TIREUR"));
 
         preparationService.setReady(account.getId(), board.getId(), true);
         assertTrue(playerService.findById(dto.getId()).orElseThrow().isPreparationReady());
@@ -167,8 +168,11 @@ class GameSetupServiceTest {
         preparationService.unplaceBuilding(account.getId(), board.getId(), building.getId());
         assertNull(building.getSector());
 
-        preparationService.unplaceUnits(account.getId(), board.getId(), 1, 20, List.of("SNIPER"));
-        assertEquals(20, unitRepository.findByPlayerIdAndSectorIsNull(dto.getId()).stream()
+        preparationService.unplaceUnits(account.getId(), board.getId(), 1, 10, List.of("TIREUR"));
+        List<Unit> units = unitRepository.findByPlayerId(dto.getId());
+        assertEquals(20, countBySectorAndClass(units, 1, UnitClass.SNIPER));
+        assertEquals(0, countBySectorAndClass(units, 1, UnitClass.TIREUR));
+        assertEquals(10, unitRepository.findByPlayerIdAndSectorIsNull(dto.getId()).stream()
                 .filter(unit -> unit.getClasses().isEmpty())
                 .count());
 

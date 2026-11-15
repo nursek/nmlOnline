@@ -125,6 +125,11 @@ class GameSetupApiTest {
                         .header("X-Board-Id", board.getId().toString()))
                 .andExpect(status().isNoContent());
 
+        mockMvc.perform(post("/api/admin/players/" + playerId + "/preparation/reset")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isBadRequest());
+
         mockMvc.perform(delete("/api/admin/players/" + playerId + "/account")
                         .header("Authorization", "Bearer " + adminToken)
                         .header("X-Board-Id", board.getId().toString()))
