@@ -51,6 +51,7 @@ public class PreparationService {
         }
         Sector sector = ownedSector(board, player, sectorNumber);
         gameCharacterService.placeInSector(player.getId(), sector);
+        clearReady(player);
         sector.recalculateMilitaryPower();
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
@@ -71,6 +72,7 @@ public class PreparationService {
         building.setSector(sector);
         sector.getBuildings().add(building);
         buildingRepository.save(building);
+        clearReady(player);
         sector.recalculateMilitaryPower();
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
@@ -103,8 +105,16 @@ public class PreparationService {
             sector.addUnit(unit);
             unitRepository.save(unit);
         }
+        clearReady(player);
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
+    }
+
+    public void setReady(Long userId, Long boardId, boolean ready) {
+        Player player = lockPlayer(userId, boardId);
+        requirePreparation(boardId);
+        player.setPreparationReady(ready);
+        playerRepository.save(player);
     }
 
     public void unplaceCharacter(Long userId, Long boardId) {
@@ -116,6 +126,7 @@ public class PreparationService {
             throw new IllegalStateException("Le personnage n'est pas placé");
         }
         unplaceCharacter(player, character);
+        clearReady(player);
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
     }
@@ -128,6 +139,7 @@ public class PreparationService {
             throw new IllegalStateException("Le bâtiment n'est pas placé");
         }
         unplaceBuilding(building);
+        clearReady(player);
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
     }
@@ -153,6 +165,7 @@ public class PreparationService {
         for (Unit unit : matching) {
             unplaceUnit(sector, unit);
         }
+        clearReady(player);
         playerStatsService.recalculateStats(player, board);
         boardService.save(board);
     }
@@ -168,6 +181,7 @@ public class PreparationService {
         if (!board.isPreparation()) {
             throw new IllegalStateException("La partie a déjà démarré");
         }
+        clearReady(player);
         Set<Sector> touched = new LinkedHashSet<>();
         gameCharacterService.getCharacter(player.getId()).ifPresent(character -> {
             Sector sector = character.getSector();
@@ -232,6 +246,10 @@ public class PreparationService {
             throw new SecurityException("Ce bâtiment n'appartient pas au joueur");
         }
         return building;
+    }
+
+    private void clearReady(Player player) {
+        player.setPreparationReady(false);
     }
 
     private List<UnitClass> parseClasses(List<String> classNames) {

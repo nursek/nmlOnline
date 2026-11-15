@@ -77,6 +77,18 @@ public class PreparationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/ready")
+    public ResponseEntity<Void> markReady(HttpServletRequest httpRequest) {
+        preparationService.setReady(userId(httpRequest), boardId(httpRequest), true);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/ready")
+    public ResponseEntity<Void> unmarkReady(HttpServletRequest httpRequest) {
+        preparationService.setReady(userId(httpRequest), boardId(httpRequest), false);
+        return ResponseEntity.noContent().build();
+    }
+
     private Long userId(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {

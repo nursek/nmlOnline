@@ -15,6 +15,9 @@
         Importer / gérer les joueurs
       </a>
       @if (preparation()) {
+        @if (prepStatuses().length > 0) {
+          <span class="prep-summary">{{ readyCount() }}/{{ prepStatuses().length }} prêts</span>
+        }
         <button
           mat-flat-button
           color="primary"
@@ -44,6 +47,13 @@
               <mat-icon>person_add</mat-icon>
               Créer un joueur prêt
             </button>
+            <button
+              mat-icon-button
+              (click)="refreshPreparation()"
+              aria-label="Rafraîchir l'état de préparation"
+            >
+              <mat-icon>refresh</mat-icon>
+            </button>
           }
         </div>
 
@@ -67,8 +77,26 @@
                       Compte non relié
                     </span>
                   }
-                  @if (unplacedCount(player) > 0) {
-                    <span class="badge badge--warn">{{ unplacedCount(player) }} à placer</span>
+                  @if (statusFor(player); as status) {
+                    <span class="prep-chip" [class.ok]="status.characterPlaced">
+                      Personnage {{ status.characterPlaced ? '✓' : '✗' }}
+                    </span>
+                    <span
+                      class="prep-chip"
+                      [class.ok]="status.buildingsPlaced === status.buildingsTotal"
+                    >
+                      Bâtiments {{ status.buildingsPlaced }}/{{ status.buildingsTotal }}
+                    </span>
+                    <span class="prep-chip" [class.ok]="status.unitsUnclassified === 0">
+                      Unités {{ status.unitsTotal - status.unitsUnclassified }}/{{
+                        status.unitsTotal
+                      }}
+                    </span>
+                    @if (status.ready) {
+                      <span class="badge badge--ready">Prêt</span>
+                    } @else {
+                      <span class="badge badge--warn">En préparation</span>
+                    }
                   }
                 </div>
                 <div class="player-sectors">

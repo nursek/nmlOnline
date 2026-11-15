@@ -46,6 +46,7 @@ import {
   RegistrationMode,
   RegisterRequest,
   TemplatePlayerRequest,
+  AdminPreparationStatus,
 } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -136,6 +137,10 @@ export class ApiService {
     return this.http.post<void>(`${this.baseUrl}/admin/board/start`, {});
   }
 
+  adminGetPreparationStatus(): Observable<AdminPreparationStatus[]> {
+    return this.http.get<AdminPreparationStatus[]>(`${this.baseUrl}/admin/preparation-status`);
+  }
+
   placePreparationCharacter(sectorNumber: number): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/preparation/character`, { sectorNumber });
   }
@@ -180,6 +185,14 @@ export class ApiService {
 
   resetPreparation(): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/preparation/reset`, {});
+  }
+
+  markPreparationReady(): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/preparation/ready`, {});
+  }
+
+  unmarkPreparationReady(): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/preparation/ready`);
   }
 
   adminResetPreparation(playerId: number): Observable<void> {

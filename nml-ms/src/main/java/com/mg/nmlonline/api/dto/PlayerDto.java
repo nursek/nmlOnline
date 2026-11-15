@@ -27,4 +27,6 @@ public class PlayerDto {
     private String eliminationCause;
     private Integer eliminatedTurn;
     private Long eliminatedByPlayerId;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean preparationReady;
 }

@@ -1,5 +1,6 @@
 package com.mg.nmlonline.api.controller;
 
+import com.mg.nmlonline.api.dto.AdminPreparationStatusDto;
 import com.mg.nmlonline.api.dto.AdminStartingSectorsRequestDto;
 import com.mg.nmlonline.api.dto.AdminTemplatePlayerRequestDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -37,6 +39,11 @@ public class AdminSetupController {
             HttpServletRequest httpRequest) {
         gameSetupService.assignStartingSectors(boardId(httpRequest), id, request.sectorNumbers());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/preparation-status")
+    public List<AdminPreparationStatusDto> preparationStatus(HttpServletRequest httpRequest) {
+        return gameSetupService.preparationStatus(boardId(httpRequest));
     }
 
     @PostMapping("/board/start")

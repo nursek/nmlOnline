@@ -55,6 +55,7 @@ export interface Player {
   eliminationCause?: string | null;
   eliminatedTurn?: number | null;
   eliminatedByPlayerId?: number | null;
+  preparationReady?: boolean;
 }
 
 export interface PlayerStatus {

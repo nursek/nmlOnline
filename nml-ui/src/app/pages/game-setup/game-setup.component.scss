@@ -206,3 +206,28 @@
 .badge--warn {
   background: var(--danger);
 }
+
+.badge--ready {
+  background: var(--teal);
+}
+
+.prep-summary {
+  align-self: center;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.prep-chip {
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+
+  &.ok {
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+}

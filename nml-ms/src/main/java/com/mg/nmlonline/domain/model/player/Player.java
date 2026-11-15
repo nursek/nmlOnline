@@ -73,6 +73,9 @@ public class Player {
     @Column(name = "eliminated_by_player_id")
     private Long eliminatedByPlayerId;
 
+    @Column(name = "preparation_ready", nullable = false)
+    private boolean preparationReady;
+
     @Embedded
     private PlayerStats stats = new PlayerStats();
 

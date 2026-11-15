@@ -31,6 +31,17 @@ interface PlacedUnitGroup {
   count: number;
 }
 
+interface SectorDetail {
+  number: number;
+  name: string;
+  incomeLabel: string;
+  resource: string;
+  adjacentOwners: string[];
+  buildings: number;
+  units: number;
+  character: boolean;
+}
+
 @Component({
   selector: 'app-preparation-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,6 +67,7 @@ export class PreparationPanelComponent {
   readonly sectors = input<Sector[]>([]);
   readonly reserveUnits = input<Unit[]>([]);
   readonly currentTurn = input<number | null>(null);
+  readonly ownerNames = input<Record<number, string>>({});
   readonly changed = output<void>();
 
   readonly unplacedBuildings = computed(() =>
@@ -102,6 +114,62 @@ export class PreparationPanelComponent {
     }
     return [...groups.values()].sort(
       (a, b) => a.sectorNumber - b.sectorNumber || a.label.localeCompare(b.label),
+    );
+  });
+  readonly buildingsTotal = computed(() => (this.player()?.buildings ?? []).length);
+  readonly unitStats = computed(() => {
+    const playerId = this.player()?.id ?? null;
+    const placed = this.sectors()
+      .flatMap((sector) => sector.army ?? [])
+      .filter((unit) => unit.playerId === playerId).length;
+    const total = this.reserveUnits().length + placed;
+    const unclassified = this.unclassifiedUnits().length;
+    return { total, classified: total - unclassified, unclassified };
+  });
+  readonly playerReady = computed(() => this.player()?.preparationReady === true);
+  readonly sectorDetails = computed<SectorDetail[]>(() => {
+    const playerId = this.player()?.id ?? null;
+    const playerName = this.player()?.name;
+    const names = this.ownerNames();
+    return this.sectors()
+      .filter((sector): sector is Sector & { number: number } => sector.number !== null)
+      .sort((a, b) => a.number - b.number)
+      .map((sector) => {
+        const adjacentOwners = [
+          ...new Set(
+            (sector.neighbors ?? [])
+              .map((number) => names[number])
+              .filter((name): name is string => !!name && name !== playerName),
+          ),
+        ];
+        return {
+          number: sector.number,
+          name: sector.name,
+          incomeLabel:
+            sector.income === null ? '—' : `${sector.income.toLocaleString('fr-FR')} ₡/tour`,
+          resource: sector.resource ?? 'Aucune ressource',
+          adjacentOwners,
+          buildings: (this.player()?.buildings ?? []).filter(
+            (building) => building.sectorNumber === sector.number,
+          ).length,
+          units: (sector.army ?? []).filter((unit) => unit.playerId === playerId).length,
+          character: this.character()?.sectorNumber === sector.number,
+        };
+      });
+  });
+  readonly remainingLabel = computed(() => {
+    const parts: string[] = [];
+    if (this.characterUnplaced()) parts.push('le personnage');
+    if (this.unplacedBuildings().length > 0) {
+      parts.push(`${this.unplacedBuildings().length} bâtiment(s)`);
+    }
+    if (this.unitStats().unclassified > 0) {
+      parts.push(`${this.unitStats().unclassified} unité(s) non classée(s)`);
+    }
+    if (parts.length === 0) return '';
+    return (
+      `Il reste ${parts.join(', ')}. Les éléments non placés iront sur le premier secteur ` +
+      'et les unités non classées deviendront LÉGER.'
     );
   });
   readonly sectorNumbers = computed(() =>
@@ -204,6 +272,23 @@ export class PreparationPanelComponent {
       () => firstValueFrom(this.api.resetPreparation()),
       'Placement de préparation réinitialisé',
     );
+  }
+
+  async markReady(): Promise<void> {
+    await this.run(() => firstValueFrom(this.api.markPreparationReady()), 'Vous êtes prêt');
+  }
+
+  async unmarkReady(): Promise<void> {
+    await this.run(
+      () => firstValueFrom(this.api.unmarkPreparationReady()),
+      'Statut « prêt » annulé',
+    );
+  }
+
+  sectorLabel(number: number): string {
+    const sector = this.sectors().find((candidate) => candidate.number === number);
+    if (!sector) return `#${number}`;
+    return `#${number} — ${sector.name}${sector.resource ? ` · ${sector.resource}` : ''}`;
   }
 
   async distributeUnits(): Promise<void> {

@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.AdminPreparationStatusDto;
 import com.mg.nmlonline.api.dto.AdminTemplatePlayerRequestDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
@@ -105,6 +106,37 @@ public class GameSetupService {
         boardService.save(board);
         adminAuditService.record(boardId, playerId, AdminAuditAction.ASSIGN_STARTING_SECTORS,
                 "Secteurs de départ : " + sectorNumbers);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminPreparationStatusDto> preparationStatus(Long boardId) {
+        Board board = boardService.getBoardById(boardId)
+                .orElseThrow(() -> new IllegalArgumentException("Plateau introuvable : " + boardId));
+        return playerService.findAll(boardId, Pageable.unpaged()).getContent().stream()
+                .map(player -> {
+                    List<Unit> units = unitRepository.findByPlayerId(player.getId());
+                    int buildingsTotal = player.getBuildings().size();
+                    int buildingsPlaced = (int) player.getBuildings().stream()
+                            .filter(building -> building.getSector() != null)
+                            .count();
+                    boolean characterPlaced = player.getCharacter() != null
+                            && player.getCharacter().getSector() != null;
+                    int unitsUnclassified = (int) units.stream()
+                            .filter(unit -> unit.getSector() == null && unit.getClasses().isEmpty())
+                            .count();
+                    return new AdminPreparationStatusDto(
+                            player.getId(),
+                            player.getName(),
+                            player.getUserId() != null,
+                            board.getSectorsByOwner(player.getId()).size(),
+                            characterPlaced,
+                            buildingsPlaced,
+                            buildingsTotal,
+                            units.size(),
+                            unitsUnclassified,
+                            player.isPreparationReady());
+                })
+                .toList();
     }
 
     public void startGame(Long boardId) {

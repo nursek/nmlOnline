@@ -86,10 +86,33 @@ class GameSetupApiTest {
                         .content("{\"sectorNumber\":1,\"quantity\":1,\"classes\":[\"LEGER\"]}"))
                 .andExpect(status().isNoContent());
 
+        mockMvc.perform(post("/api/preparation/ready")
+                        .header("Authorization", "Bearer " + playerToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/players/me")
+                        .header("Authorization", "Bearer " + playerToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.preparationReady").value(true));
+
+        mockMvc.perform(get("/api/admin/preparation-status")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].ready").value(true));
+
         mockMvc.perform(post("/api/admin/players/" + playerId + "/preparation/reset")
                         .header("Authorization", "Bearer " + adminToken)
                         .header("X-Board-Id", board.getId().toString()))
                 .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/admin/preparation-status")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].ready").value(false));
 
         mockMvc.perform(get("/api/units/reserve")
                         .header("Authorization", "Bearer " + playerToken)

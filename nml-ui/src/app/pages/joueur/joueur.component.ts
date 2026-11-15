@@ -24,6 +24,8 @@ import {
 } from '../../models';
 import { PlayerService } from '../../services/player.service';
 import { PlayerActionsService } from '../../services/player-actions.service';
+import { ActiveBoardService } from '../../services/active-board.service';
+import { PlayerDirectoryService } from '../../services/player-directory.service';
 import { MovementStateService } from '../../services/movement-state.service';
 import { ExchangeService } from '../../services/exchange.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
@@ -122,6 +124,8 @@ export class JoueurComponent {
   private readonly equipmentImages = inject(EquipmentImageService);
   private readonly vehicleImages = inject(VehicleImageService);
   private readonly playerActionsService = inject(PlayerActionsService);
+  private readonly activeBoard = inject(ActiveBoardService);
+  private readonly playerDirectory = inject(PlayerDirectoryService);
   private readonly movementState = inject(MovementStateService);
   private readonly exchangeService = inject(ExchangeService);
   private readonly allianceState = inject(AllianceStateService);
@@ -167,6 +171,20 @@ export class JoueurComponent {
     }
   });
   readonly conqueredSectors = computed(() => this.player()?.sectors ?? []);
+  readonly ownerNames = computed(() => {
+    const names = new Map<number, string>();
+    for (const candidate of this.playerDirectory.players()) {
+      if (candidate.id !== null) names.set(candidate.id, candidate.name);
+    }
+    const result: Record<number, string> = {};
+    for (const sector of this.activeBoard.sectors()) {
+      if (sector.number !== null && sector.ownerId !== null) {
+        const name = names.get(sector.ownerId);
+        if (name) result[sector.number] = name;
+      }
+    }
+    return result;
+  });
   readonly buildings = computed(() => this.player()?.buildings ?? []);
   readonly headquarters = computed(
     () => this.buildings().find((building) => building.buildingType === 'HEADQUARTERS') ?? null,

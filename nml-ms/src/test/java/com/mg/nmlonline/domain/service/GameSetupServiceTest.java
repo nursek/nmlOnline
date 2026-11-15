@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
+import com.mg.nmlonline.api.dto.AdminPreparationStatusDto;
 import com.mg.nmlonline.api.dto.AdminTemplatePlayerRequestDto;
 import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.model.board.Board;
@@ -156,8 +157,12 @@ class GameSetupServiceTest {
         preparationService.distributeUnits(account.getId(), board.getId(), 2, 50, List.of("MASTODONTE"));
         preparationService.distributeUnits(account.getId(), board.getId(), 3, 30, List.of("TIREUR"));
 
+        preparationService.setReady(account.getId(), board.getId(), true);
+        assertTrue(playerService.findById(dto.getId()).orElseThrow().isPreparationReady());
+
         preparationService.unplaceCharacter(account.getId(), board.getId());
         assertNull(gameCharacterService.getCharacter(dto.getId()).orElseThrow().getSector());
+        assertFalse(playerService.findById(dto.getId()).orElseThrow().isPreparationReady());
 
         preparationService.unplaceBuilding(account.getId(), board.getId(), building.getId());
         assertNull(building.getSector());
@@ -173,6 +178,37 @@ class GameSetupServiceTest {
                 .allMatch(placedBuilding -> placedBuilding.getSector() == null));
         assertTrue(unitRepository.findByPlayerId(dto.getId()).stream()
                 .allMatch(unit -> unit.getSector() == null && unit.getClasses().isEmpty()));
+    }
+
+    @Test
+    @DisplayName("L'état de préparation expose les comptes, secteurs, placements et unités")
+    void preparationStatusExposesReadiness() {
+        String boardName = "Statut " + UUID.randomUUID();
+        Board board = boardService.saveBoard(board(boardName), boardName);
+        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
+                new AdminTemplatePlayerRequestDto("Statut" + UUID.randomUUID(), "ORKS",
+                        List.of(1, 2), null));
+        User account = createAccount();
+        adminService.linkAccount(dto.getId(), account.getUsername());
+
+        preparationService.placeCharacter(account.getId(), board.getId(), 1);
+        Player player = playerService.findById(dto.getId()).orElseThrow();
+        Building building = player.getBuildings().getFirst();
+        preparationService.placeBuilding(account.getId(), board.getId(), building.getId(), 1);
+        preparationService.distributeUnits(account.getId(), board.getId(), 1, 20, List.of("SNIPER"));
+        preparationService.setReady(account.getId(), board.getId(), true);
+
+        List<AdminPreparationStatusDto> statuses = gameSetupService.preparationStatus(board.getId());
+        assertEquals(1, statuses.size());
+        AdminPreparationStatusDto status = statuses.getFirst();
+        assertTrue(status.accountLinked());
+        assertEquals(2, status.sectorCount());
+        assertTrue(status.characterPlaced());
+        assertEquals(1, status.buildingsPlaced());
+        assertEquals(3, status.buildingsTotal());
+        assertEquals(100, status.unitsTotal());
+        assertEquals(80, status.unitsUnclassified());
+        assertTrue(status.ready());
     }
 
     @Test

@@ -45,4 +45,17 @@ export interface TemplatePlayerRequest {
   characterName?: string;
 }
 
+export interface AdminPreparationStatus {
+  playerId: number;
+  name: string;
+  accountLinked: boolean;
+  sectorCount: number;
+  characterPlaced: boolean;
+  buildingsPlaced: number;
+  buildingsTotal: number;
+  unitsTotal: number;
+  unitsUnclassified: number;
+  ready: boolean;
+}
+
 export type AdminUserPage = PageResult<AdminUser>;

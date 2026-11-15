@@ -118,12 +118,16 @@ describe('PreparationPanelComponent — répartition et annulation', () => {
   let distribute: jest.Mock;
   let unplaceUnits: jest.Mock;
   let resetPreparation: jest.Mock;
+  let markReady: jest.Mock;
+  let unmarkReady: jest.Mock;
   let dialogOpen: jest.Mock;
 
   beforeEach(async () => {
     distribute = jest.fn(() => of(void 0));
     unplaceUnits = jest.fn(() => of(void 0));
     resetPreparation = jest.fn(() => of(void 0));
+    markReady = jest.fn(() => of(void 0));
+    unmarkReady = jest.fn(() => of(void 0));
     dialogOpen = jest.fn(() => ({ afterClosed: () => of(true) }));
     await TestBed.configureTestingModule({
       imports: [PreparationPanelComponent],
@@ -137,6 +141,8 @@ describe('PreparationPanelComponent — répartition et annulation', () => {
             unplacePreparationBuilding: jest.fn(() => of(void 0)),
             unplacePreparationUnits: unplaceUnits,
             resetPreparation,
+            markPreparationReady: markReady,
+            unmarkPreparationReady: unmarkReady,
           },
         },
         {
@@ -159,13 +165,18 @@ describe('PreparationPanelComponent — répartition et annulation', () => {
 
   function create(
     units: Unit[],
-    options: { player?: Partial<Player>; sectors?: Sector[] } = {},
+    options: {
+      player?: Partial<Player>;
+      sectors?: Sector[];
+      ownerNames?: Record<number, string>;
+    } = {},
   ): ComponentFixture<PreparationPanelComponent> {
     const fixture = TestBed.createComponent(PreparationPanelComponent);
     fixture.componentRef.setInput('player', player(options.player));
     fixture.componentRef.setInput('sectors', options.sectors ?? [sector()]);
     fixture.componentRef.setInput('reserveUnits', units);
     fixture.componentRef.setInput('currentTurn', 0);
+    fixture.componentRef.setInput('ownerNames', options.ownerNames ?? {});
     fixture.detectChanges();
     fixture.componentInstance.unitSector.set(1);
     return fixture;
@@ -244,5 +255,43 @@ describe('PreparationPanelComponent — répartition et annulation', () => {
 
     expect(dialogOpen).toHaveBeenCalled();
     expect(resetPreparation).toHaveBeenCalled();
+  });
+
+  it('affiche le contexte des secteurs et les propriétaires adjacents', () => {
+    const fixture = create([], {
+      sectors: [
+        { ...sector(5), income: 2000, resource: 'Prométhéum', neighbors: [1, 6] },
+        { ...sector(6), income: 1500, resource: null, neighbors: [5, 7] },
+      ],
+      ownerNames: { 6: 'Voisin', 7: 'Joueur' },
+    });
+
+    const details = fixture.componentInstance.sectorDetails();
+    expect(details).toHaveLength(2);
+    expect(details[0]).toMatchObject({
+      number: 5,
+      name: 'Secteur 5',
+      resource: 'Prométhéum',
+      adjacentOwners: ['Voisin'],
+    });
+    expect(details[1].adjacentOwners).toEqual([]);
+    expect(fixture.componentInstance.sectorLabel(5)).toContain('Prométhéum');
+  });
+
+  it('marque le joueur prêt', async () => {
+    const fixture = create([]);
+
+    await fixture.componentInstance.markReady();
+
+    expect(markReady).toHaveBeenCalled();
+  });
+
+  it('annule le statut prêt', async () => {
+    const fixture = create([], { player: { preparationReady: true } });
+    expect(fixture.componentInstance.playerReady()).toBe(true);
+
+    await fixture.componentInstance.unmarkReady();
+
+    expect(unmarkReady).toHaveBeenCalled();
   });
 });
