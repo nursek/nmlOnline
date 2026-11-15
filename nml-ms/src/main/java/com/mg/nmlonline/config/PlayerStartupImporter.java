@@ -5,6 +5,7 @@ import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.BoardImportService;
 import com.mg.nmlonline.domain.service.BoardService;
+import com.mg.nmlonline.domain.service.GameSetupService;
 import com.mg.nmlonline.domain.service.PlayerImportService;
 import com.mg.nmlonline.domain.service.PlayerService;
 import com.mg.nmlonline.domain.service.UserService;
@@ -20,7 +21,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.List;
 
 @Slf4j
@@ -45,6 +45,7 @@ public class PlayerStartupImporter implements ApplicationRunner {
     private final BoardImportService boardImportService;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final GameSetupService gameSetupService;
 
     @Value("${app.import-demo-data:true}")
     private boolean importDemoData;
@@ -54,13 +55,15 @@ public class PlayerStartupImporter implements ApplicationRunner {
                                  BoardService boardService,
                                  BoardImportService boardImportService,
                                  UserRepository userRepository,
-                                 UserService userService) {
+                                 UserService userService,
+                                 GameSetupService gameSetupService) {
         this.playerImportService = playerImportService;
         this.playerService = playerService;
         this.boardService = boardService;
         this.boardImportService = boardImportService;
         this.userRepository = userRepository;
         this.userService = userService;
+        this.gameSetupService = gameSetupService;
     }
 
     @Override
@@ -97,10 +100,14 @@ public class PlayerStartupImporter implements ApplicationRunner {
             importIfPresent(new ClassPathResource(player), board);
         }
 
-        // Les plateaux de démo sont déjà jouables : ils ne passent pas par le tour 0.
-        board.start(Instant.now());
-        log.info("Sauvegarde finale du Board (merge) avec {} secteurs...", board.getAllSectors().size());
-        boardService.save(board);
+        // Persiste les secteurs/propriétaires importés avant le démarrage, qui relit le board en base.
+        board = boardService.save(board);
+        if (board.isPreparation()) {
+            // Même chemin que l'admin : placements de repli, unités LÉGER, cache de tour et audit.
+            gameSetupService.startGame(board.getId());
+        } else {
+            log.info("Board déjà démarré : pas de re-démarrage.");
+        }
         long ownedCount = board.getAllSectors().stream().filter(s -> !s.isNeutral()).count();
         log.info("✅ Board '{}' sauvegardé : {} secteurs neutres + {} secteurs de players",
                 game.boardName(), board.getAllSectors().size() - ownedCount, ownedCount);

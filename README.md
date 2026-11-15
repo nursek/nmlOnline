@@ -560,6 +560,10 @@ is never stored as a MJ; with no MJ nominated, the platform admin manages the ga
 starts the game (`POST /api/admin/board/start`), which sets `started_at` and moves the board to
 turn 1.
 
+Demo data (`app.import-demo-data=true`, the dev/test default) does not wait for an admin: the
+bundled boards are imported with their fixtures and accounts, then started at boot through the
+same `startGame` routine, so they are already at turn 1 and never stay in preparation.
+
 During turn 0, only the setup actions, alliances and sector notes are open:
 purchases, orders, movement, harvest, exchanges and normal unit deployment are rejected by
 `PreparationPhaseFilter`. Players place their character, buildings and units themselves through

@@ -127,6 +127,8 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   restes, classe les unités sans classe en `LEGER`, passe à 1, renseigne `started_at` et publie
   le cache. `PreparationPhaseFilter` refuse les mutations hors préparation/alliances/notes/admin
   pendant le tour 0 ; les échanges restent fermés jusqu'au tour 2.
+- **Démo** : `PlayerStartupImporter` passe aussi par `GameSetupService.startGame` au boot — les
+  plateaux de démo sont démarrés (tour 1…), jamais laissés en tour 0.
 - **Démarrage** : ordre imposé par `@Order` — `DemoDataResetter` 0, `CsvDataLoader` 1,
   `PlayerStartupImporter` 2, `TestDataInitializer` 100. Un runner sans ordre casse les imports
   (le catalogue CSV n'est pas encore chargé quand les joueurs sont lus).

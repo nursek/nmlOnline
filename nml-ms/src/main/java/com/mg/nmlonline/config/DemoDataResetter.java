@@ -36,9 +36,10 @@ public class DemoDataResetter implements CommandLineRunner {
         if (isH2()) {
             truncateH2();
         } else {
-            // CASCADE : purge secteurs/armées/ordres/actions ; credentials exclu, les comptes survivent au reset.
+            // CASCADE purge parties et dépendances ; credentials exclu ; admin_audit_log listé à part (aucune FK).
             entityManager.createNativeQuery(
-                            "TRUNCATE TABLE game_statistics, battle_reports, boards, players, equipment, resource RESTART IDENTITY CASCADE")
+                            "TRUNCATE TABLE game_statistics, battle_reports, boards, players, equipment, resource, "
+                                    + "admin_audit_log RESTART IDENTITY CASCADE")
                     .executeUpdate();
         }
     }

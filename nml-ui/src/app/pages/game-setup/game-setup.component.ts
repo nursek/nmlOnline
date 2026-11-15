@@ -83,7 +83,11 @@ export class GameSetupComponent {
     this.admin.reloadPlayers();
     this.activeBoard.reload();
     void this.loadAdmins();
-    void this.loadPreparationStatuses();
+    effect(() => {
+      if (this.preparation()) {
+        void this.loadPreparationStatuses();
+      }
+    });
     effect(() => {
       const key = this.board()?.presetKey;
       if (key && this.preset()?.key !== key) {
@@ -128,6 +132,7 @@ export class GameSetupComponent {
   }
 
   statusFor(player: Player): AdminPreparationStatus | null {
+    if (!this.preparation()) return null;
     return this.prepStatuses().find((status) => status.playerId === player.id) ?? null;
   }
 

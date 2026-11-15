@@ -94,7 +94,8 @@ class AdminAuditServiceTest {
         assertEquals(25, first.getTotalElements());
         assertEquals(10, first.getContent().size());
         assertEquals(10, second.getContent().size());
-        assertEquals(25, auditService.getHistory(player.getBoardId(), null, PageRequest.of(0, 100))
+        // Le démarrage de la partie de démo trace une entrée de plateau sans joueur.
+        assertEquals(26, auditService.getHistory(player.getBoardId(), null, PageRequest.of(0, 100))
                 .getTotalElements());
     }
 }
