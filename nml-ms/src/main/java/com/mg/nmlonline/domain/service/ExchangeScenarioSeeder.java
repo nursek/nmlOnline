@@ -63,7 +63,7 @@ public class ExchangeScenarioSeeder {
         ExchangeOfferDto created = exchangeOfferService.createOfferForScenario(requireUserId(secondSender), boardId,
                 new CreateExchangeOfferRequestDto(secondReceiver.getId(), ACCEPTED_MONEY,
                         List.of(new ExchangeOfferItemDto("Auramite", 2))));
-        exchangeOfferService.acceptOffer(requireUserId(secondReceiver), created.id());
+        exchangeOfferService.acceptOffer(requireUserId(secondReceiver), boardId, created.id());
 
         String message = "Offre #" + pending.id() + " en attente (" + SENDER + " → " + RECEIVER
                 + "), échange #" + created.id() + " accepté (" + SECOND_SENDER + " → " + SECOND_RECEIVER + ").";

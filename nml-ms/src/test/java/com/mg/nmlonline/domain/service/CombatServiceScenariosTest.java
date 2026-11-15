@@ -428,7 +428,7 @@ class CombatServiceScenariosTest {
             assertFalse(defender.isEliminated(),
                     "QG détruit mais non capturé : aucune élimination");
             // Reconstruction 7 500 : le chemin existant redresse le QG.
-            assertTrue(buildingService.reconstructHeadquartersSameLocation(defender.getId()));
+            assertTrue(buildingService.reconstructHeadquartersSameLocation(defender.getId(), defender.getBoardId()));
         });
 
         // Fin de tour : tick +50 def plafonné à baseDefense.

@@ -53,6 +53,9 @@ class BuildingServiceTest {
     @Mock
     PlayerActionService playerActionService;
 
+    @Mock
+    TurnLock turnLock;
+
     @InjectMocks
     BuildingService buildingService;
 
@@ -62,6 +65,7 @@ class BuildingServiceTest {
     void setUp() {
         player = new Player("TestPlayer");
         player.setId(1L);
+        player.setBoardId(BOARD_ID);
         player.getStats().setMoney(100000.0);
     }
 
@@ -82,7 +86,7 @@ class BuildingServiceTest {
             stubHeadquarters(hq);
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
 
-            boolean result = buildingService.reconstructHeadquartersSameLocation(1L);
+            boolean result = buildingService.reconstructHeadquartersSameLocation(1L, BOARD_ID);
 
             assertTrue(result);
             assertEquals(92500.0, player.getStats().getMoney());
@@ -100,7 +104,7 @@ class BuildingServiceTest {
             stubHeadquarters(hq);
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
 
-            boolean result = buildingService.reconstructHeadquartersSameLocation(1L);
+            boolean result = buildingService.reconstructHeadquartersSameLocation(1L, BOARD_ID);
 
             assertFalse(result);
             assertEquals(100000.0, player.getStats().getMoney());
@@ -116,12 +120,21 @@ class BuildingServiceTest {
             player.getStats().setMoney(7499.0);
             when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
 
-            boolean result = buildingService.reconstructHeadquartersSameLocation(1L);
+            boolean result = buildingService.reconstructHeadquartersSameLocation(1L, BOARD_ID);
 
             assertFalse(result);
             assertEquals(7499.0, player.getStats().getMoney());
             assertTrue(hq.isDestroyed());
             verify(buildingRepository, never()).save(any(Building.class));
+        }
+
+        @Test
+        @DisplayName("Joueur d'une autre partie → SecurityException")
+        void shouldRejectPlayerFromAnotherBoard() {
+            when(playerRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(player));
+
+            assertThrows(SecurityException.class,
+                    () -> buildingService.reconstructHeadquartersSameLocation(1L, BOARD_ID + 1));
         }
 
         @Test
@@ -131,7 +144,7 @@ class BuildingServiceTest {
             when(buildingRepository.findByPlayerIdAndBuildingType(1L, BuildingType.HEADQUARTERS))
                     .thenReturn(Optional.empty());
 
-            assertFalse(buildingService.reconstructHeadquartersSameLocation(1L));
+            assertFalse(buildingService.reconstructHeadquartersSameLocation(1L, BOARD_ID));
         }
     }
 
@@ -411,6 +424,15 @@ class BuildingServiceTest {
             Sector sector = new Sector(3, "Secteur 3");
             sector.setOwnerId(99L);
             when(boardService.getSectorFromBoard(100L, 3)).thenReturn(Optional.of(sector));
+
+            assertThrows(IllegalStateException.class,
+                    () -> buildingService.moveBuilding(50L, 100L, 3));
+        }
+
+        @Test
+        @DisplayName("Résolution du tour en cours → déplacement refusé")
+        void shouldRefuseWhileResolutionRuns() {
+            when(turnLock.isLocked(100L)).thenReturn(true);
 
             assertThrows(IllegalStateException.class,
                     () -> buildingService.moveBuilding(50L, 100L, 3));

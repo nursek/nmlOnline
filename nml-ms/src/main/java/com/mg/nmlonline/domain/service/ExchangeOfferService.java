@@ -160,8 +160,8 @@ public class ExchangeOfferService {
         }
     }
 
-    public ExchangeOfferDto acceptOffer(Long userId, Long offerId) {
-        ExchangeOffer offer = lockOffer(offerId);
+    public ExchangeOfferDto acceptOffer(Long userId, Long boardId, Long offerId) {
+        ExchangeOffer offer = lockOffer(offerId, boardId);
         int turn = turnService.getCurrentTurn(offer.getBoardId());
         ensurePending(offer, turn);
 
@@ -203,8 +203,8 @@ public class ExchangeOfferService {
         return toDto(offer, sender.getName(), receiver.getName());
     }
 
-    public ExchangeOfferDto declineOffer(Long userId, Long offerId) {
-        ExchangeOffer offer = lockOffer(offerId);
+    public ExchangeOfferDto declineOffer(Long userId, Long boardId, Long offerId) {
+        ExchangeOffer offer = lockOffer(offerId, boardId);
         int turn = turnService.getCurrentTurn(offer.getBoardId());
         ensurePending(offer, turn);
 
@@ -219,8 +219,8 @@ public class ExchangeOfferService {
         return toDto(offer, nameOf(offer.getSenderPlayerId()), receiver.getName());
     }
 
-    public ExchangeOfferDto cancelOffer(Long userId, Long offerId) {
-        ExchangeOffer offer = lockOffer(offerId);
+    public ExchangeOfferDto cancelOffer(Long userId, Long boardId, Long offerId) {
+        ExchangeOffer offer = lockOffer(offerId, boardId);
         int turn = turnService.getCurrentTurn(offer.getBoardId());
         ensurePending(offer, turn);
 
@@ -235,9 +235,13 @@ public class ExchangeOfferService {
         return toDto(offer, sender.getName(), nameOf(offer.getReceiverPlayerId()));
     }
 
-    private ExchangeOffer lockOffer(Long offerId) {
-        return exchangeOfferRepository.findByIdForUpdate(offerId)
+    private ExchangeOffer lockOffer(Long offerId, Long boardId) {
+        ExchangeOffer offer = exchangeOfferRepository.findByIdForUpdate(offerId)
                 .orElseThrow(() -> new IllegalArgumentException("Offre introuvable : " + offerId));
+        if (!offer.getBoardId().equals(boardId)) {
+            throw new SecurityException("Cette offre n'appartient pas à la partie sélectionnée");
+        }
+        return offer;
     }
 
     private Player lockPlayer(Long playerId) {

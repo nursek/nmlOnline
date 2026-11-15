@@ -189,6 +189,26 @@ class InstanceAccessTest {
     }
 
     @Test
+    @DisplayName("un MJ ne contourne pas la portée avec un id de joueur non canonique")
+    void gameMasterCannotBypassPlayerScopeWithNonCanonicalId() throws Exception {
+        Long firstBoardId = boardRepository.findAll().getFirst().getId();
+        secondBoard = createBoard("Partie MJ non canonique");
+        gameMaster = createUser("mj_scope_non_canonique");
+        Player outsider = createPlayer("JoueurAutrePartieNonCanonique", null, firstBoardId);
+        boardAdminRepository.save(new BoardAdmin(secondBoard.getId(), gameMaster.getId()));
+        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+
+        mockMvc.perform(put("/api/admin/players/+{id}/money", outsider.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(secondBoard.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"amount\":999999}"))
+                .andExpect(status().isForbidden());
+
+        playerRepository.deleteById(outsider.getId());
+    }
+
+    @Test
     @DisplayName("un MJ ne peut pas s.octroyer des droits plateforme")
     void gameMasterCannotUsePlatformEndpoints() throws Exception {
         secondBoard = createBoard("Partie escalade");

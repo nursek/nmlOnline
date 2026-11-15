@@ -32,6 +32,8 @@ public class BoardScopeFilter extends OncePerRequestFilter {
 
     private static final Pattern ADMIN_PLAYER_PATH =
             Pattern.compile("^/api/admin/players/(\\d+)(/.*)?$");
+    private static final String ADMIN_PLAYER_PREFIX = "/api/admin/players/";
+    private static final String ADMIN_PLAYER_IMPORT = "/api/admin/players/import";
 
     private final BoardRepository boardRepository;
     private final BoardAdminRepository boardAdminRepository;
@@ -115,9 +117,14 @@ public class BoardScopeFilter extends OncePerRequestFilter {
         if (hasAuthority("ROLE_ADMIN") || !hasAuthority(INSTANCE_ADMIN_ROLE)) {
             return true;
         }
-        Matcher matcher = ADMIN_PLAYER_PATH.matcher(request.getRequestURI());
-        if (!matcher.matches()) {
+        String path = request.getRequestURI();
+        if (!path.startsWith(ADMIN_PLAYER_PREFIX) || path.equals(ADMIN_PLAYER_IMPORT)) {
             return true;
+        }
+        // Refus par défaut : MVC décode « +42 » et les ids percent-encodés, que ce motif ne couvre pas.
+        Matcher matcher = ADMIN_PLAYER_PATH.matcher(path);
+        if (!matcher.matches()) {
+            return false;
         }
         Long playerId = Long.valueOf(matcher.group(1));
         return playerRepository.findById(playerId)

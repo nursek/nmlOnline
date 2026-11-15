@@ -302,4 +302,18 @@ class VehicleServiceTest {
             assertSame(sector, result.getSector());
         }
     }
+
+    @Nested
+    @DisplayName("Équipage")
+    class CrewTests {
+
+        @Test
+        @DisplayName("Résolution du tour en cours → changement d'équipage refusé")
+        void shouldRefuseWhileResolutionRuns() {
+            when(turnLock.isLocked(100L)).thenReturn(true);
+
+            assertThrows(IllegalStateException.class,
+                    () -> vehicleService.setCrew(10L, 5L, null, List.of(), 100L));
+        }
+    }
 }
