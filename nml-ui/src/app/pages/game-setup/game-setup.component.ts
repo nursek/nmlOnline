@@ -92,7 +92,6 @@ export class GameSetupComponent {
     });
     const refresh = setInterval(() => {
       if (this.preparation() && !this.starting()) {
-        this.admin.reloadPlayers();
         void this.loadPreparationStatuses();
       }
     }, 15_000);
