@@ -38,6 +38,12 @@ public class AdminPlayerEditController {
         return adminPlayerEditService.getEdit(id);
     }
 
+    @PostMapping("/players/{id}/preparation/reset")
+    public ResponseEntity<Void> resetPreparation(@PathVariable Long id) {
+        adminPlayerEditService.resetPreparation(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/catalog")
     public AdminCatalogDto getCatalog() {
         return adminPlayerEditService.getCatalog();

@@ -158,6 +158,34 @@ export class ApiService {
     });
   }
 
+  unplacePreparationCharacter(): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/preparation/character`);
+  }
+
+  unplacePreparationBuilding(buildingId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/preparation/buildings/${buildingId}`);
+  }
+
+  unplacePreparationUnits(
+    sectorNumber: number,
+    quantity: number,
+    classes: string[],
+  ): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/preparation/units/undo`, {
+      sectorNumber,
+      quantity,
+      classes,
+    });
+  }
+
+  resetPreparation(): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/preparation/reset`, {});
+  }
+
+  adminResetPreparation(playerId: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/preparation/reset`, {});
+  }
+
   getPlayer(username: string): Observable<Player> {
     return this.http.get<Player>(`${this.baseUrl}/players/${username}`);
   }

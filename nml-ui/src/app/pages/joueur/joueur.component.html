@@ -715,6 +715,12 @@
                 L'historique des récoltes, des achats et des équipements modifiés sera journalisé
                 ici. Les ordres de déplacement se consultent sur la page « Mes ordres ».
               </p>
+              @if (currentTurn() === 0) {
+                <p class="empty-hint">
+                  Les placements du tour 0 (bâtiments, personnage, unités) se gèrent dans le panneau
+                  Préparation ; ils n'apparaissent pas dans cet historique.
+                </p>
+              }
             </div>
           } @else {
             <div class="actions-toolbar">

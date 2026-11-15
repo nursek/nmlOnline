@@ -171,6 +171,25 @@ export class GameSetupComponent {
     }
   }
 
+  async resetPreparation(player: Player): Promise<void> {
+    if (player.id === null || !this.preparation()) return;
+    const confirmed = await this.confirm(
+      'Réinitialiser le placement',
+      `Retirer les bâtiments, le personnage et les unités placées de ${player.name} ?`,
+      'Réinitialiser',
+    );
+    if (!confirmed) return;
+    if (
+      await this.run(
+        () => firstValueFrom(this.api.adminResetPreparation(player.id!)),
+        'Placement réinitialisé',
+      )
+    ) {
+      this.admin.reloadPlayers();
+      this.activeBoard.reload();
+    }
+  }
+
   async assignSectors(player: Player): Promise<void> {
     const board = this.board();
     if (!board || player.id === null || !this.preparation()) return;

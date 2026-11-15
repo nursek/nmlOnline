@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -84,6 +85,17 @@ class GameSetupApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"sectorNumber\":1,\"quantity\":1,\"classes\":[\"LEGER\"]}"))
                 .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/admin/players/" + playerId + "/preparation/reset")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/units/reserve")
+                        .header("Authorization", "Bearer " + playerToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(100));
 
         mockMvc.perform(post("/api/admin/board/start")
                         .header("Authorization", "Bearer " + adminToken)

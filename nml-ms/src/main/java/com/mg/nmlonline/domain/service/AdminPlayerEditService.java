@@ -81,6 +81,7 @@ public class AdminPlayerEditService {
     private final VehicleMapper vehicleMapper;
     private final VehicleCrewService vehicleCrewService;
     private final TurnLock turnLock;
+    private final PreparationService preparationService;
     private final EntityManager em;
 
     public AdminPlayerEditService(PlayerRepository playerRepository,
@@ -102,6 +103,7 @@ public class AdminPlayerEditService {
                                   VehicleMapper vehicleMapper,
                                   VehicleCrewService vehicleCrewService,
                                   TurnLock turnLock,
+                                  PreparationService preparationService,
                                   EntityManager em) {
         this.playerRepository = playerRepository;
         this.unitRepository = unitRepository;
@@ -122,6 +124,7 @@ public class AdminPlayerEditService {
         this.vehicleMapper = vehicleMapper;
         this.vehicleCrewService = vehicleCrewService;
         this.turnLock = turnLock;
+        this.preparationService = preparationService;
         this.em = em;
     }
 
@@ -158,6 +161,16 @@ public class AdminPlayerEditService {
                 .map(vehicleMapper::vehicleTypeToDto)
                 .toList());
         return dto;
+    }
+
+    @Transactional
+    public void resetPreparation(Long playerId) {
+        requireTurnOpen(playerId);
+        Player player = lockPlayer(playerId);
+        Board board = activeBoard(playerId);
+        preparationService.resetPlacement(player, board);
+        audit(playerId, AdminAuditAction.RESET_PREPARATION,
+                "Placement de préparation réinitialisé");
     }
 
     @Transactional

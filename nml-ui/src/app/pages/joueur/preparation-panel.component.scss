@@ -97,6 +97,32 @@
   width: 100px;
 }
 
+.placed-block {
+  border-color: var(--accent);
+}
+
+.placed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.placed-label {
+  min-width: 160px;
+  font-size: 0.85rem;
+}
+
+.placed-meta {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.reset-all {
+  margin-top: 8px;
+}
+
 .ready-text {
   color: var(--teal);
   font-size: 0.85rem;

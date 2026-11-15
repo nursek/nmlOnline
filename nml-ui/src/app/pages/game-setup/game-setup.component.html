@@ -84,6 +84,10 @@
                       <mat-icon>map</mat-icon>
                       Secteurs
                     </button>
+                    <button mat-stroked-button color="warn" (click)="resetPreparation(player)">
+                      <mat-icon>restart_alt</mat-icon>
+                      Réinit. placement
+                    </button>
                     @if (!player.userId) {
                       <button mat-stroked-button (click)="linkAccount(player)">
                         <mat-icon>link</mat-icon>

@@ -138,6 +138,44 @@ class GameSetupServiceTest {
     }
 
     @Test
+    @DisplayName("Les placements de préparation peuvent être retirés puis réinitialisés")
+    void preparationPlacementsCanBeUndoneAndReset() {
+        String boardName = "Annulation " + UUID.randomUUID();
+        Board board = boardService.saveBoard(board(boardName), boardName);
+        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
+                new AdminTemplatePlayerRequestDto("Annule" + UUID.randomUUID(), "ORKS",
+                        List.of(1, 2, 3), null));
+        User account = createAccount();
+        adminService.linkAccount(dto.getId(), account.getUsername());
+
+        preparationService.placeCharacter(account.getId(), board.getId(), 1);
+        Player player = playerService.findById(dto.getId()).orElseThrow();
+        Building building = player.getBuildings().getFirst();
+        preparationService.placeBuilding(account.getId(), board.getId(), building.getId(), 1);
+        preparationService.distributeUnits(account.getId(), board.getId(), 1, 20, List.of("SNIPER"));
+        preparationService.distributeUnits(account.getId(), board.getId(), 2, 50, List.of("MASTODONTE"));
+        preparationService.distributeUnits(account.getId(), board.getId(), 3, 30, List.of("TIREUR"));
+
+        preparationService.unplaceCharacter(account.getId(), board.getId());
+        assertNull(gameCharacterService.getCharacter(dto.getId()).orElseThrow().getSector());
+
+        preparationService.unplaceBuilding(account.getId(), board.getId(), building.getId());
+        assertNull(building.getSector());
+
+        preparationService.unplaceUnits(account.getId(), board.getId(), 1, 20, List.of("SNIPER"));
+        assertEquals(20, unitRepository.findByPlayerIdAndSectorIsNull(dto.getId()).stream()
+                .filter(unit -> unit.getClasses().isEmpty())
+                .count());
+
+        preparationService.resetPlacement(account.getId(), board.getId());
+        assertNull(gameCharacterService.getCharacter(dto.getId()).orElseThrow().getSector());
+        assertTrue(playerService.findById(dto.getId()).orElseThrow().getBuildings().stream()
+                .allMatch(placedBuilding -> placedBuilding.getSector() == null));
+        assertTrue(unitRepository.findByPlayerId(dto.getId()).stream()
+                .allMatch(unit -> unit.getSector() == null && unit.getClasses().isEmpty()));
+    }
+
+    @Test
     @DisplayName("Le démarrage refuse un joueur sans compte relié")
     void startRefusesUnlinkedPlayer() {
         String boardName = "Préparation " + UUID.randomUUID();

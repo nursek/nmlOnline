@@ -132,6 +132,75 @@
           </section>
         }
 
+        @if (placedCharacter() || placedBuildings().length > 0 || placedUnitGroups().length > 0) {
+          <section class="prep-block placed-block">
+            <h3><mat-icon>inventory_2</mat-icon> Placement actuel</h3>
+            <p class="muted">
+              Tant que la partie n'a pas démarré, retirez un élément pour le replacer autrement.
+            </p>
+            <div class="placed-list">
+              @if (placedCharacter(); as character) {
+                <div class="inline placed-row">
+                  <mat-icon>person</mat-icon>
+                  <span class="placed-label">{{ character.name }}</span>
+                  <span class="placed-meta">secteur #{{ character.sectorNumber }}</span>
+                  <button
+                    mat-stroked-button
+                    color="warn"
+                    (click)="unplaceCharacter()"
+                    [disabled]="saving()"
+                  >
+                    <mat-icon>undo</mat-icon>
+                    Retirer
+                  </button>
+                </div>
+              }
+              @for (building of placedBuildings(); track building.id) {
+                <div class="inline placed-row">
+                  <mat-icon>account_balance</mat-icon>
+                  <span class="placed-label">{{ building.displayName }}</span>
+                  <span class="placed-meta">secteur #{{ building.sectorNumber }}</span>
+                  <button
+                    mat-stroked-button
+                    color="warn"
+                    (click)="unplaceBuilding(building)"
+                    [disabled]="saving()"
+                  >
+                    <mat-icon>undo</mat-icon>
+                    Retirer
+                  </button>
+                </div>
+              }
+              @for (group of placedUnitGroups(); track group.key) {
+                <div class="inline placed-row">
+                  <mat-icon>military_tech</mat-icon>
+                  <span class="placed-label">{{ group.count }} × {{ group.label }}</span>
+                  <span class="placed-meta">secteur #{{ group.sectorNumber }}</span>
+                  <button
+                    mat-stroked-button
+                    color="warn"
+                    (click)="unplaceUnitGroup(group)"
+                    [disabled]="saving()"
+                  >
+                    <mat-icon>undo</mat-icon>
+                    Retirer
+                  </button>
+                </div>
+              }
+            </div>
+            <button
+              mat-stroked-button
+              color="warn"
+              class="reset-all"
+              (click)="resetPlacement()"
+              [disabled]="saving()"
+            >
+              <mat-icon>restart_alt</mat-icon>
+              Tout annuler
+            </button>
+          </section>
+        }
+
         @if (ready()) {
           <p class="ready-text">
             Tout est placé. En attente du démarrage de la partie par l'organisateur.

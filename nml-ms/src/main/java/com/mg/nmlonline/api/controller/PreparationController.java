@@ -49,6 +49,34 @@ public class PreparationController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/character")
+    public ResponseEntity<Void> unplaceCharacter(HttpServletRequest httpRequest) {
+        preparationService.unplaceCharacter(userId(httpRequest), boardId(httpRequest));
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/buildings/{buildingId}")
+    public ResponseEntity<Void> unplaceBuilding(@PathVariable Long buildingId,
+                                                HttpServletRequest httpRequest) {
+        preparationService.unplaceBuilding(userId(httpRequest), boardId(httpRequest), buildingId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/units/undo")
+    public ResponseEntity<Void> unplaceUnits(
+            @Valid @RequestBody DistributeUnitsRequestDto request,
+            HttpServletRequest httpRequest) {
+        preparationService.unplaceUnits(userId(httpRequest), boardId(httpRequest),
+                request.sectorNumber(), request.quantity(), request.classes());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset")
+    public ResponseEntity<Void> resetPlacement(HttpServletRequest httpRequest) {
+        preparationService.resetPlacement(userId(httpRequest), boardId(httpRequest));
+        return ResponseEntity.noContent().build();
+    }
+
     private Long userId(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         if (userId == null) {
