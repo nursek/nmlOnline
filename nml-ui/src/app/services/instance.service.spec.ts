@@ -97,6 +97,11 @@ describe('InstanceService (partie sélectionnée et en-tête X-Board-Id)', () =>
     const unscoped = http.expectOne(`${environment.apiBaseUrl}/instances`);
     expect(unscoped.request.headers.get('X-Board-Id')).toBeNull();
     unscoped.flush([]);
+
+    client.put('/api/admin/instances/3/admins/6', {}).subscribe();
+    const adminCall = http.expectOne('/api/admin/instances/3/admins/6');
+    expect(adminCall.request.headers.get('X-Board-Id')).toBe('42');
+    adminCall.flush({});
     http.verify();
   });
 

@@ -94,14 +94,22 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/instances/{boardId}/admins/{userId}")
-    public ResponseEntity<Void> grantBoardAdmin(@PathVariable Long boardId, @PathVariable Long userId) {
+    public ResponseEntity<Void> grantBoardAdmin(@PathVariable Long boardId, @PathVariable Long userId,
+                                                HttpServletRequest request) {
+        if (!boardId.equals(boardId(request))) {
+            return ResponseEntity.status(403).build();
+        }
         adminService.grantBoardAdmin(boardId, userId);
         return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/instances/{boardId}/admins/{userId}")
-    public ResponseEntity<Void> revokeBoardAdmin(@PathVariable Long boardId, @PathVariable Long userId) {
+    public ResponseEntity<Void> revokeBoardAdmin(@PathVariable Long boardId, @PathVariable Long userId,
+                                                 HttpServletRequest request) {
+        if (!boardId.equals(boardId(request))) {
+            return ResponseEntity.status(403).build();
+        }
         adminService.revokeBoardAdmin(boardId, userId);
         return ResponseEntity.noContent().build();
     }

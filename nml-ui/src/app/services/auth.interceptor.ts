@@ -52,11 +52,16 @@ function isAuthRequest(url: string): boolean {
 
 /** Lu en sessionStorage : évite une dépendance circulaire avec HttpClient. */
 function addInstanceToRequest(req: HttpRequest<unknown>): HttpRequest<unknown> {
-  if (!req.url.startsWith('/api/') || req.url.includes('/instances')) {
+  if (!req.url.startsWith('/api/') || isInstanceList(req.url)) {
     return req;
   }
   const instanceId = sessionStorage.getItem('instanceId');
   return instanceId ? req.clone({ setHeaders: { 'X-Board-Id': instanceId } }) : req;
+}
+
+// Seule la liste /api/instances est hors partie : /api/admin/instances/{id}/... reste scopé.
+function isInstanceList(url: string): boolean {
+  return url.split('?')[0] === '/api/instances';
 }
 
 function addTokenToRequest(req: HttpRequest<unknown>, token: string): HttpRequest<unknown> {

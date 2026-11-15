@@ -119,6 +119,14 @@ class GameSetupApiTest {
         }
         board = boardService.saveBoard(board, boardName);
 
+        String otherBoardName = "API rôles autre " + UUID.randomUUID();
+        Board otherBoard = new Board();
+        otherBoard.setName(otherBoardName);
+        for (int number = 1; number <= 3; number++) {
+            otherBoard.addSector(new Sector(number, "Secteur " + number));
+        }
+        otherBoard = boardService.saveBoard(otherBoard, otherBoardName);
+
         User admin = userRepository.findByUsername(TestDataInitializer.ADMIN);
         User playerUser = userRepository.findByUsername(TestDataInitializer.USER_1);
         User mjUser = userRepository.findByUsername(TestDataInitializer.USER_2);
@@ -144,6 +152,11 @@ class GameSetupApiTest {
                         .header("Authorization", "Bearer " + adminToken)
                         .header("X-Board-Id", board.getId().toString()))
                 .andExpect(status().isConflict());
+
+        mockMvc.perform(put("/api/admin/instances/" + otherBoard.getId() + "/admins/" + mjUser.getId())
+                        .header("Authorization", "Bearer " + adminToken)
+                        .header("X-Board-Id", board.getId().toString()))
+                .andExpect(status().isForbidden());
 
         mockMvc.perform(put("/api/admin/instances/" + board.getId() + "/admins/" + mjUser.getId())
                         .header("Authorization", "Bearer " + adminToken)
