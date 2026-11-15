@@ -1,0 +1,311 @@
+@if (currentTurn() === 0) {
+  <mat-card class="prep-card">
+    <mat-card-content>
+      <div class="prep-head">
+        <div>
+          <p class="eyebrow">Tour 0</p>
+          <h2>Préparation</h2>
+          <p class="hint">
+            Lisez les <a routerLink="/regles">règles</a>, discutez avec vos voisins, puis placez vos
+            bâtiments, votre personnage et vos 100 unités sur vos territoires.
+          </p>
+          <p class="sectors">{{ playerSectorLabel() }}</p>
+        </div>
+        @if (playerReady()) {
+          <span class="ready"><mat-icon>check_circle</mat-icon> Prêt</span>
+        }
+      </div>
+
+      <div class="prep-progress">
+        <span class="prep-step" [class.done]="placedCharacter() !== null">
+          <mat-icon>{{
+            placedCharacter() !== null ? 'check_circle' : 'radio_button_unchecked'
+          }}</mat-icon>
+          Personnage
+        </span>
+        <span class="prep-step" [class.done]="placedBuildings().length === buildingsTotal()">
+          <mat-icon>
+            {{
+              placedBuildings().length === buildingsTotal()
+                ? 'check_circle'
+                : 'radio_button_unchecked'
+            }}
+          </mat-icon>
+          Bâtiments {{ placedBuildings().length }}/{{ buildingsTotal() }}
+        </span>
+        <span
+          class="prep-step"
+          [class.done]="unitStats().total > 0 && unitStats().classified === unitStats().total"
+        >
+          <mat-icon>
+            {{
+              unitStats().total > 0 && unitStats().classified === unitStats().total
+                ? 'check_circle'
+                : 'radio_button_unchecked'
+            }}
+          </mat-icon>
+          Unités {{ unitStats().classified }}/{{ unitStats().total }}
+        </span>
+        <span class="prep-step" [class.done]="sectorNumbers().length > 0">
+          <mat-icon>
+            {{ sectorNumbers().length > 0 ? 'check_circle' : 'radio_button_unchecked' }}
+          </mat-icon>
+          Secteurs {{ sectorNumbers().length }}
+        </span>
+      </div>
+
+      @if (sectorNumbers().length === 0) {
+        <p class="warn">
+          L'organisateur ne vous a pas encore attribué de secteur de départ : impossible de placer
+          vos éléments pour l'instant.
+        </p>
+      }
+
+      <div class="prep-grid">
+        @if (sectorDetails().length > 0) {
+          <section class="prep-block sectors-block">
+            <h3><mat-icon>map</mat-icon> Mes secteurs</h3>
+            <div class="sector-list">
+              @for (detail of sectorDetails(); track detail.number) {
+                <div class="sector-row">
+                  <span class="sector-number">#{{ detail.number }}</span>
+                  <div class="sector-main">
+                    <span class="sector-name">{{ detail.name }}</span>
+                    <span class="sector-meta"
+                      >{{ detail.incomeLabel }} · {{ detail.resource }}</span
+                    >
+                    <span class="sector-neighbors">
+                      @if (detail.adjacentOwners.length > 0) {
+                        Voisins : {{ detail.adjacentOwners.join(', ') }}
+                      } @else {
+                        Aucun joueur adjacent
+                      }
+                    </span>
+                  </div>
+                  <span class="sector-contents">
+                    {{ detail.buildings }} bât. · {{ detail.units }} unités
+                    @if (detail.character) {
+                      · personnage
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        @if (characterUnplaced()) {
+          <section class="prep-block">
+            <h3><mat-icon>person</mat-icon> Personnage</h3>
+            <p class="muted">{{ character()?.name }} attend un secteur.</p>
+            <div class="inline">
+              <mat-form-field appearance="outline">
+                <mat-label>Secteur</mat-label>
+                <mat-select
+                  [value]="characterSector()"
+                  (selectionChange)="characterSector.set($event.value)"
+                >
+                  @for (number of sectorNumbers(); track number) {
+                    <mat-option [value]="number">{{ sectorLabel(number) }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <button
+                mat-flat-button
+                color="primary"
+                (click)="placeCharacter()"
+                [disabled]="saving() || characterSector() === null"
+              >
+                Placer
+              </button>
+            </div>
+          </section>
+        }
+
+        @if (unplacedBuildings().length > 0) {
+          <section class="prep-block">
+            <h3><mat-icon>account_balance</mat-icon> Bâtiments</h3>
+            @for (building of unplacedBuildings(); track building.id) {
+              <div class="inline building-row">
+                <span class="building-name">{{ building.displayName }}</span>
+                <mat-form-field appearance="outline">
+                  <mat-label>Secteur</mat-label>
+                  <mat-select
+                    [value]="buildingSector(building)"
+                    (selectionChange)="setBuildingSector(building, $event.value)"
+                  >
+                    @for (number of sectorNumbers(); track number) {
+                      <mat-option [value]="number">{{ sectorLabel(number) }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <button
+                  mat-stroked-button
+                  (click)="placeBuilding(building)"
+                  [disabled]="saving() || buildingSector(building) === null"
+                >
+                  Placer
+                </button>
+              </div>
+            }
+          </section>
+        }
+
+        @if (unclassifiedUnits().length > 0) {
+          <section class="prep-block units-block">
+            <h3>
+              <mat-icon>military_tech</mat-icon>
+              Unités à répartir ({{ unclassifiedUnits().length }})
+            </h3>
+            <p class="muted">
+              Choisissez un secteur, une quantité et une classe, puis répétez l'opération pour poser
+              plusieurs lots. Il reste {{ unclassifiedUnits().length }} unité(s) à répartir ; celles
+              qui ne le sont pas au démarrage seront classées en LÉGER.
+            </p>
+            <div class="inline">
+              <mat-form-field appearance="outline">
+                <mat-label>Secteur</mat-label>
+                <mat-select [value]="unitSector()" (selectionChange)="unitSector.set($event.value)">
+                  @for (number of sectorNumbers(); track number) {
+                    <mat-option [value]="number">{{ sectorLabel(number) }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="qty">
+                <mat-label>Quantité</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  min="1"
+                  [max]="unclassifiedUnits().length"
+                  [value]="unitQuantity()"
+                  (input)="unitQuantity.set(+$any($event.target).value || 1)"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Classe</mat-label>
+                <mat-select [value]="unitClass()" (selectionChange)="unitClass.set($event.value)">
+                  @for (unitClass of unitClasses(); track unitClass.name) {
+                    <mat-option [value]="unitClass.name">{{ unitClass.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <button
+                mat-flat-button
+                color="primary"
+                (click)="distributeUnits()"
+                [disabled]="saving() || unitSector() === null"
+              >
+                Répartir ce lot
+              </button>
+            </div>
+          </section>
+        }
+
+        @if (placedCharacter() || placedBuildings().length > 0 || placedUnitGroups().length > 0) {
+          <section class="prep-block placed-block">
+            <h3><mat-icon>inventory_2</mat-icon> Placement actuel</h3>
+            <p class="muted">
+              Tant que la partie n'a pas démarré, retirez un élément pour le replacer autrement.
+            </p>
+            <div class="placed-list">
+              @if (placedCharacter(); as character) {
+                <div class="inline placed-row">
+                  <mat-icon>person</mat-icon>
+                  <span class="placed-label">{{ character.name }}</span>
+                  <span class="placed-meta">secteur #{{ character.sectorNumber }}</span>
+                  <button
+                    mat-stroked-button
+                    color="warn"
+                    (click)="unplaceCharacter()"
+                    [disabled]="saving()"
+                  >
+                    <mat-icon>undo</mat-icon>
+                    Retirer
+                  </button>
+                </div>
+              }
+              @for (building of placedBuildings(); track building.id) {
+                <div class="inline placed-row">
+                  <mat-icon>account_balance</mat-icon>
+                  <span class="placed-label">{{ building.displayName }}</span>
+                  <span class="placed-meta">secteur #{{ building.sectorNumber }}</span>
+                  <button
+                    mat-stroked-button
+                    color="warn"
+                    (click)="unplaceBuilding(building)"
+                    [disabled]="saving()"
+                  >
+                    <mat-icon>undo</mat-icon>
+                    Retirer
+                  </button>
+                </div>
+              }
+              @for (group of placedUnitGroups(); track group.key) {
+                <div class="inline placed-row">
+                  <mat-icon>military_tech</mat-icon>
+                  <span class="placed-label">{{ group.count }} × {{ group.label }}</span>
+                  <span class="placed-meta">secteur #{{ group.sectorNumber }}</span>
+                  <button
+                    mat-stroked-button
+                    color="warn"
+                    (click)="unplaceUnitGroup(group)"
+                    [disabled]="saving()"
+                  >
+                    <mat-icon>undo</mat-icon>
+                    Retirer
+                  </button>
+                </div>
+              }
+            </div>
+            <button
+              mat-stroked-button
+              color="warn"
+              class="reset-all"
+              (click)="resetPlacement()"
+              [disabled]="saving()"
+            >
+              <mat-icon>restart_alt</mat-icon>
+              Tout annuler
+            </button>
+          </section>
+        }
+
+        <section class="prep-block validation-block">
+          <h3><mat-icon>verified</mat-icon> Validation</h3>
+          @if (playerReady()) {
+            <p class="muted">
+              Vous êtes prêt. L'organisateur peut démarrer ; toute modification du placement
+              annulera ce statut.
+            </p>
+            <button mat-stroked-button (click)="unmarkReady()" [disabled]="saving()">
+              <mat-icon>undo</mat-icon>
+              Annuler « prêt »
+            </button>
+          } @else {
+            <p class="muted">
+              Déclarez-vous prêt quand votre placement est terminé : l'organisateur verra votre
+              statut.
+            </p>
+            @if (remainingLabel(); as remaining) {
+              <p class="warn">{{ remaining }}</p>
+            }
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="markReady()"
+              [disabled]="saving() || sectorNumbers().length === 0"
+            >
+              <mat-icon>check</mat-icon>
+              Je suis prêt
+            </button>
+          }
+        </section>
+
+        @if (!playerReady() && ready()) {
+          <p class="ready-text">Tout est placé. Déclarez-vous prêt ci-dessus.</p>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+}

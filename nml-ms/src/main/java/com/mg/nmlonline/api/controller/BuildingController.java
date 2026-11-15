@@ -79,7 +79,8 @@ public class BuildingController {
         if (userId == null) return ResponseEntity.status(401).build();
         if (!authorizationService.isPlayerOwner(userId, playerId)) return ResponseEntity.status(403).build();
 
-        if (buildingService.reconstructHeadquartersSameLocation(playerId)) {
+        if (buildingService.reconstructHeadquartersSameLocation(playerId,
+                (Long) request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE))) {
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.badRequest().build();

@@ -50,6 +50,17 @@ public class ExchangeOfferService {
     }
 
     public ExchangeOfferDto createOffer(Long userId, Long boardId, CreateExchangeOfferRequestDto request) {
+        return createOffer(userId, boardId, request, true);
+    }
+
+    /** Scénario de démo : peut créer une offre avant le tour 2 sans ouvrir le garde-fou joueur. */
+    ExchangeOfferDto createOfferForScenario(Long userId, Long boardId,
+                                            CreateExchangeOfferRequestDto request) {
+        return createOffer(userId, boardId, request, false);
+    }
+
+    private ExchangeOfferDto createOffer(Long userId, Long boardId,
+                                         CreateExchangeOfferRequestDto request, boolean enforceTurn) {
         if (request == null || request.receiverPlayerId() == null) {
             throw new IllegalArgumentException("Destinataire manquant");
         }
@@ -58,6 +69,9 @@ public class ExchangeOfferService {
         }
 
         int turn = turnService.getCurrentTurn(boardId);
+        if (enforceTurn && turn < 2) {
+            throw new IllegalStateException("Les échanges sont ouverts à partir du tour 2");
+        }
         // Purge avant comptage : une offre expirée ne doit plus consommer un emplacement.
         exchangeOfferRepository.expirePendingOffers(boardId, ExchangeOfferStatus.PENDING,
                 ExchangeOfferStatus.EXPIRED, turn);
@@ -146,8 +160,8 @@ public class ExchangeOfferService {
         }
     }
 
-    public ExchangeOfferDto acceptOffer(Long userId, Long offerId) {
-        ExchangeOffer offer = lockOffer(offerId);
+    public ExchangeOfferDto acceptOffer(Long userId, Long boardId, Long offerId) {
+        ExchangeOffer offer = lockOffer(offerId, boardId);
         int turn = turnService.getCurrentTurn(offer.getBoardId());
         ensurePending(offer, turn);
 
@@ -189,8 +203,8 @@ public class ExchangeOfferService {
         return toDto(offer, sender.getName(), receiver.getName());
     }
 
-    public ExchangeOfferDto declineOffer(Long userId, Long offerId) {
-        ExchangeOffer offer = lockOffer(offerId);
+    public ExchangeOfferDto declineOffer(Long userId, Long boardId, Long offerId) {
+        ExchangeOffer offer = lockOffer(offerId, boardId);
         int turn = turnService.getCurrentTurn(offer.getBoardId());
         ensurePending(offer, turn);
 
@@ -205,8 +219,8 @@ public class ExchangeOfferService {
         return toDto(offer, nameOf(offer.getSenderPlayerId()), receiver.getName());
     }
 
-    public ExchangeOfferDto cancelOffer(Long userId, Long offerId) {
-        ExchangeOffer offer = lockOffer(offerId);
+    public ExchangeOfferDto cancelOffer(Long userId, Long boardId, Long offerId) {
+        ExchangeOffer offer = lockOffer(offerId, boardId);
         int turn = turnService.getCurrentTurn(offer.getBoardId());
         ensurePending(offer, turn);
 
@@ -221,9 +235,13 @@ public class ExchangeOfferService {
         return toDto(offer, sender.getName(), nameOf(offer.getReceiverPlayerId()));
     }
 
-    private ExchangeOffer lockOffer(Long offerId) {
-        return exchangeOfferRepository.findByIdForUpdate(offerId)
+    private ExchangeOffer lockOffer(Long offerId, Long boardId) {
+        ExchangeOffer offer = exchangeOfferRepository.findByIdForUpdate(offerId)
                 .orElseThrow(() -> new IllegalArgumentException("Offre introuvable : " + offerId));
+        if (!offer.getBoardId().equals(boardId)) {
+            throw new SecurityException("Cette offre n'appartient pas à la partie sélectionnée");
+        }
+        return offer;
     }
 
     private Player lockPlayer(Long playerId) {

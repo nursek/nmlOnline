@@ -100,6 +100,9 @@ public class TurnService {
             if (board.isFinished()) {
                 throw new IllegalStateException("Partie terminée : aucune résolution de tour");
             }
+            if (board.isPreparation()) {
+                throw new IllegalStateException("Partie en préparation : démarrez-la avant de résoudre un tour");
+            }
             int turnEnding = board.getCurrentTurn();
 
             // Avant les captures : le revenu du tour revient à son propriétaire pendant le tour.

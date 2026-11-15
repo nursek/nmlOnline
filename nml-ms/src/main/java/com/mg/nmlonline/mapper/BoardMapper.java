@@ -27,6 +27,7 @@ public class BoardMapper {
         board.setName(dto.getName());
         board.setMapImageUrl(dto.getMapImageUrl());
         board.setSvgOverlayUrl(dto.getSvgOverlayUrl());
+        board.setPresetKey(dto.getPresetKey());
 
         if (dto.getSectors() != null) {
             for (Map.Entry<Integer, SectorDto> entry : dto.getSectors().entrySet()) {
@@ -48,6 +49,7 @@ public class BoardMapper {
         dto.setName(board.getName());
         dto.setMapImageUrl(board.getMapImageUrl());
         dto.setSvgOverlayUrl(board.getSvgOverlayUrl());
+        dto.setPresetKey(board.getPresetKey());
 
         if (board.getAllSectors() != null) {
             Map<Integer, SectorDto> sectorsMap = board.getAllSectors().stream()
@@ -72,6 +74,7 @@ public class BoardMapper {
         dto.setName(board.getName());
         dto.setMapImageUrl(board.getMapImageUrl());
         dto.setSvgOverlayUrl(board.getSvgOverlayUrl());
+        dto.setPresetKey(board.getPresetKey());
 
         if (board.getAllSectors() != null) {
             Map<Integer, SectorDto> sectorsMap = board.getAllSectors().stream()

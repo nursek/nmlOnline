@@ -720,6 +720,28 @@ button[disabled] mat-spinner {
   }
 }
 
+.prep-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+
+  p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+
+  a {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}
+
 .game-over-card {
   @include shared.card;
   border: 1.5px solid color-mix(in srgb, var(--sun) 45%, var(--line));
@@ -757,4 +779,3 @@ button[disabled] mat-spinner {
   gap: 8px;
   margin-top: 12px;
 }
-

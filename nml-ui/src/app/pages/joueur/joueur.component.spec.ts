@@ -5,6 +5,8 @@ import { JoueurComponent } from './joueur.component';
 import { reserveVehicleGroups } from './joueur.helpers';
 import { PlayerService } from '../../services/player.service';
 import { PlayerActionsService } from '../../services/player-actions.service';
+import { ActiveBoardService } from '../../services/active-board.service';
+import { PlayerDirectoryService } from '../../services/player-directory.service';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
 import { Vehicle, Sector } from '../../models';
@@ -124,6 +126,8 @@ describe('JoueurComponent — déploiement véhicule', () => {
           },
         },
         { provide: ApiService, useValue: {} },
+        { provide: ActiveBoardService, useValue: { sectors: () => [], board: () => null } },
+        { provide: PlayerDirectoryService, useValue: { players: () => [] } },
       ],
     })
       .overrideComponent(JoueurComponent, {

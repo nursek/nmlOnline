@@ -30,6 +30,8 @@ public class SpaForwardController {
             "/regles/**",
             "/login",
             "/login/**",
+            "/register",
+            "/register/**",
             "/admin",
             "/admin/**",
             "/not-found",

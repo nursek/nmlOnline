@@ -54,7 +54,7 @@ public class BankExchangeController {
                                                         HttpServletRequest request) {
         Long userId = getAuthenticatedUserId(request);
         if (userId == null) return ResponseEntity.status(401).build();
-        return ResponseEntity.ok(exchangeOfferService.acceptOffer(userId, offerId));
+        return ResponseEntity.ok(exchangeOfferService.acceptOffer(userId, boardId(request), offerId));
     }
 
     @PostMapping("/{offerId}/decline")
@@ -62,7 +62,7 @@ public class BankExchangeController {
                                                          HttpServletRequest request) {
         Long userId = getAuthenticatedUserId(request);
         if (userId == null) return ResponseEntity.status(401).build();
-        return ResponseEntity.ok(exchangeOfferService.declineOffer(userId, offerId));
+        return ResponseEntity.ok(exchangeOfferService.declineOffer(userId, boardId(request), offerId));
     }
 
     @PostMapping("/{offerId}/cancel")
@@ -70,6 +70,6 @@ public class BankExchangeController {
                                                         HttpServletRequest request) {
         Long userId = getAuthenticatedUserId(request);
         if (userId == null) return ResponseEntity.status(401).build();
-        return ResponseEntity.ok(exchangeOfferService.cancelOffer(userId, offerId));
+        return ResponseEntity.ok(exchangeOfferService.cancelOffer(userId, boardId(request), offerId));
     }
 }

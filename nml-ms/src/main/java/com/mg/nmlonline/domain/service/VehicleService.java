@@ -213,6 +213,7 @@ public class VehicleService {
     @Transactional
     public VehicleDto setCrew(Long userId, Long vehicleId, Long pilotId, List<Long> passengerIds,
                              Long boardId) {
+        requireTurnOpen(boardId);
         // Verrou joueur AVANT véhicule : l'insert player_actions pose un KEY SHARE sur players.
         Player player = playerRepository.findByUserIdAndBoardIdForUpdate(userId, boardId)
                 .orElseThrow(() -> new EntityNotFoundException("Joueur introuvable pour userId : " + userId));

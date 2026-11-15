@@ -30,19 +30,22 @@ public class BuildingService {
     private final TurnService turnService;
     private final BuildingMapper buildingMapper;
     private final PlayerActionService playerActionService;
+    private final TurnLock turnLock;
 
     public BuildingService(BuildingRepository buildingRepository,
                            PlayerRepository playerRepository,
                            BoardService boardService,
                            TurnService turnService,
                            BuildingMapper buildingMapper,
-                           PlayerActionService playerActionService) {
+                           PlayerActionService playerActionService,
+                           TurnLock turnLock) {
         this.buildingRepository = buildingRepository;
         this.playerRepository = playerRepository;
         this.boardService = boardService;
         this.turnService = turnService;
         this.buildingMapper = buildingMapper;
         this.playerActionService = playerActionService;
+        this.turnLock = turnLock;
     }
 
     public Optional<Building> findById(Long buildingId) {
@@ -80,9 +83,12 @@ public class BuildingService {
                 .orElse(false);
     }
 
-    public boolean reconstructHeadquartersSameLocation(Long playerId) {
+    public boolean reconstructHeadquartersSameLocation(Long playerId, Long boardId) {
         Player player = playerRepository.findByIdForUpdate(playerId).orElse(null);
         if (player == null) return false;
+        if (!boardId.equals(player.getBoardId())) {
+            throw new SecurityException("Ce joueur n'appartient pas à la partie sélectionnée");
+        }
 
         // QG relu après le verrou joueur : un double appel concurrent ne paie pas deux fois.
         Optional<Headquarters> hqOpt = getHeadquarters(playerId);
@@ -226,6 +232,7 @@ public class BuildingService {
     }
 
     public boolean moveBuilding(Long buildingId, Long boardId, int newSectorNumber) {
+        requireTurnOpen(boardId);
         Building building = buildingRepository.findById(buildingId).orElse(null);
         if (building == null) {
             throw new IllegalArgumentException("Bâtiment introuvable : " + buildingId);
@@ -320,6 +327,13 @@ public class BuildingService {
         return playerRepository.findById(playerId)
                 .map(player -> player.getStats().getMoney())
                 .orElse(null);
+    }
+
+    private void requireTurnOpen(Long boardId) {
+        if (turnLock.isLocked(boardId)) {
+            throw new IllegalStateException(
+                    "La résolution du tour est en cours — réessayez après la fin du tour");
+        }
     }
 
     public record CaptureResult(double money, List<PlayerResource> resources) {}

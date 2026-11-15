@@ -44,6 +44,7 @@ public class PlayerMapper {
                 ? player.getEliminationCause().name() : null);
         dto.setEliminatedTurn(player.getEliminatedTurn());
         dto.setEliminatedByPlayerId(player.getEliminatedByPlayerId());
+        dto.setPreparationReady(player.isPreparationReady());
 
         if (player.getStats() != null) {
             PlayerStatsDto statsDto = getPlayerStatsDto(player);

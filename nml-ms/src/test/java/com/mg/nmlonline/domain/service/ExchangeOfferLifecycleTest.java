@@ -57,7 +57,7 @@ class ExchangeOfferLifecycleTest {
 
         try {
             assertThrows(IllegalStateException.class,
-                    () -> exchangeOfferService.acceptOffer(receiver.getUserId(), offer.getId()));
+                    () -> exchangeOfferService.acceptOffer(receiver.getUserId(), boardId(), offer.getId()));
             assertEquals(ExchangeOfferStatus.EXPIRED,
                     exchangeOfferRepository.findById(offer.getId()).orElseThrow().getStatus());
         } finally {

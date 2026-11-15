@@ -1,5 +1,6 @@
 package com.mg.nmlonline.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import java.util.List;
 
@@ -8,6 +9,10 @@ public class PlayerDto {
     private Long id;
     private String name;
     private String race;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Long userId;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String accountUsername;
     private Integer sectorCount;
     private PlayerStatsDto stats;
     private List<EquipmentStackDto> equipments;
@@ -22,4 +27,6 @@ public class PlayerDto {
     private String eliminationCause;
     private Integer eliminatedTurn;
     private Long eliminatedByPlayerId;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean preparationReady;
 }

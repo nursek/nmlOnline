@@ -23,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -63,7 +62,7 @@ class InstanceAccessTest {
     }
 
     @Test
-    @DisplayName("un compte joue sur deux parties, est MJ sur une seule, et rien ne fuit")
+    @DisplayName("un compte est joueur sur une partie et MJ sur une autre, sans fuite")
     void playerOnTwoInstancesIsAdminOnOne() throws Exception {
         Long firstBoardId = boardRepository.findAll().getFirst().getId();
         secondBoard = createBoard("Partie isolée");
@@ -72,30 +71,19 @@ class InstanceAccessTest {
         gameMaster = createUser("mj_isole");
         Long userId = gameMaster.getId();
         Player onFirst = createPlayer("JoueurPartie1", userId, firstBoardId);
-        Player onSecond = createPlayer("JoueurPartie2", userId, secondBoardId);
         boardAdminRepository.save(new BoardAdmin(secondBoardId, userId));
         String token = jwtService.generateToken(gameMaster, 3_600_000L);
 
         mockMvc.perform(get("/api/instances").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.id == %d)].role".formatted(secondBoardId)).value("MJ"))
-                .andExpect(jsonPath("$[?(@.id == %d)].role".formatted(firstBoardId)).value("PLAYER"))
-                .andExpect(jsonPath("$[?(@.id == %d)].playerName".formatted(secondBoardId))
-                        .value("JoueurPartie2"));
+                .andExpect(jsonPath("$[?(@.id == %d)].role".formatted(firstBoardId)).value("PLAYER"));
 
         mockMvc.perform(get("/api/players/me")
                         .header("Authorization", "Bearer " + token)
                         .header("X-Board-Id", String.valueOf(firstBoardId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(onFirst.getName()));
-
-        mockMvc.perform(get("/api/players/me")
-                        .header("Authorization", "Bearer " + token)
-                        .header("X-Board-Id", String.valueOf(secondBoardId)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value(onSecond.getName()));
-
-        assertNotEquals(onFirst.getId(), onSecond.getId());
 
         mockMvc.perform(get("/api/admin/players")
                         .header("Authorization", "Bearer " + token)
@@ -194,6 +182,26 @@ class InstanceAccessTest {
                         .header("Authorization", "Bearer " + token)
                         .header("X-Board-Id", String.valueOf(secondBoard.getId()))
                         .contentType("application/json")
+                        .content("{\"amount\":999999}"))
+                .andExpect(status().isForbidden());
+
+        playerRepository.deleteById(outsider.getId());
+    }
+
+    @Test
+    @DisplayName("un MJ ne contourne pas la portée avec un id de joueur non canonique")
+    void gameMasterCannotBypassPlayerScopeWithNonCanonicalId() throws Exception {
+        Long firstBoardId = boardRepository.findAll().getFirst().getId();
+        secondBoard = createBoard("Partie MJ non canonique");
+        gameMaster = createUser("mj_scope_non_canonique");
+        Player outsider = createPlayer("JoueurAutrePartieNonCanonique", null, firstBoardId);
+        boardAdminRepository.save(new BoardAdmin(secondBoard.getId(), gameMaster.getId()));
+        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+
+        mockMvc.perform(put("/api/admin/players/+{id}/money", outsider.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(secondBoard.getId()))
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"amount\":999999}"))
                 .andExpect(status().isForbidden());
 

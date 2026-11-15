@@ -21,13 +21,16 @@ public class SecurityConfig {
     private final CorsConfigurationSource corsConfigurationSource;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final BoardScopeFilter boardScopeFilter;
+    private final PreparationPhaseFilter preparationPhaseFilter;
 
     public SecurityConfig(CorsConfigurationSource corsConfigurationSource,
                           JwtAuthenticationFilter jwtAuthenticationFilter,
-                          BoardScopeFilter boardScopeFilter) {
+                          BoardScopeFilter boardScopeFilter,
+                          PreparationPhaseFilter preparationPhaseFilter) {
         this.corsConfigurationSource = corsConfigurationSource;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.boardScopeFilter = boardScopeFilter;
+        this.preparationPhaseFilter = preparationPhaseFilter;
     }
 
     @Bean
@@ -44,7 +47,8 @@ public class SecurityConfig {
                         "/api/login",
                         "/api/register",
                         "/api/auth/refresh",
-                        "/api/auth/logout"
+                        "/api/auth/logout",
+                        "/api/auth/registration-mode"
                 ).permitAll()
                 .requestMatchers(
                         "/",
@@ -74,6 +78,7 @@ public class SecurityConfig {
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterAfter(boardScopeFilter, JwtAuthenticationFilter.class);
+        http.addFilterAfter(preparationPhaseFilter, BoardScopeFilter.class);
 
         // API stateless JWT (bearer header, pas de session) : CSRF conservé hors /api/**.
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"));

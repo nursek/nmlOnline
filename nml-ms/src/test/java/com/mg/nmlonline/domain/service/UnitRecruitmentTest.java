@@ -251,6 +251,23 @@ class UnitRecruitmentTest {
     }
 
     @Test
+    @DisplayName("Résolution en cours : équipement d'une unité refusé")
+    void equipmentClosedDuringResolution() {
+        Player player = fundedPlayer(10000.0);
+        Board board = board();
+        setTurn(board, 2);
+        UnitDto bought = unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()).getFirst();
+
+        turnLock.tryAcquire(board.getId());
+        try {
+            assertThrows(IllegalStateException.class, () -> unitService.assignEquipment(
+                    bought.getId().longValue(), player.getUserId(), "Épée", player.getBoardId()));
+        } finally {
+            turnLock.release(board.getId());
+        }
+    }
+
+    @Test
     @DisplayName("Annuler un achat libère le quota du tour (catalogue inclus)")
     void undoBuyFreesQuota() {
         Player player = fundedPlayer(100000.0);

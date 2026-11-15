@@ -89,6 +89,7 @@ public class UnitService {
     }
 
     public Unit assignEquipment(Long unitId, Long userId, String equipmentName, Long boardId) {
+        requireTurnOpen(boardId);
         Player player = requirePlayerByUserIdForUpdate(userId, boardId);
         Board board = boardService.getBoardById(player.getBoardId())
                 .orElseThrow(() -> new IllegalStateException("Aucun plateau disponible."));
@@ -120,6 +121,7 @@ public class UnitService {
     }
 
     public Unit removeEquipment(Long unitId, Long userId, String equipmentName, Long boardId) {
+        requireTurnOpen(boardId);
         Player player = requirePlayerByUserIdForUpdate(userId, boardId);
         Board board = boardService.getBoardById(player.getBoardId())
                 .orElseThrow(() -> new IllegalStateException("Aucun plateau disponible."));
