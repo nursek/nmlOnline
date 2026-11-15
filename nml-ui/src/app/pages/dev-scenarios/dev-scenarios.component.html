@@ -196,6 +196,54 @@
 
     <section class="scenario-section">
       <header class="section-head">
+        <mat-icon>emoji_events</mat-icon>
+        <div>
+          <h2>Fin de partie</h2>
+          <p>Termine la partie avec un seul survivant et prépare la dernière édition.</p>
+        </div>
+      </header>
+
+      <div class="scenario-grid">
+        <article class="scenario-card feature-card elimination">
+          <div class="card-head">
+            <span class="card-icon"><mat-icon>emoji_events</mat-icon></span>
+            <div class="card-title">
+              <h3>Fin de partie — 1 survivant</h3>
+              <span class="card-meta">nursek champion</span>
+            </div>
+            <span class="badge">Fin de partie</span>
+          </div>
+          <p class="card-desc">
+            Élimine tous les autres joueurs, termine le tour courant et crée le brouillon de la
+            dernière édition de la Brigade des Morts. À lancer sur une démo où nursek est encore en
+            vie.
+          </p>
+          <ul class="observations">
+            <li>Podium, bannière et verrouillage immédiats</li>
+            <li>Brouillon final dans /admin/journal, puis /journal après publication</li>
+            <li>One-shot : redémarrer le backend (H2) pour rejouer</li>
+          </ul>
+          <div class="card-actions">
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="onSeedEndGame()"
+              [disabled]="seeding()"
+            >
+              @if (pendingAction() === 'END_GAME') {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>play_circle</mat-icon>
+              }
+              Seeder
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="scenario-section">
+      <header class="section-head">
         <mat-icon>event_repeat</mat-icon>
         <div>
           <h2>Tours</h2>

@@ -85,6 +85,16 @@ export class DevScenarioService {
     );
   }
 
+  async seedEndGame(): Promise<void> {
+    await this.seed(
+      () => this.api.adminSeedEndGame(),
+      'Erreur lors du seeding de la fin de partie',
+    );
+    this.activeBoard.reload();
+    this.playerDirectory.reload();
+    this.turnRef.reload();
+  }
+
   async seedCombatScenario(code: string): Promise<void> {
     await this.seed(
       () => this.api.adminSeedCombatScenario(code),

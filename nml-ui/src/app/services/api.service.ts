@@ -464,6 +464,10 @@ export class ApiService {
     return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/play-demo-turns`, {});
   }
 
+  adminSeedEndGame(): Observable<ScenarioSummary> {
+    return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/seed-end-game`, {});
+  }
+
   adminNavigateToTurn(turn: number): Observable<{ currentTurn: number }> {
     return this.http.post<{ currentTurn: number }>(`${this.baseUrl}/admin/dev/turn/${turn}`, {});
   }

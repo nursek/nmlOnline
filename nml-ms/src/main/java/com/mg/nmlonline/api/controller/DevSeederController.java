@@ -4,6 +4,7 @@ import com.mg.nmlonline.api.dto.CombatScenarioDto;
 import com.mg.nmlonline.api.dto.ExchangeScenarioSummaryDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.domain.service.DemoTurnsSeeder;
+import com.mg.nmlonline.domain.service.EndGameScenarioSeeder;
 import com.mg.nmlonline.domain.service.ExchangeScenarioSeeder;
 import com.mg.nmlonline.domain.service.FeatureScenarioSeeder;
 import com.mg.nmlonline.domain.service.TurnResolutionScenarioSeeder;
@@ -33,17 +34,20 @@ public class DevSeederController {
     private final ExchangeScenarioSeeder exchangeScenarioSeeder;
     private final FeatureScenarioSeeder featureScenarioSeeder;
     private final DemoTurnsSeeder demoTurnsSeeder;
+    private final EndGameScenarioSeeder endGameScenarioSeeder;
     private final TurnService turnService;
 
     public DevSeederController(TurnResolutionScenarioSeeder scenarioSeeder,
                                ExchangeScenarioSeeder exchangeScenarioSeeder,
                                FeatureScenarioSeeder featureScenarioSeeder,
                                DemoTurnsSeeder demoTurnsSeeder,
+                               EndGameScenarioSeeder endGameScenarioSeeder,
                                TurnService turnService) {
         this.scenarioSeeder = scenarioSeeder;
         this.exchangeScenarioSeeder = exchangeScenarioSeeder;
         this.featureScenarioSeeder = featureScenarioSeeder;
         this.demoTurnsSeeder = demoTurnsSeeder;
+        this.endGameScenarioSeeder = endGameScenarioSeeder;
         this.turnService = turnService;
     }
 
@@ -106,5 +110,11 @@ public class DevSeederController {
     @PostMapping("/play-demo-turns")
     public ResponseEntity<ScenarioSummaryDto> playDemoTurns(HttpServletRequest request) {
         return ResponseEntity.ok(demoTurnsSeeder.playDemoTurns(boardId(request)));
+    }
+
+    /** Dev-only : termine la partie avec un seul survivant et crée la dernière édition. */
+    @PostMapping("/seed-end-game")
+    public ResponseEntity<ScenarioSummaryDto> seedEndGame(HttpServletRequest request) {
+        return ResponseEntity.ok(endGameScenarioSeeder.seedEndGame(boardId(request)));
     }
 }

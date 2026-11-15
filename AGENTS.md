@@ -113,7 +113,8 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   Session de l'orchestrateur en mémoire, JVM unique, perdue au redémarrage.
 - **Scénarios dev** : `TurnResolutionScenarioSeeder.resetScenarioArena` supprime les
   `EliminationEvent`/`GazetteIssue` du board ; sinon le podium et l'archive de démo gardent des
-  fantômes.
+  fantômes. `POST /api/admin/dev/seed-end-game` termine la partie avec `nursek` survivant et crée
+  le brouillon final (one-shot).
 - **Démarrage** : ordre imposé par `@Order` — `DemoDataResetter` 0, `CsvDataLoader` 1,
   `PlayerStartupImporter` 2, `TestDataInitializer` 100. Un runner sans ordre casse les imports
   (le catalogue CSV n'est pas encore chargé quand les joueurs sont lus).
