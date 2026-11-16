@@ -1,4 +1,4 @@
-name: CD — Build & Push Docker Image 2
+name: CD — Build & Push Docker Image
 on:
   push:
     branches:
@@ -15,9 +15,15 @@ env:
   IMAGE_NAME: nursek/nmlonline
 
 jobs:
-  # ponytail: no test job here — ci.yml already gates PRs into master
+  tests:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   build-and-push:
+    needs: tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     permissions:
       contents: read

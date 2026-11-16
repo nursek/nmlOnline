@@ -10,7 +10,9 @@ public class JwtSecretValidator {
 
     private static final Set<String> COMPROMISED = Set.of(
             "test-secret-key-for-ci-at-least-32-chars-long",
-            "test-pepper-value-for-ci-tests-only");
+            "test-pepper-value-for-ci-tests-only",
+            "ci-jwt-secret-rotated-2026-not-for-production",
+            "ci-pepper-rotated-2026");
 
     public JwtSecretValidator(@Value("${jwt.secret}") String secret,
                               @Value("${jwt.pepper}") String pepper) {

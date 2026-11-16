@@ -447,10 +447,7 @@
                   <div class="panel-body">
                     <span class="sector-meta">
                       {{ sf.sector.income ?? 0 | number: '1.0-0' }} ₡/tour
-                      @if (sf.sector.stats) {
-                        · +{{ sf.sector.stats.defenseBonus }} déf ·
-                        {{ sf.sector.stats.resourceProduction }} production
-                      }
+
                     </span>
 
                     @if (

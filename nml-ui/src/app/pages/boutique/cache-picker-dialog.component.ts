@@ -26,14 +26,15 @@ export interface CachePickerDialogResult {
 
     <mat-dialog-content>
       <p class="hint">
-        {{ data.totalQuantity }} équipement(s) à ranger : choisissez la cache d'armes qui les reçoit.
+        {{ data.totalQuantity }} équipement(s) à ranger : choisissez la cache d'armes qui les
+        reçoit.
       </p>
 
       <mat-radio-group class="caches" [value]="selected()" (change)="selected.set($event.value)">
         @for (cache of data.caches; track cache.id; let index = $index) {
           <mat-radio-button [value]="cache.id" [disabled]="!canHost(cache)">
-            Cache {{ index + 1 }} — {{ sectorLabel(cache) }} · {{ cache.availableCapacity }} place(s)
-            libre(s)
+            Cache {{ index + 1 }} — {{ sectorLabel(cache) }} ·
+            {{ cache.availableCapacity }} place(s) libre(s)
           </mat-radio-button>
         }
       </mat-radio-group>
@@ -48,7 +49,12 @@ export interface CachePickerDialogResult {
 
     <mat-dialog-actions align="end">
       <button mat-button (click)="cancel()">Annuler</button>
-      <button mat-raised-button color="primary" [disabled]="selected() === null" (click)="confirm()">
+      <button
+        mat-raised-button
+        color="primary"
+        [disabled]="selected() === null"
+        (click)="confirm()"
+      >
         Choisir
       </button>
     </mat-dialog-actions>

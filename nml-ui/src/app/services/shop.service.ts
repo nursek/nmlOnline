@@ -72,16 +72,24 @@ export class ShopService {
       : undefined,
   );
 
-  readonly equipments = computed(() => this.equipmentsRef.value()?.content ?? []);
+  readonly equipments = computed(
+    () => (this.equipmentsRef.hasValue() ? this.equipmentsRef.value() : undefined)?.content ?? [],
+  );
   readonly equipmentsLoading = computed(
     () => this._error() === null && this.equipmentsRef.isLoading(),
   );
-  readonly vehicleTypes = computed(() => this.vehicleTypesRef.value() ?? []);
+  readonly vehicleTypes = computed(
+    () => (this.vehicleTypesRef.hasValue() ? this.vehicleTypesRef.value() : undefined) ?? [],
+  );
   readonly vehicleTypesLoading = computed(
     () => this._error() === null && this.vehicleTypesRef.isLoading(),
   );
   readonly unitCatalog = computed(
-    () => this.unitCatalogRef.value() ?? { classes: [], entries: [] },
+    () =>
+      (this.unitCatalogRef.hasValue() ? this.unitCatalogRef.value() : undefined) ?? {
+        classes: [],
+        entries: [],
+      },
   );
   readonly unitCatalogLoading = computed(
     () => this._error() === null && this.unitCatalogRef.isLoading(),

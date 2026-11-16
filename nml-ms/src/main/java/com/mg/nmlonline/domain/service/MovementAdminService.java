@@ -89,7 +89,7 @@ public class MovementAdminService {
             Board board = boardRepository.findById(boardId)
                     .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
             harvestAutoCollector.collectRemainingMoney(board, turn, HarvestAutoCollector.ownersBySector(board));
-            reserveUnitPlacer.placeAllAtHeadquarters();
+            reserveUnitPlacer.placeAllAtHeadquarters(boardId);
             MovementResolutionResult result = movementService.resolveAllMovements(turn, board);
             Function<Long, String> names = resolveNames(collectPlayerIds(result));
             return movementMapper.toResolutionDto(result, turn, names);
@@ -107,7 +107,7 @@ public class MovementAdminService {
             Board board = boardRepository.findById(boardId)
                     .orElseThrow(() -> new IllegalStateException("Plateau " + boardId + " introuvable"));
             // Même placement qu'à l'application : l'aperçu doit refléter la défense réelle du QG.
-            reserveUnitPlacer.placeAllAtHeadquarters();
+            reserveUnitPlacer.placeAllAtHeadquarters(boardId);
             MovementResolutionResult result = movementService.resolveAllMovements(turn, board);
             Function<Long, String> names = resolveNames(collectPlayerIds(result));
             // Construire le DTO AVANT le rollback : après, les entités seraient détachées.

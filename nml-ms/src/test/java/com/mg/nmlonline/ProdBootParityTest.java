@@ -47,9 +47,8 @@ class ProdBootParityTest {
 
     @DynamicPropertySource
     static void prodConfiguration(DynamicPropertyRegistry registry) {
-        registry.add("jwt.secret", () -> "ci-jwt-secret-rotated-2026-not-for-production");
-        registry.add("jwt.pepper", () -> "ci-pepper-rotated-2026");
         registry.add("app.admin.password", () -> "test-admin-password");
+        registry.add("app.demo.password", () -> "test-demo-password");
         // Peuple unités/bâtiments/personnages : sans ça le test d'endpoint ne prouve rien.
         registry.add("app.import-demo-data", () -> "true");
     }

@@ -128,7 +128,7 @@ export class CarteComponent {
   private readonly playerService = inject(PlayerService);
   private readonly vehicleImages = inject(VehicleImageService);
 
-  readonly isAdmin = this.auth.isAdmin;
+  readonly isAdmin = this.auth.canAdmin;
   readonly reserveUnits = this.playerService.reserveUnits;
   readonly deployableReserveUnits = computed(() =>
     this.reserveUnits().filter((unit) => unit.classes.length > 0),
@@ -168,7 +168,7 @@ export class CarteComponent {
   private readonly svgTextRef = httpResource.text(() => this.svgOverlayUrl() ?? undefined);
 
   readonly svgContent = computed<SafeHtml | string | null>(() => {
-    const text = this.svgTextRef.value();
+    const text = this.svgTextRef.hasValue() ? this.svgTextRef.value() : undefined;
     if (!text) return null;
     // Defense-in-depth: on ne bypass que si l'URL est same-origin (chemin relatif en "/").
     // Sinon on renvoie la string brute — Angular sanitize lui-même au binding [innerHTML].
@@ -195,7 +195,9 @@ export class CarteComponent {
       ? { url: `${environment.apiBaseUrl}/boards/${boardId}/sector-notes` }
       : undefined;
   });
-  readonly sectorNotes = computed(() => this.sectorNotesRef.value() ?? {});
+  readonly sectorNotes = computed(
+    () => (this.sectorNotesRef.hasValue() ? this.sectorNotesRef.value() : undefined) ?? {},
+  );
   readonly savedNote = computed(() => {
     const sectorNumber = this.selectedSector()?.number;
     return sectorNumber == null ? '' : (this.sectorNotes()[sectorNumber] ?? '');
@@ -313,15 +315,28 @@ export class CarteComponent {
       const enterHandler = () => this.onSectorHover(sectorNumber, path as SVGElement);
       const leaveHandler = () => this.onSectorLeave(sectorNumber, path as SVGElement);
 
-      path.addEventListener('click', clickHandler);
-      path.addEventListener('mouseenter', enterHandler);
-      path.addEventListener('mouseleave', leaveHandler);
+      const keyHandler = (event: Event) => {
+        const key = (event as KeyboardEvent).key;
+        if (key !== 'Enter' && key !== ' ') return;
+        event.preventDefault();
+        clickHandler(event);
+      };
+      path.setAttribute('tabindex', '0');
+      path.setAttribute('role', 'button');
+      path.setAttribute('aria-label', `Secteur ${sectorNumber}`);
 
-      this.eventCleanupFns.push(() => {
-        path.removeEventListener('click', clickHandler);
-        path.removeEventListener('mouseenter', enterHandler);
-        path.removeEventListener('mouseleave', leaveHandler);
-      });
+      const listeners: [string, (event: Event) => void][] = [
+        ['click', clickHandler],
+        ['keydown', keyHandler],
+        ['mouseenter', enterHandler],
+        ['mouseleave', leaveHandler],
+        ['focus', enterHandler],
+        ['blur', leaveHandler],
+      ];
+      listeners.forEach(([type, handler]) => path.addEventListener(type, handler));
+      this.eventCleanupFns.push(() =>
+        listeners.forEach(([type, handler]) => path.removeEventListener(type, handler)),
+      );
     });
   }
 

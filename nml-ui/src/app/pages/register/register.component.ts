@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -53,7 +53,6 @@ import { ThemeToggleComponent } from '../../shared/theme-toggle/theme-toggle.com
 export class RegisterComponent {
   private readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
-  private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
   readonly loading = this.auth.loading;
@@ -114,10 +113,6 @@ export class RegisterComponent {
         password: this.password(),
         inviteCode: this.mode()?.inviteRequired ? this.inviteCode().trim() : undefined,
       });
-      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-      if (returnUrl && returnUrl.startsWith('/')) {
-        await this.router.navigateByUrl(returnUrl);
-      }
     } catch {
       // AuthService a déjà posé le message d'erreur.
     }

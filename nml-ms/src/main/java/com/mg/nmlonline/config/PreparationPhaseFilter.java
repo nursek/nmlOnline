@@ -48,7 +48,7 @@ public class PreparationPhaseFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        String path = request.getRequestURI();
+        String path = RequestPaths.decoded(request);
         String method = request.getMethod();
         if (!path.startsWith("/api/")
                 || "GET".equals(method) || "HEAD".equals(method) || "OPTIONS".equals(method)) {

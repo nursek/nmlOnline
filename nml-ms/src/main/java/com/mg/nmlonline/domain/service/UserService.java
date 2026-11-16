@@ -45,14 +45,6 @@ public class UserService {
         return userRepo.findById(userId);
     }
 
-    public boolean checkPassword(String raw, String hashed) {
-        if (encoder.matches(applyPepper(raw), hashed)) {
-            return true;
-        }
-        // Rétro-compat : anciens hashes sans pepper (pré-refactor), tant que non re-hashés.
-        return encoder.matches(raw, hashed);
-    }
-
     /**
      * Re-hashe et persiste avec pepper si le hash stocké est un legacy sans pepper qui matche.
      * À supprimer une fois tous les comptes legacy re-hashés.
@@ -61,6 +53,8 @@ public class UserService {
         if (user == null) {
             // Utilisateur inconnu : comparer quand même à un hash factice pour un temps de réponse constant (anti-énumération).
             encoder.matches(applyPepper(raw), DUMMY_HASH);
+            // Second calcul : un compte existant en fait deux (repli legacy), l'écart de durée trahirait son existence.
+            encoder.matches(raw, DUMMY_HASH);
             return false;
         }
         String hashed = user.getPassword();

@@ -330,7 +330,9 @@ export class BoutiqueComponent {
         () => this.shop.checkoutEquipments(choice.cacheId),
         () => ({
           title: 'Équipements achetés !',
-          lines: snapshot.map((item) => `${item.quantity} × ${this.equipmentLabel(item.equipment)}`),
+          lines: snapshot.map(
+            (item) => `${item.quantity} × ${this.equipmentLabel(item.equipment)}`,
+          ),
           totalCost: snapshot.reduce((s, i) => s + i.equipment.cost * i.quantity, 0),
         }),
       );

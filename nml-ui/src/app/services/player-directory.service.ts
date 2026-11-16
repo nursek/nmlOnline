@@ -20,12 +20,14 @@ export class PlayerDirectoryService {
       : undefined,
   );
 
-  readonly players = computed(() => this.playersRef.value()?.content ?? []);
+  readonly players = computed(
+    () => (this.playersRef.hasValue() ? this.playersRef.value() : undefined)?.content ?? [],
+  );
   readonly colorMap = computed(() => assignPlayerColors(this.players()));
   readonly loading = computed(() => this.playersRef.isLoading());
   readonly error = computed(() => this.playersRef.error());
   readonly truncated = computed(() => {
-    const page = this.playersRef.value();
+    const page = this.playersRef.hasValue() ? this.playersRef.value() : undefined;
     return !!page && page.content.length < (page.totalElements ?? page.content.length);
   });
 

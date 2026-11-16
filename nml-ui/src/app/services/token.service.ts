@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { catchError, filter, finalize, switchMap, take, timeout } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { finalize, map, shareReplay, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { RefreshResponse } from '../models';
 
@@ -17,9 +17,7 @@ export class TokenService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  // État du refresh - partagé entre toutes les requêtes de cette instance
-  private isRefreshing = false;
-  private readonly refreshTokenSubject = new BehaviorSubject<string | null>(null);
+  private refresh$: Observable<string> | null = null;
 
   private readonly REFRESH_TIMEOUT_MS = 10_000;
 
@@ -72,7 +70,6 @@ export class TokenService {
     sessionStorage.removeItem('instanceId');
     sessionStorage.removeItem('instanceRole');
     this.removeRememberMe();
-    this.resetRefreshState();
   }
 
   /** Drapeau non secret : autorise une tentative de refresh cookie au prochain démarrage. */
@@ -92,65 +89,27 @@ export class TokenService {
     localStorage.removeItem('rememberMe');
   }
 
-  private resetRefreshState(): void {
-    this.isRefreshing = false;
-    this.refreshTokenSubject.next(null);
-  }
-
+  // Une seule requête de refresh à la fois : les appels concurrents partagent son résultat, succès comme échec.
   refreshToken(): Observable<string> {
-    if (this.isRefreshing) {
-      return this.waitForRefresh();
-    }
-
-    this.isRefreshing = true;
-    this.refreshTokenSubject.next(null);
-
-    return this.http
+    this.refresh$ ??= this.http
       .post<RefreshResponse>(`${this.baseUrl}/auth/refresh`, {}, { withCredentials: true })
       .pipe(
         timeout(this.REFRESH_TIMEOUT_MS),
-        switchMap((response) => {
-          if (response.valid && response.token) {
-            this.setAccessToken(response.token);
-
-            if (response.id && response.name) {
-              this.setUser({ id: response.id, username: response.name, role: response.role });
-            }
-
-            // Notifier les requêtes en attente
-            this.refreshTokenSubject.next(response.token);
-
-            return of(response.token);
-          } else {
+        map((response) => {
+          if (!response.valid || !response.token) {
             this.clearAuth();
-            return throwError(() => new Error('Invalid refresh token'));
+            throw new Error('Invalid refresh token');
           }
+          this.setAccessToken(response.token);
+          if (response.id && response.name) {
+            this.setUser({ id: response.id, username: response.name, role: response.role });
+          }
+          return response.token;
         }),
-        catchError((error) => {
-          this.clearAuth();
-          return throwError(() => error);
-        }),
-        finalize(() => {
-          // Toujours réinitialiser l'état
-          this.isRefreshing = false;
-        }),
+        finalize(() => (this.refresh$ = null)),
+        shareReplay(1),
       );
-  }
-
-  private waitForRefresh(): Observable<string> {
-    return this.refreshTokenSubject.pipe(
-      filter((token): token is string => token !== null),
-      take(1),
-      timeout(this.REFRESH_TIMEOUT_MS),
-      catchError(() => {
-        // Timeout atteint, essayer avec le token existant
-        const existingToken = this.getAccessToken();
-        if (existingToken) {
-          return of(existingToken);
-        }
-        return throwError(() => new Error('Refresh timeout'));
-      }),
-    );
+    return this.refresh$;
   }
 
   /**

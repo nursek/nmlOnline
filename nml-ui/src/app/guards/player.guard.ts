@@ -13,6 +13,6 @@ export const playerGuard: CanActivateFn = async (_route, state): Promise<boolean
   if (!auth.isAuthenticated()) {
     return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
   }
-  if (auth.isAdmin()) return router.createUrlTree(['/admin']);
+  if (auth.canAdmin()) return router.createUrlTree(['/admin']);
   return true;
 };

@@ -17,7 +17,9 @@ export class ActiveBoardService {
     this.auth.user() ? { url: `${environment.apiBaseUrl}/boards` } : undefined,
   );
 
-  readonly board = computed(() => this.boardsRef.value()?.[0] ?? null);
+  readonly board = computed(
+    () => (this.boardsRef.hasValue() ? this.boardsRef.value() : undefined)?.[0] ?? null,
+  );
   readonly sectors = computed(() => Object.values(this.board()?.sectors ?? {}));
   readonly loading = computed(() => this.boardsRef.isLoading());
   readonly error = computed(() => this.boardsRef.error());

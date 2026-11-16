@@ -130,9 +130,9 @@ class InstanceAccessTest {
     void boardsDoNotLeakPlayers() throws Exception {
         Long firstBoardId = boardRepository.findAll().getFirst().getId();
         secondBoard = createBoard("Partie étanche");
-        Player onlyOnSecond = createPlayer("JoueurEtanche", null, secondBoard.getId());
-        String token = jwtService.generateToken(
-                userRepository.findByUsername(TestDataInitializer.USER_1), 3_600_000L);
+        User reader = userRepository.findByUsername(TestDataInitializer.USER_1);
+        Player onlyOnSecond = createPlayer("JoueurEtanche", reader.getId(), secondBoard.getId());
+        String token = jwtService.generateToken(reader, 3_600_000L);
 
         mockMvc.perform(get("/api/players")
                         .header("Authorization", "Bearer " + token)
@@ -185,7 +185,28 @@ class InstanceAccessTest {
                         .content("{\"amount\":999999}"))
                 .andExpect(status().isForbidden());
 
+        // URI.create : un gabarit String serait ré-encodé (%25) puis refusé par le pare-feu, sans jamais atteindre le filtre.
+        mockMvc.perform(put(java.net.URI.create("/api/admin/%70layers/" + outsider.getId() + "/money"))
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(secondBoard.getId()))
+                        .contentType("application/json")
+                        .content("{\"amount\":999999}"))
+                .andExpect(status().isForbidden());
+
         playerRepository.deleteById(outsider.getId());
+    }
+
+    @Test
+    @DisplayName("un compte sans participation ne lit pas une partie en la nommant dans l en-tête")
+    void accountOutsideBoardCannotReadIt() throws Exception {
+        Long firstBoardId = boardRepository.findAll().getFirst().getId();
+        gameMaster = createUser("intrus_lecture");
+        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+
+        mockMvc.perform(get("/api/boards")
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(firstBoardId)))
+                .andExpect(status().isForbidden());
     }
 
     @Test

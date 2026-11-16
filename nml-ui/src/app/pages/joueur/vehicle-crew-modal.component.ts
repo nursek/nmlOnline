@@ -52,11 +52,7 @@ export interface VehicleCrewDialogResult {
       </p>
 
       <h3>Pilote</h3>
-      <mat-radio-group
-        class="pilots"
-        [value]="pilotId()"
-        (change)="selectPilot($event.value)"
-      >
+      <mat-radio-group class="pilots" [value]="pilotId()" (change)="selectPilot($event.value)">
         <mat-radio-button [value]="null">Aucun pilote</mat-radio-button>
         @for (candidate of pilots(); track candidate.id) {
           <mat-radio-button [value]="candidate.id">{{ candidate.name }}</mat-radio-button>
@@ -162,21 +158,14 @@ export class VehicleCrewModalComponent {
   readonly passengerIds = signal<ReadonlySet<number>>(
     new Set(this.data.vehicle.passengerIds ?? []),
   );
-  readonly seatsLeft = computed(
-    () => this.data.vehicle.capacity - this.passengerIds().size,
-  );
+  readonly seatsLeft = computed(() => this.data.vehicle.capacity - this.passengerIds().size);
 
   readonly pilots = computed(() =>
     pilotCandidates(this.data.sector, this.data.vehicle, this.data.playerId),
   );
 
   readonly passengers = computed(() =>
-    passengerCandidates(
-      this.data.sector,
-      this.data.vehicle,
-      this.data.playerId,
-      this.pilotId(),
-    ),
+    passengerCandidates(this.data.sector, this.data.vehicle, this.data.playerId, this.pilotId()),
   );
 
   selectPilot(pilotId: number | null): void {

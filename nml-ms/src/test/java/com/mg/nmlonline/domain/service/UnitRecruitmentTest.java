@@ -185,7 +185,9 @@ class UnitRecruitmentTest {
 
         UnitDto bought = unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId()).getFirst();
 
-        assertEquals(1, reserveUnitPlacer.placeAllAtHeadquarters());
+        assertEquals(0, reserveUnitPlacer.placeAllAtHeadquarters(player.getBoardId() + 1_000),
+                "La résolution d'une autre partie ne déploie pas ces réserves");
+        assertEquals(1, reserveUnitPlacer.placeAllAtHeadquarters(player.getBoardId()));
         assertTrue(unitService.getReserveUnitsDto(player.getUserId(), player.getBoardId()).isEmpty());
         Unit placed = entityManager.find(Unit.class, bought.getId().longValue());
         assertEquals(hqSector.getNumber(), placed.getSector().getNumber());
@@ -205,7 +207,7 @@ class UnitRecruitmentTest {
 
         unitService.buyUnitsDto(player.getUserId(), List.of(item("LARBIN", "LEGER", 1)), player.getBoardId());
 
-        assertEquals(0, reserveUnitPlacer.placeAllAtHeadquarters());
+        assertEquals(0, reserveUnitPlacer.placeAllAtHeadquarters(player.getBoardId()));
         assertFalse(unitService.getReserveUnitsDto(player.getUserId(), player.getBoardId()).isEmpty());
     }
 

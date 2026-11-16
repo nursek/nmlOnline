@@ -127,7 +127,7 @@ describe('PodiumComponent', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: { isAdmin } },
+        { provide: AuthService, useValue: { canAdmin: isAdmin } },
         { provide: InstanceService, useValue: { selectedRole } },
         { provide: PlayerDirectoryService, useValue: { colorMap: signal(new Map()) } },
         { provide: MatSnackBar, useValue: { open: jest.fn() } },

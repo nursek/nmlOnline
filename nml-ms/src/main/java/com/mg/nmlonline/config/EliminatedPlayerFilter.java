@@ -30,8 +30,8 @@ public class EliminatedPlayerFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         Object userId = request.getAttribute("userId");
         if (userId instanceof Long id && isMutation(request.getMethod())
-                && request.getRequestURI().startsWith("/api/")
-                && !request.getRequestURI().startsWith("/api/admin/")) {
+                && RequestPaths.decoded(request).startsWith("/api/")
+                && !RequestPaths.decoded(request).startsWith("/api/admin/")) {
             Object boardId = request.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
             if (!(boardId instanceof Long board)) {
                 filterChain.doFilter(request, response);

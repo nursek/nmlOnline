@@ -26,7 +26,7 @@ describe('RankingsPanelComponent — indice du MJ', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: { isAdmin: () => true } },
+        { provide: AuthService, useValue: { canAdmin: () => true } },
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);

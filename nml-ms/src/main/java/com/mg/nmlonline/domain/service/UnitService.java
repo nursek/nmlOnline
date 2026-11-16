@@ -173,6 +173,7 @@ public class UnitService {
     }
 
     public void cancelOrder(Long userId, Long orderId, Long boardId) {
+        requireTurnOpen(boardId);
         Player player = requirePlayerByUserId(userId, boardId);
         movementService.cancelOrderOrThrow(player.getId(), orderId);
     }

@@ -4,7 +4,6 @@ import com.mg.nmlonline.api.dto.BuildingDto;
 import com.mg.nmlonline.domain.model.action.PlayerActionType;
 import com.mg.nmlonline.domain.model.building.*;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
-import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.PlayerResource;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -109,28 +108,6 @@ public class BuildingService {
         return true;
     }
 
-    /** Capture du QG - entraîne la défaite du joueur. */
-    public void captureHeadquarters(Long victimPlayerId, Long capturingPlayerId, int currentTurn) {
-        Optional<Headquarters> hqOpt = getHeadquarters(victimPlayerId);
-        if (hqOpt.isEmpty()) return;
-
-        Headquarters hq = hqOpt.get();
-        hq.onCapture(capturingPlayerId, currentTurn);
-        buildingRepository.save(hq);
-        playerRepository.findById(victimPlayerId)
-                .ifPresent(victim -> victim.eliminate(
-                        EliminationCause.HEADQUARTERS_CAPTURED, currentTurn, capturingPlayerId));
-
-        List<Building> victimBuildings = buildingRepository.findByPlayerIdAndIsDestroyedFalse(victimPlayerId);
-        if (!victimBuildings.isEmpty()) {
-            for (Building building : victimBuildings) {
-                building.onCapture(capturingPlayerId, currentTurn);
-            }
-            buildingRepository.saveAll(victimBuildings);
-        }
-        // TODO implémenter une meilleure logique de transfert des ressources et équipements lors de la capture du QG. Si le joueur récupère le quartier, il récupère l'ensemble des territoires du joueur.
-    }
-
     public List<WeaponCache> getWeaponCaches(Long playerId) {
         return buildingRepository.findByPlayerIdAndBuildingTypeAndIsDestroyedFalse(playerId, BuildingType.WEAPON_CACHE).stream()
                 .filter(WeaponCache.class::isInstance)
@@ -233,6 +210,8 @@ public class BuildingService {
 
     public boolean moveBuilding(Long buildingId, Long boardId, int newSectorNumber) {
         requireTurnOpen(boardId);
+        // Verrou joueur avant de lire le bâtiment : deux déplacements simultanés passeraient tous deux canMove.
+        buildingRepository.findPlayerIdById(buildingId).ifPresent(playerRepository::findByIdForUpdate);
         Building building = buildingRepository.findById(buildingId).orElse(null);
         if (building == null) {
             throw new IllegalArgumentException("Bâtiment introuvable : " + buildingId);

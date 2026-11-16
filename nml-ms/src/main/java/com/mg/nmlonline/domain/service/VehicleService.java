@@ -88,6 +88,7 @@ public class VehicleService {
 
     @Transactional
     public List<Vehicle> buyVehicle(Long userId, String vehicleTypeName, int quantity, Long boardId) {
+        requireTurnOpen(boardId);
         if (vehicleTypeName == null || vehicleTypeName.isBlank()) {
             throw new IllegalArgumentException("Le type de véhicule est requis");
         }
@@ -122,6 +123,7 @@ public class VehicleService {
 
     @Transactional
     public List<Vehicle> buyVehiclesBatch(Long userId, List<BuyVehicleRequestDto> items, Long boardId) {
+        requireTurnOpen(boardId);
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("Le panier de véhicules est vide");
         }

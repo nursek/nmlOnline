@@ -28,7 +28,7 @@ public class MutationRateLimitFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         Object userId = request.getAttribute("userId");
         if (userId instanceof Long id && isMutation(request.getMethod())
-                && request.getRequestURI().startsWith("/api/")) {
+                && RequestPaths.decoded(request).startsWith("/api/")) {
             long now = System.currentTimeMillis();
             long[] window = windows.compute(id, (k, w) ->
                     w == null || now - w[0] >= WINDOW_MS ? new long[]{now, 1} : new long[]{w[0], w[1] + 1});

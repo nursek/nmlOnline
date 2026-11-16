@@ -27,7 +27,9 @@ export class DevScenarioService {
     }
     return { url: `${environment.apiBaseUrl}/admin/dev/seed-resolution-scenario` };
   });
-  readonly available = computed(() => this.statusRef.value()?.available ?? false);
+  readonly available = computed(
+    () => (this.statusRef.hasValue() ? this.statusRef.value() : undefined)?.available ?? false,
+  );
   readonly loading = computed(() => this.statusRef.isLoading());
 
   private readonly combatScenariosRef = httpResource<CombatScenarioInfo[]>(() => {
@@ -36,7 +38,9 @@ export class DevScenarioService {
     }
     return { url: `${environment.apiBaseUrl}/admin/dev/combat-scenarios` };
   });
-  readonly combatScenarios = computed(() => this.combatScenariosRef.value() ?? []);
+  readonly combatScenarios = computed(
+    () => (this.combatScenariosRef.hasValue() ? this.combatScenariosRef.value() : undefined) ?? [],
+  );
 
   // La démo ne se joue que depuis le tour 1 : le bouton se désactive dès qu'un tour a été résolu.
   private readonly turnRef = httpResource<{ currentTurn: number }>(() => {
@@ -45,7 +49,9 @@ export class DevScenarioService {
     }
     return { url: `${environment.apiBaseUrl}/admin/turn/current` };
   });
-  readonly demoAvailable = computed(() => this.turnRef.value()?.currentTurn === 1);
+  readonly demoAvailable = computed(
+    () => (this.turnRef.hasValue() ? this.turnRef.value() : undefined)?.currentTurn === 1,
+  );
 
   private readonly _seeding = signal(false);
   private readonly _error = signal<string | null>(null);

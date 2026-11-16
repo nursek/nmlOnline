@@ -1,7 +1,6 @@
 package com.mg.nmlonline.infrastructure.repository;
 
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
-import com.mg.nmlonline.domain.model.vehicle.VehicleType;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -16,8 +15,6 @@ import java.util.Optional;
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
     List<Vehicle> findByPlayerId(Long playerId);
-
-    List<Vehicle> findByPlayerIdAndVehicleType(Long playerId, VehicleType vehicleType);
 
     List<Vehicle> findByPlayerIdAndIsDestroyedFalse(Long playerId);
 

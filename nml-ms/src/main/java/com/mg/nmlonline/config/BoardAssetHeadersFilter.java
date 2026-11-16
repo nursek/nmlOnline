@@ -33,7 +33,7 @@ public class BoardAssetHeadersFilter extends OncePerRequestFilter {
 
     /** Le handler statique mappe le chemin décodé : on décode aussi, sinon /%62oards/** échappe au sandbox. */
     private static String decodedPath(HttpServletRequest request) {
-        String path = request.getRequestURI();
+        String path = RequestPaths.decoded(request);
         for (int i = 0; i < 2; i++) {
             try {
                 String decoded = URLDecoder.decode(path, StandardCharsets.UTF_8);

@@ -12,6 +12,7 @@ function run(current: GameInstance | null, loaded = true): Promise<unknown> {
   };
   const service = {
     selected: () => visible,
+    load: jest.fn(() => Promise.resolve([])),
     ensureLoaded: jest.fn(() => {
       visible = current;
       return Promise.resolve([]);

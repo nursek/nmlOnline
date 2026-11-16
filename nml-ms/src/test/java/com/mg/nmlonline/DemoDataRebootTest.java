@@ -74,7 +74,8 @@ class DemoDataRebootTest {
 
             User trazynUser = first.getBean(UserRepository.class).findByUsername("trazyn");
             assertNotNull(trazynUser, "l'import de démo doit créer le compte manquant");
-            assertTrue(first.getBean(UserService.class).checkPassword("trazyn", trazynUser.getPassword()));
+            assertTrue(first.getBean(UserService.class).checkAndUpgradePassword(trazynUser, "test-demo-password"),
+                    "en prod, le compte de démo porte le mot de passe configuré, jamais son nom");
             Long boardId = first.getBean(BoardRepository.class).findAll().getFirst().getId();
             first.getBean(GameStatisticRepository.class).save(new GameStatistic(boardId, "UNIT_LARBIN", 42));
             assertEquals(1, first.getBean(GameStatisticRepository.class).count());
@@ -108,9 +109,8 @@ class DemoDataRebootTest {
                         "--spring.datasource.url=" + jdbcUrl,
                         "--spring.datasource.username=postgres",
                         "--spring.datasource.password=",
-                        "--jwt.secret=ci-jwt-secret-rotated-2026-not-for-production",
-                        "--jwt.pepper=ci-pepper-rotated-2026",
                         "--app.admin.password=test-admin-password",
+                        "--app.demo.password=test-demo-password",
                         "--app.import-demo-data=true");
     }
 }

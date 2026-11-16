@@ -11,7 +11,6 @@ public interface PendingCaptureRepository extends JpaRepository<PendingCapture, 
 
     List<PendingCapture> findByBoardIdAndResolvedFalseOrderByIdAsc(Long boardId);
 
-    boolean existsByBoardIdAndSectorNumberAndTurnAndResolvedFalse(Long boardId, int sectorNumber, int turn);
 
     boolean existsByBoardIdAndSectorNumberAndResolvedFalse(Long boardId, int sectorNumber);
 }

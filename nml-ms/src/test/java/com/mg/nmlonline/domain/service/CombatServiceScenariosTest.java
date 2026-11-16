@@ -337,6 +337,20 @@ class CombatServiceScenariosTest {
     }
 
     @Test
+    @DisplayName("Duel de rupture : le QG tombe aussi quand son propriétaire est le camp « attaquant » (plus petit id)")
+    void headquartersCapturedWhateverTheCampOrder() {
+        HoldingsWorld w = seedDefenderHolding();
+        seedAttackerUnits(w.attackerId(), w.sectorNumber(), 8.0, 6);
+
+        CombatService.SectorBattleResult r = runBattle(w.defenderId(), w.attackerId(), w.sectorNumber());
+
+        assertEquals(w.attackerId(), r.winner().getId());
+        assertTrue(r.defenderHeadquartersCaptured());
+        new TransactionTemplate(txManager).executeWithoutResult(status ->
+                assertTrue(playerRepository.findById(w.defenderId()).orElseThrow().isEliminated()));
+    }
+
+    @Test
     @DisplayName("Victoire écrasante : unités→Banque→Cache→QG→personnage tombent, QG détruit ET capturé")
     void overwhelmingAttacker_killsEverything_destroyedHeadquartersStillCaptured() {
         HoldingsWorld w = seedDefenderHolding();

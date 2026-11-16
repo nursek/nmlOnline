@@ -24,8 +24,6 @@ export interface Sector {
 }
 
 export interface SectorStats {
-  defenseBonus: number;
-  resourceProduction: number;
   totalAtk?: number;
   totalPdf?: number;
   totalPdc?: number;

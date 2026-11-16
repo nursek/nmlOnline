@@ -22,7 +22,7 @@ export interface BuildingMoveDialogData {
     </h2>
 
     <mat-dialog-content>
-      @if (data.building.lastMovedTurn != null) {
+      @if ((data.building.lastMovedTurn ?? null) !== null) {
         <p class="building-info">Dernier déplacement au tour {{ data.building.lastMovedTurn }}.</p>
       }
 

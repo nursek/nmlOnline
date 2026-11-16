@@ -109,7 +109,7 @@ public class TurnService {
             harvestAutoCollector.collectRemainingMoney(board, turnEnding);
 
             // Les recrues non déployées rejoignent le QG et participent à la résolution du tour.
-            reserveUnitPlacer.placeAllAtHeadquarters();
+            reserveUnitPlacer.placeAllAtHeadquarters(boardId);
 
             // Résolution des mouvements du tour qui se termine, AVANT l'incrément.
             MovementResolutionResult result = movementService.resolveAllMovements(turnEnding, board);

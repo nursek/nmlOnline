@@ -67,7 +67,7 @@ export class ExchangeDialogComponent {
   );
 
   readonly partners = computed(() => {
-    const page = this.playersRef.value();
+    const page = this.playersRef.hasValue() ? this.playersRef.value() : undefined;
     if (!page) return [];
     return page.content
       .filter((player) => player.id !== this.data.playerId)

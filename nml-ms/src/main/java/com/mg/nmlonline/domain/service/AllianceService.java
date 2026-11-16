@@ -41,6 +41,7 @@ public class AllianceService {
     private final BuildingService buildingService;
     private final TurnService turnService;
     private final AllianceGraph allianceGraph;
+    private final TurnLock turnLock;
 
     public AllianceService(AllianceRepository allianceRepository,
                            AllianceProposalRepository proposalRepository,
@@ -48,7 +49,8 @@ public class AllianceService {
                            PlayerRepository playerRepository,
                            BuildingService buildingService,
                            TurnService turnService,
-                           AllianceGraph allianceGraph) {
+                           AllianceGraph allianceGraph,
+                           TurnLock turnLock) {
         this.allianceRepository = allianceRepository;
         this.proposalRepository = proposalRepository;
         this.announcementRepository = announcementRepository;
@@ -56,6 +58,15 @@ public class AllianceService {
         this.buildingService = buildingService;
         this.turnService = turnService;
         this.allianceGraph = allianceGraph;
+        this.turnLock = turnLock;
+    }
+
+    // Les conflits de rupture sont figés à la préparation : un changement de camp en cours de résolution ne serait jamais combattu.
+    private void requireTurnOpen(Long boardId) {
+        if (turnLock.isLocked(boardId)) {
+            throw new IllegalStateException(
+                    "La résolution du tour est en cours — réessayez après la fin du tour");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -198,6 +209,7 @@ public class AllianceService {
     }
 
     public void accept(Long userId, Long boardId, Long proposalId) {
+        requireTurnOpen(boardId);
         Player player = requirePlayer(userId, boardId);
         AllianceProposal proposal = requirePendingProposal(proposalId);
         if (!proposal.getToPlayerId().equals(player.getId())) {
@@ -258,6 +270,7 @@ public class AllianceService {
 
     /** Trahison : rupture unilatérale, possible sans QG (sinon un QG détruit piégerait le joueur dans l'alliance). */
     public void betray(Long userId, Long boardId, Long allianceId) {
+        requireTurnOpen(boardId);
         Player player = requirePlayer(userId, boardId);
         Alliance alliance = allianceRepository.findById(allianceId)
                 .orElseThrow(() -> new EntityNotFoundException("Alliance introuvable : " + allianceId));

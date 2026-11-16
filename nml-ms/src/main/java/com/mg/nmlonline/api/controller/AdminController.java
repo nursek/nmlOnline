@@ -267,7 +267,11 @@ public class AdminController {
      */
     @PostMapping("/turn/resolve/start")
     public TurnResolutionStateDto startResolution(HttpServletRequest request) {
-        TurnResolutionStateDto state = turnResolutionOrchestrator.startSession(boardId(request));
+        TurnResolutionStateDto state;
+        // Moniteur pris ici, hors transaction : celui du service se relâche avant le commit et laisserait lire un état d'avant-étape.
+        synchronized (turnResolutionOrchestrator) {
+            state = turnResolutionOrchestrator.startSession(boardId(request));
+        }
         logger.info("[ADMIN] Session pas-à-pas démarrée — tour à résoudre: {}", state.getTurnEnding());
         return state;
     }
@@ -282,7 +286,9 @@ public class AdminController {
      */
     @PostMapping("/turn/resolve/next-hop")
     public TurnResolutionStateDto advanceHop(HttpServletRequest request) {
-        return turnResolutionOrchestrator.advanceHop(boardId(request));
+        synchronized (turnResolutionOrchestrator) {
+            return turnResolutionOrchestrator.advanceHop(boardId(request));
+        }
     }
 
     /**
@@ -290,7 +296,10 @@ public class AdminController {
      */
     @PostMapping("/turn/resolve/resolve-battle")
     public ResolvedBattleDto resolveBattle(@RequestParam int conflictId, HttpServletRequest request) {
-        ResolvedBattleDto report = turnResolutionOrchestrator.resolveBattle(boardId(request), conflictId);
+        ResolvedBattleDto report;
+        synchronized (turnResolutionOrchestrator) {
+            report = turnResolutionOrchestrator.resolveBattle(boardId(request), conflictId);
+        }
         logger.info("[ADMIN] Bataille résolue au secteur {} — {} pertes attaquant, {} pertes défenseur",
                 report.getSectorNumber(), report.getAttackerCasualties(), report.getDefenderCasualties());
         return report;
@@ -300,7 +309,9 @@ public class AdminController {
     public TurnResolutionStateDto resolveElimination(@RequestParam Long victimPlayerId,
                                                      @RequestParam(required = false) Long killerPlayerId,
                                                      HttpServletRequest request) {
-        return turnResolutionOrchestrator.resolveElimination(boardId(request), victimPlayerId, killerPlayerId);
+        synchronized (turnResolutionOrchestrator) {
+            return turnResolutionOrchestrator.resolveElimination(boardId(request), victimPlayerId, killerPlayerId);
+        }
     }
 
     /**
@@ -308,7 +319,9 @@ public class AdminController {
      */
     @PostMapping("/turn/resolve/finalize")
     public TurnFinalizeResultDto finalizeResolution(HttpServletRequest request) {
-        return turnResolutionOrchestrator.finalizeTurn(boardId(request));
+        synchronized (turnResolutionOrchestrator) {
+            return turnResolutionOrchestrator.finalizeTurn(boardId(request));
+        }
     }
 
     /** Journal complet d'un tour finalisé (404 si aucun archivage pour ce tour). */

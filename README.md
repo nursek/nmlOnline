@@ -29,7 +29,6 @@ nmlOnline/
 │   ├── src/main/java/          # Java 25 source
 │   ├── src/main/resources/     # Configuration, Flyway migrations (db/migration)
 │   ├── src/test/               # Integration & unit tests
-│   ├── Dockerfile              # Multi-stage container build
 │   └── pom.xml                 # Maven build
 │
 ├── nml-ui/         # Angular 22 frontend
@@ -39,11 +38,11 @@ nmlOnline/
 │   │   ├── guards/             # Auth & admin route guards
 │   │   ├── models/             # TypeScript interfaces
 │   │   └── core/               # Constants, interceptors
-│   ├── src/environments/       # Dev & prod config
+│   ├── src/environments/       # API base URL
 │   └── angular.json
 │
 ├── pom.xml                     # Parent POM
-├── Dockerfile                  # Backend Docker image
+├── Dockerfile                  # Full-stack image (Angular build + Spring Boot)
 └── .gitignore
 ```
 
@@ -70,13 +69,13 @@ nmlOnline/
 
 - **JDK 25**
 - **Maven 3.9+** (or use the included `mvnw` wrapper)
-- **Node.js 20+** and **npm 10+**
+- **Node.js 24** (24.15+, same major as the Docker build and CI) and **npm 11+**
 - **Git**
 
 ### 1. Clone & Backend
 
 ```bash
-git clone https://github.com/YOUR_USER/nmlOnline.git
+git clone https://github.com/nursek/nmlOnline.git
 cd nmlOnline/nml-ms
 ```
 
@@ -147,6 +146,7 @@ Open **http://localhost:4200** in your browser.
 | `DATABASE_URL` | `jdbc:postgresql://db:5432/nmlonline` | PostgreSQL JDBC URL |
 | `DATABASE_USERNAME` | `nmlonline` | DB user |
 | `DATABASE_PASSWORD` | *(secret)* | DB password |
+| `ADMIN_PASSWORD` | *(secret)* | Password of the initial `admin` account |
 
 ### Optional (all environments)
 
@@ -157,6 +157,8 @@ Open **http://localhost:4200** in your browser.
 | `APP_COOKIE_SECURE` | `true` (default), `false` (dev) | Set `false` for local HTTP |
 | `APP_CORS_ALLOWED_ORIGINS` | *(empty)* | Comma-separated extra CORS origins |
 | `REGISTRATION_INVITE_CODE` | *(empty)* | Prod only: enables invitation-only registration. Empty means registrations closed. |
+| `APP_IMPORT_DEMO_DATA` | `false` in prod | Demo mode: game data is wiped and the demo boards reloaded at every boot |
+| `DEMO_PASSWORD` | *(empty)* | Password of the demo accounts. Required in prod when demo mode is on; elsewhere the password is the username |
 
 ---
 
@@ -171,9 +173,9 @@ from the entities, or Flyway from the `.sql` files), and what gets seeded.
 | **Schema built by** | Hibernate `ddl-auto=update` | Hibernate `ddl-auto=update` | **Flyway (toutes)** | **Flyway (toutes)** |
 | **Hibernate role** | writes | writes | **validates** | **validates** |
 | **Flyway** | disabled | disabled | enabled | enabled |
-| **Demo board + 5 players** | yes | yes | yes | no |
-| **Accounts created** | none | 6 (5 players + `admin`) | 3 (`testuser1/2`, `testadmin`) | `admin` only |
-| **Refresh cookie `Secure`** | `true` | `false` | `false` | `true` |
+| **Demo boards (7-player map + 6-player map)** | yes | yes | yes | no |
+| **Accounts created** | one per demo player | demo players + `admin` | 3 (`testuser1/2`, `testadmin`) | `admin` only |
+| **Refresh cookie `Secure`** | `true` | `false` | `true` | `true` |
 | **Actuator** | defaults | defaults | defaults | `health` |
 
 Since the `test` profile runs on a real PostgreSQL built by Flyway, **every integration test already
@@ -244,16 +246,15 @@ loud boot failure than a silent misconfiguration.
 - `spring.jpa.open-in-view=false` — **do not override it with `SPRING_JPA_OPEN_IN_VIEW=true`**: it hides
   lazy-loading bugs instead of fixing them. DTOs are built inside the service transaction
   (`AdminService`, `PlayerService.findAllDto`, `BoardService`…), never in a controller.
-- Refresh cookies are `Secure` (+ `HttpOnly`, `SameSite=Lax`)
-- Actuator: `/actuator/health`, `/actuator/info`, `/actuator/metrics`
+- Refresh cookies are `Secure` (+ `HttpOnly`, `SameSite=Strict`)
+- Actuator: `/actuator/health` only
 - No seed data
 
 ---
 
 ## Database Migrations (Flyway)
 
-Schema migrations are handled by **Flyway**. Flyway is enabled in the `prod` profile and in
-`ProdBootParityTest`; it stays disabled for H2 dev/test, which keep building their schema from the
+Schema migrations are handled by **Flyway**. Flyway is enabled in the `prod` and `test` profiles; it stays disabled for the H2 default/`dev` profiles, which build their schema from the
 entities via `ddl-auto`.
 
 - Migration scripts live in `nml-ms/src/main/resources/db/migration/`, named `V<n>__description.sql`.
@@ -294,7 +295,7 @@ It catches the three axes where runtimes used to differ from prod:
 | Engine — H2 vs PostgreSQL | SQL or DDL accepted by H2 but rejected by PostgreSQL |
 | Prod configuration | missing `ADMIN_PASSWORD`, `prod`-only bean failing, entity mapped outside a transaction |
 
-Run it with `./mvnw test` (~10 s). A field added to an entity without a migration fails the build
+Run it with `./mvnw clean test -Dtest=ProdBootParityTest` (~10 s). A field added to an entity without a migration fails the build
 locally, before the push.
 
 > Run `mvn clean test` rather than `mvn test`: a stale `target/classes/db/migration` keeps renamed
@@ -311,6 +312,8 @@ The root `Dockerfile` is a multi-stage build that compiles the Angular frontend,
 
 - **Non-root**: runs as the `nmlonline` user
 - **Health check**: polls `/actuator/health` every 30 seconds
+- **Profile**: `SPRING_PROFILES_ACTIVE=prod` is the image default, so a container never starts on H2 with demo accounts by accident
+- **Memory**: `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75` (override the variable to tune the JVM)
 - **Static assets**: Angular build copied to `/app/static/`, served by Spring Boot
 
 ### Build
@@ -332,7 +335,7 @@ docker run -d \
   -e DATABASE_URL="jdbc:postgresql://host.docker.internal:5432/nmlonline" \
   -e DATABASE_USERNAME="nmlonline" \
   -e DATABASE_PASSWORD="your-secure-password" \
-  -e SPRING_PROFILES_ACTIVE="prod" \
+  -e ADMIN_PASSWORD="choose-a-strong-password" \
   -e APP_COOKIE_SECURE="true" \
   -e APP_CORS_ALLOWED_ORIGINS="https://nml.yourdomain.com" \
   nml-online/backend:latest
@@ -426,15 +429,16 @@ GitHub Actions workflows live in `.github/workflows/`.
 
 ### `ci.yml` — Tests & Lint
 
-Runs on every pull request and on pushes to non-master branches:
+Runs on every pull request targeting `master`, on demand (`workflow_dispatch`) and as the first job of `cd.yml`:
 
-- Backend: `./mvnw test` + `./mvnw package -DskipTests`
+- Backend: `./mvnw -B clean verify`
 - Frontend: `npm run lint` + `npm test -- --ci --coverage` + `npm run build`
 
 ### `cd.yml` — Build & Push Docker Image
 
 Runs on pushes to `master` and version tags (`v*`):
 
+1. Runs `ci.yml`; nothing is published if a test, the lint or the build fails
 1. Builds a `linux/amd64` Docker image
 2. Pushes to `ghcr.io/nursek/nmlonline`
 3. Tags: `latest`, short commit SHA, and semver tags for releases
@@ -477,7 +481,7 @@ APP_CORS_ALLOWED_ORIGINS=https://nml.example.com,https://admin.example.com
 │         │ ◄─────────────────────── │          │
 │         │  { accessToken, id,     │          │
 │         │    name, role }          │          │
-│         │  Set-Cookie: refresh_token (HttpOnly, Secure, SameSite=Lax)
+│         │  Set-Cookie: refresh_token (HttpOnly, Secure, SameSite=Strict)
 └─────────┘                          └─────────┘
 
 ┌─────────┐  POST /api/auth/refresh  ┌─────────┐
@@ -614,7 +618,7 @@ is created; a published issue can be corrected without changing its publication 
 ```bash
 cd nml-ms
 
-# All 708 backend tests on embedded PostgreSQL + Flyway (no install, no Docker) — ~8 min
+# All backend tests on embedded PostgreSQL + Flyway (no install, no Docker) — ~8 min
 ./mvnw clean test
 
 # Fast iteration while developing
@@ -633,7 +637,7 @@ buys detection before the push: a migration forgotten behind a new entity field 
 here rather than in CI after the push, or worse, at the next production boot. The ~14 s PostgreSQL
 startup is paid once per JVM, so extra tests on an existing Spring context are nearly free.
 
- 708 backend tests across unit tests (domain models, game-logic services with mocked repositories) and integration tests (Spring context, security ownership). Game rules are pinned as characterization tests: economy (purchases, sale multipliers), units (experience thresholds, injury, equipment formulas), buildings (cooldowns, capture, vampirisation), vehicles (pilot rules, balance table), combat (deterministic phases, no-evasion scenarios) and player stats formulas. Behavior suspected to be buggy is pinned with a characterization test rather than fixed. The end-game flows are covered too: elimination order and snapshots, podium and posthumous champion, final alliance break, gazette masthead/draft/publication and the read-only game-over filter.
+The suite mixes unit tests (domain models, game-logic services with mocked repositories) and integration tests (Spring context, security ownership). Game rules are pinned as characterization tests: economy (purchases, sale multipliers), units (experience thresholds, injury, equipment formulas), buildings (cooldowns, capture, vampirisation), vehicles (pilot rules, balance table), combat (deterministic phases, no-evasion scenarios) and player stats formulas. Behavior suspected to be buggy is pinned with a characterization test rather than fixed. The end-game flows are covered too: elimination order and snapshots, podium and posthumous champion, final alliance break, gazette masthead/draft/publication and the read-only game-over filter.
 
 ### Frontend
 
@@ -668,7 +672,7 @@ src/main/java/com/mg/nmlonline/
 │   ├── controller/       # REST controllers
 │   └── dto/              # Data transfer objects
 ├── config/
-│   ├── properties/       # @ConfigurationProperties (BalanceProperties)
+│   ├── *Filter           # Board scope, game over, preparation phase, rate limit
 │   ├── SecurityConfig     # JWT filter, CORS, method security
 │   ├── CorsConfig        # Allowed origins
 │   ├── GlobalExceptionHandler  # RFC 7807 ProblemDetail
@@ -740,12 +744,14 @@ src/app/
 
 ## Security Notes
 
+The full security model, deployment checklist and reporting address are in [SECURITY.md](SECURITY.md); the system design is in [ARCHITECTURE.md](ARCHITECTURE.md).
+
 - **Passwords** are hashed with BCrypt + pepper (`JWT_PEPPER` must be the same across restarts)
 - **JWT access tokens** expire after 10 minutes, stored in `sessionStorage`
 - **Refresh tokens** are HttpOnly cookies rotated on each use, with a grace period for duplicate requests
 - **CORS** is centralized in `CorsConfig` — no `@CrossOrigin` annotations on controllers
 - **Ownership checks**: `GameCharacterController` and `BuildingController` verify the authenticated user owns the requested `playerId`
-- **Admin endpoints** (`/api/admin/**`) require the `ADMIN` role
+- **Admin endpoints** (`/api/admin/**`) require `ADMIN` or the per-game `INSTANCE_ADMIN`; platform actions require `ADMIN`
 - **Rate limiting**: login/register 5 attempts per IP (1 min block); authenticated mutations capped at 120/min per user
 - **JWT secret validation**: App fails to start if `JWT_SECRET` < 32 chars, `JWT_PEPPER` < 16 chars, or either uses a value published in this repository's history
 - **No H2 console** in any profile (removed from dev and test)

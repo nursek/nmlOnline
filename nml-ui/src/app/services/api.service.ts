@@ -13,14 +13,11 @@ import {
   TurnExport,
   ResolvedBattle,
   ScenarioSummary,
-  CombatScenarioInfo,
   Unit,
-  VehicleTypeInfo,
   BuyEquipmentItem,
   Vehicle,
   BuyVehicleBatchItem,
   BuyUnitBatchItem,
-  UnitCatalog,
   SellResourceBatchItem,
   ResourceBatchSaleResponse,
   Board,
@@ -199,10 +196,6 @@ export class ApiService {
     return this.http.post<void>(`${this.baseUrl}/admin/players/${playerId}/preparation/reset`, {});
   }
 
-  getPlayer(username: string): Observable<Player> {
-    return this.http.get<Player>(`${this.baseUrl}/players/${username}`);
-  }
-
   getCurrentPlayer(): Observable<Player> {
     return this.http.get<Player>(`${this.baseUrl}/players/me`);
   }
@@ -274,10 +267,7 @@ export class ApiService {
   }
 
   adminSaveGazette(turn: number, content: GazetteContent): Observable<GazetteAdminIssue> {
-    return this.http.put<GazetteAdminIssue>(
-      `${this.baseUrl}/admin/game/gazette/${turn}`,
-      content,
-    );
+    return this.http.put<GazetteAdminIssue>(`${this.baseUrl}/admin/game/gazette/${turn}`, content);
   }
 
   adminPublishGazette(turn: number, content: GazetteContent): Observable<GazetteAdminIssue> {
@@ -547,15 +537,6 @@ export class ApiService {
     return this.http.get<TurnExport>(`${this.baseUrl}/admin/turn-journals/${turn}`);
   }
 
-  // Scénario de test pas-à-pas (dev uniquement). En prod, le contrôleur
-  // @Profile("dev") n'est pas enregistré → ces endpoints renvoient 404 (probe
-  // servant à cacher le bouton UI côté frontend).
-  adminGetDevScenarioStatus(): Observable<{ available: boolean }> {
-    return this.http.get<{ available: boolean }>(
-      `${this.baseUrl}/admin/dev/seed-resolution-scenario`,
-    );
-  }
-
   adminSeedDevScenario(): Observable<ScenarioSummary> {
     return this.http.post<ScenarioSummary>(
       `${this.baseUrl}/admin/dev/seed-resolution-scenario`,
@@ -565,10 +546,6 @@ export class ApiService {
 
   adminSeedStandoffScenario(): Observable<ScenarioSummary> {
     return this.http.post<ScenarioSummary>(`${this.baseUrl}/admin/dev/seed-standoff-scenario`, {});
-  }
-
-  adminGetCombatScenarios(): Observable<CombatScenarioInfo[]> {
-    return this.http.get<CombatScenarioInfo[]>(`${this.baseUrl}/admin/dev/combat-scenarios`);
   }
 
   adminSeedCombatScenario(code: string): Observable<ScenarioSummary> {
@@ -608,16 +585,8 @@ export class ApiService {
     return this.http.post<{ currentTurn: number }>(`${this.baseUrl}/admin/dev/turn/${turn}`, {});
   }
 
-  getVehicleTypes(): Observable<VehicleTypeInfo[]> {
-    return this.http.get<VehicleTypeInfo[]>(`${this.baseUrl}/vehicles/types`);
-  }
-
   getPlayerVehicles(): Observable<Vehicle[]> {
     return this.http.get<Vehicle[]>(`${this.baseUrl}/vehicles/my`);
-  }
-
-  getUnitCatalog(): Observable<UnitCatalog> {
-    return this.http.get<UnitCatalog>(`${this.baseUrl}/units/catalog`);
   }
 
   getReserveUnits(): Observable<Unit[]> {

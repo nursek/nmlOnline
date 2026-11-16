@@ -20,7 +20,7 @@ describe('JournalIssueComponent', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: { isAdmin } },
+        { provide: AuthService, useValue: { canAdmin: isAdmin } },
         { provide: InstanceService, useValue: { selectedRole: signal('PLAYER') } },
       ],
     }).compileComponents();
