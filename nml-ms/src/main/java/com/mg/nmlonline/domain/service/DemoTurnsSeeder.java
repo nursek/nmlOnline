@@ -58,12 +58,12 @@ public class DemoTurnsSeeder {
     /** Équipements visés, du plus fort au plus faible ; le premier compatible avec l'unité est équipé. */
     private static final List<String> GEAR = List.of(
             "Bouclier balistique",
-            "Quantum Shielding",
-            "Dispersion Shield",
-            "Phase Shifter",
-            "Gauss Destructor",
-            "Gauss Reaper",
-            "Hyperphase Glaive");
+            "Équipement militaire complet",
+            "Bouclier anti-émeutes",
+            "Gilet pare-balles léger",
+            "Mini machine gun",
+            "Fusil d'assaut",
+            "Hache de bûcheron");
 
     /** Ordre des joueurs = ordre de soumission : le premier ordre d'un joueur le désigne camp attaquant. */
     private static final List<String> PLAYERS =

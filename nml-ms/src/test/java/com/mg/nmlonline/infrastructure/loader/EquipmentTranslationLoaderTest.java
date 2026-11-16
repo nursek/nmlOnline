@@ -30,23 +30,23 @@ class EquipmentTranslationLoaderTest {
     @Test
     @DisplayName("un fichier par race alimente displayNames, chaque libellé suivant le vrai nom technique")
     void shouldLoadTranslationsByRace() {
-        Equipment gaussBlaster = equipmentRepository.findByName("Gauss Blaster").orElseThrow();
+        Equipment gaussBlaster = equipmentRepository.findByName("Pistolet-mitrailleur").orElseThrow();
         assertEquals("Shoota Dakka-Dakka", gaussBlaster.getDisplayNames().get(PlayerRace.ORKS));
         assertEquals("Éclateur gauss", gaussBlaster.getDisplayNames().get(PlayerRace.NECRONS));
         assertEquals("L'éclateur gauss arrache la matière atome par atome à chaque salve.",
                 gaussBlaster.getDisplayDescriptions().get(PlayerRace.NECRONS));
         assertEquals(1, gaussBlaster.getDisplayDescriptions().size());
 
-        Equipment nightmareShroud = equipmentRepository.findByName("Nightmare Shroud").orElseThrow();
+        Equipment nightmareShroud = equipmentRepository.findByName("Tenue légère en fibre chauffante").orElseThrow();
         assertEquals("Linceul de cauchemars", nightmareShroud.getDisplayNames().get(PlayerRace.NECRONS));
         assertEquals("Un linceul vivant qui nourrit les cauchemars de l'adversaire.",
                 nightmareShroud.getDisplayDescriptions().get(PlayerRace.NECRONS));
 
-        Equipment phylactery = equipmentRepository.findByName("Phylactery").orElseThrow();
+        Equipment phylactery = equipmentRepository.findByName("Tenue ultra légère").orElseThrow();
         assertEquals("Rokette dorsale", phylactery.getDisplayNames().get(PlayerRace.ORKS));
         assertEquals("Spectres Canopteks", phylactery.getDisplayNames().get(PlayerRace.NECRONS));
 
-        Equipment sempiternalWeave = equipmentRepository.findByName("Sempiternal Weave").orElseThrow();
+        Equipment sempiternalWeave = equipmentRepository.findByName("Gilet pare-balles moyen").orElseThrow();
         assertEquals("Un exosquelette de métal vivant tissé sous la peau, qui se referme sur chaque impact.",
                 sempiternalWeave.getDisplayDescriptions().get(PlayerRace.NECRONS));
     }
@@ -66,7 +66,7 @@ class EquipmentTranslationLoaderTest {
                 .getDisplayNames().get(PlayerRace.NECRONS));
         assertEquals("Description Admin", equipmentRepository.findByName("Arme Admin").orElseThrow()
                 .getDisplayDescriptions().get(PlayerRace.NECRONS));
-        assertEquals("Éclateur gauss", equipmentRepository.findByName("Gauss Blaster").orElseThrow()
+        assertEquals("Éclateur gauss", equipmentRepository.findByName("Pistolet-mitrailleur").orElseThrow()
                 .getDisplayNames().get(PlayerRace.NECRONS));
     }
 }

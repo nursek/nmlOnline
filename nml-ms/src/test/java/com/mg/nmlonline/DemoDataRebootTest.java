@@ -52,7 +52,7 @@ class DemoDataRebootTest {
         String jdbcUrl = postgres.getJdbcUrl("postgres", "postgres");
 
         try (ConfigurableApplicationContext first = boot(jdbcUrl)) {
-            assertTrue(first.getBean(EquipmentRepository.class).findByName("Gauss Blaster").isPresent());
+            assertTrue(first.getBean(EquipmentRepository.class).findByName("Pistolet-mitrailleur").isPresent());
             assertEquals(2, first.getBean(BoardRepository.class).count(),
                     "la démo importe la partie principale et la carte 6 joueurs");
             Long arcsBoardId = first.getBean(BoardRepository.class).findByName("Carte 6 Joueurs (Arcs)")
@@ -82,7 +82,7 @@ class DemoDataRebootTest {
         }
 
         try (ConfigurableApplicationContext second = boot(jdbcUrl)) {
-            assertTrue(second.getBean(EquipmentRepository.class).findByName("Gauss Blaster").isPresent());
+            assertTrue(second.getBean(EquipmentRepository.class).findByName("Pistolet-mitrailleur").isPresent());
             assertTrue(second.getBean(PlayerResourceRepository.class).count() > 0);
             assertEquals(0, second.getBean(GameStatisticRepository.class).count(),
                     "Le reset démo purge les compteurs de pertes");

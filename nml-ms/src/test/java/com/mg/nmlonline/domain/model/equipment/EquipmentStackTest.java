@@ -218,7 +218,7 @@ class EquipmentStackTest {
         @DisplayName("replaceEquipmentByCategory évince le PREMIER de la catégorie à la limite")
         void shouldPinFifoEvictionByCategory() {
             Equipment blade1 = melee("Couteau");
-            Equipment blade2 = melee("Hyperphase Sword");
+            Equipment blade2 = melee("Machette");
             Equipment blade3 = melee("Katana");
             player.addEquipmentToStack(blade1, 1);
             player.addEquipmentToStack(blade2, 1);

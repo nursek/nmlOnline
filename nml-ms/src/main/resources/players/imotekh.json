@@ -26,135 +26,135 @@
   ],
   "equipments": [
     {
-      "name": "Enmitic Disintegrator Pistol",
+      "name": "Pistolet 9mm",
       "quantity": 2
     },
     {
-      "name": "Gauss Blaster",
+      "name": "Pistolet-mitrailleur",
       "quantity": 2
     },
     {
-      "name": "Tesla Carbine",
+      "name": "HK-MP7",
       "quantity": 3
     },
     {
-      "name": "Gauss Flayer",
+      "name": "Mitrailleuse",
       "quantity": 2
     },
     {
-      "name": "Gauss Reaper",
+      "name": "Fusil d'assaut",
       "quantity": 3
     },
     {
-      "name": "Gauss Destructor",
+      "name": "Mini machine gun",
       "quantity": 2
     },
     {
-      "name": "Particle Caster",
+      "name": "Fusil à pompe",
       "quantity": 2
     },
     {
-      "name": "Transdimensional Beamer",
+      "name": "Winchester",
       "quantity": 1
     },
     {
-      "name": "Particle Beamer",
+      "name": "Tromblon",
       "quantity": 1
     },
     {
-      "name": "Gauss Cannon",
+      "name": "Bombes collantes",
       "quantity": 1
     },
     {
-      "name": "Heavy Gauss Cannon",
+      "name": "Lance-roquettes",
       "quantity": 1
     },
     {
-      "name": "Enmitic Annihilator",
+      "name": "Lance-grenades",
       "quantity": 1
     },
     {
-      "name": "Synaptic Disintegrator",
+      "name": "Fusil de sniper léger",
       "quantity": 2
     },
     {
-      "name": "Particle Shredder",
+      "name": "Fusil de sniper lourd",
       "quantity": 1
     },
     {
-      "name": "Enmitic Exterminator",
+      "name": "Fusil de sniper de combat",
       "quantity": 1
     },
     {
-      "name": "Flensing Claw",
+      "name": "Poing américain",
       "quantity": 2
     },
     {
-      "name": "Voidblade",
+      "name": "Matraque télescopique",
       "quantity": 3
     },
     {
-      "name": "Hyperphase Reap-Blade",
+      "name": "Batte de métal",
       "quantity": 3
     },
     {
-      "name": "Hyperphase Sword",
+      "name": "Machette",
       "quantity": 3
     },
     {
-      "name": "Hyperphase Glaive",
+      "name": "Hache de bûcheron",
       "quantity": 3
     },
     {
-      "name": "Hyperphase Harvester",
+      "name": "Tronçonneuse",
       "quantity": 3
     },
     {
-      "name": "Monomolecular Proboscis",
+      "name": "Clé à molette",
       "quantity": 1
     },
     {
-      "name": "Rod of Covenant",
+      "name": "Pied-de-biche",
       "quantity": 1
     },
     {
-      "name": "Staff of Light",
+      "name": "Démonte-pneu",
       "quantity": 1
     },
     {
-      "name": "Tachyon Arrow",
+      "name": "Couteau de cuisine",
       "quantity": 2
     },
     {
-      "name": "Hyperphase Thresher",
+      "name": "Couteau de combat",
       "quantity": 1
     },
     {
-      "name": "Phylactery",
+      "name": "Tenue ultra légère",
       "quantity": 3
     },
     {
-      "name": "Solar Pulse",
+      "name": "Grenade lacrymogène",
       "quantity": 1
     },
     {
-      "name": "Phase Shifter",
+      "name": "Gilet pare-balles léger",
       "quantity": 3
     },
     {
-      "name": "Sempiternal Weave",
+      "name": "Gilet pare-balles moyen",
       "quantity": 5
     },
     {
-      "name": "Quantum Shielding",
+      "name": "Équipement militaire complet",
       "quantity": 4
     },
     {
-      "name": "Lightning Field",
+      "name": "Protection dorsale",
       "quantity": 2
     },
     {
-      "name": "Dispersion Shield",
+      "name": "Bouclier anti-émeutes",
       "quantity": 3
     },
     {
@@ -162,11 +162,11 @@
       "quantity": 3
     },
     {
-      "name": "Veil of Darkness",
+      "name": "Grenade assourdissante",
       "quantity": 3
     },
     {
-      "name": "Nightmare Shroud",
+      "name": "Tenue légère en fibre chauffante",
       "quantity": 2
     },
     {
@@ -227,9 +227,9 @@
           ],
           "experience": 1,
           "equipments": [
-            "Enmitic Disintegrator Pistol",
-            "Flensing Claw",
-            "Phylactery"
+            "Pistolet 9mm",
+            "Poing américain",
+            "Tenue ultra légère"
           ]
         },
         {
@@ -240,9 +240,9 @@
           ],
           "experience": 1,
           "equipments": [
-            "Gauss Blaster",
-            "Voidblade",
-            "Veil of Darkness"
+            "Pistolet-mitrailleur",
+            "Matraque télescopique",
+            "Grenade assourdissante"
           ]
         },
         {
@@ -253,10 +253,10 @@
           ],
           "experience": 3,
           "equipments": [
-            "Gauss Flayer",
-            "Hyperphase Reap-Blade",
-            "Phase Shifter",
-            "Sempiternal Weave"
+            "Mitrailleuse",
+            "Batte de métal",
+            "Gilet pare-balles léger",
+            "Gilet pare-balles moyen"
           ]
         },
         {
@@ -267,8 +267,8 @@
           ],
           "experience": 4,
           "equipments": [
-            "Synaptic Disintegrator",
-            "Tachyon Arrow",
+            "Fusil de sniper léger",
+            "Couteau de cuisine",
             "Treillis de camouflage urbain",
             "Gilet de camouflage optique"
           ]
@@ -286,11 +286,11 @@
           ],
           "experience": 6,
           "equipments": [
-            "Gauss Reaper",
-            "Hyperphase Sword",
-            "Hyperphase Reap-Blade",
-            "Sempiternal Weave",
-            "Quantum Shielding"
+            "Fusil d'assaut",
+            "Machette",
+            "Batte de métal",
+            "Gilet pare-balles moyen",
+            "Équipement militaire complet"
           ]
         },
         {
@@ -301,11 +301,11 @@
           ],
           "experience": 5,
           "equipments": [
-            "Particle Caster",
-            "Hyperphase Glaive",
-            "Hyperphase Harvester",
-            "Dispersion Shield",
-            "Lightning Field",
+            "Fusil à pompe",
+            "Hache de bûcheron",
+            "Tronçonneuse",
+            "Bouclier anti-émeutes",
+            "Protection dorsale",
             "Bouclier balistique"
           ]
         },
@@ -332,12 +332,12 @@
           ],
           "experience": 9,
           "equipments": [
-            "Gauss Destructor",
-            "Hyperphase Glaive",
-            "Hyperphase Harvester",
-            "Quantum Shielding",
-            "Sempiternal Weave",
-            "Dispersion Shield",
+            "Mini machine gun",
+            "Hache de bûcheron",
+            "Tronçonneuse",
+            "Équipement militaire complet",
+            "Gilet pare-balles moyen",
+            "Bouclier anti-émeutes",
             "Bouclier balistique"
           ]
         },
@@ -349,11 +349,11 @@
           ],
           "experience": 7,
           "equipments": [
-            "Gauss Reaper",
-            "Hyperphase Sword",
-            "Phase Shifter",
-            "Quantum Shielding",
-            "Sempiternal Weave"
+            "Fusil d'assaut",
+            "Machette",
+            "Gilet pare-balles léger",
+            "Équipement militaire complet",
+            "Gilet pare-balles moyen"
           ]
         },
         {
@@ -364,11 +364,11 @@
           ],
           "experience": 5,
           "equipments": [
-            "Tesla Carbine",
-            "Voidblade",
-            "Phylactery",
-            "Nightmare Shroud",
-            "Veil of Darkness"
+            "HK-MP7",
+            "Matraque télescopique",
+            "Tenue ultra légère",
+            "Tenue légère en fibre chauffante",
+            "Grenade assourdissante"
           ]
         }
       ]

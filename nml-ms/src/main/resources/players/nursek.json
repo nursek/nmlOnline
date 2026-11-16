@@ -34,19 +34,19 @@
   ],
   "equipments": [
     {
-      "name": "Gauss Destructor",
+      "name": "Mini machine gun",
       "quantity": 4
     },
     {
-      "name": "Sempiternal Weave",
+      "name": "Gilet pare-balles moyen",
       "quantity": 6
     },
     {
-      "name": "Quantum Shielding",
+      "name": "Équipement militaire complet",
       "quantity": 2
     },
     {
-      "name": "Dispersion Shield",
+      "name": "Bouclier anti-émeutes",
       "quantity": 4
     },
     {
@@ -54,31 +54,31 @@
       "quantity": 6
     },
     {
-      "name": "Transdimensional Beamer",
+      "name": "Winchester",
       "quantity": 2
     },
     {
-      "name": "Phylactery",
+      "name": "Tenue ultra légère",
       "quantity": 2
     },
     {
-      "name": "Gauss Flayer",
+      "name": "Mitrailleuse",
       "quantity": 1
     },
     {
-      "name": "Enmitic Disintegrator Pistol",
+      "name": "Pistolet 9mm",
       "quantity": 2
     },
     {
-      "name": "Phase Shifter",
+      "name": "Gilet pare-balles léger",
       "quantity": 10
     },
     {
-      "name": "Hyperphase Glaive",
+      "name": "Hache de bûcheron",
       "quantity": 2
     },
     {
-      "name": "Tesla Carbine",
+      "name": "HK-MP7",
       "quantity": 1
     }
   ],
@@ -103,9 +103,9 @@
           ],
           "experience": 9,
           "equipments": [
-            "Gauss Destructor",
-            "Sempiternal Weave",
-            "Quantum Shielding"
+            "Mini machine gun",
+            "Gilet pare-balles moyen",
+            "Équipement militaire complet"
           ]
         },
         {
@@ -117,10 +117,10 @@
           ],
           "experience": 9,
           "equipments": [
-            "Gauss Destructor",
-            "Hyperphase Glaive",
-            "Dispersion Shield",
-            "Quantum Shielding",
+            "Mini machine gun",
+            "Hache de bûcheron",
+            "Bouclier anti-émeutes",
+            "Équipement militaire complet",
             "Bouclier balistique",
             "Bouclier balistique"
           ]
@@ -134,8 +134,8 @@
           ],
           "experience": 11,
           "equipments": [
-            "Transdimensional Beamer",
-            "Dispersion Shield",
+            "Winchester",
+            "Bouclier anti-émeutes",
             "Bouclier balistique"
           ]
         },
@@ -148,9 +148,9 @@
           ],
           "experience": 7,
           "equipments": [
-            "Transdimensional Beamer",
-            "Sempiternal Weave",
-            "Dispersion Shield",
+            "Winchester",
+            "Gilet pare-balles moyen",
+            "Bouclier anti-émeutes",
             "Bouclier balistique"
           ]
         }

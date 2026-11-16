@@ -68,23 +68,23 @@ function vt(name: string, cost: number, basePdf: number, baseDefense: number): V
 describe('boutique.helpers — tri par défaut', () => {
   it('trie par classe (ordre du catalogue) puis catégorie (mêlée→arme à feu→défensif) puis prix', () => {
     const items = [
-      eq('Enmitic Disintegrator Pistol', 400, 'FIREARM', 'LEGER'),
-      eq('Flensing Claw', 100, 'MELEE', 'LEGER'),
-      eq('Voidblade', 200, 'MELEE', 'LEGER'),
-      eq('Phylactery', 750, 'DEFENSIVE', 'LEGER'),
-      eq('Hyperphase Glaive', 450, 'MELEE', 'MASTODONTE'),
-      eq('Hyperphase Thresher', 300, 'MELEE', 'SNIPER'),
-      eq('Gauss Cannon', 3400, 'FIREARM', 'PILOTE_DESTRUCTEUR'),
+      eq('Pistolet 9mm', 400, 'FIREARM', 'LEGER'),
+      eq('Poing américain', 100, 'MELEE', 'LEGER'),
+      eq('Matraque télescopique', 200, 'MELEE', 'LEGER'),
+      eq('Tenue ultra légère', 750, 'DEFENSIVE', 'LEGER'),
+      eq('Hache de bûcheron', 450, 'MELEE', 'MASTODONTE'),
+      eq('Couteau de combat', 300, 'MELEE', 'SNIPER'),
+      eq('Bombes collantes', 3400, 'FIREARM', 'PILOTE_DESTRUCTEUR'),
     ];
     const sorted = sortEquipments(items);
     expect(sorted.map((i) => i.name)).toEqual([
-      'Flensing Claw',
-      'Voidblade',
-      'Enmitic Disintegrator Pistol',
-      'Phylactery',
-      'Hyperphase Glaive',
-      'Hyperphase Thresher',
-      'Gauss Cannon',
+      'Poing américain',
+      'Matraque télescopique',
+      'Pistolet 9mm',
+      'Tenue ultra légère',
+      'Hache de bûcheron',
+      'Couteau de combat',
+      'Bombes collantes',
     ]);
   });
 
@@ -109,11 +109,11 @@ describe('boutique.helpers — tri par défaut', () => {
 describe('boutique.helpers — sections par catégorie', () => {
   it('ordonne mêlée → armes à feu → défensif et rejette les catégories inconnues en fin', () => {
     const groups = groupEquipmentsByCategory([
-      eq('Phylactery', 750, 'DEFENSIVE', 'LEGER'),
-      eq('Gauss Blaster', 850, 'FIREARM', 'LEGER'),
+      eq('Tenue ultra légère', 750, 'DEFENSIVE', 'LEGER'),
+      eq('Pistolet-mitrailleur', 850, 'FIREARM', 'LEGER'),
       eq('Relique', 10, 'INCONNUE', 'LEGER'),
-      eq('Flensing Claw', 100, 'MELEE', 'LEGER'),
-      eq('Quantum Shielding', 2000, 'DEFENSIVE', 'TIREUR'),
+      eq('Poing américain', 100, 'MELEE', 'LEGER'),
+      eq('Équipement militaire complet', 2000, 'DEFENSIVE', 'TIREUR'),
     ]);
 
     expect(groups.map((g) => g.key)).toEqual(['MELEE', 'FIREARM', 'DEFENSIVE', 'INCONNUE']);
@@ -125,10 +125,10 @@ describe('boutique.helpers — sections par catégorie', () => {
 describe('boutique.helpers — sections par classe', () => {
   it('groupe par classe compatible et décline chaque classe par catégorie', () => {
     const groups = groupEquipmentsByClass([
-      eq('Flensing Claw', 100, 'MELEE', 'LEGER'),
-      eq('Gauss Blaster', 850, 'FIREARM', 'LEGER'),
-      eq('Gauss Flayer', 1500, 'FIREARM', 'TIREUR'),
-      eq('Phase Shifter', 500, 'DEFENSIVE', 'TIREUR'),
+      eq('Poing américain', 100, 'MELEE', 'LEGER'),
+      eq('Pistolet-mitrailleur', 850, 'FIREARM', 'LEGER'),
+      eq('Mitrailleuse', 1500, 'FIREARM', 'TIREUR'),
+      eq('Gilet pare-balles léger', 500, 'DEFENSIVE', 'TIREUR'),
     ]);
 
     expect(groups.map((g) => g.key)).toEqual(['LEGER', 'TIREUR']);
@@ -136,40 +136,39 @@ describe('boutique.helpers — sections par classe', () => {
     expect(groups[0].label).toBe('Léger');
     expect(groups[0].categories.map((c) => c.key)).toEqual(['MELEE', 'FIREARM']);
     expect(groups[1].categories.map((c) => c.items.map((i) => i.name))).toEqual([
-      ['Gauss Flayer'],
-      ['Phase Shifter'],
+      ['Mitrailleuse'],
+      ['Gilet pare-balles léger'],
     ]);
   });
 });
 
 describe('boutique.helpers — recherche', () => {
-  const gauss = eq('Gauss Blaster', 850, 'FIREARM', 'LEGER', {
+  const pistoletMitrailleur = eq('Pistolet-mitrailleur', 850, 'FIREARM', 'LEGER', {
     displayNames: { ORKS: 'Shoota Dakka-Dakka', NECRONS: 'Éclateur gauss' },
   });
 
   it('ne matche que le libellé de la race du joueur', () => {
-    expect(matchesEquipmentSearch(gauss, 'éclateur', 'NECRONS')).toBe(true);
-    expect(matchesEquipmentSearch(gauss, 'shoota', 'NECRONS')).toBe(false);
-    expect(matchesEquipmentSearch(gauss, 'shoota', 'ORKS')).toBe(true);
+    expect(matchesEquipmentSearch(pistoletMitrailleur, 'éclateur', 'NECRONS')).toBe(true);
+    expect(matchesEquipmentSearch(pistoletMitrailleur, 'shoota', 'NECRONS')).toBe(false);
+    expect(matchesEquipmentSearch(pistoletMitrailleur, 'shoota', 'ORKS')).toBe(true);
   });
 
-  it('matche toujours le nom technique et replie dessus sans race', () => {
-    expect(matchesEquipmentSearch(gauss, 'gauss', 'NECRONS')).toBe(true);
-    expect(matchesEquipmentSearch(gauss, 'gauss', null)).toBe(true);
-    expect(matchesEquipmentSearch(gauss, 'shoota', null)).toBe(false);
+  it('sans race, la recherche porte sur le nom technique', () => {
+    expect(matchesEquipmentSearch(pistoletMitrailleur, 'mitrailleur', null)).toBe(true);
+    expect(matchesEquipmentSearch(pistoletMitrailleur, 'éclateur', null)).toBe(false);
   });
 });
 
 describe('boutique.helpers — résumés compacts', () => {
   it('résumé équipement : « Nom (Catégorie FR) : +n % Xxx. coût ₡. »', () => {
-    expect(equipmentSummary(eq('Flensing Claw', 100, 'MELEE', 'LEGER', { pdcBonus: 20 }))).toBe(
-      'Flensing Claw (Arme de corps-à-corps) : +20 % Pdc. 100 ₡.',
+    expect(equipmentSummary(eq('Poing américain', 100, 'MELEE', 'LEGER', { pdcBonus: 20 }))).toBe(
+      'Poing américain (Arme de corps-à-corps) : +20 % Pdc. 100 ₡.',
     );
     expect(
       equipmentSummary(
-        eq('Gauss Blaster', 850, 'FIREARM', 'LEGER', { pdfBonus: 150, armBonus: 25 }),
+        eq('Pistolet-mitrailleur', 850, 'FIREARM', 'LEGER', { pdfBonus: 150, armBonus: 25 }),
       ),
-    ).toBe('Gauss Blaster (Arme à feu) : +150 % Pdf ; +25 % Arm. 850 ₡.');
+    ).toBe('Pistolet-mitrailleur (Arme à feu) : +150 % Pdf ; +25 % Arm. 850 ₡.');
   });
 
   it('résumé équipement sans bonus', () => {
@@ -195,7 +194,7 @@ describe('boutique.helpers — résumés compacts', () => {
   it('résumé des modificateurs de visée sniper', () => {
     expect(
       equipmentBonusSummary(
-        eq('Particle Shredder', 1800, 'FIREARM', 'SNIPER', {
+        eq('Fusil de sniper lourd', 1800, 'FIREARM', 'SNIPER', {
           pdfBonus: 300,
           armBonus: 50,
           aimMalusReduction: 10,

@@ -75,7 +75,7 @@ class BattleTest {
     }
 
     private Equipment antiGround(double pdfBonus) {
-        Equipment equipment = new Equipment("Gauss Cannon", 100, pdfBonus, 0, 0, 0,
+        Equipment equipment = new Equipment("Bombes collantes", 100, pdfBonus, 0, 0, 0,
                 Set.of(UnitClass.PILOTE_DESTRUCTEUR), EquipmentCategory.FIREARM);
         equipment.setVehicleBonus(100);
         equipment.setVehicleBonusTarget(VehicleBonusTarget.GROUND);
@@ -525,7 +525,7 @@ class BattleTest {
             assertEquals(0.75, new Vehicle(VehicleType.HELICOPTERE, 1L).getAerialHitChance());
 
             Unit antiAir = brute();
-            Equipment heavy = new Equipment("Heavy Gauss Cannon", 100, 0, 0, 0, 0,
+            Equipment heavy = new Equipment("Lance-roquettes", 100, 0, 0, 0, 0,
                     Set.of(UnitClass.TIREUR), EquipmentCategory.FIREARM);
             heavy.setVehicleBonus(100);
             heavy.setVehicleBonusTarget(VehicleBonusTarget.AERIAL);

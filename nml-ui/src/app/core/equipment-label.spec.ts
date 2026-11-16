@@ -1,21 +1,21 @@
 import { equipmentDescription, equipmentImageCandidates, equipmentLabel } from './equipment-label';
 
 describe('equipmentLabel', () => {
-  const equipment = { name: 'Gauss Blaster', displayNames: { NECRONS: 'Éclateur gauss' } };
+  const equipment = { name: 'Pistolet-mitrailleur', displayNames: { NECRONS: 'Éclateur gauss' } };
 
   it('renvoie le libellé de la race quand il existe', () => {
     expect(equipmentLabel(equipment, 'NECRONS')).toBe('Éclateur gauss');
   });
 
   it('replie sur le nom anglais sans race ou sans traduction', () => {
-    expect(equipmentLabel(equipment, null)).toBe('Gauss Blaster');
-    expect(equipmentLabel(equipment, 'ORKS')).toBe('Gauss Blaster');
+    expect(equipmentLabel(equipment, null)).toBe('Pistolet-mitrailleur');
+    expect(equipmentLabel(equipment, 'ORKS')).toBe('Pistolet-mitrailleur');
   });
 });
 
 describe('equipmentDescription', () => {
   const equipment = {
-    name: 'Gauss Blaster',
+    name: 'Pistolet-mitrailleur',
     displayDescriptions: { NECRONS: "L'éclateur gauss arrache la matière atome par atome." },
   };
 
@@ -33,15 +33,15 @@ describe('equipmentDescription', () => {
 
 describe('equipmentImageCandidates', () => {
   it('préfixe le dossier de la race, replie sur le fichier commun', () => {
-    expect(equipmentImageCandidates({ name: 'Gauss Blaster' }, 'NECRONS')).toEqual([
-      'assets/shop/equipment/necrons/gauss-blaster.png',
-      'assets/shop/equipment/gauss-blaster.png',
+    expect(equipmentImageCandidates({ name: 'Pistolet-mitrailleur' }, 'NECRONS')).toEqual([
+      'assets/shop/equipment/necrons/pistolet-mitrailleur.png',
+      'assets/shop/equipment/pistolet-mitrailleur.png',
     ]);
   });
 
   it('sans race, uniquement le fichier commun', () => {
-    expect(equipmentImageCandidates({ name: 'Gauss Blaster' })).toEqual([
-      'assets/shop/equipment/gauss-blaster.png',
+    expect(equipmentImageCandidates({ name: 'Pistolet-mitrailleur' })).toEqual([
+      'assets/shop/equipment/pistolet-mitrailleur.png',
     ]);
   });
 });

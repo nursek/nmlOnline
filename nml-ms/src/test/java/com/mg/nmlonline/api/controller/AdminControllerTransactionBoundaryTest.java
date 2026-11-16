@@ -136,7 +136,7 @@ class AdminControllerTransactionBoundaryTest {
     void deleteEquippedEquipmentWithIncludeEquippedReturns204() throws Exception {
         Long playerId = playerRepository.findByBoardIdAndName(boardId(), "lurio").orElseThrow().getId();
         mockMvc.perform(delete("/api/admin/players/{id}/equipments", playerId)
-                        .param("name", "Tesla Carbine")
+                        .param("name", "HK-MP7")
                         .param("quantity", "1")
                         .param("includeEquipped", "true")
                         .header("Authorization", bearer(TestDataInitializer.ADMIN))

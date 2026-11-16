@@ -365,10 +365,10 @@ describe('joueur.helpers', () => {
       const groups = equipmentByClass([
         stack('Gilet pare-balles', 'DEFENSIVE', { compatibleClass: ['LEGER'] }),
         stack('Pistolet cascade', 'FIREARM', { compatibleClass: ['SNIPER'] }),
-        stack('Particle Caster', 'FIREARM', { compatibleClass: ['LEGER'], cost: 900 }),
+        stack('Fusil à pompe', 'FIREARM', { compatibleClass: ['LEGER'], cost: 900 }),
         stack('Pistolet 9mm', 'FIREARM', { compatibleClass: ['LEGER'], cost: 400 }),
-        stack('Flensing Claw', 'MELEE', { compatibleClass: ['MASTODONTE'] }),
-        stack('Hyperphase Sword', 'MELEE'),
+        stack('Poing américain', 'MELEE', { compatibleClass: ['MASTODONTE'] }),
+        stack('Machette', 'MELEE'),
       ]);
 
       expect(groups.map((g) => g.label)).toEqual(['Léger', 'Mastodonte', 'Sniper', 'Sans classe']);
@@ -381,7 +381,7 @@ describe('joueur.helpers', () => {
       ]);
       expect(groups[0].categories[0].stacks.map((s) => s.equipment.name)).toEqual([
         'Pistolet 9mm',
-        'Particle Caster',
+        'Fusil à pompe',
       ]);
 
       // Mastodonte : une seule catégorie (mêlée).

@@ -6,9 +6,9 @@ describe('slugify', () => {
   });
 
   it('supprime les accents', () => {
-    expect(slugify('Flensing Claw')).toBe('flensing-claw');
-    expect(slugify('Voidblade')).toBe('voidblade');
-    expect(slugify('Hyperphase Glaive')).toBe('hyperphase-glaive');
+    expect(slugify('Poing américain')).toBe('poing-americain');
+    expect(slugify('Matraque télescopique')).toBe('matraque-telescopique');
+    expect(slugify('Hache de bûcheron')).toBe('hache-de-bucheron');
   });
 
   it('trim les tirets en début/fin', () => {

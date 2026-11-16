@@ -70,31 +70,31 @@ public class TurnResolutionScenarioSeeder {
                             "Le surplus d'une frappe enchaîne sur la cible suivante"),
                     21, 36, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("DESTRUCTOR_VS_TANK", "Pilote destructeur vs Tank",
-                    "2 MALFRATs PILOTE_DESTRUCTEUR au Gauss Cannon attaquent un Tank piloté et 2 LARBINs.",
+                    "2 MALFRATs PILOTE_DESTRUCTEUR armés de bombes collantes attaquent un Tank piloté et 2 LARBINs.",
                     List.of("Ciblage prioritaire du Tank malgré les LARBINs exposés",
-                            "Gauss Cannon : bonus anti-véhicule ×2 puis résistance du Tank −50 %",
+                            "Bombes collantes : bonus anti-véhicule ×2 puis résistance du Tank −50 %",
                             "Le Tank endommagé répare 50 défense en fin de tour s'il survit"),
                     42, 37, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("CREW_PROTECTED", "Équipage protégé",
-                    "3 LARBINs au Gauss Flayer attaquent un VTT blindé piloté avec un passager armé.",
+                    "3 LARBINs armés d'une mitrailleuse attaquent un VTT blindé piloté avec un passager armé.",
                     List.of("Les tirs de l'équipage sont tracés « (à bord de VTT blindé) »",
                             "Pilote et passager restent intouchables tant que le véhicule vit",
                             "Les attaquants ne touchent que le véhicule en PdF"),
                     35, 22, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("CREW_DISEMBARK", "Véhicule détruit, équipage débarqué",
-                    "2 MALFRATs PILOTE_DESTRUCTEUR au Gauss Cannon détruisent un VTT léger piloté par un BRUTE.",
+                    "2 MALFRATs PILOTE_DESTRUCTEUR armés de bombes collantes détruisent un VTT léger piloté par un BRUTE.",
                     List.of("Le véhicule explose en PdF, l'équipage débarque et devient ciblable",
                             "Le surplus de la même frappe entame le pilote fraîchement débarqué"),
                     24, 19, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("AERIAL_HIT", "Aérien, jets de toucher",
-                    "3 LARBINs au Tesla Carbine attaquent un hélicoptère piloté.",
+                    "3 LARBINs au HK-MP7 attaquent un hélicoptère piloté.",
                     List.of("L'aérien n'est ciblable qu'en PdF",
                             "Chaque LARBIN n'a que 10 % de toucher (le jet est affiché)",
                             "L'hélicoptère riposte à 75 % avec 250 PdF"),
                     18, 14, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("AERIAL_ANTI_AIR", "Aérien, arme anti-aérienne",
-                    "3 BRUTEs PILOTE_DESTRUCTEUR au Heavy Gauss Cannon attaquent un hélicoptère piloté.",
-                    List.of("Heavy Gauss Cannon : 75 % de toucher contre l'aérien",
+                    "3 BRUTEs PILOTE_DESTRUCTEUR au Lance-roquettes attaquent un hélicoptère piloté.",
+                    List.of("Lance-roquettes : 75 % de toucher contre l'aérien",
                             "Dégâts doublés contre l'aérien, armure +200 % sur le tireur"),
                     28, 17, "lurio", "cegorach", null, false),
             new CombatScenarioDefinition("BLDG_CAPTURE", "Élimination — QG capturé",
@@ -426,17 +426,17 @@ public class TurnResolutionScenarioSeeder {
         }
         for (int i = 0; i < 2; i++) {
             placeAttacker(staging, attackers, combatUnit(attacker, 5.0, UnitClass.PILOTE_DESTRUCTEUR,
-                    "Gauss Cannon", "Gilet Kevlar", "Protège-dents"));
+                    "Bombes collantes", "Gilet Kevlar", "Protège-dents"));
         }
     }
 
     private void seedCrewProtected(Sector arena, Sector staging, Player attacker, Player defender,
                                    List<Unit> attackers) {
         placeVehicle(arena, defender, VehicleType.VTT_BLINDE,
-                combatUnit(defender, 0.0, UnitClass.PILOTE_DESTRUCTEUR, "Gauss Cannon"),
-                combatUnit(defender, 0.0, UnitClass.LEGER, "Tesla Carbine"));
+                combatUnit(defender, 0.0, UnitClass.PILOTE_DESTRUCTEUR, "Bombes collantes"),
+                combatUnit(defender, 0.0, UnitClass.LEGER, "HK-MP7"));
         for (int i = 0; i < 3; i++) {
-            placeAttacker(staging, attackers, combatUnit(attacker, 0.0, UnitClass.TIREUR, "Gauss Flayer"));
+            placeAttacker(staging, attackers, combatUnit(attacker, 0.0, UnitClass.TIREUR, "Mitrailleuse"));
         }
     }
 
@@ -446,7 +446,7 @@ public class TurnResolutionScenarioSeeder {
                 combatUnit(defender, 8.0, UnitClass.PILOTE_DESTRUCTEUR), null);
         for (int i = 0; i < 2; i++) {
             placeAttacker(staging, attackers, combatUnit(attacker, 5.0, UnitClass.PILOTE_DESTRUCTEUR,
-                    "Gauss Cannon", "Gilet Kevlar"));
+                    "Bombes collantes", "Gilet Kevlar"));
         }
     }
 
@@ -454,7 +454,7 @@ public class TurnResolutionScenarioSeeder {
                                List<Unit> attackers) {
         placeVehicle(arena, defender, VehicleType.HELICOPTERE, combatUnit(defender, 0.0, UnitClass.PILOTE_DESTRUCTEUR), null);
         for (int i = 0; i < 3; i++) {
-            placeAttacker(staging, attackers, combatUnit(attacker, 0.0, UnitClass.LEGER, "Tesla Carbine"));
+            placeAttacker(staging, attackers, combatUnit(attacker, 0.0, UnitClass.LEGER, "HK-MP7"));
         }
     }
 
@@ -462,35 +462,35 @@ public class TurnResolutionScenarioSeeder {
                                    List<Unit> attackers) {
         placeVehicle(arena, defender, VehicleType.HELICOPTERE, combatUnit(defender, 0.0, UnitClass.PILOTE_DESTRUCTEUR), null);
         for (int i = 0; i < 3; i++) {
-            placeAttacker(staging, attackers, combatUnit(attacker, 8.0, UnitClass.PILOTE_DESTRUCTEUR, "Heavy Gauss Cannon"));
+            placeAttacker(staging, attackers, combatUnit(attacker, 8.0, UnitClass.PILOTE_DESTRUCTEUR, "Lance-roquettes"));
         }
     }
 
     private void seedBuildingCapture(Sector arena, Sector staging, Player attacker, Player defender,
                                      List<Unit> attackers) {
         placeBank(arena, defender);
-        placeWeaponCache(arena, defender, "Gauss Flayer");
+        placeWeaponCache(arena, defender, "Mitrailleuse");
         placeHeadquarters(arena, defender);
         for (int i = 0; i < 3; i++) {
             placeAttacker(staging, attackers, combatUnit(attacker, 2.0, UnitClass.MASTODONTE,
-                    "Bouclier balistique", "Dispersion Shield"));
+                    "Bouclier balistique", "Bouclier anti-émeutes"));
         }
     }
 
     private void seedBuildingDestroy(Sector arena, Sector staging, Player attacker, Player defender,
                                      List<Unit> attackers) {
         placeBank(arena, defender);
-        placeWeaponCache(arena, defender, "Gauss Flayer");
+        placeWeaponCache(arena, defender, "Mitrailleuse");
         placeHeadquarters(arena, defender);
         for (int i = 0; i < 4; i++) {
             placeAttacker(staging, attackers, combatUnit(attacker, 8.0, UnitClass.MASTODONTE,
-                    "Bouclier balistique", "Dispersion Shield"));
+                    "Bouclier balistique", "Bouclier anti-émeutes"));
         }
     }
 
     private void seedCharacterKill(Sector arena, Sector staging, Player attacker, Player defender,
                                    List<Unit> attackers) {
-        arena.addUnit(combatUnit(defender, 0.0, UnitClass.TIREUR, "Gauss Flayer"));
+        arena.addUnit(combatUnit(defender, 0.0, UnitClass.TIREUR, "Mitrailleuse"));
         placeCharacter(arena, defender, "Champion d'arène", 30, 20, 60);
         for (int i = 0; i < 2; i++) {
             placeAttacker(staging, attackers, combatUnit(attacker, 5.0, UnitClass.TIREUR));
@@ -545,10 +545,10 @@ public class TurnResolutionScenarioSeeder {
     private void seedSniperRanged(Sector arena, Sector staging, Player attacker, Player defender,
                                   List<Unit> attackers, int turn) {
         Unit target = combatUnit(defender, 5.0, UnitClass.SNIPER,
-                "Synaptic Disintegrator", "Gilet de camouflage optique");
+                "Fusil de sniper léger", "Gilet de camouflage optique");
         arena.addUnit(target);
         Unit shooter = combatUnit(attacker, 8.0, UnitClass.SNIPER,
-                "Synaptic Disintegrator", "Gilet de camouflage optique");
+                "Fusil de sniper léger", "Gilet de camouflage optique");
         staging.addUnit(shooter);
         attackers.add(shooter);
         entityManager.flush();
@@ -559,16 +559,16 @@ public class TurnResolutionScenarioSeeder {
     private void seedSniperStandoff(Sector arena, Sector staging, Player attacker, Player defender,
                                     Player third, List<Unit> attackers, int turn) {
         for (int i = 0; i < 2; i++) {
-            placeAttacker(staging, attackers, combatUnit(attacker, 0.0, UnitClass.TIREUR, "Gauss Flayer"));
+            placeAttacker(staging, attackers, combatUnit(attacker, 0.0, UnitClass.TIREUR, "Mitrailleuse"));
         }
         for (int i = 0; i < 2; i++) {
             arena.addUnit(combatUnit(defender, 8.0, UnitClass.SNIPER,
-                    "Synaptic Disintegrator", "Gilet de camouflage optique"));
+                    "Fusil de sniper léger", "Gilet de camouflage optique"));
         }
         List<Unit> thirdSnipers = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
             Unit thirdSniper = combatUnit(third, 8.0, UnitClass.SNIPER,
-                    "Synaptic Disintegrator", "Gilet de camouflage optique");
+                    "Fusil de sniper léger", "Gilet de camouflage optique");
             staging.addUnit(thirdSniper);
             thirdSnipers.add(thirdSniper);
         }

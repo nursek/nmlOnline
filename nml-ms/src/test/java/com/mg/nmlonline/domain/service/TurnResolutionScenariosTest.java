@@ -413,7 +413,7 @@ class TurnResolutionScenariosTest {
         assertEquals(0, report.getDefenderCasualties(),
                 "Les 2 BRUTE 100/100 ne subissent aucune perte face à un LEGER attaquant");
         assertEquals(0, report.getAttackerInjured(), "L'attaquant meurt, pas de blessé");
-        // Le VOYOU équipé (Tesla Carbine : pdf 60) entame le BRUTE n°2 en phase PDF (def 100 → 40),
+        // Le VOYOU équipé (HK-MP7 : pdf 60) entame le BRUTE n°2 en phase PDF (def 100 → 40),
         // puis meurt en phase bâtiments secondaires (Cache 100 + Banque 50 vs 20 def + 10 armure).
         assertEquals(1, report.getDefenderInjured(),
                 "Le BRUTE n°2 (def 40 < 100 après le pdf de l'attaquant) termine blessé");
@@ -663,7 +663,7 @@ class TurnResolutionScenariosTest {
         assertEquals(VehicleType.HELICOPTERE, board.getSector(28).getVehicles().getFirst().getVehicleType());
 
         assertTrue(board.getSector(37).getUnits().stream().allMatch(unit -> unit.getPdf() > 0),
-                "Les MALFRATs du scénario Tank sont équipés du Gauss Cannon");
+                "Les MALFRATs du scénario Tank sont équipés de bombes collantes");
         assertEquals(3, board.getSector(5).getBuildings().size(), "Banque + Cache + QG du scénario de capture");
         assertTrue(board.getSector(5).getUnits().isEmpty(), "Aucune unité ne défend l'arène de capture");
         assertEquals(3, board.getSector(23).getBuildings().size(), "3 bâtiments du scénario de destruction");
