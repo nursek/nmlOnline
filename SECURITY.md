@@ -91,5 +91,6 @@ otherwise that header can be forged to evade the per-IP limit.
 
 ## 8. Dependencies
 
-`npm audit --omit=dev` reports no known vulnerability at the time of writing. `.github/dependabot.yml`
-opens weekly update pull requests for Maven, npm, the Docker base images and the GitHub Actions.
+`npm audit --omit=dev` reports no known vulnerability at the time of writing. Dependabot alerts and
+security updates are enabled, so a pull request appears only when a published vulnerability affects a
+dependency in use; version bumps are applied manually, when a release is worth taking.
