@@ -281,7 +281,7 @@ export class ReglesComponent {
     if (!terme) return trouvees;
     for (const panneau of this.panneauxEl()) {
       const element = panneau.nativeElement;
-      if (normaliserTexte(element.textContent ?? '').includes(terme)) {
+      if (normaliserTexte(this.texteVisible(element)).includes(terme)) {
         trouvees.add(element.id);
       }
     }
@@ -340,6 +340,17 @@ export class ReglesComponent {
     this.surligner(this.recherche().trim(), trouvees);
   }
 
+  private texteVisible(racine: HTMLElement): string {
+    const walker = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT);
+    let texte = '';
+    for (let noeud = walker.nextNode(); noeud; noeud = walker.nextNode()) {
+      // Les ligatures Material Icons ("my_location") ne sont pas du texte de règle.
+      if (noeud.parentElement?.closest('mat-icon')) continue;
+      texte += noeud.textContent ?? '';
+    }
+    return texte;
+  }
+
   private surligner(terme: string, trouvees: ReadonlySet<string>): void {
     // API Custom Highlight : progressive, la recherche filtre et déplie même sans elle.
     if (typeof CSS === 'undefined' || !CSS.highlights || typeof Highlight === 'undefined') return;
@@ -350,6 +361,7 @@ export class ReglesComponent {
       const racine = panneau.nativeElement;
       const walker = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT);
       for (let noeud = walker.nextNode(); noeud && total < 300; noeud = walker.nextNode()) {
+        if (noeud.parentElement?.closest('mat-icon')) continue;
         for (const { debut, fin } of occurrences(noeud.textContent ?? '', terme)) {
           if (total >= 300) break;
           const range = document.createRange();

@@ -18,6 +18,11 @@ describe('ReglesComponent — recherche', () => {
     const panneaux = racine.querySelectorAll('mat-expansion-panel');
     expect(panneaux.length).toBe(composant.sommaire.length);
 
+    composant.changerRecherche('location');
+    fixture.detectChanges();
+    expect(composant.sommaireFiltre()).toEqual([]);
+    expect(racine.querySelectorAll('.recherche-masquee').length).toBe(panneaux.length);
+
     composant.changerRecherche('adamentium');
     fixture.detectChanges();
 

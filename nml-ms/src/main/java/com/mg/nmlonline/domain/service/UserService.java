@@ -111,7 +111,8 @@ public class UserService {
             throw new IllegalArgumentException("Mot de passe actuel incorrect");
         }
         user.setPassword(encodePassword(newPassword));
-        userRepo.save(user);
+        // Un cookie refresh volé doit mourir avec l'ancien mot de passe.
+        resetRefreshToken(user);
         logger.info("Mot de passe modifié pour l'utilisateur {}", user.getUsername());
     }
 
