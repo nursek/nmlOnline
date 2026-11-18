@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Component
 public class JwtSecretValidator {
@@ -13,6 +14,11 @@ public class JwtSecretValidator {
             "test-pepper-value-for-ci-tests-only",
             "ci-jwt-secret-rotated-2026-not-for-production",
             "ci-pepper-rotated-2026");
+
+    // Refus par défaut : le dépôt publie des exemples de dev, une liste noire seule les laisse passer.
+    private static final Pattern PLACEHOLDER = Pattern.compile(
+            "do-not-use|dev-only|change-?me|placeholder|example|sample|not-for-production",
+            Pattern.CASE_INSENSITIVE);
 
     public JwtSecretValidator(@Value("${jwt.secret}") String secret,
                               @Value("${jwt.pepper}") String pepper) {
@@ -24,7 +30,7 @@ public class JwtSecretValidator {
         if (value == null || value.length() < minLength) {
             throw new IllegalArgumentException(name + " must be at least " + minLength + " characters long");
         }
-        if (COMPROMISED.contains(value)) {
+        if (COMPROMISED.contains(value) || PLACEHOLDER.matcher(value).find()) {
             throw new IllegalArgumentException(name + " uses a value published in this repository's history");
         }
     }
