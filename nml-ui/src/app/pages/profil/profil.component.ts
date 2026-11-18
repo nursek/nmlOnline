@@ -133,7 +133,8 @@ export class ProfilComponent {
       this.motDePasseActuel.set('');
       this.nouveauMotDePasse.set('');
       this.confirmationMotDePasse.set('');
-      this.notifier('Mot de passe mis à jour');
+      this.notifier('Mot de passe mis à jour. Reconnectez-vous.');
+      await this.auth.logout();
     } catch (error) {
       this.erreurMotDePasse.set(httpErrorMessage(error, 'Impossible de changer le mot de passe'));
     } finally {

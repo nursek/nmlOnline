@@ -13,6 +13,7 @@
         <mat-icon matPrefix>search</mat-icon>
         <input
           matInput
+          class="readonly-allow"
           type="search"
           aria-label="Rechercher dans les règles"
           [value]="recherche()"
@@ -23,6 +24,7 @@
           <button
             mat-icon-button
             matSuffix
+            class="readonly-allow"
             type="button"
             aria-label="Effacer la recherche"
             (click)="effacerRecherche()"
@@ -47,15 +49,15 @@
       </div>
       <nav class="toc-nav">
         @for (item of sommaireFiltre(); track item.id) {
-          <button type="button" class="toc-link" (click)="allerA(item.id)">
+          <button type="button" class="toc-link readonly-allow" (click)="allerA(item.id)">
             <mat-icon>{{ item.icon }}</mat-icon>
             <span>{{ item.label }}</span>
           </button>
         }
       </nav>
       <div class="toc-actions">
-        <button mat-stroked-button type="button" (click)="toutDeplier()">Tout déplier</button>
-        <button mat-stroked-button type="button" (click)="toutReplier()">Tout replier</button>
+        <button mat-stroked-button class="readonly-allow" type="button" (click)="toutDeplier()">Tout déplier</button>
+        <button mat-stroked-button class="readonly-allow" type="button" (click)="toutReplier()">Tout replier</button>
         <a mat-stroked-button class="toc-page" routerLink="/regles/tir-a-distance">
           <mat-icon>gps_fixed</mat-icon>
           Page Tir à distance
