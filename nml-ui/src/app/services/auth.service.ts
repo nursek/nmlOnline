@@ -89,12 +89,14 @@ export class AuthService {
       this.stopRetryCountdown();
       this.tokenService.setRememberMe(credentials.rememberMe);
       this.tokenService.setAccessToken(response.token);
-      this.tokenService.setUser({
+      const user = {
         id: response.id,
         username: response.name,
         role: response.role,
-      });
-      this._user.set({ id: response.id, username: response.name, role: response.role });
+        avatarUrl: response.avatarUrl ?? null,
+      };
+      this.tokenService.setUser(user);
+      this._user.set(user);
       this.instance.clear();
       this.instance.invalidate();
       // Une liste indisponible ne doit pas annuler une authentification réussie : /parties propose de réessayer.
@@ -154,6 +156,14 @@ export class AuthService {
     }
     this.clear();
     void this.router.navigate(['/login']);
+  }
+
+  updateUser(patch: Partial<User>): void {
+    const user = this._user();
+    if (!user) return;
+    const updated = { ...user, ...patch };
+    this._user.set(updated);
+    this.tokenService.setUser(updated);
   }
 
   /** Clear local auth state (no HTTP). Used by the 401 interceptor path. */

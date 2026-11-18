@@ -22,4 +22,6 @@ public class User {
     private Long refreshTokenExpiry;
     private String refreshTokenJti;
     private String role;
+    @Column(columnDefinition = "text")
+    private String avatarUrl;
 }
