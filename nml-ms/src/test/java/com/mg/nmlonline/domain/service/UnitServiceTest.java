@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
+import com.mg.nmlonline.api.dto.AutoEquipResultDto;
 import com.mg.nmlonline.api.dto.BuyUnitRequestDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Headquarters;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -197,6 +199,67 @@ class UnitServiceTest {
     }
 
     @Test
+    @DisplayName("autoEquipRemaining équipe d'abord les unités les plus expérimentées")
+    void shouldAutoEquipBestStockByExperience() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        Sector sector = findNeutralSector(board, 8);
+        Unit novice = newUnit(player.getId(), UnitType.LARBIN, Set.of(UnitClass.LEGER), 0);
+        Unit veteran = newUnit(player.getId(), UnitType.VOYOU, Set.of(UnitClass.LEGER), 2);
+        sector.addUnit(novice);
+        sector.addUnit(veteran);
+        entityManager.persist(novice);
+        entityManager.persist(veteran);
+        entityManager.flush();
+
+        List<Equipment> firearms = equipmentByCategory(EquipmentCategory.FIREARM, UnitClass.LEGER);
+        Equipment best = firearms.get(0);
+        Equipment runnerUp = firearms.get(1);
+        player.addEquipmentToStack(best, 1);
+        player.addEquipmentToStack(runnerUp, 1);
+        Equipment melee = equipmentByCategory(EquipmentCategory.MELEE, UnitClass.LEGER).getFirst();
+        player.addEquipmentToStack(melee, 1);
+        playerService.save(player);
+
+        AutoEquipResultDto result = unitService.autoEquipRemaining(
+                player.getUserId(), List.of(EquipmentCategory.FIREARM.name()), null, player.getBoardId());
+
+        assertEquals(2, result.getEquippedCount());
+        assertEquals(2, result.getUnitCount());
+        assertTrue(hasEquipment(veteran, best.getName()), "L'unité la plus expérimentée doit recevoir le meilleur stock");
+        assertTrue(hasEquipment(novice, runnerUp.getName()));
+        assertEquals(0, availableOf(best.getName()));
+        assertEquals(1, availableOf(melee.getName()), "Une catégorie non demandée doit rester en stock");
+    }
+
+    @Test
+    @DisplayName("autoEquipRemaining ne distribue que les équipements sélectionnés")
+    void shouldAutoEquipOnlySelectedNames() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        Sector sector = findNeutralSector(board, 9);
+        Unit unit = newUnit(player.getId(), UnitType.LARBIN, Set.of(UnitClass.LEGER), 0);
+        sector.addUnit(unit);
+        entityManager.persist(unit);
+        entityManager.flush();
+
+        List<Equipment> firearms = equipmentByCategory(EquipmentCategory.FIREARM, UnitClass.LEGER);
+        Equipment best = firearms.get(0);
+        Equipment runnerUp = firearms.get(1);
+        player.addEquipmentToStack(best, 1);
+        player.addEquipmentToStack(runnerUp, 1);
+        playerService.save(player);
+
+        AutoEquipResultDto result = unitService.autoEquipRemaining(
+                player.getUserId(), List.of(EquipmentCategory.FIREARM.name()),
+                List.of(runnerUp.getName()), player.getBoardId());
+
+        assertEquals(1, result.getEquippedCount());
+        assertTrue(hasEquipment(unit, runnerUp.getName()));
+        assertEquals(1, availableOf(best.getName()), "L'arme non sélectionnée doit rester en stock");
+    }
+
+    @Test
     @DisplayName("placeUnit d'une unité d'un autre joueur → SecurityException")
     void shouldRefusePlacingForeignUnit() {
         Player owner = playerOfTestUser(TestDataInitializer.USER_1);
@@ -263,13 +326,30 @@ class UnitServiceTest {
     }
 
     private static Unit newUnit(Long playerId, UnitType type, Set<UnitClass> classes) {
+        return newUnit(playerId, type, classes, 5.0);
+    }
+
+    private static Unit newUnit(Long playerId, UnitType type, Set<UnitClass> classes, double experience) {
         Unit u = new Unit();
         u.setPlayerId(playerId);
         u.setType(type);
         u.setClasses(List.copyOf(classes));
-        u.setExperience(5.0);
+        u.setExperience(experience);
         u.setNumber(1);
         return u;
+    }
+
+    private List<Equipment> equipmentByCategory(EquipmentCategory category, UnitClass unitClass) {
+        return equipmentService.findAll(org.springframework.data.domain.Pageable.ofSize(100)).stream()
+                .filter(e -> e.getCategory() == category)
+                .filter(e -> e.getCompatibleClasses().contains(unitClass))
+                .sorted(Comparator.comparingInt(Equipment::getCost).reversed())
+                .toList();
+    }
+
+    private static boolean hasEquipment(Unit unit, String equipmentName) {
+        return unit.getEquipments().stream()
+                .anyMatch(e -> e.getName().equals(equipmentName));
     }
 
     private Equipment anyCompatibleEquipment() {

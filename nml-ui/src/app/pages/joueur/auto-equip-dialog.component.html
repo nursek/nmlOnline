@@ -1,0 +1,46 @@
+<h2 mat-dialog-title>
+  <mat-icon>auto_fix_high</mat-icon>
+  Équiper le reste
+</h2>
+
+<mat-dialog-content>
+  <p class="hint">
+    Les unités déployées les plus expérimentées reçoivent d'abord les meilleurs équipements
+    disponibles. Les équipements déjà portés ne sont jamais retirés.
+  </p>
+
+  <div class="categories">
+    <mat-checkbox [checked]="firearm()" (change)="firearm.set($event.checked)">
+      Armes à feu
+    </mat-checkbox>
+    <mat-checkbox [checked]="melee()" (change)="melee.set($event.checked)">
+      Corps à corps
+    </mat-checkbox>
+    <mat-checkbox [checked]="defensive()" (change)="defensive.set($event.checked)">
+      Défensif
+    </mat-checkbox>
+  </div>
+
+  @if (firearm() && firearmStacks().length > 0) {
+    <p class="subtitle">Armes à feu à distribuer</p>
+    <div class="equipment-list">
+      @for (stack of firearmStacks(); track stack.equipment.name) {
+        <mat-checkbox
+          [checked]="isFirearmSelected(stack.equipment.name)"
+          (change)="toggleFirearm(stack.equipment.name)"
+        >
+          <span class="equipment-name">{{ equipmentLabel(stack.equipment) }}</span>
+          <span class="equipment-qty">{{ stack.available }}</span>
+        </mat-checkbox>
+      }
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button [disabled]="busy()" (click)="close()">Annuler</button>
+  <button mat-flat-button color="primary" [disabled]="!canSubmit()" (click)="submit()">
+    <mat-icon>auto_fix_high</mat-icon>
+    Équiper
+  </button>
+</mat-dialog-actions>

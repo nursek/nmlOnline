@@ -78,3 +78,8 @@ export interface UnitCatalog {
   classes: UnitClass[];
   entries: UnitCatalogEntry[];
 }
+
+export interface AutoEquipResult {
+  equippedCount: number;
+  unitCount: number;
+}

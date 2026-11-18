@@ -14,6 +14,7 @@ import {
   ResolvedBattle,
   ScenarioSummary,
   Unit,
+  AutoEquipResult,
   BuyEquipmentItem,
   Vehicle,
   BuyVehicleBatchItem,
@@ -639,6 +640,13 @@ export class ApiService {
   assignUnitEquipment(unitId: number, equipmentName: string): Observable<Unit> {
     return this.http.post<Unit>(`${this.baseUrl}/units/${unitId}/equipment`, {
       equipmentName,
+    });
+  }
+
+  autoEquipUnits(categories: string[], equipmentNames: string[]): Observable<AutoEquipResult> {
+    return this.http.post<AutoEquipResult>(`${this.baseUrl}/units/auto-equip`, {
+      categories,
+      equipmentNames,
     });
   }
 

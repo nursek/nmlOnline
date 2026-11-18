@@ -54,6 +54,7 @@ import {
   CacheEquipmentDialogComponent,
   CacheEquipmentDialogData,
 } from './cache-equipment-dialog.component';
+import { AutoEquipDialogComponent } from './auto-equip-dialog.component';
 import { BankPanelComponent } from './bank-panel.component';
 import { WeaponCachePanelComponent } from './weapon-cache-panel.component';
 import { HeadquartersPanelComponent } from './headquarters-panel.component';
@@ -593,6 +594,14 @@ export class JoueurComponent {
       width: '560px',
       maxWidth: '95vw',
       data,
+    });
+  }
+
+  openAutoEquip(): void {
+    this.dialog.open(AutoEquipDialogComponent, {
+      width: '520px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
     });
   }
 

@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.AutoEquipResultDto;
 import com.mg.nmlonline.api.dto.BuyUnitRequestDto;
 import com.mg.nmlonline.api.dto.MovementOrderDto;
 import com.mg.nmlonline.api.dto.UnitCatalogDto;
@@ -10,6 +11,8 @@ import com.mg.nmlonline.domain.model.action.PlayerAction;
 import com.mg.nmlonline.domain.model.action.PlayerActionStatus;
 import com.mg.nmlonline.domain.model.action.PlayerActionType;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.equipment.Equipment;
+import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -31,10 +34,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Gestion des unités par un joueur authentifié : recrutement, équipement et ordres à pied.
@@ -149,6 +156,82 @@ public class UnitService {
         boardService.save(board);
         playerActionService.recordUnequipUnit(player.getId(), unit.getId(), equipmentName);
         return unit;
+    }
+
+    public AutoEquipResultDto autoEquipRemaining(Long userId, List<String> categoryNames,
+                                                 List<String> equipmentNames, Long boardId) {
+        requireTurnOpen(boardId);
+        Player player = requirePlayerByUserIdForUpdate(userId, boardId);
+        Board board = boardService.getBoardById(player.getBoardId())
+                .orElseThrow(() -> new IllegalStateException("Aucun plateau disponible."));
+        List<EquipmentCategory> categories = parseEquipmentCategories(categoryNames);
+        Set<String> allowedNames = equipmentNames == null || equipmentNames.isEmpty()
+                ? null
+                : new HashSet<>(equipmentNames);
+
+        Map<String, Equipment> candidatesByName = new LinkedHashMap<>();
+        Map<String, Integer> remainingByName = new HashMap<>();
+        for (EquipmentStack stack : player.getAllEquipmentStacks()) {
+            Equipment equipment = stack.getEquipment();
+            if (equipment == null || stack.getAvailable() <= 0) {
+                continue;
+            }
+            if (allowedNames != null && !allowedNames.contains(equipment.getName())) {
+                continue;
+            }
+            candidatesByName.putIfAbsent(equipment.getName(), equipment);
+            remainingByName.merge(equipment.getName(), stack.getAvailable(), Integer::sum);
+        }
+
+        Map<EquipmentCategory, List<Equipment>> candidates = new EnumMap<>(EquipmentCategory.class);
+        for (Equipment equipment : candidatesByName.values()) {
+            candidates.computeIfAbsent(equipment.getCategory(), category -> new ArrayList<>())
+                    .add(equipment);
+        }
+        // Les plus chers d'abord : le catalogue suit cette hiérarchie de puissance par classe.
+        for (List<Equipment> list : candidates.values()) {
+            list.sort(Comparator.comparingInt(Equipment::getCost).reversed()
+                    .thenComparing(Equipment::getName));
+        }
+
+        List<Unit> units = unitRepository.findByPlayerIdAndSectorIsNotNull(player.getId()).stream()
+                .filter(unit -> !unit.isDestroyed())
+                .sorted(Comparator.comparingDouble(Unit::getExperience).reversed()
+                        .thenComparing(Unit::getId))
+                .toList();
+
+        int equippedCount = 0;
+        Set<Long> equippedUnitIds = new HashSet<>();
+        for (EquipmentCategory category : categories) {
+            List<Equipment> categoryCandidates = candidates.getOrDefault(category, List.of());
+            if (categoryCandidates.isEmpty()) {
+                continue;
+            }
+            for (Unit unit : units) {
+                while (true) {
+                    Equipment chosen = categoryCandidates.stream()
+                            .filter(equipment -> remainingByName.getOrDefault(equipment.getName(), 0) > 0)
+                            .filter(unit::canEquip)
+                            .findFirst()
+                            .orElse(null);
+                    if (chosen == null) {
+                        break;
+                    }
+                    unit.addEquipment(chosen);
+                    player.decrementEquipmentAvailability(chosen);
+                    remainingByName.merge(chosen.getName(), -1, Integer::sum);
+                    playerActionService.recordEquipUnit(player.getId(), unit.getId(), chosen.getName());
+                    equippedCount++;
+                    equippedUnitIds.add(unit.getId());
+                }
+            }
+        }
+
+        if (equippedCount > 0) {
+            playerService.save(player);
+            boardService.save(board);
+        }
+        return new AutoEquipResultDto(equippedCount, equippedUnitIds.size());
     }
 
     public MovementOrder placeFootOrder(Long userId, List<Long> entityIds, List<Integer> route, Long boardId) {
@@ -345,6 +428,27 @@ public class UnitService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Classe invalide : " + unitClass);
         }
+    }
+
+    private List<EquipmentCategory> parseEquipmentCategories(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return List.of(EquipmentCategory.values());
+        }
+        Set<EquipmentCategory> requested = new HashSet<>();
+        for (String name : names) {
+            if (name == null || name.isBlank()) {
+                continue;
+            }
+            try {
+                requested.add(EquipmentCategory.valueOf(name));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Catégorie d'équipement invalide : " + name);
+            }
+        }
+        if (requested.isEmpty()) {
+            throw new IllegalArgumentException("Aucune catégorie d'équipement sélectionnée.");
+        }
+        return Arrays.stream(EquipmentCategory.values()).filter(requested::contains).toList();
     }
 
     // === Mapping dans la transaction (classesSet/unitEquipments et route/entityIds sont LAZY) ===
