@@ -33,6 +33,17 @@
   border: 1.5px solid var(--line-2);
   border-radius: var(--r-md);
 
+  .recherche {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  .recherche-info {
+    margin: -4px 0 10px;
+    color: shared.$text-muted;
+    font-size: 0.78rem;
+  }
+
   .toc-head {
     display: flex;
     align-items: center;
@@ -91,6 +102,10 @@
 .rule-panel {
   scroll-margin-top: calc(var(--nav-h) + 12px);
   margin-bottom: 12px;
+
+  &.recherche-masquee {
+    display: none;
+  }
 
   mat-panel-title {
     display: flex;
@@ -306,4 +321,12 @@
   .toc {
     position: static;
   }
+}
+
+.aucun-resultat {
+  padding: 24px;
+  border: 1.5px dashed var(--line-2);
+  border-radius: var(--r-md);
+  color: shared.$text-muted;
+  text-align: center;
 }
