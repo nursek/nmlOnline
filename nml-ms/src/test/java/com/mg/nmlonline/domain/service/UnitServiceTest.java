@@ -208,8 +208,14 @@ class UnitServiceTest {
         Unit veteran = newUnit(player.getId(), UnitType.VOYOU, Set.of(UnitClass.LEGER), 2);
         sector.addUnit(novice);
         sector.addUnit(veteran);
+        Unit reserve = newUnit(player.getId(), UnitType.MALFRAT, Set.of(UnitClass.LEGER), 8);
+        Unit destroyed = newUnit(player.getId(), UnitType.MALFRAT, Set.of(UnitClass.LEGER), 9);
+        destroyed.setDestroyed(true);
+        sector.addUnit(destroyed);
         entityManager.persist(novice);
         entityManager.persist(veteran);
+        entityManager.persist(reserve);
+        entityManager.persist(destroyed);
         entityManager.flush();
 
         List<Equipment> firearms = equipmentByCategory(EquipmentCategory.FIREARM, UnitClass.LEGER);
@@ -228,8 +234,38 @@ class UnitServiceTest {
         assertEquals(2, result.getUnitCount());
         assertTrue(hasEquipment(veteran, best.getName()), "L'unité la plus expérimentée doit recevoir le meilleur stock");
         assertTrue(hasEquipment(novice, runnerUp.getName()));
+        assertTrue(reserve.getEquipments().isEmpty(), "Une unité en réserve ne doit pas être équipée");
+        assertTrue(destroyed.getEquipments().isEmpty(), "Une unité détruite ne doit pas être équipée");
         assertEquals(0, availableOf(best.getName()));
         assertEquals(1, availableOf(melee.getName()), "Une catégorie non demandée doit rester en stock");
+    }
+
+    @Test
+    @DisplayName("autoEquipRemaining remplit plusieurs emplacements de la même catégorie")
+    void shouldAutoEquipSeveralSlotsOfSameCategory() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        Board board = boardService.getAllBoards().stream().findFirst().orElseThrow();
+        Sector sector = findNeutralSector(board, 10);
+        Unit veteran = newUnit(player.getId(), UnitType.MALFRAT, Set.of(UnitClass.TIREUR), 5);
+        Unit recruit = newUnit(player.getId(), UnitType.VOYOU, Set.of(UnitClass.TIREUR), 2);
+        sector.addUnit(veteran);
+        sector.addUnit(recruit);
+        entityManager.persist(veteran);
+        entityManager.persist(recruit);
+        entityManager.flush();
+
+        Equipment bestMelee = equipmentByCategory(EquipmentCategory.MELEE, UnitClass.TIREUR).getFirst();
+        player.addEquipmentToStack(bestMelee, 3);
+        playerService.save(player);
+
+        AutoEquipResultDto result = unitService.autoEquipRemaining(
+                player.getUserId(), List.of(EquipmentCategory.MELEE.name()), null, player.getBoardId());
+
+        assertEquals(3, result.getEquippedCount());
+        assertEquals(2, result.getUnitCount());
+        assertEquals(2L, countEquipment(veteran, bestMelee.getName()));
+        assertEquals(1L, countEquipment(recruit, bestMelee.getName()));
+        assertEquals(0, availableOf(bestMelee.getName()));
     }
 
     @Test
@@ -350,6 +386,12 @@ class UnitServiceTest {
     private static boolean hasEquipment(Unit unit, String equipmentName) {
         return unit.getEquipments().stream()
                 .anyMatch(e -> e.getName().equals(equipmentName));
+    }
+
+    private static long countEquipment(Unit unit, String equipmentName) {
+        return unit.getEquipments().stream()
+                .filter(e -> e.getName().equals(equipmentName))
+                .count();
     }
 
     private Equipment anyCompatibleEquipment() {

@@ -44,12 +44,9 @@ export class AutoEquipDialogComponent {
     this.firearmStacks().filter((stack) => !this.excludedFirearms().has(stack.equipment.name)),
   );
 
-  readonly canSubmit = computed(() => {
-    if (this.busy() || (!this.firearm() && !this.melee() && !this.defensive())) return false;
-    return (
-      !this.firearm() || this.firearmStacks().length === 0 || this.selectedFirearms().length > 0
-    );
-  });
+  readonly canSubmit = computed(
+    () => !this.busy() && (this.firearm() || this.melee() || this.defensive()),
+  );
 
   equipmentLabel(equipment: Equipment): string {
     return equipmentLabelFor(equipment, this.player()?.race);
