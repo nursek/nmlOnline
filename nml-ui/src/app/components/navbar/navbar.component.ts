@@ -122,7 +122,11 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
                 [matMenuTriggerFor]="userMenu"
                 [attr.aria-label]="'Compte de ' + user.username"
               >
-                <mat-icon>person</mat-icon>
+                @if (user.avatarUrl) {
+                  <img class="user-avatar" [src]="user.avatarUrl" alt="" />
+                } @else {
+                  <mat-icon>person</mat-icon>
+                }
                 <span class="user-name">{{ user.username }}</span>
                 <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
               </button>
@@ -135,6 +139,11 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
                   </button>
                   <mat-divider />
                 }
+                <button mat-menu-item routerLink="/profil">
+                  <mat-icon>manage_accounts</mat-icon>
+                  <span>Mon profil</span>
+                </button>
+                <mat-divider />
                 <button mat-menu-item (click)="logout()">
                   <mat-icon>logout</mat-icon>
                   <span>Déconnexion</span>
@@ -297,6 +306,14 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         background: var(--accent-tint);
         color: var(--accent-ink);
         border-radius: 999px;
+      }
+
+      .user-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid var(--line-strong);
       }
 
       .user-name {
