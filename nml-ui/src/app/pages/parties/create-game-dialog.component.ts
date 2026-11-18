@@ -4,7 +4,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../services/api.service';
@@ -23,7 +22,6 @@ import {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
     MatProgressSpinnerModule,
     MatIconModule,
   ],
@@ -38,16 +36,32 @@ import {
         <mat-label>Nom de la partie</mat-label>
         <input matInput [value]="name()" (input)="name.set($any($event.target).value)" />
       </mat-form-field>
-      <mat-form-field appearance="outline" class="full">
-        <mat-label>Carte</mat-label>
-        <mat-select [value]="presetKey()" (selectionChange)="presetKey.set($event.value)">
-          @for (preset of presets(); track preset.key) {
-            <mat-option [value]="preset.key">
-              {{ preset.name }} — {{ preset.sectorCount }} secteurs, {{ preset.spotCount }} spots
-            </mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      <p class="carte-label" id="choix-carte">Carte</p>
+      <div class="cartes" role="group" aria-labelledby="choix-carte">
+        @for (preset of presets(); track preset.key) {
+          <label class="carte" [class.carte-selectionnee]="presetKey() === preset.key">
+            <input
+              type="radio"
+              name="preset"
+              [value]="preset.key"
+              [checked]="presetKey() === preset.key"
+              (change)="presetKey.set(preset.key)"
+            />
+            @if (preset.mapImageUrl; as image) {
+              <img
+                class="carte-image"
+                [src]="image"
+                [alt]="'Carte ' + preset.name"
+                loading="lazy"
+              />
+            }
+            <span class="carte-nom">{{ preset.name }}</span>
+            <span class="carte-details"
+              >{{ preset.sectorCount }} secteurs · {{ preset.spotCount }} spots</span
+            >
+          </label>
+        }
+      </div>
       <button mat-stroked-button type="button" (click)="importBoard()" [disabled]="creating()">
         <mat-icon>upload_file</mat-icon>
         Importer un board.json
@@ -77,6 +91,66 @@ import {
       .full {
         width: 100%;
         margin-bottom: 12px;
+      }
+      .carte-label {
+        margin: 0 0 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .cartes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .carte {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px;
+        border: 1.5px solid var(--line-2);
+        border-radius: var(--r-sm);
+        background: var(--paper);
+        cursor: pointer;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .carte:hover {
+        border-color: var(--accent);
+      }
+      .carte:has(input:focus-visible) {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .carte-selectionnee {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+      }
+      .carte input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .carte-image {
+        width: 100%;
+        aspect-ratio: 3 / 2;
+        object-fit: cover;
+        border: 1px solid var(--line);
+        border-radius: var(--r-xs);
+        background: var(--paper-2);
+      }
+      .carte-nom {
+        font-weight: 600;
+      }
+      .carte-details {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--muted);
       }
       .error {
         color: var(--danger);

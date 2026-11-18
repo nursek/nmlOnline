@@ -31,8 +31,12 @@ public class BoardPresetService {
 
     public List<BoardPresetSummaryDto> list() {
         return presets.stream()
-                .map(preset -> new BoardPresetSummaryDto(
-                        preset.key, preset.name, boardOf(preset).getSectorCount(), preset.spots.size()))
+                .map(preset -> {
+                    Board board = boardOf(preset);
+                    return new BoardPresetSummaryDto(
+                            preset.key, preset.name, board.getSectorCount(), preset.spots.size(),
+                            board.getMapImageUrl());
+                })
                 .toList();
     }
 
