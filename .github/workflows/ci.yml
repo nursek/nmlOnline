@@ -1,15 +1,15 @@
 name: CI — Tests & Lint
 
 on:
-  push:
-    branches-ignore:
-      - master
   pull_request:
     branches:
       - master
+  workflow_call:
+  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Préfixe littéral : appelé par cd.yml, github.workflow vaudrait le nom de l'appelant et le groupe s'auto-annulerait.
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -18,6 +18,7 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
 
@@ -32,16 +33,13 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Run backend tests
+      - name: Test and package backend
         working-directory: ./nml-ms
-        run: ./mvnw test -B
-
-      - name: Build backend package
-        working-directory: ./nml-ms
-        run: ./mvnw package -DskipTests -B
+        run: ./mvnw -B clean verify
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
 
@@ -49,10 +47,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
-      - name: Set up Node.js 26
+      - name: Set up Node.js 24
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
-          node-version: '26'
+          node-version: '24'
           cache: npm
           cache-dependency-path: nml-ui/package-lock.json
 

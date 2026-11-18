@@ -42,6 +42,11 @@ export class AuthService {
 
   readonly isAuthenticated = computed(() => this._user() !== null);
   readonly isAdmin = computed(() => this._user()?.role === 'ADMIN');
+  // Le MJ n'existe que par partie : son rôle vient de la partie choisie, jamais du jeton.
+  readonly canAdmin = computed(() => {
+    const role = this.instance.selectedRole();
+    return this.isAdmin() || role === 'ADMIN' || role === 'MJ';
+  });
 
   /** Initialize session: try a silent refresh on app bootstrap. */
   async initSession(): Promise<void> {
@@ -64,8 +69,10 @@ export class AuthService {
         this.tokenService.clearAuth();
         this._user.set(null);
       }
-    } catch {
-      this.tokenService.clearAuth();
+    } catch (error) {
+      // Panne passagère (redéploiement, 5xx, timeout) : garder la session pour retenter au prochain chargement.
+      const status = (error as { status?: number })?.status;
+      if (status === 401 || status === 403) this.tokenService.clearAuth();
       this._user.set(null);
     } finally {
       this._loading.set(false);
@@ -94,7 +101,13 @@ export class AuthService {
       const instances = await this.instance.ensureLoaded().catch(() => []);
       const mine = instances.filter((candidate) => candidate.participant);
       if (mine.length === 1) {
-        this.instance.enter(mine[0]);
+        // « //hôte » sortirait du site : enter() passe par location.assign.
+        const returnUrl = this.router.routerState.snapshot.root.queryParamMap.get('returnUrl');
+        if (returnUrl && /^\/(?!\/)/.test(returnUrl)) {
+          this.instance.enter(mine[0], returnUrl);
+        } else {
+          this.instance.enter(mine[0]);
+        }
         return;
       }
       void this.router.navigate(['/parties']).catch(() => undefined);

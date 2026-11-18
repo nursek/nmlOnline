@@ -1,5 +1,4 @@
 import type { Board } from './board.model';
-import type { PageResult } from './index';
 
 export interface RegistrationMode {
   enabled: boolean;
@@ -57,5 +56,3 @@ export interface AdminPreparationStatus {
   unitsUnclassified: number;
   ready: boolean;
 }
-
-export type AdminUserPage = PageResult<AdminUser>;

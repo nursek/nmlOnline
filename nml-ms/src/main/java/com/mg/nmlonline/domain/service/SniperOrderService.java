@@ -101,6 +101,10 @@ public class SniperOrderService {
     }
 
     public void cancel(Long userId, Long boardId, Long orderId) {
+        if (turnLock.isLocked(boardId)) {
+            throw new IllegalStateException(
+                    "La résolution du tour est en cours — réessayez après la fin du tour");
+        }
         Player player = requirePlayer(userId, boardId);
         SniperOrder order = sniperOrderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException(

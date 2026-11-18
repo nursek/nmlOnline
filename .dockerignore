@@ -11,8 +11,8 @@
 *.iws
 
 # Backend build artifacts
-target/
-build/
+**/target
+**/build
 
 # Frontend
 nml-ui/node_modules/
@@ -23,16 +23,16 @@ nml-ui/src/assets/_opt/
 nml-ui/.image-pipeline.json
 
 # Documentation (not needed inside the image)
-*.md
+**/*.md
 
 # Local env files
-.env
-.env.*
+**/.env
+**/.env.*
 
 # OS
 .DS_Store
 Thumbs.db
 
 # Logs
-*.log
-logs/
+**/*.log
+**/logs

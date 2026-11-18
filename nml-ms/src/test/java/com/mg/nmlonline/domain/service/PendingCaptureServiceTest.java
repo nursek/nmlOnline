@@ -47,12 +47,12 @@ class PendingCaptureServiceTest {
     }
 
     @Test
-    @DisplayName("Ligne déjà en attente pour le secteur/tour : aucune nouvelle ligne")
+    @DisplayName("Ligne déjà en attente pour le secteur, même d'un tour précédent : aucune nouvelle ligne")
     void queueNeutralSkipsDuplicate() {
         Board board = boardWithSector();
-        when(repository.existsByBoardIdAndSectorNumberAndTurnAndResolvedFalse(7L, 1, 3)).thenReturn(true);
+        when(repository.existsByBoardIdAndSectorNumberAndResolvedFalse(7L, 1)).thenReturn(true);
 
-        service.queueNeutral(board, 1, 3, List.of(1L, 2L));
+        service.queueNeutral(board, 1, 4, List.of(1L, 2L));
 
         verify(repository, never()).save(any(PendingCapture.class));
     }
@@ -61,7 +61,7 @@ class PendingCaptureServiceTest {
     @DisplayName("Première conquête : le secteur devient neutre et la ligne est créée")
     void queueNeutralCreatesPendingCapture() {
         Board board = boardWithSector();
-        when(repository.existsByBoardIdAndSectorNumberAndTurnAndResolvedFalse(7L, 1, 3)).thenReturn(false);
+        when(repository.existsByBoardIdAndSectorNumberAndResolvedFalse(7L, 1)).thenReturn(false);
 
         service.queueNeutral(board, 1, 3, List.of(1L, 2L));
 

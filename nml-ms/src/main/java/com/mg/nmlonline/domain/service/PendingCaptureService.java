@@ -44,11 +44,11 @@ public class PendingCaptureService {
         if (sector == null) {
             return;
         }
-        // captureAfterBattle puis captureByPresence repassent sur le même secteur au même tour : une seule ligne.
-        if (repository.existsByBoardIdAndSectorNumberAndTurnAndResolvedFalse(board.getId(), sectorNumber, turn)) {
+        sector.setOwnerAndColor(null, null);
+        // Une seule ligne par secteur : captureByPresence repasse à chaque tour tant que le MJ n'a pas tranché.
+        if (repository.existsByBoardIdAndSectorNumberAndResolvedFalse(board.getId(), sectorNumber)) {
             return;
         }
-        sector.setOwnerAndColor(null, null);
         repository.save(PendingCapture.create(board.getId(), sectorNumber, turn, candidates));
     }
 

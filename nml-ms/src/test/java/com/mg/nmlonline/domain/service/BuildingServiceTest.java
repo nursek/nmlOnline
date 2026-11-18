@@ -149,41 +149,6 @@ class BuildingServiceTest {
     }
 
     @Nested
-    @DisplayName("Capture du QG")
-    class CaptureHeadquartersTests {
-
-        @Test
-        @DisplayName("Capture : QG + tous les bâtiments non détruits passent au conquérant")
-        void shouldCaptureAllNonDestroyedBuildings() {
-            Headquarters hq = new Headquarters(1L);
-            stubHeadquarters(hq);
-            WeaponCache cache = new WeaponCache(1L);
-            Bank bank = new Bank(1L);
-            when(buildingRepository.findByPlayerIdAndIsDestroyedFalse(1L))
-                    .thenReturn(List.of(hq, cache, bank));
-
-            buildingService.captureHeadquarters(1L, 2L, 7);
-
-            for (Building b : List.of(hq, cache, bank)) {
-                assertEquals(2L, b.getCapturedByPlayerId());
-                assertEquals(7, b.getCapturedTurn());
-            }
-            verify(buildingRepository).saveAll(List.of(hq, cache, bank));
-        }
-
-        @Test
-        @DisplayName("QG absent → rien ne se passe")
-        void shouldDoNothingWhenHeadquartersMissing() {
-            when(buildingRepository.findByPlayerIdAndBuildingType(1L, BuildingType.HEADQUARTERS))
-                    .thenReturn(Optional.empty());
-
-            buildingService.captureHeadquarters(1L, 2L, 7);
-
-            verify(buildingRepository, never()).saveAll(any());
-        }
-    }
-
-    @Nested
     @DisplayName("Capture de banque")
     class CaptureBankTests {
 

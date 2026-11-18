@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -27,9 +27,7 @@ import { championLabel, medalEmoji } from '../podium/podium.helpers';
 export class PodiumPanelComponent {
   readonly playerColors = input<ReadonlyMap<number, string>>(new Map());
 
-  readonly podiumRef = httpResource<GamePodium>(
-    () => `${environment.apiBaseUrl}/game/podium`,
-  );
+  readonly podiumRef = httpResource<GamePodium>(() => `${environment.apiBaseUrl}/game/podium`);
   readonly podium = computed(() => (this.podiumRef.hasValue() ? this.podiumRef.value() : null));
   readonly champion = computed(() => this.podium()?.champion ?? null);
   readonly topThree = computed(() => (this.podium()?.places ?? []).slice(0, 3));

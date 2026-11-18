@@ -25,8 +25,11 @@ function response(): AuthResponse {
   return { token: 'token', id: 1, name: 'lurio', role: 'USER' };
 }
 
-function setup() {
-  const router = { navigate: jest.fn().mockResolvedValue(true) };
+function setup(returnUrl?: string) {
+  const router = {
+    navigate: jest.fn().mockResolvedValue(true),
+    routerState: { snapshot: { root: { queryParamMap: new Map([['returnUrl', returnUrl]]) } } },
+  };
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
@@ -60,6 +63,25 @@ describe('AuthService — route après login', () => {
 
     expect(enter).toHaveBeenCalledWith(expect.objectContaining({ id: 7, role: 'MJ' }));
     expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('revient à la page demandée avant la connexion, jamais vers un autre site', async () => {
+    for (const [returnUrl, expected] of [
+      ['/journal/3', ['/journal/3']],
+      ['//pirate.example', []],
+    ] as const) {
+      TestBed.resetTestingModule();
+      const { auth, instance: service, http } = setup(returnUrl);
+      const enter = jest.spyOn(service, 'enter').mockImplementation(() => undefined);
+
+      const login = auth.login({ username: 'lurio', password: 'secret' });
+      http.expectOne(`${environment.apiBaseUrl}/login`).flush(response());
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      http.expectOne(`${environment.apiBaseUrl}/instances`).flush([instance(7, true, 'PLAYER')]);
+      await login;
+
+      expect(enter).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }), ...expected);
+    }
   });
 
   it('passe par le sélecteur quand le compte joue plusieurs parties', async () => {

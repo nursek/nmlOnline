@@ -31,9 +31,11 @@ export class AdminService {
       : undefined,
   );
 
-  readonly players = computed(() => this.playersRef.value()?.content ?? []);
+  readonly players = computed(
+    () => (this.playersRef.hasValue() ? this.playersRef.value() : undefined)?.content ?? [],
+  );
   readonly playersTruncated = computed(() => {
-    const page = this.playersRef.value();
+    const page = this.playersRef.hasValue() ? this.playersRef.value() : undefined;
     return !!page && page.content.length < (page.totalElements ?? page.content.length);
   });
   readonly loading = computed(() => this.playersRef.isLoading());
@@ -49,7 +51,9 @@ export class AdminService {
       params: (filter !== 'ALL' ? { status: filter } : {}) as Record<string, string>,
     };
   });
-  readonly orders = computed(() => this.ordersRef.value() ?? []);
+  readonly orders = computed(
+    () => (this.ordersRef.hasValue() ? this.ordersRef.value() : undefined) ?? [],
+  );
   readonly ordersLoading = computed(() => this.ordersRef.isLoading());
 
   readonly exchangeStatusFilter = signal<ExchangeOfferStatusFilter>('ALL');
@@ -62,7 +66,9 @@ export class AdminService {
       params: (filter !== 'ALL' ? { status: filter } : {}) as Record<string, string>,
     };
   });
-  readonly exchanges = computed(() => this.exchangesRef.value()?.content ?? []);
+  readonly exchanges = computed(
+    () => (this.exchangesRef.hasValue() ? this.exchangesRef.value() : undefined)?.content ?? [],
+  );
   readonly exchangesLoading = computed(() => this.exchangesRef.isLoading());
 
   private readonly editPlayerIdState = signal<number | null>(null);
@@ -70,7 +76,9 @@ export class AdminService {
     const id = this.editPlayerIdState();
     return id === null ? undefined : { url: `${environment.apiBaseUrl}/admin/players/${id}` };
   });
-  readonly edit = computed(() => this.editRef.value() ?? null);
+  readonly edit = computed(
+    () => (this.editRef.hasValue() ? this.editRef.value() : undefined) ?? null,
+  );
   readonly editLoading = computed(() => this.editRef.isLoading());
 
   private readonly catalogRef = httpResource<AdminCatalog>(() =>
@@ -78,14 +86,20 @@ export class AdminService {
       ? undefined
       : { url: `${environment.apiBaseUrl}/admin/catalog` },
   );
-  readonly catalog = computed(() => this.catalogRef.value() ?? null);
+  readonly catalog = computed(
+    () => (this.catalogRef.hasValue() ? this.catalogRef.value() : undefined) ?? null,
+  );
 
   private readonly alliancesRequested = signal(false);
   private readonly alliancesRef = httpResource<AdminAllianceHistory>(() =>
     this.alliancesRequested() ? { url: `${environment.apiBaseUrl}/admin/alliances` } : undefined,
   );
-  readonly allianceEntries = computed(() => this.alliancesRef.value()?.alliances ?? []);
-  readonly allianceProposals = computed(() => this.alliancesRef.value()?.proposals ?? []);
+  readonly allianceEntries = computed(
+    () => (this.alliancesRef.hasValue() ? this.alliancesRef.value() : undefined)?.alliances ?? [],
+  );
+  readonly allianceProposals = computed(
+    () => (this.alliancesRef.hasValue() ? this.alliancesRef.value() : undefined)?.proposals ?? [],
+  );
   readonly alliancesLoading = computed(() => this.alliancesRef.isLoading());
 
   private readonly _importing = signal(false);

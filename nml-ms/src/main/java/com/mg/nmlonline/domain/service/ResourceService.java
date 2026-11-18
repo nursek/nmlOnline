@@ -72,13 +72,6 @@ public class ResourceService {
         return false;
     }
 
-    public void collectSectorResource(Player player, String resourceName, int quantity) {
-        if (player != null && resourceName != null && quantity > 0) {
-            player.addResource(resourceName, quantity);
-        }
-        // TODO: Ajouter un nouvel attribut au secteur, indiquant que la ressource a été collectée.
-    }
-
     @Transactional
     public SaleResult sellResource(Long resourceId, int quantity, Long userId, Long boardId) {
         if (quantity < 1 || quantity > SALE_MULTIPLIERS.length) {

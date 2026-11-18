@@ -21,7 +21,7 @@
   "prettier": {
     "printWidth": 100,
     "singleQuote": true,
-    "endOfLine": "lf",
+    "endOfLine": "auto",
     "overrides": [
       {
         "files": "*.html",
@@ -38,6 +38,7 @@
     "@angular/common": "^22.0.5",
     "@angular/compiler": "^22.0.5",
     "@angular/core": "^22.0.5",
+    "@angular/forms": "^22.0.5",
     "@angular/material": "^22.0.3",
     "@angular/platform-browser": "^22.0.5",
     "@angular/router": "^22.0.5",

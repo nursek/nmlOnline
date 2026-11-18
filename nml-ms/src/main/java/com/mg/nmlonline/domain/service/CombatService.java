@@ -36,7 +36,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -65,15 +64,6 @@ public class CombatService {
 
     @Autowired
     private EntityManager em;
-
-    public Optional<Sector> findSectorWithArmy(Player player, Board board) {
-        if (player == null || board == null) {
-            return Optional.empty();
-        }
-
-        List<Sector> sectorsWithArmy = playerStatsService.getSectorsWithCombatEntities(player, board);
-        return sectorsWithArmy.stream().findFirst();
-    }
 
     /**
      * Combat sur un secteur : chaque camp (1 ou 2 alliés fusionnés) engage unités + personnages + bâtiments
@@ -168,11 +158,14 @@ public class CombatService {
         int capturedBuildings = 0;
         boolean defenderHeadquartersCaptured = false;
         Player winner = battle.getWinner();
-        if (winner != null && idsOf(attackerCamp).contains(winner.getId())) {
+        if (winner != null) {
+            // Symétrique comme l'impasse : en duel de rupture le camp « attaquant » n'est que le plus petit id.
+            boolean attackerWon = idsOf(attackerCamp).contains(winner.getId());
             List<CombatEntity> allSurvivors = new ArrayList<>(attackerFighters);
             allSurvivors.addAll(defenderFighters);
-            Player capturer = dominantPlayer(attackerCamp, allSurvivors);
-            CaptureReport capture = captureBuildings(sector, capturer, idsOf(defenderCamp), turn);
+            Player capturer = dominantPlayer(attackerWon ? attackerCamp : defenderCamp, allSurvivors);
+            CaptureReport capture = captureBuildings(sector, capturer,
+                    idsOf(attackerWon ? defenderCamp : attackerCamp), turn);
             capturedBuildings = capture.capturedBuildings();
             defenderHeadquartersCaptured = capture.headquartersCaptured();
         }

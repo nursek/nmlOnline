@@ -11,6 +11,7 @@ import { catchError, switchMap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { TokenService } from './token.service';
 import { AuthService } from './auth.service';
+import { httpErrorMessage } from '../core/http-error.interceptor';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const tokenService = inject(TokenService);
@@ -27,14 +28,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      // 401 = token expiré/absent : tenter un refresh une seule fois
       if (error.status === 401) {
-        return handleUnauthorized(req, next, tokenService, authService, router);
+        return handleUnauthorized(scopedReq, next, tokenService, authService, router);
       }
 
-      // 403 = autorisations insuffisantes : ne PAS tenter de refresh
+      // Un 403 ne se rattrape pas par un refresh.
       if (error.status === 403) {
-        authService.reportForbidden(error.error?.message || 'Accès refusé');
+        authService.reportForbidden(httpErrorMessage(error, 'Accès refusé'));
       }
 
       return throwError(() => error);
@@ -72,12 +72,7 @@ function addTokenToRequest(req: HttpRequest<unknown>, token: string): HttpReques
   });
 }
 
-const RETRY_HEADER = 'X-Retry-After-Refresh';
-
-/**
- * Gère une erreur 401 en tentant un refresh du token.
- * Utilise un header personnalisé pour éviter les boucles infinies.
- */
+// Seul l'échec du refresh déconnecte : une erreur métier sur la requête rejouée remonte telle quelle.
 function handleUnauthorized(
   req: HttpRequest<unknown>,
   next: HttpHandlerFn,
@@ -85,24 +80,19 @@ function handleUnauthorized(
   authService: AuthService,
   router: Router,
 ): Observable<HttpEvent<unknown>> {
-  // Si la requête a déjà été retentée après un refresh, ne pas boucler
-  if (req.headers.has(RETRY_HEADER)) {
+  const logout = (error: unknown) => {
     authService.clear();
     void router.navigate(['/login']);
-    return throwError(() => new Error('Token refresh failed after retry'));
-  }
-
+    return throwError(() => error);
+  };
   return tokenService.refreshToken().pipe(
-    switchMap((newToken) => {
-      const retriedReq = req.clone({
-        setHeaders: { [RETRY_HEADER]: '1' },
-      });
-      return next(addTokenToRequest(retriedReq, newToken));
-    }),
-    catchError((refreshError) => {
-      authService.clear();
-      void router.navigate(['/login']);
-      return throwError(() => refreshError);
-    }),
+    catchError(logout),
+    switchMap((newToken) =>
+      next(addTokenToRequest(req, newToken)).pipe(
+        catchError((error: HttpErrorResponse) =>
+          error.status === 401 ? logout(error) : throwError(() => error),
+        ),
+      ),
+    ),
   );
 }

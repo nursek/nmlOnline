@@ -55,12 +55,7 @@ export class PodiumComponent {
   readonly saving = signal(false);
   readonly adjustError = signal<string | null>(null);
 
-  readonly canAdmin = computed(
-    () =>
-      this.auth.isAdmin() ||
-      this.instance.selectedRole() === 'ADMIN' ||
-      this.instance.selectedRole() === 'MJ',
-  );
+  readonly canAdmin = this.auth.canAdmin;
 
   readonly causeLabel = causeLabel;
   readonly championLabel = championLabel;

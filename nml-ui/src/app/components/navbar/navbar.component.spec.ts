@@ -34,6 +34,7 @@ function build(isAdmin: boolean, accessible: number, finished = false): NavbarCo
         useValue: {
           isAuthenticated: signal(true),
           isAdmin: signal(isAdmin),
+          canAdmin: signal(isAdmin),
           user: signal({ id: 1, username: 'lurio' }),
         },
       },

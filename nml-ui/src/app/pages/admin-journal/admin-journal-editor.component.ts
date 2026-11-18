@@ -16,12 +16,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import {
-  GazetteAdminIssue,
-  GazetteArticle,
-  GazetteContent,
-  GazetteIssue,
-} from '../../models';
+import { GazetteAdminIssue, GazetteArticle, GazetteContent, GazetteIssue } from '../../models';
 import { environment } from '../../../environments/environment';
 import { ApiService } from '../../services/api.service';
 import { PlayerDirectoryService } from '../../services/player-directory.service';
@@ -127,12 +122,7 @@ export class AdminJournalEditorComponent {
     });
   }
 
-  updateField(
-    list: ArticleList,
-    index: number,
-    field: keyof GazetteArticle,
-    event: Event,
-  ): void {
+  updateField(list: ArticleList, index: number, field: keyof GazetteArticle, event: Event): void {
     const value = (event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement)
       .value;
     const normalized = field === 'photoPlayerName' && value === '' ? null : value;
@@ -201,10 +191,7 @@ export class AdminJournalEditorComponent {
     window.print();
   }
 
-  private async mutate(
-    call: () => Observable<GazetteAdminIssue>,
-    message: string,
-  ): Promise<void> {
+  private async mutate(call: () => Observable<GazetteAdminIssue>, message: string): Promise<void> {
     this.saving.set(true);
     this.error.set(null);
     try {

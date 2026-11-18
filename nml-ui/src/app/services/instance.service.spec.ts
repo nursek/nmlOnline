@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { InstanceService, routeForInstance } from './instance.service';
+import { InstanceService, routeForInstance, sameOriginTarget } from './instance.service';
 import { authInterceptor } from './auth.interceptor';
 import { GameInstance } from '../models';
 import { environment } from '../../environments/environment';
@@ -193,5 +193,15 @@ describe('routeForInstance', () => {
   it('garde les routes de jeu une fois la partie démarrée', () => {
     expect(routeForInstance({ ...base, currentTurn: 1, role: 'ADMIN' })).toBe('/admin');
     expect(routeForInstance({ ...base, currentTurn: 1, role: 'PLAYER' })).toBe('/accueil');
+  });
+});
+
+describe('sameOriginTarget', () => {
+  it('ramène toute cible hors origine à la route de la partie', () => {
+    expect(sameOriginTarget('/joueur?x=1#y', '/accueil')).toBe('/joueur?x=1#y');
+    expect(sameOriginTarget('/\\evil.example', '/accueil')).toBe('/accueil');
+    expect(sameOriginTarget('//evil.example', '/accueil')).toBe('/accueil');
+    expect(sameOriginTarget('https://evil.example/joueur', '/accueil')).toBe('/accueil');
+    expect(sameOriginTarget('javascript:alert(1)', '/accueil')).toBe('/accueil');
   });
 });

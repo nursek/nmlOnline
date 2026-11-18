@@ -396,10 +396,8 @@ export class NavbarComponent {
 
   readonly isAuthenticated = this.auth.isAuthenticated;
   readonly isAdmin = this.auth.isAdmin;
-  readonly canAdmin = computed<boolean>(() => {
-    const role = this.instance.selectedRole();
-    return this.auth.isAdmin() || role === 'ADMIN' || role === 'MJ';
-  });
+  readonly canAdmin = this.auth.canAdmin;
+
   readonly user = this.auth.user;
   readonly canSwitchInstance = computed(() => this.instance.instances().length > 1);
 

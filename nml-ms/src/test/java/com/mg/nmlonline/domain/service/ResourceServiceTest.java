@@ -256,7 +256,7 @@ class ResourceServiceTest {
     }
 
     @Nested
-    @DisplayName("Transferts et collecte")
+    @DisplayName("Transferts")
     class TransferTests {
 
         @Test
@@ -290,15 +290,5 @@ class ResourceServiceTest {
             assertEquals(0, to.getResourceQuantity("Auramite"));
         }
 
-        @Test
-        @DisplayName("Collecte ignorée si paramètres invalides")
-        void shouldIgnoreInvalidCollection() {
-            // Le secteur n'est pas marqué collecté : la ressource reste re-collectable.
-            resourceService.collectSectorResource(null, "Auramite", 500);
-            resourceService.collectSectorResource(player, null, 500);
-            resourceService.collectSectorResource(player, "Auramite", 0);
-
-            assertEquals(0, player.getResourceQuantity("Auramite"));
-        }
     }
 }

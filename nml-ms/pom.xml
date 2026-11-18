@@ -11,19 +11,6 @@
 	<artifactId>nml-ms</artifactId>
     <name>nml-ms</name>
 	<description>nml-ms</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -31,6 +18,8 @@
         <java.version>25</java.version>
         <spring.boot.version>4.1.1</spring.boot.version>
         <lombok.version>1.18.48</lombok.version>
+        <jjwt.version>0.12.5</jjwt.version>
+        <byte-buddy-agent.version>1.18.11</byte-buddy-agent.version>
     </properties>
 
     <dependencyManagement>
@@ -64,12 +53,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
-            <version>${spring.boot.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
-            <version>${spring.boot.version}</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -82,23 +69,19 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
-            <version>${spring.boot.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
-            <version>${spring.boot.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <version>${spring.boot.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
-            <version>${spring.boot.version}</version>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
@@ -113,7 +96,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-flyway</artifactId>
-            <version>${spring.boot.version}</version>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -135,24 +117,23 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
-            <version>${spring.boot.version}</version>
         </dependency>
         <!-- jjwt-gson plutôt que jjwt-jackson : évite de trainer Jackson 2 (et ses CVE) à côté de Jackson 3. -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>0.12.5</version>
+            <version>${jjwt.version}</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>0.12.5</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-gson</artifactId>
-            <version>0.12.5</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -162,7 +143,7 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy-agent</artifactId>
-            <version>1.18.11</version>
+            <version>${byte-buddy-agent.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -183,10 +164,6 @@
                     </annotationProcessorPaths>
                     <release>${java.version}</release>
                     <parameters>true</parameters>
-                    <compilerArgs>
-                        <arg>-encoding</arg>
-                        <arg>UTF-8</arg>
-                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
@@ -196,7 +173,7 @@
                 <configuration>
                     <argLine>
                         -Dfile.encoding=UTF-8
-                        -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.18.11/byte-buddy-agent-1.18.11.jar
+                        -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/${byte-buddy-agent.version}/byte-buddy-agent-${byte-buddy-agent.version}.jar
                     </argLine>
                 </configuration>
             </plugin>
@@ -222,12 +199,5 @@
             </plugin>
         </plugins>
     </build>
-    <repositories>
-        <repository>
-            <id>central</id>
-            <name>Maven Central</name>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-    </repositories>
 
 </project>

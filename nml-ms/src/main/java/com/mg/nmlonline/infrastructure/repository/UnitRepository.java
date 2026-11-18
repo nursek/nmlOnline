@@ -16,8 +16,10 @@ public interface UnitRepository extends JpaRepository<Unit, Long> {
     List<Unit> findByPlayerIdAndSectorIsNull(Long playerId);
 
     // Projection : ne charge pas les entités avant les verrous joueurs (sinon snapshot périmé).
-    @Query("select distinct u.playerId from Unit u where u.sector is null and u.playerId is not null")
-    List<Long> findPlayerIdsWithReserveUnits();
+    // Filtre par partie via le joueur : une unité en réserve n'a pas de secteur, donc pas de board.
+    @Query("select distinct u.playerId from Unit u where u.sector is null"
+            + " and u.playerId in (select p.id from Player p where p.boardId = :boardId)")
+    List<Long> findPlayerIdsWithReserveUnits(@Param("boardId") Long boardId);
 
     // Une unité sans secteur n'appartient à aucune partie : elle est replacée au QG avant la résolution.
     @Query("select u from Unit u where u.sector.board.id = :boardId")

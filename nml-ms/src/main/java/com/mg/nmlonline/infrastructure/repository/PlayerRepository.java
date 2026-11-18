@@ -22,8 +22,6 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
 
     List<Player> findByBoardId(Long boardId);
 
-    List<Player> findByBoardIdAndEliminatedTurnOrderByNameAsc(Long boardId, Integer eliminatedTurn);
-
     Page<Player> findByBoardIdOrderByNameAsc(Long boardId, Pageable pageable);
 
     long countByBoardId(Long boardId);

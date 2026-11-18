@@ -26,6 +26,7 @@ export default tseslint.config(
       ...tseslint.configs.recommended,
       ...angularEslint.configs.tsRecommended,
     ],
+    processor: angularEslint.processInlineTemplates,
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {

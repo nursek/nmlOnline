@@ -82,7 +82,7 @@ export class InstanceService {
   enter(instance: GameInstance, target = routeForInstance(instance)): void {
     // Rechargement complet : les ressources racine et les httpResource ne se rechargent pas en SPA.
     this.select(instance);
-    window.location.assign(target);
+    window.location.assign(sameOriginTarget(target, routeForInstance(instance)));
   }
 
   select(instance: GameInstance): void {
@@ -101,6 +101,18 @@ export class InstanceService {
     sessionStorage.removeItem(ROLE_KEY);
     this._selectedId.set(null);
     this._selectedRole.set(null);
+  }
+}
+
+/** `location.assign` résout `/\hôte` hors origine : toute cible hors origine retombe sur la route de la partie. */
+export function sameOriginTarget(target: string, fallback: string): string {
+  try {
+    const url = new URL(target, window.location.origin);
+    return url.origin === window.location.origin
+      ? `${url.pathname}${url.search}${url.hash}`
+      : fallback;
+  } catch {
+    return fallback;
   }
 }
 

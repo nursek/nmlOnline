@@ -152,13 +152,6 @@ public class GazetteService {
         return read(issue);
     }
 
-    @Transactional(readOnly = true)
-    public Integer findLatestPublishedTurn(Long boardId) {
-        return repository.findFirstByBoardIdAndStatusOrderByTurnDesc(boardId, GazetteStatus.PUBLISHED)
-                .map(GazetteIssue::getTurn)
-                .orElse(null);
-    }
-
     private GazetteIssue require(Long boardId, int turn) {
         if (turn < 1) {
             throw new IllegalArgumentException("Tour invalide : " + turn);

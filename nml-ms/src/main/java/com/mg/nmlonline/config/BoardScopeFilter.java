@@ -84,6 +84,10 @@ public class BoardScopeFilter extends OncePerRequestFilter {
         }
         request.setAttribute(BOARD_ID_ATTRIBUTE, boardId);
         grantGameMasterAuthority(request, boardId);
+        if (!participates(request, boardId)) {
+            reject(response, HttpStatus.FORBIDDEN, "Vous ne participez pas à cette partie.");
+            return;
+        }
         if (!enforceGameMasterPlayerScope(request, boardId)) {
             reject(response, HttpStatus.FORBIDDEN,
                     "Ce joueur n'appartient pas à la partie sélectionnée.");
@@ -112,12 +116,18 @@ public class BoardScopeFilter extends OncePerRequestFilter {
         }
     }
 
+    private boolean participates(HttpServletRequest request, Long boardId) {
+        return hasAuthority("ROLE_ADMIN") || hasAuthority(INSTANCE_ADMIN_ROLE)
+                || (request.getAttribute("userId") instanceof Long userId
+                && playerRepository.findByUserIdAndBoardId(userId, boardId).isPresent());
+    }
+
     /** Un MJ ne peut lire ou éditer que les joueurs de sa partie, même en changeant l'id dans l'URL. */
     private boolean enforceGameMasterPlayerScope(HttpServletRequest request, Long boardId) {
         if (hasAuthority("ROLE_ADMIN") || !hasAuthority(INSTANCE_ADMIN_ROLE)) {
             return true;
         }
-        String path = request.getRequestURI();
+        String path = RequestPaths.decoded(request);
         if (!path.startsWith(ADMIN_PLAYER_PREFIX) || path.equals(ADMIN_PLAYER_IMPORT)) {
             return true;
         }
@@ -141,7 +151,7 @@ public class BoardScopeFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        String path = request.getRequestURI();
+        String path = RequestPaths.decoded(request);
         // Créer une partie ne peut pas dépendre d'une partie déjà choisie.
         if (path.equals("/api/boards") && "POST".equals(request.getMethod())) {
             return true;

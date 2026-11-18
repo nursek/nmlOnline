@@ -45,8 +45,11 @@ USER nmlonline:nmlonline
 # Spring Boot serves static files from /app/static and classpath:/static/
 EXPOSE 8080
 
-# JWT_SECRET and JWT_PEPPER must be provided at runtime:
-#   docker run -e JWT_SECRET=<secret> -e JWT_PEPPER=<pepper> ...
+# Sans profil, l'image démarrerait en H2 + comptes de démo + inscription ouverte.
+ENV SPRING_PROFILES_ACTIVE=prod
+# Le défaut JVM (25 % de la RAM du conteneur) sous-utilise un conteneur dédié.
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75"
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \

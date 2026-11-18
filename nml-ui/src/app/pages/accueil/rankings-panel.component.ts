@@ -34,10 +34,12 @@ export class RankingsPanelComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   readonly playerColors = input<ReadonlyMap<number, string>>(new Map());
-  readonly isAdmin = this.auth.isAdmin;
+  readonly isAdmin = this.auth.canAdmin;
 
   readonly rankingsRef = httpResource<Rankings>(() => `${environment.apiBaseUrl}/rankings`);
-  readonly rankings = computed(() => this.rankingsRef.value() ?? null);
+  readonly rankings = computed(
+    () => (this.rankingsRef.hasValue() ? this.rankingsRef.value() : undefined) ?? null,
+  );
   readonly available = computed(() => (this.rankings()?.turn ?? 0) >= 2);
 
   readonly editingPlayerId = signal<number | null>(null);

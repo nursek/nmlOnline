@@ -34,8 +34,6 @@ public interface MovementOrderRepository extends JpaRepository<MovementOrder, Lo
         return findByBoardIdAndTurnAndStatus(boardId, turn, MovementStatus.PENDING);
     }
 
-    List<MovementOrder> findByPlayerIdAndTurn(Long playerId, int turn);
-
     List<MovementOrder> findByPlayerIdAndTurnAndStatus(Long playerId, int turn, MovementStatus status);
 
     List<MovementOrder> findByPlayerIdAndStatus(Long playerId, MovementStatus status);

@@ -12,7 +12,14 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-journal-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, MatButtonModule, MatCardModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [
+    DatePipe,
+    RouterLink,
+    MatButtonModule,
+    MatCardModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+  ],
   templateUrl: './journal-list.component.html',
   styleUrls: ['./journal-list.component.scss'],
 })

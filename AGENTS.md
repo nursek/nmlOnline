@@ -47,6 +47,9 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   exige l'en-tête `X-Board-Id` (`BoardScopeFilter`) ; jamais de repli sur « la première partie »
   (l'absence d'en-tête n'est tolérée que si la base ne contient qu'un plateau). Tout service qui
   résout un joueur le fait par `(userId, boardId)` — jamais `findByUserId` seul.
+- **Chemins dans les filtres** : comparer `RequestPaths.decoded(request)`, jamais `getRequestURI()` brut —
+  Spring Security et MVC routent sur le chemin décodé, un `/api/%61dmin/…` contournerait un `startsWith`.
+  Avec `X-Board-Id`, `BoardScopeFilter` refuse (403) un compte ni `ADMIN`, ni MJ, ni joueur de la partie.
 - **Rôles** : `ADMIN` est global (compte, création de parties, catalogue) ; le MJ est **par partie**
   (`board_admins` → `ROLE_INSTANCE_ADMIN`, ajoutée à la requête seulement, jamais dans le jeton).
   Les endpoints plateforme gardent `@PreAuthorize("hasRole('ADMIN')")`. Un MJ n'est jamais un joueur
@@ -57,7 +60,8 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   `nml-ms/src/main/resources/db/migration/` (actif en `test` et `prod` seulement ; jamais modifier
   une migration appliquée). Livré avec l'entité.
 - Jamais de `JWT_SECRET` / `JWT_PEPPER` / identifiants DB dans le dépôt — variables
-  d'environnement uniquement. Pas de console H2, pas de `@CrossOrigin` (CORS dans `CorsConfig`).
+  d'environnement uniquement ; les tests génèrent les leurs (`TestSecrets`), ne jamais en écrire un en dur.
+  Mode démo en prod : `DEMO_PASSWORD` obligatoire (mot de passe = nom réservé à dev/test). Pas de console H2, pas de `@CrossOrigin` (CORS dans `CorsConfig`).
 - **JWT** : access token = claim `type=access`, refresh = `type=refresh` ; ne jamais accepter l'un pour l'autre.
 - **Inscription** : ouverte en dev/test, fermée en prod ; en prod, seul le code
   `REGISTRATION_INVITE_CODE` permet de créer un compte (`app.registration.open=false`).
@@ -113,10 +117,14 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   portent le contenu hors inventaire ; `Player.equipments`/`resources` sont filtrés
   (`@SQLRestriction`) — passer par `getAllEquipmentStacks()`/`getUsableWeaponCaches()` et clore
   les `BUY_EQUIPMENT` actifs (`discardActiveActionsReferencing`) avant tout retrait de stock.
+- **Résolution** : tant que `TurnLock` est pris, toute mutation joueur est refusée (achat, placement, ordre et son
+  annulation, alliance acceptée ou trahie, undo, récolte) — un nouveau service mutant appelle `turnLock.isLocked(boardId)`.
+  `ReserveUnitPlacer.placeAllAtHeadquarters(boardId)` ne touche que la partie résolue.
 - **Tour** : `TurnService.advanceTurn(boardId)`, `TurnService.setCurrentTurn(boardId, turn)` (navigation dev) et
   `TurnResolutionOrchestrator` mutent `Board.currentTurn` — les trois doivent publier/invalider
   `TurnService.cachedTurns` (`publishTurn(boardId, turn)` avant commit, purge sur rollback).
-  Session de l'orchestrateur en mémoire, JVM unique, perdue au redémarrage.
+  Sessions de l'orchestrateur en mémoire (une par partie), JVM unique, perdues au redémarrage ; `AdminController`
+  sérialise les étapes par `synchronized` hors transaction.
 - **Scénarios dev** : `TurnResolutionScenarioSeeder.resetScenarioArena` supprime les
   `EliminationEvent`/`GazetteIssue` du board ; sinon le podium et l'archive de démo gardent des
   fantômes. `POST /api/admin/dev/seed-end-game` termine la partie avec `nursek` survivant et crée
@@ -167,7 +175,8 @@ consomment, ils ne possèdent pas l'état global.
 
 - **Partie active** : `InstanceService` (choisie après login, en `sessionStorage`) ; l'intercepteur
   pose `X-Board-Id` sur `/api/**` sauf auth et `/instances`. Le rôle MJ vient de `selectedRole()`,
-  jamais du jeton.
+  jamais du jeton : tester `AuthService.canAdmin()` (admin plateforme ou MJ de la partie), pas `isAdmin()`.
+- **httpResource** : `value()` lève en état d'erreur — toujours `ref.hasValue() ? ref.value() : repli`.
 - **Guards** : `instanceGuard` avant `playerGuard`/`adminGuard` ; changer de partie recharge la page
   (tous les `httpResource` racine sont liés à la partie).
 - **Routes SPA** : toute nouvelle route Angular doit être ajoutée à `SpaForwardController`

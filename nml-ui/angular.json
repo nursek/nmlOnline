@@ -32,7 +32,8 @@
               {
                 "glob": "**/*",
                 "input": "src/assets",
-                "output": "/assets"
+                "output": "/assets",
+                "ignore": ["**/*.md"]
               }
             ],
             "styles": ["src/styles.scss"]

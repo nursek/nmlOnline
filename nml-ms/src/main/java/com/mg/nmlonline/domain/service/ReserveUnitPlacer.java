@@ -32,10 +32,10 @@ public class ReserveUnitPlacer {
     }
 
     @Transactional
-    public int placeAllAtHeadquarters() {
+    public int placeAllAtHeadquarters(Long boardId) {
         int placed = 0;
         // Verrou joueur AVANT de lire ses unités : sinon un placement concurrent est écrasé par un snapshot périmé.
-        for (Long playerId : unitRepository.findPlayerIdsWithReserveUnits().stream().sorted().toList()) {
+        for (Long playerId : unitRepository.findPlayerIdsWithReserveUnits(boardId).stream().sorted().toList()) {
             playerRepository.findByIdForUpdate(playerId);
             Sector headquarters = findHeadquartersSector(playerId);
             if (headquarters == null) {

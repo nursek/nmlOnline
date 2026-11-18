@@ -89,8 +89,8 @@ export class AllianceComponent {
   async betray(allianceId: number, allyName: string): Promise<void> {
     const confirmed = await this.confirm(
       'Trahir cette alliance ?',
-      `Trahir ${allyName} donne un bonus de trahison (15 % + 10 % par tour d'alliance, ce tour uniquement) `
-        + 'et sera annoncé publiquement au tour suivant. Vos unités restées chez lui se battront.',
+      `Trahir ${allyName} donne un bonus de trahison (15 % + 10 % par tour d'alliance, ce tour uniquement) ` +
+        'et sera annoncé publiquement au tour suivant. Vos unités restées chez lui se battront.',
       'Trahir',
     );
     if (!confirmed) return;

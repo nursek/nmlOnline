@@ -12,9 +12,12 @@ export const preparationGuard: CanActivateFn = async (): Promise<boolean | UrlTr
     // Liste indisponible : la garde de partie affichera l'erreur de chargement.
     return true;
   }
-  const current = instance.selected();
-  if (current?.currentTurn === 0 && current.role === 'PLAYER') {
-    return router.createUrlTree(['/joueur']);
-  }
-  return true;
+  const inPreparation = () => {
+    const current = instance.selected();
+    return current?.currentTurn === 0 && current.role === 'PLAYER';
+  };
+  if (!inPreparation()) return true;
+  // La liste est mise en cache pour la page : sans relecture, le joueur resterait bloqué après le lancement.
+  await instance.load().catch(() => undefined);
+  return inPreparation() ? router.createUrlTree(['/joueur']) : true;
 };

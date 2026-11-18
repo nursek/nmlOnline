@@ -29,3 +29,6 @@ nml-ui/.image-pipeline.json
 
 ### Logs ###
 *.log
+
+### Serena ###
+.serena/

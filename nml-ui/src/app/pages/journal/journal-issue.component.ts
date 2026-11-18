@@ -20,7 +20,13 @@ import { GazetteTemplateComponent } from '../../shared/gazette/gazette-template.
 @Component({
   selector: 'app-journal-issue',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatButtonModule, MatIconModule, MatProgressSpinnerModule, GazetteTemplateComponent],
+  imports: [
+    RouterLink,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    GazetteTemplateComponent,
+  ],
   templateUrl: './journal-issue.component.html',
   styleUrls: ['./journal-issue.component.scss'],
 })
@@ -33,12 +39,7 @@ export class JournalIssueComponent {
     this.turn() === null ? undefined : `${environment.apiBaseUrl}/game/gazette/${this.turn()}`,
   );
   readonly issue = computed(() => (this.issueRef.hasValue() ? this.issueRef.value() : null));
-  readonly canAdmin = computed(
-    () =>
-      this.auth.isAdmin() ||
-      this.instance.selectedRole() === 'ADMIN' ||
-      this.instance.selectedRole() === 'MJ',
-  );
+  readonly canAdmin = this.auth.canAdmin;
 
   retry(): void {
     this.issueRef.reload();

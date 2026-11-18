@@ -106,7 +106,7 @@ import { groupBattleLog } from './turn-export.helpers';
         font-size: 1.15rem;
       }
       .standoff-badge {
-        background: rgba(195,75,28, 0.15);
+        background: rgba(195, 75, 28, 0.15);
         color: var(--accent-ink);
         padding: 0.1rem 0.5rem;
         border-radius: var(--r-xs);
@@ -124,7 +124,7 @@ import { groupBattleLog } from './turn-export.helpers';
       .camp {
         padding: 0.15rem 0.55rem;
         border-radius: var(--r-xs);
-        background: rgba(93,86,69, 0.18);
+        background: rgba(93, 86, 69, 0.18);
         color: var(--ink);
       }
       .camp.eliminated {
@@ -132,11 +132,11 @@ import { groupBattleLog } from './turn-export.helpers';
         text-decoration: line-through;
       }
       .camp.attacker {
-        background: rgba(195,75,28, 0.15);
+        background: rgba(195, 75, 28, 0.15);
         color: var(--accent-ink);
       }
       .camp.defender {
-        background: rgba(38,64,121, 0.15);
+        background: rgba(38, 64, 121, 0.15);
         color: var(--cobalt-deep);
       }
       .vs {
@@ -300,7 +300,9 @@ export class CombatLogDialogComponent {
       parts.push(`Infanterie : ${force.infantry.map((unit) => unit.displayName).join(', ')}`);
     }
     if (force.buildings.length) {
-      parts.push(`Bâtiments : ${force.buildings.map((building) => building.displayName).join(', ')}`);
+      parts.push(
+        `Bâtiments : ${force.buildings.map((building) => building.displayName).join(', ')}`,
+      );
     }
     return parts.join(' · ');
   }

@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -47,7 +48,7 @@ import java.util.stream.Collectors;
  * {@code startSession} → {@code advanceHop} × N → {@code resolveBattle} par conflit
  * → {@code finalizeTurn}.
  *
- * <p>Session en mémoire, single-JVM (perdue au redémarrage). {@link TurnLock} est
+ * <p>Une session par partie, en mémoire, single-JVM (perdue au redémarrage). {@link TurnLock} est
  * acquis au {@code startSession} et tenu jusqu'à {@code finalizeTurn}/{@code abort},
  * bloquant {@link TurnService#advanceTurn()} en parallèle.
  */
@@ -78,7 +79,7 @@ public class TurnResolutionOrchestrator {
 
     private static final long SESSION_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
 
-    private volatile Session session;
+    private final Map<Long, Session> sessions = new ConcurrentHashMap<>();
 
     @Autowired
     public TurnResolutionOrchestrator(TurnLock turnLock,
@@ -126,12 +127,10 @@ public class TurnResolutionOrchestrator {
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
     public synchronized TurnResolutionStateDto startSession(Long boardId) {
         // Session abandonnée (onglet fermé) : on la libère au bout de 2 h pour ne pas figer le jeu.
-        if (session != null && System.currentTimeMillis() - session.startedAt > SESSION_TIMEOUT_MS) {
-            turnLock.release(session.boardId);
-            session = null;
-        }
-        if (session != null && !session.boardId.equals(boardId)) {
-            throw new IllegalStateException("Une résolution est déjà en cours sur une autre partie");
+        Session stale = sessions.get(boardId);
+        if (stale != null && System.currentTimeMillis() - stale.startedAt > SESSION_TIMEOUT_MS) {
+            turnLock.release(boardId);
+            sessions.remove(boardId);
         }
         if (!turnLock.tryAcquire(boardId)) {
             throw new IllegalStateException("Une résolution de fin de tour est déjà en cours");
@@ -145,14 +144,14 @@ public class TurnResolutionOrchestrator {
                 throw new IllegalStateException("Partie en préparation : démarrez-la avant de résoudre un tour");
             }
             int turnEnding = board.getCurrentTurn();
-            reserveUnitPlacer.placeAllAtHeadquarters();
+            reserveUnitPlacer.placeAllAtHeadquarters(boardId);
             MovementService.ResolutionContext ctx = movementService.prepareResolution(turnEnding, board);
             Session s = new Session(boardId, ctx, turnEnding, HarvestAutoCollector.ownersBySector(board));
             // Conflits de rupture/trahison détectés dès la préparation (ex-alliés co-localisés).
             for (SectorConflict conflict : ctx.getConflicts()) {
                 s.pendingConflicts.add(new PendingConflict(++s.conflictIdSeq, conflict));
             }
-            this.session = s;
+            sessions.put(boardId, s);
             return toStateDto(s);
         } catch (RuntimeException e) {
             turnLock.release(boardId);
@@ -476,7 +475,7 @@ public class TurnResolutionOrchestrator {
             return dto;
         } finally {
             turnLock.release(s.boardId);
-            this.session = null;
+            sessions.remove(s.boardId);
         }
     }
 
@@ -591,18 +590,15 @@ public class TurnResolutionOrchestrator {
 
     /** Abandon soft : libère le verrou sans rollback des entités déplacées ni des combats résolus. */
     public synchronized void abort(Long boardId) {
-        Session s = this.session;
-        if (s == null || !s.boardId.equals(boardId)) {
-            return;
+        if (sessions.remove(boardId) != null) {
+            turnLock.release(boardId);
         }
-        turnLock.release(s.boardId);
-        this.session = null;
     }
 
     @Transactional(readOnly = true)
     public synchronized TurnResolutionStateDto getState(Long boardId) {
-        Session s = this.session;
-        if (s == null || !s.boardId.equals(boardId)) {
+        Session s = sessions.get(boardId);
+        if (s == null) {
             TurnResolutionStateDto dto = new TurnResolutionStateDto();
             dto.setActive(false);
             return dto;
@@ -611,8 +607,8 @@ public class TurnResolutionOrchestrator {
     }
 
     private Session requireSession(Long boardId) {
-        Session s = this.session;
-        if (s == null || !s.boardId.equals(boardId)) {
+        Session s = sessions.get(boardId);
+        if (s == null) {
             throw new IllegalStateException("Aucune session de résolution active sur cette partie");
         }
         return s;

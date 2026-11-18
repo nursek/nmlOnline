@@ -40,7 +40,7 @@ export class PlayerActionsService {
     try {
       this._actions.set(await firstValueFrom(this.api.getPlayerActions()));
     } catch (error) {
-      this._error.set(httpErrorMessage(error, "Erreur lors du chargement des actions"));
+      this._error.set(httpErrorMessage(error, 'Erreur lors du chargement des actions'));
     } finally {
       this._loading.set(false);
     }
