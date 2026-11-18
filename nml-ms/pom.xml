@@ -16,7 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>25</java.version>
-        <spring.boot.version>4.1.1</spring.boot.version>
+        <spring.boot.version>4.1.2</spring.boot.version>
         <lombok.version>1.18.48</lombok.version>
         <jjwt.version>0.12.5</jjwt.version>
         <byte-buddy-agent.version>1.18.11</byte-buddy-agent.version>
