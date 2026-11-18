@@ -163,7 +163,7 @@ export function equipmentBonusSummary(eq: Equipment): string {
   return parts.join(' ; ');
 }
 
-/** « Flensing Claw (Arme de corps-à-corps) : +20 % Pdc. 100 ₡. » */
+/** « Poing américain (Arme de corps-à-corps) : +20 % Pdc. 100 ₡. » */
 export function equipmentSummary(eq: Equipment, label: string = eq.name): string {
   const bonuses = equipmentBonusSummary(eq);
   const core = `${label} (${equipmentCategoryLabel(eq.category)})`;

@@ -19,11 +19,11 @@ class EquipmentAimMalusLoaderTest {
     @Test
     @DisplayName("les deux fusils réduisent le malus de visée, le gilet l'augmente pour l'adversaire")
     void shouldLoadSniperAimMalus() {
-        Equipment shredder = equipmentRepository.findByName("Particle Shredder").orElseThrow();
+        Equipment shredder = equipmentRepository.findByName("Fusil de sniper lourd").orElseThrow();
         assertEquals(10, shredder.getAimMalusReduction());
         assertEquals(0, shredder.getEnemyAimMalus());
 
-        Equipment exterminator = equipmentRepository.findByName("Enmitic Exterminator").orElseThrow();
+        Equipment exterminator = equipmentRepository.findByName("Fusil de sniper de combat").orElseThrow();
         assertEquals(15, exterminator.getAimMalusReduction());
 
         Equipment gilet = equipmentRepository.findByName("Gilet de camouflage optique").orElseThrow();

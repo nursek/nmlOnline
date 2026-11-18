@@ -480,7 +480,7 @@ class PlayerActionServiceTest {
         playerRepository.save(player);
         entityManager.flush();
 
-        Equipment eq = equipmentService.findByName("Gauss Blaster").orElseThrow();
+        Equipment eq = equipmentService.findByName("Pistolet-mitrailleur").orElseThrow();
         BuyEquipmentItemDto item = new BuyEquipmentItemDto();
         item.setName(eq.getName());
         item.setQuantity(1);
@@ -494,7 +494,7 @@ class PlayerActionServiceTest {
         entityManager.flush();
 
         List<PlayerActionDto> english = playerActionService.getCurrentTurnActions(player.getUserId(), boardId());
-        assertEquals("Achat de 1 × Gauss Blaster", english.getFirst().getLabel());
+        assertEquals("Achat de 1 × Pistolet-mitrailleur", english.getFirst().getLabel());
     }
 
     private Unit addUnit(Sector sector, Player player, UnitClass... classes) {

@@ -1,40 +1,40 @@
 equipmentName,unitClass
-Enmitic Disintegrator Pistol,LEGER
-Gauss Blaster,LEGER
-Tesla Carbine,LEGER
-Gauss Flayer,TIREUR
-Gauss Reaper,TIREUR
-Gauss Destructor,TIREUR
-Particle Caster,MASTODONTE
-Transdimensional Beamer,MASTODONTE
-Particle Beamer,MASTODONTE
-Gauss Cannon,PILOTE_DESTRUCTEUR
-Heavy Gauss Cannon,PILOTE_DESTRUCTEUR
-Enmitic Annihilator,PILOTE_DESTRUCTEUR
-Synaptic Disintegrator,SNIPER
-Particle Shredder,SNIPER
-Enmitic Exterminator,SNIPER
-Flensing Claw,LEGER
-Voidblade,LEGER
-Hyperphase Reap-Blade,TIREUR
-Hyperphase Sword,TIREUR
-Hyperphase Glaive,MASTODONTE
-Hyperphase Harvester,MASTODONTE
-Monomolecular Proboscis,PILOTE_DESTRUCTEUR
-Rod of Covenant,PILOTE_DESTRUCTEUR
-Staff of Light,PILOTE_DESTRUCTEUR
-Tachyon Arrow,SNIPER
-Hyperphase Thresher,SNIPER
-Phylactery,LEGER
-Solar Pulse,LEGER
-Phase Shifter,TIREUR
-Sempiternal Weave,TIREUR
-Quantum Shielding,TIREUR
-Lightning Field,MASTODONTE
-Dispersion Shield,MASTODONTE
+Pistolet 9mm,LEGER
+Pistolet-mitrailleur,LEGER
+HK-MP7,LEGER
+Mitrailleuse,TIREUR
+Fusil d'assaut,TIREUR
+Mini machine gun,TIREUR
+Fusil à pompe,MASTODONTE
+Winchester,MASTODONTE
+Tromblon,MASTODONTE
+Bombes collantes,PILOTE_DESTRUCTEUR
+Lance-roquettes,PILOTE_DESTRUCTEUR
+Lance-grenades,PILOTE_DESTRUCTEUR
+Fusil de sniper léger,SNIPER
+Fusil de sniper lourd,SNIPER
+Fusil de sniper de combat,SNIPER
+Poing américain,LEGER
+Matraque télescopique,LEGER
+Batte de métal,TIREUR
+Machette,TIREUR
+Hache de bûcheron,MASTODONTE
+Tronçonneuse,MASTODONTE
+Clé à molette,PILOTE_DESTRUCTEUR
+Pied-de-biche,PILOTE_DESTRUCTEUR
+Démonte-pneu,PILOTE_DESTRUCTEUR
+Couteau de cuisine,SNIPER
+Couteau de combat,SNIPER
+Tenue ultra légère,LEGER
+Grenade lacrymogène,LEGER
+Gilet pare-balles léger,TIREUR
+Gilet pare-balles moyen,TIREUR
+Équipement militaire complet,TIREUR
+Protection dorsale,MASTODONTE
+Bouclier anti-émeutes,MASTODONTE
 Bouclier balistique,MASTODONTE
-Veil of Darkness,LEGER
-Nightmare Shroud,LEGER
+Grenade assourdissante,LEGER
+Tenue légère en fibre chauffante,LEGER
 Protège-dents,PILOTE_DESTRUCTEUR
 Casque militaire,PILOTE_DESTRUCTEUR
 Gilet Kevlar,PILOTE_DESTRUCTEUR

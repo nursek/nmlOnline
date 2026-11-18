@@ -157,81 +157,81 @@ class AdminPlayerEditServiceTest {
         service.setMoney(player.getId(), 1234.5);
         service.addResource(player.getId(), "Caisse d'armes", 3);
         service.removeResource(player.getId(), "Caisse d'armes", 2);
-        service.addEquipment(player.getId(), "Tesla Carbine", 2);
+        service.addEquipment(player.getId(), "HK-MP7", 2);
 
         assertEquals(1234.5, player.getStats().getMoney());
         assertEquals(11, player.getResourceQuantity("Caisse d'armes"));
         assertTrue(player.getEquipments().stream()
-                .anyMatch(stack -> "Tesla Carbine".equals(stack.getEquipment().getName())));
+                .anyMatch(stack -> "HK-MP7".equals(stack.getEquipment().getName())));
     }
 
     @Test
     @DisplayName("Équipement équipé : refus sans includeEquipped, retrait des unités avec")
     void removeEquippedEquipmentNeedsConfirmation() {
-        EquipmentStack tesla = stack("Tesla Carbine");
-        int quantity = tesla.getQuantity();
-        assertEquals(0, tesla.getAvailable());
+        EquipmentStack mitraillette = stack("HK-MP7");
+        int quantity = mitraillette.getQuantity();
+        assertEquals(0, mitraillette.getAvailable());
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.removeEquipment(player.getId(), "Tesla Carbine", quantity, false));
+                () -> service.removeEquipment(player.getId(), "HK-MP7", quantity, false));
 
-        service.removeEquipment(player.getId(), "Tesla Carbine", quantity, true);
+        service.removeEquipment(player.getId(), "HK-MP7", quantity, true);
         entityManager.flush();
 
         assertTrue(player.getEquipments().stream()
-                .noneMatch(s -> "Tesla Carbine".equals(s.getEquipment().getName())));
+                .noneMatch(s -> "HK-MP7".equals(s.getEquipment().getName())));
         assertTrue(unitRepository.findByPlayerId(player.getId()).stream()
                 .flatMap(unit -> unit.getEquipments().stream())
-                .noneMatch(equipment -> "Tesla Carbine".equals(equipment.getName())));
+                .noneMatch(equipment -> "HK-MP7".equals(equipment.getName())));
     }
 
     @Test
     @DisplayName("Équipement : le retrait mixte consomme le stock avant les unités")
     void removePartiallyEquippedEquipmentConsumesStockFirst() {
-        EquipmentStack weave = stack("Sempiternal Weave");
-        assertEquals(2, weave.getAvailable());
-        int carriersBefore = carriersOf("Sempiternal Weave").size();
+        EquipmentStack gilet = stack("Gilet pare-balles moyen");
+        assertEquals(2, gilet.getAvailable());
+        int carriersBefore = carriersOf("Gilet pare-balles moyen").size();
 
-        service.removeEquipment(player.getId(), "Sempiternal Weave", 3, true);
+        service.removeEquipment(player.getId(), "Gilet pare-balles moyen", 3, true);
         entityManager.flush();
 
-        EquipmentStack updated = stack("Sempiternal Weave");
+        EquipmentStack updated = stack("Gilet pare-balles moyen");
         assertEquals(3, updated.getQuantity());
         assertEquals(0, updated.getAvailable());
-        assertEquals(carriersBefore - 1, carriersOf("Sempiternal Weave").size());
+        assertEquals(carriersBefore - 1, carriersOf("Gilet pare-balles moyen").size());
     }
 
     @Test
     @DisplayName("Équipement : un retrait couvert par le stock ne touche aucune unité")
     void removeStockOnlyLeavesUnitsUntouched() {
-        int carriersBefore = carriersOf("Sempiternal Weave").size();
+        int carriersBefore = carriersOf("Gilet pare-balles moyen").size();
 
-        service.removeEquipment(player.getId(), "Sempiternal Weave", 1, false);
+        service.removeEquipment(player.getId(), "Gilet pare-balles moyen", 1, false);
         entityManager.flush();
 
-        EquipmentStack updated = stack("Sempiternal Weave");
+        EquipmentStack updated = stack("Gilet pare-balles moyen");
         assertEquals(5, updated.getQuantity());
         assertEquals(1, updated.getAvailable());
-        assertEquals(carriersBefore, carriersOf("Sempiternal Weave").size());
+        assertEquals(carriersBefore, carriersOf("Gilet pare-balles moyen").size());
     }
 
     @Test
     @DisplayName("Équipement : les copies perdues avec une unité détruite sont écrites en perte")
     void removeEquipmentWritesOffPhantomCopies() {
-        List<Unit> carriers = carriersOf("Sempiternal Weave");
+        List<Unit> carriers = carriersOf("Gilet pare-balles moyen");
         assertTrue(carriers.size() >= 2);
         for (int i = 0; i < 2; i++) {
-            UnitEquipment row = carriers.get(i).removeOneEquipment("Sempiternal Weave");
+            UnitEquipment row = carriers.get(i).removeOneEquipment("Gilet pare-balles moyen");
             assertNotNull(row);
             entityManager.remove(row);
         }
         entityManager.flush();
 
-        service.removeEquipment(player.getId(), "Sempiternal Weave", 6, true);
+        service.removeEquipment(player.getId(), "Gilet pare-balles moyen", 6, true);
         entityManager.flush();
 
         assertTrue(player.getEquipments().stream()
-                .noneMatch(s -> "Sempiternal Weave".equals(s.getEquipment().getName())));
+                .noneMatch(s -> "Gilet pare-balles moyen".equals(s.getEquipment().getName())));
     }
 
     @Test
@@ -269,7 +269,7 @@ class AdminPlayerEditServiceTest {
         Unit pilot = unitRepository.findByPlayerId(player.getId()).stream()
                 .filter(unit -> unit.getClasses().contains(UnitClass.PILOTE_DESTRUCTEUR))
                 .findFirst().orElseThrow();
-        int availableBefore = stack("Gauss Destructor").getAvailable();
+        int availableBefore = stack("Mini machine gun").getAvailable();
 
         Sector sector = board.getSector(41);
         Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, player.getId());
@@ -284,7 +284,7 @@ class AdminPlayerEditServiceTest {
 
         assertTrue(unitRepository.findById(pilot.getId()).isEmpty());
         assertNull(vehicleRepository.findById(vehicle.getId()).orElseThrow().getPilot());
-        assertEquals(availableBefore + 1, stack("Gauss Destructor").getAvailable());
+        assertEquals(availableBefore + 1, stack("Mini machine gun").getAvailable());
     }
 
     @Test
@@ -488,7 +488,7 @@ class AdminPlayerEditServiceTest {
                 .filter(candidate -> candidate.getSector() != null
                         && candidate.getSector().getNumber() == 41)
                 .findFirst().orElseThrow();
-        EquipmentStack stored = new EquipmentStack(stack("Gauss Destructor").getEquipment());
+        EquipmentStack stored = new EquipmentStack(stack("Mini machine gun").getEquipment());
         stored.setPlayer(player);
         cache.getStoredEquipments().add(stored);
         entityManager.flush();
@@ -576,12 +576,12 @@ class AdminPlayerEditServiceTest {
                 .filter(candidate -> candidate.getSector() != null)
                 .findFirst().orElseThrow();
         PlayerAction action = PlayerAction.equipUnit(
-                player.getId(), board.getCurrentTurn(), unit.getId(), "Tesla Carbine");
+                player.getId(), board.getCurrentTurn(), unit.getId(), "HK-MP7");
         action.setBoardId(boardId());
         playerActionRepository.save(action);
         entityManager.flush();
 
-        service.removeEquipment(player.getId(), "Tesla Carbine", 1, true);
+        service.removeEquipment(player.getId(), "HK-MP7", 1, true);
         entityManager.flush();
 
         assertEquals(PlayerActionStatus.UNDONE,
@@ -664,8 +664,8 @@ class AdminPlayerEditServiceTest {
         double equipmentValue = player.getStats().getTotalEquipmentValue();
         assertEquals(130 + equipmentValue, player.getStats().getTotalEconomyPower(), 0.001);
 
-        double cost = stack("Tesla Carbine").getEquipment().getCost();
-        service.addEquipment(player.getId(), "Tesla Carbine", 2);
+        double cost = stack("HK-MP7").getEquipment().getCost();
+        service.addEquipment(player.getId(), "HK-MP7", 2);
         entityManager.flush();
         assertEquals(equipmentValue + 2 * cost,
                 player.getStats().getTotalEquipmentValue(), 0.001);
@@ -1026,32 +1026,32 @@ class AdminPlayerEditServiceTest {
                 .filter(candidate -> candidate.getSector() != null
                         && candidate.getSector().getNumber() == 41)
                 .findFirst().orElseThrow();
-        int inventoryBefore = equipmentQuantity(player, "Gauss Destructor");
+        int inventoryBefore = equipmentQuantity(player, "Mini machine gun");
 
-        service.addCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 2);
+        service.addCacheEquipment(player.getId(), cache.getId(), "Mini machine gun", 2);
         entityManager.flush();
-        assertEquals(2, cachedQuantity(cache, "Gauss Destructor"));
+        assertEquals(2, cachedQuantity(cache, "Mini machine gun"));
 
         assertThrows(IllegalArgumentException.class, () -> service.addCacheEquipment(
-                player.getId(), cache.getId(), "Gauss Destructor", 299));
+                player.getId(), cache.getId(), "Mini machine gun", 299));
 
-        service.removeCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 1);
+        service.removeCacheEquipment(player.getId(), cache.getId(), "Mini machine gun", 1);
         entityManager.flush();
-        assertEquals(1, cachedQuantity(cache, "Gauss Destructor"));
-        service.removeCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 1);
+        assertEquals(1, cachedQuantity(cache, "Mini machine gun"));
+        service.removeCacheEquipment(player.getId(), cache.getId(), "Mini machine gun", 1);
         entityManager.flush();
         assertTrue(cache.getStoredEquipments().isEmpty());
 
         entityManager.clear();
         Player reloaded = playerRepository.findById(player.getId()).orElseThrow();
-        assertEquals(inventoryBefore, equipmentQuantity(reloaded, "Gauss Destructor"));
+        assertEquals(inventoryBefore, equipmentQuantity(reloaded, "Mini machine gun"));
     }
 
     @Test
     @DisplayName("Contenu banque/cache : hors inventaire même après rechargement")
     void storedBankAndCacheContentStaysOutOfInventory() {
         int inventoryResource = player.getResourceQuantity("Caisse d'armes");
-        int inventoryEquipment = equipmentQuantity(player, "Gauss Destructor");
+        int inventoryEquipment = equipmentQuantity(player, "Mini machine gun");
 
         service.addBankResource(player.getId(), "Caisse d'armes", 3);
         service.addBuilding(player.getId(), "WEAPON_CACHE", 41);
@@ -1062,13 +1062,13 @@ class AdminPlayerEditServiceTest {
                 .filter(candidate -> candidate.getSector() != null
                         && candidate.getSector().getNumber() == 41)
                 .findFirst().orElseThrow();
-        service.addCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 2);
+        service.addCacheEquipment(player.getId(), cache.getId(), "Mini machine gun", 2);
         entityManager.flush();
 
         entityManager.clear();
         Player reloaded = playerRepository.findById(player.getId()).orElseThrow();
         assertEquals(inventoryResource, reloaded.getResourceQuantity("Caisse d'armes"));
-        assertEquals(inventoryEquipment, equipmentQuantity(reloaded, "Gauss Destructor"));
+        assertEquals(inventoryEquipment, equipmentQuantity(reloaded, "Mini machine gun"));
 
         Bank bank = reloaded.getBuildings().stream()
                 .filter(Bank.class::isInstance)
@@ -1081,7 +1081,7 @@ class AdminPlayerEditServiceTest {
                 .filter(candidate -> candidate.getSector() != null
                         && candidate.getSector().getNumber() == 41)
                 .findFirst().orElseThrow();
-        assertEquals(2, cachedQuantity(reloadedCache, "Gauss Destructor"));
+        assertEquals(2, cachedQuantity(reloadedCache, "Mini machine gun"));
     }
 
     @Test
@@ -1089,14 +1089,14 @@ class AdminPlayerEditServiceTest {
     void purchaseGoesAutomaticallyToWeaponCache() {
         service.setMoney(player.getId(), 50_000);
         WeaponCache cache = player.getUsableWeaponCaches().getFirst();
-        int cachedBefore = cachedQuantity(cache, "Gauss Destructor");
-        int inventoryBefore = equipmentQuantity(player, "Gauss Destructor");
+        int cachedBefore = cachedQuantity(cache, "Mini machine gun");
+        int inventoryBefore = equipmentQuantity(player, "Mini machine gun");
 
-        playerService.buyEquipments(player.getId(), List.of(buyItem("Gauss Destructor", 2)));
+        playerService.buyEquipments(player.getId(), List.of(buyItem("Mini machine gun", 2)));
         entityManager.flush();
 
-        assertEquals(cachedBefore + inventoryBefore + 2, cachedQuantity(cache, "Gauss Destructor"));
-        assertEquals(0, equipmentQuantity(player, "Gauss Destructor"));
+        assertEquals(cachedBefore + inventoryBefore + 2, cachedQuantity(cache, "Mini machine gun"));
+        assertEquals(0, equipmentQuantity(player, "Mini machine gun"));
     }
 
     @Test
@@ -1129,17 +1129,17 @@ class AdminPlayerEditServiceTest {
         player.setTotalEquipmentValue();
         double valueBefore = player.getStats().getTotalEquipmentValue();
 
-        service.addCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 1);
+        service.addCacheEquipment(player.getId(), cache.getId(), "HK-MP7", 1);
         entityManager.flush();
         assertEquals(valueBefore + 1600.0, player.getStats().getTotalEquipmentValue(), 0.001);
 
-        unitService.assignEquipment(unit.getId(), player.getUserId(), "Tesla Carbine", boardId());
+        unitService.assignEquipment(unit.getId(), player.getUserId(), "HK-MP7", boardId());
         entityManager.flush();
 
         assertTrue(unit.getEquipments().stream()
-                .anyMatch(equipment -> "Tesla Carbine".equals(equipment.getName())));
-        assertEquals(0, cachedAvailable(cache, "Tesla Carbine"));
-        assertNull(player.findAvailableEquipmentStack("Tesla Carbine"));
+                .anyMatch(equipment -> "HK-MP7".equals(equipment.getName())));
+        assertEquals(0, cachedAvailable(cache, "HK-MP7"));
+        assertNull(player.findAvailableEquipmentStack("HK-MP7"));
     }
 
     @Test
@@ -1154,22 +1154,22 @@ class AdminPlayerEditServiceTest {
                 .filter(candidate -> candidate.getSector() != null
                         && candidate.getSector().getNumber() == 41)
                 .findFirst().orElseThrow();
-        service.addCacheEquipment(player.getId(), cache.getId(), "Gauss Blaster", 1);
+        service.addCacheEquipment(player.getId(), cache.getId(), "Pistolet-mitrailleur", 1);
         entityManager.flush();
 
-        service.equipUnit(player.getId(), unit.getId(), "Gauss Blaster");
+        service.equipUnit(player.getId(), unit.getId(), "Pistolet-mitrailleur");
         entityManager.flush();
 
         assertTrue(unit.getEquipments().stream()
-                .anyMatch(equipment -> "Gauss Blaster".equals(equipment.getName())));
-        assertEquals(0, cachedAvailable(cache, "Gauss Blaster"));
+                .anyMatch(equipment -> "Pistolet-mitrailleur".equals(equipment.getName())));
+        assertEquals(0, cachedAvailable(cache, "Pistolet-mitrailleur"));
 
-        service.unequipUnit(player.getId(), unit.getId(), "Gauss Blaster");
+        service.unequipUnit(player.getId(), unit.getId(), "Pistolet-mitrailleur");
         entityManager.flush();
 
-        assertEquals(1, cachedAvailable(cache, "Gauss Blaster"));
+        assertEquals(1, cachedAvailable(cache, "Pistolet-mitrailleur"));
         assertFalse(unit.getEquipments().stream()
-                .anyMatch(equipment -> "Gauss Blaster".equals(equipment.getName())));
+                .anyMatch(equipment -> "Pistolet-mitrailleur".equals(equipment.getName())));
     }
 
     @Test
@@ -1177,11 +1177,11 @@ class AdminPlayerEditServiceTest {
     void removeCacheEquipmentDiscardsMatchingPurchaseAction() {
         service.setMoney(player.getId(), 50_000);
         WeaponCache cache = player.getUsableWeaponCaches().getFirst();
-        playerService.buyEquipments(player.getId(), List.of(buyItem("Gauss Destructor", 1)));
+        playerService.buyEquipments(player.getId(), List.of(buyItem("Mini machine gun", 1)));
         entityManager.flush();
         assertFalse(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty());
 
-        service.removeCacheEquipment(player.getId(), cache.getId(), "Gauss Destructor", 1);
+        service.removeCacheEquipment(player.getId(), cache.getId(), "Mini machine gun", 1);
         entityManager.flush();
 
         assertTrue(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty(),
@@ -1193,7 +1193,7 @@ class AdminPlayerEditServiceTest {
     void deleteCacheDiscardsPurchaseActions() {
         service.setMoney(player.getId(), 50_000);
         WeaponCache cache = player.getUsableWeaponCaches().getFirst();
-        playerService.buyEquipments(player.getId(), List.of(buyItem("Gauss Destructor", 1)));
+        playerService.buyEquipments(player.getId(), List.of(buyItem("Mini machine gun", 1)));
         entityManager.flush();
         assertFalse(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty());
 
@@ -1215,17 +1215,17 @@ class AdminPlayerEditServiceTest {
                 .filter(candidate -> candidate.getSector() != null
                         && candidate.getSector().getNumber() == 41)
                 .findFirst().orElseThrow();
-        int inventoryBefore = equipmentQuantity(player, "Tesla Carbine");
+        int inventoryBefore = equipmentQuantity(player, "HK-MP7");
 
-        service.addCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 2);
+        service.addCacheEquipment(player.getId(), cache.getId(), "HK-MP7", 2);
         entityManager.flush();
-        Equipment tesla = cache.getStoredEquipments().getFirst().getEquipment();
+        Equipment equipementRetire = cache.getStoredEquipments().getFirst().getEquipment();
 
-        player.removeEquipmentFromStack(tesla);
-        player.removeEquipmentFromStack(tesla);
+        player.removeEquipmentFromStack(equipementRetire);
+        player.removeEquipmentFromStack(equipementRetire);
 
         assertTrue(cache.getStoredEquipments().isEmpty());
-        assertEquals(inventoryBefore, equipmentQuantity(player, "Tesla Carbine"));
+        assertEquals(inventoryBefore, equipmentQuantity(player, "HK-MP7"));
     }
 
     @Test
@@ -1240,17 +1240,17 @@ class AdminPlayerEditServiceTest {
                 .filter(candidate -> candidate.getSector() != null
                         && candidate.getSector().getNumber() == 41)
                 .findFirst().orElseThrow();
-        service.addCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 2);
-        unitService.assignEquipment(unit.getId(), player.getUserId(), "Tesla Carbine", boardId());
+        service.addCacheEquipment(player.getId(), cache.getId(), "HK-MP7", 2);
+        unitService.assignEquipment(unit.getId(), player.getUserId(), "HK-MP7", boardId());
         entityManager.flush();
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.removeCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 2));
-        service.removeCacheEquipment(player.getId(), cache.getId(), "Tesla Carbine", 1);
+                () -> service.removeCacheEquipment(player.getId(), cache.getId(), "HK-MP7", 2));
+        service.removeCacheEquipment(player.getId(), cache.getId(), "HK-MP7", 1);
         entityManager.flush();
 
-        assertEquals(1, cachedQuantity(cache, "Tesla Carbine"));
-        assertEquals(0, cachedAvailable(cache, "Tesla Carbine"));
+        assertEquals(1, cachedQuantity(cache, "HK-MP7"));
+        assertEquals(0, cachedAvailable(cache, "HK-MP7"));
     }
 
     @Test
@@ -1261,7 +1261,7 @@ class AdminPlayerEditServiceTest {
                 .filter(Bank.class::isInstance)
                 .findFirst().orElseThrow();
         assertThrows(IllegalArgumentException.class, () -> service.addCacheEquipment(
-                player.getId(), bank.getId(), "Gauss Destructor", 1));
+                player.getId(), bank.getId(), "Mini machine gun", 1));
 
         WeaponCache foreign = buildingRepository.findAll().stream()
                 .filter(WeaponCache.class::isInstance)
@@ -1271,7 +1271,7 @@ class AdminPlayerEditServiceTest {
                 .findFirst().orElse(null);
         assumeTrue(foreign != null);
         assertThrows(IllegalArgumentException.class, () -> service.addCacheEquipment(
-                player.getId(), foreign.getId(), "Gauss Destructor", 1));
+                player.getId(), foreign.getId(), "Mini machine gun", 1));
     }
 
     @Test

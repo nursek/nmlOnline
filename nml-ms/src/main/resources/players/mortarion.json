@@ -9,19 +9,19 @@
   ],
   "equipments": [
     {
-      "name": "Tesla Carbine",
+      "name": "HK-MP7",
       "quantity": 1
     },
     {
-      "name": "Gauss Destructor",
+      "name": "Mini machine gun",
       "quantity": 1
     },
     {
-      "name": "Sempiternal Weave",
+      "name": "Gilet pare-balles moyen",
       "quantity": 1
     },
     {
-      "name": "Quantum Shielding",
+      "name": "Équipement militaire complet",
       "quantity": 1
     }
   ],
@@ -38,9 +38,9 @@
           ],
           "experience": 9,
           "equipments": [
-            "Gauss Destructor",
-            "Sempiternal Weave",
-            "Quantum Shielding"
+            "Mini machine gun",
+            "Gilet pare-balles moyen",
+            "Équipement militaire complet"
           ]
         }
       ]

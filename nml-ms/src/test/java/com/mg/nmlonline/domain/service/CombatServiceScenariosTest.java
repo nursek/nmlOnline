@@ -165,15 +165,15 @@ class CombatServiceScenariosTest {
             playerRepository.save(defender);
             em.flush();
 
-            Equipment gauss = new Equipment("Gauss Cannon (test)", 3400, 80, 0, 0, 0,
+            Equipment bombes = new Equipment("Bombes collantes (test)", 3400, 80, 0, 0, 0,
                     Set.of(UnitClass.PILOTE_DESTRUCTEUR), EquipmentCategory.FIREARM);
-            gauss.setVehicleBonus(100);
-            gauss.setVehicleBonusTarget(VehicleBonusTarget.GROUND);
-            em.persist(gauss);
+            bombes.setVehicleBonus(100);
+            bombes.setVehicleBonusTarget(VehicleBonusTarget.GROUND);
+            em.persist(bombes);
 
             Unit shooter = new Unit(5.0, UnitClass.PILOTE_DESTRUCTEUR);
             shooter.setPlayerId(attacker.getId());
-            shooter.addEquipment(gauss);
+            shooter.addEquipment(bombes);
             sector.addUnit(shooter);
 
             Equipment armor = new Equipment("Armure pilote", 100, 0, 0, 200, 0,

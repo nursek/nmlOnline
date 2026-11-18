@@ -212,7 +212,7 @@ export class ReglesComponent {
       nom: unitClassLabel('PILOTE_DESTRUCTEUR'),
       effet:
         "Priorité de ciblage : tire d'abord sur les véhicules ennemis. Obligatoire pour piloter un véhicule avec une unité ; " +
-        'les armes anti-véhicules (Gauss Cannon, Heavy Gauss Cannon, Enmitic Annihilator) doublent les dégâts contre leur catégorie de cible.',
+        'les armes anti-véhicules (Bombes collantes, Lance-roquettes, Lance-grenades) doublent les dégâts contre leur catégorie de cible.',
       actif: true,
     },
   ];

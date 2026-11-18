@@ -15,22 +15,22 @@ describe('EquipmentImageService', () => {
   });
 
   it('préfixe le dossier de la race puis replie sur le fichier commun', () => {
-    expect(service.image({ name: 'Gauss Blaster' })?.src).toBe(
-      '/assets/_opt/shop/equipment/necrons/gauss-blaster.320.webp',
+    expect(service.image({ name: 'Pistolet-mitrailleur' })?.src).toBe(
+      '/assets/_opt/shop/equipment/necrons/pistolet-mitrailleur.320.webp',
     );
 
-    service.onError({ name: 'Gauss Blaster' });
+    service.onError({ name: 'Pistolet-mitrailleur' });
 
-    expect(service.image({ name: 'Gauss Blaster' })?.src).toBe(
-      '/assets/_opt/shop/equipment/gauss-blaster.320.webp',
+    expect(service.image({ name: 'Pistolet-mitrailleur' })?.src).toBe(
+      '/assets/_opt/shop/equipment/pistolet-mitrailleur.320.webp',
     );
   });
 
   it("ne masque pas les autres vignettes quand une image de la race manque", () => {
     service.onError({ name: 'Arme inconnue' });
 
-    expect(service.image({ name: 'Gauss Blaster' })?.src).toBe(
-      '/assets/_opt/shop/equipment/necrons/gauss-blaster.320.webp',
+    expect(service.image({ name: 'Pistolet-mitrailleur' })?.src).toBe(
+      '/assets/_opt/shop/equipment/necrons/pistolet-mitrailleur.320.webp',
     );
   });
 });
