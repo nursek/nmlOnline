@@ -8,13 +8,46 @@
 
   <div class="rules-layout">
     <aside class="toc">
+      <mat-form-field appearance="outline" class="recherche" subscriptSizing="dynamic">
+        <mat-label>Rechercher dans les règles</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input
+          matInput
+          type="search"
+          aria-label="Rechercher dans les règles"
+          [value]="recherche()"
+          (input)="changerRecherche($any($event.target).value)"
+          (keydown.escape)="effacerRecherche()"
+        />
+        @if (recherche()) {
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            aria-label="Effacer la recherche"
+            (click)="effacerRecherche()"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+      @if (rechercheActive()) {
+        <p class="recherche-info" role="status" aria-live="polite">
+          @if (sommaireFiltre().length === 0) {
+            Aucune section ne correspond.
+          } @else {
+            {{ sommaireFiltre().length }}
+            {{ sommaireFiltre().length > 1 ? 'sections trouvées' : 'section trouvée' }}
+          }
+        </p>
+      }
       <div class="toc-head">
         <mat-icon>toc</mat-icon>
         <h2>Sommaire</h2>
       </div>
       <nav class="toc-nav">
-        @for (item of sommaire; track item.id; let i = $index) {
-          <button type="button" class="toc-link" (click)="allerA(i)">
+        @for (item of sommaireFiltre(); track item.id) {
+          <button type="button" class="toc-link" (click)="allerA(item.id)">
             <mat-icon>{{ item.icon }}</mat-icon>
             <span>{{ item.label }}</span>
           </button>
@@ -889,6 +922,11 @@
         </mat-expansion-panel>
 
       </mat-accordion>
+      @if (rechercheActive() && sommaireFiltre().length === 0) {
+        <p class="aucun-resultat">
+          Aucune section ne contient « {{ recherche().trim() }} ». Essayez un autre mot.
+        </p>
+      }
     </div>
   </div>
 </div>

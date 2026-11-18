@@ -1040,3 +1040,8 @@ textarea:focus-visible,
 .cdk-overlay-container {
   z-index: 1100;
 }
+
+::highlight(regles-recherche) {
+  background: color-mix(in srgb, var(--sun) 55%, transparent);
+  color: var(--ink);
+}
