@@ -22,7 +22,7 @@ COPY nml-ms/ ./nml-ms/
 WORKDIR /app-ms/nml-ms
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:25-jre-alpine@sha256:3c0a9084927a221ccd1d007fcaf614465672c0af37aaa834c5184483afe56d61
+FROM eclipse-temurin:25-jre-alpine@sha256:e1898fd6a11fc965a994d8ace186fd3585aeb636cf8f05f47a723fcfee0b0918
 
 LABEL org.opencontainers.image.title="NML Online"
 LABEL org.opencontainers.image.description="NML Online - Turn-based strategy game"
