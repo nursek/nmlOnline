@@ -47,6 +47,8 @@ class PreparationPhaseFilterTest {
     void allowsPreparationSocialAndAdminRoutes() throws Exception {
         assertEquals(200, perform("POST", "/api/preparation/units", 1L).getStatus());
         assertEquals(200, perform("POST", "/api/alliances/proposals", 1L).getStatus());
+        assertEquals(200, perform("POST", "/api/notifications/4/read", 1L).getStatus());
+        assertEquals(200, perform("POST", "/api/notifications/read-all", 1L).getStatus());
         assertEquals(200, perform("POST", "/api/admin/players/template", 1L).getStatus());
         assertEquals(200, perform("GET", "/api/players/me", 1L).getStatus());
     }

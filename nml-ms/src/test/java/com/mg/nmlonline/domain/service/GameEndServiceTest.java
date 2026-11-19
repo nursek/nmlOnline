@@ -148,6 +148,7 @@ class GameEndServiceTest {
         assertEquals(3L, state.winnerPlayerId());
         verify(boardRepository).save(board);
         verify(adminAuditService).record(eq(1L), eq(3L), any(), any());
+        verify(notificationService).replaceGameFinished(eq(1L), eq(designated));
     }
 
     @Test

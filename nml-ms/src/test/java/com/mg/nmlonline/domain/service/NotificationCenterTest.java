@@ -4,6 +4,7 @@ import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.NotificationFeedDto;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.notification.NotificationType;
+import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
@@ -74,6 +75,28 @@ class NotificationCenterTest {
 
         assertEquals(1, notificationService.getFeed(first.getUserId(), board.getId()).unreadCount());
         assertEquals(1, notificationService.getFeed(second.getUserId(), board.getId()).unreadCount());
+    }
+
+    @Test
+    @DisplayName("la désignation du champion remplace l'alerte de fin de partie")
+    void replacingTheChampionReplacesTheEndGameAlert() {
+        Board board = board();
+        Player first = player(board, "Premier");
+        Player second = player(board, "Second");
+        second.eliminate(EliminationCause.MAIN_CHARACTER_KILLED, 5);
+
+        notificationService.notifyBoard(board.getId(), NotificationType.GAME_FINISHED,
+                "Partie terminée", "Victoire de Premier.", "/podium");
+        notificationService.markAllRead(first.getUserId(), board.getId());
+
+        notificationService.replaceGameFinished(board.getId(), second);
+
+        NotificationFeedDto feed = notificationService.getFeed(first.getUserId(), board.getId());
+        assertEquals(1, feed.items().size());
+        assertEquals(NotificationType.GAME_FINISHED, feed.items().getFirst().type());
+        assertEquals("Champion désigné", feed.items().getFirst().title());
+        assertEquals("/podium", feed.items().getFirst().link());
+        assertEquals(1, feed.unreadCount());
     }
 
     private Board board() {
