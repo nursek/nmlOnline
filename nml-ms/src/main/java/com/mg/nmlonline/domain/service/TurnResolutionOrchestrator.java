@@ -76,6 +76,7 @@ public class TurnResolutionOrchestrator {
     private final FinalDuelService finalDuelService;
     private final GazetteDraftFactory gazetteDraftFactory;
     private final GazetteService gazetteService;
+    private final NotificationService notificationService;
 
     private static final long SESSION_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
 
@@ -101,7 +102,8 @@ public class TurnResolutionOrchestrator {
                                       GameEndService gameEndService,
                                       FinalDuelService finalDuelService,
                                       GazetteDraftFactory gazetteDraftFactory,
-                                      GazetteService gazetteService) {
+                                      GazetteService gazetteService,
+                                      NotificationService notificationService) {
         this.turnLock = turnLock;
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
@@ -122,6 +124,7 @@ public class TurnResolutionOrchestrator {
         this.finalDuelService = finalDuelService;
         this.gazetteDraftFactory = gazetteDraftFactory;
         this.gazetteService = gazetteService;
+        this.notificationService = notificationService;
     }
 
     /** Acquiert le verrou et prépare la résolution (validation, positions initiales) ; aucun hop effectué. */
@@ -443,6 +446,10 @@ public class TurnResolutionOrchestrator {
             }
 
             int newTurn = board.getCurrentTurn();
+            if (!outcome.finished()) {
+                notificationService.notifyTurnEnded(s.boardId, s.turnEnding, newTurn,
+                        captures.size(), deathOrder.stream().map(Player::getName).toList());
+            }
             TurnFinalizeResultDto dto = new TurnFinalizeResultDto();
             dto.setNewTurn(newTurn);
             dto.setTurnEnding(s.turnEnding);

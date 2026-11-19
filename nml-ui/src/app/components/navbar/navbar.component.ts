@@ -23,6 +23,7 @@ import { DevScenarioService } from '../../services/dev-scenario.service';
 import { PlayerStatusService } from '../../services/player-status.service';
 import { SigilComponent } from '../../shared/sigil/sigil.component';
 import { ThemeToggleComponent } from '../../shared/theme-toggle/theme-toggle.component';
+import { NotificationBellComponent } from './notification-bell.component';
 
 interface NavLink {
   path: string;
@@ -69,6 +70,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
     MatDividerModule,
     SigilComponent,
     ThemeToggleComponent,
+    NotificationBellComponent,
   ],
   template: `
     @if (isAuthenticated()) {
@@ -113,6 +115,7 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
           <div class="spacer"></div>
 
           <div class="user-section">
+            <app-notification-bell />
             <app-theme-toggle />
 
             @if (user(); as user) {
@@ -397,6 +400,30 @@ const ADMIN_MENU_ITEMS: NavLink[] = [
         }
         to {
           transform: translateX(0);
+        }
+      }
+
+      @media (max-width: 720px) {
+        .navbar-content {
+          gap: 8px;
+        }
+
+        .user-section {
+          gap: 2px;
+        }
+
+        .user-name {
+          display: none;
+        }
+
+        .user-chip {
+          padding: 0 8px;
+        }
+      }
+
+      @media (max-width: 430px) {
+        .logo-text {
+          display: none;
         }
       }
     `,

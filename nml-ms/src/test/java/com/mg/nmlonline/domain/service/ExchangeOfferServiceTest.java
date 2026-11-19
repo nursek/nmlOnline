@@ -6,6 +6,7 @@ import com.mg.nmlonline.api.dto.ExchangeOfferItemDto;
 import com.mg.nmlonline.domain.model.bank.ExchangeOffer;
 import com.mg.nmlonline.domain.model.bank.ExchangeOfferResource;
 import com.mg.nmlonline.domain.model.bank.ExchangeOfferStatus;
+import com.mg.nmlonline.domain.model.notification.NotificationType;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.resource.Resource;
 import com.mg.nmlonline.infrastructure.repository.ExchangeOfferRepository;
@@ -30,6 +31,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +52,9 @@ class ExchangeOfferServiceTest {
 
     @Mock
     TurnService turnService;
+
+    @Mock
+    NotificationService notificationService;
 
     @InjectMocks
     ExchangeOfferService exchangeOfferService;
@@ -135,6 +140,8 @@ class ExchangeOfferServiceTest {
             assertEquals(1, dto.resources().size());
             assertEquals("Sender", dto.senderName());
             assertEquals("Receiver", dto.receiverName());
+            verify(notificationService).notify(eq(receiver), eq(NotificationType.EXCHANGE_RECEIVED),
+                    any(), any(), eq("/joueur"));
         }
 
         @Test

@@ -2,6 +2,7 @@ package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.notification.NotificationType;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.press.EliminationEvent;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
@@ -20,14 +21,17 @@ public class GameEndService {
     private final PlayerRepository playerRepository;
     private final EliminationEventRepository eliminationEventRepository;
     private final AdminAuditService adminAuditService;
+    private final NotificationService notificationService;
 
     public GameEndService(BoardRepository boardRepository, PlayerRepository playerRepository,
                           EliminationEventRepository eliminationEventRepository,
-                          AdminAuditService adminAuditService) {
+                          AdminAuditService adminAuditService,
+                          NotificationService notificationService) {
         this.boardRepository = boardRepository;
         this.playerRepository = playerRepository;
         this.eliminationEventRepository = eliminationEventRepository;
         this.adminAuditService = adminAuditService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -64,6 +68,13 @@ public class GameEndService {
         board.setFinishedAt(Instant.now());
         board.setWinnerPlayerId(winner.getId());
         board.setWinnerAdjusted(false);
+        if (board.getId() != null) {
+            notificationService.notifyBoard(board.getId(), NotificationType.GAME_FINISHED,
+                    "Partie terminée",
+                    "Victoire de " + winner.getName()
+                            + (winner.isEliminated() ? " (posthume)." : "."),
+                    "/podium");
+        }
         return new GameOutcome(true, board.getCurrentTurn(), winner.getId(), winner.getName(),
                 winner.isEliminated(), false);
     }
