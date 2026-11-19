@@ -56,6 +56,7 @@ public class GameOverFilter extends OncePerRequestFilter {
                 || path.equals("/api/register")
                 || path.equals("/api/instances")
                 || path.startsWith("/api/admin/")
+                || path.startsWith("/api/notifications/")
                 || (path.equals("/api/boards") && "POST".equals(method))) {
             return true;
         }

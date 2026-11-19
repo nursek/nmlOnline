@@ -89,4 +89,12 @@ public class NotificationService {
         notifyBoard(boardId, NotificationType.TURN_ENDED, "Tour " + turnEnding + " terminé",
                 message.toString(), "/rapports");
     }
+
+    public void replaceGameFinished(Long boardId, Player winner) {
+        repository.deleteByBoardIdAndType(boardId, NotificationType.GAME_FINISHED);
+        notifyBoard(boardId, NotificationType.GAME_FINISHED, "Champion désigné",
+                "Le MJ a désigné " + winner.getName() + " champion"
+                        + (winner.isEliminated() ? " (victoire posthume)." : "."),
+                "/podium");
+    }
 }

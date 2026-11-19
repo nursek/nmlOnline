@@ -70,6 +70,8 @@ class GameOverFilterTest {
         when(boardRepository.findById(2L)).thenReturn(Optional.of(new Board()));
 
         assertPassed("GET", "/api/players/me", 1L);
+        assertPassed("POST", "/api/notifications/4/read", 1L);
+        assertPassed("POST", "/api/notifications/read-all", 1L);
         assertPassed("POST", "/api/admin/turn/next", 1L);
         assertPassed("POST", "/api/units/orders", 2L);
     }

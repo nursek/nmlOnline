@@ -67,6 +67,7 @@ describe('NotificationsService', () => {
     expect(service.items()).toHaveLength(1);
     expect(service.unreadCount()).toBe(1);
     expect(service.toasts()).toHaveLength(0);
+    expect(service.hasLoaded()).toBe(true);
 
     const second = notification(2);
     const reload = service.reload();
@@ -90,5 +91,28 @@ describe('NotificationsService', () => {
 
     expect(service.unreadCount()).toBe(0);
     expect(service.items().every((item) => item.readAt)).toBe(true);
+  });
+
+  it('ignore un poll antérieur à une lecture locale', async () => {
+    const service = TestBed.inject(NotificationsService);
+    const http = TestBed.inject(HttpTestingController);
+    const first = notification(1);
+    const second = notification(2);
+
+    TestBed.tick();
+    http.expectOne(`${environment.apiBaseUrl}/notifications`).flush(feed([second, first]));
+    await TestBed.inject(ApplicationRef).whenStable();
+    expect(service.unreadCount()).toBe(2);
+
+    const pendingReload = service.reload();
+    const pendingMark = service.markRead(second.id);
+    http.expectOne(`${environment.apiBaseUrl}/notifications/2/read`).flush(null);
+    await pendingMark;
+
+    http.expectOne(`${environment.apiBaseUrl}/notifications`).flush(feed([second, first]));
+    await pendingReload;
+
+    expect(service.unreadCount()).toBe(1);
+    expect(service.items().find((item) => item.id === second.id)?.readAt).toBeTruthy();
   });
 });

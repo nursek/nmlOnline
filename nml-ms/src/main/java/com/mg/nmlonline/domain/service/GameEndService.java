@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class GameEndService {
@@ -109,9 +110,14 @@ public class GameEndService {
         Long natural = eliminationEventRepository.findFirstByBoardIdOrderByDeathIndexDesc(boardId)
                 .map(EliminationEvent::getVictimPlayerId)
                 .orElse(null);
+        Long previousWinnerId = board.getWinnerPlayerId();
+        boolean wasAdjusted = board.isWinnerAdjusted();
         board.setWinnerPlayerId(playerId);
         board.setWinnerAdjusted(!playerId.equals(natural));
         boardRepository.save(board);
+        if (!Objects.equals(previousWinnerId, playerId) || wasAdjusted != board.isWinnerAdjusted()) {
+            notificationService.replaceGameFinished(boardId, target);
+        }
         adminAuditService.record(boardId, playerId, AdminAuditAction.GAME_WINNER_OVERRIDE,
                 (board.isWinnerAdjusted() ? "Champion désigné" : "Champion naturel")
                         + " : " + target.getName());

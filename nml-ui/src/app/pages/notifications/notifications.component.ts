@@ -29,7 +29,7 @@ type NotificationFilter = 'all' | 'unread';
         </span>
       </header>
 
-      @if (notifications.loading() && !notifications.items().length) {
+      @if (notifications.loading() && !notifications.hasLoaded()) {
         <div class="loading-state" role="status">
           <mat-spinner diameter="40"></mat-spinner>
           <p>Chargement des notifications...</p>

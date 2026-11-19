@@ -3,8 +3,10 @@ package com.mg.nmlonline.domain.service;
 import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.GamePodiumDto;
+import com.mg.nmlonline.api.dto.NotificationFeedDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.notification.NotificationType;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.press.GazetteIssue;
 import com.mg.nmlonline.domain.model.press.GazetteStatus;
@@ -42,6 +44,9 @@ class EndGameScenarioSeederTest {
     @Autowired
     private GamePodiumService gamePodiumService;
 
+    @Autowired
+    private NotificationService notificationService;
+
     @Test
     void finishesWithOneSurvivorAndFinalGazetteDraft() {
         Long boardId = DemoFixtures.mainBoardId(boardRepository);
@@ -61,6 +66,13 @@ class EndGameScenarioSeederTest {
         assertFalse(podium.isPosthumous());
         assertEquals("nursek", podium.getChampion().getPlayerName());
         assertEquals(players.size(), podium.getPlaces().size());
+
+        Player winner = playerRepository.findById(board.getWinnerPlayerId()).orElseThrow();
+        NotificationFeedDto feed = notificationService.getFeed(winner.getUserId(), boardId);
+        assertTrue(feed.items().stream().anyMatch(notification ->
+                        notification.type() == NotificationType.GAME_FINISHED
+                                && "/podium".equals(notification.link())),
+                "La fin de partie notifie le vainqueur vers le podium");
 
         GazetteIssue draft = gazetteIssueRepository
                 .findByBoardIdAndTurn(boardId, board.getCurrentTurn())

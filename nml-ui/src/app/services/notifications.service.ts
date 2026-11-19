@@ -23,12 +23,14 @@ export class NotificationsService {
   private readonly _unreadCount = signal(0);
   private readonly _toasts = signal<GameNotification[]>([]);
   private readonly _loading = signal(false);
+  private readonly _hasLoaded = signal(false);
   private readonly _error = signal<string | null>(null);
 
   readonly items = this._items.asReadonly();
   readonly unreadCount = this._unreadCount.asReadonly();
   readonly toasts = this._toasts.asReadonly();
   readonly loading = this._loading.asReadonly();
+  readonly hasLoaded = this._hasLoaded.asReadonly();
   readonly error = this._error.asReadonly();
   readonly preview = computed(() => this._items().slice(0, 5));
   readonly unreadLabel = computed(() => {
@@ -74,6 +76,9 @@ export class NotificationsService {
     } finally {
       this.inFlight = false;
       this._loading.set(false);
+      if (generation === this.generation) {
+        this._hasLoaded.set(true);
+      }
     }
   }
 
@@ -82,6 +87,7 @@ export class NotificationsService {
     if (!item || item.readAt) {
       return;
     }
+    this.generation++;
     this.markLocally([notificationId]);
     try {
       await firstValueFrom(this.api.markNotificationRead(notificationId));
@@ -94,6 +100,7 @@ export class NotificationsService {
     if (this._unreadCount() === 0) {
       return;
     }
+    this.generation++;
     const now = new Date().toISOString();
     this._items.update((items) =>
       items.map((item) => (item.readAt ? item : { ...item, readAt: now })),
@@ -174,5 +181,6 @@ export class NotificationsService {
     this._toasts.set([]);
     this._error.set(null);
     this._loading.set(false);
+    this._hasLoaded.set(false);
   }
 }
