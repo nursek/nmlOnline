@@ -9,9 +9,7 @@ import {
   untracked,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
 import { Sector } from '../../models';
 import { sectorKind, sectorKindLabel } from '../../core/movement.helpers';
 import { routeForSteps, routeStepOptions, visibleRouteSteps } from './route-picker.helpers';
@@ -19,7 +17,7 @@ import { routeForSteps, routeStepOptions, visibleRouteSteps } from './route-pick
 @Component({
   selector: 'app-route-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatSelectModule],
+  imports: [MatButtonModule, MatIconModule],
   templateUrl: './route-picker.component.html',
   styleUrls: ['./route-picker.component.scss'],
 })
@@ -35,16 +33,33 @@ export class RoutePickerComponent {
 
   private readonly emptyAllies = new Set<number>();
   private readonly steps = signal<(number | null)[]>([null]);
+  private lastFrom: number | null = null;
 
   readonly visibleSteps = computed(() => visibleRouteSteps(this.maxHops(), this.steps()));
   readonly stepIndexes = computed(() => Array.from({ length: this.visibleSteps() }, (_, i) => i));
   readonly routeSteps = computed(() => this.route().slice(1));
+  readonly arrivalSector = computed(() => {
+    const route = this.route();
+    return route.length > 1 ? route[route.length - 1] : null;
+  });
+  readonly transitSectors = computed(() => {
+    const route = this.route();
+    return route.length > 2 ? route.slice(1, -1) : [];
+  });
+  readonly canRemoveLast = computed(() => this.route().length > 1);
 
   constructor() {
     effect(() => {
-      this.from();
-      this.maxHops();
-      untracked(() => this.reset());
+      const from = this.from();
+      const maxHops = this.maxHops();
+      untracked(() => {
+        if (this.lastFrom !== null && this.lastFrom !== from) {
+          this.reset();
+        } else {
+          this.truncateTo(maxHops);
+        }
+        this.lastFrom = from;
+      });
     });
   }
 
@@ -56,12 +71,42 @@ export class RoutePickerComponent {
     return routeStepOptions(this.sectors(), this.from(), this.steps(), index);
   }
 
+  stepLabel(index: number): string {
+    return index === 0 ? 'Étape 1' : `Étape ${index + 1} (facultative)`;
+  }
+
   setStep(index: number, value: number | null): void {
+    if (this.stepValue(index) === value) return;
     const steps = [...this.steps()];
     steps[index] = value;
     steps.length = Math.max(1, index + 1);
     this.steps.set(steps);
-    this.route.set(routeForSteps(this.from(), steps));
+    this.syncRoute();
+  }
+
+  truncateAt(index: number): void {
+    if (index < 0 || index >= this.routeSteps().length) return;
+    const steps = this.steps().slice(0, index + 1);
+    this.steps.set(steps.length ? steps : [null]);
+    this.syncRoute();
+  }
+
+  removeLastStep(): void {
+    const steps = [...this.steps()];
+    while (steps.length && steps[steps.length - 1] == null) steps.pop();
+    steps.pop();
+    this.steps.set(steps.length ? steps : [null]);
+    this.syncRoute();
+  }
+
+  setRoute(route: number[]): void {
+    if (route[0] !== this.from()) {
+      this.reset();
+      return;
+    }
+    const steps = route.slice(1, this.maxHops() + 1);
+    this.steps.set(steps.length ? steps : [null]);
+    this.syncRoute();
   }
 
   reset(): void {
@@ -79,5 +124,46 @@ export class RoutePickerComponent {
     return sectorKindLabel(
       sectorKind(sector, this.playerId(), this.allyPlayerIds() ?? this.emptyAllies),
     );
+  }
+
+  isOccupied(number: number): boolean {
+    const sector = this.sectors().find((candidate) => candidate.number === number);
+    return (
+      !!sector &&
+      ((sector.army?.length ?? 0) > 0 ||
+        sector.character != null ||
+        (sector.vehicles?.length ?? 0) > 0)
+    );
+  }
+
+  sectorTitle(number: number): string {
+    const kind = this.sectorKindText(number);
+    const occupied = this.isOccupied(number) ? ' · forces présentes' : '';
+    return `Secteur ${number} · ${this.sectorName(number)}${kind ? ' · ' + kind : ''}${occupied}`;
+  }
+
+  arrivalSuffix(): string {
+    const sector = this.arrivalSector();
+    if (sector == null) return '';
+    const parts = [
+      this.sectorKindText(sector),
+      this.isOccupied(sector) ? 'forces présentes' : null,
+    ].filter((part): part is string => part != null);
+    return parts.length ? ` (${parts.join(' · ')})` : '';
+  }
+
+  private truncateTo(maxHops: number): void {
+    if (maxHops < 1) {
+      this.reset();
+      return;
+    }
+    const steps = this.steps().slice(0, maxHops);
+    this.steps.set(steps.length ? steps : [null]);
+    this.syncRoute();
+  }
+
+  private syncRoute(): void {
+    const steps = this.steps();
+    this.route.set(steps.some((step) => step != null) ? routeForSteps(this.from(), steps) : []);
   }
 }

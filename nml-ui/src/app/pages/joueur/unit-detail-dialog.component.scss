@@ -311,6 +311,28 @@ $stat-colors: (
     }
   }
 
+  .udd-move-section--top {
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 12px;
+    border-top: 0;
+    border-bottom: 1px solid $border;
+    margin-bottom: 16px;
+  }
+
+  .udd-pending-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .udd-move-summary {
+    margin-right: auto;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: $text-secondary;
+  }
+
   .udd-move {
     display: flex;
     align-items: center;

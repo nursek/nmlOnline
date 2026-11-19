@@ -458,7 +458,6 @@
                   <div class="panel-body">
                     <span class="sector-meta">
                       {{ sf.sector.income ?? 0 | number: '1.0-0' }} ₡/tour
-
                     </span>
 
                     @if (
@@ -619,6 +618,16 @@
                                 {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
                               }
                             </span>
+                            <button
+                              mat-icon-button
+                              class="force-action"
+                              matTooltip="Déplacer l'unité"
+                              aria-label="Déplacer l'unité"
+                              (click)="$event.stopPropagation(); openUnitDialog(u, sf.sector)"
+                              (keydown.enter)="$event.stopPropagation()"
+                            >
+                              <mat-icon>directions_walk</mat-icon>
+                            </button>
                           </div>
                         }
                       </div>

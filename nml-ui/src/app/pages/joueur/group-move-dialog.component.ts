@@ -90,6 +90,21 @@ export class GroupMoveDialogComponent {
     groupMaxHops(this.selectedUnits(), this.selectedCharacter(), this.selectedVehicles()),
   );
 
+  readonly limitingEntity = computed<string | null>(() => {
+    const candidates: { label: string; hops: number }[] = [];
+    for (const unit of this.selectedUnits()) {
+      candidates.push({ label: `${unit.type.name} n°${unit.number}`, hops: unitMaxHops(unit) });
+    }
+    const character = this.selectedCharacter();
+    if (character) candidates.push({ label: character.name, hops: 1 });
+    for (const vehicle of this.selectedVehicles()) {
+      candidates.push({ label: vehicle.displayName, hops: vehicle.speed });
+    }
+    if (!candidates.length) return null;
+    const min = Math.min(...candidates.map((candidate) => candidate.hops));
+    return candidates.find((candidate) => candidate.hops === min)?.label ?? null;
+  });
+
   constructor() {
     void this.movementState.loadOrders();
   }
@@ -118,6 +133,27 @@ export class GroupMoveDialogComponent {
       if (v.id != null) ids.add(v.id);
     });
     this.deselectedIds.set(ids);
+  }
+
+  selectLightUnitsOnly(): void {
+    const deselected = new Set<number>();
+    for (const unit of this.movable().units) {
+      if (unitMaxHops(unit) <= 1) deselected.add(unit.id);
+    }
+    const character = this.movable().character;
+    if (character?.id != null) deselected.add(character.id);
+    for (const vehicle of this.movable().vehicles) {
+      if (vehicle.id != null) deselected.add(vehicle.id);
+    }
+    this.deselectedIds.set(deselected);
+  }
+
+  selectVehiclesOnly(): void {
+    const deselected = new Set<number>();
+    for (const unit of this.movable().units) deselected.add(unit.id);
+    const character = this.movable().character;
+    if (character?.id != null) deselected.add(character.id);
+    this.deselectedIds.set(deselected);
   }
 
   async submit(): Promise<void> {

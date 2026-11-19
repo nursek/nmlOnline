@@ -17,6 +17,24 @@
     <div class="gmd-toolbar">
       <button mat-button type="button" (click)="selectAll()">Tout sélectionner</button>
       <button mat-button type="button" (click)="clearSelection()">Tout désélectionner</button>
+      <button
+        mat-button
+        type="button"
+        title="Sélectionner uniquement les unités légères"
+        (click)="selectLightUnitsOnly()"
+      >
+        <mat-icon>directions_walk</mat-icon>
+        Légères seules
+      </button>
+      <button
+        mat-button
+        type="button"
+        title="Sélectionner uniquement les véhicules"
+        (click)="selectVehiclesOnly()"
+      >
+        <mat-icon>local_shipping</mat-icon>
+        Véhicules seuls
+      </button>
       <span class="gmd-count"
         >{{ selectedCount() }} / {{ totalMovableCount() }} sélectionnée(s)</span
       >
@@ -87,13 +105,24 @@
         [disabled]="busy()"
         [(route)]="route"
       />
-      <div class="gmd-hint">Portée du groupe : {{ maxHops() }} secteur(s).</div>
+      <div class="gmd-hint">
+        {{ selectedCount() }} entité(s) · portée {{ maxHops() }} secteur(s)
+        @if (limitingEntity(); as limit) {
+          · limitée par {{ limit }}
+        }
+      </div>
     } @else {
       <p class="gmd-hint">Sélectionnez au moins une entité pour définir le chemin.</p>
     }
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
+    <span class="gmd-summary">
+      {{ selectedCount() }} entité(s)
+      @if (route().length > 1) {
+        · {{ route().length - 1 }} secteur(s)
+      }
+    </span>
     <button mat-button (click)="close()">Annuler</button>
     <button
       mat-raised-button

@@ -19,7 +19,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Unit, Equipment } from '../../models';
+import { Unit, Equipment, MovementOrder } from '../../models';
 import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
 import { optimizedImage } from '../../core/optimized-image';
 import type { OptimizedImage } from '../../core/optimized-image';
@@ -252,6 +252,24 @@ export class UnitDetailDialogComponent {
     this.busy.set(true);
     try {
       await this.movementState.cancelOrder(orderId);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async editOrder(order: MovementOrder): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
+    try {
+      const ok = await this.movementState.cancelOrder(order.id);
+      if (!ok) {
+        const err = this.movementState.error();
+        if (err) this.snackBar.open(err, 'Fermer', { duration: 5000 });
+        return;
+      }
+      this.route.set(order.route);
+      this.routePicker()?.setRoute(order.route);
+      this.snackBar.open('Ordre annulé — modifiez le chemin', 'OK', { duration: 2500 });
     } finally {
       this.busy.set(false);
     }
