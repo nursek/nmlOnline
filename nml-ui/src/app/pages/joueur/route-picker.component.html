@@ -1,0 +1,54 @@
+<div class="route-picker">
+  <div class="route-preview" aria-live="polite">
+    <span class="route-pill route-start">
+      Secteur {{ from() }}
+      <em>départ</em>
+    </span>
+    @for (step of routeSteps(); track $index) {
+      <mat-icon>arrow_forward</mat-icon>
+      <span class="route-pill">Secteur {{ step }}</span>
+    }
+    @if (route().length < 2) {
+      <span class="route-empty">Choisissez au moins une étape.</span>
+    }
+  </div>
+
+  <div class="route-steps">
+    @for (index of stepIndexes(); track index) {
+      <mat-form-field appearance="outline" class="route-step">
+        <mat-label>{{
+          index === 0 ? 'Étape 1' : 'Étape ' + (index + 1) + ' (optionnel)'
+        }}</mat-label>
+        <mat-select
+          [value]="stepValue(index)"
+          [disabled]="disabled()"
+          (valueChange)="setStep(index, $event)"
+        >
+          <mat-option [value]="null">
+            {{ index === 0 ? 'Choisir un secteur' : "S'arrêter ici" }}
+          </mat-option>
+          @for (number of optionsFor(index); track number) {
+            <mat-option [value]="number">
+              Secteur {{ number }} · {{ sectorName(number) }}
+              @if (sectorKindText(number); as kind) {
+                <span class="route-kind">{{ kind }}</span>
+              }
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+  </div>
+
+  @if (route().length > 1) {
+    <button mat-button type="button" class="route-clear" [disabled]="disabled()" (click)="reset()">
+      <mat-icon>restart_alt</mat-icon>
+      Effacer le chemin
+    </button>
+  }
+
+  <p class="route-hint">
+    {{ maxHops() }} secteur(s) maximum. Chaque étape doit être adjacente à la précédente ; laissez
+    une étape vide pour terminer le chemin.
+  </p>
+</div>
