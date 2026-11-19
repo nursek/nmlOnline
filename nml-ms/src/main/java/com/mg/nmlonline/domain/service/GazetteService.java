@@ -7,6 +7,7 @@ import com.mg.nmlonline.api.dto.GazetteIssueDto;
 import com.mg.nmlonline.api.dto.GazetteIssueSummaryDto;
 import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.notification.NotificationType;
 import com.mg.nmlonline.domain.model.press.GazetteIssue;
 import com.mg.nmlonline.domain.model.press.GazetteStatus;
 import com.mg.nmlonline.infrastructure.repository.GazetteIssueRepository;
@@ -35,13 +36,16 @@ public class GazetteService {
     private final GazetteMastheadService mastheadService;
     private final AdminAuditService adminAuditService;
     private final ObjectMapper objectMapper;
+    private final NotificationService notificationService;
 
     public GazetteService(GazetteIssueRepository repository, GazetteMastheadService mastheadService,
-                          AdminAuditService adminAuditService, ObjectMapper objectMapper) {
+                          AdminAuditService adminAuditService, ObjectMapper objectMapper,
+                          NotificationService notificationService) {
         this.repository = repository;
         this.mastheadService = mastheadService;
         this.adminAuditService = adminAuditService;
         this.objectMapper = objectMapper;
+        this.notificationService = notificationService;
     }
 
     public GazetteAdminIssueDto createDraft(Board board, int turn, GazetteDraftFactory.GazetteDraft draft) {
@@ -110,6 +114,9 @@ public class GazetteService {
         repository.save(issue);
         adminAuditService.record(boardId, null, AdminAuditAction.GAZETTE_PUBLISHED,
                 "Édition tour " + turn + " publiée");
+        notificationService.notifyBoard(boardId, NotificationType.GAZETTE_PUBLISHED,
+                "Nouvelle édition du journal",
+                "La Brigade des Morts publie l'édition du tour " + turn + ".", "/journal/" + turn);
         return toAdmin(issue);
     }
 

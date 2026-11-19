@@ -61,6 +61,7 @@ public class PreparationPhaseFilter extends OncePerRequestFilter {
                 || path.startsWith("/api/admin/")
                 || path.startsWith("/api/preparation/")
                 || path.startsWith("/api/alliances/")
+                || path.startsWith("/api/notifications/")
                 || path.equals("/api/boards")
                 || path.startsWith("/api/boards/")) {
             return true;

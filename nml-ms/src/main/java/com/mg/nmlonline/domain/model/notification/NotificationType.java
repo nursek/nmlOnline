@@ -1,0 +1,17 @@
+package com.mg.nmlonline.domain.model.notification;
+
+public enum NotificationType {
+    EXCHANGE_RECEIVED,
+    EXCHANGE_ACCEPTED,
+    EXCHANGE_DECLINED,
+    EXCHANGE_CANCELLED,
+    ALLIANCE_PROPOSAL,
+    ALLIANCE_ACCEPTED,
+    ALLIANCE_DECLINED,
+    ALLIANCE_BROKEN,
+    TURN_ENDED,
+    GAME_STARTED,
+    GAME_FINISHED,
+    PLAYER_ELIMINATED,
+    GAZETTE_PUBLISHED
+}

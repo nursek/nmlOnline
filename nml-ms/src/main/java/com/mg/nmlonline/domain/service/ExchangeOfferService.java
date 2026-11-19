@@ -7,6 +7,7 @@ import com.mg.nmlonline.domain.exception.OfferExpiredException;
 import com.mg.nmlonline.domain.model.bank.ExchangeOffer;
 import com.mg.nmlonline.domain.model.bank.ExchangeOfferResource;
 import com.mg.nmlonline.domain.model.bank.ExchangeOfferStatus;
+import com.mg.nmlonline.domain.model.notification.NotificationType;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.ExchangeOfferRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
@@ -36,17 +37,20 @@ public class ExchangeOfferService {
     private final ResourceRepository resourceRepository;
     private final ResourceService resourceService;
     private final TurnService turnService;
+    private final NotificationService notificationService;
 
     public ExchangeOfferService(ExchangeOfferRepository exchangeOfferRepository,
                                 PlayerRepository playerRepository,
                                 ResourceRepository resourceRepository,
                                 ResourceService resourceService,
-                                TurnService turnService) {
+                                TurnService turnService,
+                                NotificationService notificationService) {
         this.exchangeOfferRepository = exchangeOfferRepository;
         this.playerRepository = playerRepository;
         this.resourceRepository = resourceRepository;
         this.resourceService = resourceService;
         this.turnService = turnService;
+        this.notificationService = notificationService;
     }
 
     public ExchangeOfferDto createOffer(Long userId, Long boardId, CreateExchangeOfferRequestDto request) {
@@ -113,6 +117,9 @@ public class ExchangeOfferService {
             offer.addResource(new ExchangeOfferResource(item.resourceName(), item.quantity()));
         }
         exchangeOfferRepository.save(offer);
+        notificationService.notify(receiver, NotificationType.EXCHANGE_RECEIVED,
+                "Nouvelle offre d'échange",
+                sender.getName() + " vous propose un échange au tour " + turn + ".", "/joueur");
         return toDto(offer, sender.getName(), receiver.getName());
     }
 
@@ -200,6 +207,8 @@ public class ExchangeOfferService {
         playerRepository.save(sender);
         playerRepository.save(receiver);
         exchangeOfferRepository.save(offer);
+        notificationService.notify(sender, NotificationType.EXCHANGE_ACCEPTED, "Offre acceptée",
+                receiver.getName() + " a accepté votre offre d'échange.", "/joueur");
         return toDto(offer, sender.getName(), receiver.getName());
     }
 
@@ -216,6 +225,9 @@ public class ExchangeOfferService {
 
         offer.decline(turn);
         exchangeOfferRepository.save(offer);
+        notificationService.notifyPlayer(offer.getSenderPlayerId(),
+                NotificationType.EXCHANGE_DECLINED, "Offre refusée",
+                receiver.getName() + " a refusé votre offre d'échange.", "/joueur");
         return toDto(offer, nameOf(offer.getSenderPlayerId()), receiver.getName());
     }
 
@@ -232,6 +244,9 @@ public class ExchangeOfferService {
 
         offer.cancel(turn);
         exchangeOfferRepository.save(offer);
+        notificationService.notifyPlayer(offer.getReceiverPlayerId(),
+                NotificationType.EXCHANGE_CANCELLED, "Offre annulée",
+                sender.getName() + " a annulé son offre d'échange.", "/joueur");
         return toDto(offer, sender.getName(), nameOf(offer.getReceiverPlayerId()));
     }
 

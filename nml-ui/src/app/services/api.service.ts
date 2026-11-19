@@ -27,6 +27,7 @@ import {
   CreateExchangeOfferPayload,
   ExchangeOffer,
   ExchangeScenarioSummary,
+  NotificationFeed,
   PageResult,
   AllianceMe,
   AllianceProposal,
@@ -789,5 +790,17 @@ export class ApiService {
 
   adminDismissPendingCapture(pendingId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/admin/pending-captures/${pendingId}`);
+  }
+
+  getNotifications(): Observable<NotificationFeed> {
+    return this.http.get<NotificationFeed>(`${this.baseUrl}/notifications`);
+  }
+
+  markNotificationRead(notificationId: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/notifications/${notificationId}/read`, {});
+  }
+
+  markAllNotificationsRead(): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/notifications/read-all`, {});
   }
 }

@@ -71,6 +71,8 @@ class EliminatedPlayerFilterTest {
         when(playerRepository.findByUserIdAndBoardId(2L, 1L)).thenReturn(Optional.of(new Player("Actif")));
 
         assertPassed("GET", "/api/players/me", 1L);
+        assertPassed("POST", "/api/notifications/4/read", 1L);
+        assertPassed("POST", "/api/notifications/read-all", 1L);
         assertPassed("POST", "/api/units/orders", 2L);
         assertPassed("POST", "/api/units/orders", null);
     }

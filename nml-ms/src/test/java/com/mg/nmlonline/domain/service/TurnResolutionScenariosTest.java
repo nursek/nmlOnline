@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
+import com.mg.nmlonline.api.dto.NotificationFeedDto;
 import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
@@ -17,6 +18,7 @@ import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
+import com.mg.nmlonline.domain.model.notification.NotificationType;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -94,6 +96,9 @@ class TurnResolutionScenariosTest {
 
     @Autowired
     private TurnJournalService turnJournalService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     private EntityManager em;
@@ -1018,6 +1023,50 @@ class TurnResolutionScenariosTest {
         assertFalse(journal.getRangedCombats().isEmpty(), "Le journal archive le tir isolé");
         assertEquals("TIR", journal.getRangedCombats().getFirst().getKind());
         assertEquals(journal.getRangedCombats().size(), journal.getSummary().getRangedCombats());
+    }
+
+    @Test
+    @DisplayName("un tour finalisé publie une alerte TURN_ENDED vers les rapports pour chaque joueur")
+    void finalizedTurnPublishesTurnEndNotification() {
+        seeder.seedCombatScenario("SNIPER_RANGED", boardId());
+        Player player = playerRepository.findByBoardId(boardId()).getFirst();
+
+        orchestrator.startSession(boardId());
+        TurnFinalizeResultDto finalized = orchestrator.finalizeTurn(boardId());
+
+        NotificationFeedDto feed = notificationService.getFeed(player.getUserId(), boardId());
+        assertTrue(feed.items().stream().anyMatch(notification ->
+                        notification.type() == NotificationType.TURN_ENDED
+                                && ("Tour " + finalized.getTurnEnding() + " terminé")
+                                .equals(notification.title())
+                                && "/rapports".equals(notification.link())),
+                "La fin de tour notifie chaque joueur du plateau");
+    }
+
+    @Test
+    @DisplayName("un tour qui termine la partie émet GAME_FINISHED mais pas TURN_ENDED")
+    void gameEndingFinalizeDoesNotPublishTurnEnded() {
+        Board board = boardRepository.findAll().stream().findFirst().orElseThrow();
+        List<Player> players = playerRepository.findByBoardId(board.getId());
+        Player survivor = players.getFirst();
+        for (Player player : players) {
+            if (!player.getId().equals(survivor.getId())) {
+                player.eliminate(EliminationCause.MAIN_CHARACTER_KILLED, board.getCurrentTurn());
+            }
+        }
+        playerRepository.saveAll(players);
+
+        orchestrator.startSession(boardId());
+        TurnFinalizeResultDto finalized = orchestrator.finalizeTurn(boardId());
+
+        assertTrue(finalized.isGameFinished(), "Le dernier survivant termine la partie");
+        NotificationFeedDto feed = notificationService.getFeed(survivor.getUserId(), boardId());
+        assertTrue(feed.items().stream()
+                        .anyMatch(notification -> notification.type() == NotificationType.GAME_FINISHED),
+                "La fin de partie est notifiée vers le podium");
+        assertFalse(feed.items().stream()
+                        .anyMatch(notification -> notification.type() == NotificationType.TURN_ENDED),
+                "Un tour final ne produit pas d'alerte de nouveau tour");
     }
 
     @Test
