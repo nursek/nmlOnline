@@ -10,12 +10,14 @@ public class AuthResponse {
     private Long id;
     private String name;
     private String role;
+    private String avatarUrl;
 
-    public AuthResponse(String token, Long id, String name, String role) {
+    public AuthResponse(String token, Long id, String name, String role, String avatarUrl) {
         this.token = token;
         this.id = id;
         this.name = name;
         this.role = role != null ? role : "USER";
+        this.avatarUrl = avatarUrl;
     }
 
 }

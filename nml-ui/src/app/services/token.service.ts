@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { finalize, map, shareReplay, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { RefreshResponse } from '../models';
+import { RefreshResponse, User } from '../models';
 
 /**
  * Service singleton pour gérer le refresh des tokens JWT.
@@ -38,14 +38,19 @@ export class TokenService {
     sessionStorage.removeItem('accessToken');
   }
 
-  getUser(): { id: number; username: string; role?: string } | null {
+  getUser(): User | null {
     const stored = sessionStorage.getItem('user');
     if (!stored) return null;
 
     try {
       const parsed = JSON.parse(stored);
       if (parsed && typeof parsed.id === 'number' && typeof parsed.username === 'string') {
-        return parsed;
+        return {
+          id: parsed.id,
+          username: parsed.username,
+          role: parsed.role,
+          avatarUrl: typeof parsed.avatarUrl === 'string' ? parsed.avatarUrl : null,
+        };
       }
     } catch {
       // Ignore parsing errors
@@ -55,7 +60,7 @@ export class TokenService {
     return null;
   }
 
-  setUser(user: { id: number; username: string; role?: string }): void {
+  setUser(user: User): void {
     sessionStorage.setItem('user', JSON.stringify(user));
   }
 
@@ -102,7 +107,12 @@ export class TokenService {
           }
           this.setAccessToken(response.token);
           if (response.id && response.name) {
-            this.setUser({ id: response.id, username: response.name, role: response.role });
+            this.setUser({
+              id: response.id,
+              username: response.name,
+              role: response.role,
+              avatarUrl: response.avatarUrl ?? null,
+            });
           }
           return response.token;
         }),

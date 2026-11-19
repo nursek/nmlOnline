@@ -960,7 +960,9 @@ textarea:focus-visible,
 }
 
 .main-content.readonly-mode {
-  :is(input, select, textarea, mat-checkbox, mat-radio-button, mat-slide-toggle, mat-select) {
+  :is(input, select, textarea, mat-checkbox, mat-radio-button, mat-slide-toggle, mat-select):not(
+    .readonly-allow
+  ) {
     pointer-events: none;
     opacity: 0.6;
   }
@@ -1039,4 +1041,9 @@ textarea:focus-visible,
 
 .cdk-overlay-container {
   z-index: 1100;
+}
+
+::highlight(regles-recherche) {
+  background: color-mix(in srgb, var(--sun) 55%, transparent);
+  color: var(--ink);
 }

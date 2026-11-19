@@ -176,7 +176,7 @@ export class PartiesComponent {
 
   createGame(): void {
     this.dialog
-      .open(CreateGameDialogComponent, { width: '520px', maxWidth: '95vw' })
+      .open(CreateGameDialogComponent, { width: '640px', maxWidth: '95vw' })
       .afterClosed()
       .subscribe((board: Board | undefined) => {
         if (!board) return;

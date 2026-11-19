@@ -12,6 +12,8 @@ public class SpaForwardController {
             "/accueil/**",
             "/parties",
             "/parties/**",
+            "/profil",
+            "/profil/**",
             "/carte",
             "/carte/**",
             "/joueur",

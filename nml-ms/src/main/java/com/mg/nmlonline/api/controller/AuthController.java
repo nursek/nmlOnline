@@ -151,7 +151,8 @@ public class AuthController {
 
             int refreshTokenMaxAge = (int) (refreshTokenDurationMs / 1000);
             addRefreshCookie(request, response, refresh.token(), refreshTokenMaxAge);
-            return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername(), user.getRole()));
+            return ResponseEntity.ok(new AuthResponse(accessToken, user.getId(), user.getUsername(),
+                    user.getRole(), user.getAvatarUrl()));
         } else {
             logger.warn("Échec de login : '{}' ip {}", logSafe(req.getUsername()), clientIp);
             int currentCount = att.count.incrementAndGet();
@@ -253,13 +254,13 @@ public class AuthController {
 
         String accessToken = jwtService.generateToken(user, ACCESS_TOKEN_EXPIRATION);
 
-        Map<String, Object> responseData = Map.of(
-                "valid", true,
-                "token", accessToken,
-                "id", user.getId(),
-                "name", user.getUsername(),
-                "role", user.getRole() != null ? user.getRole() : "USER"
-        );
+        Map<String, Object> responseData = new LinkedHashMap<>();
+        responseData.put("valid", true);
+        responseData.put("token", accessToken);
+        responseData.put("id", user.getId());
+        responseData.put("name", user.getUsername());
+        responseData.put("role", user.getRole() != null ? user.getRole() : "USER");
+        responseData.put("avatarUrl", user.getAvatarUrl());
 
         throttle.lastRefresh = now;
         throttle.previousToken = refreshToken;

@@ -44,6 +44,7 @@ import {
   RegistrationMode,
   RegisterRequest,
   TemplatePlayerRequest,
+  User,
   AdminPreparationStatus,
 } from '../models';
 import { environment } from '../../environments/environment';
@@ -81,6 +82,21 @@ export class ApiService {
 
   register(payload: RegisterRequest): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.baseUrl}/register`, payload);
+  }
+
+  updateProfileUsername(username: string): Observable<User> {
+    return this.http.put<User>(`${this.baseUrl}/profile/username`, { username });
+  }
+
+  updateProfileAvatar(avatarUrl: string | null): Observable<User> {
+    return this.http.put<User>(`${this.baseUrl}/profile/avatar`, { avatarUrl });
+  }
+
+  updateProfilePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/profile/password`, {
+      currentPassword,
+      newPassword,
+    });
   }
 
   adminSearchUsers(q: string): Observable<PageResult<AdminUser>> {

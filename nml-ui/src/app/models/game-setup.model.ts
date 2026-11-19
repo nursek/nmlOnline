@@ -27,6 +27,7 @@ export interface BoardPresetSummary {
   name: string;
   sectorCount: number;
   spotCount: number;
+  mapImageUrl: string | null;
 }
 
 export interface BoardPreset {
