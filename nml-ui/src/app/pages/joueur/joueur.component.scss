@@ -180,7 +180,8 @@
     color: var(--section-accent, #{shared.$primary-color});
   }
 
-  .shop-btn {
+  .shop-btn,
+  .auto-equip-btn {
     margin-left: auto;
   }
 }

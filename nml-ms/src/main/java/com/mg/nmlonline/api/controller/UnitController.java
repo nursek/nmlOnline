@@ -1,5 +1,7 @@
 package com.mg.nmlonline.api.controller;
 
+import com.mg.nmlonline.api.dto.AutoEquipRequestDto;
+import com.mg.nmlonline.api.dto.AutoEquipResultDto;
 import com.mg.nmlonline.api.dto.BuyUnitBatchRequestDto;
 import com.mg.nmlonline.api.dto.CreateSniperOrderRequestDto;
 import com.mg.nmlonline.api.dto.MovementOrderDto;
@@ -89,6 +91,20 @@ public class UnitController {
         }
         UnitDto unit = unitService.assignEquipmentDto(unitId, userId, request.getEquipmentName(), boardId);
         return ResponseEntity.ok(unit);
+    }
+
+    @PostMapping("/auto-equip")
+    public ResponseEntity<AutoEquipResultDto> autoEquip(
+            @RequestBody(required = false) AutoEquipRequestDto request,
+            HttpServletRequest httpRequest) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        Long boardId = (Long) httpRequest.getAttribute(BoardScopeFilter.BOARD_ID_ATTRIBUTE);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        List<String> categories = request != null ? request.getCategories() : null;
+        List<String> equipmentNames = request != null ? request.getEquipmentNames() : null;
+        return ResponseEntity.ok(unitService.autoEquipRemaining(userId, categories, equipmentNames, boardId));
     }
 
     @DeleteMapping("/{unitId}/equipment")

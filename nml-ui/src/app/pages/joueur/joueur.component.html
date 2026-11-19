@@ -273,6 +273,17 @@
             <div class="section-header">
               <mat-icon>inventory_2</mat-icon>
               <h2>Équipements</h2>
+              <button
+                mat-stroked-button
+                color="primary"
+                class="auto-equip-btn"
+                [disabled]="equipmentStacks().length === 0"
+                matTooltip="Distribuer le stock restant aux unités les plus expérimentées"
+                (click)="openAutoEquip()"
+              >
+                <mat-icon>auto_fix_high</mat-icon>
+                Équiper le reste
+              </button>
             </div>
             <p class="section-subtitle">Votre arsenal actuel</p>
 

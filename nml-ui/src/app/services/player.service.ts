@@ -2,7 +2,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
-import { Player, Unit, Vehicle } from '../models';
+import { AutoEquipResult, Player, Unit, Vehicle } from '../models';
 import { httpErrorMessage } from '../core/http-error.interceptor';
 
 /**
@@ -216,6 +216,21 @@ export class PlayerService {
       return unit;
     } catch (error) {
       this._error.set(httpErrorMessage(error, "Erreur lors du retrait de l'équipement"));
+      return null;
+    }
+  }
+
+  async autoEquipUnits(
+    categories: string[],
+    equipmentNames: string[],
+  ): Promise<AutoEquipResult | null> {
+    this._error.set(null);
+    try {
+      const result = await firstValueFrom(this.api.autoEquipUnits(categories, equipmentNames));
+      void this.loadCurrent();
+      return result;
+    } catch (error) {
+      this._error.set(httpErrorMessage(error, "Erreur lors de l'équipement automatique"));
       return null;
     }
   }

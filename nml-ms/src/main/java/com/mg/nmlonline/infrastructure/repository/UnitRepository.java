@@ -13,6 +13,8 @@ public interface UnitRepository extends JpaRepository<Unit, Long> {
 
     List<Unit> findByPlayerId(Long playerId);
 
+    List<Unit> findByPlayerIdAndSectorIsNotNull(Long playerId);
+
     List<Unit> findByPlayerIdAndSectorIsNull(Long playerId);
 
     // Projection : ne charge pas les entités avant les verrous joueurs (sinon snapshot périmé).
