@@ -1,0 +1,132 @@
+<div class="umd">
+  <div class="umd-header">
+    <h2 mat-dialog-title>
+      <mat-icon>directions_walk</mat-icon>
+      Donner un ordre — {{ unit.type.name }} n°{{ unit.number }}
+      <span class="umd-sub">{{ unit.experience | exp }} Exp · {{ maxHops() }} secteur(s) max</span>
+    </h2>
+    <button mat-icon-button (click)="close()" aria-label="Fermer">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <section class="umd-sector">
+      <div
+        class="umd-map"
+        [class.umd-map-fallback]="!mapPreview() || mapError()"
+        role="img"
+        [attr.aria-label]="'Aperçu de la carte autour du secteur ' + sector.name"
+      >
+        @if (mapPreview(); as preview) {
+          @if (!mapError()) {
+            <img [src]="preview.url" alt="" (error)="mapError.set(true)" />
+            <span
+              class="umd-pin"
+              [style.left.%]="preview.left"
+              [style.top.%]="preview.top"
+              [style.background]="ownerColor()"
+            >
+              {{ sector.number }}
+            </span>
+          } @else {
+            <mat-icon>map</mat-icon>
+          }
+        } @else {
+          <mat-icon>map</mat-icon>
+        }
+      </div>
+
+      <div class="umd-context">
+        <span class="umd-kicker">Secteur actuel</span>
+        <h3>
+          {{ sector.name }}
+          <small>n°{{ sector.number }}</small>
+        </h3>
+        <div class="umd-tags">
+          <span class="umd-kind" [style.background]="ownerColor()">{{ sectorKindText() }}</span>
+          <span class="umd-owner">{{ ownerName() }}</span>
+        </div>
+        <div class="umd-facts">
+          <span>
+            <mat-icon>payments</mat-icon>
+            {{ income() | number: '1.0-0' }} ₡/tour
+          </span>
+          @if (resourceIcon(); as icon) {
+            <span>
+              <img [src]="icon" alt="" />
+              {{ sector.resource }}
+            </span>
+          }
+          <span>
+            <mat-icon>share</mat-icon>
+            {{ sector.neighbors.length }} voisin(s)
+          </span>
+        </div>
+        <div class="umd-forces">
+          <mat-icon>military_tech</mat-icon>
+          {{ forceCounts() }}
+        </div>
+      </div>
+    </section>
+
+    <section class="umd-order">
+      <h3><mat-icon>route</mat-icon> Itinéraire</h3>
+      <app-route-picker
+        [sectors]="allSectors()"
+        [from]="sectorNumber"
+        [maxHops]="maxHops()"
+        [playerId]="data.playerId"
+        [allyPlayerIds]="data.allyPlayerIds"
+        [disabled]="
+          busy() || pendingOrdersForUnit().length > 0 || pendingSniperOrdersForUnit().length > 0
+        "
+        [(route)]="route"
+      />
+
+      @if (pendingOrdersForUnit().length) {
+        <div class="umd-pending">
+          <div class="umd-subhead">Ordre en attente</div>
+          @for (order of pendingOrdersForUnit(); track order.id) {
+            <div class="umd-pending-row">
+              <span>Route {{ order.route.join(' → ') }} ({{ order.status }})</span>
+              <div class="umd-pending-actions">
+                @if (order.entityIds.length <= 1) {
+                  <button
+                    mat-icon-button
+                    [disabled]="busy()"
+                    matTooltip="Modifier l'ordre"
+                    (click)="editOrder(order)"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                }
+                <button
+                  mat-icon-button
+                  color="warn"
+                  [disabled]="busy()"
+                  (click)="cancelOrder(order.id)"
+                >
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    @if (route().length > 1) {
+      <span class="umd-summary">
+        {{ route().length - 1 }} secteur(s) · {{ route().join(' → ') }}
+      </span>
+    }
+    <button mat-button (click)="close()">Annuler</button>
+    <button mat-raised-button color="primary" [disabled]="!canSubmit()" (click)="submitMove()">
+      <mat-icon>directions_walk</mat-icon>
+      Donner l'ordre
+    </button>
+  </mat-dialog-actions>
+</div>

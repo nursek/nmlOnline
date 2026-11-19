@@ -5,7 +5,6 @@ import {
   effect,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -19,7 +18,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Unit, Equipment, MovementOrder } from '../../models';
+import { Unit, Equipment } from '../../models';
 import { equipmentLabel as equipmentLabelFor } from '../../core/equipment-label';
 import { optimizedImage } from '../../core/optimized-image';
 import type { OptimizedImage } from '../../core/optimized-image';
@@ -29,9 +28,8 @@ import { MovementStateService } from '../../services/movement-state.service';
 import { SniperOrderStateService } from '../../services/sniper-order-state.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
 import { UnitSlotPickerComponent, UnitSlotPickerData } from './unit-slot-picker.component';
-import { RoutePickerComponent } from './route-picker.component';
 import { ExpPipe } from '../../shared/exp.pipe';
-import { reachableTargets, sectorKind, unitMaxHops } from '../../core/movement.helpers';
+import { reachableTargets, sectorKind } from '../../core/movement.helpers';
 import { sniperActionLabel as sniperActionLabelFor } from '../../core/labels';
 
 export interface UnitDetailDialogData {
@@ -49,7 +47,7 @@ export interface SlotGroup {
   filled: Equipment[];
 }
 
-/** slots offensifs | stats + portrait | slots défensifs, ordre de déplacement en bas. */
+/** slots offensifs | stats + portrait | slots défensifs. */
 @Component({
   selector: 'app-unit-detail-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,7 +59,6 @@ export interface SlotGroup {
     MatFormFieldModule,
     MatSelectModule,
     MatTooltipModule,
-    RoutePickerComponent,
   ],
   templateUrl: './unit-detail-dialog.component.html',
   styleUrls: ['./unit-detail-dialog.component.scss'],
@@ -77,10 +74,8 @@ export class UnitDetailDialogComponent {
   private readonly dialog = inject(MatDialog);
 
   readonly player = this.playerService.player;
-  readonly alliedPlayerIds = this.allianceState.alliedPlayerIds;
 
-  // Board complète (secteurs neutres inclus) — nécessaire pour résoudre l'adjacence
-  // des secteurs non possédés par le joueur lors du calcul des routes de déplacement.
+  // Board complète (secteurs neutres inclus) — nécessaire pour les cibles sniper adjacentes.
   private readonly activeBoard = inject(ActiveBoardService);
   readonly allSectors = this.activeBoard.sectors;
 
@@ -98,9 +93,7 @@ export class UnitDetailDialogComponent {
 
   readonly imgError = signal(false);
   readonly busy = signal(false);
-  readonly route = signal<number[]>([]);
   readonly sniperTarget = signal<number | null>(null);
-  private readonly routePicker = viewChild(RoutePickerComponent);
 
   /** Unité live re-lue depuis le player signal (rafraîchi après équipement). */
   readonly unit = computed<Unit>(() => {
@@ -123,18 +116,16 @@ export class UnitDetailDialogComponent {
     this.portraitUrl() ? optimizedImage(this.portraitUrl()) : null,
   );
 
-  readonly maxHops = computed<number>(() => unitMaxHops(this.unit()));
-
-  /** Groupe de slots pour une catégorie (cap + équipements actuels positionnels). */
-  readonly slotGroups = computed<SlotGroup[]>(() => {
-    const u = this.unit();
-    if (!u?.type) return [];
-    return [
-      this.buildGroup('MELEE', 'Mêlée', u.type.maxMeleeWeapons ?? 0, u),
-      this.buildGroup('FIREARM', 'Distance', u.type.maxFirearms ?? 0, u),
-      this.buildGroup('DEFENSIVE', 'Défensif', u.type.maxDefensiveEquipment ?? 0, u),
-    ].filter((g) => g.cap > 0);
-  });
+  /** Groupe de slots pour une catégorie (cap + équipements actuels positionnels). */ readonly slotGroups =
+    computed<SlotGroup[]>(() => {
+      const u = this.unit();
+      if (!u?.type) return [];
+      return [
+        this.buildGroup('MELEE', 'Mêlée', u.type.maxMeleeWeapons ?? 0, u),
+        this.buildGroup('FIREARM', 'Distance', u.type.maxFirearms ?? 0, u),
+        this.buildGroup('DEFENSIVE', 'Défensif', u.type.maxDefensiveEquipment ?? 0, u),
+      ].filter((g) => g.cap > 0);
+    });
 
   /** Slots offensifs (Mêlée + Distance) — colonne gauche. */
   readonly offensiveSlots = computed<SlotGroup[]>(() =>
@@ -218,58 +209,6 @@ export class UnitDetailDialogComponent {
       if (updated) {
         this.snackBar.open(`${this.equipmentLabel(eq)} retiré`, 'OK', { duration: 2500 });
       }
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  async submitMove(): Promise<void> {
-    if (this.pendingOrdersForUnit().length > 0 || this.pendingSniperOrdersForUnit().length > 0) {
-      this.snackBar.open('Cette unité a déjà un ordre en attente', 'Fermer', { duration: 3000 });
-      return;
-    }
-    const route = this.route();
-    if (route.length < 2) return;
-
-    this.busy.set(true);
-    try {
-      const order = await this.movementState.placeFootOrder([this.unit().id], route);
-      if (order) {
-        this.snackBar.open(`Ordre : secteur ${route.join(' → ')}`, 'OK', { duration: 2500 });
-        this.routePicker()?.reset();
-        this.route.set([]);
-      } else {
-        const err = this.movementState.error();
-        if (err) this.snackBar.open(err, 'Fermer', { duration: 5000 });
-      }
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  async cancelOrder(orderId: number): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    try {
-      await this.movementState.cancelOrder(orderId);
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  async editOrder(order: MovementOrder): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    try {
-      const ok = await this.movementState.cancelOrder(order.id);
-      if (!ok) {
-        const err = this.movementState.error();
-        if (err) this.snackBar.open(err, 'Fermer', { duration: 5000 });
-        return;
-      }
-      this.route.set(order.route);
-      this.routePicker()?.setRoute(order.route);
-      this.snackBar.open('Ordre annulé — modifiez le chemin', 'OK', { duration: 2500 });
     } finally {
       this.busy.set(false);
     }

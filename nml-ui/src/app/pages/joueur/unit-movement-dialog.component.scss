@@ -1,0 +1,245 @@
+.umd {
+  width: 100%;
+}
+
+.umd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  h2 {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .umd-sub {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+  }
+}
+
+.umd-sector {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.umd-map {
+  position: relative;
+  flex: 0 0 210px;
+  height: 132px;
+  overflow: hidden;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--void);
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+  }
+
+  > mat-icon {
+    position: absolute;
+    inset: 0;
+    width: 42px;
+    height: 42px;
+    margin: auto;
+    font-size: 42px;
+    color: var(--line-strong);
+  }
+}
+
+.umd-map-fallback {
+  border-style: dashed;
+}
+
+.umd-pin {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
+  color: var(--void);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+}
+
+.umd-context {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0;
+    color: var(--ink);
+    font-size: 1.15rem;
+
+    small {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+  }
+}
+
+.umd-kicker {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.umd-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.umd-kind {
+  padding: 1px 7px;
+  border-radius: var(--r-xs);
+  color: var(--void);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.umd-owner {
+  color: var(--ink-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.umd-facts,
+.umd-forces {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--muted);
+  font-size: 0.78rem;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    color: var(--ink-3);
+  }
+
+  img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+  }
+}
+
+.umd-forces {
+  color: var(--ink-2);
+}
+
+.umd-order {
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    color: var(--ink);
+    font-size: 0.9rem;
+  }
+
+  > h3 mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: var(--accent);
+  }
+}
+
+.umd-pending {
+  margin-top: 10px;
+}
+
+.umd-subhead {
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.umd-pending-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--sun-tint);
+  border-radius: var(--r-xs);
+  background: var(--sun-tint);
+  color: var(--sun);
+  font-size: 0.82rem;
+}
+
+.umd-pending-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.umd-summary {
+  margin-right: auto;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 640px) {
+  .umd-sector {
+    flex-direction: column;
+  }
+
+  .umd-map {
+    flex-basis: auto;
+    width: 100%;
+    height: 160px;
+  }
+}

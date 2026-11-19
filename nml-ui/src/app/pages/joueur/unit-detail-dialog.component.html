@@ -11,52 +11,6 @@
   </div>
 
   <mat-dialog-content>
-    <section class="udd-move-section udd-move-section--top">
-      <h3><mat-icon>directions_walk</mat-icon> Ordre de déplacement</h3>
-      <app-route-picker
-        [sectors]="allSectors()"
-        [from]="data.sectorNumber"
-        [maxHops]="maxHops()"
-        [playerId]="player()?.id ?? null"
-        [allyPlayerIds]="alliedPlayerIds()"
-        [disabled]="
-          busy() || pendingOrdersForUnit().length > 0 || pendingSniperOrdersForUnit().length > 0
-        "
-        [(route)]="route"
-      />
-
-      @if (pendingOrdersForUnit().length) {
-        <div class="udd-move-pending">
-          <div class="udd-subhead">Ordres en attente</div>
-          @for (o of pendingOrdersForUnit(); track o.id) {
-            <div class="udd-pending-row">
-              <span>Route {{ o.route.join(' → ') }} ({{ o.status }})</span>
-              <div class="udd-pending-actions">
-                @if (o.entityIds.length <= 1) {
-                  <button
-                    mat-icon-button
-                    [disabled]="busy()"
-                    matTooltip="Modifier l'ordre"
-                    (click)="editOrder(o)"
-                  >
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                }
-                <button
-                  mat-icon-button
-                  color="warn"
-                  [disabled]="busy()"
-                  (click)="cancelOrder(o.id)"
-                >
-                  <mat-icon>cancel</mat-icon>
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-      }
-    </section>
-
     <div class="udd-body">
       <div class="udd-col udd-col-left">
         <h3><mat-icon>inventory_2</mat-icon> Offensif</h3>
@@ -233,6 +187,12 @@
           neutre ou ennemi ; surveillance sur un secteur possédé ou allié.
         </div>
 
+        @if (pendingOrdersForUnit().length) {
+          <div class="udd-move-hint">
+            Un ordre de déplacement est en attente : modifiez-le depuis l'icône de déplacement.
+          </div>
+        }
+
         @if (pendingSniperOrdersForUnit().length) {
           <div class="udd-move-pending">
             <div class="udd-subhead">Ordres sniper en attente</div>
@@ -259,11 +219,6 @@
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    @if (route().length > 1) {
-      <span class="udd-move-summary">
-        {{ route().length - 1 }} secteur(s) · {{ route().join(' → ') }}
-      </span>
-    }
     <button mat-button (click)="close()">Fermer</button>
     @if (isSniper()) {
       <button
@@ -281,19 +236,5 @@
         {{ sniperActionLabel(selectedSniperAction()) }}
       </button>
     }
-    <button
-      mat-raised-button
-      color="primary"
-      [disabled]="
-        busy() ||
-        route().length < 2 ||
-        pendingOrdersForUnit().length > 0 ||
-        pendingSniperOrdersForUnit().length > 0
-      "
-      (click)="submitMove()"
-    >
-      <mat-icon>directions_walk</mat-icon>
-      Donner l'ordre
-    </button>
   </mat-dialog-actions>
 </div>
