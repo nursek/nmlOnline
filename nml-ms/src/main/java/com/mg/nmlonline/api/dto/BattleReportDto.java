@@ -20,6 +20,7 @@ public class BattleReportDto {
     private List<ExperienceGainDto> experienceGains;
     private List<PlayerForceDto> forces;
     private List<BattleHighlightDto> highlights;
+    private Long viewerPlayerId;
 
     @Data
     public static class CampDto {
@@ -63,6 +64,7 @@ public class BattleReportDto {
         private List<VehicleForceDto> vehicles;
         private List<UnitForceDto> infantry;
         private List<BuildingForceDto> buildings;
+        private StatsDto totals;
     }
 
     @Data
@@ -72,6 +74,9 @@ public class BattleReportDto {
         private String displayName;
         private Double experience;
         private boolean injured;
+        private String classCode;
+        private List<String> equipmentNames;
+        private StatsDto stats;
     }
 
     @Data
@@ -79,11 +84,23 @@ public class BattleReportDto {
         private String displayName;
         private boolean aerial;
         private List<UnitForceDto> crew;
+        private StatsDto stats;
     }
 
     @Data
     public static class BuildingForceDto {
         private String displayName;
         private String category;
+        private StatsDto stats;
+    }
+
+    @Data
+    public static class StatsDto {
+        private double attack;
+        private double pdf;
+        private double pdc;
+        private double defense;
+        private double armor;
+        private double evasion;
     }
 }
