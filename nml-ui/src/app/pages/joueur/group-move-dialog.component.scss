@@ -31,6 +31,7 @@ $text-secondary: var(--muted);
 .gmd-toolbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 8px;
 
@@ -39,6 +40,13 @@ $text-secondary: var(--muted);
     font-size: 0.8rem;
     font-weight: 600;
     color: $text-primary;
+  }
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    margin-right: 2px;
   }
 }
 
@@ -107,6 +115,13 @@ $text-secondary: var(--muted);
 
 .gmd-hint {
   margin-top: 8px;
+  font-size: 0.78rem;
+  color: $text-secondary;
+}
+
+.gmd-summary {
+  margin-right: auto;
+  font-family: var(--font-mono);
   font-size: 0.78rem;
   color: $text-secondary;
 }

@@ -6,49 +6,93 @@
     </span>
     @for (step of routeSteps(); track $index) {
       <mat-icon>arrow_forward</mat-icon>
-      <span class="route-pill">Secteur {{ step }}</span>
+      <button
+        type="button"
+        class="route-pill route-step-pill"
+        [disabled]="disabled()"
+        [attr.title]="'Terminer le chemin au secteur ' + step"
+        (click)="truncateAt($index)"
+      >
+        Secteur {{ step }}
+      </button>
     }
     @if (route().length < 2) {
-      <span class="route-empty">Choisissez au moins une étape.</span>
+      <span class="route-empty">Choisissez une première étape.</span>
     }
   </div>
 
-  <div class="route-steps">
-    @for (index of stepIndexes(); track index) {
-      <mat-form-field appearance="outline" class="route-step">
-        <mat-label>{{
-          index === 0 ? 'Étape 1' : 'Étape ' + (index + 1) + ' (optionnel)'
-        }}</mat-label>
-        <mat-select
-          [value]="stepValue(index)"
-          [disabled]="disabled()"
-          (valueChange)="setStep(index, $event)"
+  @for (index of stepIndexes(); track index) {
+    <div class="route-step-row">
+      <span class="route-step-label">{{ stepLabel(index) }}</span>
+      <div class="route-chips">
+        @if (index > 0) {
+          <button
+            type="button"
+            class="route-chip route-chip-stop"
+            [class.active]="stepValue(index) === null"
+            [attr.aria-pressed]="stepValue(index) === null"
+            [disabled]="disabled()"
+            (click)="setStep(index, null)"
+          >
+            <mat-icon>stop_circle</mat-icon>
+            Terminer ici
+          </button>
+        }
+        @for (number of optionsFor(index); track number) {
+          <button
+            type="button"
+            class="route-chip"
+            [class.active]="stepValue(index) === number"
+            [attr.aria-pressed]="stepValue(index) === number"
+            [attr.title]="sectorTitle(number)"
+            [disabled]="disabled()"
+            (click)="setStep(index, number)"
+          >
+            <span class="chip-number">#{{ number }}</span>
+            <span class="chip-name">{{ sectorName(number) }}</span>
+            @if (sectorKindText(number); as kind) {
+              <span class="chip-kind">{{ kind }}</span>
+            }
+            @if (isOccupied(number)) {
+              <span class="chip-occupied">forces</span>
+            }
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (canRemoveLast()) {
+    <div class="route-actions">
+      <button mat-button type="button" [disabled]="disabled()" (click)="removeLastStep()">
+        <mat-icon>undo</mat-icon>
+        Retour
+      </button>
+      <button mat-button type="button" [disabled]="disabled()" (click)="reset()">
+        <mat-icon>restart_alt</mat-icon>
+        Effacer le chemin
+      </button>
+    </div>
+  }
+
+  @if (arrivalSector(); as arrival) {
+    <div class="route-summary">
+      <span class="summary-pill">{{ route().length - 1 }} secteur(s)</span>
+      @if (transitSectors().length) {
+        <span
+          class="summary-pill summary-warning"
+          title="Défense et Armure divisées par deux si un combat a lieu dans ces secteurs"
         >
-          <mat-option [value]="null">
-            {{ index === 0 ? 'Choisir un secteur' : "S'arrêter ici" }}
-          </mat-option>
-          @for (number of optionsFor(index); track number) {
-            <mat-option [value]="number">
-              Secteur {{ number }} · {{ sectorName(number) }}
-              @if (sectorKindText(number); as kind) {
-                <span class="route-kind">{{ kind }}</span>
-              }
-            </mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-    }
-  </div>
-
-  @if (route().length > 1) {
-    <button mat-button type="button" class="route-clear" [disabled]="disabled()" (click)="reset()">
-      <mat-icon>restart_alt</mat-icon>
-      Effacer le chemin
-    </button>
+          <mat-icon>warning</mat-icon>
+          Transit exposé : {{ transitSectors().join(', ') }}
+        </span>
+      }
+      <span class="summary-pill">Arrivée : secteur {{ arrival }}{{ arrivalSuffix() }}</span>
+    </div>
   }
 
   <p class="route-hint">
-    {{ maxHops() }} secteur(s) maximum. Chaque étape doit être adjacente à la précédente ; laissez
-    une étape vide pour terminer le chemin.
+    {{ maxHops() }} secteur(s) maximum. Cliquez sur un secteur pour ajouter une étape ; « Terminer
+    ici » clôt le chemin.
   </p>
 </div>
