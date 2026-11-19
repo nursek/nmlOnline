@@ -164,43 +164,24 @@
 
     <section class="udd-move-section">
       <h3><mat-icon>directions_walk</mat-icon> Ordre de déplacement</h3>
-      <div class="udd-move">
-        <div class="udd-move-from">
-          <span class="udd-label">Depuis</span>
-          <span class="udd-pill">Secteur {{ data.sectorNumber }}</span>
-        </div>
-        <mat-icon class="udd-arrow">arrow_forward</mat-icon>
-        <mat-form-field appearance="outline" class="udd-move-to">
-          <mat-label>Vers</mat-label>
-          <mat-select [value]="targetSector()" (valueChange)="targetSector.set($event)">
-            @for (n of reachableTargets(); track $index) {
-              <mat-option [value]="n">Secteur {{ n }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="udd-move-hint">
-        @if (maxHops() === 1) {
-          <span
-            >Déplacement 1 secteur — {{ reachableTargets().length }} destination(s)
-            atteignable(s).</span
-          >
-        } @else {
-          <span
-            >Déplacement jusqu'à {{ maxHops() }} secteurs —
-            {{ reachableTargets().length }} destination(s) atteignable(s).</span
-          >
-        }
-      </div>
+      <app-route-picker
+        [sectors]="allSectors()"
+        [from]="data.sectorNumber"
+        [maxHops]="maxHops()"
+        [playerId]="player()?.id ?? null"
+        [allyPlayerIds]="alliedPlayerIds()"
+        [disabled]="
+          busy() || pendingOrdersForUnit().length > 0 || pendingSniperOrdersForUnit().length > 0
+        "
+        [(route)]="route"
+      />
 
       @if (pendingOrdersForUnit().length) {
         <div class="udd-move-pending">
           <div class="udd-subhead">Ordres en attente</div>
           @for (o of pendingOrdersForUnit(); track o.id) {
             <div class="udd-pending-row">
-              <span
-                >Secteur {{ o.fromSectorNumber }} → {{ o.toSectorNumber }} ({{ o.status }})</span
-              >
+              <span>Route {{ o.route.join(' → ') }} ({{ o.status }})</span>
               <button mat-icon-button color="warn" [disabled]="busy()" (click)="cancelOrder(o.id)">
                 <mat-icon>cancel</mat-icon>
               </button>
@@ -283,7 +264,7 @@
       color="primary"
       [disabled]="
         busy() ||
-        targetSector() === null ||
+        route().length < 2 ||
         pendingOrdersForUnit().length > 0 ||
         pendingSniperOrdersForUnit().length > 0
       "

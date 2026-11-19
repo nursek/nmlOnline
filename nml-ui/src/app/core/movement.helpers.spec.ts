@@ -1,5 +1,4 @@
 import {
-  findRoute,
   groupMaxHops,
   movableEntities,
   reachableTargets,
@@ -147,21 +146,6 @@ describe('movement.helpers', () => {
     it('étend la frontière sur plusieurs hops sans inclure le départ', () => {
       expect(reachableTargets(graph, 1, 2)).toEqual([2, 3, 5]);
       expect(reachableTargets(graph, 1, 3)).toEqual([2, 3, 4, 5]);
-    });
-  });
-
-  describe('findRoute', () => {
-    it('retourne la route directe', () => {
-      expect(findRoute(graph, 1, 2, 1)).toEqual([1, 2]);
-    });
-
-    it('trouve un chemin à 2 hops', () => {
-      expect(findRoute(graph, 1, 3, 2)).toEqual([1, 2, 3]);
-    });
-
-    it('retourne un chemin vide si la portée est insuffisante', () => {
-      expect(findRoute(graph, 1, 3, 1)).toEqual([]);
-      expect(findRoute(graph, 1, 4, 2)).toEqual([]);
     });
   });
 

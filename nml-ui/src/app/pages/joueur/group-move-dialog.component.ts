@@ -2,23 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { GameCharacter, Sector } from '../../models';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { MovementStateService } from '../../services/movement-state.service';
 import { ExpPipe } from '../../shared/exp.pipe';
-import {
-  findRoute,
-  groupMaxHops,
-  movableEntities,
-  reachableTargets,
-  sectorKind,
-  SectorKind,
-  unitMaxHops,
-} from '../../core/movement.helpers';
+import { groupMaxHops, movableEntities, unitMaxHops } from '../../core/movement.helpers';
+import { RoutePickerComponent } from './route-picker.component';
 
 export interface GroupMoveDialogData {
   sector: Sector;
@@ -26,20 +17,6 @@ export interface GroupMoveDialogData {
   playerId: number;
   allyPlayerIds?: ReadonlySet<number>;
 }
-
-interface MoveTarget {
-  number: number;
-  name: string;
-  kind: SectorKind;
-}
-
-const KIND_LABELS: Record<SectorKind, string> = {
-  own: 'Interne',
-  neutral: 'Neutre',
-  ally: 'Allié',
-  enemy: 'Ennemi',
-  unknown: 'Inconnu',
-};
 
 @Component({
   selector: 'app-group-move-dialog',
@@ -49,9 +26,8 @@ const KIND_LABELS: Record<SectorKind, string> = {
     MatButtonModule,
     MatCheckboxModule,
     MatDialogModule,
-    MatFormFieldModule,
     MatIconModule,
-    MatSelectModule,
+    RoutePickerComponent,
   ],
   templateUrl: './group-move-dialog.component.html',
   styleUrls: ['./group-move-dialog.component.scss'],
@@ -63,7 +39,7 @@ export class GroupMoveDialogComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   readonly busy = signal(false);
-  readonly targetSector = signal<number | null>(null);
+  readonly route = signal<number[]>([]);
   /** Entités décochées ; la sélection par défaut couvre tout ce qui est déplaçable. */
   private readonly deselectedIds = signal<ReadonlySet<number>>(new Set());
 
@@ -114,21 +90,6 @@ export class GroupMoveDialogComponent {
     groupMaxHops(this.selectedUnits(), this.selectedCharacter(), this.selectedVehicles()),
   );
 
-  readonly reachableTargets = computed(() =>
-    reachableTargets(this.allSectors(), this.data.sectorNumber, this.maxHops()),
-  );
-
-  readonly targets = computed<MoveTarget[]>(() =>
-    this.reachableTargets().map((number) => {
-      const sector = this.allSectors().find((s) => s.number === number) ?? null;
-      return {
-        number,
-        name: sector?.name ?? `Secteur ${number}`,
-        kind: sectorKind(sector, this.data.playerId, this.data.allyPlayerIds ?? new Set()),
-      };
-    }),
-  );
-
   constructor() {
     void this.movementState.loadOrders();
   }
@@ -159,12 +120,8 @@ export class GroupMoveDialogComponent {
     this.deselectedIds.set(ids);
   }
 
-  kindLabel(kind: SectorKind): string {
-    return KIND_LABELS[kind];
-  }
-
   async submit(): Promise<void> {
-    const to = this.targetSector();
+    const route = this.route();
     const entityIds = this.selectedUnits().map((u) => u.id);
     const character = this.selectedCharacter();
     if (character?.id != null) entityIds.push(character.id);
@@ -172,15 +129,7 @@ export class GroupMoveDialogComponent {
       .map((v) => v.id)
       .filter((id): id is number => id != null);
 
-    if (to === null || (entityIds.length === 0 && vehicleIds.length === 0)) return;
-
-    const route = findRoute(this.allSectors(), this.data.sectorNumber, to, this.maxHops());
-    if (route.length < 2) {
-      this.snackBar.open('Aucune route adjacente trouvée vers la destination', 'Fermer', {
-        duration: 3000,
-      });
-      return;
-    }
+    if (route.length < 2 || (entityIds.length === 0 && vehicleIds.length === 0)) return;
 
     this.busy.set(true);
     try {
@@ -210,7 +159,7 @@ export class GroupMoveDialogComponent {
       }
 
       this.snackBar.open(
-        `Ordre groupé : secteur ${this.data.sectorNumber} → ${to} (${movedCount} entité(s))`,
+        `Ordre groupé : secteur ${route.join(' → ')} (${movedCount} entité(s))`,
         'OK',
         { duration: 3000 },
       );

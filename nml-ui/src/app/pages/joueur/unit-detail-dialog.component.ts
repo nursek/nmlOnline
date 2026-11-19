@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import {
@@ -28,8 +29,9 @@ import { MovementStateService } from '../../services/movement-state.service';
 import { SniperOrderStateService } from '../../services/sniper-order-state.service';
 import { AllianceStateService } from '../../services/alliance-state.service';
 import { UnitSlotPickerComponent, UnitSlotPickerData } from './unit-slot-picker.component';
+import { RoutePickerComponent } from './route-picker.component';
 import { ExpPipe } from '../../shared/exp.pipe';
-import { findRoute, reachableTargets, sectorKind, unitMaxHops } from '../../core/movement.helpers';
+import { reachableTargets, sectorKind, unitMaxHops } from '../../core/movement.helpers';
 import { sniperActionLabel as sniperActionLabelFor } from '../../core/labels';
 
 export interface UnitDetailDialogData {
@@ -59,6 +61,7 @@ export interface SlotGroup {
     MatFormFieldModule,
     MatSelectModule,
     MatTooltipModule,
+    RoutePickerComponent,
   ],
   templateUrl: './unit-detail-dialog.component.html',
   styleUrls: ['./unit-detail-dialog.component.scss'],
@@ -74,6 +77,7 @@ export class UnitDetailDialogComponent {
   private readonly dialog = inject(MatDialog);
 
   readonly player = this.playerService.player;
+  readonly alliedPlayerIds = this.allianceState.alliedPlayerIds;
 
   // Board complète (secteurs neutres inclus) — nécessaire pour résoudre l'adjacence
   // des secteurs non possédés par le joueur lors du calcul des routes de déplacement.
@@ -94,8 +98,9 @@ export class UnitDetailDialogComponent {
 
   readonly imgError = signal(false);
   readonly busy = signal(false);
-  readonly targetSector = signal<number | null>(null);
+  readonly route = signal<number[]>([]);
   readonly sniperTarget = signal<number | null>(null);
+  private readonly routePicker = viewChild(RoutePickerComponent);
 
   /** Unité live re-lue depuis le player signal (rafraîchi après équipement). */
   readonly unit = computed<Unit>(() => {
@@ -119,11 +124,6 @@ export class UnitDetailDialogComponent {
   );
 
   readonly maxHops = computed<number>(() => unitMaxHops(this.unit()));
-
-  /** Secteurs atteignables en <= maxHops (route adjacente, secteurs neutres traversables). */
-  readonly reachableTargets = computed<number[]>(() =>
-    reachableTargets(this.allSectors(), this.data.sectorNumber, this.maxHops()),
-  );
 
   /** Groupe de slots pour une catégorie (cap + équipements actuels positionnels). */
   readonly slotGroups = computed<SlotGroup[]>(() => {
@@ -228,22 +228,16 @@ export class UnitDetailDialogComponent {
       this.snackBar.open('Cette unité a déjà un ordre en attente', 'Fermer', { duration: 3000 });
       return;
     }
-    const from = this.data.sectorNumber;
-    const to = this.targetSector();
-    if (to === null || to === from) return;
-    const route = findRoute(this.allSectors(), from, to, this.maxHops());
-    if (route.length < 2) {
-      this.snackBar.open('Aucune route adjacente trouvée vers la destination', 'Fermer', {
-        duration: 3000,
-      });
-      return;
-    }
+    const route = this.route();
+    if (route.length < 2) return;
+
     this.busy.set(true);
     try {
       const order = await this.movementState.placeFootOrder([this.unit().id], route);
       if (order) {
-        this.snackBar.open(`Ordre: secteur ${from} -> ${to}`, 'OK', { duration: 2500 });
-        this.targetSector.set(null);
+        this.snackBar.open(`Ordre : secteur ${route.join(' → ')}`, 'OK', { duration: 2500 });
+        this.routePicker()?.reset();
+        this.route.set([]);
       } else {
         const err = this.movementState.error();
         if (err) this.snackBar.open(err, 'Fermer', { duration: 5000 });

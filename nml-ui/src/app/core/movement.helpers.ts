@@ -28,14 +28,18 @@ export function groupMaxHops(
   return hops.length ? Math.min(...hops) : 0;
 }
 
-const sectorOf = (sectors: Sector[], number: number): Sector | null =>
+const sectorOf = (sectors: readonly Sector[], number: number): Sector | null =>
   sectors.find((s) => s.number === number) ?? null;
 
-const neighborsOf = (sectors: Sector[], number: number): number[] =>
+export const neighborsOf = (sectors: readonly Sector[], number: number): number[] =>
   sectorOf(sectors, number)?.neighbors ?? [];
 
 /** Secteurs atteignables en <= maxHops via une route adjacente (BFS), `from` exclu. */
-export function reachableTargets(sectors: Sector[], from: number, maxHops: number): number[] {
+export function reachableTargets(
+  sectors: readonly Sector[],
+  from: number,
+  maxHops: number,
+): number[] {
   if (maxHops < 1) return [];
 
   const result = new Set<number>();
@@ -56,30 +60,6 @@ export function reachableTargets(sectors: Sector[], from: number, maxHops: numbe
   return [...result].sort((a, b) => a - b);
 }
 
-/** Route adjacente la plus courte de `from` vers `to`, bornée par maxHops (BFS). */
-export function findRoute(sectors: Sector[], from: number, to: number, maxHops: number): number[] {
-  if (from === to || maxHops < 1) return [];
-
-  const queue: number[][] = [[from]];
-  const visited = new Set<number>([from]);
-
-  while (queue.length > 0) {
-    const path = queue.shift()!;
-    if (path.length - 1 >= maxHops) continue;
-
-    for (const next of neighborsOf(sectors, path[path.length - 1])) {
-      if (visited.has(next)) continue;
-
-      if (next === to) return [...path, next];
-
-      visited.add(next);
-      queue.push([...path, next]);
-    }
-  }
-
-  return [];
-}
-
 export function sectorKind(
   sector: Sector | null | undefined,
   playerId: number | null,
@@ -89,6 +69,18 @@ export function sectorKind(
   if (sector.ownerId == null) return 'neutral';
   if (sector.ownerId === playerId) return 'own';
   return allyPlayerIds.has(sector.ownerId) ? 'ally' : 'enemy';
+}
+
+export const SECTOR_KIND_LABELS: Record<SectorKind, string> = {
+  own: 'Interne',
+  neutral: 'Neutre',
+  ally: 'Allié',
+  enemy: 'Ennemi',
+  unknown: 'Inconnu',
+};
+
+export function sectorKindLabel(kind: SectorKind): string {
+  return SECTOR_KIND_LABELS[kind];
 }
 
 /**

@@ -77,29 +77,20 @@
       }
     </div>
 
-    <div class="gmd-move">
-      <div class="gmd-move-from">
-        <span class="gmd-label">Depuis</span>
-        <span class="gmd-pill">Secteur {{ data.sectorNumber }}</span>
-      </div>
-      <mat-icon class="gmd-arrow">arrow_forward</mat-icon>
-      <mat-form-field appearance="outline" class="gmd-move-to">
-        <mat-label>Vers</mat-label>
-        <mat-select [value]="targetSector()" (valueChange)="targetSector.set($event)">
-          @for (target of targets(); track target.number) {
-            <mat-option [value]="target.number">
-              #{{ target.number }} · {{ target.name }}
-              <span [class]="'gmd-kind gmd-kind-' + target.kind">{{ kindLabel(target.kind) }}</span>
-            </mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-    </div>
-
-    <div class="gmd-hint">
-      Portée du groupe : {{ maxHops() }} secteur(s) — {{ reachableTargets().length }} destination(s)
-      atteignable(s).
-    </div>
+    @if (selectedCount() > 0) {
+      <app-route-picker
+        [sectors]="allSectors()"
+        [from]="data.sectorNumber"
+        [maxHops]="maxHops()"
+        [playerId]="data.playerId"
+        [allyPlayerIds]="data.allyPlayerIds"
+        [disabled]="busy()"
+        [(route)]="route"
+      />
+      <div class="gmd-hint">Portée du groupe : {{ maxHops() }} secteur(s).</div>
+    } @else {
+      <p class="gmd-hint">Sélectionnez au moins une entité pour définir le chemin.</p>
+    }
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
@@ -107,7 +98,7 @@
     <button
       mat-raised-button
       color="primary"
-      [disabled]="busy() || selectedCount() === 0 || targetSector() === null"
+      [disabled]="busy() || selectedCount() === 0 || route().length < 2"
       (click)="submit()"
     >
       <mat-icon>directions_walk</mat-icon>
