@@ -34,8 +34,9 @@ class GameEndServiceTest {
     private final EliminationEventRepository eliminationEventRepository =
             mock(EliminationEventRepository.class);
     private final AdminAuditService adminAuditService = mock(AdminAuditService.class);
+    private final NotificationService notificationService = mock(NotificationService.class);
     private final GameEndService service = new GameEndService(boardRepository, playerRepository,
-            eliminationEventRepository, adminAuditService);
+            eliminationEventRepository, adminAuditService, notificationService);
 
     @Test
     void runningGameHasNoWinner() {

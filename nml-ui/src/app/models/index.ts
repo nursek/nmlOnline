@@ -21,6 +21,7 @@ export * from './podium.model';
 export * from './gazette.model';
 export * from './exchange-offer.model';
 export * from './alliance.model';
+export * from './notification.model';
 export * from './game-statistics.model';
 export * from './admin.model';
 

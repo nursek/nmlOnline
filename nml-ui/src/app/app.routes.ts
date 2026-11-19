@@ -142,6 +142,12 @@ export const routes: Routes = [
     canActivate: [authGuard, instanceGuard, playerGuard, preparationGuard],
   },
   {
+    path: 'notifications',
+    loadComponent: () =>
+      import('./pages/notifications/notifications.component').then((m) => m.NotificationsComponent),
+    canActivate: [authGuard, instanceGuard],
+  },
+  {
     path: '',
     redirectTo: 'accueil',
     pathMatch: 'full',

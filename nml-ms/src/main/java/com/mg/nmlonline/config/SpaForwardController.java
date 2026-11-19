@@ -22,6 +22,8 @@ public class SpaForwardController {
             "/ordres/**",
             "/rapports",
             "/rapports/**",
+            "/notifications",
+            "/notifications/**",
             "/podium",
             "/podium/**",
             "/journal",
