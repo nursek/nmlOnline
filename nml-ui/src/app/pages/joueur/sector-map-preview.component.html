@@ -1,0 +1,11 @@
+<div class="sector-map">
+  <div
+    #map
+    class="sector-map-svg"
+    role="img"
+    [attr.aria-label]="'Aperçu de la carte autour du secteur ' + sectorNumber()"
+  ></div>
+  @if (!hasGeometry()) {
+    <mat-icon>map</mat-icon>
+  }
+</div>

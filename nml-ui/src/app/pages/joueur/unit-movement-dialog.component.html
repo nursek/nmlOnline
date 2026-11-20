@@ -12,33 +12,8 @@
 
   <mat-dialog-content>
     <section class="umd-sector">
-      <div
-        class="umd-map"
-        [class.umd-map-fallback]="!mapPreview() || mapError()"
-        role="img"
-        [attr.aria-label]="'Aperçu de la carte autour du secteur ' + sector.name"
-      >
-        @if (mapPreview(); as preview) {
-          @if (!mapError()) {
-            <img [src]="preview.url" alt="" (error)="mapError.set(true)" />
-            @if (preview.left !== null && preview.top !== null) {
-              <span
-                class="umd-pin"
-                [style.left.%]="preview.left"
-                [style.top.%]="preview.top"
-                [style.background]="ownerColor()"
-              >
-                {{ sector.number }}
-              </span>
-            } @else {
-              <span class="umd-map-badge">Secteur {{ sector.number }}</span>
-            }
-          } @else {
-            <mat-icon>map</mat-icon>
-          }
-        } @else {
-          <mat-icon>map</mat-icon>
-        }
+      <div class="umd-map">
+        <app-sector-map-preview [sectorNumber]="sectorNumber" />
       </div>
 
       <div class="umd-context">
