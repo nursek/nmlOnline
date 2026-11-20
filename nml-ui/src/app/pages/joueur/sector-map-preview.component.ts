@@ -150,7 +150,7 @@ export class SectorMapPreviewComponent {
           ? mapWidth / mapHeight
           : 5 / 3;
 
-    const pad = Math.max(box.width, box.height) * 0.3;
+    const pad = Math.max(box.width, box.height) * 0.4;
     const halfWidth = box.width / 2 + pad;
     const halfHeight = box.height / 2 + pad;
     let cropWidth = Math.max(halfWidth * 2, halfHeight * 2 * aspect);
@@ -173,26 +173,68 @@ export class SectorMapPreviewComponent {
     const crop = { x: cropX, y: cropY, width: cropWidth, height: cropHeight };
     svg.setAttribute('viewBox', `${crop.x} ${crop.y} ${crop.width} ${crop.height}`);
 
-    const labelFont = Math.max(12, Math.min(crop.width, crop.height) * 0.06);
-    this.addLabel(svg, sectorNumber, centerX, centerY, labelFont);
+    const labelFont = Math.max(11, Math.min(crop.width, crop.height) * 0.055);
+    const marginX = Math.max(crop.width * 0.05, labelFont * 1.6);
+    const marginY = Math.max(crop.height * 0.05, labelFont * 1.6);
+    const candidates: { number: number; x: number; y: number; area: number; selected: boolean }[] =
+      [];
+    const seen = new Set<number>();
+    paths.forEach((path) => {
+      const id = path.getAttribute('id');
+      const number = id ? parseInt(id.replace('path', ''), 10) : Number.NaN;
+      if (Number.isNaN(number) || seen.has(number)) return;
+      const pathBox = path.getBBox();
+      if (!pathBox.width && !pathBox.height) return;
+      const visibleWidth =
+        Math.min(pathBox.x + pathBox.width, crop.x + crop.width) - Math.max(pathBox.x, crop.x);
+      const visibleHeight =
+        Math.min(pathBox.y + pathBox.height, crop.y + crop.height) - Math.max(pathBox.y, crop.y);
+      if (visibleWidth <= 0 || visibleHeight <= 0) return;
 
-    const selectedSector = byNumber.get(sectorNumber);
-    const marginX = Math.max(crop.width * 0.06, labelFont * 1.8);
-    const marginY = Math.max(crop.height * 0.06, labelFont * 1.8);
-    for (const neighborNumber of selectedSector?.neighbors ?? []) {
-      const neighbor = svg.querySelector<SVGGraphicsElement>(`#path${neighborNumber}`);
-      if (!neighbor) continue;
-      const neighborBox = neighbor.getBBox();
-      if (!neighborBox.width && !neighborBox.height) continue;
-      const x = Math.min(
-        crop.x + crop.width - marginX,
-        Math.max(crop.x + marginX, neighborBox.x + neighborBox.width / 2),
-      );
-      const y = Math.min(
-        crop.y + crop.height - marginY,
-        Math.max(crop.y + marginY, neighborBox.y + neighborBox.height / 2),
-      );
-      this.addLabel(svg, neighborNumber, x, y, labelFont);
+      candidates.push({
+        number,
+        x: Math.min(
+          crop.x + crop.width - marginX,
+          Math.max(crop.x + marginX, pathBox.x + pathBox.width / 2),
+        ),
+        y: Math.min(
+          crop.y + crop.height - marginY,
+          Math.max(crop.y + marginY, pathBox.y + pathBox.height / 2),
+        ),
+        area: visibleWidth * visibleHeight,
+        selected: number === sectorNumber,
+      });
+      seen.add(number);
+    });
+
+    candidates.sort((a, b) => Number(b.selected) - Number(a.selected) || b.area - a.area);
+    const placed: { x: number; y: number }[] = [];
+    const minDistance = labelFont * 1.35;
+    for (const candidate of candidates) {
+      const offsets = [0, minDistance, -minDistance, minDistance * 2, -minDistance * 2];
+      let chosen: { x: number; y: number } | null = null;
+      for (const dx of offsets) {
+        for (const dy of offsets) {
+          const x = candidate.x + dx;
+          const y = candidate.y + dy;
+          if (
+            x < crop.x + marginX ||
+            x > crop.x + crop.width - marginX ||
+            y < crop.y + marginY ||
+            y > crop.y + crop.height - marginY
+          ) {
+            continue;
+          }
+          if (placed.every((point) => Math.hypot(point.x - x, point.y - y) >= minDistance)) {
+            chosen = { x, y };
+            break;
+          }
+        }
+        if (chosen) break;
+      }
+      const label = chosen ?? { x: candidate.x, y: candidate.y };
+      this.addLabel(svg, candidate.number, label.x, label.y, labelFont);
+      placed.push(label);
     }
 
     this.hasGeometry.set(true);
