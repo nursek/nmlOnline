@@ -21,14 +21,18 @@
         @if (mapPreview(); as preview) {
           @if (!mapError()) {
             <img [src]="preview.url" alt="" (error)="mapError.set(true)" />
-            <span
-              class="umd-pin"
-              [style.left.%]="preview.left"
-              [style.top.%]="preview.top"
-              [style.background]="ownerColor()"
-            >
-              {{ sector.number }}
-            </span>
+            @if (preview.left !== null && preview.top !== null) {
+              <span
+                class="umd-pin"
+                [style.left.%]="preview.left"
+                [style.top.%]="preview.top"
+                [style.background]="ownerColor()"
+              >
+                {{ sector.number }}
+              </span>
+            } @else {
+              <span class="umd-map-badge">Secteur {{ sector.number }}</span>
+            }
           } @else {
             <mat-icon>map</mat-icon>
           }
