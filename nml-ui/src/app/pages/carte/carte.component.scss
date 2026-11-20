@@ -547,6 +547,15 @@
   border-radius: var(--r-sm);
   overflow: hidden;
   background: var(--void);
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 .svg-map-wrapper::before {
@@ -638,6 +647,12 @@
       cursor: pointer;
       transition: all 0.2s ease;
       vector-effect: non-scaling-stroke;
+
+      // Le focus clavier est déjà signalé par le surlignage du secteur : l'outline
+      // natif dessine un rectangle autour de la bbox SVG, pas du polygone.
+      &:focus {
+        outline: none;
+      }
     }
 
     .sector-label {
