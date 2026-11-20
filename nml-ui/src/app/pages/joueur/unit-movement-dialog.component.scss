@@ -68,6 +68,20 @@
   border-style: dashed;
 }
 
+.umd-map-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  padding: 2px 7px;
+  border-radius: var(--r-xs);
+  background: color-mix(in srgb, var(--void) 78%, transparent);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .umd-pin {
   position: absolute;
   display: flex;
