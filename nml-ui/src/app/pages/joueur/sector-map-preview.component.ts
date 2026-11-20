@@ -56,7 +56,11 @@ export class SectorMapPreviewComponent {
     host: HTMLDivElement,
     text: string,
     sectorNumber: number,
-    sectors: readonly { number: number | null; ownerId: number | null }[],
+    sectors: readonly {
+      number: number | null;
+      ownerId: number | null;
+      neighbors: number[];
+    }[],
     colors: ReadonlyMap<number, string>,
     mapImageUrl: string | null,
   ): void {
@@ -90,7 +94,10 @@ export class SectorMapPreviewComponent {
       svg.insertBefore(image, svg.firstChild);
     }
 
-    const byNumber = new Map<number, { number: number | null; ownerId: number | null }>();
+    const byNumber = new Map<
+      number,
+      { number: number | null; ownerId: number | null; neighbors: number[] }
+    >();
     for (const sector of sectors) {
       if (sector.number !== null) byNumber.set(sector.number, sector);
     }
@@ -109,7 +116,7 @@ export class SectorMapPreviewComponent {
 
       path.style.pointerEvents = 'none';
       path.style.fill = color;
-      path.style.fillOpacity = isSelected ? '0.9' : '0.55';
+      path.style.fillOpacity = isSelected ? '0.82' : '0.5';
       path.style.stroke = isSelected ? LABEL_COLOR : color;
       path.style.strokeOpacity = isSelected ? '1' : '0.8';
       path.style.strokeWidth = isSelected ? '3' : '1';
@@ -131,27 +138,66 @@ export class SectorMapPreviewComponent {
       return;
     }
 
+    const pad = Math.max(box.width, box.height) * 0.3;
+    const crop = {
+      x: box.x - pad,
+      y: box.y - pad,
+      width: box.width + pad * 2,
+      height: box.height + pad * 2,
+    };
+    svg.setAttribute('viewBox', `${crop.x} ${crop.y} ${crop.width} ${crop.height}`);
+
+    const selectedFont = Math.max(16, Math.min(box.width, box.height) * 0.25);
+    this.addLabel(
+      svg,
+      sectorNumber,
+      box.x + box.width / 2,
+      box.y + box.height / 2,
+      selectedFont,
+      '800',
+    );
+
+    const selectedSector = byNumber.get(sectorNumber);
+    const neighborFont = Math.max(12, Math.min(crop.width, crop.height) * 0.06);
+    const marginX = crop.width * 0.07;
+    const marginY = crop.height * 0.07;
+    for (const neighborNumber of selectedSector?.neighbors ?? []) {
+      const neighbor = svg.querySelector<SVGGraphicsElement>(`#path${neighborNumber}`);
+      if (!neighbor) continue;
+      const neighborBox = neighbor.getBBox();
+      if (!neighborBox.width && !neighborBox.height) continue;
+      const centerX = neighborBox.x + neighborBox.width / 2;
+      const centerY = neighborBox.y + neighborBox.height / 2;
+      const x = Math.min(crop.x + crop.width - marginX, Math.max(crop.x + marginX, centerX));
+      const y = Math.min(crop.y + crop.height - marginY, Math.max(crop.y + marginY, centerY));
+      this.addLabel(svg, neighborNumber, x, y, neighborFont, '600');
+    }
+
+    this.hasGeometry.set(true);
+  }
+
+  private addLabel(
+    svg: SVGSVGElement,
+    value: number,
+    x: number,
+    y: number,
+    fontSize: number,
+    fontWeight: string,
+  ): void {
     const label = document.createElementNS(SVG_NS, 'text');
-    label.setAttribute('x', String(box.x + box.width / 2));
-    label.setAttribute('y', String(box.y + box.height / 2));
+    label.setAttribute('x', String(x));
+    label.setAttribute('y', String(y));
     label.setAttribute('text-anchor', 'middle');
     label.setAttribute('dominant-baseline', 'central');
-    label.setAttribute('font-size', String(Math.max(14, Math.min(box.width, box.height) * 0.22)));
-    label.setAttribute('font-weight', '800');
+    label.setAttribute('font-size', String(fontSize));
+    label.setAttribute('font-weight', fontWeight);
     label.setAttribute('font-family', 'system-ui, sans-serif');
     label.setAttribute('fill', LABEL_COLOR);
     label.setAttribute('stroke', LABEL_HALO);
-    label.setAttribute('stroke-width', '3');
+    label.setAttribute('stroke-width', String(Math.max(2, fontSize * 0.16)));
     label.setAttribute('paint-order', 'stroke');
     label.setAttribute('pointer-events', 'none');
-    label.textContent = String(sectorNumber);
+    label.textContent = String(value);
     svg.appendChild(label);
-
-    const pad = Math.max(box.width, box.height) * 0.65;
-    svg.setAttribute(
-      'viewBox',
-      `${box.x - pad} ${box.y - pad} ${box.width + pad * 2} ${box.height + pad * 2}`,
-    );
-    this.hasGeometry.set(true);
   }
 }
