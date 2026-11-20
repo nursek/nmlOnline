@@ -46,8 +46,9 @@ export class SectorMapPreviewComponent {
       const sectorNumber = this.sectorNumber();
       const sectors = this.activeBoard.sectors();
       const colors = this.playerDirectory.colorMap();
+      const mapImageUrl = this.activeBoard.board()?.mapImageUrl ?? null;
       if (!text || !host) return;
-      untracked(() => this.render(host, text, sectorNumber, sectors, colors));
+      untracked(() => this.render(host, text, sectorNumber, sectors, colors, mapImageUrl));
     });
   }
 
@@ -57,6 +58,7 @@ export class SectorMapPreviewComponent {
     sectorNumber: number,
     sectors: readonly { number: number | null; ownerId: number | null }[],
     colors: ReadonlyMap<number, string>,
+    mapImageUrl: string | null,
   ): void {
     const sanitized = sanitizeSvg(text);
     if (!sanitized) {
@@ -74,6 +76,19 @@ export class SectorMapPreviewComponent {
     svg.setAttribute('width', '100%');
     svg.setAttribute('height', '100%');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+    if (mapImageUrl) {
+      const viewBox = svg.viewBox.baseVal;
+      const image = document.createElementNS(SVG_NS, 'image');
+      image.setAttribute('x', String(viewBox?.x ?? 0));
+      image.setAttribute('y', String(viewBox?.y ?? 0));
+      image.setAttribute('width', String(viewBox?.width || svg.width.baseVal.value));
+      image.setAttribute('height', String(viewBox?.height || svg.height.baseVal.value));
+      image.setAttribute('preserveAspectRatio', 'none');
+      image.setAttribute('href', mapImageUrl);
+      image.style.pointerEvents = 'none';
+      svg.insertBefore(image, svg.firstChild);
+    }
 
     const byNumber = new Map<number, { number: number | null; ownerId: number | null }>();
     for (const sector of sectors) {
