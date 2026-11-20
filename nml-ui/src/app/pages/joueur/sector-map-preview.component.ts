@@ -138,39 +138,61 @@ export class SectorMapPreviewComponent {
       return;
     }
 
+    const viewBox = svg.viewBox.baseVal;
+    const mapX = viewBox?.x ?? 0;
+    const mapY = viewBox?.y ?? 0;
+    const mapWidth = viewBox?.width || svg.width.baseVal.value;
+    const mapHeight = viewBox?.height || svg.height.baseVal.value;
+    const aspect =
+      host.clientWidth > 0 && host.clientHeight > 0
+        ? host.clientWidth / host.clientHeight
+        : mapWidth && mapHeight
+          ? mapWidth / mapHeight
+          : 5 / 3;
+
     const pad = Math.max(box.width, box.height) * 0.3;
-    const crop = {
-      x: box.x - pad,
-      y: box.y - pad,
-      width: box.width + pad * 2,
-      height: box.height + pad * 2,
-    };
+    const halfWidth = box.width / 2 + pad;
+    const halfHeight = box.height / 2 + pad;
+    let cropWidth = Math.max(halfWidth * 2, halfHeight * 2 * aspect);
+    let cropHeight = cropWidth / aspect;
+    if (mapWidth > 0 && mapHeight > 0) {
+      const scale = Math.min(1, mapWidth / cropWidth, mapHeight / cropHeight);
+      cropWidth *= scale;
+      cropHeight *= scale;
+    }
+
+    const centerX = box.x + box.width / 2;
+    const centerY = box.y + box.height / 2;
+    let cropX = centerX - cropWidth / 2;
+    let cropY = centerY - cropHeight / 2;
+    if (mapWidth > 0 && mapHeight > 0) {
+      cropX = Math.min(Math.max(cropX, mapX), mapX + mapWidth - cropWidth);
+      cropY = Math.min(Math.max(cropY, mapY), mapY + mapHeight - cropHeight);
+    }
+
+    const crop = { x: cropX, y: cropY, width: cropWidth, height: cropHeight };
     svg.setAttribute('viewBox', `${crop.x} ${crop.y} ${crop.width} ${crop.height}`);
 
-    const selectedFont = Math.max(16, Math.min(box.width, box.height) * 0.25);
-    this.addLabel(
-      svg,
-      sectorNumber,
-      box.x + box.width / 2,
-      box.y + box.height / 2,
-      selectedFont,
-      '800',
-    );
+    const labelFont = Math.max(12, Math.min(crop.width, crop.height) * 0.06);
+    this.addLabel(svg, sectorNumber, centerX, centerY, labelFont);
 
     const selectedSector = byNumber.get(sectorNumber);
-    const neighborFont = Math.max(12, Math.min(crop.width, crop.height) * 0.06);
-    const marginX = crop.width * 0.07;
-    const marginY = crop.height * 0.07;
+    const marginX = Math.max(crop.width * 0.06, labelFont * 1.8);
+    const marginY = Math.max(crop.height * 0.06, labelFont * 1.8);
     for (const neighborNumber of selectedSector?.neighbors ?? []) {
       const neighbor = svg.querySelector<SVGGraphicsElement>(`#path${neighborNumber}`);
       if (!neighbor) continue;
       const neighborBox = neighbor.getBBox();
       if (!neighborBox.width && !neighborBox.height) continue;
-      const centerX = neighborBox.x + neighborBox.width / 2;
-      const centerY = neighborBox.y + neighborBox.height / 2;
-      const x = Math.min(crop.x + crop.width - marginX, Math.max(crop.x + marginX, centerX));
-      const y = Math.min(crop.y + crop.height - marginY, Math.max(crop.y + marginY, centerY));
-      this.addLabel(svg, neighborNumber, x, y, neighborFont, '600');
+      const x = Math.min(
+        crop.x + crop.width - marginX,
+        Math.max(crop.x + marginX, neighborBox.x + neighborBox.width / 2),
+      );
+      const y = Math.min(
+        crop.y + crop.height - marginY,
+        Math.max(crop.y + marginY, neighborBox.y + neighborBox.height / 2),
+      );
+      this.addLabel(svg, neighborNumber, x, y, labelFont);
     }
 
     this.hasGeometry.set(true);
@@ -182,7 +204,6 @@ export class SectorMapPreviewComponent {
     x: number,
     y: number,
     fontSize: number,
-    fontWeight: string,
   ): void {
     const label = document.createElementNS(SVG_NS, 'text');
     label.setAttribute('x', String(x));
@@ -190,7 +211,7 @@ export class SectorMapPreviewComponent {
     label.setAttribute('text-anchor', 'middle');
     label.setAttribute('dominant-baseline', 'central');
     label.setAttribute('font-size', String(fontSize));
-    label.setAttribute('font-weight', fontWeight);
+    label.setAttribute('font-weight', '700');
     label.setAttribute('font-family', 'system-ui, sans-serif');
     label.setAttribute('fill', LABEL_COLOR);
     label.setAttribute('stroke', LABEL_HALO);
