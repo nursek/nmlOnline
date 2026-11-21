@@ -10,6 +10,7 @@ import { MovementStateService } from '../../services/movement-state.service';
 import { ExpPipe } from '../../shared/exp.pipe';
 import { groupMaxHops, movableEntities, unitMaxHops } from '../../core/movement.helpers';
 import { RoutePickerComponent } from './route-picker.component';
+import { SectorMapPreviewComponent } from './sector-map-preview.component';
 
 export interface GroupMoveDialogData {
   sector: Sector;
@@ -28,6 +29,7 @@ export interface GroupMoveDialogData {
     MatDialogModule,
     MatIconModule,
     RoutePickerComponent,
+    SectorMapPreviewComponent,
   ],
   templateUrl: './group-move-dialog.component.html',
   styleUrls: ['./group-move-dialog.component.scss'],
@@ -40,6 +42,9 @@ export class GroupMoveDialogComponent {
 
   readonly busy = signal(false);
   readonly route = signal<number[]>([]);
+  readonly frontOverlay = signal(false);
+  readonly resourcesOverlay = signal(false);
+  readonly allyPlayerIds = this.data.allyPlayerIds ?? new Set<number>();
   /** Entités décochées ; la sélection par défaut couvre tout ce qui est déplaçable. */
   private readonly deselectedIds = signal<ReadonlySet<number>>(new Set());
 

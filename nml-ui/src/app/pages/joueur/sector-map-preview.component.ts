@@ -12,10 +12,12 @@ import {
 } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
+import type { Sector } from '../../models';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { PlayerDirectoryService } from '../../services/player-directory.service';
 import { sanitizeSvg } from '../../core/svg-sanitize';
 import { contrastColor, haloColor, MAP_THEME } from '../carte/carte.config';
+import { frontBorders, resourceIconSrc } from '../carte/carte.helpers';
 import { computeVisualCenter } from '../carte/sector-label.helpers';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -37,6 +39,10 @@ type RouteRole = 'start' | 'target' | 'transit';
 export class SectorMapPreviewComponent {
   readonly startSector = input.required<number>();
   readonly route = input<readonly number[]>([]);
+  readonly playerId = input<number | null>(null);
+  readonly allyPlayerIds = input<ReadonlySet<number>>(new Set());
+  readonly showFront = input(false);
+  readonly showResources = input(false);
 
   private readonly activeBoard = inject(ActiveBoardService);
   private readonly playerDirectory = inject(PlayerDirectoryService);
@@ -47,6 +53,7 @@ export class SectorMapPreviewComponent {
   readonly hasGeometry = signal(false);
   private labelCentersKey = '';
   private readonly labelCenters = new Map<number, { x: number; y: number }>();
+  private maskSequence = 0;
 
   constructor() {
     effect(() => {
@@ -54,11 +61,29 @@ export class SectorMapPreviewComponent {
       const host = this.mapHost()?.nativeElement;
       const startSector = this.startSector();
       const route = this.route();
+      const playerId = this.playerId();
+      const allyPlayerIds = this.allyPlayerIds();
+      const showFront = this.showFront();
+      const showResources = this.showResources();
       const sectors = this.activeBoard.sectors();
       const colors = this.playerDirectory.colorMap();
       const mapImageUrl = this.activeBoard.board()?.mapImageUrl ?? null;
       if (!text || !host) return;
-      untracked(() => this.render(host, text, startSector, route, sectors, colors, mapImageUrl));
+      untracked(() =>
+        this.render(
+          host,
+          text,
+          startSector,
+          route,
+          sectors,
+          colors,
+          mapImageUrl,
+          playerId,
+          allyPlayerIds,
+          showFront,
+          showResources,
+        ),
+      );
     });
   }
 
@@ -67,9 +92,13 @@ export class SectorMapPreviewComponent {
     text: string,
     startSector: number,
     route: readonly number[],
-    sectors: readonly { number: number | null; ownerId: number | null }[],
+    sectors: readonly Sector[],
     colors: ReadonlyMap<number, string>,
     mapImageUrl: string | null,
+    playerId: number | null,
+    allyPlayerIds: ReadonlySet<number>,
+    showFront: boolean,
+    showResources: boolean,
   ): void {
     const sanitized = sanitizeSvg(text);
     if (!sanitized) {
@@ -96,6 +125,7 @@ export class SectorMapPreviewComponent {
     if (mapWidth > 0 && mapHeight > 0) {
       svg.setAttribute('viewBox', `${mapX} ${mapY} ${mapWidth} ${mapHeight}`);
     }
+    this.ensureNeutralPattern(svg);
 
     if (mapImageUrl) {
       const image = document.createElementNS(SVG_NS, 'image');
@@ -109,7 +139,7 @@ export class SectorMapPreviewComponent {
       svg.insertBefore(image, svg.firstChild);
     }
 
-    const byNumber = new Map<number, { number: number | null; ownerId: number | null }>();
+    const byNumber = new Map<number, Sector>();
     for (const sector of sectors) {
       if (sector.number !== null) byNumber.set(sector.number, sector);
     }
@@ -140,13 +170,22 @@ export class SectorMapPreviewComponent {
               ? 'transit'
               : null;
       const color = role ? roleColors[role] : ownerColor;
+      const isNeutral = sector?.ownerId == null;
+      const isAlly = sector?.ownerId != null && allyPlayerIds.has(sector.ownerId);
 
       path.style.pointerEvents = 'none';
-      path.style.fill = color;
-      path.style.fillOpacity = role ? '0.9' : '0.5';
-      path.style.stroke = role ? LABEL_COLOR : color;
+      path.style.fill = role
+        ? color
+        : showResources
+          ? MAP_THEME.resourceFill + MAP_THEME.fill.normalAlpha
+          : isNeutral
+            ? 'url(#neutral-stripes)'
+            : color + MAP_THEME.fill.normalAlpha;
+      path.style.fillOpacity = role ? '0.9' : '1';
+      path.style.stroke = role ? LABEL_COLOR : showResources ? 'none' : color;
       path.style.strokeOpacity = role ? '1' : '0.8';
-      path.style.strokeWidth = role ? '6' : '1';
+      path.style.strokeWidth = role ? '6' : showResources ? '0' : '1';
+      path.style.strokeDasharray = !showResources && !role && isAlly ? '7 4' : '';
       path.style.vectorEffect = 'non-scaling-stroke';
       path.style.filter = role
         ? `drop-shadow(0 0 4px ${color}) drop-shadow(0 0 10px ${color})`
@@ -156,6 +195,10 @@ export class SectorMapPreviewComponent {
     if (!paths.length) {
       this.hasGeometry.set(false);
       return;
+    }
+
+    if (showFront) {
+      this.renderFrontOverlay(svg, paths, sectors, playerId, allyPlayerIds);
     }
 
     const cacheKey = this.svgUrl() ?? '';
@@ -188,18 +231,126 @@ export class SectorMapPreviewComponent {
               ? 'transit'
               : null;
       const roleColor = role ? roleColors[role] : null;
-      this.addLabel(
-        svg,
-        number,
-        center.x,
-        center.y,
-        labelFont,
-        roleColor ? contrastColor(roleColor) : ownerColor,
-        roleColor ? haloColor(roleColor) : MAP_THEME.label.strokeColor,
-      );
+      if (showResources) {
+        if (sector?.resource) {
+          this.addResourceIcon(svg, sector.resource, center.x, center.y);
+        }
+      } else {
+        this.addLabel(
+          svg,
+          number,
+          center.x,
+          center.y,
+          labelFont,
+          roleColor ? contrastColor(roleColor) : ownerColor,
+          roleColor ? haloColor(roleColor) : MAP_THEME.label.strokeColor,
+        );
+      }
     });
 
     this.hasGeometry.set(true);
+  }
+
+  private ensureNeutralPattern(svg: SVGSVGElement): void {
+    let defs = svg.querySelector<SVGDefsElement>('defs');
+    if (!defs) {
+      defs = document.createElementNS(SVG_NS, 'defs');
+      svg.insertBefore(defs, svg.firstChild);
+    }
+    if (svg.querySelector('#neutral-stripes')) return;
+
+    const np = MAP_THEME.neutralPattern;
+    const pattern = document.createElementNS(SVG_NS, 'pattern');
+    pattern.setAttribute('id', 'neutral-stripes');
+    pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+    pattern.setAttribute('width', String(np.width));
+    pattern.setAttribute('height', String(np.height));
+    pattern.setAttribute('patternTransform', `rotate(${np.rotateDeg})`);
+
+    const background = document.createElementNS(SVG_NS, 'rect');
+    background.setAttribute('width', String(np.width));
+    background.setAttribute('height', String(np.height));
+    background.setAttribute('fill', np.background);
+
+    const stripe = document.createElementNS(SVG_NS, 'rect');
+    stripe.setAttribute('width', String(np.stripeWidth));
+    stripe.setAttribute('height', String(np.height));
+    stripe.setAttribute('fill', MAP_THEME.neutralColor);
+
+    pattern.appendChild(background);
+    pattern.appendChild(stripe);
+    defs.appendChild(pattern);
+  }
+
+  private renderFrontOverlay(
+    svg: SVGSVGElement,
+    paths: NodeListOf<SVGGraphicsElement>,
+    sectors: readonly Sector[],
+    playerId: number | null,
+    allyPlayerIds: ReadonlySet<number>,
+  ): void {
+    const { mine, enemies } = frontBorders(sectors, playerId, allyPlayerIds);
+    const defs = svg.querySelector('defs');
+    if (!mine.length || !enemies.length || !defs) return;
+
+    const byNumber = new Map<number, SVGGraphicsElement>();
+    paths.forEach((path) => {
+      const id = path.getAttribute('id');
+      const number = id ? parseInt(id.replace('path', ''), 10) : Number.NaN;
+      if (!Number.isNaN(number)) byNumber.set(number, path);
+    });
+
+    const maskId = `preview-front-mask-${++this.maskSequence}`;
+    const mask = document.createElementNS(SVG_NS, 'mask');
+    mask.setAttribute('id', maskId);
+    mask.setAttribute('maskUnits', 'userSpaceOnUse');
+    for (const number of mine) {
+      const source = byNumber.get(number);
+      if (!source) continue;
+      const area = this.clonePath(source);
+      area.style.fill = '#fff';
+      area.style.stroke = '#fff';
+      area.style.strokeWidth = String(MAP_THEME.overlays.frontMaskWidth);
+      area.style.vectorEffect = 'non-scaling-stroke';
+      mask.appendChild(area);
+    }
+    defs.appendChild(mask);
+
+    const group = document.createElementNS(SVG_NS, 'g');
+    group.setAttribute('pointer-events', 'none');
+    for (const number of enemies) {
+      const source = byNumber.get(number);
+      if (!source) continue;
+      const clone = this.clonePath(source);
+      clone.style.fill = 'none';
+      clone.style.stroke = MAP_THEME.overlays.frontStroke;
+      clone.style.strokeWidth = String(MAP_THEME.overlays.frontWidth);
+      clone.setAttribute('mask', `url(#${maskId})`);
+      group.appendChild(clone);
+    }
+    svg.appendChild(group);
+  }
+
+  private clonePath(path: SVGGraphicsElement): SVGElement {
+    const clone = path.cloneNode(true) as SVGElement;
+    clone.removeAttribute('id');
+    clone.style.filter = 'none';
+    clone.style.opacity = '1';
+    clone.style.strokeDasharray = '';
+    clone.style.pointerEvents = 'none';
+    return clone;
+  }
+
+  private addResourceIcon(svg: SVGSVGElement, resource: string, x: number, y: number): void {
+    const size = MAP_THEME.resourceIcon.size;
+    const icon = document.createElementNS(SVG_NS, 'image');
+    icon.setAttribute('href', resourceIconSrc(resource));
+    icon.setAttribute('x', String(x - size / 2));
+    icon.setAttribute('y', String(y - size / 2));
+    icon.setAttribute('width', String(size));
+    icon.setAttribute('height', String(size));
+    icon.setAttribute('pointer-events', 'none');
+    svg.appendChild(icon);
   }
 
   private addLabel(

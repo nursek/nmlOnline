@@ -95,6 +95,51 @@
       }
     </div>
 
+    <div class="gmd-map-section">
+      <div class="gmd-map-head">
+        <span class="gmd-map-title">Secteur {{ data.sectorNumber }} · {{ data.sector.name }}</span>
+        <div class="gmd-map-filters">
+          <button
+            type="button"
+            class="gmd-filter"
+            [class.active]="frontOverlay()"
+            [attr.aria-pressed]="frontOverlay()"
+            (click)="frontOverlay.set(!frontOverlay())"
+            title="Bordures avec les secteurs ennemis (jamais les neutres)"
+          >
+            <mat-icon>shield</mat-icon>
+            Frontières
+          </button>
+          <button
+            type="button"
+            class="gmd-filter"
+            [class.active]="resourcesOverlay()"
+            [attr.aria-pressed]="resourcesOverlay()"
+            (click)="resourcesOverlay.set(!resourcesOverlay())"
+            title="Afficher la ressource de chaque secteur"
+          >
+            <mat-icon>diamond</mat-icon>
+            Ressources
+          </button>
+        </div>
+      </div>
+      <div class="gmd-legend" aria-hidden="true">
+        <span class="gmd-legend-item gmd-legend-start">Départ</span>
+        <span class="gmd-legend-item gmd-legend-target">Cible</span>
+        <span class="gmd-legend-item gmd-legend-transit">Transit</span>
+      </div>
+      <div class="gmd-map">
+        <app-sector-map-preview
+          [startSector]="data.sectorNumber"
+          [route]="route()"
+          [playerId]="data.playerId"
+          [allyPlayerIds]="allyPlayerIds"
+          [showFront]="frontOverlay()"
+          [showResources]="resourcesOverlay()"
+        />
+      </div>
+    </div>
+
     @if (selectedCount() > 0) {
       <app-route-picker
         [sectors]="allSectors()"
