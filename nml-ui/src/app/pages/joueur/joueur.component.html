@@ -189,6 +189,8 @@
                 [character]="playerCharacter()"
                 [sector]="characterSector()"
                 [playerId]="player.id"
+                [canMove]="characterCanMove()"
+                (moveRequested)="moveCharacterFromPanel()"
               />
             </mat-card-content>
           </mat-card>
@@ -501,6 +503,21 @@
                                 {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
                               }
                             </span>
+                            @if (
+                              character.id !== null &&
+                              !vehicleDisplay().pilotTags.get(character.id) &&
+                              !vehicleDisplay().passengerTags.get(character.id)
+                            ) {
+                              <button
+                                mat-icon-button
+                                class="force-action"
+                                matTooltip="Donner un ordre au personnage"
+                                aria-label="Donner un ordre au personnage"
+                                (click)="openCharacterMovement(character, sf.sector)"
+                              >
+                                <mat-icon>directions_walk</mat-icon>
+                              </button>
+                            }
                           </div>
                         }
 

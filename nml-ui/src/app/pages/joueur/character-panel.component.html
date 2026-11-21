@@ -18,6 +18,18 @@
               · {{ s.resource }}
             }
           </span>
+          @if (canMove()) {
+            <button
+              mat-icon-button
+              type="button"
+              class="chp-move"
+              matTooltip="Donner un ordre au personnage"
+              aria-label="Donner un ordre au personnage"
+              (click)="requestMove()"
+            >
+              <mat-icon>directions_walk</mat-icon>
+            </button>
+          }
         </div>
 
         @if (isEmpty()) {

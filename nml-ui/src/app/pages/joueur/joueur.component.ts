@@ -22,6 +22,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Building,
   Equipment,
+  GameCharacter,
   HarvestChoice,
   PlayerAction,
   PlayerResource,
@@ -184,6 +185,12 @@ export class JoueurComponent {
   }
 
   readonly playerCharacter = computed(() => this.player()?.character ?? null);
+  readonly characterCanMove = computed(() => {
+    const character = this.playerCharacter();
+    if (character?.id == null || !this.characterSector()) return false;
+    const tags = this.vehicleDisplay();
+    return !tags.pilotTags.get(character.id) && !tags.passengerTags.get(character.id);
+  });
   readonly eliminationLabel = computed(() => {
     switch (this.player()?.eliminationCause) {
       case 'HEADQUARTERS_CAPTURED':
@@ -463,6 +470,28 @@ export class JoueurComponent {
       maxWidth: '96vw',
       data,
     });
+  }
+
+  openCharacterMovement(character: GameCharacter, sector: Sector): void {
+    const playerId = this.player()?.id;
+    if (playerId == null || character.id == null) return;
+    const data: UnitMovementDialogData = {
+      character,
+      sector,
+      playerId,
+      allyPlayerIds: this.allianceState.alliedPlayerIds(),
+    };
+    this.dialog.open(UnitMovementDialogComponent, {
+      width: '900px',
+      maxWidth: '96vw',
+      data,
+    });
+  }
+
+  moveCharacterFromPanel(): void {
+    const character = this.playerCharacter();
+    const sector = this.characterSector();
+    if (character && sector) this.openCharacterMovement(character, sector);
   }
 
   openBuildingMove(building: Building): void {

@@ -11,7 +11,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MovementOrder, Sector, Unit } from '../../models';
+import { GameCharacter, MovementOrder, Sector, Unit } from '../../models';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { MovementStateService } from '../../services/movement-state.service';
 import { PlayerDirectoryService } from '../../services/player-directory.service';
@@ -23,7 +23,8 @@ import { routeAfterSectorClick } from './route-picker.helpers';
 import { SectorMapPreviewComponent } from './sector-map-preview.component';
 
 export interface UnitMovementDialogData {
-  unit: Unit;
+  unit?: Unit;
+  character?: GameCharacter;
   sector: Sector;
   playerId: number;
   allyPlayerIds?: ReadonlySet<number>;
@@ -53,24 +54,37 @@ export class UnitMovementDialogComponent {
   private readonly activeBoard = inject(ActiveBoardService);
   private readonly snackBar = inject(MatSnackBar);
 
-  readonly unit = this.data.unit;
+  readonly unit = this.data.unit ?? null;
+  readonly character = this.data.character ?? null;
   readonly sector = this.data.sector;
   readonly sectorNumber = this.data.sector.number ?? 0;
   readonly allyPlayerIds = this.data.allyPlayerIds ?? new Set<number>();
+  readonly entityId = this.unit?.id ?? this.character?.id ?? null;
+  readonly entityLabel = computed(() =>
+    this.unit
+      ? `${this.unit.type.name} n°${this.unit.number}`
+      : (this.character?.name ?? 'Personnage'),
+  );
 
   readonly busy = signal(false);
   readonly route = signal<number[]>([]);
   private readonly routePicker = viewChild(RoutePickerComponent);
 
   readonly allSectors = this.activeBoard.sectors;
-  readonly maxHops = computed(() => unitMaxHops(this.unit));
+  readonly maxHops = computed(() => (this.unit ? unitMaxHops(this.unit) : 1));
 
-  readonly pendingOrdersForUnit = computed(() =>
-    this.movementState.orders().filter((order) => (order.entityIds ?? []).includes(this.unit.id)),
-  );
-  readonly pendingSniperOrdersForUnit = computed(() =>
-    this.sniperState.orders().filter((order) => order.unitId === this.unit.id),
-  );
+  readonly pendingOrdersForUnit = computed(() => {
+    const entityId = this.entityId;
+    if (entityId == null) return [];
+    return this.movementState
+      .orders()
+      .filter((order) => (order.entityIds ?? []).includes(entityId));
+  });
+  readonly pendingSniperOrdersForUnit = computed(() => {
+    const entityId = this.entityId;
+    if (entityId == null) return [];
+    return this.sniperState.orders().filter((order) => order.unitId === entityId);
+  });
 
   readonly ownerName = computed(() => {
     const ownerId = this.sector.ownerId;
@@ -92,6 +106,7 @@ export class UnitMovementDialogComponent {
 
   readonly canSubmit = computed(
     () =>
+      this.entityId != null &&
       this.route().length >= 2 &&
       !this.busy() &&
       this.pendingOrdersForUnit().length === 0 &&
@@ -127,11 +142,12 @@ export class UnitMovementDialogComponent {
   }
 
   async submitMove(): Promise<void> {
-    if (!this.canSubmit()) return;
+    const entityId = this.entityId;
+    if (!this.canSubmit() || entityId == null) return;
     const route = this.route();
     this.busy.set(true);
     try {
-      const order = await this.movementState.placeFootOrder([this.unit.id], route);
+      const order = await this.movementState.placeFootOrder([entityId], route);
       if (order) {
         this.snackBar.open(`Ordre : secteur ${route.join(' → ')}`, 'OK', { duration: 2500 });
         this.dialogRef.close(true);

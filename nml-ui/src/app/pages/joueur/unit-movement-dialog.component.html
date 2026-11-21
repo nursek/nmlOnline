@@ -2,8 +2,15 @@
   <div class="umd-header">
     <h2 mat-dialog-title>
       <mat-icon>directions_walk</mat-icon>
-      Donner un ordre — {{ unit.type.name }} n°{{ unit.number }}
-      <span class="umd-sub">{{ unit.experience | exp }} Exp · {{ maxHops() }} secteur(s) max</span>
+      Donner un ordre — {{ entityLabel() }}
+      <span class="umd-sub">
+        @if (unit; as u) {
+          {{ u.experience | exp }} Exp ·
+        } @else {
+          Personnage ·
+        }
+        {{ maxHops() }} secteur(s) max
+      </span>
     </h2>
     <button mat-icon-button (click)="close()" aria-label="Fermer">
       <mat-icon>close</mat-icon>
