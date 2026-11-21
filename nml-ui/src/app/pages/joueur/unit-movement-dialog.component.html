@@ -12,40 +12,46 @@
 
   <mat-dialog-content>
     <section class="umd-sector">
-      <div class="umd-map">
-        <app-sector-map-preview [sectorNumber]="sectorNumber" />
-      </div>
-
-      <div class="umd-context">
-        <span class="umd-kicker">Secteur actuel</span>
-        <h3>
-          {{ sector.name }}
-          <small>n°{{ sector.number }}</small>
-        </h3>
-        <div class="umd-tags">
+      <div class="umd-map-head">
+        <div class="umd-map-title">
+          <span class="umd-kicker">Secteur actuel</span>
+          <h3>
+            {{ sector.name }}
+            <small>n°{{ sector.number }}</small>
+          </h3>
           <span class="umd-kind" [style.background]="ownerColor()">{{ sectorKindText() }}</span>
           <span class="umd-owner">{{ ownerName() }}</span>
         </div>
-        <div class="umd-facts">
-          <span>
-            <mat-icon>payments</mat-icon>
-            {{ income() | number: '1.0-0' }} ₡/tour
-          </span>
-          @if (resourceIcon(); as icon) {
-            <span>
-              <img [src]="icon" alt="" />
-              {{ sector.resource }}
-            </span>
-          }
-          <span>
-            <mat-icon>share</mat-icon>
-            {{ sector.neighbors.length }} voisin(s)
-          </span>
+        <div class="umd-legend" aria-hidden="true">
+          <span class="umd-legend-item umd-legend-start">Départ</span>
+          <span class="umd-legend-item umd-legend-target">Cible</span>
+          <span class="umd-legend-item umd-legend-transit">Transit</span>
         </div>
-        <div class="umd-forces">
+      </div>
+
+      <div class="umd-facts">
+        <span>
+          <mat-icon>payments</mat-icon>
+          {{ income() | number: '1.0-0' }} ₡/tour
+        </span>
+        @if (resourceIcon(); as icon) {
+          <span>
+            <img [src]="icon" alt="" />
+            {{ sector.resource }}
+          </span>
+        }
+        <span>
+          <mat-icon>share</mat-icon>
+          {{ sector.neighbors.length }} voisin(s)
+        </span>
+        <span class="umd-forces">
           <mat-icon>military_tech</mat-icon>
           {{ forceCounts() }}
-        </div>
+        </span>
+      </div>
+
+      <div class="umd-map">
+        <app-sector-map-preview [startSector]="sectorNumber" [route]="route()" />
       </div>
     </section>
 

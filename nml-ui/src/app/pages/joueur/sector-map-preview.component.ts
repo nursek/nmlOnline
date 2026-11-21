@@ -20,6 +20,11 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const NEUTRAL_COLOR = '#6e7885';
 const LABEL_COLOR = '#e6decb';
 const LABEL_HALO = '#060809';
+const START_COLOR = '#e8bb45';
+const TARGET_COLOR = '#ff2d9d';
+const TRANSIT_COLOR = '#4fc3c9';
+
+type RouteRole = 'start' | 'target' | 'transit';
 
 @Component({
   selector: 'app-sector-map-preview',
@@ -29,7 +34,8 @@ const LABEL_HALO = '#060809';
   styleUrls: ['./sector-map-preview.component.scss'],
 })
 export class SectorMapPreviewComponent {
-  readonly sectorNumber = input.required<number>();
+  readonly startSector = input.required<number>();
+  readonly route = input<readonly number[]>([]);
 
   private readonly activeBoard = inject(ActiveBoardService);
   private readonly playerDirectory = inject(PlayerDirectoryService);
@@ -43,24 +49,22 @@ export class SectorMapPreviewComponent {
     effect(() => {
       const text = this.svgText.hasValue() ? this.svgText.value() : null;
       const host = this.mapHost()?.nativeElement;
-      const sectorNumber = this.sectorNumber();
+      const startSector = this.startSector();
+      const route = this.route();
       const sectors = this.activeBoard.sectors();
       const colors = this.playerDirectory.colorMap();
       const mapImageUrl = this.activeBoard.board()?.mapImageUrl ?? null;
       if (!text || !host) return;
-      untracked(() => this.render(host, text, sectorNumber, sectors, colors, mapImageUrl));
+      untracked(() => this.render(host, text, startSector, route, sectors, colors, mapImageUrl));
     });
   }
 
   private render(
     host: HTMLDivElement,
     text: string,
-    sectorNumber: number,
-    sectors: readonly {
-      number: number | null;
-      ownerId: number | null;
-      neighbors: number[];
-    }[],
+    startSector: number,
+    route: readonly number[],
+    sectors: readonly { number: number | null; ownerId: number | null }[],
     colors: ReadonlyMap<number, string>,
     mapImageUrl: string | null,
   ): void {
@@ -81,133 +85,113 @@ export class SectorMapPreviewComponent {
     svg.setAttribute('height', '100%');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
+    const viewBox = svg.viewBox.baseVal;
+    const mapX = viewBox?.x ?? 0;
+    const mapY = viewBox?.y ?? 0;
+    const mapWidth = viewBox?.width || svg.width.baseVal.value;
+    const mapHeight = viewBox?.height || svg.height.baseVal.value;
+    if (mapWidth > 0 && mapHeight > 0) {
+      svg.setAttribute('viewBox', `${mapX} ${mapY} ${mapWidth} ${mapHeight}`);
+    }
+
     if (mapImageUrl) {
-      const viewBox = svg.viewBox.baseVal;
       const image = document.createElementNS(SVG_NS, 'image');
-      image.setAttribute('x', String(viewBox?.x ?? 0));
-      image.setAttribute('y', String(viewBox?.y ?? 0));
-      image.setAttribute('width', String(viewBox?.width || svg.width.baseVal.value));
-      image.setAttribute('height', String(viewBox?.height || svg.height.baseVal.value));
+      image.setAttribute('x', String(mapX));
+      image.setAttribute('y', String(mapY));
+      image.setAttribute('width', String(mapWidth));
+      image.setAttribute('height', String(mapHeight));
       image.setAttribute('preserveAspectRatio', 'none');
       image.setAttribute('href', mapImageUrl);
       image.style.pointerEvents = 'none';
       svg.insertBefore(image, svg.firstChild);
     }
 
-    const byNumber = new Map<
-      number,
-      { number: number | null; ownerId: number | null; neighbors: number[] }
-    >();
+    const byNumber = new Map<number, { number: number | null; ownerId: number | null }>();
     for (const sector of sectors) {
       if (sector.number !== null) byNumber.set(sector.number, sector);
     }
 
-    const paths = svg.querySelectorAll<SVGGraphicsElement>('path[id^="path"], polygon[id^="path"]');
+    const targetSector = route.length > 1 ? route[route.length - 1] : null;
+    const transitSectors = new Set(route.length > 2 ? route.slice(1, -1) : []);
+    const roleColor: Record<RouteRole, string> = {
+      start: START_COLOR,
+      target: TARGET_COLOR,
+      transit: TRANSIT_COLOR,
+    };
 
+    const paths = svg.querySelectorAll<SVGGraphicsElement>('path[id^="path"], polygon[id^="path"]');
     paths.forEach((path) => {
       const id = path.getAttribute('id');
       const number = id ? parseInt(id.replace('path', ''), 10) : Number.NaN;
       if (Number.isNaN(number)) return;
 
       const sector = byNumber.get(number);
-      const color =
+      const ownerColor =
         sector?.ownerId != null ? (colors.get(sector.ownerId) ?? NEUTRAL_COLOR) : NEUTRAL_COLOR;
-      const isSelected = number === sectorNumber;
+      const role: RouteRole | null =
+        number === startSector
+          ? 'start'
+          : targetSector === number
+            ? 'target'
+            : transitSectors.has(number)
+              ? 'transit'
+              : null;
+      const color = role ? roleColor[role] : ownerColor;
 
       path.style.pointerEvents = 'none';
       path.style.fill = color;
-      path.style.fillOpacity = isSelected ? '0.82' : '0.5';
-      path.style.stroke = isSelected ? LABEL_COLOR : color;
-      path.style.strokeOpacity = isSelected ? '1' : '0.8';
-      path.style.strokeWidth = isSelected ? '3' : '1';
+      path.style.fillOpacity = role ? '0.9' : '0.5';
+      path.style.stroke = role ? LABEL_COLOR : color;
+      path.style.strokeOpacity = role ? '1' : '0.8';
+      path.style.strokeWidth = role ? '6' : '1';
       path.style.vectorEffect = 'non-scaling-stroke';
-      path.style.filter = isSelected
+      path.style.filter = role
         ? `drop-shadow(0 0 4px ${color}) drop-shadow(0 0 10px ${color})`
         : 'none';
     });
 
-    const selected = svg.querySelector<SVGGraphicsElement>(`#path${sectorNumber}`);
-    if (!selected) {
+    if (!paths.length) {
       this.hasGeometry.set(false);
       return;
     }
 
-    const box = selected.getBBox();
-    if (!box.width && !box.height) {
-      this.hasGeometry.set(false);
-      return;
-    }
-
-    const viewBox = svg.viewBox.baseVal;
-    const mapX = viewBox?.x ?? 0;
-    const mapY = viewBox?.y ?? 0;
-    const mapWidth = viewBox?.width || svg.width.baseVal.value;
-    const mapHeight = viewBox?.height || svg.height.baseVal.value;
-    const aspect =
-      host.clientWidth > 0 && host.clientHeight > 0
-        ? host.clientWidth / host.clientHeight
-        : mapWidth && mapHeight
-          ? mapWidth / mapHeight
-          : 5 / 3;
-
-    const pad = Math.max(box.width, box.height) * 0.4;
-    const halfWidth = box.width / 2 + pad;
-    const halfHeight = box.height / 2 + pad;
-    let cropWidth = Math.max(halfWidth * 2, halfHeight * 2 * aspect);
-    let cropHeight = cropWidth / aspect;
-    if (mapWidth > 0 && mapHeight > 0) {
-      const scale = Math.min(1, mapWidth / cropWidth, mapHeight / cropHeight);
-      cropWidth *= scale;
-      cropHeight *= scale;
-    }
-
-    const centerX = box.x + box.width / 2;
-    const centerY = box.y + box.height / 2;
-    let cropX = centerX - cropWidth / 2;
-    let cropY = centerY - cropHeight / 2;
-    if (mapWidth > 0 && mapHeight > 0) {
-      cropX = Math.min(Math.max(cropX, mapX), mapX + mapWidth - cropWidth);
-      cropY = Math.min(Math.max(cropY, mapY), mapY + mapHeight - cropHeight);
-    }
-
-    const crop = { x: cropX, y: cropY, width: cropWidth, height: cropHeight };
-    svg.setAttribute('viewBox', `${crop.x} ${crop.y} ${crop.width} ${crop.height}`);
-
-    const labelFont = Math.max(11, Math.min(crop.width, crop.height) * 0.055);
-    const marginX = Math.max(crop.width * 0.05, labelFont * 1.6);
-    const marginY = Math.max(crop.height * 0.05, labelFont * 1.6);
-    const candidates: { number: number; x: number; y: number; area: number; selected: boolean }[] =
-      [];
+    const labelFont = Math.max(10, Math.min(mapWidth, mapHeight) * 0.022);
+    const marginX = Math.max(mapWidth * 0.01, labelFont * 1.2);
+    const marginY = Math.max(mapHeight * 0.01, labelFont * 1.2);
+    const candidates: {
+      number: number;
+      x: number;
+      y: number;
+      area: number;
+      priority: number;
+    }[] = [];
     const seen = new Set<number>();
     paths.forEach((path) => {
       const id = path.getAttribute('id');
       const number = id ? parseInt(id.replace('path', ''), 10) : Number.NaN;
       if (Number.isNaN(number) || seen.has(number)) return;
-      const pathBox = path.getBBox();
-      if (!pathBox.width && !pathBox.height) return;
-      const visibleWidth =
-        Math.min(pathBox.x + pathBox.width, crop.x + crop.width) - Math.max(pathBox.x, crop.x);
-      const visibleHeight =
-        Math.min(pathBox.y + pathBox.height, crop.y + crop.height) - Math.max(pathBox.y, crop.y);
-      if (visibleWidth <= 0 || visibleHeight <= 0) return;
+      const box = path.getBBox();
+      if (!box.width && !box.height) return;
 
+      const priority =
+        number === startSector
+          ? 3
+          : targetSector === number
+            ? 2
+            : transitSectors.has(number)
+              ? 1
+              : 0;
       candidates.push({
         number,
-        x: Math.min(
-          crop.x + crop.width - marginX,
-          Math.max(crop.x + marginX, pathBox.x + pathBox.width / 2),
-        ),
-        y: Math.min(
-          crop.y + crop.height - marginY,
-          Math.max(crop.y + marginY, pathBox.y + pathBox.height / 2),
-        ),
-        area: visibleWidth * visibleHeight,
-        selected: number === sectorNumber,
+        x: Math.min(mapX + mapWidth - marginX, Math.max(mapX + marginX, box.x + box.width / 2)),
+        y: Math.min(mapY + mapHeight - marginY, Math.max(mapY + marginY, box.y + box.height / 2)),
+        area: box.width * box.height,
+        priority,
       });
       seen.add(number);
     });
 
-    candidates.sort((a, b) => Number(b.selected) - Number(a.selected) || b.area - a.area);
+    candidates.sort((a, b) => b.priority - a.priority || b.area - a.area);
     const placed: { x: number; y: number }[] = [];
     const minDistance = labelFont * 1.35;
     for (const candidate of candidates) {
@@ -218,10 +202,10 @@ export class SectorMapPreviewComponent {
           const x = candidate.x + dx;
           const y = candidate.y + dy;
           if (
-            x < crop.x + marginX ||
-            x > crop.x + crop.width - marginX ||
-            y < crop.y + marginY ||
-            y > crop.y + crop.height - marginY
+            x < mapX + marginX ||
+            x > mapX + mapWidth - marginX ||
+            y < mapY + marginY ||
+            y > mapY + mapHeight - marginY
           ) {
             continue;
           }
