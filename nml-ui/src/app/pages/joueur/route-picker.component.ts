@@ -12,7 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Sector } from '../../models';
 import { sectorKind, sectorKindLabel } from '../../core/movement.helpers';
-import { routeForSteps, routeStepOptions, visibleRouteSteps } from './route-picker.helpers';
+import { routeForSteps } from './route-picker.helpers';
 
 @Component({
   selector: 'app-route-picker',
@@ -35,8 +35,6 @@ export class RoutePickerComponent {
   private readonly steps = signal<(number | null)[]>([null]);
   private lastFrom: number | null = null;
 
-  readonly visibleSteps = computed(() => visibleRouteSteps(this.maxHops(), this.steps()));
-  readonly stepIndexes = computed(() => Array.from({ length: this.visibleSteps() }, (_, i) => i));
   readonly routeSteps = computed(() => this.route().slice(1));
   readonly arrivalSector = computed(() => {
     const route = this.route();
@@ -63,34 +61,6 @@ export class RoutePickerComponent {
     });
   }
 
-  stepValue(index: number): number | null {
-    return this.steps()[index] ?? null;
-  }
-
-  optionsFor(index: number): number[] {
-    return routeStepOptions(this.sectors(), this.from(), this.steps(), index);
-  }
-
-  stepLabel(index: number): string {
-    return index === 0 ? 'Étape 1' : `Étape ${index + 1} (facultative)`;
-  }
-
-  setStep(index: number, value: number | null): void {
-    if (this.stepValue(index) === value) return;
-    const steps = [...this.steps()];
-    steps[index] = value;
-    steps.length = Math.max(1, index + 1);
-    this.steps.set(steps);
-    this.syncRoute();
-  }
-
-  truncateAt(index: number): void {
-    if (index < 0 || index >= this.routeSteps().length) return;
-    const steps = this.steps().slice(0, index + 1);
-    this.steps.set(steps.length ? steps : [null]);
-    this.syncRoute();
-  }
-
   removeLastStep(): void {
     const steps = [...this.steps()];
     while (steps.length && steps[steps.length - 1] == null) steps.pop();
@@ -114,10 +84,6 @@ export class RoutePickerComponent {
     this.route.set([]);
   }
 
-  sectorName(number: number): string {
-    return this.sectors().find((sector) => sector.number === number)?.name ?? `Secteur ${number}`;
-  }
-
   sectorKindText(number: number): string | null {
     if (this.playerId() == null) return null;
     const sector = this.sectors().find((candidate) => candidate.number === number) ?? null;
@@ -134,12 +100,6 @@ export class RoutePickerComponent {
         sector.character != null ||
         (sector.vehicles?.length ?? 0) > 0)
     );
-  }
-
-  sectorTitle(number: number): string {
-    const kind = this.sectorKindText(number);
-    const occupied = this.isOccupied(number) ? ' · forces présentes' : '';
-    return `Secteur ${number} · ${this.sectorName(number)}${kind ? ' · ' + kind : ''}${occupied}`;
   }
 
   arrivalSuffix(): string {
