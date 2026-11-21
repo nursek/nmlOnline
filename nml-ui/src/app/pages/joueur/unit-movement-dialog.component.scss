@@ -141,39 +141,6 @@
   font-weight: 600;
 }
 
-.umd-facts {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 0.78rem;
-
-  span {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  mat-icon {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
-    color: var(--ink-3);
-  }
-
-  img {
-    width: 16px;
-    height: 16px;
-    object-fit: contain;
-  }
-
-  .umd-forces {
-    color: var(--ink-2);
-  }
-}
-
 .umd-order {
   h3 {
     display: flex;

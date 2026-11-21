@@ -29,29 +29,14 @@
         </div>
       </div>
 
-      <div class="umd-facts">
-        <span>
-          <mat-icon>payments</mat-icon>
-          {{ income() | number: '1.0-0' }} ₡/tour
-        </span>
-        @if (resourceIcon(); as icon) {
-          <span>
-            <img [src]="icon" alt="" />
-            {{ sector.resource }}
-          </span>
-        }
-        <span>
-          <mat-icon>share</mat-icon>
-          {{ sector.neighbors.length }} voisin(s)
-        </span>
-        <span class="umd-forces">
-          <mat-icon>military_tech</mat-icon>
-          {{ forceCounts() }}
-        </span>
-      </div>
-
       <div class="umd-map">
-        <app-sector-map-preview [startSector]="sectorNumber" [route]="route()" />
+        <app-sector-map-preview
+          [startSector]="sectorNumber"
+          [route]="route()"
+          [playerId]="data.playerId"
+          [allyPlayerIds]="allyPlayerIds"
+          (sectorClick)="onMapSectorClick($event)"
+        />
       </div>
     </section>
 

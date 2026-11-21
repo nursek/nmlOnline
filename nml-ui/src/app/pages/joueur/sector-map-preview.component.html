@@ -2,9 +2,9 @@
   <div
     #map
     class="sector-map-svg"
-    role="img"
+    role="group"
     [attr.aria-label]="
-      'Carte des secteurs — départ ' +
+      'Carte interactive des secteurs — départ ' +
       startSector() +
       (route().length > 1 ? ', cible ' + route()[route().length - 1] : '')
     "
