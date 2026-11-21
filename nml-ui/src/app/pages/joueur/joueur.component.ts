@@ -39,6 +39,10 @@ import {
   BuildingMoveDialogData,
 } from './building-move-modal.component';
 import { UnitDetailDialogComponent, UnitDetailDialogData } from './unit-detail-dialog.component';
+import {
+  UnitMovementDialogComponent,
+  UnitMovementDialogData,
+} from './unit-movement-dialog.component';
 import { GroupMoveDialogComponent, GroupMoveDialogData } from './group-move-dialog.component';
 import {
   VehicleCrewModalComponent,
@@ -426,6 +430,22 @@ export class JoueurComponent {
     });
   }
 
+  openUnitMovement(unit: Unit, sector: Sector): void {
+    const playerId = this.player()?.id;
+    if (playerId == null) return;
+    const data: UnitMovementDialogData = {
+      unit,
+      sector,
+      playerId,
+      allyPlayerIds: this.allianceState.alliedPlayerIds(),
+    };
+    this.dialog.open(UnitMovementDialogComponent, {
+      width: '900px',
+      maxWidth: '96vw',
+      data,
+    });
+  }
+
   openBuildingMove(building: Building): void {
     const buildingId = building.id;
     if (buildingId == null) return;
@@ -521,8 +541,8 @@ export class JoueurComponent {
       allyPlayerIds: this.allianceState.alliedPlayerIds(),
     };
     this.dialog.open(GroupMoveDialogComponent, {
-      width: '720px',
-      maxWidth: '95vw',
+      width: '900px',
+      maxWidth: '96vw',
       data,
     });
   }

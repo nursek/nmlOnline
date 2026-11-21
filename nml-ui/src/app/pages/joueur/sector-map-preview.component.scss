@@ -1,0 +1,34 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.sector-map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--void);
+
+  > mat-icon {
+    position: absolute;
+    inset: 0;
+    width: 42px;
+    height: 42px;
+    margin: auto;
+    font-size: 42px;
+    color: var(--line-strong);
+  }
+}
+
+.sector-map-svg {
+  width: 100%;
+  height: 100%;
+
+  ::ng-deep svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}

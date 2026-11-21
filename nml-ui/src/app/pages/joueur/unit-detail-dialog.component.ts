@@ -29,7 +29,7 @@ import { SniperOrderStateService } from '../../services/sniper-order-state.servi
 import { AllianceStateService } from '../../services/alliance-state.service';
 import { UnitSlotPickerComponent, UnitSlotPickerData } from './unit-slot-picker.component';
 import { ExpPipe } from '../../shared/exp.pipe';
-import { findRoute, reachableTargets, sectorKind, unitMaxHops } from '../../core/movement.helpers';
+import { reachableTargets, sectorKind } from '../../core/movement.helpers';
 import { sniperActionLabel as sniperActionLabelFor } from '../../core/labels';
 
 export interface UnitDetailDialogData {
@@ -47,7 +47,7 @@ export interface SlotGroup {
   filled: Equipment[];
 }
 
-/** slots offensifs | stats + portrait | slots défensifs, ordre de déplacement en bas. */
+/** slots offensifs | stats + portrait | slots défensifs. */
 @Component({
   selector: 'app-unit-detail-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -75,8 +75,7 @@ export class UnitDetailDialogComponent {
 
   readonly player = this.playerService.player;
 
-  // Board complète (secteurs neutres inclus) — nécessaire pour résoudre l'adjacence
-  // des secteurs non possédés par le joueur lors du calcul des routes de déplacement.
+  // Board complète (secteurs neutres inclus) — nécessaire pour les cibles sniper adjacentes.
   private readonly activeBoard = inject(ActiveBoardService);
   readonly allSectors = this.activeBoard.sectors;
 
@@ -94,7 +93,6 @@ export class UnitDetailDialogComponent {
 
   readonly imgError = signal(false);
   readonly busy = signal(false);
-  readonly targetSector = signal<number | null>(null);
   readonly sniperTarget = signal<number | null>(null);
 
   /** Unité live re-lue depuis le player signal (rafraîchi après équipement). */
@@ -118,23 +116,16 @@ export class UnitDetailDialogComponent {
     this.portraitUrl() ? optimizedImage(this.portraitUrl()) : null,
   );
 
-  readonly maxHops = computed<number>(() => unitMaxHops(this.unit()));
-
-  /** Secteurs atteignables en <= maxHops (route adjacente, secteurs neutres traversables). */
-  readonly reachableTargets = computed<number[]>(() =>
-    reachableTargets(this.allSectors(), this.data.sectorNumber, this.maxHops()),
-  );
-
-  /** Groupe de slots pour une catégorie (cap + équipements actuels positionnels). */
-  readonly slotGroups = computed<SlotGroup[]>(() => {
-    const u = this.unit();
-    if (!u?.type) return [];
-    return [
-      this.buildGroup('MELEE', 'Mêlée', u.type.maxMeleeWeapons ?? 0, u),
-      this.buildGroup('FIREARM', 'Distance', u.type.maxFirearms ?? 0, u),
-      this.buildGroup('DEFENSIVE', 'Défensif', u.type.maxDefensiveEquipment ?? 0, u),
-    ].filter((g) => g.cap > 0);
-  });
+  /** Groupe de slots pour une catégorie (cap + équipements actuels positionnels). */ readonly slotGroups =
+    computed<SlotGroup[]>(() => {
+      const u = this.unit();
+      if (!u?.type) return [];
+      return [
+        this.buildGroup('MELEE', 'Mêlée', u.type.maxMeleeWeapons ?? 0, u),
+        this.buildGroup('FIREARM', 'Distance', u.type.maxFirearms ?? 0, u),
+        this.buildGroup('DEFENSIVE', 'Défensif', u.type.maxDefensiveEquipment ?? 0, u),
+      ].filter((g) => g.cap > 0);
+    });
 
   /** Slots offensifs (Mêlée + Distance) — colonne gauche. */
   readonly offensiveSlots = computed<SlotGroup[]>(() =>
@@ -218,46 +209,6 @@ export class UnitDetailDialogComponent {
       if (updated) {
         this.snackBar.open(`${this.equipmentLabel(eq)} retiré`, 'OK', { duration: 2500 });
       }
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  async submitMove(): Promise<void> {
-    if (this.pendingOrdersForUnit().length > 0 || this.pendingSniperOrdersForUnit().length > 0) {
-      this.snackBar.open('Cette unité a déjà un ordre en attente', 'Fermer', { duration: 3000 });
-      return;
-    }
-    const from = this.data.sectorNumber;
-    const to = this.targetSector();
-    if (to === null || to === from) return;
-    const route = findRoute(this.allSectors(), from, to, this.maxHops());
-    if (route.length < 2) {
-      this.snackBar.open('Aucune route adjacente trouvée vers la destination', 'Fermer', {
-        duration: 3000,
-      });
-      return;
-    }
-    this.busy.set(true);
-    try {
-      const order = await this.movementState.placeFootOrder([this.unit().id], route);
-      if (order) {
-        this.snackBar.open(`Ordre: secteur ${from} -> ${to}`, 'OK', { duration: 2500 });
-        this.targetSector.set(null);
-      } else {
-        const err = this.movementState.error();
-        if (err) this.snackBar.open(err, 'Fermer', { duration: 5000 });
-      }
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  async cancelOrder(orderId: number): Promise<void> {
-    if (this.busy()) return;
-    this.busy.set(true);
-    try {
-      await this.movementState.cancelOrder(orderId);
     } finally {
       this.busy.set(false);
     }

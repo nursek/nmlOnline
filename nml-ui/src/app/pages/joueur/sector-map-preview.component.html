@@ -1,0 +1,15 @@
+<div class="sector-map">
+  <div
+    #map
+    class="sector-map-svg"
+    role="group"
+    [attr.aria-label]="
+      'Carte interactive des secteurs — départ ' +
+      startSector() +
+      (route().length > 1 ? ', cible ' + route()[route().length - 1] : '')
+    "
+  ></div>
+  @if (!hasGeometry()) {
+    <mat-icon>map</mat-icon>
+  }
+</div>

@@ -13,6 +13,7 @@ export interface BattleReport {
   experienceGains: BattleReportExperienceGain[];
   forces?: BattlePlayerForce[] | null;
   highlights?: BattleHighlight[] | null;
+  viewerPlayerId?: number | null;
 }
 
 export interface BattleReportCamp {
@@ -58,17 +59,22 @@ export interface BattleUnitForce {
   displayName: string;
   experience: number | null;
   injured: boolean;
+  classCode?: string | null;
+  equipmentNames?: string[] | null;
+  stats?: BattleStats | null;
 }
 
 export interface BattleVehicleForce {
   displayName: string;
   aerial: boolean;
   crew: BattleUnitForce[];
+  stats?: BattleStats | null;
 }
 
 export interface BattleBuildingForce {
   displayName: string;
   category: string | null;
+  stats?: BattleStats | null;
 }
 
 export interface BattlePlayerForce {
@@ -79,4 +85,14 @@ export interface BattlePlayerForce {
   vehicles: BattleVehicleForce[];
   infantry: BattleUnitForce[];
   buildings: BattleBuildingForce[];
+  totals?: BattleStats | null;
+}
+
+export interface BattleStats {
+  attack: number;
+  pdf: number;
+  pdc: number;
+  defense: number;
+  armor: number;
+  evasion: number;
 }

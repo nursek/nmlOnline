@@ -43,7 +43,7 @@ public class BattleReport {
     private int capturedBuildings;
 
     // Snapshot JSON : le rapport ne doit pas dépendre des entités mutées/supprimées après le combat.
-    @Column(nullable = false, length = 100000)
+    @Column(nullable = false, columnDefinition = "text")
     private String payload;
 
     @Column(name = "created_at", nullable = false)

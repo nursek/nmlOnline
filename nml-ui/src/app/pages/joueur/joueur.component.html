@@ -458,7 +458,6 @@
                   <div class="panel-body">
                     <span class="sector-meta">
                       {{ sf.sector.income ?? 0 | number: '1.0-0' }} ₡/tour
-
                     </span>
 
                     @if (
@@ -472,7 +471,7 @@
                           matTooltip="Sélectionner les entités du secteur et donner un ordre groupé"
                         >
                           <mat-icon>directions_walk</mat-icon>
-                          Déplacer le secteur
+                          Donner un ordre groupé
                         </button>
                       </div>
                     }
@@ -598,7 +597,7 @@
                             role="button"
                             tabindex="0"
                             (keydown.enter)="openUnitDialog(u, sf.sector)"
-                            matTooltip="Cliquer pour les détails et les ordres"
+                            matTooltip="Cliquer pour les détails"
                           >
                             @if (classCodes(u); as codes) {
                               <span class="class-codes">({{ codes }})</span>
@@ -619,6 +618,16 @@
                                 {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
                               }
                             </span>
+                            <button
+                              mat-icon-button
+                              class="force-action"
+                              matTooltip="Déplacer l'unité"
+                              aria-label="Déplacer l'unité"
+                              (click)="$event.stopPropagation(); openUnitMovement(u, sf.sector)"
+                              (keydown.enter)="$event.stopPropagation()"
+                            >
+                              <mat-icon>directions_walk</mat-icon>
+                            </button>
                           </div>
                         }
                       </div>
