@@ -440,8 +440,8 @@ export class JoueurComponent {
       allyPlayerIds: this.allianceState.alliedPlayerIds(),
     };
     this.dialog.open(UnitMovementDialogComponent, {
-      width: '780px',
-      maxWidth: '95vw',
+      width: '900px',
+      maxWidth: '96vw',
       data,
     });
   }

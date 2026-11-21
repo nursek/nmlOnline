@@ -3,7 +3,11 @@
     #map
     class="sector-map-svg"
     role="img"
-    [attr.aria-label]="'Aperçu de la carte autour du secteur ' + sectorNumber()"
+    [attr.aria-label]="
+      'Carte des secteurs — départ ' +
+      startSector() +
+      (route().length > 1 ? ', cible ' + route()[route().length - 1] : '')
+    "
   ></div>
   @if (!hasGeometry()) {
     <mat-icon>map</mat-icon>

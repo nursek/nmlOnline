@@ -27,9 +27,6 @@
 }
 
 .umd-sector {
-  display: flex;
-  align-items: stretch;
-  gap: 14px;
   margin-bottom: 18px;
   padding: 12px;
   border: 1.5px solid var(--line-2);
@@ -37,21 +34,19 @@
   background: var(--surface-2);
 }
 
-.umd-map {
-  position: relative;
-  flex: 0 0 250px;
-  height: 150px;
-  overflow: hidden;
-  border: 1.5px solid var(--line-strong);
-  border-radius: var(--r-sm);
-  background: var(--void);
+.umd-map-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
 }
 
-.umd-context {
+.umd-map-title {
   display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   min-width: 0;
 
   h3 {
@@ -71,6 +66,55 @@
   }
 }
 
+.umd-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.umd-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  &::before {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+}
+
+.umd-legend-start::before {
+  background: #e8bb45;
+}
+
+.umd-legend-target::before {
+  background: #ff2d9d;
+}
+
+.umd-legend-transit::before {
+  background: #4fc3c9;
+}
+
+.umd-map {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--void);
+}
+
 .umd-kicker {
   color: var(--muted);
   font-family: var(--font-mono);
@@ -78,13 +122,6 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-}
-
-.umd-tags {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .umd-kind {
@@ -104,12 +141,12 @@
   font-weight: 600;
 }
 
-.umd-facts,
-.umd-forces {
+.umd-facts {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 14px;
+  margin-top: 6px;
   color: var(--muted);
   font-size: 0.78rem;
 
@@ -131,10 +168,10 @@
     height: 16px;
     object-fit: contain;
   }
-}
 
-.umd-forces {
-  color: var(--ink-2);
+  .umd-forces {
+    color: var(--ink-2);
+  }
 }
 
 .umd-order {
@@ -194,13 +231,7 @@
 }
 
 @media (max-width: 640px) {
-  .umd-sector {
-    flex-direction: column;
-  }
-
   .umd-map {
-    flex-basis: auto;
-    width: 100%;
-    height: 160px;
+    aspect-ratio: 4 / 3;
   }
 }
