@@ -1,79 +1,35 @@
 <div class="route-picker">
-  <div class="route-preview" aria-live="polite">
-    <span class="route-pill route-start">
-      Secteur {{ from() }}
-      <em>départ</em>
-    </span>
+  <div class="route-path" aria-live="polite">
+    <span class="route-path-sector route-path-start">Secteur {{ from() }}</span>
     @for (step of routeSteps(); track $index) {
       <mat-icon>arrow_forward</mat-icon>
-      <button
-        type="button"
-        class="route-pill route-step-pill"
-        [disabled]="disabled()"
-        [attr.title]="'Terminer le chemin au secteur ' + step"
-        (click)="truncateAt($index)"
-      >
-        Secteur {{ step }}
-      </button>
+      <span class="route-path-sector">Secteur {{ step }}</span>
     }
     @if (route().length < 2) {
-      <span class="route-empty">Choisissez une première étape.</span>
+      <span class="route-empty">Choisissez une destination sur la carte.</span>
     }
   </div>
 
-  @for (index of stepIndexes(); track index) {
-    <div class="route-step-row">
-      <span class="route-step-label">{{ stepLabel(index) }}</span>
-      <div class="route-chips">
-        @if (index > 0) {
-          <button
-            type="button"
-            class="route-chip route-chip-stop"
-            [class.active]="stepValue(index) === null"
-            [attr.aria-pressed]="stepValue(index) === null"
-            [disabled]="disabled()"
-            (click)="setStep(index, null)"
-          >
-            <mat-icon>stop_circle</mat-icon>
-            Terminer ici
-          </button>
-        }
-        @for (number of optionsFor(index); track number) {
-          <button
-            type="button"
-            class="route-chip"
-            [class.active]="stepValue(index) === number"
-            [attr.aria-pressed]="stepValue(index) === number"
-            [attr.title]="sectorTitle(number)"
-            [disabled]="disabled()"
-            (click)="setStep(index, number)"
-          >
-            <span class="chip-number">#{{ number }}</span>
-            <span class="chip-name">{{ sectorName(number) }}</span>
-            @if (sectorKindText(number); as kind) {
-              <span class="chip-kind">{{ kind }}</span>
-            }
-            @if (isOccupied(number)) {
-              <span class="chip-occupied">forces</span>
-            }
-          </button>
-        }
-      </div>
-    </div>
-  }
-
-  @if (canRemoveLast()) {
-    <div class="route-actions">
-      <button mat-button type="button" [disabled]="disabled()" (click)="removeLastStep()">
-        <mat-icon>undo</mat-icon>
-        Retour
-      </button>
-      <button mat-button type="button" [disabled]="disabled()" (click)="reset()">
-        <mat-icon>restart_alt</mat-icon>
-        Effacer le chemin
-      </button>
-    </div>
-  }
+  <div class="route-actions">
+    <button
+      mat-button
+      type="button"
+      [disabled]="disabled() || !canRemoveLast()"
+      (click)="removeLastStep()"
+    >
+      <mat-icon>undo</mat-icon>
+      Retour
+    </button>
+    <button
+      mat-button
+      type="button"
+      [disabled]="disabled() || route().length < 2"
+      (click)="reset()"
+    >
+      <mat-icon>restart_alt</mat-icon>
+      Effacer le chemin
+    </button>
+  </div>
 
   @if (arrivalSector(); as arrival) {
     <div class="route-summary">
@@ -92,7 +48,7 @@
   }
 
   <p class="route-hint">
-    {{ maxHops() }} secteur(s) maximum. Cliquez sur un secteur pour ajouter une étape ; « Terminer
-    ici » clôt le chemin.
+    {{ maxHops() }} secteur(s) maximum. Cliquez sur la carte pour construire le chemin ; Retour
+    retire la dernière étape.
   </p>
 </div>

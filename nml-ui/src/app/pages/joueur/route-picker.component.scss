@@ -2,56 +2,25 @@
   display: block;
 }
 
-.route-preview {
+.route-path {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.35rem;
-  margin: 0 0 0.65rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
 }
 
-.route-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--r-xs);
-  background: var(--accent-tint);
-  color: var(--accent-ink);
-  font-family: inherit;
-  font-size: 0.85rem;
+.route-path-sector {
+  color: var(--ink);
   font-weight: 600;
 }
 
-.route-start {
-  background: var(--surface-3);
-  color: var(--ink);
-
-  em {
-    font-size: 0.65rem;
-    font-style: normal;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
+.route-path-start {
+  color: var(--accent-ink);
 }
 
-.route-step-pill {
-  border: 1.5px solid transparent;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    border-color: var(--accent);
-  }
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.7;
-  }
-}
-
-.route-preview mat-icon {
+.route-path mat-icon {
   width: 18px;
   height: 18px;
   font-size: 18px;
@@ -62,101 +31,6 @@
   font-size: 0.8rem;
   font-style: italic;
   color: var(--muted);
-}
-
-.route-step-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-bottom: 0.55rem;
-}
-
-.route-step-label {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.route-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.route-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
-  max-width: 100%;
-  padding: 0.3rem 0.55rem;
-  border: 1.5px solid var(--line-2);
-  border-radius: var(--r-sm);
-  background: var(--surface);
-  color: var(--ink);
-  font-family: inherit;
-  font-size: 0.8rem;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
-
-  &:hover:not(:disabled) {
-    border-color: var(--accent);
-  }
-
-  &.active {
-    border-color: var(--accent);
-    background: var(--accent-tint);
-    color: var(--accent-ink);
-  }
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.6;
-  }
-
-  .chip-number {
-    font-family: var(--font-mono);
-    font-weight: 700;
-  }
-
-  .chip-name {
-    max-width: 12rem;
-    overflow: hidden;
-    color: var(--muted);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .chip-kind {
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--ink-3);
-  }
-
-  .chip-occupied {
-    font-size: 0.62rem;
-    color: var(--sun);
-  }
-
-  &.active .chip-name,
-  &.active .chip-kind {
-    color: var(--accent-ink);
-  }
-}
-
-.route-chip-stop {
-  mat-icon {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
-  }
 }
 
 .route-actions {
