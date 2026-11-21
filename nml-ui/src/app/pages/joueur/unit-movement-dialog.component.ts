@@ -6,7 +6,6 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,8 +18,8 @@ import { PlayerDirectoryService } from '../../services/player-directory.service'
 import { SniperOrderStateService } from '../../services/sniper-order-state.service';
 import { ExpPipe } from '../../shared/exp.pipe';
 import { sectorKind, sectorKindLabel, unitMaxHops } from '../../core/movement.helpers';
-import { resourceIconSrc } from '../carte/carte.helpers';
 import { RoutePickerComponent } from './route-picker.component';
+import { routeAfterSectorClick } from './route-picker.helpers';
 import { SectorMapPreviewComponent } from './sector-map-preview.component';
 
 export interface UnitMovementDialogData {
@@ -34,7 +33,6 @@ export interface UnitMovementDialogData {
   selector: 'app-unit-movement-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DecimalPipe,
     ExpPipe,
     MatButtonModule,
     MatDialogModule,
@@ -58,7 +56,7 @@ export class UnitMovementDialogComponent {
   readonly unit = this.data.unit;
   readonly sector = this.data.sector;
   readonly sectorNumber = this.data.sector.number ?? 0;
-  private readonly allyIds = this.data.allyPlayerIds ?? new Set<number>();
+  readonly allyPlayerIds = this.data.allyPlayerIds ?? new Set<number>();
 
   readonly busy = signal(false);
   readonly route = signal<number[]>([]);
@@ -89,20 +87,8 @@ export class UnitMovementDialogComponent {
       : (this.playerDirectory.colorMap().get(ownerId) ?? 'var(--muted)');
   });
   readonly sectorKindText = computed(() =>
-    sectorKindLabel(sectorKind(this.sector, this.data.playerId, this.allyIds)),
+    sectorKindLabel(sectorKind(this.sector, this.data.playerId, this.allyPlayerIds)),
   );
-  readonly income = computed(() => this.sector.income ?? 0);
-  readonly resourceIcon = computed(() =>
-    this.sector.resource ? resourceIconSrc(this.sector.resource) : null,
-  );
-  readonly forceCounts = computed(() => {
-    const parts: string[] = [];
-    if (this.sector.character) parts.push(`${this.sector.character.name} (personnage)`);
-    if (this.sector.army?.length) parts.push(`${this.sector.army.length} unité(s)`);
-    if (this.sector.vehicles?.length) parts.push(`${this.sector.vehicles.length} véhicule(s)`);
-    if (this.sector.buildings?.length) parts.push(`${this.sector.buildings.length} bâtiment(s)`);
-    return parts.length ? parts.join(' · ') : 'Aucune force';
-  });
 
   readonly canSubmit = computed(
     () =>
@@ -115,6 +101,29 @@ export class UnitMovementDialogComponent {
   constructor() {
     void this.movementState.loadOrders();
     void this.sniperState.loadOrders();
+  }
+
+  onMapSectorClick(sectorNumber: number): void {
+    if (
+      this.busy() ||
+      this.pendingOrdersForUnit().length > 0 ||
+      this.pendingSniperOrdersForUnit().length > 0
+    ) {
+      return;
+    }
+    const result = routeAfterSectorClick(
+      this.route(),
+      sectorNumber,
+      this.sectorNumber,
+      this.allSectors(),
+      this.maxHops(),
+    );
+    if (result.error) {
+      this.snackBar.open(result.error, 'Fermer', { duration: 2500 });
+      return;
+    }
+    this.route.set(result.route);
+    this.routePicker()?.setRoute(result.route);
   }
 
   async submitMove(): Promise<void> {

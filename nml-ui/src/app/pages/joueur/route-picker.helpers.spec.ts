@@ -1,5 +1,10 @@
 import type { Sector } from '../../models';
-import { routeForSteps, routeStepOptions, visibleRouteSteps } from './route-picker.helpers';
+import {
+  routeAfterSectorClick,
+  routeForSteps,
+  routeStepOptions,
+  visibleRouteSteps,
+} from './route-picker.helpers';
 
 function sector(number: number, neighbors: number[]): Sector {
   return {
@@ -54,5 +59,24 @@ describe('route-picker.helpers', () => {
     expect(routeStepOptions(graph, 1, [2, 3], 2)).toEqual([4]);
     expect(routeStepOptions(graph, 1, [2, null], 1)).toEqual([3, 5]);
     expect(routeStepOptions(graph, 1, [2, null], 2)).toEqual([]);
+  });
+
+  it('construit un chemin en cliquant les secteurs de la carte', () => {
+    expect(routeAfterSectorClick([], 2, 1, graph, 2)).toEqual({ route: [1, 2], error: null });
+    expect(routeAfterSectorClick([1, 2], 3, 1, graph, 2)).toEqual({
+      route: [1, 2, 3],
+      error: null,
+    });
+    expect(routeAfterSectorClick([1, 2, 3], 2, 1, graph, 3)).toEqual({
+      route: [1, 2],
+      error: null,
+    });
+    expect(routeAfterSectorClick([1, 2], 1, 1, graph, 2)).toEqual({ route: [], error: null });
+  });
+
+  it('refuse un secteur non adjacent ou une portée dépassée', () => {
+    expect(routeAfterSectorClick([], 4, 1, graph, 2).route).toEqual([]);
+    expect(routeAfterSectorClick([], 4, 1, graph, 2).error).toContain('adjacent');
+    expect(routeAfterSectorClick([1, 2], 5, 1, graph, 1).error).toContain('Portée maximale');
   });
 });

@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
   viewChild,
@@ -43,6 +44,7 @@ export class SectorMapPreviewComponent {
   readonly allyPlayerIds = input<ReadonlySet<number>>(new Set());
   readonly showFront = input(false);
   readonly showResources = input(false);
+  readonly sectorClick = output<number>();
 
   private readonly activeBoard = inject(ActiveBoardService);
   private readonly playerDirectory = inject(PlayerDirectoryService);
@@ -173,7 +175,23 @@ export class SectorMapPreviewComponent {
       const isNeutral = sector?.ownerId == null;
       const isAlly = sector?.ownerId != null && allyPlayerIds.has(sector.ownerId);
 
-      path.style.pointerEvents = 'none';
+      path.style.pointerEvents = 'all';
+      path.style.cursor = 'pointer';
+      path.style.outline = 'none';
+      path.setAttribute('tabindex', '0');
+      path.setAttribute('role', 'button');
+      path.setAttribute('aria-label', `Secteur ${number}`);
+      const activate = (event: Event) => {
+        event.stopPropagation();
+        this.sectorClick.emit(number);
+      };
+      path.addEventListener('click', activate);
+      path.addEventListener('keydown', (event) => {
+        const key = (event as KeyboardEvent).key;
+        if (key !== 'Enter' && key !== ' ') return;
+        event.preventDefault();
+        activate(event);
+      });
       path.style.fill = role
         ? color
         : showResources

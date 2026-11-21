@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -10,6 +17,7 @@ import { MovementStateService } from '../../services/movement-state.service';
 import { ExpPipe } from '../../shared/exp.pipe';
 import { groupMaxHops, movableEntities, unitMaxHops } from '../../core/movement.helpers';
 import { RoutePickerComponent } from './route-picker.component';
+import { routeAfterSectorClick } from './route-picker.helpers';
 import { SectorMapPreviewComponent } from './sector-map-preview.component';
 
 export interface GroupMoveDialogData {
@@ -45,6 +53,7 @@ export class GroupMoveDialogComponent {
   readonly frontOverlay = signal(false);
   readonly resourcesOverlay = signal(false);
   readonly allyPlayerIds = this.data.allyPlayerIds ?? new Set<number>();
+  private readonly routePicker = viewChild(RoutePickerComponent);
   /** Entités décochées ; la sélection par défaut couvre tout ce qui est déplaçable. */
   private readonly deselectedIds = signal<ReadonlySet<number>>(new Set());
 
@@ -159,6 +168,29 @@ export class GroupMoveDialogComponent {
     const character = this.movable().character;
     if (character?.id != null) deselected.add(character.id);
     this.deselectedIds.set(deselected);
+  }
+
+  onMapSectorClick(sectorNumber: number): void {
+    if (this.busy()) return;
+    if (this.selectedCount() === 0) {
+      this.snackBar.open('Sélectionnez au moins une entité pour définir le chemin.', 'Fermer', {
+        duration: 2500,
+      });
+      return;
+    }
+    const result = routeAfterSectorClick(
+      this.route(),
+      sectorNumber,
+      this.data.sectorNumber,
+      this.allSectors(),
+      this.maxHops(),
+    );
+    if (result.error) {
+      this.snackBar.open(result.error, 'Fermer', { duration: 2500 });
+      return;
+    }
+    this.route.set(result.route);
+    this.routePicker()?.setRoute(result.route);
   }
 
   async submit(): Promise<void> {
