@@ -15,11 +15,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { PlayerDirectoryService } from '../../services/player-directory.service';
 import { sanitizeSvg } from '../../core/svg-sanitize';
+import { contrastColor, haloColor, MAP_THEME } from '../carte/carte.config';
+import { computeVisualCenter } from '../carte/sector-label.helpers';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const NEUTRAL_COLOR = '#6e7885';
 const LABEL_COLOR = '#e6decb';
-const LABEL_HALO = '#060809';
 const START_COLOR = '#e8bb45';
 const TARGET_COLOR = '#ff2d9d';
 const TRANSIT_COLOR = '#4fc3c9';
@@ -44,6 +45,8 @@ export class SectorMapPreviewComponent {
   private readonly svgText = httpResource.text(() => this.svgUrl() ?? undefined);
 
   readonly hasGeometry = signal(false);
+  private labelCentersKey = '';
+  private readonly labelCenters = new Map<number, { x: number; y: number }>();
 
   constructor() {
     effect(() => {
@@ -113,7 +116,7 @@ export class SectorMapPreviewComponent {
 
     const targetSector = route.length > 1 ? route[route.length - 1] : null;
     const transitSectors = new Set(route.length > 2 ? route.slice(1, -1) : []);
-    const roleColor: Record<RouteRole, string> = {
+    const roleColors: Record<RouteRole, string> = {
       start: START_COLOR,
       target: TARGET_COLOR,
       transit: TRANSIT_COLOR,
@@ -136,7 +139,7 @@ export class SectorMapPreviewComponent {
             : transitSectors.has(number)
               ? 'transit'
               : null;
-      const color = role ? roleColor[role] : ownerColor;
+      const color = role ? roleColors[role] : ownerColor;
 
       path.style.pointerEvents = 'none';
       path.style.fill = color;
@@ -155,71 +158,46 @@ export class SectorMapPreviewComponent {
       return;
     }
 
-    const labelFont = Math.max(10, Math.min(mapWidth, mapHeight) * 0.022);
-    const marginX = Math.max(mapWidth * 0.01, labelFont * 1.2);
-    const marginY = Math.max(mapHeight * 0.01, labelFont * 1.2);
-    const candidates: {
-      number: number;
-      x: number;
-      y: number;
-      area: number;
-      priority: number;
-    }[] = [];
-    const seen = new Set<number>();
+    const cacheKey = this.svgUrl() ?? '';
+    if (cacheKey !== this.labelCentersKey) {
+      this.labelCenters.clear();
+      this.labelCentersKey = cacheKey;
+    }
+
+    const labelFont = MAP_THEME.label.fontPx;
     paths.forEach((path) => {
       const id = path.getAttribute('id');
       const number = id ? parseInt(id.replace('path', ''), 10) : Number.NaN;
-      if (Number.isNaN(number) || seen.has(number)) return;
-      const box = path.getBBox();
-      if (!box.width && !box.height) return;
+      if (Number.isNaN(number)) return;
 
-      const priority =
-        number === startSector
-          ? 3
-          : targetSector === number
-            ? 2
-            : transitSectors.has(number)
-              ? 1
-              : 0;
-      candidates.push({
-        number,
-        x: Math.min(mapX + mapWidth - marginX, Math.max(mapX + marginX, box.x + box.width / 2)),
-        y: Math.min(mapY + mapHeight - marginY, Math.max(mapY + marginY, box.y + box.height / 2)),
-        area: box.width * box.height,
-        priority,
-      });
-      seen.add(number);
-    });
-
-    candidates.sort((a, b) => b.priority - a.priority || b.area - a.area);
-    const placed: { x: number; y: number }[] = [];
-    const minDistance = labelFont * 1.35;
-    for (const candidate of candidates) {
-      const offsets = [0, minDistance, -minDistance, minDistance * 2, -minDistance * 2];
-      let chosen: { x: number; y: number } | null = null;
-      for (const dx of offsets) {
-        for (const dy of offsets) {
-          const x = candidate.x + dx;
-          const y = candidate.y + dy;
-          if (
-            x < mapX + marginX ||
-            x > mapX + mapWidth - marginX ||
-            y < mapY + marginY ||
-            y > mapY + mapHeight - marginY
-          ) {
-            continue;
-          }
-          if (placed.every((point) => Math.hypot(point.x - x, point.y - y) >= minDistance)) {
-            chosen = { x, y };
-            break;
-          }
-        }
-        if (chosen) break;
+      let center = this.labelCenters.get(number);
+      if (!center) {
+        center = computeVisualCenter(path as SVGGeometryElement);
+        this.labelCenters.set(number, center);
       }
-      const label = chosen ?? { x: candidate.x, y: candidate.y };
-      this.addLabel(svg, candidate.number, label.x, label.y, labelFont);
-      placed.push(label);
-    }
+
+      const sector = byNumber.get(number);
+      const ownerColor =
+        sector?.ownerId != null ? (colors.get(sector.ownerId) ?? NEUTRAL_COLOR) : NEUTRAL_COLOR;
+      const role: RouteRole | null =
+        number === startSector
+          ? 'start'
+          : targetSector === number
+            ? 'target'
+            : transitSectors.has(number)
+              ? 'transit'
+              : null;
+      const roleColor = role ? roleColors[role] : null;
+      this.addLabel(
+        svg,
+        number,
+        center.x,
+        center.y,
+        labelFont,
+        roleColor ? contrastColor(roleColor) : ownerColor,
+        roleColor ? haloColor(roleColor) : MAP_THEME.label.strokeColor,
+      );
+    });
 
     this.hasGeometry.set(true);
   }
@@ -230,6 +208,8 @@ export class SectorMapPreviewComponent {
     x: number,
     y: number,
     fontSize: number,
+    fill: string,
+    stroke: string,
   ): void {
     const label = document.createElementNS(SVG_NS, 'text');
     label.setAttribute('x', String(x));
@@ -237,13 +217,15 @@ export class SectorMapPreviewComponent {
     label.setAttribute('text-anchor', 'middle');
     label.setAttribute('dominant-baseline', 'central');
     label.setAttribute('font-size', String(fontSize));
-    label.setAttribute('font-weight', '700');
+    label.setAttribute('font-weight', String(MAP_THEME.label.weight));
     label.setAttribute('font-family', 'system-ui, sans-serif');
-    label.setAttribute('fill', LABEL_COLOR);
-    label.setAttribute('stroke', LABEL_HALO);
-    label.setAttribute('stroke-width', String(Math.max(2, fontSize * 0.16)));
+    label.setAttribute('fill', fill);
+    label.setAttribute('stroke', stroke);
+    label.setAttribute('stroke-width', String(MAP_THEME.label.strokeWidthPx));
+    label.setAttribute('stroke-linejoin', 'round');
     label.setAttribute('paint-order', 'stroke');
     label.setAttribute('pointer-events', 'none');
+    label.setAttribute('data-sector', String(value));
     label.textContent = String(value);
     svg.appendChild(label);
   }
