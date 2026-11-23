@@ -494,6 +494,18 @@
   border-radius: var(--r-xs);
 }
 
+// Le bouton d'action reste hors de la zone cliquable de la ligne (détails).
+.force-line-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  > .force-line {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 // Le personnage principal passe en tête du secteur (au-dessus des bâtiments).
 .force-line.character {
   background: var(--accent-tint);

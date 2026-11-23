@@ -177,6 +177,7 @@ export class SectorMapPreviewComponent {
 
       path.style.pointerEvents = 'all';
       path.style.cursor = 'pointer';
+      // ponytail: focus clavier non signalé dans l'aperçu, ajouter :focus-visible si prioritaire.
       path.style.outline = 'none';
       path.setAttribute('tabindex', '0');
       path.setAttribute('role', 'button');
