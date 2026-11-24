@@ -1,33 +1,46 @@
 <div class="container fade-in">
-  <div class="page-header">
+  <header class="page-header">
     <div class="avatar">
       <mat-icon>manage_accounts</mat-icon>
     </div>
     <h1 class="title">Mon profil</h1>
-  </div>
+  </header>
 
-  <div class="profil">
-    <mat-card class="carte">
-      <mat-card-header>
-        <mat-card-title>Photo de profil</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="photo">
-          <div class="apercu">
+  <mat-card class="panneau" role="region" aria-labelledby="titre-identite">
+    <mat-card-content class="panneau-corps">
+      <div class="entete">
+        <mat-icon aria-hidden="true">badge</mat-icon>
+        <h2 id="titre-identite">Identité</h2>
+        <span class="filet" aria-hidden="true"></span>
+      </div>
+
+      <div class="identite">
+        <div class="bloc-photo">
+          <div
+            class="apercu"
+            [class.apercu--vide]="!avatarUrl()"
+            [class.apercu--chargement]="enregistrementPhoto()"
+            [attr.aria-busy]="enregistrementPhoto()"
+          >
             @if (avatarUrl(); as url) {
               <img [src]="url" alt="Photo de profil actuelle" />
             } @else {
-              <mat-icon>person</mat-icon>
+              <mat-icon aria-hidden="true">person</mat-icon>
+            }
+            @if (enregistrementPhoto()) {
+              <mat-spinner diameter="30" aria-label="Enregistrement de la photo"></mat-spinner>
             }
           </div>
-          <div class="photo-actions">
-            <input
-              #fichier
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              hidden
-              (change)="choisirPhoto($event)"
-            />
+
+          <input
+            #fichier
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            hidden
+            (change)="choisirPhoto($event)"
+          />
+
+          <div class="boutons-photo">
             <button
               mat-stroked-button
               class="readonly-allow"
@@ -36,35 +49,32 @@
               [disabled]="enregistrementPhoto()"
             >
               <mat-icon>photo_camera</mat-icon>
-              Choisir une photo
+              {{ avatarUrl() ? 'Changer la photo' : 'Ajouter une photo' }}
             </button>
             @if (avatarUrl()) {
               <button
                 mat-button
-                class="readonly-allow"
+                class="readonly-allow retirer"
                 type="button"
                 (click)="retirerPhoto()"
                 [disabled]="enregistrementPhoto()"
               >
-                Retirer la photo
+                Retirer
               </button>
             }
-            <p class="aide">PNG, JPEG ou WebP. L'image est recadrée en carré.</p>
           </div>
-        </div>
-        @if (erreurPhoto(); as message) {
-          <p class="erreur" role="alert">{{ message }}</p>
-        }
-      </mat-card-content>
-    </mat-card>
 
-    <mat-card class="carte">
-      <mat-card-header>
-        <mat-card-title>Pseudo</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <form (submit)="enregistrerPseudo($event)">
-          <mat-form-field appearance="outline" class="plein">
+          <p class="aide">PNG, JPEG ou WebP, 8 Mo max. L'image est recadrée en carré.</p>
+          @if (erreurPhoto(); as message) {
+            <p class="erreur" role="alert">
+              <mat-icon aria-hidden="true">error_outline</mat-icon>
+              {{ message }}
+            </p>
+          }
+        </div>
+
+        <form class="bloc-pseudo" (submit)="enregistrerPseudo($event)">
+          <mat-form-field appearance="outline">
             <mat-label>Pseudo</mat-label>
             <input
               matInput
@@ -73,89 +83,158 @@
               autocomplete="username"
               maxlength="50"
               [value]="pseudo()"
-              (input)="pseudo.set($any($event.target).value)"
+              (input)="pseudo.set($any($event.target).value); erreurPseudo.set(null)"
             />
           </mat-form-field>
-          <p class="aide">Le pseudo sert aussi d'identifiant de connexion.</p>
+          <p class="aide">2 à 50 caractères. Sert aussi d'identifiant de connexion.</p>
           @if (erreurPseudo(); as message) {
-            <p class="erreur" role="alert">{{ message }}</p>
-          }
-          <button
-            mat-flat-button
-            class="readonly-allow"
-            color="primary"
-            type="submit"
-            [disabled]="!pseudoModifie() || enregistrementPseudo()"
-          >
-            @if (enregistrementPseudo()) {
-              <mat-spinner diameter="18"></mat-spinner>
-            } @else {
-              Enregistrer
-            }
-          </button>
-        </form>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="carte carte-large">
-      <mat-card-header>
-        <mat-card-title>Mot de passe</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <p class="aide">
-          Aucun e-mail n'est associé au compte : le mot de passe se change ici, une fois connecté.
-        </p>
-        <form class="mot-de-passe" (submit)="changerMotDePasse($event)">
-          <mat-form-field appearance="outline">
-            <mat-label>Mot de passe actuel</mat-label>
-            <input
-              matInput
-              class="readonly-allow"
-              type="password"
-              autocomplete="current-password"
-              [value]="motDePasseActuel()"
-              (input)="motDePasseActuel.set($any($event.target).value)"
-            />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Nouveau mot de passe</mat-label>
-            <input
-              matInput
-              class="readonly-allow"
-              type="password"
-              autocomplete="new-password"
-              [value]="nouveauMotDePasse()"
-              (input)="nouveauMotDePasse.set($any($event.target).value)"
-            />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Confirmer le mot de passe</mat-label>
-            <input
-              matInput
-              class="readonly-allow"
-              type="password"
-              autocomplete="new-password"
-              [value]="confirmationMotDePasse()"
-              (input)="confirmationMotDePasse.set($any($event.target).value)"
-            />
-          </mat-form-field>
-          @if (nouveauMotDePasse().length > 0 && nouveauMotDePasse().length < 8) {
             <p class="erreur" role="alert">
-              Le nouveau mot de passe doit faire au moins 8 caractères.
+              <mat-icon aria-hidden="true">error_outline</mat-icon>
+              {{ message }}
             </p>
           }
-          @if (
-            confirmationMotDePasse().length > 0 && confirmationMotDePasse() !== nouveauMotDePasse()
-          ) {
-            <p class="erreur" role="alert">Les mots de passe ne correspondent pas.</p>
+          <div class="actions">
+            <button
+              mat-flat-button
+              color="primary"
+              class="readonly-allow"
+              type="submit"
+              [disabled]="!pseudoModifie() || enregistrementPseudo()"
+            >
+              @if (enregistrementPseudo()) {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                Enregistrer
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="panneau" role="region" aria-labelledby="titre-securite">
+    <mat-card-content class="panneau-corps">
+      <div class="entete">
+        <mat-icon aria-hidden="true">lock</mat-icon>
+        <h2 id="titre-securite">Mot de passe</h2>
+        <span class="filet" aria-hidden="true"></span>
+        <button
+          mat-button
+          class="readonly-allow bascule"
+          type="button"
+          [attr.aria-pressed]="afficherMotDePasse()"
+          (click)="afficherMotDePasse.set(!afficherMotDePasse())"
+        >
+          <mat-icon>
+            {{ afficherMotDePasse() ? 'visibility_off' : 'visibility' }}
+          </mat-icon>
+          {{ afficherMotDePasse() ? 'Masquer' : 'Afficher' }}
+        </button>
+      </div>
+
+      <p class="aide intro">
+        Aucun e-mail n'est associé au compte : le mot de passe se change ici, une fois connecté.
+      </p>
+
+      <form
+        class="mot-de-passe"
+        (input)="erreurMotDePasse.set(null)"
+        (submit)="changerMotDePasse($event)"
+      >
+        <input
+          type="text"
+          name="username"
+          autocomplete="username"
+          [value]="user()?.username ?? ''"
+          hidden
+        />
+
+        <mat-form-field appearance="outline" class="champ-actuel">
+          <mat-label>Mot de passe actuel</mat-label>
+          <input
+            matInput
+            class="readonly-allow"
+            name="current-password"
+            [type]="afficherMotDePasse() ? 'text' : 'password'"
+            autocomplete="current-password"
+            [value]="motDePasseActuel()"
+            (input)="motDePasseActuel.set($any($event.target).value)"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Nouveau mot de passe</mat-label>
+          <input
+            matInput
+            class="readonly-allow"
+            name="new-password"
+            [type]="afficherMotDePasse() ? 'text' : 'password'"
+            autocomplete="new-password"
+            maxlength="100"
+            aria-describedby="regles-mdp"
+            [value]="nouveauMotDePasse()"
+            (input)="nouveauMotDePasse.set($any($event.target).value)"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Confirmer le mot de passe</mat-label>
+          <input
+            matInput
+            class="readonly-allow"
+            name="confirm-password"
+            [type]="afficherMotDePasse() ? 'text' : 'password'"
+            autocomplete="new-password"
+            maxlength="100"
+            aria-describedby="regles-mdp"
+            [attr.aria-invalid]="confirmationDifferente() || null"
+            [value]="confirmationMotDePasse()"
+            (input)="confirmationMotDePasse.set($any($event.target).value)"
+          />
+        </mat-form-field>
+
+        <ul class="regles" id="regles-mdp">
+          <li [class.ok]="longueurValide()">
+            <mat-icon aria-hidden="true">
+              {{ longueurValide() ? 'check_circle' : 'radio_button_unchecked' }}
+            </mat-icon>
+            8 caractères minimum
+          </li>
+          <li [class.ok]="confirmationValide()" [class.invalide]="confirmationDifferente()">
+            <mat-icon aria-hidden="true">
+              {{
+                confirmationValide()
+                  ? 'check_circle'
+                  : confirmationDifferente()
+                    ? 'error_outline'
+                    : 'radio_button_unchecked'
+              }}
+            </mat-icon>
+            Les deux saisies correspondent
+          </li>
+        </ul>
+
+        @if (erreurMotDePasse(); as message) {
+          <p class="erreur" role="alert">
+            <mat-icon aria-hidden="true">error_outline</mat-icon>
+            {{ message }}
+          </p>
+        }
+
+        <p class="sr-only" role="status">
+          @if (confirmationDifferente()) {
+            Les mots de passe ne correspondent pas.
+          } @else if (motDePasseValide()) {
+            Le nouveau mot de passe est valide.
           }
-          @if (erreurMotDePasse(); as message) {
-            <p class="erreur" role="alert">{{ message }}</p>
-          }
+        </p>
+
+        <div class="actions">
           <button
             mat-flat-button
-            class="readonly-allow"
             color="primary"
+            class="readonly-allow"
             type="submit"
             [disabled]="!motDePasseValide() || enregistrementMotDePasse()"
           >
@@ -165,8 +244,9 @@
               Changer le mot de passe
             }
           </button>
-        </form>
-      </mat-card-content>
-    </mat-card>
-  </div>
+          <span class="indication">Vous devrez vous reconnecter.</span>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
 </div>

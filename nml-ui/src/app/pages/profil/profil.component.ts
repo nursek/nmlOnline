@@ -42,6 +42,7 @@ export class ProfilComponent {
   readonly nouveauMotDePasse = signal('');
   readonly confirmationMotDePasse = signal('');
 
+  readonly afficherMotDePasse = signal(false);
   readonly enregistrementPseudo = signal(false);
   readonly enregistrementPhoto = signal(false);
   readonly enregistrementMotDePasse = signal(false);
@@ -55,11 +56,23 @@ export class ProfilComponent {
     return pseudo.length >= 2 && pseudo !== this.user()?.username;
   });
 
-  readonly motDePasseValide = computed(
+  readonly longueurValide = computed(() => {
+    const longueur = this.nouveauMotDePasse().length;
+    return longueur >= 8 && longueur <= 100;
+  });
+
+  readonly confirmationValide = computed(
     () =>
-      this.motDePasseActuel().length > 0 &&
-      this.nouveauMotDePasse().length >= 8 &&
-      this.nouveauMotDePasse() === this.confirmationMotDePasse(),
+      this.confirmationMotDePasse().length > 0 &&
+      this.confirmationMotDePasse() === this.nouveauMotDePasse(),
+  );
+
+  readonly confirmationDifferente = computed(
+    () => this.confirmationMotDePasse().length > 0 && !this.confirmationValide(),
+  );
+
+  readonly motDePasseValide = computed(
+    () => this.motDePasseActuel().length > 0 && this.longueurValide() && this.confirmationValide(),
   );
 
   async enregistrerPseudo(event: Event): Promise<void> {
@@ -83,6 +96,7 @@ export class ProfilComponent {
     const input = event.target as HTMLInputElement;
     const fichier = input.files?.[0];
     input.value = '';
+    this.erreurPhoto.set(null);
     if (!fichier) return;
     if (!FORMATS_PHOTO.includes(fichier.type)) {
       this.erreurPhoto.set('Choisissez une image PNG, JPEG ou WebP.');
@@ -93,7 +107,6 @@ export class ProfilComponent {
       return;
     }
     this.enregistrementPhoto.set(true);
-    this.erreurPhoto.set(null);
     try {
       const avatarUrl = await this.recadrerPhoto(fichier);
       const profile = await firstValueFrom(this.api.updateProfileAvatar(avatarUrl));
