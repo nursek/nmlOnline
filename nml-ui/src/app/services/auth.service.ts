@@ -5,7 +5,6 @@ import { ApiService } from './api.service';
 import { TokenService } from './token.service';
 import { InstanceService } from './instance.service';
 import { LoginRequest, RegisterRequest, User } from '../models';
-import { httpErrorMessage } from '../core/http-error.interceptor';
 
 /**
  * Single source of truth for authentication state.
@@ -119,7 +118,7 @@ export class AuthService {
         this.startRetryCountdown(retryAfterSeconds);
         throw new Error('Trop de tentatives de connexion');
       }
-      const message = this.extractErrorMessage(error);
+      const message = this.loginErrorMessage(error);
       this._error.set(message);
       throw new Error(message);
     } finally {
@@ -133,18 +132,19 @@ export class AuthService {
     this._error.set(null);
     try {
       await firstValueFrom(this.api.register(payload));
-      await this.login({
-        username: payload.username,
-        password: payload.password,
-        rememberMe: false,
-      });
     } catch (error) {
-      const message = httpErrorMessage(error, "Une erreur est survenue lors de l'inscription");
+      const message = this.registerErrorMessage(error);
       this._error.set(message);
       throw new Error(message);
     } finally {
       this._loading.set(false);
     }
+    // Hors du try : un échec de connexion garde son propre message, l'inscription a réussi.
+    await this.login({
+      username: payload.username,
+      password: payload.password,
+      rememberMe: false,
+    });
   }
 
   /** Log the user out (server + local). Never rejects — always clears locally. */
@@ -213,15 +213,12 @@ export class AuthService {
     return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : 0;
   }
 
-  private extractErrorMessage(error: unknown): string {
+  private loginErrorMessage(error: unknown): string {
     const status = (error as { status?: number })?.status ?? 0;
     // Détail technique (statut, corps du backend) : console uniquement, jamais dans l'alerte joueur.
     console.warn(`[connexion] échec (${status})`, error);
-    if ((error as { name?: string })?.name === 'TimeoutError') {
-      return 'La connexion a pris trop de temps. Veuillez réessayer.';
-    }
-    if (status === 0) {
-      return 'Le serveur ne répond pas. Vérifiez votre connexion puis réessayez.';
+    if (status === 400) {
+      return 'Vérifiez le nom d’utilisateur et le mot de passe.';
     }
     if (status === 401) {
       return "Nom d'utilisateur ou mot de passe incorrect.";
@@ -229,12 +226,48 @@ export class AuthService {
     if (status === 403) {
       return 'Connexion refusée. Contactez l’organisateur de la partie.';
     }
+    return this.failureMessage(
+      error,
+      'La connexion est impossible pour le moment. Réessayez plus tard.',
+    );
+  }
+
+  private registerErrorMessage(error: unknown): string {
+    const status = (error as { status?: number })?.status ?? 0;
+    console.warn(`[inscription] échec (${status})`, error);
     if (status === 400) {
-      return 'Vérifiez le nom d’utilisateur et le mot de passe.';
+      return 'Vérifiez les informations du formulaire.';
+    }
+    if (status === 403) {
+      // Seules les erreurs 403 de /api/register portent un détail rédigé pour le joueur (invitation).
+      const detail = (error as { error?: { detail?: unknown } })?.error?.detail;
+      return typeof detail === 'string' && detail.trim() !== ''
+        ? detail
+        : 'Inscription refusée. Contactez l’organisateur de la partie.';
+    }
+    if (status === 409) {
+      return 'Ce nom d’utilisateur est déjà pris.';
+    }
+    return this.failureMessage(
+      error,
+      'L’inscription est impossible pour le moment. Réessayez plus tard.',
+    );
+  }
+
+  private failureMessage(error: unknown, fallback: string): string {
+    const status = (error as { status?: number })?.status ?? 0;
+    if ((error as { name?: string })?.name === 'TimeoutError') {
+      return 'La connexion a pris trop de temps. Veuillez réessayer.';
+    }
+    if (status === 0) {
+      return 'Le serveur ne répond pas. Vérifiez votre connexion puis réessayez.';
+    }
+    if (status === 429) {
+      return 'Trop de tentatives. Réessayez dans quelques instants.';
     }
     if (status >= 500) {
       return 'Le serveur est momentanément indisponible. Réessayez dans quelques instants.';
     }
-    return 'La connexion est impossible pour le moment. Réessayez plus tard.';
+    return fallback;
   }
 }
