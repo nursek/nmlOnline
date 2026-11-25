@@ -158,7 +158,6 @@ Open **http://localhost:4200** in your browser.
 | `APP_CORS_ALLOWED_ORIGINS` | *(empty)* | Comma-separated extra CORS origins |
 | `REGISTRATION_INVITE_CODE` | *(empty)* | Prod only: enables invitation-only registration. Empty means registrations closed. |
 | `APP_IMPORT_DEMO_DATA` | `false` in prod | Demo mode: game data is wiped and the demo boards reloaded at every boot |
-| `DEMO_PASSWORD` | *(empty)* | Password of the demo accounts. Required in prod when demo mode is on; elsewhere the password is the username |
 
 ---
 

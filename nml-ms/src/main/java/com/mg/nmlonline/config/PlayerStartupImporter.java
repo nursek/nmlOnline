@@ -50,12 +50,6 @@ public class PlayerStartupImporter implements ApplicationRunner {
     @Value("${app.import-demo-data:true}")
     private boolean importDemoData;
 
-    @Value("${app.demo.password:}")
-    private String demoPassword;
-
-    @Value("${app.demo.password-required:false}")
-    private boolean demoPasswordRequired;
-
     public PlayerStartupImporter(PlayerImportService playerImportService,
                                  PlayerService playerService,
                                  BoardService boardService,
@@ -80,11 +74,6 @@ public class PlayerStartupImporter implements ApplicationRunner {
             log.info("Import des données de démo désactivé (app.import-demo-data=false). " +
                      "L'admin doit importer le board et les joueurs via l'API.");
             return;
-        }
-
-        // Les comptes survivent au reset de démo : « mot de passe = nom » resterait ouvert sur une vraie partie.
-        if (demoPasswordRequired && demoPassword.isBlank()) {
-            throw new IllegalStateException("Mode démo : DEMO_PASSWORD est requis (app.demo.password)");
         }
 
         importGame(MAIN_GAME);
@@ -173,18 +162,13 @@ public class PlayerStartupImporter implements ApplicationRunner {
 
                     User user = userRepository.findByUsername(player.getName());
                     if (user == null) {
-                        // Hors prod, même convention que DevDataInitializer : mdp = nom.
+                        // Comptes jetables : à supprimer avant une vraie partie.
                         user = new User();
                         user.setUsername(player.getName());
-                        user.setPassword(userService.encodePassword(
-                                demoPassword.isBlank() ? player.getName() : demoPassword));
+                        user.setPassword(userService.encodePassword(player.getName()));
                         user.setRole("USER");
                         user = userRepository.save(user);
                         log.info("Compte démo créé pour {}", player.getName());
-                    } else if (!demoPassword.isBlank() && !"ADMIN".equals(user.getRole())) {
-                        // Un compte créé par une ancienne démo garderait « mot de passe = nom ».
-                        user.setPassword(userService.encodePassword(demoPassword));
-                        user = userRepository.save(user);
                     }
                     player.setUserId(user.getId());
                     log.info("userId {} lié au joueur {}", user.getId(), player.getName());

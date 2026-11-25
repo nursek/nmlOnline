@@ -77,14 +77,15 @@ otherwise that header can be forged to evade the per-IP limit.
    invitation-only sign-up. Treat the code as a secret.
 6. Terminate TLS in front of the container and do not expose port 8080 directly.
 7. Mount volumes on `/app/static/boards` and `/app/logs`.
-8. Demo mode (`APP_IMPORT_DEMO_DATA=true`) requires `DEMO_PASSWORD` in production. Prefer a
-   disposable database for it — see below.
+8. Demo mode (`APP_IMPORT_DEMO_DATA=true`) creates one account per fixture player, with the
+   username as password. Run it on a disposable database and delete these accounts before a real
+   game — see below.
 
 ## 7. Known limitations
 
 | Limitation | Risk | Mitigation today |
 |---|---|---|
-| Demo accounts outlive demo mode: the demo reset keeps accounts | After demo mode is switched off, anyone who knows `DEMO_PASSWORD` can still log in to them | In production, demo mode refuses to start without `DEMO_PASSWORD` and re-applies it to the demo accounts at every boot; change or delete these accounts before opening a real game |
+| Demo accounts outlive demo mode: the demo reset keeps accounts | After demo mode is switched off, anyone can still log in to them with `username/username` | Delete or rename these accounts before opening a real game; never point demo mode at the real database |
 | Rate limiters and turn locks are in memory | Lost on restart; ineffective across several instances | Single-instance deployment |
 | Access token in `sessionStorage` | Readable by a successful XSS for up to 10 minutes | Strict CSP, no `innerHTML` outside the sanitised map overlay |
 | Secrets committed in history | Old values are public | Rejected at startup by `JwtSecretValidator` |
