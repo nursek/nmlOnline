@@ -18,7 +18,7 @@ describe('DiscardEquipmentDialogComponent', () => {
     equipment: { name: 'Fusil', displayNames: { ORKS: 'Shoota' } },
     available: 4,
     quantity: 6,
-  } as EquipmentStack;
+  } as unknown as EquipmentStack;
 
   beforeEach(() => {
     jest.clearAllMocks();

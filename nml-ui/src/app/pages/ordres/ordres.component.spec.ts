@@ -43,7 +43,7 @@ describe('OrdresComponent', () => {
               classes: [],
               equipments: [],
               isInjured: false,
-            } as Unit,
+            } as unknown as Unit,
           ],
         },
       ],

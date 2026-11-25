@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dial
 import { CacheEquipmentDialogComponent } from './cache-equipment-dialog.component';
 import { DiscardEquipmentDialogComponent } from './discard-equipment-dialog.component';
 import { PlayerService } from '../../services/player.service';
-import type { EquipmentStack } from '../../models';
+import type { Equipment, EquipmentStack } from '../../models';
 
 describe('CacheEquipmentDialogComponent', () => {
   const playerService = {
@@ -46,7 +46,7 @@ describe('CacheEquipmentDialogComponent', () => {
 
     expect(page.stacks().map((stack) => stack.equipment.name)).toEqual(['Fusil', 'Zarb']);
     expect(page.total()).toBe(5);
-    expect(page.equipmentLabel({ name: 'Fusil', displayNames: { ORKS: 'Shoota' } })).toBe('Shoota');
+    expect(page.equipmentLabel({ name: 'Fusil', displayNames: { ORKS: 'Shoota' } } as unknown as Equipment)).toBe('Shoota');
   });
 
   it('ouvre le jet d’équipement sur le bon bâtiment', () => {

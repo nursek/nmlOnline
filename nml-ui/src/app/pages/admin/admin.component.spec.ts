@@ -73,7 +73,7 @@ describe('AdminComponent', () => {
     expect(page.formatMoney(1_200_000)).toBe('1.2M');
     expect(page.formatMoney(42)).toBe('42');
     expect(page.exchangeItemsLabel(offer)).toBe('2.5k ₡, 2 × Auramite');
-    expect(page.exchangeItemsLabel({ money: 0, resources: [] } as ExchangeOffer)).toBe('—');
+    expect(page.exchangeItemsLabel({ money: 0, resources: [] } as unknown as ExchangeOffer)).toBe('—');
   });
 
   it('labellise statuts et propositions', () => {

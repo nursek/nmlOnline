@@ -31,7 +31,7 @@ describe('BattleReportService', () => {
 
   it('charge les rapports et expose l’erreur', async () => {
     const loaded = service.loadReports();
-    http.expectOne('/api/battle-reports').flush([{ id: 1 }] as BattleReport[]);
+    http.expectOne('/api/battle-reports').flush([{ id: 1 }] as unknown as BattleReport[]);
     await loaded;
     expect(service.reports()).toHaveLength(1);
     expect(service.loading()).toBe(false);

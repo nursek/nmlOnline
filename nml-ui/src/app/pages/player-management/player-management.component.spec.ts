@@ -12,7 +12,7 @@ describe('PlayerManagementComponent', () => {
   const players = [
     { id: 1, name: 'lurio', race: 'ORKS', sectors: [] },
     { id: 2, name: 'nursek', race: 'ORKS', sectors: [] },
-  ] as Player[];
+   ] as unknown as Player[];
   const admin = {
     players: signal(players),
     playersTruncated: signal(false),

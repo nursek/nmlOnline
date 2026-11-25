@@ -33,7 +33,7 @@ function run(guard: CanActivateFn, access: Access, url = '/joueur'): Promise<unk
     ],
   });
   const state = { url } as never;
-  return TestBed.runInInjectionContext(() => guard({} as never, state));
+  return Promise.resolve(TestBed.runInInjectionContext(() => guard({} as never, state)));
 }
 
 describe('guards d’accès', () => {

@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { UnitSlotPickerComponent } from './unit-slot-picker.component';
 import { PlayerService } from '../../services/player.service';
-import type { Equipment, Player, Unit } from '../../models';
+import type { Equipment, EquipmentStack, Player, Unit } from '../../models';
 
 describe('UnitSlotPickerComponent', () => {
   const melee = (name: string, classes = ['LEGER'], available = 1) =>
@@ -17,7 +17,7 @@ describe('UnitSlotPickerComponent', () => {
       },
       quantity: available,
       available,
-    }) as never;
+    }) as unknown as EquipmentStack;
   const unit = {
     id: 3,
     type: { maxFirearms: 1, maxMeleeWeapons: 1, maxDefensiveEquipment: 1 },

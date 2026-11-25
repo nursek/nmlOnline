@@ -37,7 +37,7 @@ describe('AllianceStateService', () => {
       outgoingProposals: [],
       activeBetrayalBonuses: [],
       headquartersOperational: true,
-    } as AllianceMe);
+    } as unknown as AllianceMe);
     await loaded;
 
     expect([...service.alliedPlayerIds()].sort()).toEqual([2, 3]);
@@ -69,7 +69,7 @@ describe('AllianceStateService', () => {
       await Promise.resolve();
       http
         .expectOne('/api/alliances/me')
-        .flush({ alliedPlayers: [{ playerId: 2 }] } as AllianceMe);
+        .flush({ alliedPlayers: [{ playerId: 2 }] } as unknown as AllianceMe);
       await new Promise((resolve) => setTimeout(resolve, 0));
       http.expectOne('/api/announcements').flush([]);
 

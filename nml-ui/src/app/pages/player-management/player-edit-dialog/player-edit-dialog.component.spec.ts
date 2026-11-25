@@ -19,7 +19,7 @@ describe('PlayerEditDialogComponent — mutations admin', () => {
           vehicles: [{ id: 7, displayName: 'VTT', sectorNumber: 5 }],
         },
       ],
-      character: null,
+      character: null as { name: string; baseAttack: number } | null,
       equipments: [],
       buildings: [],
     },
@@ -56,12 +56,13 @@ describe('PlayerEditDialogComponent — mutations admin', () => {
     adminRemoveCacheEquipment: jest.fn(() => of(undefined)),
     adminReassignSector: jest.fn(() => of(undefined)),
   };
-  const dialog = { open: jest.fn(() => ({ afterClosed: () => of(true) })) };
+  const dialog = { open: jest.fn() };
   const dialogRef = { close: jest.fn() };
 
   beforeEach(() => {
     jest.clearAllMocks();
     edit.set(baseEdit());
+    dialog.open.mockReturnValue({ afterClosed: () => of(true) });
     admin.catalog.set(null);
     admin.players.set([]);
     TestBed.configureTestingModule({
@@ -238,7 +239,7 @@ describe('PlayerEditDialogComponent — mutations admin', () => {
   it('réassigne un secteur à un autre joueur après confirmation', async () => {
     admin.players.set([{ id: 2, name: 'nursek', eliminated: false }] as never);
     const page = component();
-    page.sectorChoice.set(5);
+    (page as unknown as { sectorChoice: { set(value: number): void } }).sectorChoice.set(5);
     page.sectorTarget.set(2);
 
     await page.reassignSector();

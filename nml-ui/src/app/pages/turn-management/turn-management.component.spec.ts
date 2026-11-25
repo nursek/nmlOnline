@@ -129,7 +129,7 @@ describe('TurnManagementComponent — actions de résolution', () => {
       turnEnding: 2,
       resolvedConflicts: [],
       transitCombatsCount: 0,
-    });
+    } as never);
     const page = component();
 
     page.onDownloadTurn('json');

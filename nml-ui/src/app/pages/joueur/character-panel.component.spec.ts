@@ -39,7 +39,7 @@ describe('CharacterPanelComponent', () => {
     experience: 0,
     equipments: [],
     isInjured: false,
-  } as Unit;
+  } as unknown as Unit;
   const vehicle = {
     id: 5,
     displayName: 'VTT léger',

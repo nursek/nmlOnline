@@ -179,8 +179,8 @@ describe('BoutiqueComponent — achat du panier', () => {
     expect(boutique.getSellQty(resource)).toBe(9);
     boutique.setSellQty(resource, 0);
     expect(boutique.getSellQty(resource)).toBe(1);
-    boutique.setSellQty({ ...resource, id: null }, 5);
-    expect(boutique.getSellQty({ ...resource, id: null })).toBe(1);
+    boutique.setSellQty({ ...resource, id: undefined }, 5);
+    expect(boutique.getSellQty({ ...resource, id: undefined })).toBe(1);
 
     boutique.addToSellCart(resource);
     expect(shop.addToSellCart).toHaveBeenCalledWith(resource, 1);

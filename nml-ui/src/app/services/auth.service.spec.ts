@@ -60,7 +60,7 @@ describe('AuthService — route après login', () => {
     const { auth, instance: service, http, router } = setup();
     const enter = jest.spyOn(service, 'enter').mockImplementation(() => undefined);
 
-    const login = auth.login({ username: 'lurio', password: 'secret' });
+    const login = auth.login({ username: 'lurio', password: 'secret', rememberMe: false });
     http.expectOne(`${environment.apiBaseUrl}/login`).flush(response());
     await new Promise((resolve) => setTimeout(resolve, 0));
     http
@@ -81,7 +81,7 @@ describe('AuthService — route après login', () => {
       const { auth, instance: service, http } = setup(returnUrl);
       const enter = jest.spyOn(service, 'enter').mockImplementation(() => undefined);
 
-      const login = auth.login({ username: 'lurio', password: 'secret' });
+      const login = auth.login({ username: 'lurio', password: 'secret', rememberMe: false });
       http.expectOne(`${environment.apiBaseUrl}/login`).flush(response());
       await new Promise((resolve) => setTimeout(resolve, 0));
       http.expectOne(`${environment.apiBaseUrl}/instances`).flush([instance(7, true, 'PLAYER')]);
@@ -94,7 +94,7 @@ describe('AuthService — route après login', () => {
   it('passe par le sélecteur quand le compte joue plusieurs parties', async () => {
     const { auth, http, router } = setup();
 
-    const login = auth.login({ username: 'lurio', password: 'secret' });
+    const login = auth.login({ username: 'lurio', password: 'secret', rememberMe: false });
     http.expectOne(`${environment.apiBaseUrl}/login`).flush(response());
     await new Promise((resolve) => setTimeout(resolve, 0));
     http
@@ -108,7 +108,7 @@ describe('AuthService — route après login', () => {
   it('ne transforme pas une liste indisponible en échec de connexion', async () => {
     const { auth, instance: service, http, router } = setup();
 
-    const login = auth.login({ username: 'lurio', password: 'secret' });
+    const login = auth.login({ username: 'lurio', password: 'secret', rememberMe: false });
     http.expectOne(`${environment.apiBaseUrl}/login`).flush(response());
     await new Promise((resolve) => setTimeout(resolve, 0));
     http
@@ -133,7 +133,7 @@ describe('AuthService — blocage temporaire du login', () => {
     jest.useFakeTimers();
     const { auth, http } = setup();
 
-    const login = auth.login({ username: 'lurio', password: 'mauvais' });
+    const login = auth.login({ username: 'lurio', password: 'mauvais', rememberMe: false });
     http.expectOne(`${environment.apiBaseUrl}/login`).flush(
       { detail: 'Trop de tentatives, réessayez plus tard' },
       { status: 429, statusText: 'Too Many Requests', headers: { 'Retry-After': '90' } },

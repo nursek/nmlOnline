@@ -16,7 +16,7 @@ describe('UnitDetailDialogComponent', () => {
     name: 'Fusil',
     category: 'FIREARM',
     displayNames: { ORKS: 'Shoota' },
-  } as Equipment;
+  } as unknown as Equipment;
   const unit = {
     id: 3,
     number: 1,

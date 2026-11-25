@@ -24,7 +24,7 @@ describe('GroupMoveDialogComponent', () => {
       experience: 0,
       equipments: [],
       isInjured: false,
-    }) as Unit;
+    }) as unknown as Unit;
   const sector = {
     number: 5,
     name: 'Cinq',

@@ -52,7 +52,7 @@ describe('updateOverlays — frontières', () => {
 });
 
 type InteractionHost = {
-  selectedSector: ReturnType<typeof signal<{ number: number } | null>>;
+  selectedSector: ReturnType<typeof signal<{ number: number; ownerId?: number | null } | null>>;
   overlays: ReturnType<typeof signal<Set<'front' | 'resources'>>>;
   selectSector: (sector: { number: number }) => void;
   toggleOverlay: (overlay: 'front' | 'resources') => void;
@@ -102,7 +102,7 @@ describe('sélection et calques de carte', () => {
 
 type NoteHost = {
   board: ReturnType<typeof signal<{ id: number } | null>>;
-  selectedSector: ReturnType<typeof signal<{ number: number } | null>>;
+  selectedSector: ReturnType<typeof signal<{ number: number; ownerId?: number | null } | null>>;
   noteDraft: ReturnType<typeof signal<string>>;
   savingNote: ReturnType<typeof signal<boolean>>;
   api: { saveSectorNote: jest.Mock };
@@ -434,7 +434,7 @@ describe('import de board depuis la carte', () => {
 });
 
 type RenderHost = {
-  selectedSector: ReturnType<typeof signal<{ number: number } | null>>;
+  selectedSector: ReturnType<typeof signal<{ number: number; ownerId?: number | null } | null>>;
   placing: ReturnType<typeof signal<unknown>>;
   hoveredSectorNumber: ReturnType<typeof signal<number | null>>;
   sectorsMap: () => Map<number, { number: number; ownerId: number | null }>;

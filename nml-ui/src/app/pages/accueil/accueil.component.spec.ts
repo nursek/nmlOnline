@@ -97,7 +97,7 @@ describe('AccueilComponent', () => {
       targetName: 'nursek',
       turn: 3,
       createdAt: '2026-11-25T12:00:00Z',
-    } as Announcement;
+    } as unknown as Announcement;
 
     expect(page.announcementLabel({ ...base, type: 'ALLIANCE_FORMED' })).toBe(
       'lurio et nursek sont désormais alliés',

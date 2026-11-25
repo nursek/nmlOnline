@@ -42,7 +42,7 @@ describe('PlayerService', () => {
   });
 
   it('ne charge rien sans utilisateur connecté', async () => {
-    user.set(null);
+    user.set(null as never);
     TestBed.tick();
 
     await service.loadCurrent();
