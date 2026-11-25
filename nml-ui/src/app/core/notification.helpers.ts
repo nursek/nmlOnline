@@ -19,8 +19,8 @@ export function notificationIcon(type: NotificationType): string {
       return 'flag';
     case 'GAME_FINISHED':
       return 'emoji_events';
-    case 'PLAYER_ELIMINATED':
-      return 'dangerous';
+    case 'BATTLE_REPORTS_AVAILABLE':
+      return 'military_tech';
     case 'GAZETTE_PUBLISHED':
       return 'newspaper';
     default:
@@ -35,7 +35,6 @@ export function notificationTone(type: NotificationType): NotificationTone {
     case 'ALLIANCE_PROPOSAL':
       return 'accent';
     case 'ALLIANCE_BROKEN':
-    case 'PLAYER_ELIMINATED':
       return 'danger';
     case 'EXCHANGE_ACCEPTED':
     case 'ALLIANCE_ACCEPTED':

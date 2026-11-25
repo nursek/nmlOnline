@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -450,6 +451,10 @@ public class TurnResolutionOrchestrator {
                 notificationService.notifyTurnEnded(s.boardId, s.turnEnding, newTurn,
                         captures.size(), deathOrder.stream().map(Player::getName).toList());
             }
+            Set<Long> battleParticipants = battleParticipants(s, rangedCombats);
+            if (!battleParticipants.isEmpty()) {
+                notificationService.notifyBattleReports(s.turnEnding, battleParticipants);
+            }
             TurnFinalizeResultDto dto = new TurnFinalizeResultDto();
             dto.setNewTurn(newTurn);
             dto.setTurnEnding(s.turnEnding);
@@ -484,6 +489,16 @@ public class TurnResolutionOrchestrator {
             turnLock.release(s.boardId);
             sessions.remove(s.boardId);
         }
+    }
+
+    private static Set<Long> battleParticipants(Session s, List<BattleReportDetailDto> rangedCombats) {
+        Set<Long> playerIds = new LinkedHashSet<>();
+        s.resolvedConflicts.stream()
+                .filter(ResolvedBattle::success)
+                .forEach(battle -> playerIds.addAll(battle.participantPlayerIds()));
+        rangedCombats.forEach(report -> report.getCamps()
+                .forEach(camp -> playerIds.add(camp.getPlayerId())));
+        return playerIds;
     }
 
     private List<Player> deathOrder(Session s, List<Player> eliminated) {

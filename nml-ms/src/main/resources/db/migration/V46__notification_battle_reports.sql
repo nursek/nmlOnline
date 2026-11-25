@@ -1,0 +1,19 @@
+DELETE FROM public.notifications WHERE type = 'PLAYER_ELIMINATED';
+
+ALTER TABLE public.notifications DROP CONSTRAINT notifications_type_check;
+
+ALTER TABLE public.notifications ADD CONSTRAINT notifications_type_check CHECK (type IN (
+    'EXCHANGE_RECEIVED',
+    'EXCHANGE_ACCEPTED',
+    'EXCHANGE_DECLINED',
+    'EXCHANGE_CANCELLED',
+    'ALLIANCE_PROPOSAL',
+    'ALLIANCE_ACCEPTED',
+    'ALLIANCE_DECLINED',
+    'ALLIANCE_BROKEN',
+    'TURN_ENDED',
+    'GAME_STARTED',
+    'GAME_FINISHED',
+    'BATTLE_REPORTS_AVAILABLE',
+    'GAZETTE_PUBLISHED'
+));

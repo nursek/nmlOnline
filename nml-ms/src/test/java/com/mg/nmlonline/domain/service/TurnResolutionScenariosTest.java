@@ -43,8 +43,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -1043,6 +1044,31 @@ class TurnResolutionScenariosTest extends DemoDatabaseReset {
                                 .equals(notification.title())
                                 && "/rapports".equals(notification.link())),
                 "La fin de tour notifie chaque joueur du plateau");
+    }
+
+    @Test
+    @DisplayName("un tour finalisé notifie les rapports de combat aux seuls joueurs qui ont combattu")
+    void finalizedTurnNotifiesBattleReportsToFighters() {
+        seeder.seedCombatScenario("SNIPER_RANGED", boardId());
+
+        orchestrator.startSession(boardId());
+        TurnFinalizeResultDto finalized = orchestrator.finalizeTurn(boardId());
+
+        int fighters = 0;
+        for (Player player : playerRepository.findByBoardId(boardId())) {
+            boolean fought = !battleReportRepository
+                    .findByParticipantId(player.getId(), PageRequest.of(0, 1)).isEmpty();
+            if (fought) {
+                fighters++;
+            }
+            boolean notified = notificationService.getFeed(player.getUserId(), boardId()).items().stream()
+                    .anyMatch(notification -> notification.type() == NotificationType.BATTLE_REPORTS_AVAILABLE
+                            && "Rapports de combat disponibles".equals(notification.title())
+                            && "/rapports".equals(notification.link())
+                            && notification.message().contains("tour " + finalized.getTurnEnding()));
+            assertEquals(fought, notified, () -> player.getName() + " n'est notifié que s'il a combattu");
+        }
+        assertTrue(fighters >= 2, "Le tir isolé oppose le tireur et sa cible");
     }
 
     @Test

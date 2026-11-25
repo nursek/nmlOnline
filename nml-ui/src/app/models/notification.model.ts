@@ -10,7 +10,7 @@ export type NotificationType =
   | 'TURN_ENDED'
   | 'GAME_STARTED'
   | 'GAME_FINISHED'
-  | 'PLAYER_ELIMINATED'
+  | 'BATTLE_REPORTS_AVAILABLE'
   | 'GAZETTE_PUBLISHED';
 
 export type NotificationTone = 'accent' | 'danger' | 'teal' | 'cobalt';
