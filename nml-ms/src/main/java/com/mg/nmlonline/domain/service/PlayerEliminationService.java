@@ -215,7 +215,7 @@ public class PlayerEliminationService {
                     AnnouncementType.ALLIANCE_BROKEN, victim.getBoardId(), victim.getId(), allyId, turn));
             notificationService.notifyPlayer(allyId, NotificationType.ALLIANCE_BROKEN,
                     "Alliance rompue", victim.getName()
-                            + " a été éliminé : votre alliance prend fin.", "/joueur");
+                            + " a été éliminé : votre alliance prend fin.", "/joueur?alliance=1");
         }
     }
 

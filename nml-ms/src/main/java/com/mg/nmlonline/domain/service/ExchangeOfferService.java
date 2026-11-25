@@ -119,7 +119,8 @@ public class ExchangeOfferService {
         exchangeOfferRepository.save(offer);
         notificationService.notify(receiver, NotificationType.EXCHANGE_RECEIVED,
                 "Nouvelle offre d'échange",
-                sender.getName() + " vous propose un échange au tour " + turn + ".", "/joueur");
+                sender.getName() + " vous propose un échange au tour " + turn + ".",
+                "/joueur?echange=1");
         return toDto(offer, sender.getName(), receiver.getName());
     }
 
@@ -208,7 +209,7 @@ public class ExchangeOfferService {
         playerRepository.save(receiver);
         exchangeOfferRepository.save(offer);
         notificationService.notify(sender, NotificationType.EXCHANGE_ACCEPTED, "Offre acceptée",
-                receiver.getName() + " a accepté votre offre d'échange.", "/joueur");
+                receiver.getName() + " a accepté votre offre d'échange.", "/joueur?echange=1");
         return toDto(offer, sender.getName(), receiver.getName());
     }
 
@@ -227,7 +228,7 @@ public class ExchangeOfferService {
         exchangeOfferRepository.save(offer);
         notificationService.notifyPlayer(offer.getSenderPlayerId(),
                 NotificationType.EXCHANGE_DECLINED, "Offre refusée",
-                receiver.getName() + " a refusé votre offre d'échange.", "/joueur");
+                receiver.getName() + " a refusé votre offre d'échange.", "/joueur?echange=1");
         return toDto(offer, nameOf(offer.getSenderPlayerId()), receiver.getName());
     }
 
@@ -246,7 +247,7 @@ public class ExchangeOfferService {
         exchangeOfferRepository.save(offer);
         notificationService.notifyPlayer(offer.getReceiverPlayerId(),
                 NotificationType.EXCHANGE_CANCELLED, "Offre annulée",
-                sender.getName() + " a annulé son offre d'échange.", "/joueur");
+                sender.getName() + " a annulé son offre d'échange.", "/joueur?echange=1");
         return toDto(offer, sender.getName(), nameOf(offer.getReceiverPlayerId()));
     }
 

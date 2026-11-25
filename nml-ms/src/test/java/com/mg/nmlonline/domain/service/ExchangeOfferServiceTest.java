@@ -141,7 +141,7 @@ class ExchangeOfferServiceTest {
             assertEquals("Sender", dto.senderName());
             assertEquals("Receiver", dto.receiverName());
             verify(notificationService).notify(eq(receiver), eq(NotificationType.EXCHANGE_RECEIVED),
-                    any(), any(), eq("/joueur"));
+                    any(), any(), eq("/joueur?echange=1"));
         }
 
         @Test

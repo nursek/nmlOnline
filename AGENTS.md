@@ -186,3 +186,6 @@ consomment, ils ne possèdent pas l'état global.
 - **Tour 0** : `/admin/partie` est réservé à `ADMIN` (`platformAdminGuard`) ; `preparationGuard`
   renvoie `/boutique`, `/ordres` et `/rapports` vers `/joueur` tant que la partie est en
   préparation. Le placement se fait dans le panneau de préparation de `/joueur`.
+- **Notifications** : `Notification.link` est une route SPA interne (validée par
+  `safeNotificationLink`) ; `/joueur?alliance=1` et `/joueur?echange=1` ouvrent la fenêtre
+  concernée — un nouveau type pointe vers l'écran où l'action se fait.

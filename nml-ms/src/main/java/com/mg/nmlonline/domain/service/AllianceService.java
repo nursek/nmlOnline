@@ -214,7 +214,7 @@ public class AllianceService {
                 player.getName() + (kind == ProposalKind.ALLIANCE
                         ? " vous propose une alliance."
                         : " vous propose une rupture amiable."),
-                "/joueur");
+                "/joueur?alliance=1");
         return toProposalDto(proposal, Map.of(player.getId(), player.getName(), target.getId(), target.getName()), "OUT");
     }
 
@@ -258,7 +258,7 @@ public class AllianceService {
         proposalRepository.save(proposal);
         notificationService.notifyPlayer(proposal.getFromPlayerId(),
                 NotificationType.ALLIANCE_ACCEPTED, "Proposition acceptée",
-                player.getName() + " a accepté votre proposition.", "/joueur");
+                player.getName() + " a accepté votre proposition.", "/joueur?alliance=1");
     }
 
     public void decline(Long userId, Long boardId, Long proposalId) {
@@ -271,7 +271,7 @@ public class AllianceService {
         proposalRepository.save(proposal);
         notificationService.notifyPlayer(proposal.getFromPlayerId(),
                 NotificationType.ALLIANCE_DECLINED, "Proposition déclinée",
-                player.getName() + " a décliné votre proposition.", "/joueur");
+                player.getName() + " a décliné votre proposition.", "/joueur?alliance=1");
     }
 
     public void withdraw(Long userId, Long boardId, Long proposalId) {
@@ -306,7 +306,7 @@ public class AllianceService {
                 player.getId(), alliance.other(player.getId()), turn));
         notificationService.notifyPlayer(alliance.other(player.getId()),
                 NotificationType.ALLIANCE_BROKEN, "Alliance rompue",
-                player.getName() + " a trahi votre alliance.", "/joueur");
+                player.getName() + " a trahi votre alliance.", "/joueur?alliance=1");
         cancelPendingProposalsFor(player.getId(), turn);
     }
 

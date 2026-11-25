@@ -1,6 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+} from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -133,6 +140,7 @@ export class JoueurComponent {
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly player = this.playerService.player;
@@ -149,6 +157,8 @@ export class JoueurComponent {
   readonly actionsLoading = this.playerActionsService.loading;
   readonly actionsError = this.playerActionsService.error;
 
+  private pendingExchangeOpen = false;
+
   constructor() {
     void this.playerService.loadCurrent();
     void this.playerService.loadVehicles();
@@ -158,6 +168,15 @@ export class JoueurComponent {
     void this.movementState.loadOrders();
     void this.exchangeService.loadOffers();
     void this.allianceState.loadMe();
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => this.openFromLink(params));
+    effect(() => {
+      if (this.pendingExchangeOpen && this.player()) {
+        this.pendingExchangeOpen = false;
+        this.openExchangeDialog();
+      }
+    });
   }
 
   readonly playerCharacter = computed(() => this.player()?.character ?? null);
@@ -447,6 +466,19 @@ export class JoueurComponent {
             });
         }
       });
+  }
+
+  private openFromLink(params: ParamMap): void {
+    if (params.has('alliance')) {
+      this.openAllianceDialog();
+    }
+    if (params.has('echange')) {
+      if (this.player()) {
+        this.openExchangeDialog();
+      } else {
+        this.pendingExchangeOpen = true;
+      }
+    }
   }
 
   openAllianceDialog(): void {

@@ -118,7 +118,9 @@ export class NotificationsService {
     this.dismiss(notification.id);
     const link = safeNotificationLink(notification.link);
     if (link) {
-      void this.router.navigateByUrl(link);
+      // L'id rend chaque clic distinct : une même URL ne rejoue pas l'ouverture de la fenêtre.
+      const separator = link.includes('?') ? '&' : '?';
+      void this.router.navigateByUrl(`${link}${separator}notif=${notification.id}`);
     }
   }
 
