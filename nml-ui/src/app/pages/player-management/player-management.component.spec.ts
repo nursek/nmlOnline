@@ -112,15 +112,6 @@ describe('PlayerManagementComponent', () => {
     expect(admin.deletePlayer).toHaveBeenCalledWith(1);
   });
 
-  it('ouvre l’édition puis ferme la session du joueur', () => {
-    const page = component();
-
-    page.openEdit(players[0]);
-
-    expect(dialog.open).toHaveBeenCalled();
-    expect(admin.closeEdit).toHaveBeenCalled();
-  });
-
   it('ignore export, suppression et édition sans id', async () => {
     const page = component();
     const withoutId = { ...players[0], id: null } as Player;

@@ -6,6 +6,7 @@ import com.mg.nmlonline.domain.service.JwtService;
 import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.UnitRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,9 @@ class AdminControllerTransactionBoundaryTest {
 
     @Autowired
     private BoardRepository boardRepository;
+
+    @Autowired
+    private UnitRepository unitRepository;
 
     private Long boardId() {
         return DemoFixtures.mainBoardId(boardRepository);
@@ -142,6 +146,46 @@ class AdminControllerTransactionBoundaryTest {
                         .header("X-Board-Id", String.valueOf(boardId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("TestPlayer1-renamed"));
+    }
+
+    @Test
+    @Transactional
+    void adminPlayerMutationRoutesKeepHttpContract() throws Exception {
+        var player = playerRepository.findByBoardIdAndName(boardId(), "lurio").orElseThrow();
+        Long playerId = player.getId();
+        Long unitId = unitRepository.findByPlayerId(playerId).getFirst().getId();
+        Long targetId = playerRepository.findByBoardIdAndName(boardId(), "cegorach").orElseThrow().getId();
+
+        mockMvc.perform(put("/api/admin/players/{id}/character", playerId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"" + player.getCharacter().getName() + "\",\"baseAttack\":10,"
+                                + "\"baseDefense\":20,\"basePdf\":30,\"basePdc\":40,"
+                                + "\"baseArmor\":50,\"baseEvasion\":60}")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
+                        .header("X-Board-Id", String.valueOf(boardId())))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(put("/api/admin/players/{id}/units/{unitId}", playerId, unitId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"experience\":6.0}")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
+                        .header("X-Board-Id", String.valueOf(boardId())))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(put("/api/admin/sectors/{sectorNumber}/owner", 41)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"playerId\":" + targetId + "}")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
+                        .header("X-Board-Id", String.valueOf(boardId())))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(delete("/api/admin/players/{id}/equipments", playerId)
+                        .param("name", "HK-MP7")
+                        .param("quantity", "1")
+                        .param("includeEquipped", "true")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
+                        .header("X-Board-Id", String.valueOf(boardId())))
+                .andExpect(status().isNoContent());
     }
 
     @Test

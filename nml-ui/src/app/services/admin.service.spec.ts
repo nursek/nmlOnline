@@ -5,7 +5,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { of, throwError } from 'rxjs';
 import { AdminService } from './admin.service';
 import { ApiService } from './api.service';
-import type { AdminCatalog, AdminPlayerEdit, PageResult, Player } from '../models';
+import type { AdminCatalog, AdminPlayerEdit, Player } from '../models';
 
 describe('AdminService', () => {
   let service: AdminService;
@@ -49,9 +49,9 @@ describe('AdminService', () => {
     service.reloadPlayers();
     TestBed.tick();
     http.expectOne('/api/admin/players?page=0&size=50').flush({
-      content: [{ id: 1, name: 'lurio' }],
+      content: [{ id: 1, name: 'lurio' } as unknown as Player],
       totalElements: 2,
-    } satisfies PageResult<Player>);
+    });
     await Promise.resolve();
     TestBed.tick();
 

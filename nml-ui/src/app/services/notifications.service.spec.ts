@@ -99,18 +99,26 @@ describe('NotificationsService', () => {
     const http = TestBed.inject(HttpTestingController);
     const router = TestBed.inject(Router);
     const navigate = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
-    const item = notification(5);
+    const first = notification(5);
 
     TestBed.tick();
-    http.expectOne(`${environment.apiBaseUrl}/notifications`).flush(feed([item]));
+    http.expectOne(`${environment.apiBaseUrl}/notifications`).flush(feed([first]));
     await TestBed.inject(ApplicationRef).whenStable();
 
-    service.open(item);
-    http.expectOne(`${environment.apiBaseUrl}/notifications/5/read`).flush(null);
+    // Deuxième poll : la notification 6 est nouvelle, un toast est créé.
+    const second = notification(6);
+    const reload = service.reload();
+    http.expectOne(`${environment.apiBaseUrl}/notifications`).flush(feed([second, first]));
+    await reload;
+    await TestBed.inject(ApplicationRef).whenStable();
+    expect(service.toasts().map((toast) => toast.id)).toEqual([6]);
+
+    service.open(second);
+    http.expectOne(`${environment.apiBaseUrl}/notifications/6/read`).flush(null);
     await Promise.resolve();
 
-    expect(navigate).toHaveBeenCalledWith('/joueur?notif=5');
-    expect(service.unreadCount()).toBe(0);
+    expect(navigate).toHaveBeenCalledWith('/joueur?notif=6');
+    expect(service.unreadCount()).toBe(1);
     expect(service.toasts()).toHaveLength(0);
   });
 
