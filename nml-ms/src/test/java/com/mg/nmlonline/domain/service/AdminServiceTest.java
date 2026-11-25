@@ -171,6 +171,19 @@ class AdminServiceTest {
         verify(userService, never()).encodePassword(any());
     }
     @Test
+    @DisplayName("Un joueur non parsable est refusé avant toute écriture")
+    void rejectsUnparsablePlayer() throws java.io.IOException {
+        PlayerImportService.PlayerDTO dto = new PlayerImportService.PlayerDTO();
+        when(playerImportService.parse("{}")).thenReturn(dto);
+        when(playerImportService.importPlayer(dto, BOARD_ID)).thenReturn(null);
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> adminService.importPlayer("{}", null, BOARD_ID));
+
+        assertTrue(error.getMessage().contains("JSON"));
+        verify(playerService, never()).save(any(Player.class));
+    }
+    @Test
     @DisplayName("deletePlayer ne touche jamais le compte global : il peut jouer dans une autre partie")
     void playerDeletionKeepsGlobalAccount() {
         Long playerId = 42L;

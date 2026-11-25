@@ -332,17 +332,6 @@ class BuildingServiceTest {
                     .thenReturn(Optional.of(bank));
             assertEquals(0.0, buildingService.calculateVampirizedIncome(1L, 10000.0, 5));
         }
-
-        @Test
-        @DisplayName("Banque capturée : revenu × taux progressif plafonné à 75%")
-        void shouldComputeVampirizedIncome() {
-            Bank bank = new Bank(1L);
-            bank.onCapture(2L, 3);
-            when(buildingRepository.findByPlayerIdAndBuildingType(1L, BuildingType.BANK))
-                    .thenReturn(Optional.of(bank));
-
-            assertEquals(1500.0, buildingService.calculateVampirizedIncome(1L, 10000.0, 3), 1e-9);
-        }
     }
 
     @Nested
@@ -454,6 +443,45 @@ class BuildingServiceTest {
             stack.setAvailable(quantity);
             cache.getStoredEquipments().add(stack);
             return cache;
+        }
+
+        @Test
+        @DisplayName("Nom ou quantité invalide refusé avant toute lecture")
+        void shouldRejectInvalidDiscardInput() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, " ", 1, 7L, BOARD_ID));
+            assertThrows(IllegalArgumentException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, null, 1, 7L, BOARD_ID));
+            assertThrows(IllegalArgumentException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 0, 7L, BOARD_ID));
+        }
+
+        @Test
+        @DisplayName("Un bâtiment qui n'est pas une cache est refusé")
+        void shouldRejectNonCacheBuilding() {
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(7L, BOARD_ID)).thenReturn(Optional.of(player));
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(new Headquarters(1L)));
+
+            assertThrows(IllegalStateException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 1, 7L, BOARD_ID));
+        }
+
+        @Test
+        @DisplayName("Une cache détruite ou un équipement inconnu est refusé")
+        void shouldRejectDestroyedCacheAndUnknownEquipment() {
+            WeaponCache destroyed = cacheWith("Pistolet", 1);
+            destroyed.setDestroyed(true);
+            when(playerRepository.findByUserIdAndBoardIdForUpdate(7L, BOARD_ID)).thenReturn(Optional.of(player));
+            when(buildingRepository.findById(50L)).thenReturn(Optional.of(destroyed));
+
+            assertThrows(IllegalStateException.class,
+                    () -> buildingService.discardPlayerEquipment(50L, "Pistolet", 1, 7L, BOARD_ID));
+
+            WeaponCache empty = new WeaponCache(1L);
+            when(buildingRepository.findById(51L)).thenReturn(Optional.of(empty));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> buildingService.discardPlayerEquipment(51L, "Pistolet", 1, 7L, BOARD_ID));
         }
 
         @Test

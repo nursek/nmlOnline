@@ -1,6 +1,9 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoDatabaseReset;
+import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
+import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.movement.MovementOrder;
 import com.mg.nmlonline.domain.model.movement.MovementStatus;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
@@ -8,7 +11,9 @@ import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -20,14 +25,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 @EmbeddedPostgresTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("TurnService — résolution + incrément du tour")
-class TurnServiceTest {
+class TurnServiceTest extends DemoDatabaseReset {
 
     @Autowired
     private BoardRepository boardRepository;
 
     private Long boardId() {
-        return boardRepository.findAll().getFirst().getId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
 
@@ -70,6 +76,28 @@ class TurnServiceTest {
         assertEquals(target, turnService.setCurrentTurn(boardId(), target));
         turnService.invalidateTurnCache();
         assertEquals(target, turnService.getCurrentTurn(boardId()), "La valeur doit être persistée en base");
+    }
+
+    @Test
+    @DisplayName("Une partie terminée refuse l'incrément et le changement de tour")
+    void finishedGameRejectsTurnChanges() {
+        Board board = boardRepository.findById(boardId()).orElseThrow();
+        board.setFinishedAt(Instant.now());
+        boardRepository.save(board);
+
+        assertThrows(IllegalStateException.class, () -> turnService.advanceTurn(boardId()));
+        assertThrows(IllegalStateException.class, () -> turnService.setCurrentTurn(boardId(), 5));
+    }
+
+    @Test
+    @DisplayName("Une partie en préparation refuse la résolution d'un tour")
+    void preparationGameRejectsAdvance() {
+        Board board = boardRepository.findById(boardId()).orElseThrow();
+        board.setCurrentTurn(0);
+        boardRepository.save(board);
+        turnService.invalidateTurnCache();
+
+        assertThrows(IllegalStateException.class, () -> turnService.advanceTurn(boardId()));
     }
 
     @Test

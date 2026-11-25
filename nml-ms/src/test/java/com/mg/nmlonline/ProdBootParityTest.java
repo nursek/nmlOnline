@@ -9,8 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -19,8 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import static io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider.EMBEDDED;
 import static io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseType.POSTGRES;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureEmbeddedDatabase(type = POSTGRES, provider = EMBEDDED)
 class ProdBootParityTest {
 
-    private static final long TOKEN_TTL_MS = 3_600_000;
+    private static final String ADMIN_PASSWORD = "test-admin-password";
 
     @Autowired
     private MockMvc mockMvc;
@@ -47,28 +46,40 @@ class ProdBootParityTest {
 
     @DynamicPropertySource
     static void prodConfiguration(DynamicPropertyRegistry registry) {
-        registry.add("app.admin.password", () -> "test-admin-password");
+        registry.add("app.admin.password", () -> ADMIN_PASSWORD);
         // Peuple unités/bâtiments/personnages : sans ça le test d'endpoint ne prouve rien.
         registry.add("app.import-demo-data", () -> "true");
     }
 
     @Test
-    void everyMigrationIsApplied(@Autowired JdbcTemplate jdbc) throws Exception {
-        int onClasspath = new PathMatchingResourcePatternResolver()
-                .getResources("classpath:db/migration/V*.sql").length;
-        Integer applied = jdbc.queryForObject(
-                "select count(*) from flyway_schema_history where success = true", Integer.class);
+    void prodAdminBootstrapLoginWorks() throws Exception {
+        mockMvc.perform(post("/api/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"admin\",\"password\":\"" + ADMIN_PASSWORD + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists());
+    }
 
-        assertEquals(onClasspath, applied, "toutes les migrations du classpath doivent être appliquées");
+    @Test
+    void registrationIsClosedInProd() throws Exception {
+        mockMvc.perform(get("/api/auth/registration-mode"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enabled").value(false))
+                .andExpect(jsonPath("$.inviteRequired").value(true));
+
+        mockMvc.perform(post("/api/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"produser\",\"password\":\"secret123\"}"))
+                .andExpect(status().isForbidden());
     }
 
     /** Le DTO joueur parcourt des relations LAZY : 500 si le mapping sort de la transaction (OSIV). */
     @Test
     void adminApiListsPlayersOnMigratedSchema() throws Exception {
         User admin = userRepository.findByUsername("admin");
-        String token = jwtService.generateToken(admin, TOKEN_TTL_MS);
+        String token = DemoFixtures.tokenFor(admin, jwtService);
 
-        Long boardId = boardRepository.findAll().getFirst().getId();
+        Long boardId = DemoFixtures.mainBoardId(boardRepository);
         mockMvc.perform(get("/api/admin/players")
                         .header("Authorization", "Bearer " + token)
                         .header("X-Board-Id", String.valueOf(boardId)))

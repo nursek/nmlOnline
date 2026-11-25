@@ -45,18 +45,32 @@ class GameSetupServiceTest {
     @Autowired
     private UserService userService;
 
+    private record Draft(Board board, PlayerDto dto, Player player) {
+    }
+
+    private Draft createTemplate(List<Integer> sectors, String prefix, String characterName) {
+        String boardName = "Préparation " + UUID.randomUUID();
+        Board board = boardService.saveBoard(emptyBoard(boardName), boardName);
+        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
+                new AdminTemplatePlayerRequestDto(prefix + UUID.randomUUID(), "ORKS",
+                        sectors, characterName));
+        Player player = playerService.findById(dto.getId()).orElseThrow();
+        return new Draft(board, dto, player);
+    }
+
+    private User linkAccount(PlayerDto dto) {
+        User account = createAccount();
+        adminService.linkAccount(dto.getId(), account.getUsername());
+        return account;
+    }
+
     @Test
     @DisplayName("Template, placement, lien de compte puis démarrage passent le tour à 1")
     void templatePlacementLinkAndStart() {
-        String boardName = "Préparation " + UUID.randomUUID();
-        Board board = boardService.saveBoard(board(boardName), boardName);
-        String playerName = "Prep" + UUID.randomUUID().toString().substring(0, 8);
+        String characterName = "Héros";
+        Draft draft = createTemplate(List.of(1), "Prep", characterName);
+        Player player = draft.player();
 
-        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
-                new AdminTemplatePlayerRequestDto(playerName, "ORKS",
-                        List.of(1), "Héros " + playerName));
-
-        Player player = playerService.findById(dto.getId()).orElseThrow();
         assertNull(player.getUserId());
         assertEquals(GameSetupService.STARTING_MONEY, player.getStats().getMoney());
         assertEquals(100, unitRepository.findByPlayerIdAndSectorIsNull(player.getId()).size());
@@ -64,29 +78,27 @@ class GameSetupServiceTest {
                 .allMatch(unit -> unit.getClasses().isEmpty()));
         assertEquals(3, player.getBuildings().size());
         assertTrue(player.getBuildings().stream().allMatch(building -> building.getSector() == null));
-        GameCharacter character = gameCharacterService.getCharacter(player.getId()).orElseThrow();
-        assertNull(character.getSector());
+        assertNull(gameCharacterService.getCharacter(player.getId()).orElseThrow().getSector());
 
-        User account = createAccount();
-        adminService.linkAccount(player.getId(), account.getUsername());
+        User account = linkAccount(draft.dto());
         assertEquals(account.getId(), playerService.findById(player.getId()).orElseThrow().getUserId());
 
-        preparationService.placeCharacter(account.getId(), board.getId(), 1);
+        preparationService.placeCharacter(account.getId(), draft.board().getId(), 1);
         assertNotNull(gameCharacterService.getCharacter(player.getId()).orElseThrow().getSector());
 
         Building building = player.getBuildings().getFirst();
-        preparationService.placeBuilding(account.getId(), board.getId(), building.getId(), 1);
+        preparationService.placeBuilding(account.getId(), draft.board().getId(), building.getId(), 1);
         assertTrue(playerService.findById(player.getId()).orElseThrow().getBuildings().stream()
                 .anyMatch(placed -> placed.getSector() != null));
 
-        preparationService.distributeUnits(account.getId(), board.getId(), 1, 10, List.of("LEGER"));
+        preparationService.distributeUnits(account.getId(), draft.board().getId(), 1, 10, List.of("LEGER"));
         List<Unit> units = unitRepository.findByPlayerId(player.getId());
         assertEquals(10, units.stream().filter(unit -> unit.getSector() != null).count());
         assertEquals(90, units.stream().filter(unit -> unit.getSector() == null).count());
 
-        gameSetupService.startGame(board.getId());
+        gameSetupService.startGame(draft.board().getId());
 
-        Board started = boardService.getBoardById(board.getId()).orElseThrow();
+        Board started = boardService.getBoardById(draft.board().getId()).orElseThrow();
         assertEquals(1, started.getCurrentTurn());
         assertNotNull(started.getStartedAt());
         assertTrue(unitRepository.findByPlayerId(player.getId()).stream()
@@ -94,115 +106,97 @@ class GameSetupServiceTest {
         assertThrows(IllegalStateException.class,
                 () -> adminService.linkAccount(player.getId(), account.getUsername()));
         assertThrows(IllegalStateException.class,
-                () -> preparationService.distributeUnits(account.getId(), board.getId(), 1, 1,
+                () -> preparationService.distributeUnits(account.getId(), draft.board().getId(), 1, 1,
                         List.of("LEGER")));
     }
 
     @Test
     @DisplayName("Les 100 unités peuvent être placées et classées pendant le tour 0")
     void allStartingUnitsCanBePlacedDuringPreparation() {
-        String boardName = "Préparation " + UUID.randomUUID();
-        Board board = boardService.saveBoard(board(boardName), boardName);
-        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
-                new AdminTemplatePlayerRequestDto("ToutesUnites" + UUID.randomUUID(), "ORKS",
-                        List.of(1), null));
-        User account = createAccount();
-        adminService.linkAccount(dto.getId(), account.getUsername());
+        Draft draft = createTemplate(List.of(1), "ToutesUnites", null);
+        User account = linkAccount(draft.dto());
 
-        preparationService.distributeUnits(account.getId(), board.getId(), 1, 100, List.of("LEGER"));
-        assertEquals(0, unitRepository.findByPlayerIdAndSectorIsNull(dto.getId()).size());
+        preparationService.distributeUnits(account.getId(), draft.board().getId(), 1, 100, List.of("LEGER"));
+        assertEquals(0, unitRepository.findByPlayerIdAndSectorIsNull(draft.dto().getId()).size());
 
-        gameSetupService.startGame(board.getId());
-        assertEquals(0, unitRepository.findByPlayerIdAndSectorIsNull(dto.getId()).size());
+        gameSetupService.startGame(draft.board().getId());
+        assertEquals(0, unitRepository.findByPlayerIdAndSectorIsNull(draft.dto().getId()).size());
     }
 
     @Test
     @DisplayName("Les unités se répartissent en lots de classes différentes sur plusieurs secteurs")
     void startingUnitsCanBeSplitAcrossSectorsAndClasses() {
-        String boardName = "Lots " + UUID.randomUUID();
-        Board board = boardService.saveBoard(board(boardName), boardName);
-        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
-                new AdminTemplatePlayerRequestDto("Lots" + UUID.randomUUID(), "ORKS",
-                        List.of(1, 2, 3), null));
-        User account = createAccount();
-        adminService.linkAccount(dto.getId(), account.getUsername());
+        Draft draft = createTemplate(List.of(1, 2, 3), "Lots", null);
+        User account = linkAccount(draft.dto());
 
-        preparationService.distributeUnits(account.getId(), board.getId(), 1, 20, List.of("SNIPER"));
-        preparationService.distributeUnits(account.getId(), board.getId(), 2, 50, List.of("MASTODONTE"));
-        preparationService.distributeUnits(account.getId(), board.getId(), 3, 30, List.of("TIREUR"));
+        preparationService.distributeUnits(account.getId(), draft.board().getId(), 1, 20, List.of("SNIPER"));
+        preparationService.distributeUnits(account.getId(), draft.board().getId(), 2, 50, List.of("MASTODONTE"));
+        preparationService.distributeUnits(account.getId(), draft.board().getId(), 3, 30, List.of("TIREUR"));
 
-        List<Unit> units = unitRepository.findByPlayerId(dto.getId());
+        List<Unit> units = unitRepository.findByPlayerId(draft.dto().getId());
         assertEquals(20, countBySectorAndClass(units, 1, UnitClass.SNIPER));
         assertEquals(50, countBySectorAndClass(units, 2, UnitClass.MASTODONTE));
         assertEquals(30, countBySectorAndClass(units, 3, UnitClass.TIREUR));
-        assertEquals(0, unitRepository.findByPlayerIdAndSectorIsNull(dto.getId()).size());
+        assertEquals(0, unitRepository.findByPlayerIdAndSectorIsNull(draft.dto().getId()).size());
     }
 
     @Test
     @DisplayName("Les placements de préparation peuvent être retirés puis réinitialisés")
     void preparationPlacementsCanBeUndoneAndReset() {
-        String boardName = "Annulation " + UUID.randomUUID();
-        Board board = boardService.saveBoard(board(boardName), boardName);
-        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
-                new AdminTemplatePlayerRequestDto("Annule" + UUID.randomUUID(), "ORKS",
-                        List.of(1, 2, 3), null));
-        User account = createAccount();
-        adminService.linkAccount(dto.getId(), account.getUsername());
+        Draft draft = createTemplate(List.of(1, 2, 3), "Annule", null);
+        User account = linkAccount(draft.dto());
+        Long boardId = draft.board().getId();
+        Player player = draft.player();
 
-        preparationService.placeCharacter(account.getId(), board.getId(), 1);
-        Player player = playerService.findById(dto.getId()).orElseThrow();
+        preparationService.placeCharacter(account.getId(), boardId, 1);
         Building building = player.getBuildings().getFirst();
-        preparationService.placeBuilding(account.getId(), board.getId(), building.getId(), 1);
-        preparationService.distributeUnits(account.getId(), board.getId(), 1, 20, List.of("SNIPER"));
-        preparationService.distributeUnits(account.getId(), board.getId(), 1, 10, List.of("TIREUR"));
-        preparationService.distributeUnits(account.getId(), board.getId(), 2, 50, List.of("MASTODONTE"));
-        preparationService.distributeUnits(account.getId(), board.getId(), 3, 20, List.of("TIREUR"));
+        preparationService.placeBuilding(account.getId(), boardId, building.getId(), 1);
+        preparationService.distributeUnits(account.getId(), boardId, 1, 20, List.of("SNIPER"));
+        preparationService.distributeUnits(account.getId(), boardId, 1, 10, List.of("TIREUR"));
+        preparationService.distributeUnits(account.getId(), boardId, 2, 50, List.of("MASTODONTE"));
+        preparationService.distributeUnits(account.getId(), boardId, 3, 20, List.of("TIREUR"));
 
-        preparationService.setReady(account.getId(), board.getId(), true);
-        assertTrue(playerService.findById(dto.getId()).orElseThrow().isPreparationReady());
+        preparationService.setReady(account.getId(), boardId, true);
+        assertTrue(playerService.findById(draft.dto().getId()).orElseThrow().isPreparationReady());
 
-        preparationService.unplaceCharacter(account.getId(), board.getId());
-        assertNull(gameCharacterService.getCharacter(dto.getId()).orElseThrow().getSector());
-        assertFalse(playerService.findById(dto.getId()).orElseThrow().isPreparationReady());
+        preparationService.unplaceCharacter(account.getId(), boardId);
+        assertNull(gameCharacterService.getCharacter(draft.dto().getId()).orElseThrow().getSector());
+        assertFalse(playerService.findById(draft.dto().getId()).orElseThrow().isPreparationReady());
 
-        preparationService.unplaceBuilding(account.getId(), board.getId(), building.getId());
+        preparationService.unplaceBuilding(account.getId(), boardId, building.getId());
         assertNull(building.getSector());
 
-        preparationService.unplaceUnits(account.getId(), board.getId(), 1, 10, List.of("TIREUR"));
-        List<Unit> units = unitRepository.findByPlayerId(dto.getId());
+        preparationService.unplaceUnits(account.getId(), boardId, 1, 10, List.of("TIREUR"));
+        List<Unit> units = unitRepository.findByPlayerId(draft.dto().getId());
         assertEquals(20, countBySectorAndClass(units, 1, UnitClass.SNIPER));
         assertEquals(0, countBySectorAndClass(units, 1, UnitClass.TIREUR));
-        assertEquals(10, unitRepository.findByPlayerIdAndSectorIsNull(dto.getId()).stream()
+        assertEquals(10, unitRepository.findByPlayerIdAndSectorIsNull(draft.dto().getId()).stream()
                 .filter(unit -> unit.getClasses().isEmpty())
                 .count());
 
-        preparationService.resetPlacement(account.getId(), board.getId());
-        assertNull(gameCharacterService.getCharacter(dto.getId()).orElseThrow().getSector());
-        assertTrue(playerService.findById(dto.getId()).orElseThrow().getBuildings().stream()
+        preparationService.resetPlacement(account.getId(), boardId);
+        assertNull(gameCharacterService.getCharacter(draft.dto().getId()).orElseThrow().getSector());
+        assertTrue(playerService.findById(draft.dto().getId()).orElseThrow().getBuildings().stream()
                 .allMatch(placedBuilding -> placedBuilding.getSector() == null));
-        assertTrue(unitRepository.findByPlayerId(dto.getId()).stream()
+        assertTrue(unitRepository.findByPlayerId(draft.dto().getId()).stream()
                 .allMatch(unit -> unit.getSector() == null && unit.getClasses().isEmpty()));
     }
 
     @Test
     @DisplayName("L'état de préparation expose les comptes, secteurs, placements et unités")
     void preparationStatusExposesReadiness() {
-        String boardName = "Statut " + UUID.randomUUID();
-        Board board = boardService.saveBoard(board(boardName), boardName);
-        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
-                new AdminTemplatePlayerRequestDto("Statut" + UUID.randomUUID(), "ORKS",
-                        List.of(1, 2), null));
-        User account = createAccount();
-        adminService.linkAccount(dto.getId(), account.getUsername());
+        Draft draft = createTemplate(List.of(1, 2), "Statut", null);
+        User account = linkAccount(draft.dto());
+        Long boardId = draft.board().getId();
+        Player player = draft.player();
 
-        preparationService.placeCharacter(account.getId(), board.getId(), 1);
-        Player player = playerService.findById(dto.getId()).orElseThrow();
+        preparationService.placeCharacter(account.getId(), boardId, 1);
         Building building = player.getBuildings().getFirst();
-        preparationService.placeBuilding(account.getId(), board.getId(), building.getId(), 1);
-        preparationService.distributeUnits(account.getId(), board.getId(), 1, 20, List.of("SNIPER"));
-        preparationService.setReady(account.getId(), board.getId(), true);
+        preparationService.placeBuilding(account.getId(), boardId, building.getId(), 1);
+        preparationService.distributeUnits(account.getId(), boardId, 1, 20, List.of("SNIPER"));
+        preparationService.setReady(account.getId(), boardId, true);
 
-        List<AdminPreparationStatusDto> statuses = gameSetupService.preparationStatus(board.getId());
+        List<AdminPreparationStatusDto> statuses = gameSetupService.preparationStatus(boardId);
         assertEquals(1, statuses.size());
         AdminPreparationStatusDto status = statuses.getFirst();
         assertTrue(status.accountLinked());
@@ -218,28 +212,21 @@ class GameSetupServiceTest {
     @Test
     @DisplayName("Le démarrage refuse un joueur sans compte relié")
     void startRefusesUnlinkedPlayer() {
-        String boardName = "Préparation " + UUID.randomUUID();
-        Board board = boardService.saveBoard(board(boardName), boardName);
-        gameSetupService.createTemplatePlayer(board.getId(),
-                new AdminTemplatePlayerRequestDto("SansCompte" + UUID.randomUUID(), "ORKS",
-                        List.of(1), null));
+        Draft draft = createTemplate(List.of(1), "SansCompte", null);
 
-        assertThrows(IllegalStateException.class, () -> gameSetupService.startGame(board.getId()));
+        assertThrows(IllegalStateException.class,
+                () -> gameSetupService.startGame(draft.board().getId()));
     }
 
     @Test
     @DisplayName("Le démarrage refuse un joueur sans secteur de départ")
     void startRefusesPlayerWithoutSector() {
-        String boardName = "Préparation " + UUID.randomUUID();
-        Board board = boardService.saveBoard(board(boardName), boardName);
-        PlayerDto dto = gameSetupService.createTemplatePlayer(board.getId(),
-                new AdminTemplatePlayerRequestDto("SansSecteur" + UUID.randomUUID(), "ORKS",
-                        List.of(1), null));
-        gameSetupService.assignStartingSectors(board.getId(), dto.getId(), List.of());
-        User account = createAccount();
-        adminService.linkAccount(dto.getId(), account.getUsername());
+        Draft draft = createTemplate(List.of(1), "SansSecteur", null);
+        gameSetupService.assignStartingSectors(draft.board().getId(), draft.dto().getId(), List.of());
+        linkAccount(draft.dto());
 
-        assertThrows(IllegalStateException.class, () -> gameSetupService.startGame(board.getId()));
+        assertThrows(IllegalStateException.class,
+                () -> gameSetupService.startGame(draft.board().getId()));
     }
 
     private static long countBySectorAndClass(List<Unit> units, int sectorNumber,
@@ -260,7 +247,7 @@ class GameSetupServiceTest {
         return user;
     }
 
-    private Board board(String name) {
+    private Board emptyBoard(String name) {
         Board board = new Board();
         board.setName(name);
         for (int number = 1; number <= 3; number++) {

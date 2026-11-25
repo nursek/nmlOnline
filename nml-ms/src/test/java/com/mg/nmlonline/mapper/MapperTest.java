@@ -1,11 +1,14 @@
 package com.mg.nmlonline.mapper;
 
 import com.mg.nmlonline.api.dto.BuildingDto;
+import com.mg.nmlonline.api.dto.MovementResolutionResultDto;
 import com.mg.nmlonline.api.dto.EquipmentDto;
 import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.VehicleBonusTarget;
+import com.mg.nmlonline.domain.model.movement.MovementResolutionResult;
+import com.mg.nmlonline.domain.model.movement.TransitCombatResult;
 import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.service.TurnService;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,9 +25,10 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-@DisplayName("Mappers — équipement et bâtiment")
+@DisplayName("Mappers — équipement, bâtiment et mouvement")
 class MapperTest {
 
     @Nested
@@ -124,23 +128,39 @@ class MapperTest {
         }
 
         @Test
-        @DisplayName("Banque 75 % et QG 25 % de la fortune du propriétaire")
+        @DisplayName("Banque 75 % et QG 25 % de la fortune ; sans propriétaire, aucune part")
         void shouldSplitOwnerWealthBetweenBankAndHeadquarters() {
             BuildingDto bank = buildingMapper.toDto(new Bank(1L), 10000.0);
             BuildingDto hq = buildingMapper.toDto(new Headquarters(1L), 10000.0);
 
             assertEquals(7500.0, bank.getStoredMoney());
             assertEquals(2500.0, hq.getStoredWealth());
+
+            BuildingDto withoutOwner = buildingMapper.toDto(new Bank(1L));
+            assertEquals(0.0, withoutOwner.getStoredMoney());
+            assertNull(buildingMapper.toDto(new Headquarters(1L)).getStoredWealth());
         }
+    }
+
+    @Nested
+    @DisplayName("MovementMapper — combat de transit")
+    class MovementTests {
 
         @Test
-        @DisplayName("Sans propriétaire : aucune part de fortune calculée")
-        void shouldNotComputeWealthWithoutOwner() {
-            BuildingDto bank = buildingMapper.toDto(new Bank(1L));
-            BuildingDto hq = buildingMapper.toDto(new Headquarters(1L));
+        @DisplayName("Le DTO conserve le nom et le type du véhicule engagé en transit")
+        void transitCombatKeepsReadableVehicle() {
+            MovementResolutionResult result = new MovementResolutionResult();
+            result.addTransitCombat(new TransitCombatResult(7, 3L, true, "Rhino", "VTT_BLINDE", 1L));
 
-            assertEquals(0.0, bank.getStoredMoney());
-            assertNull(hq.getStoredWealth());
+            MovementResolutionResultDto dto = new MovementMapper().toResolutionDto(result, 4, id -> null);
+
+            assertEquals(1, dto.getTransitCombats().size());
+            var transit = dto.getTransitCombats().getFirst();
+            assertEquals(7, transit.getSectorNumber());
+            assertEquals("Rhino", transit.getVehicleName());
+            assertEquals("VTT_BLINDE", transit.getVehicleType());
+            assertEquals(1L, transit.getOwnerPlayerId());
+            assertTrue(transit.isVehicleFired());
         }
     }
 }

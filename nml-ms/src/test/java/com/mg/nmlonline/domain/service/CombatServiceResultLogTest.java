@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoDatabaseReset;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
@@ -25,9 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EmbeddedPostgresTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("CombatService — bilan par joueur")
-class CombatServiceResultLogTest {
+class CombatServiceResultLogTest extends DemoDatabaseReset {
 
     @Autowired
     private CombatService combatService;

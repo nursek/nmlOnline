@@ -1,5 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoDatabaseReset;
+import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.battle.BattleLogEntry;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
+
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -27,13 +30,13 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 @EmbeddedPostgresTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("CombatService — expérience de combat")
-class CombatExperienceTest {
+class CombatExperienceTest extends DemoDatabaseReset {
 
     private Player newPlayer(String name) {
         Player player = new Player(name);
-        player.setBoardId(boardRepository.findAll().getFirst().getId());
+        player.setBoardId(DemoFixtures.mainBoardId(boardRepository));
         return player;
     }
 

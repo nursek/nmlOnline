@@ -1,21 +1,16 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoDatabaseReset;
 import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.domain.model.action.PlayerAction;
 import com.mg.nmlonline.domain.model.action.PlayerActionStatus;
 import com.mg.nmlonline.domain.model.action.PlayerActionType;
-import com.mg.nmlonline.infrastructure.repository.AllianceRepository;
-import com.mg.nmlonline.infrastructure.repository.AnnouncementRepository;
 import com.mg.nmlonline.infrastructure.repository.BattleReportRepository;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
-import com.mg.nmlonline.infrastructure.repository.MovementOrderRepository;
-import com.mg.nmlonline.infrastructure.repository.PendingCaptureRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerActionRepository;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
-import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,15 +27,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * une partie déjà entamée (sinon les ventes/ordres seraient rejoués sur un monde déjà joué).
  */
 @EmbeddedPostgresTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("Démo — deux tours joués depuis les fixtures")
-class DemoTurnsSeederTest {
+class DemoTurnsSeederTest extends DemoDatabaseReset {
 
     @Autowired
     private DemoTurnsSeeder seeder;
-
-    @Autowired
-    private TurnResolutionOrchestrator orchestrator;
 
     @Autowired
     private TurnService turnService;
@@ -57,46 +49,11 @@ class DemoTurnsSeederTest {
     @Autowired
     private PlayerRepository playerRepository;
 
-    private Long boardId() {
-        return DemoFixtures.mainBoardId(boardRepository);
-    }
-
     @Autowired
     private PlatformTransactionManager txManager;
 
-    @Autowired
-    private EntityManager em;
-
-    @Autowired
-    private MovementOrderRepository movementOrderRepository;
-
-    @Autowired
-    private AllianceRepository allianceRepository;
-
-    @Autowired
-    private AnnouncementRepository announcementRepository;
-
-    @Autowired
-    private PendingCaptureRepository pendingCaptureRepository;
-
-    // Base partagée par toute la suite : la démo committe ventes/ordres/rapports, il faut les purger.
-    @AfterEach
-    void cleanUpSharedDatabase() {
-        orchestrator.abort(boardId());
-        new TransactionTemplate(txManager).executeWithoutResult(status -> {
-            playerActionRepository.deleteAll();
-            movementOrderRepository.deleteAll();
-            battleReportRepository.deleteAll();
-            allianceRepository.deleteAll();
-            announcementRepository.deleteAll();
-            pendingCaptureRepository.deleteAll();
-            boardRepository.findAll().stream().findFirst().ifPresent(board -> {
-                board.setCurrentTurn(1);
-                board.setRevenueClaimedTurn(null);
-            });
-            em.flush();
-        });
-        turnService.invalidateTurnCache();
+    private Long boardId() {
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     @Test

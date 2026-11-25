@@ -1,7 +1,9 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.BuyEquipmentItemDto;
+import com.mg.nmlonline.api.dto.PlayerDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
+import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
 import com.mg.nmlonline.domain.model.equipment.Equipment;
 import com.mg.nmlonline.domain.model.equipment.EquipmentCategory;
@@ -9,6 +11,12 @@ import com.mg.nmlonline.domain.model.equipment.EquipmentStack;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.unit.UnitClass;
 import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
+import com.mg.nmlonline.infrastructure.repository.UserRepository;
+import com.mg.nmlonline.mapper.PlayerMapper;
+import jakarta.persistence.EntityManager;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +47,18 @@ class PlayerServiceTest {
     SectorService sectorService;
 
     @Mock
+    UserRepository userRepository;
+
+    @Mock
+    PlayerMapper playerMapper;
+
+    @Mock
+    BoardService boardService;
+
+    @Mock
+    EntityManager entityManager;
+
+    @Mock
     EquipmentService equipmentService;
 
     @Mock
@@ -57,6 +77,48 @@ class PlayerServiceTest {
         player = new Player("TestPlayer");
         player.setId(1L);
         player.getStats().setMoney(2000.0);
+    }
+
+    @Test
+    @DisplayName("La liste publique et la fiche par nom respectent la visibilité")
+    void summaryAndNameDtoFollowVisibility() {
+        Board board = new Board();
+        board.setId(BOARD_ID);
+        Player player = new Player("lurio");
+        player.setId(5L);
+        player.setUserId(10L);
+        PlayerDto summary = new PlayerDto();
+        PlayerDto full = new PlayerDto();
+        when(boardService.getBoardById(BOARD_ID)).thenReturn(Optional.of(board));
+        when(playerRepository.findByBoardIdOrderByNameAsc(eq(BOARD_ID), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(player)));
+        when(playerMapper.toSummaryDto(player, board)).thenReturn(summary);
+
+        var page = playerService.findAllSummaryDto(BOARD_ID, PageRequest.of(0, 10));
+        assertEquals(List.of(summary), page.getContent());
+
+        when(playerRepository.findByBoardIdAndName(BOARD_ID, "lurio")).thenReturn(Optional.of(player));
+        when(playerMapper.toDtoWithSectors(player, board)).thenReturn(full);
+        assertEquals(full, playerService.findByNameDto(BOARD_ID, "lurio", 10L).orElseThrow());
+        assertEquals(summary, playerService.findByNameDto(BOARD_ID, "lurio", 11L).orElseThrow());
+        assertEquals(summary, playerService.findByNameDto(BOARD_ID, "lurio", null).orElseThrow());
+        assertEquals(Optional.empty(), playerService.findByNameDto(BOARD_ID, "absent", 10L));
+    }
+
+    @Test
+    @DisplayName("La fiche par userId est complète ou vide")
+    void userDtoReturnsFullOrEmpty() {
+        Board board = new Board();
+        Player player = new Player("lurio");
+        PlayerDto full = new PlayerDto();
+        when(boardService.getBoardById(BOARD_ID)).thenReturn(Optional.of(board));
+        when(playerRepository.findByUserIdAndBoardId(10L, BOARD_ID)).thenReturn(Optional.of(player));
+        when(playerMapper.toDtoWithSectors(player, board)).thenReturn(full);
+
+        assertEquals(full, playerService.findByUserIdDto(10L, BOARD_ID).orElseThrow());
+
+        when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.empty());
+        assertEquals(Optional.empty(), playerService.findByUserIdDto(11L, BOARD_ID));
     }
 
     private BuyEquipmentItemDto item(String name, int quantity) {

@@ -1,5 +1,6 @@
 package com.mg.nmlonline;
 
+import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.config.TestDataInitializer;
 import com.mg.nmlonline.domain.model.player.Player;
@@ -15,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -40,18 +42,13 @@ class SecurityOwnershipTest {
     @Autowired
     private BoardRepository boardRepository;
 
-    private static final long TOKEN_TTL_MS = 3_600_000;
 
     private String tokenFor(String username) {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new IllegalStateException("Utilisateur de test introuvable : " + username);
-        }
-        return jwtService.generateToken(user, TOKEN_TTL_MS);
+        return DemoFixtures.tokenFor(userRepository, jwtService, username);
     }
 
     private Long boardId() {
-        return boardRepository.findAll().getFirst().getId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     private Long playerIdForUser(String username) {
@@ -67,35 +64,16 @@ class SecurityOwnershipTest {
     }
 
     @Test
-    void unauthenticated_getPlayers_returns401() throws Exception {
-        mockMvc.perform(get("/api/players"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void unauthenticated_getAdminPlayers_returns401() throws Exception {
-        mockMvc.perform(get("/api/admin/players"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void unauthenticated_getMyVehicles_returns401() throws Exception {
-        mockMvc.perform(get("/api/vehicles/my"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void unauthenticated_getCurrentTurn_returns401() throws Exception {
-        mockMvc.perform(get("/api/turn/current"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void unauthenticated_buyEquipment_returns401() throws Exception {
-        mockMvc.perform(post("/api/players/equipment/buy")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("[]"))
-                .andExpect(status().isUnauthorized());
+    void unauthenticatedRequestsReturn401() throws Exception {
+        assertAll(
+                () -> mockMvc.perform(get("/api/players")).andExpect(status().isUnauthorized()),
+                () -> mockMvc.perform(get("/api/admin/players")).andExpect(status().isUnauthorized()),
+                () -> mockMvc.perform(get("/api/vehicles/my")).andExpect(status().isUnauthorized()),
+                () -> mockMvc.perform(get("/api/turn/current")).andExpect(status().isUnauthorized()),
+                () -> mockMvc.perform(post("/api/players/equipment/buy")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("[]"))
+                        .andExpect(status().isUnauthorized()));
     }
 
     @Test

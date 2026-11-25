@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.AdminAllianceHistoryDto;
 import com.mg.nmlonline.api.dto.AllianceMeDto;
@@ -50,7 +51,7 @@ class AllianceServiceTest {
     private AllianceGraph allianceGraph;
 
     private Long boardId() {
-        return boardRepository.findAll().getFirst().getId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     private Player createPlayer(String name) {
@@ -183,6 +184,35 @@ class AllianceServiceTest {
                 requester.getUserId(), boardId(), ProposalKind.RUPTURE, accepter.getId());
         assertThrows(IllegalStateException.class,
                 () -> allianceService.accept(accepter.getUserId(), boardId(), rupture.getId()));
+    }
+
+    @Test
+    @DisplayName("Refus et retrait : seuls le destinataire et l'auteur peuvent clore une proposition")
+    void declineAndWithdrawAreReservedToTheirOwner() {
+        Player proposer = createPlayer("PropRefus" + USER_SEQ.get());
+        Player target = createPlayer("CibleRefus" + USER_SEQ.get());
+        AllianceProposalDto proposal = allianceService.propose(
+                proposer.getUserId(), boardId(), ProposalKind.ALLIANCE, target.getId());
+
+        assertThrows(SecurityException.class,
+                () -> allianceService.withdraw(target.getUserId(), boardId(), proposal.getId()));
+        assertThrows(SecurityException.class,
+                () -> allianceService.decline(proposer.getUserId(), boardId(), proposal.getId()));
+
+        allianceService.decline(target.getUserId(), boardId(), proposal.getId());
+        assertEquals("DECLINED", proposalStatus(proposal.getId()));
+
+        AllianceProposalDto second = allianceService.propose(
+                proposer.getUserId(), boardId(), ProposalKind.ALLIANCE, target.getId());
+        allianceService.withdraw(proposer.getUserId(), boardId(), second.getId());
+        assertEquals("WITHDRAWN", proposalStatus(second.getId()));
+    }
+
+    private String proposalStatus(Long proposalId) {
+        return allianceService.getHistory(boardId()).getProposals().stream()
+                .filter(candidate -> candidate.getId().equals(proposalId))
+                .findFirst().orElseThrow()
+                .getStatus();
     }
 
     @Test

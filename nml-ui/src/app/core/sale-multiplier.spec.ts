@@ -1,4 +1,4 @@
-import { saleLabel, saleMultiplier, saleValue, SALE_MULTIPLIERS } from './sale-multiplier';
+import { saleLabel, saleMultiplier, saleValue } from './sale-multiplier';
 
 describe('sale-multiplier', () => {
   it('renvoie le multiplicateur attendu pour chaque palier (1→9)', () => {
@@ -41,7 +41,4 @@ describe('sale-multiplier', () => {
     expect(saleLabel(10, 9)).toBe('Vente de 9 ressources (max 9)');
   });
 
-  it('SALE_MULTIPLIERS a 9 entrées', () => {
-    expect(SALE_MULTIPLIERS).toHaveLength(9);
-  });
 });

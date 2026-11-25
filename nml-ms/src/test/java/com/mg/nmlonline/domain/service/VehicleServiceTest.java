@@ -1,8 +1,11 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.api.dto.BuyVehicleRequestDto;
+import com.mg.nmlonline.api.dto.VehicleDto;
+import com.mg.nmlonline.api.dto.VehicleTypeDto;
 import com.mg.nmlonline.domain.exception.InsufficientFundsException;
 import com.mg.nmlonline.domain.model.player.Player;
+import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.sector.Sector;
 import com.mg.nmlonline.domain.model.vehicle.Vehicle;
 import com.mg.nmlonline.domain.model.vehicle.VehicleType;
@@ -11,6 +14,7 @@ import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.SectorRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import com.mg.nmlonline.mapper.MovementMapper;
+import com.mg.nmlonline.mapper.VehicleMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -61,6 +65,9 @@ class VehicleServiceTest {
     VehicleCrewService vehicleCrewService;
 
     @Mock
+    VehicleMapper vehicleMapper;
+
+    @Mock
     MovementMapper movementMapper;
 
     @Mock
@@ -84,6 +91,35 @@ class VehicleServiceTest {
         dto.setVehicleType(type);
         dto.setQuantity(quantity);
         return dto;
+    }
+
+    @Test
+    @DisplayName("La vue des véhicules du joueur applique sa race")
+    void getPlayerVehiclesDtoMapsPlayerRace() {
+        when(playerRepository.findByUserIdAndBoardId(10L, BOARD_ID)).thenReturn(Optional.of(player));
+        Vehicle vehicle = new Vehicle(VehicleType.VTT_LEGER, 1L);
+        vehicle.setId(5L);
+        when(vehicleRepository.findByPlayerId(1L)).thenReturn(List.of(vehicle));
+        when(vehicleMapper.toDto(vehicle, null)).thenReturn(new VehicleDto());
+
+        assertEquals(1, vehicleService.getPlayerVehiclesDto(10L, BOARD_ID).size());
+        verify(vehicleMapper).toDto(vehicle, null);
+    }
+
+    @Test
+    @DisplayName("Le catalogue des types de véhicules suit la race du joueur, ou null sans compte")
+    void getVehicleTypesDtoUsesPlayerRace() {
+        player.setRace(PlayerRace.ORKS);
+        when(playerRepository.findByUserIdAndBoardId(10L, BOARD_ID)).thenReturn(Optional.of(player));
+        when(vehicleMapper.vehicleTypeToDto(any(), eq(PlayerRace.ORKS))).thenReturn(new VehicleTypeDto());
+
+        assertEquals(VehicleType.values().length,
+                vehicleService.getVehicleTypesDto(10L, BOARD_ID).size());
+
+        when(playerRepository.findByUserIdAndBoardId(10L, BOARD_ID)).thenReturn(Optional.empty());
+        when(vehicleMapper.vehicleTypeToDto(any(), isNull())).thenReturn(new VehicleTypeDto());
+        assertEquals(VehicleType.values().length,
+                vehicleService.getVehicleTypesDto(10L, BOARD_ID).size());
     }
 
     @Nested

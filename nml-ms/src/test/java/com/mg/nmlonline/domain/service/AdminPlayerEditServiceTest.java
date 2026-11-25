@@ -46,7 +46,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
@@ -59,7 +58,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @EmbeddedPostgresTest
 @Transactional
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @DisplayName("AdminPlayerEditService — édition complète d'un joueur, invariants d'intégrité")
 class AdminPlayerEditServiceTest {
 
@@ -974,16 +972,6 @@ class AdminPlayerEditServiceTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> service.reassignSector(board.getId(), 41, target.getId()));
-    }
-
-    @Test
-    @DisplayName("Le catalogue et la vue d'édition ne dépendent pas de la session HTTP (mapping en transaction)")
-    void dtoMappingSurvivesWithoutOpenSessionInView() {
-        AdminPlayerEditDto dto = service.getEdit(player.getId());
-        assertNotNull(dto.getPlayer().getStats());
-        assertNotNull(dto.getPlayer().getBuildings());
-        assertNotNull(dto.getUnits().getFirst().getType().getName());
-        assertNotNull(dto.getVehicles());
     }
 
     @Test

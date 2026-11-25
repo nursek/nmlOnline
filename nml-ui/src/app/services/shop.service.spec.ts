@@ -300,6 +300,82 @@ describe('ShopService (carts + signals)', () => {
     expect(shop.cart()).toEqual([]);
   });
 
+  it('achète le panier véhicules en lot, le vide et recharge les véhicules', async () => {
+    const shop = getShop();
+    const http = TestBed.inject(HttpTestingController);
+    const player = TestBed.inject(PlayerService) as unknown as {
+      loadVehicles: jest.Mock;
+    };
+    const vt = {
+      name: 'Tank',
+      displayName: 'Char',
+      cost: 50,
+      basePdf: 0,
+      baseDefense: 0,
+      speed: 1,
+      capacity: 4,
+      resistance: 0,
+      firesInTransit: false,
+      aerial: false,
+      availableFromTurn: 4,
+    };
+    shop.addVehicleToCart(vt, 2);
+
+    const promise = shop.checkoutVehicles();
+    const req = http.expectOne('/api/vehicles/buy-batch');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ items: [{ vehicleType: 'Tank', quantity: 2 }] });
+    req.flush([{ id: 1 }]);
+
+    await expect(promise).resolves.toEqual([{ id: 1 }]);
+    expect(shop.vehicleCart()).toEqual([]);
+    expect(player.loadVehicles).toHaveBeenCalled();
+  });
+
+  it('mappe le refus 402 du panier véhicules', async () => {
+    const shop = getShop();
+    const http = TestBed.inject(HttpTestingController);
+    shop.addVehicleToCart(
+      {
+        name: 'Tank',
+        displayName: 'Char',
+        cost: 50,
+        basePdf: 0,
+        baseDefense: 0,
+        speed: 1,
+        capacity: 4,
+        resistance: 0,
+        firesInTransit: false,
+        aerial: false,
+        availableFromTurn: 4,
+      },
+      1,
+    );
+
+    const promise = shop.checkoutVehicles();
+    http
+      .expectOne('/api/vehicles/buy-batch')
+      .flush({ detail: 'Fonds insuffisants' }, { status: 402, statusText: 'Payment Required' });
+
+    await expect(promise).rejects.toThrow('Fonds insuffisants pour acheter ces véhicules');
+    expect(shop.error()).toBe('Fonds insuffisants pour acheter ces véhicules');
+    expect(shop.vehicleCart()).toHaveLength(1);
+  });
+
+  it('vend le panier de ressources et le vide', async () => {
+    const shop = getShop();
+    const http = TestBed.inject(HttpTestingController);
+    shop.addToSellCart({ id: 7, name: 'Bois', quantity: 5, baseValue: 2 }, 3);
+
+    const promise = shop.checkoutSellCart();
+    const req = http.expectOne('/api/players/resources/sell-batch');
+    expect(req.request.body).toEqual({ items: [{ playerResourceId: 7, quantity: 3 }] });
+    req.flush({ message: 'ok', totalValue: 900, sales: [] });
+
+    await expect(promise).resolves.toBe(900);
+    expect(shop.sellCart()).toEqual([]);
+  });
+
   describe('en tant qu’admin', () => {
     beforeEach(() => {
       TestBed.configureTestingModule({

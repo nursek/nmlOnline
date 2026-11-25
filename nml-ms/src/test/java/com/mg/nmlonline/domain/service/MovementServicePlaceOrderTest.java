@@ -189,6 +189,15 @@ class MovementServicePlaceOrderTest {
     }
 
     @Test
+    @DisplayName("Refuse une route non adjacente (téléportation)")
+    void shouldRejectNonAdjacentRoute() {
+        IllegalArgumentException erreur = assertThrows(IllegalArgumentException.class, () ->
+                service.placeFootOrder(JOUEUR, 1, List.of(UNITE_1_ID), List.of(1, 3), board));
+
+        assertTrue(erreur.getMessage().contains("non adjacents"));
+    }
+
+    @Test
     @DisplayName("Un véhicule sans pilote ne peut pas recevoir d'ordre")
     void shouldRejectVehicleWithoutPilot() {
         vehicule.removePilot();

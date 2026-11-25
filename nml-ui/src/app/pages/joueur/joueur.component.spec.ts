@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
 import { JoueurComponent } from './joueur.component';
@@ -13,6 +14,9 @@ import { ApiService } from '../../services/api.service';
 import { AllianceComponent } from '../alliance/alliance.component';
 import { ExchangeDialogComponent } from './exchange-dialog.component';
 import { Vehicle, Sector } from '../../models';
+import { UnitDetailDialogComponent } from './unit-detail-dialog.component';
+import { SellResourceDialogComponent } from './sell-resource-dialog.component';
+import { AutoEquipDialogComponent } from './auto-equip-dialog.component';
 
 function vehicle(id: number, playerId = 1): Vehicle {
   return {
@@ -58,6 +62,7 @@ function sector(): Sector {
 describe('JoueurComponent — déploiement véhicule', () => {
   let placeVehicleSpy: jest.SpyInstance;
   let openDialogSpy: jest.Mock;
+  const snackBar = { open: jest.fn() };
   const routeParams = new BehaviorSubject(convertToParamMap({}));
 
   beforeEach(async () => {
@@ -72,6 +77,7 @@ describe('JoueurComponent — déploiement véhicule', () => {
           provide: MatDialog,
           useValue: { open: openDialogSpy },
         },
+        { provide: MatSnackBar, useValue: snackBar },
         {
           provide: ActivatedRoute,
           useValue: { queryParamMap: routeParams.asObservable() },
@@ -116,6 +122,8 @@ describe('JoueurComponent — déploiement véhicule', () => {
             loadCurrentTurn: jest.fn(),
             placeVehicle: placeVehicleSpy,
             placeUnit: jest.fn().mockResolvedValue(null),
+            setVehicleCrew: jest.fn().mockResolvedValue(vehicle(1)),
+            moveBuilding: jest.fn().mockResolvedValue(true),
           },
         },
         {
@@ -130,8 +138,9 @@ describe('JoueurComponent — déploiement véhicule', () => {
             error: () => null,
             hasActions: () => false,
             loadActions: jest.fn(),
-            undoFrom: jest.fn(),
-            undoAll: jest.fn(),
+            undoFrom: jest.fn().mockResolvedValue(true),
+            undoAll: jest.fn().mockResolvedValue(true),
+            harvest: jest.fn().mockResolvedValue(true),
           },
         },
         { provide: ApiService, useValue: {} },
@@ -144,6 +153,92 @@ describe('JoueurComponent — déploiement véhicule', () => {
         add: { imports: [] },
       })
       .compileComponents();
+  });
+
+  it('ouvre le détail d’unité, la vente, l’échange et l’auto-équipement', () => {
+    const fixture = TestBed.createComponent(JoueurComponent);
+    fixture.detectChanges();
+    const comp = fixture.componentInstance;
+    const unit = { id: 1, number: 1 } as never;
+    const s = sector();
+
+    comp.openUnitDialog(unit, s);
+    expect(openDialogSpy).toHaveBeenCalledWith(
+      UnitDetailDialogComponent,
+      expect.objectContaining({ data: { unit, sectorNumber: 5, sectorName: 'Quartier 5' } }),
+    );
+
+    comp.openSellDialog({ id: 7, name: 'Bois', quantity: 2 } as never);
+    expect(openDialogSpy).toHaveBeenCalledWith(SellResourceDialogComponent, expect.anything());
+
+    comp.openExchangeDialog();
+    expect(openDialogSpy).toHaveBeenCalledWith(
+      ExchangeDialogComponent,
+      expect.objectContaining({ data: expect.objectContaining({ playerId: 1 }) }),
+    );
+
+    comp.openAutoEquip();
+    expect(openDialogSpy).toHaveBeenCalledWith(AutoEquipDialogComponent, expect.anything());
+
+    comp.openCacheEquipments(null);
+    expect(openDialogSpy).toHaveBeenCalledTimes(4);
+  });
+
+  it('déplace un bâtiment après sélection du secteur', async () => {
+    const fixture = TestBed.createComponent(JoueurComponent);
+    fixture.detectChanges();
+    const comp = fixture.componentInstance;
+    const open = jest.spyOn(
+      (comp as unknown as { snackBar: { open: () => void } }).snackBar,
+      'open',
+    );
+
+    comp.openBuildingMove({ id: 9, displayName: 'Banque' } as never);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(open).toHaveBeenCalledWith('Bâtiment déplacé', 'Fermer', { duration: 3000 });
+  });
+
+  it('met à jour puis vide l’équipage d’un véhicule', async () => {
+    openDialogSpy.mockReturnValueOnce({ afterClosed: () => of({ pilotId: 2, passengerIds: [3] }) });
+    const fixture = TestBed.createComponent(JoueurComponent);
+    fixture.detectChanges();
+    const comp = fixture.componentInstance;
+    const open = jest.spyOn(
+      (comp as unknown as { snackBar: { open: () => void } }).snackBar,
+      'open',
+    );
+    const v = vehicle(1);
+    const s = sector();
+
+    comp.openVehicleCrew(v, s);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(open).toHaveBeenCalledWith('Équipage mis à jour', 'Fermer', { duration: 3000 });
+
+    comp.clearVehicleCrew(v);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(open).toHaveBeenCalledWith('Véhicule vidé', 'Fermer', { duration: 3000 });
+  });
+
+  it('récolte seulement avec des secteurs, annule les actions', async () => {
+    const fixture = TestBed.createComponent(JoueurComponent);
+    fixture.detectChanges();
+    const comp = fixture.componentInstance;
+    const open = jest.spyOn(
+      (comp as unknown as { snackBar: { open: () => void } }).snackBar,
+      'open',
+    );
+
+    comp.harvest('HARVEST_MONEY', []);
+    expect(open).not.toHaveBeenCalled();
+
+    comp.harvest('HARVEST_MONEY', [5]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(open).toHaveBeenCalledWith('Récolte effectuée', 'Fermer', { duration: 3000 });
+
+    comp.undoAll();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(open).toHaveBeenCalledWith('Actions annulées', 'Fermer', { duration: 3000 });
   });
 
   it('appelle placeVehicle quand la modale renvoie un secteur', () => {

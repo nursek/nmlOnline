@@ -37,14 +37,17 @@ class MovementAdminServiceTest {
     @Autowired
     private BoardRepository boardRepository;
 
+    @Autowired
+    private TurnLock turnLock;
+
     private Long boardId() {
         return DemoFixtures.mainBoardId(boardRepository);
     }
 
     // destination inexistante (99999) pour bloquer l'ordre de façon déterministe.
     @Test
-    @DisplayName("preview ne persiste pas, resolve mute le statut de l'ordre")
-    void previewDoesNotPersistButResolveDoes() {
+    @DisplayName("preview ne persiste pas le statut de l'ordre")
+    void previewDoesNotPersist() {
         int turn = turnService.getCurrentTurn(boardId());
 
         MovementOrder order = MovementOrder.createFootOrder(
@@ -64,10 +67,42 @@ class MovementAdminServiceTest {
             assertTrue(
                     preview.getBlocked().stream().anyMatch(o -> orderId.equals(o.getId())),
                     "L'aperçu doit lister l'ordre bloqué dans le compte-rendu");
-
-            movementOrderRepository.deleteById(orderId);
         } finally {
             movementOrderRepository.deleteById(orderId);
+        }
+    }
+
+    @Test
+    @DisplayName("getOrdersForTurn filtre par statut")
+    void getOrdersForTurnFiltersByStatus() {
+        int turn = turnService.getCurrentTurn(boardId());
+        MovementOrder order = MovementOrder.createFootOrder(
+                99L, boardId(), turn, List.of(999L), List.of(2, 99999));
+        MovementOrder saved = movementOrderRepository.save(order);
+        final Long orderId = saved.getId();
+
+        try {
+            assertTrue(movementAdminService.getOrdersForTurn(boardId(), turn, MovementStatus.PENDING)
+                            .stream().anyMatch(dto -> orderId.equals(dto.getId())),
+                    "L'ordre PENDING doit être listé");
+            assertFalse(movementAdminService.getOrdersForTurn(boardId(), turn, MovementStatus.RESOLVED)
+                            .stream().anyMatch(dto -> orderId.equals(dto.getId())),
+                    "L'ordre PENDING ne doit pas apparaître dans les RESOLVED");
+        } finally {
+            movementOrderRepository.deleteById(orderId);
+        }
+    }
+
+    @Test
+    @DisplayName("resolveMovements refuse une résolution déjà verrouillée")
+    void resolveMovementsRejectsWhenLocked() {
+        int turn = turnService.getCurrentTurn(boardId());
+        assertTrue(turnLock.tryAcquire(boardId()));
+        try {
+            assertThrows(IllegalStateException.class,
+                    () -> movementAdminService.resolveMovements(boardId(), turn));
+        } finally {
+            turnLock.release(boardId());
         }
     }
 

@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.BuyEquipmentItemDto;
 import com.mg.nmlonline.api.dto.BuyVehicleRequestDto;
@@ -24,6 +25,7 @@ import com.mg.nmlonline.infrastructure.repository.PlayerRepository;
 import com.mg.nmlonline.infrastructure.repository.UserRepository;
 import com.mg.nmlonline.infrastructure.repository.VehicleRepository;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -128,6 +130,58 @@ class PlayerActionServiceTest {
                 "Aucun exemplaire ne doit rester dans les caches après annulation");
     }
 
+
+
+    @Test
+    @DisplayName("undoAll annule tout le journal actif du tour et rembourse")
+    void undoAllClearsTheTurnJournal() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        double moneyBefore = fund(player);
+        Equipment eq = firearmFor(UnitClass.TIREUR);
+        BuyEquipmentItemDto item = new BuyEquipmentItemDto();
+        item.setName(eq.getName());
+        item.setQuantity(1);
+        playerService.buyEquipments(player.getId(), List.of(item));
+        assertFalse(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty());
+
+        playerActionService.undoAll(player.getUserId(), boardId());
+
+        assertTrue(playerActionService.getCurrentTurnActions(player.getUserId(), boardId()).isEmpty());
+        assertEquals(moneyBefore, playerRepository.findById(player.getId())
+                .orElseThrow().getStats().getMoney(), 0.001);
+    }
+    @Test
+    @DisplayName("Annulation : action inconnue → 404")
+    void undoRejectsUnknownAction() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+
+        assertThrows(EntityNotFoundException.class,
+                () -> playerActionService.undoFrom(player.getUserId(), boardId(), 999_999L));
+    }
+
+    @Test
+    @DisplayName("Annulation : action d'un tour terminé → refus")
+    void undoRejectsActionFromPreviousTurn() {
+        Player player = playerOfTestUser(TestDataInitializer.USER_1);
+        double moneyBefore = fund(player);
+        Equipment eq = firearmFor(UnitClass.TIREUR);
+        BuyEquipmentItemDto item = new BuyEquipmentItemDto();
+        item.setName(eq.getName());
+        item.setQuantity(1);
+        playerService.buyEquipments(player.getId(), List.of(item));
+        Long actionId = playerActionService.getCurrentTurnActions(player.getUserId(), boardId())
+                .getFirst().getId();
+
+        Board board = boardService.getAllBoards().getFirst();
+        int turn = board.getCurrentTurn();
+        setTurn(board, turn + 1);
+
+        assertThrows(PlayerActionUndoException.class,
+                () -> playerActionService.undoFrom(player.getUserId(), boardId(), actionId));
+        assertEquals(moneyBefore - eq.getCost(), playerRepository.findById(player.getId())
+                .orElseThrow().getStats().getMoney(), 0.001);
+        setTurn(board, turn);
+    }
     @Test
     @DisplayName("Achat + placement véhicule : l'annulation en cascade retire le véhicule et rembourse")
     void undoVehicleBuyCascadesOverPlacement() {
@@ -529,12 +583,7 @@ class PlayerActionServiceTest {
     }
 
     private Player playerOfTestUser(String username) {
-        User user = userRepository.findByUsername(username);
-        assertNotNull(user, "L'utilisateur de test " + username + " doit exister");
-        Player player = playerService.findByUserId(user.getId(),
-                boardService.getAllBoards().getFirst().getId());
-        assertNotNull(player, "Le joueur lié à " + username + " doit exister");
-        return player;
+        return DemoFixtures.playerOfTestUser(userRepository, playerService, boardService, username);
     }
 
     private Sector findNeutralSector(Board board) {

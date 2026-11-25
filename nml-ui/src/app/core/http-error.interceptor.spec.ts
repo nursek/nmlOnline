@@ -3,6 +3,7 @@ import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { firstValueFrom } from 'rxjs';
 import { httpErrorInterceptor } from './http-error.interceptor';
+import { APP_CONSTANTS } from './constants';
 import { PlayerStatusService } from '../services/player-status.service';
 import { PlayerService } from '../services/player.service';
 
@@ -56,6 +57,35 @@ describe('httpErrorInterceptor (lecture seule)', () => {
     expect(loadCurrent).not.toHaveBeenCalled();
   });
 
+
+  it('rejoue une requête GET après une erreur 5xx', () => {
+    jest.useFakeTimers();
+    setup(true);
+    let received: unknown;
+    TestBed.inject(HttpClient)
+      .get('/api/ready')
+      .subscribe((value) => (received = value));
+    const backend = TestBed.inject(HttpTestingController);
+
+    backend.expectOne('/api/ready').flush(null, { status: 503, statusText: 'Indisponible' });
+    jest.advanceTimersByTime(APP_CONSTANTS.HTTP_RETRY_DELAY_MS);
+    const retried = backend.expectOne('/api/ready');
+    expect(retried.request.method).toBe('GET');
+    retried.flush({ ready: true });
+
+    expect(received).toEqual({ ready: true });
+    jest.useRealTimers();
+  });
+
+  it('ne rejoue pas une requête GET en 4xx', async () => {
+    setup(true);
+    const request = firstValueFrom(TestBed.inject(HttpClient).get('/api/absent'));
+    const backend = TestBed.inject(HttpTestingController);
+
+    backend.expectOne('/api/absent').flush(null, { status: 404, statusText: 'Absent' });
+    await expect(request).rejects.toBeTruthy();
+    backend.expectNone('/api/absent');
+  });
   it('ignore les autres erreurs', async () => {
     setup(true);
 

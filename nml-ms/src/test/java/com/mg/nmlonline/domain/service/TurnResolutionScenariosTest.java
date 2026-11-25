@@ -1,5 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoDatabaseReset;
+import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.NotificationFeedDto;
 import com.mg.nmlonline.api.dto.PendingConflictDto;
@@ -41,8 +43,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -56,12 +58,12 @@ import static org.junit.jupiter.api.Assertions.*;
  * Scénarios de fin de tour sur PostgreSQL réel, orchestrateur + seeder : conflit résolu manuellement,
  * vainqueur d'une bataille intermédiaire, anéantissement mutuel, cascades FK (Phase 2/3), impasse
  * mexicaine 3 camps, scénario Lurio→Cegorach 2 hops, catalogue des arènes de combat et leurs
- * résolutions de bout en bout. Déterministe (pas d'évasion), un contexte Spring neuf par test.
+ * résolutions de bout en bout. Déterministe (pas d'évasion), fixtures réinitialisées avant chaque test.
  */
 @EmbeddedPostgresTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("Résolution de tour — scénarios de bout en bout")
-class TurnResolutionScenariosTest {
+class TurnResolutionScenariosTest extends DemoDatabaseReset {
 
     @Autowired
     private TurnResolutionScenarioSeeder seeder;
@@ -79,7 +81,7 @@ class TurnResolutionScenariosTest {
     private BoardRepository boardRepository;
 
     private Long boardId() {
-        return boardRepository.findAll().getFirst().getId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     @Autowired

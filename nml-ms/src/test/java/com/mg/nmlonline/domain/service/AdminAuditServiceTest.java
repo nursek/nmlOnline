@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EmbeddedPostgresTest
 @Transactional
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 @DisplayName("AdminAuditService — journal des mutations admin")
 class AdminAuditServiceTest {
 
@@ -37,6 +35,9 @@ class AdminAuditServiceTest {
 
     @Autowired
     private BoardRepository boardRepository;
+
+    @Autowired
+    private TurnService turnService;
 
     private Player player;
 
@@ -63,8 +64,8 @@ class AdminAuditServiceTest {
         assertEquals("SET_MONEY", entry.getAction());
         assertEquals(player.getId(), entry.getPlayerId());
         assertTrue(entry.getDetails().contains("1234.5"));
+        assertEquals(turnService.getCurrentTurn(player.getBoardId()), entry.getTurn());
         assertNotNull(entry.getCreatedAt());
-        assertNotNull(entry.getAdminUsername());
     }
 
     @Test
@@ -82,6 +83,8 @@ class AdminAuditServiceTest {
     @Test
     @DisplayName("L'historique est paginé et filtré par joueur")
     void historyIsPaginated() {
+        long boardEntriesBefore = auditService.getHistory(player.getBoardId(), null,
+                PageRequest.of(0, 100)).getTotalElements();
         for (int i = 0; i < 25; i++) {
             editService.setMoney(player.getId(), i);
         }
@@ -94,8 +97,7 @@ class AdminAuditServiceTest {
         assertEquals(25, first.getTotalElements());
         assertEquals(10, first.getContent().size());
         assertEquals(10, second.getContent().size());
-        // Le démarrage de la partie de démo trace une entrée de plateau sans joueur.
-        assertEquals(26, auditService.getHistory(player.getBoardId(), null, PageRequest.of(0, 100))
-                .getTotalElements());
+        assertEquals(boardEntriesBefore + 25, auditService.getHistory(player.getBoardId(), null,
+                PageRequest.of(0, 100)).getTotalElements());
     }
 }

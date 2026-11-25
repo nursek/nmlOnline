@@ -345,6 +345,47 @@ class BattleTest {
 
             assertTrue(logContains("résistance 50 % (100 → 50)"));
             assertTrue(logContains("défense 250 → 200"));
+            assertEquals(190.0, tank.getDefense(), "Le tir de 50 PdF puis la riposte ATK du LARBIN");
+        }
+
+        @Test
+        @DisplayName("Bonus de trahison : +100 % double les frappes du camp qui en bénéficie")
+        void betrayalBonusDoublesStrikes() {
+            battle.setAttackerBonusPercent(100);
+            Unit striker = brute();
+            striker.setNumber(1);
+            Headquarters headquarters = new Headquarters(1L);
+            headquarters.setPlayerId(2L);
+            headquarters.setDefense(400);
+            headquarters.setAttack(0);
+
+            battle.classicCombatConfiguration(attacker, defender,
+                    new ArrayList<>(List.of(striker)),
+                    new ArrayList<>(List.of(headquarters)));
+
+            assertEquals(200.0, headquarters.getDefense(), "100 ATK × 2 = 200");
+
+            Unit plainAttacker = brute();
+            Battle referenceBattle = new Battle();
+            referenceBattle.setRandomSource(() -> 100);
+            referenceBattle.classicCombatConfiguration(attacker, defender,
+                    new ArrayList<>(List.of(plainAttacker)),
+                    new ArrayList<>(List.of(larbin())));
+            double plainDamage = referenceBattle.getParticipation().get(plainAttacker).damageTaken();
+
+            Battle defendingBattle = new Battle();
+            defendingBattle.setRandomSource(() -> 100);
+            defendingBattle.setDefenderBonusPercent(100);
+            Unit boostedAttacker = brute();
+
+            defendingBattle.classicCombatConfiguration(attacker, defender,
+                    new ArrayList<>(List.of(boostedAttacker)),
+                    new ArrayList<>(List.of(larbin())));
+
+            assertEquals(2 * plainDamage,
+                    defendingBattle.getParticipation().get(boostedAttacker).damageTaken(), 1e-9,
+                    "Le bonus de camp double la riposte du défenseur");
+            assertTrue(boostedAttacker.isInjured());
         }
 
         @Test

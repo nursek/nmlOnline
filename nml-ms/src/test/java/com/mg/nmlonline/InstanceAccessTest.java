@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -64,7 +65,7 @@ class InstanceAccessTest {
     @Test
     @DisplayName("un compte est joueur sur une partie et MJ sur une autre, sans fuite")
     void playerOnTwoInstancesIsAdminOnOne() throws Exception {
-        Long firstBoardId = boardRepository.findAll().getFirst().getId();
+        Long firstBoardId = DemoFixtures.mainBoardId(boardRepository);
         secondBoard = createBoard("Partie isolée");
         Long secondBoardId = secondBoard.getId();
 
@@ -72,7 +73,7 @@ class InstanceAccessTest {
         Long userId = gameMaster.getId();
         Player onFirst = createPlayer("JoueurPartie1", userId, firstBoardId);
         boardAdminRepository.save(new BoardAdmin(secondBoardId, userId));
-        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+        String token = DemoFixtures.tokenFor(gameMaster, jwtService);
 
         mockMvc.perform(get("/api/instances").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
@@ -99,10 +100,10 @@ class InstanceAccessTest {
     @Test
     @DisplayName("un admin plateforme délègue un MJ à une seule partie")
     void platformAdminDelegatesGameMaster() throws Exception {
-        Long boardId = boardRepository.findAll().getFirst().getId();
+        Long boardId = DemoFixtures.mainBoardId(boardRepository);
         gameMaster = createUser("mj_delegue");
-        String adminToken = jwtService.generateToken(
-                userRepository.findByUsername(TestDataInitializer.ADMIN), 3_600_000L);
+        String adminToken = DemoFixtures.tokenFor(
+                userRepository.findByUsername(TestDataInitializer.ADMIN), jwtService);
 
         mockMvc.perform(put("/api/admin/instances/{boardId}/admins/{userId}", boardId, gameMaster.getId())
                         .header("Authorization", "Bearer " + adminToken)
@@ -110,7 +111,7 @@ class InstanceAccessTest {
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/admin/players")
-                        .header("Authorization", "Bearer " + jwtService.generateToken(gameMaster, 3_600_000L))
+                        .header("Authorization", "Bearer " + DemoFixtures.tokenFor(gameMaster, jwtService))
                         .header("X-Board-Id", String.valueOf(boardId)))
                 .andExpect(status().isOk());
 
@@ -120,7 +121,7 @@ class InstanceAccessTest {
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/admin/players")
-                        .header("Authorization", "Bearer " + jwtService.generateToken(gameMaster, 3_600_000L))
+                        .header("Authorization", "Bearer " + DemoFixtures.tokenFor(gameMaster, jwtService))
                         .header("X-Board-Id", String.valueOf(boardId)))
                 .andExpect(status().isForbidden());
     }
@@ -128,11 +129,11 @@ class InstanceAccessTest {
     @Test
     @DisplayName("une partie ne soigne ni ne liste les joueurs de l autre")
     void boardsDoNotLeakPlayers() throws Exception {
-        Long firstBoardId = boardRepository.findAll().getFirst().getId();
+        Long firstBoardId = DemoFixtures.mainBoardId(boardRepository);
         secondBoard = createBoard("Partie étanche");
         User reader = userRepository.findByUsername(TestDataInitializer.USER_1);
         Player onlyOnSecond = createPlayer("JoueurEtanche", reader.getId(), secondBoard.getId());
-        String token = jwtService.generateToken(reader, 3_600_000L);
+        String token = DemoFixtures.tokenFor(reader, jwtService);
 
         mockMvc.perform(get("/api/players")
                         .header("Authorization", "Bearer " + token)
@@ -150,14 +151,23 @@ class InstanceAccessTest {
     }
 
     @Test
-    @DisplayName("sans en-tête : 400 avec plusieurs parties, 400 si invalide, 404 si inconnue")
+    @DisplayName("sans en-tête : 400 avec plusieurs parties, 400 si invalide, 404 si inconnue ou hors portée")
     void headerValidationFailsClosed() throws Exception {
+        Long firstBoardId = DemoFixtures.mainBoardId(boardRepository);
         secondBoard = createBoard("Partie en-tête");
-        String token = jwtService.generateToken(
-                userRepository.findByUsername(TestDataInitializer.USER_1), 3_600_000L);
+        String token = DemoFixtures.tokenFor(
+                userRepository.findByUsername(TestDataInitializer.USER_1), jwtService);
 
         mockMvc.perform(get("/api/turn/current").header("Authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/boards/" + secondBoard.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(firstBoardId)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/boards/" + firstBoardId)
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-Board-Id", String.valueOf(firstBoardId)))
+                .andExpect(status().isOk());
         mockMvc.perform(get("/api/turn/current")
                         .header("Authorization", "Bearer " + token)
                         .header("X-Board-Id", "abc"))
@@ -171,12 +181,12 @@ class InstanceAccessTest {
     @Test
     @DisplayName("un MJ ne peut pas éditer un joueur d une autre partie")
     void gameMasterCannotEditPlayerFromAnotherBoard() throws Exception {
-        Long firstBoardId = boardRepository.findAll().getFirst().getId();
+        Long firstBoardId = DemoFixtures.mainBoardId(boardRepository);
         secondBoard = createBoard("Partie MJ");
         gameMaster = createUser("mj_scope");
         Player outsider = createPlayer("JoueurAutrePartie", null, firstBoardId);
         boardAdminRepository.save(new BoardAdmin(secondBoard.getId(), gameMaster.getId()));
-        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+        String token = DemoFixtures.tokenFor(gameMaster, jwtService);
 
         mockMvc.perform(put("/api/admin/players/{id}/money", outsider.getId())
                         .header("Authorization", "Bearer " + token)
@@ -199,9 +209,9 @@ class InstanceAccessTest {
     @Test
     @DisplayName("un compte sans participation ne lit pas une partie en la nommant dans l en-tête")
     void accountOutsideBoardCannotReadIt() throws Exception {
-        Long firstBoardId = boardRepository.findAll().getFirst().getId();
+        Long firstBoardId = DemoFixtures.mainBoardId(boardRepository);
         gameMaster = createUser("intrus_lecture");
-        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+        String token = DemoFixtures.tokenFor(gameMaster, jwtService);
 
         mockMvc.perform(get("/api/boards")
                         .header("Authorization", "Bearer " + token)
@@ -212,12 +222,12 @@ class InstanceAccessTest {
     @Test
     @DisplayName("un MJ ne contourne pas la portée avec un id de joueur non canonique")
     void gameMasterCannotBypassPlayerScopeWithNonCanonicalId() throws Exception {
-        Long firstBoardId = boardRepository.findAll().getFirst().getId();
+        Long firstBoardId = DemoFixtures.mainBoardId(boardRepository);
         secondBoard = createBoard("Partie MJ non canonique");
         gameMaster = createUser("mj_scope_non_canonique");
         Player outsider = createPlayer("JoueurAutrePartieNonCanonique", null, firstBoardId);
         boardAdminRepository.save(new BoardAdmin(secondBoard.getId(), gameMaster.getId()));
-        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+        String token = DemoFixtures.tokenFor(gameMaster, jwtService);
 
         mockMvc.perform(put("/api/admin/players/+{id}/money", outsider.getId())
                         .header("Authorization", "Bearer " + token)
@@ -235,7 +245,7 @@ class InstanceAccessTest {
         secondBoard = createBoard("Partie escalade");
         gameMaster = createUser("mj_escalade");
         boardAdminRepository.save(new BoardAdmin(secondBoard.getId(), gameMaster.getId()));
-        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+        String token = DemoFixtures.tokenFor(gameMaster, jwtService);
 
         mockMvc.perform(put("/api/admin/instances/{boardId}/admins/{userId}",
                         secondBoard.getId(), gameMaster.getId())
@@ -248,9 +258,10 @@ class InstanceAccessTest {
     @DisplayName("supprimer une partie supprime ses participations, jamais les comptes")
     void deletingBoardRemovesOnlyItsParticipations() throws Exception {
         secondBoard = createBoard("Partie à supprimer");
-        Player doomed = createPlayer("JoueurSupprime", null, secondBoard.getId());
-        String adminToken = jwtService.generateToken(
-                userRepository.findByUsername(TestDataInitializer.ADMIN), 3_600_000L);
+        User account = userRepository.findByUsername(TestDataInitializer.USER_1);
+        Player doomed = createPlayer("JoueurSupprime", account.getId(), secondBoard.getId());
+        String adminToken = DemoFixtures.tokenFor(
+                userRepository.findByUsername(TestDataInitializer.ADMIN), jwtService);
 
         mockMvc.perform(delete("/api/boards/{id}", secondBoard.getId())
                         .header("Authorization", "Bearer " + adminToken)
@@ -259,17 +270,19 @@ class InstanceAccessTest {
 
         assertFalse(boardRepository.existsById(secondBoard.getId()));
         assertFalse(playerRepository.existsById(doomed.getId()));
+        assertNotNull(userRepository.findByUsername(TestDataInitializer.USER_1),
+                "Le compte global survit à la suppression de la partie");
         secondBoard = null;
     }
 
     @Test
     @DisplayName("la liste des parties ne contient que celles du compte connecté")
     void instanceListIsScopedToTheAccount() throws Exception {
-        Long firstBoardId = boardRepository.findAll().getFirst().getId();
+        Long firstBoardId = DemoFixtures.mainBoardId(boardRepository);
         secondBoard = createBoard("Partie non jouée");
         gameMaster = createUser("solo_player");
         Player solo = createPlayer("Solo", gameMaster.getId(), firstBoardId);
-        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+        String token = DemoFixtures.tokenFor(gameMaster, jwtService);
 
         mockMvc.perform(get("/api/instances").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
@@ -280,14 +293,14 @@ class InstanceAccessTest {
         User delegated = createUser("mj_sans_joueur");
         boardAdminRepository.save(new BoardAdmin(secondBoard.getId(), delegated.getId()));
         mockMvc.perform(get("/api/instances")
-                        .header("Authorization", "Bearer " + jwtService.generateToken(delegated, 3_600_000L)))
+                        .header("Authorization", "Bearer " + DemoFixtures.tokenFor(delegated, jwtService)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].participant").value(true))
                 .andExpect(jsonPath("$[0].role").value("MJ"));
 
-        String adminToken = jwtService.generateToken(
-                userRepository.findByUsername(TestDataInitializer.ADMIN), 3_600_000L);
+        String adminToken = DemoFixtures.tokenFor(
+                userRepository.findByUsername(TestDataInitializer.ADMIN), jwtService);
         int boardCount = (int) boardRepository.count();
         mockMvc.perform(get("/api/instances").header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
@@ -313,7 +326,7 @@ class InstanceAccessTest {
         reserved.setPassword("hash-avant");
         reserved.setRole("ADMIN");
         User savedReserved = userRepository.save(reserved);
-        String token = jwtService.generateToken(gameMaster, 3_600_000L);
+        String token = DemoFixtures.tokenFor(gameMaster, jwtService);
 
         try {
             mockMvc.perform(multipart("/api/admin/players/import")
