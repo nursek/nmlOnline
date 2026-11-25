@@ -10,6 +10,7 @@ import com.mg.nmlonline.domain.model.alliance.Announcement;
 import com.mg.nmlonline.domain.model.alliance.AnnouncementType;
 import com.mg.nmlonline.domain.model.alliance.ProposalKind;
 import com.mg.nmlonline.domain.model.alliance.ProposalStatus;
+import com.mg.nmlonline.domain.model.notification.NotificationType;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.infrastructure.repository.AllianceProposalRepository;
 import com.mg.nmlonline.infrastructure.repository.AllianceRepository;
@@ -42,6 +43,7 @@ public class AllianceService {
     private final TurnService turnService;
     private final AllianceGraph allianceGraph;
     private final TurnLock turnLock;
+    private final NotificationService notificationService;
 
     public AllianceService(AllianceRepository allianceRepository,
                            AllianceProposalRepository proposalRepository,
@@ -50,7 +52,8 @@ public class AllianceService {
                            BuildingService buildingService,
                            TurnService turnService,
                            AllianceGraph allianceGraph,
-                           TurnLock turnLock) {
+                           TurnLock turnLock,
+                           NotificationService notificationService) {
         this.allianceRepository = allianceRepository;
         this.proposalRepository = proposalRepository;
         this.announcementRepository = announcementRepository;
@@ -59,6 +62,7 @@ public class AllianceService {
         this.turnService = turnService;
         this.allianceGraph = allianceGraph;
         this.turnLock = turnLock;
+        this.notificationService = notificationService;
     }
 
     // Les conflits de rupture sont figés à la préparation : un changement de camp en cours de résolution ne serait jamais combattu.
@@ -205,6 +209,12 @@ public class AllianceService {
             // Double-clic simultané : l'index unique partiel (prod) rejette le doublon au flush.
             throw new IllegalStateException("Une proposition identique est déjà en attente.");
         }
+        notificationService.notify(target, NotificationType.ALLIANCE_PROPOSAL,
+                kind == ProposalKind.ALLIANCE ? "Proposition d'alliance" : "Proposition de rupture",
+                player.getName() + (kind == ProposalKind.ALLIANCE
+                        ? " vous propose une alliance."
+                        : " vous propose une rupture amiable."),
+                "/joueur?alliance=1");
         return toProposalDto(proposal, Map.of(player.getId(), player.getName(), target.getId(), target.getName()), "OUT");
     }
 
@@ -246,6 +256,9 @@ public class AllianceService {
         }
         proposal.accept(turn);
         proposalRepository.save(proposal);
+        notificationService.notifyPlayer(proposal.getFromPlayerId(),
+                NotificationType.ALLIANCE_ACCEPTED, "Proposition acceptée",
+                player.getName() + " a accepté votre proposition.", "/joueur?alliance=1");
     }
 
     public void decline(Long userId, Long boardId, Long proposalId) {
@@ -256,6 +269,9 @@ public class AllianceService {
         }
         proposal.decline(turnService.getCurrentTurn(boardId));
         proposalRepository.save(proposal);
+        notificationService.notifyPlayer(proposal.getFromPlayerId(),
+                NotificationType.ALLIANCE_DECLINED, "Proposition déclinée",
+                player.getName() + " a décliné votre proposition.", "/joueur?alliance=1");
     }
 
     public void withdraw(Long userId, Long boardId, Long proposalId) {
@@ -288,6 +304,9 @@ public class AllianceService {
         }
         announcementRepository.save(Announcement.create(AnnouncementType.BETRAYAL, boardId,
                 player.getId(), alliance.other(player.getId()), turn));
+        notificationService.notifyPlayer(alliance.other(player.getId()),
+                NotificationType.ALLIANCE_BROKEN, "Alliance rompue",
+                player.getName() + " a trahi votre alliance.", "/joueur?alliance=1");
         cancelPendingProposalsFor(player.getId(), turn);
     }
 

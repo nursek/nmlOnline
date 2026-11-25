@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { of } from 'rxjs';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { BehaviorSubject, of } from 'rxjs';
 import { JoueurComponent } from './joueur.component';
 import { reserveVehicleGroups } from './joueur.helpers';
 import { PlayerService } from '../../services/player.service';
@@ -9,6 +10,8 @@ import { ActiveBoardService } from '../../services/active-board.service';
 import { PlayerDirectoryService } from '../../services/player-directory.service';
 import { AuthService } from '../../services/auth.service';
 import { ApiService } from '../../services/api.service';
+import { AllianceComponent } from '../alliance/alliance.component';
+import { ExchangeDialogComponent } from './exchange-dialog.component';
 import { Vehicle, Sector } from '../../models';
 
 function vehicle(id: number, playerId = 1): Vehicle {
@@ -54,18 +57,24 @@ function sector(): Sector {
 
 describe('JoueurComponent — déploiement véhicule', () => {
   let placeVehicleSpy: jest.SpyInstance;
+  let openDialogSpy: jest.Mock;
+  const routeParams = new BehaviorSubject(convertToParamMap({}));
 
   beforeEach(async () => {
     placeVehicleSpy = jest.fn().mockResolvedValue(vehicle(42));
+    openDialogSpy = jest.fn(() => ({ afterClosed: () => of(sector()) }));
+    routeParams.next(convertToParamMap({}));
 
     await TestBed.configureTestingModule({
       imports: [JoueurComponent],
       providers: [
         {
           provide: MatDialog,
-          useValue: {
-            open: () => ({ afterClosed: () => of(sector()) }) as unknown as MatDialogRef<unknown>,
-          },
+          useValue: { open: openDialogSpy },
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: { queryParamMap: routeParams.asObservable() },
         },
         {
           provide: PlayerService,
@@ -158,5 +167,19 @@ describe('JoueurComponent — déploiement véhicule', () => {
     expect(fixture.componentInstance.vehicleSummaries()).toEqual([
       { vehicleType: 'TANK', displayName: 'Tank de combat', count: 1 },
     ]);
+  });
+
+  it("ouvre la fenêtre d'alliance depuis un lien de notification", () => {
+    routeParams.next(convertToParamMap({ alliance: '1' }));
+    TestBed.createComponent(JoueurComponent);
+
+    expect(openDialogSpy).toHaveBeenCalledWith(AllianceComponent, expect.anything());
+  });
+
+  it("ouvre la fenêtre d'échange depuis un lien de notification", () => {
+    routeParams.next(convertToParamMap({ echange: '1' }));
+    TestBed.createComponent(JoueurComponent);
+
+    expect(openDialogSpy).toHaveBeenCalledWith(ExchangeDialogComponent, expect.anything());
   });
 });

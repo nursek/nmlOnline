@@ -7,6 +7,7 @@ import com.mg.nmlonline.domain.model.audit.AdminAuditAction;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.BuildingType;
+import com.mg.nmlonline.domain.model.notification.NotificationType;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -44,12 +45,14 @@ public class GameSetupService {
     private final AdminAuditService adminAuditService;
     private final TurnService turnService;
     private final PlayerMapper playerMapper;
+    private final NotificationService notificationService;
 
     public GameSetupService(BoardService boardService, PlayerService playerService,
                             UnitRepository unitRepository, BuildingRepository buildingRepository,
                             BuildingService buildingService, GameCharacterService gameCharacterService,
                             PlayerStatsService playerStatsService, AdminAuditService adminAuditService,
-                            TurnService turnService, PlayerMapper playerMapper) {
+                            TurnService turnService, PlayerMapper playerMapper,
+                            NotificationService notificationService) {
         this.boardService = boardService;
         this.playerService = playerService;
         this.unitRepository = unitRepository;
@@ -60,6 +63,7 @@ public class GameSetupService {
         this.adminAuditService = adminAuditService;
         this.turnService = turnService;
         this.playerMapper = playerMapper;
+        this.notificationService = notificationService;
     }
 
     public PlayerDto createTemplatePlayer(Long boardId, AdminTemplatePlayerRequestDto request) {
@@ -162,6 +166,8 @@ public class GameSetupService {
         turnService.publishTurn(boardId, 1);
         adminAuditService.record(boardId, null, AdminAuditAction.START_GAME,
                 "Démarrage de la partie");
+        notificationService.notifyBoard(boardId, NotificationType.GAME_STARTED,
+                "La partie commence", "Le tour 1 est lancé. Bonne chance à tous.", "/accueil");
     }
 
     /** Verrouille les joueurs par id croissant AVANT le plateau : évite l'inversion avec les placements. */

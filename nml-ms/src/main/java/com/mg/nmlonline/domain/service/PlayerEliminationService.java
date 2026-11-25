@@ -12,6 +12,7 @@ import com.mg.nmlonline.domain.model.building.Bank;
 import com.mg.nmlonline.domain.model.building.Building;
 import com.mg.nmlonline.domain.model.building.Headquarters;
 import com.mg.nmlonline.domain.model.building.WeaponCache;
+import com.mg.nmlonline.domain.model.notification.NotificationType;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.player.PlayerStats;
@@ -46,6 +47,7 @@ public class PlayerEliminationService {
     private final ExchangeOfferRepository exchangeOfferRepository;
     private final PendingCaptureRepository pendingCaptureRepository;
     private final BuildingService buildingService;
+    private final NotificationService notificationService;
 
     public PlayerEliminationService(EntityManager entityManager,
                                     PlayerRepository playerRepository,
@@ -54,7 +56,8 @@ public class PlayerEliminationService {
                                     AnnouncementRepository announcementRepository,
                                     ExchangeOfferRepository exchangeOfferRepository,
                                     PendingCaptureRepository pendingCaptureRepository,
-                                    BuildingService buildingService) {
+                                    BuildingService buildingService,
+                                    NotificationService notificationService) {
         this.entityManager = entityManager;
         this.playerRepository = playerRepository;
         this.allianceRepository = allianceRepository;
@@ -63,6 +66,7 @@ public class PlayerEliminationService {
         this.exchangeOfferRepository = exchangeOfferRepository;
         this.pendingCaptureRepository = pendingCaptureRepository;
         this.buildingService = buildingService;
+        this.notificationService = notificationService;
     }
 
     public void apply(Board board, Player victim, Long killerId, int turn) {
@@ -123,6 +127,9 @@ public class PlayerEliminationService {
 
         victim.setEliminatedByPlayerId(killerId);
         playerRepository.save(victim);
+        notificationService.notify(victim, NotificationType.PLAYER_ELIMINATED, "Joueur éliminé",
+                "Votre personnage a été éliminé au tour " + turn + ". Consultation uniquement.",
+                "/accueil");
     }
 
     private void lootHeadquartersSector(Player victim, int sectorNumber, Long killerId, int turn) {
@@ -206,6 +213,9 @@ public class PlayerEliminationService {
             allianceRepository.save(alliance);
             announcementRepository.save(Announcement.create(
                     AnnouncementType.ALLIANCE_BROKEN, victim.getBoardId(), victim.getId(), allyId, turn));
+            notificationService.notifyPlayer(allyId, NotificationType.ALLIANCE_BROKEN,
+                    "Alliance rompue", victim.getName()
+                            + " a été éliminé : votre alliance prend fin.", "/joueur?alliance=1");
         }
     }
 

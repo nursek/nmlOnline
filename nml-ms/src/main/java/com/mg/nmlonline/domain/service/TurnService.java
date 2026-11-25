@@ -30,6 +30,7 @@ public class TurnService {
     private final VehicleMaintenanceService vehicleMaintenanceService;
     private final ReserveUnitPlacer reserveUnitPlacer;
     private final UnitRecoveryService unitRecoveryService;
+    private final NotificationService notificationService;
 
     // Cache du tour par plateau (évite un N+1), publié avant commit et purgé sur rollback.
     private final Map<Long, Integer> cachedTurns = new ConcurrentHashMap<>();
@@ -39,7 +40,8 @@ public class TurnService {
                        HarvestAutoCollector harvestAutoCollector,
                        VehicleMaintenanceService vehicleMaintenanceService,
                        ReserveUnitPlacer reserveUnitPlacer,
-                       UnitRecoveryService unitRecoveryService) {
+                       UnitRecoveryService unitRecoveryService,
+                       NotificationService notificationService) {
         this.boardRepository = boardRepository;
         this.movementService = movementService;
         this.turnLock = turnLock;
@@ -48,6 +50,7 @@ public class TurnService {
         this.vehicleMaintenanceService = vehicleMaintenanceService;
         this.reserveUnitPlacer = reserveUnitPlacer;
         this.unitRecoveryService = unitRecoveryService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -122,6 +125,8 @@ public class TurnService {
             board.setCurrentTurn(newTurn);
             board = boardRepository.save(board);
             publishTurn(boardId, newTurn);
+            notificationService.notifyTurnEnded(boardId, turnEnding, newTurn,
+                    result.getCaptures().size(), List.of());
             return new TurnAdvanceResult(board.getCurrentTurn(), result.getCaptures());
         } finally {
             turnLock.release(boardId);

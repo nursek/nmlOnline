@@ -36,8 +36,9 @@ class GazetteServiceTest {
     private final GazetteIssueRepository repository = mock(GazetteIssueRepository.class);
     private final GazetteMastheadService mastheadService = mock(GazetteMastheadService.class);
     private final AdminAuditService adminAuditService = mock(AdminAuditService.class);
+    private final NotificationService notificationService = mock(NotificationService.class);
     private final GazetteService service = new GazetteService(repository, mastheadService,
-            adminAuditService, new ObjectMapper());
+            adminAuditService, new ObjectMapper(), notificationService);
 
     private static Board board() {
         Board board = new Board();
