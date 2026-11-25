@@ -214,9 +214,27 @@ export class AuthService {
   }
 
   private extractErrorMessage(error: unknown): string {
+    const status = (error as { status?: number })?.status ?? 0;
+    // Détail technique (statut, corps du backend) : console uniquement, jamais dans l'alerte joueur.
+    console.warn(`[connexion] échec (${status})`, error);
     if ((error as { name?: string })?.name === 'TimeoutError') {
       return 'La connexion a pris trop de temps. Veuillez réessayer.';
     }
-    return httpErrorMessage(error, 'Une erreur est survenue lors de la connexion');
+    if (status === 0) {
+      return 'Le serveur ne répond pas. Vérifiez votre connexion puis réessayez.';
+    }
+    if (status === 401) {
+      return "Nom d'utilisateur ou mot de passe incorrect.";
+    }
+    if (status === 403) {
+      return 'Connexion refusée. Contactez l’organisateur de la partie.';
+    }
+    if (status === 400) {
+      return 'Vérifiez le nom d’utilisateur et le mot de passe.';
+    }
+    if (status >= 500) {
+      return 'Le serveur est momentanément indisponible. Réessayez dans quelques instants.';
+    }
+    return 'La connexion est impossible pour le moment. Réessayez plus tard.';
   }
 }

@@ -122,6 +122,44 @@ describe('AuthService — route après login', () => {
   });
 });
 
+describe('AuthService — messages de connexion', () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => {
+    sessionStorage.clear();
+    jest.restoreAllMocks();
+  });
+
+  const failedLogin = async (status: number, body: unknown) => {
+    const { auth, http } = setup();
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const login = auth.login({ username: 'lurio', password: 'mauvais' });
+    http.expectOne(`${environment.apiBaseUrl}/login`).flush(body, { status, statusText: 'Error' });
+    await expect(login).rejects.toThrow();
+
+    return { auth, warn };
+  };
+
+  it('traduit des identifiants refusés en message joueur et garde le détail en console', async () => {
+    const { auth, warn } = await failedLogin(401, {
+      title: 'Unauthorized',
+      status: 401,
+      detail: 'Identifiants invalides',
+    });
+
+    expect(auth.error()).toBe("Nom d'utilisateur ou mot de passe incorrect.");
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it('ne montre pas la panne serveur brute au joueur', async () => {
+    const { auth } = await failedLogin(503, { title: 'Service Unavailable', status: 503 });
+
+    expect(auth.error()).toBe(
+      'Le serveur est momentanément indisponible. Réessayez dans quelques instants.',
+    );
+  });
+});
+
 describe('AuthService — blocage temporaire du login', () => {
   beforeEach(() => sessionStorage.clear());
   afterEach(() => {
