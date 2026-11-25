@@ -61,7 +61,8 @@ Réponses et commentaires en **français** ; README en anglais (guide SVG en fra
   une migration appliquée). Livré avec l'entité.
 - Jamais de `JWT_SECRET` / `JWT_PEPPER` / identifiants DB dans le dépôt — variables
   d'environnement uniquement ; les tests génèrent les leurs (`TestSecrets`), ne jamais en écrire un en dur.
-  Mode démo en prod : `DEMO_PASSWORD` obligatoire (mot de passe = nom réservé à dev/test). Pas de console H2, pas de `@CrossOrigin` (CORS dans `CorsConfig`).
+  Mode démo en prod : comptes de démo en mot de passe = nom, donc à supprimer avant une vraie partie.
+  Pas de console H2, pas de `@CrossOrigin` (CORS dans `CorsConfig`).
 - **JWT** : access token = claim `type=access`, refresh = `type=refresh` ; ne jamais accepter l'un pour l'autre.
 - **Inscription** : ouverte en dev/test, fermée en prod ; en prod, seul le code
   `REGISTRATION_INVITE_CODE` permet de créer un compte (`app.registration.open=false`).
