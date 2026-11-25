@@ -33,6 +33,13 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/unread")
+    public ResponseEntity<Void> markUnread(@PathVariable("id") Long id,
+                                           HttpServletRequest request) {
+        notificationService.markUnread(userId(request), boardId(request), id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/read-all")
     public ResponseEntity<Void> markAllRead(HttpServletRequest request) {
         notificationService.markAllRead(userId(request), boardId(request));

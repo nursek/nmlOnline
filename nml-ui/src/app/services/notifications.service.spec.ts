@@ -85,6 +85,13 @@ describe('NotificationsService', () => {
     expect(service.unreadCount()).toBe(1);
     expect(service.items().find((item) => item.id === second.id)?.readAt).toBeTruthy();
 
+    const markUnread = service.markUnread(second.id);
+    http.expectOne(`${environment.apiBaseUrl}/notifications/2/unread`).flush(null);
+    await markUnread;
+
+    expect(service.unreadCount()).toBe(2);
+    expect(service.items().find((item) => item.id === second.id)?.readAt).toBeNull();
+
     const markAll = service.markAllRead();
     http.expectOne(`${environment.apiBaseUrl}/notifications/read-all`).flush(null);
     await markAll;

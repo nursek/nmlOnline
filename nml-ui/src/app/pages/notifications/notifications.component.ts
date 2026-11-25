@@ -97,32 +97,45 @@ type NotificationFilter = 'all' | 'unread';
         } @else {
           <div class="notification-list">
             @for (item of visible(); track item.id) {
-              <button
-                type="button"
-                class="notification-row readonly-allow"
-                [class.unread]="!item.readAt"
-                (click)="notifications.open(item)"
-              >
-                <span class="row-icon" [class]="'tone-' + tone(item.type)">
-                  <mat-icon>{{ icon(item.type) }}</mat-icon>
-                </span>
-                <span class="row-content">
-                  <span class="row-head">
-                    <strong>{{ item.title }}</strong>
-                    <time [attr.datetime]="item.createdAt">{{ time(item.createdAt) }}</time>
+              <div class="notification-item">
+                <button
+                  type="button"
+                  class="notification-row readonly-allow"
+                  [class.unread]="!item.readAt"
+                  (click)="notifications.open(item)"
+                >
+                  <span class="row-icon" [class]="'tone-' + tone(item.type)">
+                    <mat-icon>{{ icon(item.type) }}</mat-icon>
                   </span>
-                  <span class="row-message">{{ item.message }}</span>
-                  @if (item.link) {
-                    <span class="row-link">
-                      Ouvrir
-                      <mat-icon>arrow_forward</mat-icon>
+                  <span class="row-content">
+                    <span class="row-head">
+                      <strong>{{ item.title }}</strong>
+                      <time [attr.datetime]="item.createdAt">{{ time(item.createdAt) }}</time>
                     </span>
+                    <span class="row-message">{{ item.message }}</span>
+                    @if (item.link) {
+                      <span class="row-link">
+                        Ouvrir
+                        <mat-icon>arrow_forward</mat-icon>
+                      </span>
+                    }
+                  </span>
+                  @if (!item.readAt) {
+                    <span class="unread-dot" aria-hidden="true"></span>
                   }
-                </span>
-                @if (!item.readAt) {
-                  <span class="unread-dot" aria-hidden="true"></span>
+                </button>
+                @if (item.readAt) {
+                  <button
+                    type="button"
+                    class="row-unread readonly-allow"
+                    aria-label="Marquer comme non lue"
+                    title="Marquer comme non lue"
+                    (click)="notifications.markUnread(item.id)"
+                  >
+                    <mat-icon>markunread</mat-icon>
+                  </button>
                 }
-              </button>
+              </div>
             }
           </div>
         }
@@ -211,12 +224,19 @@ type NotificationFilter = 'all' | 'unread';
         gap: 8px;
       }
 
+      .notification-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
       .notification-row {
         display: grid;
         grid-template-columns: 40px minmax(0, 1fr) 10px;
         align-items: start;
         gap: 12px;
-        width: 100%;
+        flex: 1;
+        min-width: 0;
         padding: 14px 16px;
         border: 1.5px solid var(--line-2);
         border-left: 3px solid transparent;
@@ -252,6 +272,37 @@ type NotificationFilter = 'all' | 'unread';
               transparent 45%
             ),
             var(--surface-2);
+        }
+      }
+
+      .row-unread {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border: 1.5px solid var(--line-2);
+        border-radius: var(--r-md);
+        background: var(--surface);
+        color: var(--muted);
+        cursor: pointer;
+        transition:
+          border-color 0.16s ease,
+          color 0.16s ease;
+
+        &:hover {
+          border-color: var(--line-strong);
+          color: var(--ink);
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 1px;
+        }
+
+        mat-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
         }
       }
 

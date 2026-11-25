@@ -53,14 +53,23 @@ class NotificationCenterTest {
         assertEquals(2, before.items().size());
         assertEquals(2, before.unreadCount());
 
-        notificationService.markRead(first.getUserId(), board.getId(), before.items().getFirst().id());
+        Long firstId = before.items().getFirst().id();
+        notificationService.markRead(first.getUserId(), board.getId(), firstId);
+        assertEquals(1, notificationService.getFeed(first.getUserId(), board.getId()).unreadCount());
+
+        notificationService.markUnread(first.getUserId(), board.getId(), firstId);
+        assertEquals(2, notificationService.getFeed(first.getUserId(), board.getId()).unreadCount());
+
+        notificationService.markRead(first.getUserId(), board.getId(), firstId);
         assertEquals(1, notificationService.getFeed(first.getUserId(), board.getId()).unreadCount());
 
         notificationService.markAllRead(first.getUserId(), board.getId());
         assertEquals(0, notificationService.getFeed(first.getUserId(), board.getId()).unreadCount());
 
         assertThrows(SecurityException.class, () -> notificationService.markRead(second.getUserId(),
-                board.getId(), before.items().getFirst().id()));
+                board.getId(), firstId));
+        assertThrows(SecurityException.class, () -> notificationService.markUnread(second.getUserId(),
+                board.getId(), firstId));
     }
 
     @Test
