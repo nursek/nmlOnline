@@ -10,6 +10,7 @@ export interface AuthResponse {
   id: number;
   name: string;
   role: string;
+  avatarUrl?: string | null;
 }
 
 export interface RefreshResponse {
@@ -18,6 +19,7 @@ export interface RefreshResponse {
   id?: number;
   name?: string;
   role?: string;
+  avatarUrl?: string | null;
   error?: string;
 }
 
@@ -25,4 +27,5 @@ export interface User {
   id: number;
   username: string;
   role?: string;
+  avatarUrl?: string | null;
 }

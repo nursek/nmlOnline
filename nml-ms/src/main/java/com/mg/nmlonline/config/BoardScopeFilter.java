@@ -158,6 +158,7 @@ public class BoardScopeFilter extends OncePerRequestFilter {
         }
         return !path.startsWith("/api/")
                 || path.equals("/api/instances")
+                || path.startsWith("/api/profile/")
                 || path.equals("/api/admin/boards/import")
                 || path.equals("/api/admin/boards/assets")
                 || path.equals("/api/admin/board-presets")
