@@ -88,7 +88,7 @@ describe('NotificationBellComponent', () => {
   it('expose les helpers de ton, icône et temps', () => {
     const page = component();
     expect(page.icon('TURN_ENDED')).toBe('event_repeat');
-    expect(page.tone('PLAYER_ELIMINATED')).toBe('danger');
+    expect(page.tone('ALLIANCE_BROKEN')).toBe('danger');
     expect(page.time(notification.createdAt)).toBeTruthy();
   });
 });

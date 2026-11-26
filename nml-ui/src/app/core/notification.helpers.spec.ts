@@ -20,8 +20,9 @@ describe('notification.helpers', () => {
     expect(notificationIcon('EXCHANGE_RECEIVED')).toBe('swap_horiz');
     expect(notificationIcon('ALLIANCE_BROKEN')).toBe('heart_broken');
     expect(notificationIcon('GAME_FINISHED')).toBe('emoji_events');
+    expect(notificationIcon('BATTLE_REPORTS_AVAILABLE')).toBe('military_tech');
     expect(notificationIcon('UNKNOWN' as never)).toBe('notifications');
-    expect(notificationTone('PLAYER_ELIMINATED')).toBe('danger');
+    expect(notificationTone('ALLIANCE_BROKEN')).toBe('danger');
     expect(notificationTone('GAME_FINISHED')).toBe('teal');
   });
 

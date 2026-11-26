@@ -89,8 +89,8 @@ type NotificationFilter = 'all' | 'unread';
                 {{ filter() === 'unread' ? 'Aucune notification non lue' : 'Aucune notification' }}
               </h2>
               <p>
-                Les échanges, alliances, fins de tour, éliminations et nouvelles éditions du journal
-                apparaîtront ici.
+                Les échanges, alliances, fins de tour, rapports de combat et nouvelles éditions du
+                journal apparaîtront ici.
               </p>
             </mat-card-content>
           </mat-card>

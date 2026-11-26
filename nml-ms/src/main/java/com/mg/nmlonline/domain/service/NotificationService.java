@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -88,6 +89,14 @@ public class NotificationService {
         }
         notifyBoard(boardId, NotificationType.TURN_ENDED, "Tour " + turnEnding + " terminé",
                 message.toString(), "/rapports");
+    }
+
+    public void notifyBattleReports(int turn, Collection<Long> playerIds) {
+        for (Long playerId : playerIds) {
+            notifyPlayer(playerId, NotificationType.BATTLE_REPORTS_AVAILABLE,
+                    "Rapports de combat disponibles",
+                    "Vos combats du tour " + turn + " sont disponibles.", "/rapports");
+        }
     }
 
     public void replaceGameFinished(Long boardId, Player winner) {

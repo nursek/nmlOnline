@@ -127,9 +127,6 @@ public class PlayerEliminationService {
 
         victim.setEliminatedByPlayerId(killerId);
         playerRepository.save(victim);
-        notificationService.notify(victim, NotificationType.PLAYER_ELIMINATED, "Joueur éliminé",
-                "Votre personnage a été éliminé au tour " + turn + ". Consultation uniquement.",
-                "/accueil");
     }
 
     private void lootHeadquartersSector(Player victim, int sectorNumber, Long killerId, int turn) {
