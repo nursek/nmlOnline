@@ -824,6 +824,10 @@ export class ApiService {
     return this.http.post<void>(`${this.baseUrl}/notifications/${notificationId}/read`, {});
   }
 
+  markNotificationUnread(notificationId: number): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/notifications/${notificationId}/unread`, {});
+  }
+
   markAllNotificationsRead(): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/notifications/read-all`, {});
   }

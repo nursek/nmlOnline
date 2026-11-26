@@ -96,6 +96,25 @@ export class NotificationsService {
     }
   }
 
+  async markUnread(notificationId: number): Promise<void> {
+    const item = this._items().find((candidate) => candidate.id === notificationId);
+    if (!item || !item.readAt) {
+      return;
+    }
+    this.generation++;
+    this._items.update((items) =>
+      items.map((candidate) =>
+        candidate.id === notificationId ? { ...candidate, readAt: null } : candidate,
+      ),
+    );
+    this._unreadCount.update((count) => count + 1);
+    try {
+      await firstValueFrom(this.api.markNotificationUnread(notificationId));
+    } catch {
+      void this.reload();
+    }
+  }
+
   async markAllRead(): Promise<void> {
     if (this._unreadCount() === 0) {
       return;

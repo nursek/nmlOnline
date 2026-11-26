@@ -41,16 +41,29 @@ public class NotificationService {
     }
 
     public void markRead(Long userId, Long boardId, Long notificationId) {
+        Notification notification = owned(userId, boardId, notificationId);
+        if (!notification.isRead()) {
+            notification.setReadAt(Instant.now());
+            repository.save(notification);
+        }
+    }
+
+    public void markUnread(Long userId, Long boardId, Long notificationId) {
+        Notification notification = owned(userId, boardId, notificationId);
+        if (notification.isRead()) {
+            notification.setReadAt(null);
+            repository.save(notification);
+        }
+    }
+
+    private Notification owned(Long userId, Long boardId, Long notificationId) {
         Notification notification = repository.findById(notificationId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Notification introuvable : " + notificationId));
         if (!boardId.equals(notification.getBoardId()) || !userId.equals(notification.getUserId())) {
             throw new SecurityException("Cette notification ne vous appartient pas.");
         }
-        if (!notification.isRead()) {
-            notification.setReadAt(Instant.now());
-            repository.save(notification);
-        }
+        return notification;
     }
 
     public void markAllRead(Long userId, Long boardId) {
