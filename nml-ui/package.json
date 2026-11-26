@@ -34,21 +34,21 @@
   "private": true,
   "packageManager": "npm@10.9.3",
   "dependencies": {
-    "@angular/cdk": "^22.0.3",
-    "@angular/common": "^22.0.5",
-    "@angular/compiler": "^22.0.5",
-    "@angular/core": "^22.0.5",
-    "@angular/forms": "^22.0.5",
-    "@angular/material": "^22.0.3",
-    "@angular/platform-browser": "^22.0.5",
-    "@angular/router": "^22.0.5",
+    "@angular/cdk": "^22.3.0",
+    "@angular/common": "^22.3.0",
+    "@angular/compiler": "^22.3.0",
+    "@angular/core": "^22.3.0",
+    "@angular/forms": "^22.3.0",
+    "@angular/material": "^22.3.0",
+    "@angular/platform-browser": "^22.3.0",
+    "@angular/router": "^22.3.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular/build": "^22.0.5",
-    "@angular/cli": "^22.0.5",
-    "@angular/compiler-cli": "^22.0.5",
+    "@angular/build": "^22.3.0",
+    "@angular/cli": "^22.3.0",
+    "@angular/compiler-cli": "^22.3.0",
     "@eslint/js": "^9.18.0",
     "@types/jest": "^30.0.0",
     "angular-eslint": "^22.0.0",
@@ -62,6 +62,14 @@
     "sharp": "^0.35.5",
     "ts-node": "^10.9.2",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.74.0"
+  },
+  "overrides": {
+    "glob": {
+      "minimatch": "^11.0.1"
+    },
+    "test-exclude": {
+      "minimatch": "^11.0.1"
+    }
   }
 }
