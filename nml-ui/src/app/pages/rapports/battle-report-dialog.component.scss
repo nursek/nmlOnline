@@ -1,0 +1,347 @@
+.report-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.15rem;
+
+  .title-turn {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+}
+
+.report-dialog {
+  max-height: 72vh;
+  padding-top: 0.25rem;
+}
+
+.report-outcome {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid var(--line-2);
+  border-left: 4px solid var(--muted);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--muted) 8%, transparent);
+
+  .result {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .versus {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    color: var(--ink);
+  }
+
+  .camp {
+    padding: 0.1rem 0.5rem;
+    border-radius: var(--r-xs);
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+
+  .side-group {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .side-label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .camp-separator {
+    color: var(--muted);
+  }
+
+  .vs {
+    font-size: 0.75rem;
+    font-style: normal;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .capture {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--sun);
+  }
+
+  &.win {
+    border-left-color: var(--forest);
+    background: color-mix(in srgb, var(--forest) 10%, transparent);
+
+    .result {
+      color: var(--forest);
+    }
+  }
+
+  &.loss {
+    border-left-color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
+
+    .result {
+      color: var(--danger);
+    }
+  }
+
+  &.standoff {
+    border-left-color: var(--rust);
+    background: color-mix(in srgb, var(--rust) 10%, transparent);
+
+    .result {
+      color: var(--accent-ink);
+    }
+  }
+
+  &.ranged {
+    border-left-color: var(--cobalt);
+    background: color-mix(in srgb, var(--cobalt) 10%, transparent);
+
+    .result {
+      color: var(--cobalt-deep);
+    }
+  }
+}
+
+.report-kind {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.kind-badge {
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--r-xs);
+  background: color-mix(in srgb, var(--cobalt) 12%, transparent);
+  color: var(--cobalt-deep);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.report-section {
+  margin-top: 1rem;
+
+  > h3 {
+    margin: 0 0 0.45rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+}
+
+.highlight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.highlight {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  color: var(--ink);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--ink-3);
+  }
+
+  &.character_lost,
+  &.heavy_losses {
+    color: var(--danger-deep);
+    font-weight: 600;
+  }
+
+  &.winner,
+  &.promotion {
+    color: var(--forest);
+    font-weight: 600;
+  }
+}
+
+.report-accordion {
+  display: block;
+  margin-top: 1rem;
+
+  .report-panel {
+    border-radius: var(--r-sm);
+  }
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 600;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--accent);
+    }
+  }
+}
+
+.force-accordion {
+  display: block;
+}
+
+.camps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.camp-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.45rem 0.6rem;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-xs);
+  background: var(--surface);
+  font-size: 0.88rem;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--accent);
+  }
+
+  &.eliminated {
+    opacity: 0.7;
+  }
+}
+
+.camp-name {
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: var(--r-xs);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+
+  &.danger {
+    background: var(--danger-tint);
+    color: var(--danger);
+  }
+}
+
+.player-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.6rem;
+}
+
+.player-group {
+  padding: 0.55rem 0.7rem;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .player-name {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .count {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  &.eliminated {
+    opacity: 0.72;
+  }
+}
+
+.result-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.86rem;
+  color: var(--ink);
+
+  li {
+    margin-bottom: 0.2rem;
+  }
+
+  .evolved {
+    color: var(--forest);
+  }
+}
+
+.none {
+  margin: 0;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.ranged-fire {
+  font-size: 0.85rem;
+  color: var(--ink-3);
+}
+
+@media (max-width: 640px) {
+  .report-outcome .capture {
+    margin-left: 0;
+  }
+
+  .report-dialog-title .title-turn {
+    width: 100%;
+    margin-left: 1.9rem;
+  }
+}

@@ -1,24 +1,24 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { GameCharacter, Sector } from '../../models';
 import { ActiveBoardService } from '../../services/active-board.service';
 import { MovementStateService } from '../../services/movement-state.service';
 import { ExpPipe } from '../../shared/exp.pipe';
-import {
-  findRoute,
-  groupMaxHops,
-  movableEntities,
-  reachableTargets,
-  sectorKind,
-  SectorKind,
-  unitMaxHops,
-} from '../../core/movement.helpers';
+import { groupMaxHops, movableEntities, unitMaxHops } from '../../core/movement.helpers';
+import { RoutePickerComponent } from './route-picker.component';
+import { routeAfterSectorClick } from './route-picker.helpers';
+import { SectorMapPreviewComponent } from './sector-map-preview.component';
 
 export interface GroupMoveDialogData {
   sector: Sector;
@@ -26,20 +26,6 @@ export interface GroupMoveDialogData {
   playerId: number;
   allyPlayerIds?: ReadonlySet<number>;
 }
-
-interface MoveTarget {
-  number: number;
-  name: string;
-  kind: SectorKind;
-}
-
-const KIND_LABELS: Record<SectorKind, string> = {
-  own: 'Interne',
-  neutral: 'Neutre',
-  ally: 'Allié',
-  enemy: 'Ennemi',
-  unknown: 'Inconnu',
-};
 
 @Component({
   selector: 'app-group-move-dialog',
@@ -49,9 +35,9 @@ const KIND_LABELS: Record<SectorKind, string> = {
     MatButtonModule,
     MatCheckboxModule,
     MatDialogModule,
-    MatFormFieldModule,
     MatIconModule,
-    MatSelectModule,
+    RoutePickerComponent,
+    SectorMapPreviewComponent,
   ],
   templateUrl: './group-move-dialog.component.html',
   styleUrls: ['./group-move-dialog.component.scss'],
@@ -63,7 +49,11 @@ export class GroupMoveDialogComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   readonly busy = signal(false);
-  readonly targetSector = signal<number | null>(null);
+  readonly route = signal<number[]>([]);
+  readonly frontOverlay = signal(false);
+  readonly resourcesOverlay = signal(false);
+  readonly allyPlayerIds = this.data.allyPlayerIds ?? new Set<number>();
+  private readonly routePicker = viewChild(RoutePickerComponent);
   /** Entités décochées ; la sélection par défaut couvre tout ce qui est déplaçable. */
   private readonly deselectedIds = signal<ReadonlySet<number>>(new Set());
 
@@ -114,20 +104,20 @@ export class GroupMoveDialogComponent {
     groupMaxHops(this.selectedUnits(), this.selectedCharacter(), this.selectedVehicles()),
   );
 
-  readonly reachableTargets = computed(() =>
-    reachableTargets(this.allSectors(), this.data.sectorNumber, this.maxHops()),
-  );
-
-  readonly targets = computed<MoveTarget[]>(() =>
-    this.reachableTargets().map((number) => {
-      const sector = this.allSectors().find((s) => s.number === number) ?? null;
-      return {
-        number,
-        name: sector?.name ?? `Secteur ${number}`,
-        kind: sectorKind(sector, this.data.playerId, this.data.allyPlayerIds ?? new Set()),
-      };
-    }),
-  );
+  readonly limitingEntity = computed<string | null>(() => {
+    const candidates: { label: string; hops: number }[] = [];
+    for (const unit of this.selectedUnits()) {
+      candidates.push({ label: `${unit.type.name} n°${unit.number}`, hops: unitMaxHops(unit) });
+    }
+    const character = this.selectedCharacter();
+    if (character) candidates.push({ label: character.name, hops: 1 });
+    for (const vehicle of this.selectedVehicles()) {
+      candidates.push({ label: vehicle.displayName, hops: vehicle.speed });
+    }
+    if (!candidates.length) return null;
+    const min = Math.min(...candidates.map((candidate) => candidate.hops));
+    return candidates.find((candidate) => candidate.hops === min)?.label ?? null;
+  });
 
   constructor() {
     void this.movementState.loadOrders();
@@ -159,12 +149,52 @@ export class GroupMoveDialogComponent {
     this.deselectedIds.set(ids);
   }
 
-  kindLabel(kind: SectorKind): string {
-    return KIND_LABELS[kind];
+  selectLightUnitsOnly(): void {
+    const deselected = new Set<number>();
+    for (const unit of this.movable().units) {
+      if (unitMaxHops(unit) <= 1) deselected.add(unit.id);
+    }
+    const character = this.movable().character;
+    if (character?.id != null) deselected.add(character.id);
+    for (const vehicle of this.movable().vehicles) {
+      if (vehicle.id != null) deselected.add(vehicle.id);
+    }
+    this.deselectedIds.set(deselected);
+  }
+
+  selectVehiclesOnly(): void {
+    const deselected = new Set<number>();
+    for (const unit of this.movable().units) deselected.add(unit.id);
+    const character = this.movable().character;
+    if (character?.id != null) deselected.add(character.id);
+    this.deselectedIds.set(deselected);
+  }
+
+  onMapSectorClick(sectorNumber: number): void {
+    if (this.busy()) return;
+    if (this.selectedCount() === 0) {
+      this.snackBar.open('Sélectionnez au moins une entité pour définir le chemin.', 'Fermer', {
+        duration: 2500,
+      });
+      return;
+    }
+    const result = routeAfterSectorClick(
+      this.route(),
+      sectorNumber,
+      this.data.sectorNumber,
+      this.allSectors(),
+      this.maxHops(),
+    );
+    if (result.error) {
+      this.snackBar.open(result.error, 'Fermer', { duration: 2500 });
+      return;
+    }
+    this.route.set(result.route);
+    this.routePicker()?.setRoute(result.route);
   }
 
   async submit(): Promise<void> {
-    const to = this.targetSector();
+    const route = this.route();
     const entityIds = this.selectedUnits().map((u) => u.id);
     const character = this.selectedCharacter();
     if (character?.id != null) entityIds.push(character.id);
@@ -172,15 +202,7 @@ export class GroupMoveDialogComponent {
       .map((v) => v.id)
       .filter((id): id is number => id != null);
 
-    if (to === null || (entityIds.length === 0 && vehicleIds.length === 0)) return;
-
-    const route = findRoute(this.allSectors(), this.data.sectorNumber, to, this.maxHops());
-    if (route.length < 2) {
-      this.snackBar.open('Aucune route adjacente trouvée vers la destination', 'Fermer', {
-        duration: 3000,
-      });
-      return;
-    }
+    if (route.length < 2 || (entityIds.length === 0 && vehicleIds.length === 0)) return;
 
     this.busy.set(true);
     try {
@@ -210,7 +232,7 @@ export class GroupMoveDialogComponent {
       }
 
       this.snackBar.open(
-        `Ordre groupé : secteur ${this.data.sectorNumber} → ${to} (${movedCount} entité(s))`,
+        `Ordre groupé : secteur ${route.join(' → ')} (${movedCount} entité(s))`,
         'OK',
         { duration: 3000 },
       );

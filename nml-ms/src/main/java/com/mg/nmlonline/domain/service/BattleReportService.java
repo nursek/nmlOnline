@@ -156,7 +156,9 @@ public class BattleReportService {
         List<BattleReport> page = reportRepository.findByParticipantId(
                 player.getId(), PageRequest.of(0, MAX_REPORTS_PER_PLAYER));
         for (BattleReport report : page) {
-            reports.add(toPlayerReport(readPayload(report)));
+            BattleReportDto dto = toPlayerReport(readPayload(report));
+            dto.setViewerPlayerId(player.getId());
+            reports.add(dto);
         }
         return reports;
     }

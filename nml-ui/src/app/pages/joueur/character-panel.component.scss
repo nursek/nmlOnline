@@ -13,6 +13,10 @@
 }
 
 .chp-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 12px;
 
   h4 {
@@ -20,6 +24,10 @@
     font-size: 1rem;
     font-weight: 600;
     color: var(--accent-ink);
+  }
+
+  .chp-move {
+    margin-left: auto;
   }
 }
 

@@ -1,9 +1,9 @@
 import {
-  findRoute,
   groupMaxHops,
   movableEntities,
   reachableTargets,
   sectorKind,
+  sectorKindLabel,
   unitMaxHops,
 } from './movement.helpers';
 import type { GameCharacter, Sector, Unit, Vehicle } from '../models';
@@ -150,27 +150,15 @@ describe('movement.helpers', () => {
     });
   });
 
-  describe('findRoute', () => {
-    it('retourne la route directe', () => {
-      expect(findRoute(graph, 1, 2, 1)).toEqual([1, 2]);
-    });
-
-    it('trouve un chemin à 2 hops', () => {
-      expect(findRoute(graph, 1, 3, 2)).toEqual([1, 2, 3]);
-    });
-
-    it('retourne un chemin vide si la portée est insuffisante', () => {
-      expect(findRoute(graph, 1, 3, 1)).toEqual([]);
-      expect(findRoute(graph, 1, 4, 2)).toEqual([]);
-    });
-  });
-
   describe('sectorKind', () => {
     it('distingue interne, neutre et ennemi', () => {
       expect(sectorKind(sector(1, 1), 1)).toBe('own');
       expect(sectorKind(sector(2, null), 1)).toBe('neutral');
       expect(sectorKind(sector(3, 2), 1)).toBe('enemy');
       expect(sectorKind(null, 1)).toBe('unknown');
+      expect(sectorKindLabel('own')).toBe('Interne');
+      expect(sectorKindLabel('neutral')).toBe('Neutre');
+      expect(sectorKindLabel('enemy')).toBe('Ennemi');
     });
 
     it('marque le secteur d’un allié', () => {

@@ -1,0 +1,76 @@
+<mat-expansion-panel class="force-panel">
+  <mat-expansion-panel-header>
+    <mat-panel-title class="force-title">
+      <span class="force-name">{{ force().playerName ?? '#' + force().playerId }}</span>
+      <span class="side">{{ sideLabel(force().side) }}</span>
+    </mat-panel-title>
+    <mat-panel-description class="force-desc">
+      <span>{{ forceSummary(force()) }}</span>
+      @if (force().totals) {
+        <span class="totals-inline">
+          @for (s of battleStatTokens(force().totals); track s.label) {
+            {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+          }
+        </span>
+      }
+    </mat-panel-description>
+  </mat-expansion-panel-header>
+
+  <div class="force-body">
+    @for (character of force().characters; track $index) {
+      <app-report-unit-line [unit]="character" tag="Personnage" />
+    }
+
+    @for (unit of force().infantry; track $index) {
+      <app-report-unit-line [unit]="unit" />
+    }
+
+    @for (vehicle of force().vehicles; track $index) {
+      <div class="entity-line">
+        <mat-icon>local_shipping</mat-icon>
+        <span class="entity-name">{{ vehicle.displayName }}</span>
+        <span class="entity-tag">Véhicule</span>
+        @if (vehicle.aerial) {
+          <span class="badge">Aérien</span>
+        }
+        <span class="stats">
+          @for (s of battleStatTokens(vehicle.stats); track s.label) {
+            {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+          }
+          @if (evasionPercent(vehicle.stats); as dodge) {
+            <span class="dodge">Esquive : {{ dodge }} %</span>
+          }
+        </span>
+      </div>
+      @for (member of vehicle.crew; track $index) {
+        <app-report-unit-line [unit]="member" tag="Équipage" />
+      }
+    }
+
+    @for (building of force().buildings; track $index) {
+      <div class="entity-line">
+        <mat-icon>apartment</mat-icon>
+        <span class="entity-name">{{ building.displayName }}</span>
+        <span class="entity-tag">Bâtiment</span>
+        <span class="stats">
+          @for (s of battleStatTokens(building.stats); track s.label) {
+            {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+          }
+        </span>
+      </div>
+    }
+
+    @if (force().totals; as totals) {
+      <div class="force-grand-total">
+        <span class="total-label">Total</span>
+        <span class="stats">
+          @for (s of battleStatTokens(totals); track s.label) {
+            {{ s.separator }}{{ s.value | number: '1.0-1' }} {{ s.label }}
+          }
+        </span>
+      </div>
+    } @else if (!forceHasStats(force())) {
+      <p class="stats-missing">Statistiques non disponibles pour ce rapport.</p>
+    }
+  </div>
+</mat-expansion-panel>

@@ -1,0 +1,77 @@
+:host {
+  display: block;
+}
+
+.route-path {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.route-path-sector {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.route-path-start {
+  color: var(--accent-ink);
+}
+
+.route-path mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.route-empty {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.route-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.route-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--r-xs);
+  background: var(--surface-3);
+  color: var(--ink-2);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.summary-warning {
+  background: var(--sun-tint);
+  color: var(--sun-deep);
+
+  mat-icon {
+    width: 15px;
+    height: 15px;
+    font-size: 15px;
+  }
+}
+
+.route-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}

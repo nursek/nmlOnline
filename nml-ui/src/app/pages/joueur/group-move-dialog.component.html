@@ -17,6 +17,24 @@
     <div class="gmd-toolbar">
       <button mat-button type="button" (click)="selectAll()">Tout sélectionner</button>
       <button mat-button type="button" (click)="clearSelection()">Tout désélectionner</button>
+      <button
+        mat-button
+        type="button"
+        title="Sélectionner uniquement les unités légères"
+        (click)="selectLightUnitsOnly()"
+      >
+        <mat-icon>directions_walk</mat-icon>
+        Légères seules
+      </button>
+      <button
+        mat-button
+        type="button"
+        title="Sélectionner uniquement les véhicules"
+        (click)="selectVehiclesOnly()"
+      >
+        <mat-icon>local_shipping</mat-icon>
+        Véhicules seuls
+      </button>
       <span class="gmd-count"
         >{{ selectedCount() }} / {{ totalMovableCount() }} sélectionnée(s)</span
       >
@@ -77,37 +95,85 @@
       }
     </div>
 
-    <div class="gmd-move">
-      <div class="gmd-move-from">
-        <span class="gmd-label">Depuis</span>
-        <span class="gmd-pill">Secteur {{ data.sectorNumber }}</span>
+    <div class="gmd-map-section">
+      <div class="gmd-map-head">
+        <span class="gmd-map-title">Secteur {{ data.sectorNumber }} · {{ data.sector.name }}</span>
+        <div class="gmd-map-filters">
+          <button
+            type="button"
+            class="gmd-filter"
+            [class.active]="frontOverlay()"
+            [attr.aria-pressed]="frontOverlay()"
+            (click)="frontOverlay.set(!frontOverlay())"
+            title="Bordures avec les secteurs ennemis (jamais les neutres)"
+          >
+            <mat-icon>shield</mat-icon>
+            Frontières
+          </button>
+          <button
+            type="button"
+            class="gmd-filter"
+            [class.active]="resourcesOverlay()"
+            [attr.aria-pressed]="resourcesOverlay()"
+            (click)="resourcesOverlay.set(!resourcesOverlay())"
+            title="Afficher la ressource de chaque secteur"
+          >
+            <mat-icon>diamond</mat-icon>
+            Ressources
+          </button>
+        </div>
       </div>
-      <mat-icon class="gmd-arrow">arrow_forward</mat-icon>
-      <mat-form-field appearance="outline" class="gmd-move-to">
-        <mat-label>Vers</mat-label>
-        <mat-select [value]="targetSector()" (valueChange)="targetSector.set($event)">
-          @for (target of targets(); track target.number) {
-            <mat-option [value]="target.number">
-              #{{ target.number }} · {{ target.name }}
-              <span [class]="'gmd-kind gmd-kind-' + target.kind">{{ kindLabel(target.kind) }}</span>
-            </mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      <div class="gmd-legend" aria-hidden="true">
+        <span class="gmd-legend-item gmd-legend-start">Départ</span>
+        <span class="gmd-legend-item gmd-legend-target">Cible</span>
+        <span class="gmd-legend-item gmd-legend-transit">Transit</span>
+      </div>
+      <div class="gmd-map">
+        <app-sector-map-preview
+          [startSector]="data.sectorNumber"
+          [route]="route()"
+          [playerId]="data.playerId"
+          [allyPlayerIds]="allyPlayerIds"
+          [showFront]="frontOverlay()"
+          [showResources]="resourcesOverlay()"
+          (sectorClick)="onMapSectorClick($event)"
+        />
+      </div>
     </div>
 
-    <div class="gmd-hint">
-      Portée du groupe : {{ maxHops() }} secteur(s) — {{ reachableTargets().length }} destination(s)
-      atteignable(s).
-    </div>
+    @if (selectedCount() > 0) {
+      <app-route-picker
+        [sectors]="allSectors()"
+        [from]="data.sectorNumber"
+        [maxHops]="maxHops()"
+        [playerId]="data.playerId"
+        [allyPlayerIds]="data.allyPlayerIds"
+        [disabled]="busy()"
+        [(route)]="route"
+      />
+      <div class="gmd-hint">
+        {{ selectedCount() }} entité(s) · portée {{ maxHops() }} secteur(s)
+        @if (limitingEntity(); as limit) {
+          · limitée par {{ limit }}
+        }
+      </div>
+    } @else {
+      <p class="gmd-hint">Sélectionnez au moins une entité pour définir le chemin.</p>
+    }
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
+    <span class="gmd-summary">
+      {{ selectedCount() }} entité(s)
+      @if (route().length > 1) {
+        · {{ route().length - 1 }} secteur(s)
+      }
+    </span>
     <button mat-button (click)="close()">Annuler</button>
     <button
       mat-raised-button
       color="primary"
-      [disabled]="busy() || selectedCount() === 0 || targetSector() === null"
+      [disabled]="busy() || selectedCount() === 0 || route().length < 2"
       (click)="submit()"
     >
       <mat-icon>directions_walk</mat-icon>

@@ -1,0 +1,174 @@
+<h2 mat-dialog-title class="report-dialog-title">
+  <mat-icon>receipt_long</mat-icon>
+  <span>Bataille — secteur {{ report.sectorNumber }}</span>
+  <span class="title-turn">Tour {{ report.turn }}</span>
+</h2>
+
+<mat-dialog-content class="report-dialog">
+  <div [class]="'report-outcome ' + tone">
+    <span class="result">{{ resultLabel }}</span>
+    <span class="versus">
+      @for (group of sides; track $index; let last = $last) {
+        <span class="side-group">
+          @if (group.side && !report.standoff) {
+            <span class="side-label">{{ sideLabel(group.side) }} :</span>
+          }
+          @for (player of group.players; track $index; let lastPlayer = $last) {
+            <span class="camp">{{ player }}</span>
+            @if (!lastPlayer) {
+              <span class="camp-separator">,</span>
+            }
+          }
+        </span>
+        @if (!last) {
+          <em class="vs">vs</em>
+        }
+      }
+    </span>
+    @if (report.capturedBuildings > 0) {
+      <span class="capture">{{ report.capturedBuildings }} bâtiment(s) capturé(s)</span>
+    }
+  </div>
+
+  <div class="report-kind">
+    <span class="kind-badge">{{ kindLabel(report.kind) }}</span>
+    @if (report.rangedFire) {
+      <span class="ranged-fire">{{ report.rangedFire }}</span>
+    }
+  </div>
+
+  @if (report.highlights?.length) {
+    <section class="report-section">
+      <h3>Points clés</h3>
+      <ul class="highlight-list">
+        @for (highlight of report.highlights; track $index) {
+          <li [class]="'highlight ' + highlightTone(highlight.kind)">
+            <mat-icon>{{ highlightIcon(highlight.kind) }}</mat-icon>
+            <span>{{ highlight.message }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <mat-accordion multi class="report-accordion">
+    @if (forces.length) {
+      <mat-expansion-panel class="report-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title class="panel-title">
+            <mat-icon>security</mat-icon>
+            Forces en présence
+          </mat-panel-title>
+          <mat-panel-description>{{ forces.length }} camp(s)</mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <mat-accordion multi class="force-accordion">
+          @for (force of forces; track force.playerId) {
+            <app-report-force-panel [force]="force" />
+          }
+        </mat-accordion>
+      </mat-expansion-panel>
+    }
+
+    @if (camps.length) {
+      <mat-expansion-panel class="report-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title class="panel-title">
+            <mat-icon>flag</mat-icon>
+            Camps
+          </mat-panel-title>
+          <mat-panel-description>{{ camps.length }} camp(s)</mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <div class="camps">
+          @for (camp of camps; track camp.playerId) {
+            <div class="camp-line" [class.eliminated]="camp.eliminated">
+              <mat-icon>shield</mat-icon>
+              <span class="camp-name">{{ camp.playerName ?? '#' + camp.playerId }}</span>
+              @if (camp.characterLost) {
+                <span class="badge danger">Personnage perdu</span>
+              }
+              @if (camp.eliminated) {
+                <span class="badge">Camp éliminé</span>
+              }
+              @if (camp.playerEliminated) {
+                <span class="badge danger">Joueur éliminé</span>
+              }
+            </div>
+          }
+        </div>
+      </mat-expansion-panel>
+    }
+  </mat-accordion>
+
+  <section class="report-section">
+    <h3>Pertes</h3>
+    @if (losses.length) {
+      <div class="player-groups">
+        @for (group of losses; track group.playerId) {
+          <article class="player-group" [class.eliminated]="group.eliminated">
+            <header>
+              <span class="player-name">{{ group.playerName }}</span>
+              @if (group.characterLost) {
+                <span class="badge danger">Personnage perdu</span>
+              }
+              <span class="count">{{ group.entries.length }} perte(s)</span>
+            </header>
+            @if (group.entries.length) {
+              <ul class="result-list">
+                @for (casualty of group.entries; track $index) {
+                  <li>
+                    <strong>{{ casualty.label }}</strong>
+                    @if (casualty.experience !== null) {
+                      ({{ casualty.experience | exp }} Exp)
+                    }
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="none">Aucune perte.</p>
+            }
+          </article>
+        }
+      </div>
+    } @else {
+      <p class="none">Aucune perte.</p>
+    }
+  </section>
+
+  <section class="report-section">
+    <h3>Expérience gagnée</h3>
+    @if (gains.length) {
+      <div class="player-groups">
+        @for (group of gains; track group.playerId) {
+          <article class="player-group">
+            <header>
+              <span class="player-name">{{ group.playerName }}</span>
+              <span class="count">{{ group.entries.length }} gain(s)</span>
+            </header>
+            <ul class="result-list">
+              @for (gain of group.entries; track $index) {
+                <li>
+                  <strong>{{ gain.typeBefore }} n°{{ gain.unitNumber }}</strong>
+                  {{ gain.experienceBefore | exp }} Exp + {{ gain.gained | exp }}
+                  @if (gain.typeAfter !== gain.typeBefore) {
+                    → <strong class="evolved">{{ gain.typeAfter }}</strong>
+                  } @else {
+                    → {{ gain.typeAfter }}
+                  }
+                  ({{ gain.experienceAfter | exp }} Exp)
+                </li>
+              }
+            </ul>
+          </article>
+        }
+      </div>
+    } @else {
+      <p class="none">Aucune expérience gagnée.</p>
+    }
+  </section>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-flat-button color="primary" (click)="close()">Fermer</button>
+</mat-dialog-actions>

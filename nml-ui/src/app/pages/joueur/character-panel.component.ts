@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { GameCharacter, Sector } from '../../models';
 import { sectorForces, totalsStats, troopSummaries, vehicleLabels } from './joueur.helpers';
 import { CharacterPortraitComponent } from '../../shared/character-portrait/character-portrait.component';
@@ -15,7 +17,14 @@ import { ExpPipe } from '../../shared/exp.pipe';
 @Component({
   selector: 'app-character-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DecimalPipe, ExpPipe, MatIconModule, CharacterPortraitComponent],
+  imports: [
+    DecimalPipe,
+    ExpPipe,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    CharacterPortraitComponent,
+  ],
   templateUrl: './character-panel.component.html',
   styleUrls: ['./character-panel.component.scss'],
 })
@@ -26,6 +35,8 @@ export class CharacterPanelComponent {
   readonly character = input.required<GameCharacter | null>();
   readonly sector = input<Sector | null>(null);
   readonly playerId = input<number | null>(null);
+  readonly canMove = input(true);
+  readonly moveRequested = output<void>();
 
   readonly forces = computed(() => {
     const sector = this.sector();
@@ -73,5 +84,9 @@ export class CharacterPanelComponent {
       autoFocus: false,
       data,
     });
+  }
+
+  requestMove(): void {
+    if (this.canMove() && this.sector()) this.moveRequested.emit();
   }
 }

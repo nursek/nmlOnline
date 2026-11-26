@@ -1,0 +1,140 @@
+:host {
+  display: block;
+}
+
+.force-panel {
+  margin-bottom: 0.6rem;
+  border-radius: var(--r-sm);
+}
+
+.force-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.force-name {
+  font-weight: 600;
+}
+
+.side {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--cobalt-deep);
+}
+
+.force-desc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  font-size: 0.8rem;
+}
+
+.totals-inline {
+  font-variant-numeric: tabular-nums;
+}
+
+.force-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.entity-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: var(--surface);
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-xs);
+
+  mat-icon {
+    align-self: center;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--muted);
+  }
+}
+
+.entity-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.entity-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stats {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dodge {
+  margin-left: 0.45rem;
+  color: var(--sun);
+  font-weight: 500;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: var(--r-xs);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.force-grand-total {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--line-2);
+}
+
+.total-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.force-grand-total .stats {
+  margin-left: 0;
+}
+
+.stats-missing {
+  margin: 0;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .stats {
+    margin-left: 0;
+    white-space: normal;
+  }
+}

@@ -1,0 +1,204 @@
+.umd {
+  width: 100%;
+}
+
+.umd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  h2 {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .umd-sub {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--muted);
+  }
+}
+
+.umd-sector {
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1.5px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.umd-map-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.umd-map-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+
+  h3 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0;
+    color: var(--ink);
+    font-size: 1.15rem;
+
+    small {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+  }
+}
+
+.umd-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.umd-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  &::before {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+}
+
+.umd-legend-start::before {
+  background: #e8bb45;
+}
+
+.umd-legend-target::before {
+  background: #ff2d9d;
+}
+
+.umd-legend-transit::before {
+  background: #4fc3c9;
+}
+
+.umd-map {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--void);
+}
+
+.umd-kicker {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.umd-kind {
+  padding: 1px 7px;
+  border-radius: var(--r-xs);
+  color: var(--void);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.umd-owner {
+  color: var(--ink-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.umd-order {
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    color: var(--ink);
+    font-size: 0.9rem;
+  }
+
+  > h3 mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    color: var(--accent);
+  }
+}
+
+.umd-pending {
+  margin-top: 10px;
+}
+
+.umd-subhead {
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.umd-pending-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--sun-tint);
+  border-radius: var(--r-xs);
+  background: var(--sun-tint);
+  color: var(--sun);
+  font-size: 0.82rem;
+}
+
+.umd-pending-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.umd-summary {
+  margin-right: auto;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 640px) {
+  .umd-map {
+    aspect-ratio: 4 / 3;
+  }
+}

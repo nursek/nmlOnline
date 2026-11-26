@@ -122,30 +122,6 @@ describe('UnitDetailDialogComponent', () => {
     expect(snackBar.open).toHaveBeenCalledWith('Shoota retiré', 'OK', { duration: 2500 });
   });
 
-  it('bloque un ordre si un ordre est déjà en attente', async () => {
-    movement.orders.set([{ entityIds: [3] }] as never);
-    const page = component();
-
-    await page.submitMove();
-
-    expect(movement.placeFootOrder).not.toHaveBeenCalled();
-    expect(snackBar.open).toHaveBeenCalledWith('Cette unité a déjà un ordre en attente', 'Fermer', {
-      duration: 3000,
-    });
-  });
-
-  it('place un ordre de déplacement sur une route adjacente', async () => {
-    movement.orders.set([]);
-    const page = component();
-    page.targetSector.set(6);
-
-    await page.submitMove();
-
-    expect(movement.placeFootOrder).toHaveBeenCalledWith([3], [5, 6]);
-    expect(snackBar.open).toHaveBeenCalledWith('Ordre: secteur 5 -> 6', 'OK', { duration: 2500 });
-    expect(page.targetSector()).toBeNull();
-  });
-
   it('place un ordre sniper et dérive l’action du propriétaire', async () => {
     alliance.alliedPlayerIds.set(new Set([9]));
     const page = component();
@@ -162,7 +138,7 @@ describe('UnitDetailDialogComponent', () => {
     expect(page.sniperTarget()).toBeNull();
   });
 
-  it('ouvre le sélecteur de slot, annule les ordres, ferme et signale l’image cassée', async () => {
+  it('ouvre le sélecteur de slot, annule l’ordre sniper, ferme et signale l’image cassée', async () => {
     const page = component();
     page.openSlotPicker(page.slotGroups()[1]);
     expect(dialog.open).toHaveBeenCalledWith(
@@ -170,9 +146,7 @@ describe('UnitDetailDialogComponent', () => {
       expect.objectContaining({ data: { unitId: 3, category: 'FIREARM', categoryLabel: 'Distance' } }),
     );
 
-    await page.cancelOrder(9);
     await page.cancelSniperOrder(4);
-    expect(movement.cancelOrder).toHaveBeenCalledWith(9);
     expect(sniper.cancelOrder).toHaveBeenCalledWith(4);
 
     page.onImgError();

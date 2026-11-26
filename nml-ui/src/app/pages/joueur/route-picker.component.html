@@ -1,0 +1,54 @@
+<div class="route-picker">
+  <div class="route-path" aria-live="polite">
+    <span class="route-path-sector route-path-start">Secteur {{ from() }}</span>
+    @for (step of routeSteps(); track $index) {
+      <mat-icon>arrow_forward</mat-icon>
+      <span class="route-path-sector">Secteur {{ step }}</span>
+    }
+    @if (route().length < 2) {
+      <span class="route-empty">Choisissez une destination sur la carte.</span>
+    }
+  </div>
+
+  <div class="route-actions">
+    <button
+      mat-button
+      type="button"
+      [disabled]="disabled() || !canRemoveLast()"
+      (click)="removeLastStep()"
+    >
+      <mat-icon>undo</mat-icon>
+      Retour
+    </button>
+    <button
+      mat-button
+      type="button"
+      [disabled]="disabled() || route().length < 2"
+      (click)="reset()"
+    >
+      <mat-icon>restart_alt</mat-icon>
+      Effacer le chemin
+    </button>
+  </div>
+
+  @if (arrivalSector(); as arrival) {
+    <div class="route-summary">
+      <span class="summary-pill">{{ route().length - 1 }} secteur(s)</span>
+      @if (transitSectors().length) {
+        <span
+          class="summary-pill summary-warning"
+          title="Défense et Armure divisées par deux si un combat a lieu dans ces secteurs"
+        >
+          <mat-icon>warning</mat-icon>
+          Transit exposé : {{ transitSectors().join(', ') }}
+        </span>
+      }
+      <span class="summary-pill">Arrivée : secteur {{ arrival }}{{ arrivalSuffix() }}</span>
+    </div>
+  }
+
+  <p class="route-hint">
+    {{ maxHops() }} secteur(s) maximum. Cliquez sur la carte pour construire le chemin ; Retour
+    retire la dernière étape.
+  </p>
+</div>

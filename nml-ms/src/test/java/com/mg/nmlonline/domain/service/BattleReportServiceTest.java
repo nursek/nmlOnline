@@ -83,6 +83,7 @@ class BattleReportServiceTest {
         assertEquals(7, dto.getTurn());
         assertEquals(32, dto.getSectorNumber());
         assertEquals("Attaquant", dto.getWinnerName());
+        assertEquals(2L, dto.getViewerPlayerId(), "La vue est signée par le joueur qui la consulte");
         assertEquals(2, dto.getCamps().size());
         assertEquals(1, dto.getCasualties().size());
         assertEquals("Heros", dto.getCasualties().getFirst().getLabel());
@@ -140,7 +141,7 @@ class BattleReportServiceTest {
     }
 
     @Test
-    @DisplayName("Le payload v2 garde forces et points clés pour l'admin, la vue joueur ne les expose pas")
+    @DisplayName("Le payload v2 garde le déroulé pour l'admin, la vue joueur l'écarte et expose les forces")
     void playerViewDropsAdminDetail() {
         Player attacker = new Player("Attaquant");
         attacker.setId(1L);
@@ -151,6 +152,13 @@ class BattleReportServiceTest {
         force.setPlayerId(1L);
         force.setPlayerName("Attaquant");
         force.setSide("ATTAQUANT");
+        BattleReportDto.UnitForceDto infantry = new BattleReportDto.UnitForceDto();
+        infantry.setDisplayName("Larbin n°1");
+        infantry.setClassCode("T");
+        infantry.setEquipmentNames(List.of("Pistolet-mitrailleur"));
+        infantry.setStats(stats(10, 15, 10, 0, 10));
+        force.setInfantry(List.of(infantry));
+        force.setTotals(stats(10, 15, 10, 0, 10));
 
         CombatService.SectorBattleResult result = new CombatService.SectorBattleResult(
                 true, "Bataille terminée", List.of(), List.of(), List.of(), List.of(),
@@ -183,8 +191,20 @@ class BattleReportServiceTest {
         assertFalse(json.contains("battleLog"), "La vue joueur ne contient pas le déroulé");
         assertFalse(json.contains("jet secret"), "La vue joueur ne contient pas les messages admin");
         assertFalse(json.contains("coups critiques"), "La vue joueur ne contient pas les points clés admin");
-        assertFalse(json.contains("stats"), "La vue joueur ne contient pas les statistiques");
-        assertFalse(json.contains("equipments"), "La vue joueur ne contient pas les équipements");
+        assertTrue(json.contains("Pistolet-mitrailleur"), "La vue joueur expose l'équipement du combattant");
+        assertEquals(15.0, playerView.getForces().getFirst().getInfantry().getFirst()
+                .getStats().getPdf(), 0.0001, "La vue joueur expose les statistiques de l'unité");
+    }
+
+    private static BattleReportDto.StatsDto stats(double attack, double pdf, double defense,
+                                                  double armor, double evasion) {
+        BattleReportDto.StatsDto stats = new BattleReportDto.StatsDto();
+        stats.setAttack(attack);
+        stats.setPdf(pdf);
+        stats.setDefense(defense);
+        stats.setArmor(armor);
+        stats.setEvasion(evasion);
+        return stats;
     }
 
     private static BattleHighlightDto highlight(String kind, String visibility, String message) {

@@ -47,6 +47,7 @@ import {
 } from '../../shared/board-import-dialog/board-import-dialog.component';
 import { contrastColor, haloColor, MAP_THEME } from './carte.config';
 import { frontBorders, resourceIconSrc } from './carte.helpers';
+import { computeVisualCenter } from './sector-label.helpers';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -444,7 +445,7 @@ export class CarteComponent {
       const sectorNumber = parseInt(id.replace('path', ''), 10);
       if (Number.isNaN(sectorNumber)) return;
 
-      const center = this.computeVisualCenter(path as SVGGeometryElement);
+      const center = computeVisualCenter(path as SVGGeometryElement);
       const text = document.createElementNS(svgNs, 'text');
       text.setAttribute('x', String(center.x));
       text.setAttribute('y', String(center.y));
@@ -458,97 +459,6 @@ export class CarteComponent {
       text.textContent = String(sectorNumber);
       labelsGroup.appendChild(text);
     });
-  }
-
-  /**
-   * Pôle d'inaccessibilité approximé. 1) échantillonne le contour, 2) égrène
-   * une grille dans la bbox en ne gardant que les points intérieurs
-   * (isPointInFill), 3) retourne celui dont la distance min au contour est max.
-   */
-  private computeVisualCenter(el: SVGGeometryElement): { x: number; y: number } {
-    const bbox = el.getBBox();
-    const fallback = { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
-
-    // Échantillonne le contour. getTotalLength/getPointAtLength n'existent que
-    // sur SVGPathElement ; pour les <polygon> on décode les points.
-    const boundary: { x: number; y: number }[] = [];
-    const pathEl = el.tagName.toLowerCase() === 'path' ? (el as SVGPathElement) : null;
-    try {
-      if (pathEl) {
-        const total = pathEl.getTotalLength();
-        if (total <= 0) return fallback;
-        const BOUNDARY_SAMPLES = Math.min(128, Math.max(32, Math.ceil(total / 6)));
-        for (let i = 0; i < BOUNDARY_SAMPLES; i++) {
-          const pt = pathEl.getPointAtLength((i * total) / (BOUNDARY_SAMPLES - 1));
-          boundary.push({ x: pt.x, y: pt.y });
-        }
-      } else {
-        const ptsStr = el.getAttribute('points') ?? '';
-        for (const pair of ptsStr
-          .trim()
-          .split(/[\s,]+/)
-          .reduce<string[][]>((acc, v, i) => {
-            if (i % 2 === 0) acc.push([v]);
-            else acc[acc.length - 1].push(v);
-            return acc;
-          }, [])) {
-          const x = Number(pair[0]);
-          const y = Number(pair[1]);
-          if (Number.isFinite(x) && Number.isFinite(y)) boundary.push({ x, y });
-        }
-        if (boundary.length === 0) return fallback;
-      }
-    } catch {
-      return fallback;
-    }
-
-    // isPointInFill requiert une géométrie « fillable » ; on retombe au besoin.
-    const canFillTest = typeof el.isPointInFill === 'function';
-    // Pas fin pour résoudre les secteurs étroits/allongés (ex. 2, 28, 8, 5,
-    // 42, 43, 14, 25). Coût acceptable au chargement.
-    const step = 4;
-    // Marge préférentielle : on privilégie les candidats dont la distance min
-    // au contour dépasse le demi-glyphe (~12 unités), pour garder le numéro
-    // à l'intérieur même après centrage du texte.
-    const MARGIN = 12;
-    const candidates: { x: number; y: number }[] = [];
-    for (let gy = bbox.y; gy <= bbox.y + bbox.height; gy += step) {
-      for (let gx = bbox.x; gx <= bbox.x + bbox.width; gx += step) {
-        if (canFillTest) {
-          try {
-            if (!el.isPointInFill({ x: gx, y: gy })) continue;
-          } catch {
-            continue;
-          }
-        }
-        candidates.push({ x: gx, y: gy });
-      }
-    }
-    if (candidates.length === 0) return fallback;
-
-    let best = candidates[0];
-    let bestDist = -Infinity;
-    let bestAboveMargin = false;
-    for (const c of candidates) {
-      let minDist = Infinity;
-      for (const b of boundary) {
-        const dx = c.x - b.x;
-        const dy = c.y - b.y;
-        const d = dx * dx + dy * dy;
-        if (d < minDist) minDist = d;
-      }
-      const above = minDist >= MARGIN * MARGIN;
-      if (bestAboveMargin) {
-        if (!above || minDist <= bestDist) continue;
-      } else if (above) {
-        bestAboveMargin = true;
-      } else if (minDist <= bestDist) {
-        continue;
-      }
-      bestDist = minDist;
-      best = c;
-    }
-    return best;
   }
 
   /**
