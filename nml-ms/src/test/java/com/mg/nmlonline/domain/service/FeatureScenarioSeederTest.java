@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoDatabaseReset;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.ScenarioSummaryDto;
 import com.mg.nmlonline.domain.model.alliance.Alliance;
@@ -23,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EmbeddedPostgresTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("FeatureScenarioSeeder — alliance et vente rejouables")
-class FeatureScenarioSeederTest {
+class FeatureScenarioSeederTest extends DemoDatabaseReset {
 
     private Long boardId() {
         return DemoFixtures.mainBoardId(boardRepository);

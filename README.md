@@ -617,7 +617,7 @@ is created; a published issue can be corrected without changing its publication 
 ```bash
 cd nml-ms
 
-# All backend tests on embedded PostgreSQL + Flyway (no install, no Docker) — ~8 min
+# All backend tests on embedded PostgreSQL + Flyway (no install, no Docker) — ~5 min
 ./mvnw clean test
 
 # Fast iteration while developing
@@ -635,6 +635,10 @@ The full suite runs on the embedded PostgreSQL in a few minutes, locally and in 
 buys detection before the push: a migration forgotten behind a new entity field fails `mvn test`
 here rather than in CI after the push, or worse, at the next production boot. The ~14 s PostgreSQL
 startup is paid once per JVM, so extra tests on an existing Spring context are nearly free.
+
+Tests that mutate the demo fixtures extend `DemoDatabaseReset` (in-context truncate + reimport,
+~2.5 s) instead of `@DirtiesContext` (~8 s per context rebuild); `@DirtiesContext(AFTER_CLASS)` on
+those classes isolates the next class.
 
 The suite mixes unit tests (domain models, game-logic services with mocked repositories) and integration tests (Spring context, security ownership). Game rules are pinned as characterization tests: economy (purchases, sale multipliers), units (experience thresholds, injury, equipment formulas), buildings (cooldowns, capture, vampirisation), vehicles (pilot rules, balance table), combat (deterministic phases, no-evasion scenarios) and player stats formulas. Behavior suspected to be buggy is pinned with a characterization test rather than fixed. The end-game flows are covered too: elimination order and snapshots, podium and posthumous champion, final alliance break, gazette masthead/draft/publication and the read-only game-over filter.
 

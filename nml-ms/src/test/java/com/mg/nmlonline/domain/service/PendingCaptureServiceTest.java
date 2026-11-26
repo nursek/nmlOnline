@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.api.dto.PendingCaptureDto;
 import com.mg.nmlonline.domain.model.alliance.PendingCapture;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.sector.Sector;
@@ -16,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -102,6 +104,47 @@ class PendingCaptureServiceTest {
         when(repository.findById(11L)).thenReturn(Optional.of(pending));
 
         assertThrows(IllegalStateException.class, () -> service.resolve(7L, 11L, 42L));
+    }
+
+    @Test
+    @DisplayName("list résout les noms des candidats et ignore les attributions résolues")
+    void listResolvesCandidateNames() {
+        PendingCapture first = PendingCapture.create(7L, 1, 3, List.of(42L, 43L));
+        first.setId(11L);
+        when(repository.findByBoardIdAndResolvedFalseOrderByIdAsc(7L)).thenReturn(List.of(first));
+        Player a = new Player("Alpha");
+        a.setId(42L);
+        Player b = new Player("Beta");
+        b.setId(43L);
+        when(playerRepository.findAllById(Set.of(42L, 43L))).thenReturn(List.of(a, b));
+
+        List<PendingCaptureDto> pendings = service.list(7L);
+
+        assertEquals(1, pendings.size());
+        assertEquals(7L, pendings.getFirst().getBoardId());
+        assertEquals(List.of("Alpha", "Beta"), pendings.getFirst().getCandidates().stream()
+                .map(PendingCaptureDto.CandidateDto::getPlayerName).toList());
+    }
+
+    @Test
+    @DisplayName("resolve refuse une attribution ou un candidat d'une autre partie")
+    void resolveIsScopedToTheBoard() {
+        PendingCapture pending = PendingCapture.create(8L, 1, 3, List.of(42L));
+        pending.setId(11L);
+        when(repository.findById(11L)).thenReturn(Optional.of(pending));
+
+        assertThrows(SecurityException.class, () -> service.resolve(7L, 11L, 42L));
+
+        PendingCapture local = PendingCapture.create(7L, 1, 3, List.of(42L));
+        local.setId(12L);
+        when(repository.findById(12L)).thenReturn(Optional.of(local));
+        when(boardRepository.findById(7L)).thenReturn(Optional.of(boardWithSector()));
+        Player outsider = new Player("Etranger");
+        outsider.setId(42L);
+        outsider.setBoardId(8L);
+        when(playerRepository.findById(42L)).thenReturn(Optional.of(outsider));
+
+        assertThrows(IllegalArgumentException.class, () -> service.resolve(7L, 12L, 42L));
     }
 
     @Test

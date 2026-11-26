@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.AutoEquipResultDto;
 import com.mg.nmlonline.api.dto.BuyUnitRequestDto;
@@ -344,12 +345,7 @@ class UnitServiceTest {
 
     /** Résout le joueur par nom d'utilisateur : les ids générés dépendent de la séquence, pas d'une constante. */
     private Player playerOfTestUser(String username) {
-        User user = userRepository.findByUsername(username);
-        assertNotNull(user, "L'utilisateur de test " + username + " doit exister");
-        Player player = playerService.findByUserId(user.getId(),
-                boardService.getAllBoards().getFirst().getId());
-        assertNotNull(player, "Le joueur lié à " + username + " doit exister");
-        return player;
+        return DemoFixtures.playerOfTestUser(userRepository, playerService, boardService, username);
     }
 
     private static Sector findNeutralSector(Board board, int preferred) {

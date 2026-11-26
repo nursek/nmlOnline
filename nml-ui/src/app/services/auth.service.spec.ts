@@ -25,7 +25,14 @@ function response(): AuthResponse {
   return { token: 'token', id: 1, name: 'lurio', role: 'USER' };
 }
 
-function setup(returnUrl?: string) {
+function setup(returnUrl?: string, stored = false) {
+  if (stored) {
+    sessionStorage.setItem('accessToken', 'vieux');
+    sessionStorage.setItem(
+      'user',
+      JSON.stringify({ id: 1, username: 'lurio', role: 'USER', avatarUrl: null }),
+    );
+  }
   const router = {
     navigate: jest.fn().mockResolvedValue(true),
     routerState: { snapshot: { root: { queryParamMap: new Map([['returnUrl', returnUrl]]) } } },
@@ -53,7 +60,7 @@ describe('AuthService — route après login', () => {
     const { auth, instance: service, http, router } = setup();
     const enter = jest.spyOn(service, 'enter').mockImplementation(() => undefined);
 
-    const login = auth.login({ username: 'lurio', password: 'secret' });
+    const login = auth.login({ username: 'lurio', password: 'secret', rememberMe: false });
     http.expectOne(`${environment.apiBaseUrl}/login`).flush(response());
     await new Promise((resolve) => setTimeout(resolve, 0));
     http
@@ -74,7 +81,7 @@ describe('AuthService — route après login', () => {
       const { auth, instance: service, http } = setup(returnUrl);
       const enter = jest.spyOn(service, 'enter').mockImplementation(() => undefined);
 
-      const login = auth.login({ username: 'lurio', password: 'secret' });
+      const login = auth.login({ username: 'lurio', password: 'secret', rememberMe: false });
       http.expectOne(`${environment.apiBaseUrl}/login`).flush(response());
       await new Promise((resolve) => setTimeout(resolve, 0));
       http.expectOne(`${environment.apiBaseUrl}/instances`).flush([instance(7, true, 'PLAYER')]);
@@ -87,7 +94,7 @@ describe('AuthService — route après login', () => {
   it('passe par le sélecteur quand le compte joue plusieurs parties', async () => {
     const { auth, http, router } = setup();
 
-    const login = auth.login({ username: 'lurio', password: 'secret' });
+    const login = auth.login({ username: 'lurio', password: 'secret', rememberMe: false });
     http.expectOne(`${environment.apiBaseUrl}/login`).flush(response());
     await new Promise((resolve) => setTimeout(resolve, 0));
     http
@@ -101,7 +108,7 @@ describe('AuthService — route après login', () => {
   it('ne transforme pas une liste indisponible en échec de connexion', async () => {
     const { auth, instance: service, http, router } = setup();
 
-    const login = auth.login({ username: 'lurio', password: 'secret' });
+    const login = auth.login({ username: 'lurio', password: 'secret', rememberMe: false });
     http.expectOne(`${environment.apiBaseUrl}/login`).flush(response());
     await new Promise((resolve) => setTimeout(resolve, 0));
     http
@@ -126,7 +133,7 @@ describe('AuthService — blocage temporaire du login', () => {
     jest.useFakeTimers();
     const { auth, http } = setup();
 
-    const login = auth.login({ username: 'lurio', password: 'mauvais' });
+    const login = auth.login({ username: 'lurio', password: 'mauvais', rememberMe: false });
     http.expectOne(`${environment.apiBaseUrl}/login`).flush(
       { detail: 'Trop de tentatives, réessayez plus tard' },
       { status: 429, statusText: 'Too Many Requests', headers: { 'Retry-After': '90' } },
@@ -141,5 +148,124 @@ describe('AuthService — blocage temporaire du login', () => {
 
     jest.advanceTimersByTime(60_000);
     expect(auth.retryInSeconds()).toBe(0);
+  });
+});
+
+describe('AuthService — dérivés de session', () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => sessionStorage.clear());
+
+  function serviceFor(userRole: string | null, instanceRole: string | null) {
+    sessionStorage.clear();
+    if (userRole) {
+      sessionStorage.setItem(
+        'user',
+        JSON.stringify({ id: 1, username: 'lurio', role: userRole, avatarUrl: null }),
+      );
+    }
+    if (instanceRole) sessionStorage.setItem('instanceRole', instanceRole);
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: Router, useValue: { navigate: jest.fn().mockResolvedValue(true) } },
+      ],
+    });
+    return TestBed.inject(AuthService);
+  }
+
+  it('canAdmin suit le rôle de la partie : joueur non, MJ oui, sans toucher au jeton', () => {
+    expect(serviceFor('USER', 'PLAYER').canAdmin()).toBe(false);
+    expect(serviceFor('USER', 'MJ').canAdmin()).toBe(true);
+    expect(serviceFor('ADMIN', null).canAdmin()).toBe(true);
+    expect(serviceFor('USER', 'ADMIN').canAdmin()).toBe(true);
+    expect(serviceFor(null, 'MJ').isAuthenticated()).toBe(false);
+  });
+
+  it('isAdmin ne confond pas le rôle global et le rôle MJ de la partie', () => {
+    expect(serviceFor('ADMIN', 'MJ').isAdmin()).toBe(true);
+    expect(serviceFor('USER', 'MJ').isAdmin()).toBe(false);
+  });
+
+  it('initSession sans jeton ni mémorisation marque la session initialisée sans appel réseau', async () => {
+    const auth = serviceFor(null, null);
+    const http = TestBed.inject(HttpTestingController);
+
+    await auth.initSession();
+
+    expect(auth.initialized()).toBe(true);
+    expect(auth.isAuthenticated()).toBe(false);
+    http.verify();
+  });
+
+  it('logout nettoie la session locale même si le serveur échoue', async () => {
+    const auth = serviceFor('USER', 'PLAYER');
+    const http = TestBed.inject(HttpTestingController);
+    const router = TestBed.inject(Router);
+
+    const logout = auth.logout();
+    http
+      .expectOne(`${environment.apiBaseUrl}/auth/logout`)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+    await logout;
+
+    expect(auth.isAuthenticated()).toBe(false);
+    expect(sessionStorage.getItem('user')).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+  });
+});
+
+describe('AuthService — restauration de session au démarrage', () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => {
+    sessionStorage.clear();
+    localStorage.clear();
+  });
+
+  it('un refresh valide restaure l’utilisateur et le jeton', async () => {
+    const { auth, http } = setup(undefined, true);
+
+    const pending = auth.initSession();
+    http.expectOne(`${environment.apiBaseUrl}/auth/refresh`).flush({
+      valid: true,
+      token: 'neuf',
+      id: 1,
+      name: 'lurio',
+      role: 'USER',
+    });
+    await pending;
+
+    expect(auth.initialized()).toBe(true);
+    expect(auth.isAuthenticated()).toBe(true);
+    expect(sessionStorage.getItem('accessToken')).toBe('neuf');
+  });
+
+  it('une panne 5xx garde le jeton pour retenter plus tard', async () => {
+    const { auth, http } = setup(undefined, true);
+
+    const pending = auth.initSession();
+    http
+      .expectOne(`${environment.apiBaseUrl}/auth/refresh`)
+      .flush(null, { status: 500, statusText: 'Erreur' });
+    await pending;
+
+    expect(auth.initialized()).toBe(true);
+    expect(auth.isAuthenticated()).toBe(false);
+    expect(sessionStorage.getItem('accessToken')).toBe('vieux');
+  });
+
+  it('un 401 purge la session stockée', async () => {
+    const { auth, http } = setup(undefined, true);
+
+    const pending = auth.initSession();
+    http
+      .expectOne(`${environment.apiBaseUrl}/auth/refresh`)
+      .flush(null, { status: 401, statusText: 'Non autorisé' });
+    await pending;
+
+    expect(auth.initialized()).toBe(true);
+    expect(sessionStorage.getItem('accessToken')).toBeNull();
+    expect(sessionStorage.getItem('user')).toBeNull();
   });
 });

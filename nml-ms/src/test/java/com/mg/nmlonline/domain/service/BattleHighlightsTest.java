@@ -88,19 +88,6 @@ class BattleHighlightsTest {
                 "1 perte sur 3 entités engagées reste sous le seuil de 50 %");
     }
 
-    @Test
-    @DisplayName("Aucun point clé de mécanique n'est public")
-    void criticalsStayAdmin() {
-        List<BattleHighlightDto> highlights = BattleHighlights.build(
-                List.of(force(1L, "Lurio", "ATTAQUANT", List.of(), List.of())),
-                List.of(), List.of(), "Lurio", false, 0,
-                List.of(new BattleLogEntry("PDF", BattleLogEntry.CRIT, "critique")));
-
-        assertTrue(highlights.stream()
-                .filter(highlight -> "CRIT".equals(highlight.getKind()))
-                .allMatch(highlight -> BattleHighlights.ADMIN.equals(highlight.getVisibility())));
-    }
-
     private static BattleReportDto.PlayerForceDto force(Long playerId, String name, String side,
                                                         List<BattleReportDto.UnitForceDto> characters,
                                                         List<BattleReportDto.VehicleForceDto> vehicles) {

@@ -2,7 +2,7 @@ import { ApplicationRef, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { NotificationsService } from './notifications.service';
 import { AuthService } from './auth.service';
 import { InstanceService } from './instance.service';
@@ -91,6 +91,70 @@ describe('NotificationsService', () => {
 
     expect(service.unreadCount()).toBe(0);
     expect(service.items().every((item) => item.readAt)).toBe(true);
+  });
+
+
+  it('open marque lu, ferme le toast et navigue avec l’identifiant de notification', async () => {
+    const service = TestBed.inject(NotificationsService);
+    const http = TestBed.inject(HttpTestingController);
+    const router = TestBed.inject(Router);
+    const navigate = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const first = notification(5);
+
+    TestBed.tick();
+    http.expectOne(`${environment.apiBaseUrl}/notifications`).flush(feed([first]));
+    await TestBed.inject(ApplicationRef).whenStable();
+
+    // Deuxième poll : la notification 6 est nouvelle, un toast est créé.
+    const second = notification(6);
+    const reload = service.reload();
+    http.expectOne(`${environment.apiBaseUrl}/notifications`).flush(feed([second, first]));
+    await reload;
+    await TestBed.inject(ApplicationRef).whenStable();
+    expect(service.toasts().map((toast) => toast.id)).toEqual([6]);
+
+    service.open(second);
+    http.expectOne(`${environment.apiBaseUrl}/notifications/6/read`).flush(null);
+    await Promise.resolve();
+
+    expect(navigate).toHaveBeenCalledWith('/joueur?notif=6');
+    expect(service.unreadCount()).toBe(1);
+    expect(service.toasts()).toHaveLength(0);
+  });
+
+  it('open n’ouvre pas un lien externe ou javascript', async () => {
+    const service = TestBed.inject(NotificationsService);
+    const http = TestBed.inject(HttpTestingController);
+    const router = TestBed.inject(Router);
+    const navigate = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const unsafe = { ...notification(6), link: 'javascript:alert(1)' };
+
+    TestBed.tick();
+    http.expectOne(`${environment.apiBaseUrl}/notifications`).flush(feed([unsafe]));
+    await TestBed.inject(ApplicationRef).whenStable();
+
+    service.open(unsafe);
+    http.expectOne(`${environment.apiBaseUrl}/notifications/6/read`).flush(null);
+    await Promise.resolve();
+
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('une lecture en échec recharge le fil', async () => {
+    const service = TestBed.inject(NotificationsService);
+    const http = TestBed.inject(HttpTestingController);
+    const item = notification(7);
+
+    TestBed.tick();
+    http.expectOne(`${environment.apiBaseUrl}/notifications`).flush(feed([item]));
+    await TestBed.inject(ApplicationRef).whenStable();
+
+    const pending = service.markRead(7);
+    http
+      .expectOne(`${environment.apiBaseUrl}/notifications/7/read`)
+      .flush(null, { status: 500, statusText: 'Erreur' });
+    await pending;
+    http.expectOne(`${environment.apiBaseUrl}/notifications`).flush(feed([item]));
   });
 
   it('ignore un poll antérieur à une lecture locale', async () => {

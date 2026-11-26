@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.domain.model.board.Board;
+import com.mg.nmlonline.domain.model.notification.NotificationType;
 import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.press.EliminationEvent;
@@ -21,8 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,6 +77,7 @@ class GameEndServiceTest {
     @Test
     void oneSurvivorWins() {
         Board board = new Board();
+        board.setId(1L);
         board.setCurrentTurn(5);
         Player winner = new Player("nursek");
         winner.setId(1L);
@@ -88,6 +92,8 @@ class GameEndServiceTest {
         assertNotNull(board.getFinishedAt());
         assertEquals(1L, board.getWinnerPlayerId());
         assertFalse(board.isWinnerAdjusted());
+        verify(notificationService).notifyBoard(eq(1L), eq(NotificationType.GAME_FINISHED),
+                any(), contains("nursek"), eq("/podium"));
     }
 
     @Test
@@ -161,6 +167,50 @@ class GameEndServiceTest {
 
         assertThrows(IllegalStateException.class,
                 () -> service.adjustWinner(1L, survivor.getId()));
+    }
+
+    @Test
+    void alreadyFinishedGameIsNotFinishedTwice() {
+        Board board = new Board();
+        board.setId(1L);
+        board.setCurrentTurn(7);
+        board.setFinishedAt(Instant.now());
+        board.setWinnerPlayerId(1L);
+        Player winner = new Player("nursek");
+        when(boardRepository.findById(1L)).thenReturn(Optional.of(board));
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(winner));
+
+        GameEndService.GameOutcome state = service.finishIfOver(board,
+                List.of(winner, eliminated("lurio")), List.of());
+
+        assertTrue(state.finished());
+        assertEquals("nursek", state.winnerName());
+        verify(notificationService, never()).notifyBoard(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void gameNeedsTwoPlayersAndAWinner() {
+        Board board = new Board();
+        Player only = new Player("nursek");
+
+        assertFalse(service.finishIfOver(board, List.of(only), List.of()).finished());
+
+        Board allDead = new Board();
+        allDead.setId(1L);
+        when(eliminationEventRepository.findFirstByBoardIdOrderByDeathIndexDesc(1L))
+                .thenReturn(Optional.empty());
+
+        assertFalse(service.finishIfOver(allDead,
+                List.of(eliminated("nursek"), eliminated("lurio")), List.of()).finished());
+        assertNull(allDead.getFinishedAt());
+    }
+
+    @Test
+    void adjustWinnerRequiresAFinishedGame() {
+        Board board = new Board();
+        when(boardRepository.findById(1L)).thenReturn(Optional.of(board));
+
+        assertThrows(IllegalStateException.class, () -> service.adjustWinner(1L, 2L));
     }
 
     private static Player eliminated(String name) {

@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.DemoFixtures;
+import com.mg.nmlonline.DemoDatabaseReset;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.GamePodiumDto;
 import com.mg.nmlonline.api.dto.NotificationFeedDto;
@@ -25,9 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EmbeddedPostgresTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("Scénario dev — fin de partie à un survivant")
-class EndGameScenarioSeederTest {
+class EndGameScenarioSeederTest extends DemoDatabaseReset {
 
     @Autowired
     private EndGameScenarioSeeder seeder;

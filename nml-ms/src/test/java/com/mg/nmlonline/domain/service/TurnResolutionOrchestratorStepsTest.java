@@ -1,5 +1,6 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.api.dto.PendingConflictDto;
 import com.mg.nmlonline.api.dto.ResolvedBattleDto;
@@ -48,7 +49,7 @@ class TurnResolutionOrchestratorStepsTest {
     private BoardRepository boardRepository;
 
     private Long boardId() {
-        return boardRepository.findAll().getFirst().getId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     @Autowired

@@ -1,6 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
+import com.mg.nmlonline.domain.exception.PlayerActionUndoException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +31,8 @@ class ResolutionLockTest {
     private SniperOrderService sniperOrderService;
     @Autowired
     private VehicleService vehicleService;
+    @Autowired
+    private PlayerActionService playerActionService;
 
     @BeforeEach
     void lock() {
@@ -50,10 +53,17 @@ class ResolutionLockTest {
                 refused(() -> unitService.cancelOrder(USER_ID, 1L, BOARD_ID)),
                 refused(() -> sniperOrderService.cancel(USER_ID, BOARD_ID, 1L)),
                 refused(() -> vehicleService.buyVehicle(USER_ID, "MOTO", 1, BOARD_ID)),
-                refused(() -> vehicleService.buyVehiclesBatch(USER_ID, List.of(), BOARD_ID)));
+                refused(() -> vehicleService.buyVehiclesBatch(USER_ID, List.of(), BOARD_ID)),
+                refused(() -> sniperOrderService.place(USER_ID, BOARD_ID, 1L, 2)),
+                refused(PlayerActionUndoException.class,
+                        () -> playerActionService.undoFrom(USER_ID, BOARD_ID, 1L)));
     }
 
     private static Executable refused(Executable mutation) {
-        return () -> assertThrows(IllegalStateException.class, mutation);
+        return refused(IllegalStateException.class, mutation);
+    }
+
+    private static Executable refused(Class<? extends Throwable> expected, Executable mutation) {
+        return () -> assertThrows(expected, mutation);
     }
 }

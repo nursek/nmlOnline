@@ -6,6 +6,8 @@ import com.mg.nmlonline.domain.model.player.EliminationCause;
 import com.mg.nmlonline.domain.model.player.Player;
 import com.mg.nmlonline.domain.model.player.PlayerRace;
 import com.mg.nmlonline.domain.model.press.EliminationEvent;
+import com.mg.nmlonline.domain.model.press.GazetteIssue;
+import com.mg.nmlonline.domain.model.press.GazetteStatus;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
 import com.mg.nmlonline.infrastructure.repository.EliminationEventRepository;
 import com.mg.nmlonline.infrastructure.repository.GazetteIssueRepository;
@@ -20,6 +22,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -48,6 +51,10 @@ class GamePodiumServiceTest {
                         List.of(1L)),
                 event(2L, "lurio", 1, EliminationCause.MAIN_CHARACTER_KILLED, 1L, "nursek",
                         List.of())));
+        GazetteIssue lastPublished = new GazetteIssue();
+        lastPublished.setTurn(4);
+        when(gazetteIssueRepository.findFirstByBoardIdAndStatusOrderByTurnDesc(
+                1L, GazetteStatus.PUBLISHED)).thenReturn(Optional.of(lastPublished));
 
         GamePodiumDto dto = service.getPodium(1L);
 
@@ -68,6 +75,7 @@ class GamePodiumServiceTest {
         assertEquals(1, dto.getPlaces().get(1).getKills());
         assertTrue(dto.getPlaces().get(1).isDefinitive());
         assertNull(dto.getPlaces().get(0).getEliminatedTurn());
+        assertEquals(4, dto.getLastGazetteTurn());
     }
 
     @Test
@@ -107,6 +115,16 @@ class GamePodiumServiceTest {
         assertEquals(1, dto.getActivePlayers());
         assertNull(dto.getChampion());
         assertTrue(dto.getPlaces().isEmpty());
+    }
+
+    @Test
+    void finishedGameWithSeveralSurvivorsIsInconsistent() {
+        Board board = finishedBoard(1L);
+        when(boardRepository.findById(1L)).thenReturn(Optional.of(board));
+        when(playerRepository.findByBoardId(1L)).thenReturn(List.of(
+                player(1L, "nursek", false), player(2L, "lurio", false)));
+
+        assertThrows(IllegalStateException.class, () -> service.getPodium(1L));
     }
 
     private static Board finishedBoard(Long winnerId) {

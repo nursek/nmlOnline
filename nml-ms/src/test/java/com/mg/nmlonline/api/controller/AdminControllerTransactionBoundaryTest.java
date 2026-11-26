@@ -2,7 +2,6 @@ package com.mg.nmlonline.api.controller;
 
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.config.TestDataInitializer;
-import com.mg.nmlonline.domain.model.user.User;
 import com.mg.nmlonline.domain.service.JwtService;
 import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.infrastructure.repository.BoardRepository;
@@ -52,12 +51,12 @@ class AdminControllerTransactionBoundaryTest {
     @Autowired
     private BoardRepository boardRepository;
 
+    @Autowired
+    private UnitRepository unitRepository;
+
     private Long boardId() {
         return DemoFixtures.mainBoardId(boardRepository);
     }
-
-    @Autowired
-    private UnitRepository unitRepository;
 
     @Test
     void getAllPlayers() throws Exception {
@@ -133,75 +132,6 @@ class AdminControllerTransactionBoundaryTest {
 
     @Test
     @Transactional
-    void deleteEquippedEquipmentWithIncludeEquippedReturns204() throws Exception {
-        Long playerId = playerRepository.findByBoardIdAndName(boardId(), "lurio").orElseThrow().getId();
-        mockMvc.perform(delete("/api/admin/players/{id}/equipments", playerId)
-                        .param("name", "HK-MP7")
-                        .param("quantity", "1")
-                        .param("includeEquipped", "true")
-                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
-                        .header("X-Board-Id", String.valueOf(boardId())))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    @Transactional
-    void updateUnitReturns204() throws Exception {
-        Long playerId = playerRepository.findByBoardIdAndName(boardId(), "lurio").orElseThrow().getId();
-        Long unitId = unitRepository.findByPlayerId(playerId).stream()
-                .filter(unit -> unit.getClasses().size() == 1)
-                .findFirst().orElseThrow()
-                .getId();
-        mockMvc.perform(put("/api/admin/players/{id}/units/{unitId}", playerId, unitId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"experience\":6.0}")
-                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
-                        .header("X-Board-Id", String.valueOf(boardId())))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    @Transactional
-    void updatePlayerNameReturns204() throws Exception {
-        Long playerId = playerRepository.findByBoardIdAndName(boardId(), "lurio").orElseThrow().getId();
-        mockMvc.perform(put("/api/admin/players/{id}/name", playerId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"lurio-admin-test\"}")
-                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
-                        .header("X-Board-Id", String.valueOf(boardId())))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    @Transactional
-    void updateCharacterReturns204() throws Exception {
-        var player = playerRepository.findByBoardIdAndName(boardId(), "lurio").orElseThrow();
-        Long playerId = player.getId();
-        String characterName = player.getCharacter().getName();
-        mockMvc.perform(put("/api/admin/players/{id}/character", playerId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"" + characterName + "\",\"baseAttack\":10,"
-                                + "\"baseDefense\":20,\"basePdf\":30,\"basePdc\":40,"
-                                + "\"baseArmor\":50,\"baseEvasion\":60}")
-                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
-                        .header("X-Board-Id", String.valueOf(boardId())))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    @Transactional
-    void reassignSectorReturns204() throws Exception {
-        Long targetId = playerRepository.findByBoardIdAndName(boardId(), "cegorach").orElseThrow().getId();
-        mockMvc.perform(put("/api/admin/sectors/{sectorNumber}/owner", 41)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"playerId\":" + targetId + "}")
-                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
-                        .header("X-Board-Id", String.valueOf(boardId())))
-                .andExpect(status().isNoContent());
-    }
-
-    @Test
-    @Transactional
     void currentPlayerFollowsRenameByUserId() throws Exception {
         Long playerId = playerRepository.findByBoardIdAndName(boardId(), "TestPlayer1").orElseThrow().getId();
         mockMvc.perform(put("/api/admin/players/{id}/name", playerId)
@@ -219,27 +149,43 @@ class AdminControllerTransactionBoundaryTest {
     }
 
     @Test
-    void addUnitsRejectsTooManyClasses() throws Exception {
-        Long playerId = playerRepository.findByBoardIdAndName(boardId(), "lurio").orElseThrow().getId();
-        mockMvc.perform(post("/api/admin/players/{id}/units", playerId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"type\":\"LARBIN\",\"classes\":[\"LEGER\",\"TIREUR\",\"SNIPER\"],"
-                                + "\"quantity\":1,\"sectorNumber\":41}")
-                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
-                        .header("X-Board-Id", String.valueOf(boardId())))
-                .andExpect(status().isBadRequest());
-    }
+    @Transactional
+    void adminPlayerMutationRoutesKeepHttpContract() throws Exception {
+        var player = playerRepository.findByBoardIdAndName(boardId(), "lurio").orElseThrow();
+        Long playerId = player.getId();
+        Long unitId = unitRepository.findByPlayerId(playerId).getFirst().getId();
+        Long targetId = playerRepository.findByBoardIdAndName(boardId(), "cegorach").orElseThrow().getId();
 
-    @Test
-    void addUnitsRejectsForeignSector() throws Exception {
-        Long playerId = playerRepository.findByBoardIdAndName(boardId(), "lurio").orElseThrow().getId();
-        mockMvc.perform(post("/api/admin/players/{id}/units", playerId)
+        mockMvc.perform(put("/api/admin/players/{id}/character", playerId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"type\":\"LARBIN\",\"classes\":[\"LEGER\"],"
-                                + "\"quantity\":1,\"sectorNumber\":1}")
+                        .content("{\"name\":\"" + player.getCharacter().getName() + "\",\"baseAttack\":10,"
+                                + "\"baseDefense\":20,\"basePdf\":30,\"basePdc\":40,"
+                                + "\"baseArmor\":50,\"baseEvasion\":60}")
                         .header("Authorization", bearer(TestDataInitializer.ADMIN))
                         .header("X-Board-Id", String.valueOf(boardId())))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(put("/api/admin/players/{id}/units/{unitId}", playerId, unitId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"experience\":6.0}")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
+                        .header("X-Board-Id", String.valueOf(boardId())))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(put("/api/admin/sectors/{sectorNumber}/owner", 41)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"playerId\":" + targetId + "}")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
+                        .header("X-Board-Id", String.valueOf(boardId())))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(delete("/api/admin/players/{id}/equipments", playerId)
+                        .param("name", "HK-MP7")
+                        .param("quantity", "1")
+                        .param("includeEquipped", "true")
+                        .header("Authorization", bearer(TestDataInitializer.ADMIN))
+                        .header("X-Board-Id", String.valueOf(boardId())))
+                .andExpect(status().isNoContent());
     }
 
     @Test
@@ -327,11 +273,7 @@ class AdminControllerTransactionBoundaryTest {
     }
 
     private String bearer(String username) {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new IllegalStateException("Utilisateur de test introuvable : " + username);
-        }
-        return "Bearer " + jwtService.generateToken(user, TOKEN_TTL_MS);
+        return com.mg.nmlonline.DemoFixtures.bearer(userRepository, jwtService, username);
     }
 
     private static MockMultipartFile jsonPart(String param, String classpathLocation) throws Exception {

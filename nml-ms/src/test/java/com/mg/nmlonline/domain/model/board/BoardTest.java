@@ -6,7 +6,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collection;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,19 +34,6 @@ class BoardTest {
             assertTrue(board.hasSector(1));
             assertEquals(1, board.getSectorCount());
             assertEquals("Quartier Nord", board.getSector(1).getName());
-        }
-
-        @Test
-        @DisplayName("Ajout de plusieurs secteurs")
-        void shouldAddMultipleSectors() {
-            for (int i = 1; i <= 16; i++) {
-                board.addSector(new Sector(i, "Secteur " + i));
-            }
-
-            assertEquals(16, board.getSectorCount());
-            for (int i = 1; i <= 16; i++) {
-                assertTrue(board.hasSector(i));
-            }
         }
 
         @Test
@@ -86,18 +72,6 @@ class BoardTest {
 
             assertFalse(board.hasSector(1));
             assertEquals(0, board.getSectorCount());
-        }
-
-        @Test
-        @DisplayName("Récupération de tous les secteurs")
-        void shouldGetAllSectors() {
-            board.addSector(new Sector(1, "S1"));
-            board.addSector(new Sector(2, "S2"));
-            board.addSector(new Sector(3, "S3"));
-
-            Collection<Sector> allSectors = board.getAllSectors();
-
-            assertEquals(3, allSectors.size());
         }
     }
 

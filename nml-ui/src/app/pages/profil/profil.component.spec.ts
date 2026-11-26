@@ -48,7 +48,9 @@ describe('ProfilComponent', () => {
     const composant = TestBed.createComponent(ProfilComponent).componentInstance;
 
     expect(composant.pseudoModifie()).toBe(false);
-    composant.pseudo.set('lurio2');
+    composant.pseudo.set('l');
+    expect(composant.pseudoModifie()).toBe(false);
+    composant.pseudo.set('  lurio2  ');
     expect(composant.pseudoModifie()).toBe(true);
 
     composant.motDePasseActuel.set('Actuel123');
@@ -57,6 +59,46 @@ describe('ProfilComponent', () => {
     expect(composant.motDePasseValide()).toBe(false);
     composant.confirmationMotDePasse.set('motdepasse1');
     expect(composant.motDePasseValide()).toBe(true);
+  });
+
+  it('enregistre le pseudo nettoyé et met à jour la session', async () => {
+    api.updateProfileUsername.mockReturnValue(of({ ...utilisateur, username: 'lurio2' }));
+    const composant = TestBed.createComponent(ProfilComponent).componentInstance;
+    composant.pseudo.set('  lurio2  ');
+
+    await composant.enregistrerPseudo({ preventDefault: jest.fn() } as unknown as Event);
+
+    expect(api.updateProfileUsername).toHaveBeenCalledWith('lurio2');
+    expect(auth.updateUser).toHaveBeenCalledWith({ username: 'lurio2' });
+    expect(composant.pseudo()).toBe('lurio2');
+    expect(composant.enregistrementPseudo()).toBe(false);
+  });
+
+  it('refuse une photo de mauvais format ou trop lourde sans appel API', async () => {
+    const composant = TestBed.createComponent(ProfilComponent).componentInstance;
+    await composant.choisirPhoto({
+      target: { files: [new File(['x'], 'photo.gif', { type: 'image/gif' })], value: '' },
+    } as unknown as Event);
+    expect(composant.erreurPhoto()).toContain('PNG, JPEG ou WebP');
+
+    const lourde = new File([new Uint8Array(8 * 1024 * 1024 + 1)], 'photo.png', {
+      type: 'image/png',
+    });
+    await composant.choisirPhoto({
+      target: { files: [lourde], value: '' },
+    } as unknown as Event);
+    expect(composant.erreurPhoto()).toContain('8 Mo');
+    expect(api.updateProfileAvatar).not.toHaveBeenCalled();
+  });
+
+  it('retire la photo de profil', async () => {
+    api.updateProfileAvatar.mockReturnValue(of({ ...utilisateur, avatarUrl: null }));
+    const composant = TestBed.createComponent(ProfilComponent).componentInstance;
+
+    await composant.retirerPhoto();
+
+    expect(api.updateProfileAvatar).toHaveBeenCalledWith(null);
+    expect(auth.updateUser).toHaveBeenCalledWith({ avatarUrl: null });
   });
 
   it('recadre la photo en carré 256 et envoie le data URL', async () => {

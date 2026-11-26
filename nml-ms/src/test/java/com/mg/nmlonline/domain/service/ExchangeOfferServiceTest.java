@@ -338,6 +338,31 @@ class ExchangeOfferServiceTest {
     }
 
     @Nested
+    @DisplayName("Vue joueur")
+    class PlayerListTests {
+
+        @Test
+        @DisplayName("La vue joueur expire puis résout les noms des deux parties")
+        void shouldListOffersWithNamesAndExpiration() {
+            ExchangeOffer offer = offerOf(100.0, 1, 2);
+            when(playerRepository.findByUserIdAndBoardId(11L, BOARD_ID)).thenReturn(Optional.of(sender));
+            when(turnService.getCurrentTurn(BOARD_ID)).thenReturn(2);
+            when(exchangeOfferRepository
+                    .findBySenderPlayerIdOrReceiverPlayerIdOrderByCreatedAtDesc(1L, 1L))
+                    .thenReturn(List.of(offer));
+            when(playerRepository.findAllById(any())).thenReturn(List.of(sender, receiver));
+
+            List<ExchangeOfferDto> offers = exchangeOfferService.getOffers(11L, BOARD_ID);
+
+            assertEquals(1, offers.size());
+            assertEquals("Sender", offers.getFirst().senderName());
+            assertEquals("Receiver", offers.getFirst().receiverName());
+            verify(exchangeOfferRepository).expirePendingOffers(
+                    BOARD_ID, ExchangeOfferStatus.PENDING, ExchangeOfferStatus.EXPIRED, 2);
+        }
+    }
+
+    @Nested
     @DisplayName("Vue admin")
     class AdminListTests {
 

@@ -1,5 +1,7 @@
 package com.mg.nmlonline.domain.service;
 
+import com.mg.nmlonline.DemoDatabaseReset;
+import com.mg.nmlonline.DemoFixtures;
 import com.mg.nmlonline.EmbeddedPostgresTest;
 import com.mg.nmlonline.domain.model.board.Board;
 import com.mg.nmlonline.domain.model.building.Bank;
@@ -42,9 +44,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * (unité ou personnage) avant le DELETE. Déterministe : aucune évasion, budgets choisis pour épuiser exactement.
  */
 @EmbeddedPostgresTest
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @DisplayName("CombatService — scénarios bâtiments, personnages et véhicules")
-class CombatServiceScenariosTest {
+class CombatServiceScenariosTest extends DemoDatabaseReset {
 
     @Autowired
     private CombatService combatService;
@@ -65,7 +67,7 @@ class CombatServiceScenariosTest {
     }
 
     private Long boardId() {
-        return boardRepository.findAll().getFirst().getId();
+        return DemoFixtures.mainBoardId(boardRepository);
     }
 
     @Autowired

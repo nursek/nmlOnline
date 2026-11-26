@@ -50,7 +50,7 @@ class GameSetupApiTest {
         board = boardService.saveBoard(board, boardName);
 
         User admin = userRepository.findByUsername(TestDataInitializer.ADMIN);
-        String adminToken = jwtService.generateToken(admin, 3_600_000L);
+        String adminToken = DemoFixtures.tokenFor(admin, jwtService);
 
         String body = "{\"name\":\"ApiPlayer\",\"race\":\"ORKS\",\"sectorNumbers\":[1]}";
         MvcResult created = mockMvc.perform(post("/api/admin/players/template")
@@ -70,7 +70,7 @@ class GameSetupApiTest {
                         .content("{\"username\":\"" + TestDataInitializer.USER_1 + "\"}"))
                 .andExpect(status().isNoContent());
         User playerUser = userRepository.findByUsername(TestDataInitializer.USER_1);
-        String playerToken = jwtService.generateToken(playerUser, 3_600_000L);
+        String playerToken = DemoFixtures.tokenFor(playerUser, jwtService);
 
         mockMvc.perform(post("/api/players/equipment/buy")
                         .header("Authorization", "Bearer " + playerToken)
@@ -158,7 +158,7 @@ class GameSetupApiTest {
         User admin = userRepository.findByUsername(TestDataInitializer.ADMIN);
         User playerUser = userRepository.findByUsername(TestDataInitializer.USER_1);
         User mjUser = userRepository.findByUsername(TestDataInitializer.USER_2);
-        String adminToken = jwtService.generateToken(admin, 3_600_000L);
+        String adminToken = DemoFixtures.tokenFor(admin, jwtService);
 
         MvcResult created = mockMvc.perform(post("/api/admin/players/template")
                         .header("Authorization", "Bearer " + adminToken)
