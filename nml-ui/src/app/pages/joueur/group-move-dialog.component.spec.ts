@@ -101,18 +101,18 @@ describe('GroupMoveDialogComponent', () => {
     expect(page.selectedVehicles()).toEqual([]);
   });
 
-  it('liste les cibles atteignables avec leur nature', () => {
+  it('construit le chemin au clic sur la carte', () => {
     const page = component();
 
-    expect(page.targets().map((target) => target.number)).toEqual([6]);
-    expect(page.kindLabel(page.targets()[0].kind)).toBe('Neutre');
-    expect(page.kindLabel('own')).toBe('Interne');
-    expect(page.kindLabel('enemy')).toBe('Ennemi');
+    page.onMapSectorClick(6);
+    expect(page.route()).toEqual([5, 6]);
+    page.onMapSectorClick(5);
+    expect(page.route()).toEqual([]);
   });
 
   it('envoie un ordre groupé pour les unités, le personnage et les véhicules', async () => {
     const page = component();
-    page.targetSector.set(6);
+    page.onMapSectorClick(6);
 
     await page.submit();
 
@@ -126,15 +126,15 @@ describe('GroupMoveDialogComponent', () => {
 
   it('refuse une destination sans route et ne bouge rien', async () => {
     const page = component();
-    page.targetSector.set(7);
+    page.onMapSectorClick(7);
 
     await page.submit();
 
     expect(movement.placeFootOrder).not.toHaveBeenCalled();
     expect(snackBar.open).toHaveBeenCalledWith(
-      'Aucune route adjacente trouvée vers la destination',
+      'Ce secteur n’est pas adjacent à la dernière étape.',
       'Fermer',
-      { duration: 3000 },
+      { duration: 2500 },
     );
   });
 

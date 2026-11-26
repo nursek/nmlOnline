@@ -3,6 +3,7 @@ import {
   movableEntities,
   reachableTargets,
   sectorKind,
+  sectorKindLabel,
   unitMaxHops,
 } from './movement.helpers';
 import type { GameCharacter, Sector, Unit, Vehicle } from '../models';
@@ -155,6 +156,9 @@ describe('movement.helpers', () => {
       expect(sectorKind(sector(2, null), 1)).toBe('neutral');
       expect(sectorKind(sector(3, 2), 1)).toBe('enemy');
       expect(sectorKind(null, 1)).toBe('unknown');
+      expect(sectorKindLabel('own')).toBe('Interne');
+      expect(sectorKindLabel('neutral')).toBe('Neutre');
+      expect(sectorKindLabel('enemy')).toBe('Ennemi');
     });
 
     it('marque le secteur d’un allié', () => {
